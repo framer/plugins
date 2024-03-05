@@ -17,7 +17,7 @@ jobs:
 
         steps:
             - name: "Checkout repository"
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
 
             - name: Setup Node.js
               uses: actions/setup-node@v4
@@ -52,10 +52,10 @@ jobs:
 
             - name: Sync with S3
               if: ${{ github.ref_name == 'main' }}
-              run: aws s3 sync ./p/ s3://946663360620-us-east-1-static-files --delete --exclude '.git/*' --exclude README.md --exclude '.github/*' --exclude .gitattributes --exclude .gitignore
+              run: aws s3 sync ./p/ s3://946663360620-us-east-1-static-files --exclude '.git/*' --exclude README.md --exclude '.github/*' --exclude .gitattributes --exclude .gitignore
 
-            - name: "Bust the CDN cache"
-              uses: chetan/invalidate-cloudfront-action@v2
-              env:
-                  PATHS: "/*"
-                  DISTRIBUTION: ${{ secrets.CLOUDFRONT_DISTRIBUTION }}
+            # - name: "Bust the CDN cache"
+            #   uses: chetan/invalidate-cloudfront-action@v2
+            #   env:
+            #       PATHS: "/*"
+            #       DISTRIBUTION: ${{ secrets.CLOUDFRONT_DISTRIBUTION }}

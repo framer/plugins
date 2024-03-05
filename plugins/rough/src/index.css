@@ -28,11 +28,12 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-<<<<<<< Updated upstream
+
 a {
     color: inherit;
     text-decoration: none;
-=======
+}
+
 *,
 *::before,
 *::after {
@@ -49,7 +50,6 @@ html {
 #root {
     height: 100%;
     padding: 0 15px 15px 15px;
->>>>>>> Stashed changes
 }
 
 @media (prefers-color-scheme: dark) {

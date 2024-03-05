@@ -2,29 +2,28 @@ import {
     Suspense,
     useCallback,
     useDeferredValue,
-    useEffect,
     useMemo,
     useState,
-} from "react";
-import "./App.css";
-import { CanvasNode, api } from "./api";
-import Fuse from "fuse.js";
+} from "react"
+import "./App.css"
+import { api } from "./api"
+import Fuse from "fuse.js"
 
-import { IconContext } from "@phosphor-icons/react";
-import * as Icons from "@phosphor-icons/react";
+import { IconContext } from "@phosphor-icons/react"
+import * as Icons from "@phosphor-icons/react"
 
 import {
     icons as iconData,
     IconEntry as CoreEntry,
     // @ts-expect-error - phosphor-icons is not typed
-} from "@phosphor-icons/core";
-import { Icon } from "@phosphor-icons/react";
-import { renderToStaticMarkup } from "react-dom/server";
+} from "@phosphor-icons/core"
+import { Icon } from "@phosphor-icons/react"
+import { renderToStaticMarkup } from "react-dom/server"
 
 export const icons: ReadonlyArray<IconEntry> = iconData.map((entry: any) => ({
     ...entry,
     Icon: Icons[entry.pascal_name as keyof typeof Icons] as Icons.Icon,
-}));
+}))
 
 const fuse = new Fuse(icons, {
     keys: [
@@ -36,41 +35,41 @@ const fuse = new Fuse(icons, {
     threshold: 0.2, // Tweak this to what feels like the right number of results
     // shouldSort: false,
     useExtendedSearch: true,
-});
+})
 
 export interface IconEntry extends CoreEntry {
-    Icon: Icon;
+    Icon: Icon
 }
 
 function IconGrid(props: any) {
-    const { searchQuery, weight } = props;
+    const { searchQuery, weight } = props
 
-    const deferredQuery = useDeferredValue(searchQuery);
+    const deferredQuery = useDeferredValue(searchQuery)
 
     const filteredIcons = useMemo(() => {
-        const query = deferredQuery.trim().toLowerCase();
-        if (!query) return icons;
+        const query = deferredQuery.trim().toLowerCase()
+        if (!query) return icons
 
-        return fuse.search(query).map((value) => value.item);
-    }, [deferredQuery]);
+        return fuse.search(query).map((value) => value.item)
+    }, [deferredQuery])
 
     const handleIconClick = useCallback(async (entry: IconEntry) => {
-        const { Icon } = entry;
+        const { Icon } = entry
 
         const svg = renderToStaticMarkup(
             <Icon size={32} color={"black"} weight={weight} />
-        );
+        )
 
         await api.addSVG({
             svg,
             name: "test.svg",
-        });
-    }, []);
+        })
+    }, [])
 
     return (
         <div className="grid">
             {filteredIcons.map((entry) => {
-                const { Icon } = entry;
+                const { Icon } = entry
 
                 return (
                     <div
@@ -80,15 +79,15 @@ function IconGrid(props: any) {
                     >
                         <Icon size={32} color={"black"} weight={weight} />
                     </div>
-                );
+                )
             })}
         </div>
-    );
+    )
 }
 
 export function App() {
-    const weight = "regular";
-    const [searchQuery, setSearchQuery] = useState("");
+    const weight = "regular"
+    const [searchQuery, setSearchQuery] = useState("")
 
     return (
         <>
@@ -115,5 +114,5 @@ export function App() {
                 </IconContext.Provider>
             </Suspense>
         </>
-    );
+    )
 }

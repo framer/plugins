@@ -1,0 +1,22 @@
+/* Your Plugin CSS */
+
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 0 15px 15px 15px;
+  height: 100%;
+  gap: 10px;
+}
+
+.row {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 90px 1fr;
+  align-items: center;
+}
+
+.row input,
+.row select {
+  width: 100%;
+}

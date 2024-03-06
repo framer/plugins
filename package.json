@@ -1,17 +1,20 @@
 {
-    "name": "plugins",
-    "version": "1.0.0",
-    "private": true,
-    "main": "index.js",
-    "repository": "https://huntercaron@github.com/framer/plugins.git",
-    "author": "Hunter Caron <huntercaron@me.com>",
-    "license": "MIT",
-    "workspaces": [
-        "plugins/*"
-    ],
-    "scripts": {
-        "clean": "rm -rf ./p",
-        "copy": "mkdir p && for d in ./plugins/*/dist; do cp -r \"$d\" \"./p/$(basename $(dirname $d))\"; done",
-        "build": "turbo run build-remote copy"
-    }
+  "name": "plugins",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "repository": "https://huntercaron@github.com/framer/plugins.git",
+  "author": "Hunter Caron <huntercaron@me.com>",
+  "license": "MIT",
+  "workspaces": [
+    "plugins/*"
+  ],
+  "scripts": {
+    "clean": "rm -rf ./p",
+    "copy": "bash ./scripts/copy-build.sh",
+    "build": "turbo run build-remote copy"
+  },
+  "devDependencies": {
+    "turbo": "^1.12.4"
+  }
 }

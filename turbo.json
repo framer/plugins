@@ -4,6 +4,6 @@
         "build-remote": {
             "outputs": ["dist/**"]
         },
-        "//#copy": {}
+        "//#copy": { "cache": false, "dependsOn": ["^build"] }
     }
 }

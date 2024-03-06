@@ -6,7 +6,7 @@
     "main": "src/api/index.ts",
     "scripts": {
         "dev": "vite",
-        "build": "vite build --base=${USE_BASE_PATH:+/$npm_package_name/}",
+        "build": "vite build",
         "build-remote": "vite build --base=/${npm_package_name}/",
         "format": "prettier . --write",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",

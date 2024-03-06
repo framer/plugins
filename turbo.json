@@ -1,10 +1,9 @@
 {
     "$schema": "https://turbo.build/schema.json",
     "pipeline": {
-        "build": {
-            "env": ["USE_BASE_PATH"],
+        "build-remote": {
             "outputs": ["dist/**"]
         },
-        "//#copy": {}
+        "//#copy": { "cache": false }
     }
 }

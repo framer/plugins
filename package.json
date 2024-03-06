@@ -11,7 +11,7 @@
     ],
     "scripts": {
         "clean": "rm -rf ./p",
-        "copy": "mkdir -p ./p && for d in ./plugins/*/dist; do cp -r \"$d\" \"./p/$(basename $(dirname $d))\"; done",
+        "copy": "mkdir -p p && for d in ./plugins/*/dist; do cp -r \"$d\" \"./p/$(basename $(dirname $d))\"; done",
         "build": "turbo run build-remote copy"
     }
 }

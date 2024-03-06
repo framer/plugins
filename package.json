@@ -10,6 +10,7 @@
         "plugins/*"
     ],
     "scripts": {
-        "build": "turbo copy && chmod +x script.sh && ./scripts/build.sh"
+        "copy": "./scripts/build.sh",
+        "build": "turbo run build copy"
     }
 }

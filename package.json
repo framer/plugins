@@ -1,6 +1,7 @@
 {
     "name": "plugins",
     "version": "1.0.0",
+    "private": true,
     "main": "index.js",
     "repository": "https://huntercaron@github.com/framer/plugins.git",
     "author": "Hunter Caron <huntercaron@me.com>",

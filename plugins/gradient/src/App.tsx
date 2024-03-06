@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef } from "react"
+import { useCallback, useRef } from "react"
 import { api } from "./api"
-import { Canvas, useThree } from "@react-three/fiber"
+import { Canvas } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import { useResolution } from "emulsion/pre"
 import { customGlsl } from "emulsion/shaders"

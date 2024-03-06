@@ -1,12 +1,14 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { App } from "./App.tsx"
-import { assert } from "./api/utils.ts"
-import { api } from "./api"
+
+import { api } from "@framerjs/plugin-api"
 import "./index.css"
 
 const root = document.getElementById("root")
-assert(root, "Root element not found")
+if (!root) {
+    throw new Error("Root element not found")
+}
 
 import.meta.hot?.dispose(() => {
     void api.closePlugin()

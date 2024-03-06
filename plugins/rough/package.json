@@ -12,6 +12,7 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz",
         "react": "^18",
         "react-dom": "^18",
         "roughjs": "^4.6.6",

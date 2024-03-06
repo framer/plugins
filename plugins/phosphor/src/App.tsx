@@ -2,12 +2,11 @@ import {
     Suspense,
     useCallback,
     useDeferredValue,
-    useEffect,
     useMemo,
     useState,
 } from "react"
 import "./App.css"
-import { api } from "./api"
+import { api } from "@framerjs/plugin-api"
 import Fuse from "fuse.js"
 
 import { IconContext } from "@phosphor-icons/react"

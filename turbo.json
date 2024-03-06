@@ -1,7 +1,7 @@
 {
     "$schema": "https://turbo.build/schema.json",
     "pipeline": {
-        "build-remote": {
+        "build": {
             "env": ["USE_BASE_PATH"],
             "outputs": ["dist/**"]
         },

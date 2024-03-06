@@ -12,7 +12,7 @@
     "scripts": {
         "clean": "rm -rf ./p",
         "copy": "bash ./scripts/copy-build.sh",
-        "build": "turbo run build-remote && npm run copy"
+        "build": "turbo run build && npm run copy"
     },
     "devDependencies": {
         "turbo": "^1.12.4"

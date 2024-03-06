@@ -11,6 +11,9 @@ assert(root, "Root element not found")
 import.meta.hot?.dispose(() => {
     void api.closePlugin()
 })
+
+void api.showWindow({ position: "top left", width: 240, height: 365 })
+
 ReactDOM.createRoot(root).render(
     <React.StrictMode>
         <App />

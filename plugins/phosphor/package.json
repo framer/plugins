@@ -7,6 +7,7 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
+        "build-remote": "vite build --base=/${npm_package_name}/",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
         "preview": "vite preview"
     },

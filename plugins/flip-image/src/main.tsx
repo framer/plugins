@@ -40,8 +40,10 @@ async function flipHorizontally() {
   await api.closePlugin("Saved");
 }
 
-try {
-  await flipHorizontally();
-} catch (err) {
-  api.closePlugin("Unexpected error", { variant: "error" });
-}
+(async () => {
+  try {
+    await flipHorizontally();
+  } catch (err) {
+    api.closePlugin("Unexpected error", { variant: "error" });
+  }
+})();

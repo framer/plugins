@@ -46,17 +46,27 @@ button {
 .webcam-parent {
     position: relative;
     width: 100%;
-    height: auto;
+    height: 100%;
     border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #111;
     overflow: hidden;
 }
 
 video { 
     display: block;
+    height: 100%;
 }
 
 .webcam {
-    width: 100%;
+    width: auto;
+    margin: auto;
+    height: 100%;
+    opacity: 0;
+    max-height: 300px;
+    animation: fadeIn 1s 1s ease-in-out forwards;
 }
 
 /* .webcam {
@@ -90,3 +100,12 @@ video {
     border-radius: 8px;
     box-shadow: inset 0px 0px 0px 1px rgba(0, 0, 0, 0.1);
 }
+
+@keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }

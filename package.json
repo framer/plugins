@@ -1,20 +1,20 @@
 {
-  "name": "plugins",
-  "version": "1.0.0",
-  "private": true,
-  "main": "index.js",
-  "repository": "https://huntercaron@github.com/framer/plugins.git",
-  "author": "Hunter Caron <huntercaron@me.com>",
-  "license": "MIT",
-  "workspaces": [
-    "plugins/*"
-  ],
-  "scripts": {
-    "clean": "rm -rf ./p",
-    "copy": "bash ./scripts/copy-build.sh",
-    "build": "turbo run build-remote && npm run copy"
-  },
-  "devDependencies": {
-    "turbo": "^1.12.4"
-  }
+    "name": "plugins",
+    "version": "1.0.0",
+    "private": true,
+    "main": "index.js",
+    "repository": "https://huntercaron@github.com/framer/plugins.git",
+    "author": "Hunter Caron <huntercaron@me.com>",
+    "license": "MIT",
+    "workspaces": [
+        "plugins/*"
+    ],
+    "scripts": {
+        "clean": "rm -rf ./p",
+        "copy": "bash ./scripts/copy-build.sh",
+        "build": "turbo run build-remote && npm run copy"
+    },
+    "devDependencies": {
+        "turbo": "^1.12.4"
+    }
 }

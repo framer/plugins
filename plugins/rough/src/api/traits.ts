@@ -1,4 +1,5 @@
-import { AnyNodeData } from "./nodes"
+import type { FramerImageData } from "./image"
+import type { AnyNodeData } from "./nodes"
 
 export interface WithName {
     readonly name: string | null
@@ -6,6 +7,10 @@ export interface WithName {
 
 export interface WithBackgroundColor {
     readonly backgroundColor: string | null
+}
+
+export interface WithBackgroundImage {
+    readonly backgroundImage: FramerImageData | null
 }
 
 export interface WithRotation {
@@ -34,6 +39,11 @@ export function withName<T extends PartialNodeData>(node: T): node is T & WithNa
 const backgroundColorKey: keyof WithBackgroundColor = "backgroundColor"
 export function withBackgroundColor<T extends PartialNodeData>(node: T): node is T & WithBackgroundColor {
     return backgroundColorKey in node
+}
+
+const backgroundImageKey: keyof WithBackgroundImage = "backgroundImage"
+export function withBackgroundImage<T extends PartialNodeData>(node: T): node is T & WithBackgroundImage {
+    return backgroundImageKey in node
 }
 
 const rotationKey: keyof WithRotation = "rotation"

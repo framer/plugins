@@ -1,5 +1,15 @@
 import type { PluginApi } from "./api"
-import type { BorderRadius, WithBackgroundColor, WithBorderRadius, WithName, WithOpacity, WithRotation } from "./traits"
+import { FramerImage } from "./image"
+import {
+    withBackgroundImage,
+    type BorderRadius,
+    type WithBackgroundColor,
+    type WithBackgroundImage,
+    type WithBorderRadius,
+    type WithName,
+    type WithOpacity,
+    type WithRotation,
+} from "./traits"
 
 import { assert, assertNever, isString } from "./utils"
 
@@ -10,12 +20,12 @@ interface PrivateNodeData {
     children: AnyNodeData[] | null
 }
 
-export interface MandatoryData extends PrivateNodeData {
+export interface MandatoryNodeData extends PrivateNodeData {
     id: NodeId
 }
 
 type HidePrivateNodeData<T extends PrivateNodeData> = Omit<T, keyof PrivateNodeData>
-type HideImmutableData<T extends MandatoryData> = Omit<T, keyof MandatoryData>
+type HideImmutableData<T extends MandatoryNodeData> = Omit<T, keyof MandatoryNodeData>
 
 export abstract class NodeMethods {
     readonly id: string
@@ -42,6 +52,14 @@ export abstract class NodeMethods {
 
     clone(): Promise<AnyNode | null> {
         return this.#api.cloneNode(this.id)
+    }
+
+    getImage(): FramerImage | null {
+        if (withBackgroundImage(this.#data) && this.#data.backgroundImage) {
+            return new FramerImage(this.#data.backgroundImage, this.#api)
+        }
+
+        return null
     }
 
     setAttributes(update: Partial<AnyNodeData>): Promise<AnyNode | null> {
@@ -81,9 +99,10 @@ export abstract class NodeMethods {
 }
 
 export interface FrameNodeData
-    extends MandatoryData,
+    extends MandatoryNodeData,
         WithName,
         WithBackgroundColor,
+        WithBackgroundImage,
         WithRotation,
         WithOpacity,
         WithBorderRadius {}
@@ -91,6 +110,7 @@ export interface FrameNodeData
 export class FrameNode extends NodeMethods implements HidePrivateNodeData<FrameNodeData> {
     readonly name: string | null
     readonly backgroundColor: string | null
+    readonly backgroundImage: FramerImage | null
     readonly rotation: number | null
     readonly opacity: number | null
     readonly borderRadius: BorderRadius
@@ -101,6 +121,7 @@ export class FrameNode extends NodeMethods implements HidePrivateNodeData<FrameN
 
         this.name = rawData.name ?? null
         this.backgroundColor = rawData.backgroundColor ?? null
+        this.backgroundImage = rawData.backgroundImage ? new FramerImage(rawData.backgroundImage, api) : null
         this.rotation = rawData.rotation ?? null
         this.opacity = rawData.opacity ?? null
         this.borderRadius = rawData.borderRadius ?? null
@@ -115,7 +136,7 @@ export class FrameNode extends NodeMethods implements HidePrivateNodeData<FrameN
     }
 }
 
-export interface TextNodeData extends MandatoryData, WithName {
+export interface TextNodeData extends MandatoryNodeData, WithName {
     readonly html: string
 }
 export class TextNode extends NodeMethods implements HidePrivateNodeData<TextNodeData> {
@@ -140,7 +161,7 @@ export class TextNode extends NodeMethods implements HidePrivateNodeData<TextNod
     }
 }
 
-export interface SVGNodeData extends MandatoryData, WithName {
+export interface SVGNodeData extends MandatoryNodeData, WithName {
     readonly svg: string
 }
 export class SVGNode extends NodeMethods implements HidePrivateNodeData<SVGNodeData> {
@@ -165,7 +186,7 @@ export class SVGNode extends NodeMethods implements HidePrivateNodeData<SVGNodeD
     }
 }
 
-export interface CodeComponentNodeData extends MandatoryData, WithName {
+export interface CodeComponentNodeData extends MandatoryNodeData, WithName {
     identifier: string
     componentProps: Record<string, unknown>
 }
@@ -193,7 +214,7 @@ export class CodeComponentNode extends NodeMethods implements HidePrivateNodeDat
     }
 }
 
-export interface WebPageNodeData extends MandatoryData {}
+export interface WebPageNodeData extends MandatoryNodeData {}
 export class WebPageNode extends NodeMethods implements HidePrivateNodeData<WebPageNodeData> {
     constructor(rawData: Partial<WebPageNodeData>, api: PluginApi) {
         super(rawData, api)
@@ -208,7 +229,7 @@ export class WebPageNode extends NodeMethods implements HidePrivateNodeData<WebP
     }
 }
 
-export interface SmartComponentNodeData extends MandatoryData, WithName {}
+export interface SmartComponentNodeData extends MandatoryNodeData, WithName {}
 export class SmartComponentNode extends NodeMethods implements HidePrivateNodeData<SmartComponentNodeData> {
     readonly name: string | null
 
@@ -227,10 +248,10 @@ export class SmartComponentNode extends NodeMethods implements HidePrivateNodeDa
     }
 }
 
-export type CanvasRootData = MandatoryData & (WebPageNodeData | SmartComponentNodeData)
+export type CanvasRootData = MandatoryNodeData & (WebPageNodeData | SmartComponentNodeData)
 export type CanvasRoot = WebPageNode | SmartComponentNode
 
-export type CanvasNodeData = MandatoryData &
+export type CanvasNodeData = MandatoryNodeData &
     Partial<FrameNodeData | TextNodeData | CodeComponentNodeData | SmartComponentNodeData | SVGNodeData>
 export type AnyCanvasNodeData = Partial<
     FrameNodeData & TextNodeData & CodeComponentNodeData & SVGNodeData & SmartComponentNodeData
@@ -283,4 +304,28 @@ export function convertRawCanvasNodeDataToNode(rawCanvasNode: CanvasNodeData, ap
             assertNever(rawCanvasNode.__class)
         }
     }
+}
+
+export function isFrameNode(node: unknown): node is FrameNode {
+    return node instanceof FrameNode
+}
+
+export function isTextNode(node: unknown): node is TextNode {
+    return node instanceof TextNode
+}
+
+export function isSVGNode(node: unknown): node is SVGNode {
+    return node instanceof SVGNode
+}
+
+export function isCodeComponentNode(node: unknown): node is CodeComponentNode {
+    return node instanceof CodeComponentNode
+}
+
+export function isWebPageNode(node: unknown): node is WebPageNode {
+    return node instanceof WebPageNode
+}
+
+export function isSmartComponentNode(node: unknown): node is SmartComponentNode {
+    return node instanceof SmartComponentNode
 }

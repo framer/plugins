@@ -1,4 +1,21 @@
-import { FramerImage, ImageData, ImageInput, SVGData, createImageDataFromInput } from "./image"
+import {
+    FramerImage,
+    FramerImageData,
+    FramerImageUploadResult,
+    ImageDataTransfer,
+    ImageInput,
+    SVGData,
+    createImageDataFromInput,
+} from "./image"
+import {
+    PluginEvent,
+    PluginMessageId,
+    PluginMethodInvocation,
+    PluginSubscription,
+    PluginSubscriptionEvent,
+    PluginSubscriptionTopic,
+    isPluginMessage,
+} from "./messages"
 import {
     AnyNode,
     AnyNodeData,
@@ -19,35 +36,29 @@ import {
     convertRawNodeDataToNode,
 } from "./nodes"
 import { PublishInfo } from "./publishInfo"
-import {
-    RPCEvent,
-    RPCMessageId,
-    RPCMethodInvocation,
-    RPCSubscription,
-    RPCSubscriptionEvent,
-    RPCSubscriptionTopic,
-    isRPCMessage,
-} from "./rpc"
 import { assert, assertNever, isString } from "./utils"
 
 export type Unsubscribe = VoidFunction
 
 // TODO: HostEvent? Is such a subscription also a function implementation?
 // It would be nice to distinguish because they are handled differently.
-type PostMessage = (message: RPCMethodInvocation | RPCSubscription, transfer?: Transferable[] | undefined) => void
+type PostMessage = (message: PluginMethodInvocation | PluginSubscription, transfer?: Transferable[] | undefined) => void
 
 export class PluginApi implements API {
     private count = 0
-    private initialMessageQueue: [RPCMethodInvocation | RPCSubscription, Transferable[] | undefined][] = []
+    private initialMessageQueue: [PluginMethodInvocation | PluginSubscription, Transferable[] | undefined][] = []
     private postMessage: PostMessage | undefined = undefined
-    private methodResponseHandlers = new Map<RPCMessageId, (value: unknown) => void>()
+    private methodResponseHandlers = new Map<
+        PluginMessageId,
+        { resolve: (value: unknown) => void; reject: (error: string) => void }
+    >()
 
-    private subscriptions: Map<RPCSubscriptionTopic, Set<(value: unknown) => void>> = new Map()
+    private subscriptions: Map<PluginSubscriptionTopic, Set<(value: unknown) => void>> = new Map()
 
     constructor() {
         window.addEventListener("message", this.onMessage)
 
-        const initMessage: RPCEvent = {
+        const initMessage: PluginEvent = {
             payload: { type: "init" },
             type: "event",
         }
@@ -55,35 +66,36 @@ export class PluginApi implements API {
     }
 
     private invoke<
-        TName extends keyof PostMessageAPI,
-        TArgs extends Parameters<PostMessageAPI[TName]>,
-        TReturnType extends ReturnType<PostMessageAPI[TName]>,
+        TName extends keyof PluginMessageAPI,
+        TArgs extends Parameters<PluginMessageAPI[TName]>,
+        TReturnType extends ReturnType<PluginMessageAPI[TName]>,
     >(methodName: TName, ...args: TArgs): Promise<TReturnType> {
         return this.invokeTransferable(methodName, undefined, ...args)
     }
 
     private invokeTransferable<
-        TName extends keyof PostMessageAPI,
-        TArgs extends Parameters<PostMessageAPI[TName]>,
-        TReturnType extends ReturnType<PostMessageAPI[TName]>,
+        TName extends keyof PluginMessageAPI,
+        TArgs extends Parameters<PluginMessageAPI[TName]>,
+        TReturnType extends ReturnType<PluginMessageAPI[TName]>,
     >(methodName: TName, transfer: Transferable[] | undefined, ...args: TArgs): Promise<TReturnType> {
-        return new Promise(resolve => {
-            const message: RPCMethodInvocation = {
+        return new Promise((resolve, reject) => {
+            const message: PluginMethodInvocation = {
                 args,
                 methodName,
                 id: this.count++,
                 type: "methodInvocation",
             }
 
-            this.methodResponseHandlers.set(message.id, resolve as (value: unknown) => void)
+            const typedResolve = resolve as (value: unknown) => void
+            this.methodResponseHandlers.set(message.id, { resolve: typedResolve, reject })
 
             this.queueMessage(message, transfer)
         })
     }
 
     private subscribe<
-        TTopic extends RPCSubscriptionTopic,
-        TEvent extends Extract<RPCSubscriptionEvent, { topic: TTopic }>,
+        TTopic extends PluginSubscriptionTopic,
+        TEvent extends Extract<PluginSubscriptionEvent, { topic: TTopic }>,
     >(topic: TTopic, callback: (data: TEvent["payload"]) => void): VoidFunction {
         // TODO: do we need ID at all?
         const subscriptionId = this.count++
@@ -115,7 +127,7 @@ export class PluginApi implements API {
         }
     }
 
-    private queueMessage(message: RPCMethodInvocation | RPCSubscription, transfer?: Transferable[] | undefined) {
+    private queueMessage(message: PluginMethodInvocation | PluginSubscription, transfer?: Transferable[] | undefined) {
         if (!this.postMessage) {
             this.initialMessageQueue.push([message, transfer])
             return
@@ -126,7 +138,7 @@ export class PluginApi implements API {
 
     private onMessage = (event: MessageEvent) => {
         const message = event.data
-        if (!isRPCMessage(message)) {
+        if (!isPluginMessage(message)) {
             return
         }
 
@@ -139,14 +151,19 @@ export class PluginApi implements API {
                 throw new Error("Method invocation cannot be handled by plugin.")
             }
             case "methodResponse": {
-                const resolveResponse = this.methodResponseHandlers.get(message.id)
-                if (!resolveResponse) {
+                const responseHandlers = this.methodResponseHandlers.get(message.id)
+                if (!responseHandlers) {
                     throw new Error(`No handler for response with id ${message.id}`)
                 }
 
                 this.methodResponseHandlers.delete(message.id)
 
-                resolveResponse(message.result)
+                if (message.error) {
+                    responseHandlers.reject(message.error)
+                } else {
+                    responseHandlers.resolve(message.result)
+                }
+
                 break
             }
             case "subscriptionMessage": {
@@ -175,7 +192,7 @@ export class PluginApi implements API {
         }
     }
 
-    private handleEvent = (event: RPCEvent, originalEvent: MessageEvent) => {
+    private handleEvent = (event: PluginEvent, originalEvent: MessageEvent) => {
         switch (event.payload.type) {
             case "init": {
                 const source = originalEvent.source
@@ -185,7 +202,7 @@ export class PluginApi implements API {
 
                 // Transferable only exists on window.parent.postMessage and not source.postMessage
                 this.postMessage = (
-                    message: RPCMethodInvocation | RPCSubscription,
+                    message: PluginMethodInvocation | PluginSubscription,
                     transfer?: Transferable[] | undefined
                 ) => window.parent.postMessage(message, originalEvent.origin, transfer)
 
@@ -199,6 +216,19 @@ export class PluginApi implements API {
                 assertNever(event.payload.type)
             }
         }
+    }
+
+    async showWindow(options: WindowOptions = {}): Promise<void> {
+        return this.invoke("showWindow", options)
+    }
+
+    async closeWindow(): Promise<void> {
+        return this.invoke("closeWindow")
+    }
+
+    async closePlugin(message?: string): Promise<void> {
+        window.removeEventListener("message", this.onMessage)
+        return this.invoke("closePlugin", message)
     }
 
     async getSelection() {
@@ -313,28 +343,42 @@ export class PluginApi implements API {
 
     async addImage(image: ImageInput): Promise<void> {
         const data = await createImageDataFromInput(image)
-        return this.invokeTransferable("addImage", [data.bytes], data)
+        return this.invokeTransferable("addImage", [data.bytes.buffer], data)
     }
 
-    async uploadImage(image: ImageInput): Promise<FramerImage> {
+    async uploadImage(image: ImageInput): Promise<FramerImageUploadResult> {
         const data = await createImageDataFromInput(image)
         return this.invokeTransferable("uploadImage", [data.bytes], data)
     }
 
-    async getImage(): Promise<FramerImage | null> {
-        return this.invoke("getImage")
+    async getImageData(image: FramerImageData): Promise<ImageDataTransfer | null> {
+        const result = await this.invoke("getImageData", image)
+
+        return result
     }
 
     async addSVG(svg: SVGData): Promise<void> {
         return this.invoke("addSVG", svg)
     }
+}
 
-    async showWindow(): Promise<void> {
-        return this.invoke("showWindow")
-    }
+export interface WindowOptions {
+    /** The preferred window width, defaults to the property panel width (260px). */
+    width?: number
+    /** The preferred window height. */
+    height?: number
+    /** The initial window position, defaults to top left. */
+    position?: "center" | "top left" | "bottom left" | "top right" | "bottom right"
 }
 
 export interface API {
+    /** Show the plugin window. */
+    showWindow: (options?: WindowOptions) => Promise<void>
+    /** Hide the plugin window, without stopping the plugin. */
+    closeWindow: () => Promise<void>
+    /** Stop the plugin. */
+    closePlugin(message?: string): Promise<void>
+
     /** Get the current selection. */
     getSelection: () => Promise<CanvasNode[]>
     /** Set the current selection. */
@@ -376,20 +420,23 @@ export interface API {
     /** Upload an image, and either assign it to the selection, or insert on the canvas. */
     addImage: (image: ImageInput) => Promise<void>
     /** Upload an image without assigning it. */
-    uploadImage: (image: ImageInput) => Promise<FramerImage>
-    /** Get the optional image of the current selection. */
-    getImage: () => Promise<FramerImage | null>
+    uploadImage: (image: ImageInput) => Promise<FramerImageUploadResult>
+
+    /**
+     * Get the details of the given image input.
+     * TODO: Naming? getImageBytes? getImage?
+     */
+    getImageData: (image: FramerImage) => Promise<ImageDataTransfer | null>
 
     /** Add an SVG, replacing the selected SVG, or insert on the canvas. */
     addSVG: (svg: SVGData) => Promise<void>
-
-    /** Show the plugin window in Framer */
-    showWindow: () => Promise<void>
 }
 
 export type CreateNodeType = "Frame" | "Text" | "SVG" | "CodeComponent"
 
-export interface PostMessageAPI extends Pick<API, "getImage" | "addSVG"> {
+export interface PluginMessageAPI extends Pick<API, "closeWindow" | "closePlugin" | "addSVG"> {
+    showWindow: (options: WindowOptions) => Promise<void>
+
     getSelection: () => Promise<CanvasNodeData[]>
     setSelection: (nodeIds: NodeId[]) => Promise<void>
 
@@ -408,11 +455,11 @@ export interface PostMessageAPI extends Pick<API, "getImage" | "addSVG"> {
 
     setAttributes: (nodeId: NodeId, attributes: Partial<AnyNodeData>) => Promise<AnyNodeData | null>
 
-    addImage: (image: ImageData) => Promise<void>
+    addImage: (image: ImageDataTransfer) => Promise<void>
 
-    uploadImage: (image: ImageData) => Promise<FramerImage>
+    getImageData: (image: FramerImageData) => Promise<ImageDataTransfer>
+
+    uploadImage: (image: ImageDataTransfer) => Promise<FramerImageUploadResult>
 
     setParent: (nodeId: NodeId, parentId: NodeId, index?: number) => Promise<void>
-
-    showWindow: () => Promise<void>
 }

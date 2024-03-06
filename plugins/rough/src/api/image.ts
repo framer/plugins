@@ -1,32 +1,103 @@
-import { isString } from "./utils"
+import { PluginApi } from "./api"
+import { assert, isString } from "./utils"
 
 export type ImageId = string
 
-export type ImageBase64 = string
-
 export type URLString = string
 
-export interface FramerImage {
+export interface FramerImageUploadResult {
     /** A unique id. */
     id: ImageId
     /** Something that can be rendered within the iFrame. */
     url: string
-    /** The original file name. */
-    name: string
     /** The original file width. */
     width: number
     /** The original file height. */
     height: number
 }
 
-export interface ImageInput {
-    data: File | URLString | ImageBase64
+export interface FramerImageData {
+    /** Something that can be rendered within the iFrame. */
+    url: string
+    /** Optional name of the image */
     name?: string
 }
 
-export interface ImageData {
+interface Size {
+    width: number
+    height: number
+}
+
+export class FramerImage implements FramerImageData {
+    readonly url: string
+
+    #api: PluginApi
+
+    constructor(data: FramerImageData, api: PluginApi) {
+        this.url = data.url
+        this.#api = api
+    }
+
+    async measure(): Promise<Size> {
+        return measureImage(this.url)
+    }
+
+    /**
+     * Get the data such as the bytes of the image.
+     * The bytes can be used to manipulate the pixels of the image.
+     */
+    async getData(): Promise<ImageDataTransfer> {
+        const data = await this.#api.getImageData(this)
+        if (!data) {
+            throw new Error("Failed to load image data")
+        }
+
+        return data
+    }
+
+    /**
+     * Utility to create a HTMLImageElement from the image data returned by `getData`
+     */
+    static async imageFromData(data: ImageDataTransfer): Promise<HTMLImageElement> {
+        const url = URL.createObjectURL(new Blob([data.bytes]))
+
+        return new Promise<HTMLImageElement>((resolve, reject) => {
+            const img = new Image()
+            img.onload = () => resolve(img)
+            img.onerror = () => reject()
+            img.src = url
+        })
+    }
+
+    /**
+     * Convenience method to load an image from a canvas.
+     * As a transferable bytes array
+     */
+    static async bytesFromCanvas(canvas: HTMLCanvasElement): Promise<Uint8Array | null> {
+        return new Promise<Uint8Array>((resolve, reject) => {
+            canvas.toBlob(blob => {
+                assert(blob)
+
+                const reader = new FileReader()
+
+                reader.onload = () => {
+                    assert(reader.result)
+                    resolve(new Uint8Array(reader.result as ArrayBuffer))
+                }
+                reader.onerror = () => reject(new Error("Could not read from blob"))
+                reader.readAsArrayBuffer(blob)
+            })
+        })
+    }
+}
+
+export type ImageInput = {
+    name?: string
+} & ({ file: File } | { url: string } | { data: ImageDataTransfer })
+
+export interface ImageDataTransfer {
     /** The file data as RAW bytes. (UInt8Array) */
-    bytes: ArrayBuffer
+    bytes: Uint8Array
     /* The mime type of the image file */
     mimeType: string
     /** The file name. */
@@ -51,30 +122,23 @@ export function isValidUrl(url: unknown): url is URLString {
     }
 }
 
-export async function createImageDataFromInput(input: ImageInput): Promise<ImageData> {
-    let file: FileInfo
+export async function createImageDataFromInput(input: ImageInput): Promise<ImageDataTransfer> {
+    let transfer: ImageDataTransfer
 
-    if (input.data instanceof File) {
-        file = await getBytesFromFile(input.data)
-    } else if (isValidUrl(input.data)) {
-        file = await getBytesFromUrl(input.data)
+    if ("file" in input && input.file instanceof File) {
+        transfer = await getImageDataTransferFromFile(input.file)
+    } else if ("url" in input && isValidUrl(input.url)) {
+        transfer = await getImageDataTransferFromUrl(input.url)
+    } else if ("data" in input && input.data) {
+        transfer = input.data
     } else {
         throw new Error("Invalid image data")
     }
 
-    return {
-        bytes: file.bytes.buffer,
-        mimeType: file.mimeType,
-        name: input.name,
-    }
+    return transfer
 }
 
-export interface FileInfo {
-    bytes: Uint8Array
-    mimeType: string
-}
-
-export async function getBytesFromFile(file: File): Promise<FileInfo> {
+export async function getImageDataTransferFromFile(file: File): Promise<ImageDataTransfer> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = event => {
@@ -96,13 +160,13 @@ export async function getBytesFromFile(file: File): Promise<FileInfo> {
     })
 }
 
-export async function getBytesFromUrl(url: URLString): Promise<FileInfo> {
+export async function getImageDataTransferFromUrl(url: URLString): Promise<ImageDataTransfer> {
     const response = await fetch(url)
     const blob = await response.blob()
 
     const type = response.headers.get("Content-Type")
     if (!type) {
-        throw new Error("Unknown content type for url")
+        throw new Error("Unknown content-type for file at URL")
     }
 
     const bytes = await new Response(blob).arrayBuffer().then(buffer => new Uint8Array(buffer))
@@ -110,5 +174,23 @@ export async function getBytesFromUrl(url: URLString): Promise<FileInfo> {
     return {
         mimeType: type,
         bytes,
+    }
+}
+
+export async function measureImage(input: File | string): Promise<Size> {
+    const isFileInput = input instanceof File
+    const src = isFileInput ? URL.createObjectURL(input) : input
+
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    img.src = src
+
+    await img.decode().finally(() => {
+        if (isFileInput) URL.revokeObjectURL(src)
+    })
+
+    return {
+        height: img.height,
+        width: img.width,
     }
 }

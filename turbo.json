@@ -3,7 +3,6 @@
   "pipeline": {
     "build-remote": {
       "outputs": ["dist/**"]
-    },
-    "//#copy": { "cache": false, "dependsOn": ["^build-remote"] }
+    }
   }
 }

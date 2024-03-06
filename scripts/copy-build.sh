@@ -6,11 +6,9 @@
 # Iterate over all directories in ./plugins
 for d in ./plugins/*/; do
     # Check if a dist directory exists for the current plugin
-    echo ${d}
     if [ -d "${d}dist" ]; then
         # Extract the name of the plugin directory
         plugin_dir_name=$(basename "${d}")
-        echo $plugin_dir_name
         # Create plugin directory in p if it does not exist
         [ ! -d "./p/${plugin_dir_name}" ] && mkdir -p "./p/${plugin_dir_name}"
         # Copy all files from the dist directory to the target directory

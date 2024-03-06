@@ -129,35 +129,6 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: PluginImage; ma
         [image]
     )
 
-    const handleFlipHorizontally = async () => {
-        const canvas = document.createElement("canvas")
-        const ctx = canvas.getContext("2d")
-
-        assert(ctx)
-        if (!image) return
-
-        const data = await image.getData()
-        const img = await image.loadBitmap()
-
-        ctx.canvas.width = img.width
-        ctx.canvas.height = img.height
-
-        // Flip the context horizontally
-        ctx.scale(-1, 1)
-        ctx.drawImage(img, -img.width, 0)
-
-        const result = await bytesFromCanvas(canvas)
-        assert(result)
-
-        void api.closeWindow()
-        await api.addImage({
-            bytes: result,
-            mimeType: data.mimeType,
-        })
-
-        await api.closePlugin("Image flipped")
-    }
-
     const handleThresholdChange = useCallback(
         (nextValue: number) => {
             startTransition(() => {
@@ -195,7 +166,6 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: PluginImage; ma
                 />
 
                 <button onClick={handleSaveImage}>Save Image</button>
-                <button onClick={handleFlipHorizontally}>Flip horizontally</button>
             </div>
         </div>
     )

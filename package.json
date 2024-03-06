@@ -10,7 +10,7 @@
         "plugins/*"
     ],
     "scripts": {
-        "copy": "./scripts/build.sh",
+        "copy": "mkdir p && for d in ./plugins/*/dist; do cp -r \"$d\" \"./p/$(basename $(dirname $d))\"; done",
         "build": "turbo run build copy"
     }
 }

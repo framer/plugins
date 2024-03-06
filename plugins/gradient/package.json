@@ -1,5 +1,5 @@
 {
-  "name": "@framerjs/gradient",
+  "name": "gradient",
   "private": true,
   "version": "0.0.0",
   "type": "module",

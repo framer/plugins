@@ -16,7 +16,7 @@ A collection of Framer Plugins.
 ![plugins](assets/images/plugins.png)
 
 ### 🎛️ Get Started 
-Try out the current selection of plugins in Framer on the [plugin branch](https://features-plugin.beta.framer.com/projects/). 
+Try out the current selection of plugins in Framer on the [plugin PR preview](https://features-plugin.beta.framer.com/projects/). 
 
 ### 🛠️ Contribute
 

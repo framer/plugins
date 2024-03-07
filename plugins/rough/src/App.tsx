@@ -168,7 +168,7 @@ export function App() {
                                 <input
                                     type="range"
                                     min="1"
-                                    max="10"
+                                    max="40"
                                     step="0.5"
                                     value={gap}
                                     onChange={e => setGap(Number(e.target.value))}

@@ -9,6 +9,14 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+.pnp.*
+.yarn/*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+
 node_modules
 dist
 dist-ssr

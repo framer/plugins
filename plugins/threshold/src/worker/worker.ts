@@ -1,5 +1,5 @@
-import { expose, transfer } from "comlink"
 
+import { expose, transfer, Endpoint } from "comlink"
 
 export class CanvasWorker {
     private offscreenCanvas: OffscreenCanvas
@@ -49,4 +49,5 @@ export class CanvasWorker {
     }
 }
 
-expose(CanvasWorker, self)
+
+expose(CanvasWorker, self as Endpoint)

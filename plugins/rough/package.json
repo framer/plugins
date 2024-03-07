@@ -14,8 +14,8 @@
     "dependencies": {
         "react": "^18",
         "react-dom": "^18",
-        "vite-plugin-mkcert": "^1",
-        "roughjs": "^4.6.6"
+        "roughjs": "^4.6.6",
+        "vite-plugin-mkcert": "^1"
     },
     "devDependencies": {
         "@types/react": "^18",

@@ -9,9 +9,11 @@
         "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
         "format": "prettier . --write",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
+        "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz",
         "react": "^18",
         "react-dom": "^18",
         "roughjs": "^4.6.6",

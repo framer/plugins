@@ -240,6 +240,66 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=flip-image%40workspace%3Aplugins%2Fflip-image":
+  version: 0.0.0
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=702d97&locator=flip-image%40workspace%3Aplugins%2Fflip-image"
+  dependencies:
+    react: "npm:^18.2.0"
+    react-dom: "npm:^18.2.0"
+    valibot: "npm:^0.29.0"
+    vite-plugin-mkcert: "npm:^1.17.4"
+  checksum: 10c0/7dc75f91b06b7dd7c146ed335f2978f37af06e1e49996449e91c8b31f79e31f080c1247e43985c2dc790a24c26d23ea67377c7cdc45730b82de7bf264844fa82
+  languageName: node
+  linkType: hard
+
+"@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=phosphor%40workspace%3Aplugins%2Fphosphor":
+  version: 0.0.0
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=702d97&locator=phosphor%40workspace%3Aplugins%2Fphosphor"
+  dependencies:
+    react: "npm:^18.2.0"
+    react-dom: "npm:^18.2.0"
+    valibot: "npm:^0.29.0"
+    vite-plugin-mkcert: "npm:^1.17.4"
+  checksum: 10c0/7dc75f91b06b7dd7c146ed335f2978f37af06e1e49996449e91c8b31f79e31f080c1247e43985c2dc790a24c26d23ea67377c7cdc45730b82de7bf264844fa82
+  languageName: node
+  linkType: hard
+
+"@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=photobooth%40workspace%3Aplugins%2Fphotobooth":
+  version: 0.0.0
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=702d97&locator=photobooth%40workspace%3Aplugins%2Fphotobooth"
+  dependencies:
+    react: "npm:^18.2.0"
+    react-dom: "npm:^18.2.0"
+    valibot: "npm:^0.29.0"
+    vite-plugin-mkcert: "npm:^1.17.4"
+  checksum: 10c0/7dc75f91b06b7dd7c146ed335f2978f37af06e1e49996449e91c8b31f79e31f080c1247e43985c2dc790a24c26d23ea67377c7cdc45730b82de7bf264844fa82
+  languageName: node
+  linkType: hard
+
+"@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=rough%40workspace%3Aplugins%2Frough":
+  version: 0.0.0
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=702d97&locator=rough%40workspace%3Aplugins%2Frough"
+  dependencies:
+    react: "npm:^18.2.0"
+    react-dom: "npm:^18.2.0"
+    valibot: "npm:^0.29.0"
+    vite-plugin-mkcert: "npm:^1.17.4"
+  checksum: 10c0/7dc75f91b06b7dd7c146ed335f2978f37af06e1e49996449e91c8b31f79e31f080c1247e43985c2dc790a24c26d23ea67377c7cdc45730b82de7bf264844fa82
+  languageName: node
+  linkType: hard
+
+"@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=threshold%40workspace%3Aplugins%2Fthreshold":
+  version: 0.0.0
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=702d97&locator=threshold%40workspace%3Aplugins%2Fthreshold"
+  dependencies:
+    react: "npm:^18.2.0"
+    react-dom: "npm:^18.2.0"
+    valibot: "npm:^0.29.0"
+    vite-plugin-mkcert: "npm:^1.17.4"
+  checksum: 10c0/7dc75f91b06b7dd7c146ed335f2978f37af06e1e49996449e91c8b31f79e31f080c1247e43985c2dc790a24c26d23ea67377c7cdc45730b82de7bf264844fa82
+  languageName: node
+  linkType: hard
+
 "@humanwhocodes/config-array@npm:^0.11.14":
   version: 0.11.14
   resolution: "@humanwhocodes/config-array@npm:0.11.14"
@@ -1916,6 +1976,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "flip-image@workspace:plugins/flip-image"
   dependencies:
+    "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
     "@typescript-eslint/eslint-plugin": "npm:^6"
@@ -2847,6 +2908,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "phosphor@workspace:plugins/phosphor"
   dependencies:
+    "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz"
     "@phosphor-icons/core": "npm:^2.0.8"
     "@phosphor-icons/react": "npm:^2.0.15"
     "@types/react": "npm:^18.0.26"
@@ -2870,6 +2932,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "photobooth@workspace:plugins/photobooth"
   dependencies:
+    "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
     "@typescript-eslint/eslint-plugin": "npm:^6"
@@ -3219,6 +3282,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "rough@workspace:plugins/rough"
   dependencies:
+    "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
     "@typescript-eslint/eslint-plugin": "npm:^6"
@@ -3529,6 +3593,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "threshold@workspace:plugins/threshold"
   dependencies:
+    "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
     "@typescript-eslint/eslint-plugin": "npm:^6"
@@ -3783,6 +3848,13 @@ __metadata:
   bin:
     uuid: dist/bin/uuid
   checksum: 10c0/1607dd32ac7fc22f2d8f77051e6a64845c9bce5cd3dd8aa0070c074ec73e666a1f63c7b4e0f4bf2bc8b9d59dc85a15e17807446d9d2b17c8485fbc2147b27f9b
+  languageName: node
+  linkType: hard
+
+"valibot@npm:^0.29.0":
+  version: 0.29.0
+  resolution: "valibot@npm:0.29.0"
+  checksum: 10c0/0bb277461bd7b7c16188a99567cd80353ac53c30a215fc007965eab009f6db84204845977118b1f5277eaef7cb1c5b9d60548fab453fc47eebfd30e67ebd6b9c
   languageName: node
   linkType: hard
 

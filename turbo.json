@@ -3,6 +3,9 @@
     "pipeline": {
         "build": {
             "outputs": ["dist/**"]
+        },
+        "typecheck": {
+            
         }
     }
 }

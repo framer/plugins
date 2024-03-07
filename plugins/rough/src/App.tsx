@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import rough from "roughjs"
 import "./App.css"
-import { api } from "./api"
+import { api } from "@framerjs/plugin-api"
 
 export function App() {
     useEffect(() => {

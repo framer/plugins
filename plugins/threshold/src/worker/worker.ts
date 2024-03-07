@@ -1,5 +1,5 @@
-import { expose, transfer } from "comlink"
-import { assert } from "../api/utils"
+
+import { expose, transfer, Endpoint } from "comlink"
 
 export class CanvasWorker {
     private offscreenCanvas: OffscreenCanvas
@@ -9,7 +9,9 @@ export class CanvasWorker {
         this.offscreenCanvas = new OffscreenCanvas(0, 0)
         const ctx = this.offscreenCanvas.getContext("2d")
 
-        assert(ctx)
+        if (!ctx) {
+            throw new Error("WTF")
+        }
 
         this.ctx = ctx
     }
@@ -47,4 +49,5 @@ export class CanvasWorker {
     }
 }
 
-expose(CanvasWorker, self)
+
+expose(CanvasWorker, self as Endpoint)

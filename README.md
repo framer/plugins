@@ -5,14 +5,12 @@
 
 A collection of Framer Plugins. Try out the current selection of plugins in Framer on the [plugin branch](https://features-plugin.beta.framer.com/projects/). Do you have a plugin idea? Please join in and try building a plugin of your own, we’d love to see it! 
 
-</br>
-
 ![plugins](assets/images/plugins.png)
 
-## Making Plugins
+### 🛠️ Contribute
 
 View the [plugin template repo](https://github.com/framer/plugin) to get started building a plugin. If you hack on something you’d like us to include in our batch of example plugins, please feel free to open a PR.
 
-## Feedback
+### 🔮 Feedback
 
 We are early in the process of plugins, but moving fast! We appreciate any and all feedback in the [#proj-plugins](https://framer-team.slack.com/archives/C06L5H5ADK2) channel on Slack.

@@ -5,6 +5,8 @@
 
 A collection of Framer Plugins. Try out the current selection of plugins in Framer on the [plugin branch](https://features-plugin.beta.framer.com/projects/). Do you have a plugin idea? Please join in and try building a plugin of your own, we’d love to see it! 
 
+</br>
+
 ![plugins](assets/images/plugins.png)
 
 ## Making Plugins

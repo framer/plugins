@@ -9,7 +9,8 @@
         "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
         "format": "prettier . --write",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "comlink": "^4.4.1",
@@ -19,6 +20,7 @@
         "vite-plugin-mkcert": "^1"
     },
     "devDependencies": {
+        "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz",
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "@typescript-eslint/eslint-plugin": "^6",

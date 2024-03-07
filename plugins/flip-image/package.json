@@ -8,9 +8,11 @@
     "dev": "vite",
     "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz",
     "comlink": "^4.4.1",
     "react": "^18",
     "react-dom": "^18",

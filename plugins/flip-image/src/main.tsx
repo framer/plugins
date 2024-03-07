@@ -1,11 +1,11 @@
-import { api, withBackgroundImage } from "./api";
-import { assert } from "./api/utils";
+import { api, withBackgroundImage } from '@framerjs/plugin-api'
 import { bytesFromCanvas } from "./utils";
 
 async function flipHorizontally() {
   const selection = await api.getSelection();
   const firstSelection = selection[0];
-  const image = withBackgroundImage(firstSelection)
+
+  const image = firstSelection && withBackgroundImage(firstSelection)
     ? firstSelection.backgroundImage
     : undefined;
 
@@ -17,7 +17,10 @@ async function flipHorizontally() {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  assert(ctx);
+  if (!ctx) {
+    throw new Error("ctx is null")
+  }
+
 
   const { mimeType } = await image.getData();
   const img = await image.loadBitmap();
@@ -30,7 +33,9 @@ async function flipHorizontally() {
   ctx.drawImage(img, -img.width, 0);
 
   const result = await bytesFromCanvas(canvas);
-  assert(result);
+  if (!result) {
+    throw new Error("Result is not defined")
+  }
 
   await api.addImage({
     bytes: result,

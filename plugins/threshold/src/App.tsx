@@ -1,11 +1,8 @@
 import * as comlink from "comlink"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "./App.css"
-import { CanvasNode, PluginImage, api, withBackgroundImage } from "./api"
-
-import { isFrameNode } from "./api/nodes"
-import { assert } from "./api/utils"
-import { bytesFromCanvas } from "./utils"
+import { CanvasNode, PluginImage, api, withBackgroundImage, isFrameNode } from "@framerjs/plugin-api"
+import { assert, bytesFromCanvas } from "./utils"
 import type { CanvasWorker } from "./worker/worker"
 import Worker from "./worker/worker?worker"
 

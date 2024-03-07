@@ -12,7 +12,8 @@
     "scripts": {
         "clean": "rm -rf ./p",
         "copy": "bash ./scripts/copy-build.sh",
-        "build": "turbo run build && npm run copy"
+        "build": "turbo run build && npm run copy",
+        "typecheck": "turbo run typecheck"
     },
     "devDependencies": {
         "turbo": "^1.12.4"

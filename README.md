@@ -3,7 +3,7 @@
   <h1 align="center">Framer Plugins</h1>
 </p>
 
-A collection of Framer Plugins. Try out the current selection of plugins on the [plugin branch](https://features-plugin.beta.framer.com/projects/) or try building a plugin of your own.
+A collection of Framer Plugins. Try out the current selection of plugins in Framer on the [plugin branch](https://features-plugin.beta.framer.com/projects/). Have an idea? Please have a try at building a plugin of your own.
 
 ## Making Plugins
 

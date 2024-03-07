@@ -2,7 +2,7 @@
   <img src="assets/images/icon.png" height="128">
   <h1 align="center" style="border: none;">Framer Plugins</h1>
 <h3 align="center">
-A collection of Framer Plugins.
+A collection of example Plugins.
 </h3>
 <h3 align="center">
 

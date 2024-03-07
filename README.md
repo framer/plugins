@@ -1,15 +1,26 @@
 <p align="center">
   <img src="assets/images/icon.png" height="128">
-  <h1 align="center">Framer Plugins</h1>
+  <h1 align="center" style="border: none;">Framer Plugins</h1>
+<h3 align="center">
+A collection of Framer Plugins.
+</h3>
+<h3 align="center">
+
+</h3>
 </p>
 
-A collection of Framer Plugins. Try out the current selection of plugins in Framer on the [plugin branch](https://features-plugin.beta.framer.com/projects/). Do you have a plugin idea? Please join in and try building a plugin of your own, we’d love to see it! 
+
+
+<br>
 
 ![plugins](assets/images/plugins.png)
 
+### 🎛️ Get Started 
+Try out the current selection of plugins in Framer on the [plugin branch](https://features-plugin.beta.framer.com/projects/). 
+
 ### 🛠️ Contribute
 
-View the [plugin template repo](https://github.com/framer/plugin) to get started building a plugin. If you hack on something you’d like us to include in our batch of example plugins, please feel free to open a PR.
+Have a plugin idea? Contributions are welcome. View the [plugin template repo](https://github.com/framer/plugin) to get started building a plugin. If you hack on something you’d like us to include in our batch of example plugins, feel free to open a PR.
 
 ### 🔮 Feedback
 

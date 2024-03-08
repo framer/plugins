@@ -41,9 +41,8 @@ export class CanvasWorker {
 
         ctx.putImageData(imageData, 0, 0)
 
-        const nextData = this.ctx.getImageData(0, 0, width, height)
-
-        const resultBitmap = await createImageBitmap(nextData)
+    
+        const resultBitmap = await createImageBitmap(imageData)
 
         return transfer(resultBitmap, [resultBitmap])
     }

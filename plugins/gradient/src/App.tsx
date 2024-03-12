@@ -101,7 +101,7 @@ export function App() {
 
         const image = canvasElement.current.toDataURL("image/png")
 
-        api.addImage(image, { name: "image.png" })
+        api.addImage({ image, name: "image.png" })
     }, [canvasElement])
 
     return (

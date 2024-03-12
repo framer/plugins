@@ -1,8 +1,8 @@
-import { api, withBackgroundImage } from "@framerjs/plugin-api";
+import { framer, withBackgroundImage } from "@framerjs/plugin-api";
 import { bytesFromCanvas } from "./utils";
 
 async function flipHorizontally() {
-  const selection = await api.getSelection();
+  const selection = await framer.getSelection();
   const firstSelection = selection[0];
 
   const image =
@@ -11,7 +11,7 @@ async function flipHorizontally() {
       : undefined;
 
   if (!image) {
-    api.closePlugin("No Image was selected.", { variant: "error" });
+    framer.closePlugin("No Image was selected.", { variant: "error" });
     return;
   }
 
@@ -37,17 +37,17 @@ async function flipHorizontally() {
     throw new Error("Result is not defined");
   }
 
-  await api.addImage({
+  await framer.addImage({
     image: { bytes: result, mimeType },
   });
 
-  await api.closePlugin("Saved");
+  await framer.closePlugin("Saved");
 }
 
 (async () => {
   try {
     await flipHorizontally();
   } catch (err) {
-    api.closePlugin("Unexpected error", { variant: "error" });
+    framer.closePlugin("Unexpected error", { variant: "error" });
   }
 })();

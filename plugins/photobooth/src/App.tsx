@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react"
-import { api } from "@framerjs/plugin-api"
+import { framer } from "@framerjs/plugin-api"
 import Webcam from "react-webcam"
 import { useAnimate } from "framer-motion"
 import "./App.css"
@@ -15,7 +15,7 @@ export function App() {
         })
         animate(".webcam-flash", { opacity: 1 })
 
-        await api.addImage({image, name: "selfie" })
+        await framer.addImage({image, name: "selfie" })
         animate(".webcam-flash", { opacity: 0 }, { duration: 0.3 })
     }, [webcamRef])
 

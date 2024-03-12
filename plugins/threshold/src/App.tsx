@@ -1,7 +1,7 @@
 import * as comlink from "comlink"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "./App.css"
-import { CanvasNode, PluginImage, api, withBackgroundImage, isFrameNode } from "@framerjs/plugin-api"
+import { CanvasNode, PluginImage, framer, withBackgroundImage, isFrameNode } from "@framerjs/plugin-api"
 import { assert, bytesFromCanvas } from "./utils"
 import type { CanvasWorker } from "./worker/worker"
 import Worker from "./worker/worker?worker"
@@ -10,11 +10,11 @@ const WorkerBase = comlink.wrap<typeof CanvasWorker>(new Worker())
 
 // Remove any dangling API instances when the plugin is reloaded during development
 import.meta.hot?.dispose(() => {
-    api.closePlugin()
+    framer.closePlugin()
 })
 
 setTimeout(() => {
-    api.showWindow({
+    framer.showWindow({
         width: 500,
         height: 500,
         position: "top left",
@@ -25,7 +25,7 @@ function useSelection() {
     const [selection, setSelection] = useState<CanvasNode[]>([])
 
     useEffect(() => {
-        return api.subscribeToSelection(setSelection)
+        return framer.subscribeToSelection(setSelection)
     }, [])
 
     return selection
@@ -73,15 +73,15 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: PluginImage; ma
 
         const start = performance.now()
 
-        api.closeWindow()
-        await api.addImage({
+        framer.closeWindow()
+        await framer.addImage({
             image: {
                 bytes: nextBytes,
                 mimeType: originalImage.mimeType,
             },
         })
 
-        void api.closePlugin("Image saved...")
+        void framer.closePlugin("Image saved...")
 
         console.log("total duration", performance.now() - start)
     }

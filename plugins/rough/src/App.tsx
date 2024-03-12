@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import rough from "roughjs"
 import "./App.css"
-import { api } from "@framerjs/plugin-api"
+import { framer } from "@framerjs/plugin-api"
 
 export function App() {
     useEffect(() => {
-        api.showWindow()
+        framer.showWindow()
     }, [])
 
     const ref = useRef<SVGSVGElement>(null)
@@ -78,7 +78,7 @@ export function App() {
         const svgElement = ref.current
         const svg = new XMLSerializer().serializeToString(svgElement)
 
-        await api.addSVG({
+        await framer.addSVG({
             svg: svg,
             name: "framer.svg",
         })

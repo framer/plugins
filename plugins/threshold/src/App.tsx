@@ -75,8 +75,10 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: PluginImage; ma
 
         api.closeWindow()
         await api.addImage({
-            bytes: nextBytes,
-            mimeType: originalImage.mimeType,
+            image: {
+                bytes: nextBytes,
+                mimeType: originalImage.mimeType,
+            },
         })
 
         void api.closePlugin("Image saved...")

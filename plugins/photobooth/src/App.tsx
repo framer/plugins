@@ -15,7 +15,7 @@ export function App() {
         })
         animate(".webcam-flash", { opacity: 1 })
 
-        await api.addImage(image, { name: "selfie" })
+        await api.addImage({image, name: "selfie" })
         animate(".webcam-flash", { opacity: 0 }, { duration: 0.3 })
     }, [webcamRef])
 

@@ -6,7 +6,7 @@ import {
     useState,
 } from "react"
 import "./App.css"
-import { api } from "@framerjs/plugin-api"
+import { framer } from "@framerjs/plugin-api"
 import Fuse from "fuse.js"
 
 import { IconContext } from "@phosphor-icons/react"
@@ -60,7 +60,7 @@ function IconGrid(props: any) {
             <Icon size={32} color={"black"} weight={weight} />
         )
 
-        await api.addSVG({
+        await framer.addSVG({
             svg,
             name: "test.svg",
         })

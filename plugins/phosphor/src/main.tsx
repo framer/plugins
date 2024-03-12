@@ -1,7 +1,7 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { App } from "./App.tsx"
-import { api } from "@framerjs/plugin-api"
+import { framer } from "@framerjs/plugin-api"
 
 import "./index.css"
 
@@ -11,10 +11,10 @@ if (!root) {
 }
 
 import.meta.hot?.dispose(() => {
-    void api.closePlugin()
+    void framer.closePlugin()
 })
 
-void api.showWindow({ position: "top left", width: 240, height: 450 })
+void framer.showWindow({ position: "top left", width: 240, height: 450 })
 
 ReactDOM.createRoot(root).render(
     <React.StrictMode>

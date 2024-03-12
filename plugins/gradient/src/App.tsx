@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react"
-import { api } from '@framerjs/plugin-api'
+import { framer } from '@framerjs/plugin-api'
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import { useResolution } from "emulsion/pre"
@@ -101,7 +101,7 @@ export function App() {
 
         const image = canvasElement.current.toDataURL("image/png")
 
-        api.addImage(image, { name: "image.png" })
+        framer.addImage({ image, name: "image.png" })
     }, [canvasElement])
 
     return (

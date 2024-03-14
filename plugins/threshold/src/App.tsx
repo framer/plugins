@@ -1,7 +1,7 @@
 import * as comlink from "comlink"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "./App.css"
-import { CanvasNode, PluginImage, framer, withBackgroundImage, isFrameNode } from "@framerjs/plugin-api"
+import { PluginImage, framer } from "@framerjs/plugin-api"
 import { assert, bytesFromCanvas } from "./utils"
 import type { CanvasWorker } from "./worker/worker"
 import Worker from "./worker/worker?worker"
@@ -21,22 +21,18 @@ setTimeout(() => {
     })
 }, 100)
 
-function useSelection() {
-    const [selection, setSelection] = useState<CanvasNode[]>([])
+function useSelectedImage() {
+    const [image, setImage] = useState<ImageAsset | null>(null)
 
     useEffect(() => {
-        return framer.subscribeToSelection(setSelection)
+        return framer.subscribeToImage(setImage)
     }, [])
 
-    return selection
+    return image
 }
 
 export function App() {
-    const selection = useSelection()
-
-    const firstSelection = selection[0]
-    const image =
-        isFrameNode(firstSelection) && withBackgroundImage(firstSelection) ? firstSelection.backgroundImage : undefined
+    const image = useSelectedImage()
 
     if (!image) {
         return <div>No image</div>

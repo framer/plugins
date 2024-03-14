@@ -242,61 +242,61 @@ __metadata:
 
 "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=flip-image%40workspace%3Aplugins%2Fflip-image":
   version: 0.0.0
-  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=d57e1b&locator=flip-image%40workspace%3Aplugins%2Fflip-image"
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=2bcf8d&locator=flip-image%40workspace%3Aplugins%2Fflip-image"
   dependencies:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     valibot: "npm:^0.29.0"
     vite-plugin-mkcert: "npm:^1.17.4"
-  checksum: 10c0/69ef9077de5c3eeaf0b171fc08f14938cc1149b4afc10d762af43df5a668ad4082ad88f8ad9ceee0855859285b31dca5fb910fbe119499eedb2d42b2e5de6db5
+  checksum: 10c0/89cf03e7ec4e801091d2821a93aff0af06badfc4f3b64a9e9a609d339b32e003efd0d1ba941598530d426f0c09b5933507567eff47b99ec4bb636757ace7b51c
   languageName: node
   linkType: hard
 
 "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=phosphor%40workspace%3Aplugins%2Fphosphor":
   version: 0.0.0
-  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=d57e1b&locator=phosphor%40workspace%3Aplugins%2Fphosphor"
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=2bcf8d&locator=phosphor%40workspace%3Aplugins%2Fphosphor"
   dependencies:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     valibot: "npm:^0.29.0"
     vite-plugin-mkcert: "npm:^1.17.4"
-  checksum: 10c0/69ef9077de5c3eeaf0b171fc08f14938cc1149b4afc10d762af43df5a668ad4082ad88f8ad9ceee0855859285b31dca5fb910fbe119499eedb2d42b2e5de6db5
+  checksum: 10c0/89cf03e7ec4e801091d2821a93aff0af06badfc4f3b64a9e9a609d339b32e003efd0d1ba941598530d426f0c09b5933507567eff47b99ec4bb636757ace7b51c
   languageName: node
   linkType: hard
 
 "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=photobooth%40workspace%3Aplugins%2Fphotobooth":
   version: 0.0.0
-  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=d57e1b&locator=photobooth%40workspace%3Aplugins%2Fphotobooth"
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=2bcf8d&locator=photobooth%40workspace%3Aplugins%2Fphotobooth"
   dependencies:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     valibot: "npm:^0.29.0"
     vite-plugin-mkcert: "npm:^1.17.4"
-  checksum: 10c0/69ef9077de5c3eeaf0b171fc08f14938cc1149b4afc10d762af43df5a668ad4082ad88f8ad9ceee0855859285b31dca5fb910fbe119499eedb2d42b2e5de6db5
+  checksum: 10c0/89cf03e7ec4e801091d2821a93aff0af06badfc4f3b64a9e9a609d339b32e003efd0d1ba941598530d426f0c09b5933507567eff47b99ec4bb636757ace7b51c
   languageName: node
   linkType: hard
 
 "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=rough%40workspace%3Aplugins%2Frough":
   version: 0.0.0
-  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=d57e1b&locator=rough%40workspace%3Aplugins%2Frough"
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=2bcf8d&locator=rough%40workspace%3Aplugins%2Frough"
   dependencies:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     valibot: "npm:^0.29.0"
     vite-plugin-mkcert: "npm:^1.17.4"
-  checksum: 10c0/69ef9077de5c3eeaf0b171fc08f14938cc1149b4afc10d762af43df5a668ad4082ad88f8ad9ceee0855859285b31dca5fb910fbe119499eedb2d42b2e5de6db5
+  checksum: 10c0/89cf03e7ec4e801091d2821a93aff0af06badfc4f3b64a9e9a609d339b32e003efd0d1ba941598530d426f0c09b5933507567eff47b99ec4bb636757ace7b51c
   languageName: node
   linkType: hard
 
 "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=threshold%40workspace%3Aplugins%2Fthreshold":
   version: 0.0.0
-  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=d57e1b&locator=threshold%40workspace%3Aplugins%2Fthreshold"
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=2bcf8d&locator=threshold%40workspace%3Aplugins%2Fthreshold"
   dependencies:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     valibot: "npm:^0.29.0"
     vite-plugin-mkcert: "npm:^1.17.4"
-  checksum: 10c0/69ef9077de5c3eeaf0b171fc08f14938cc1149b4afc10d762af43df5a668ad4082ad88f8ad9ceee0855859285b31dca5fb910fbe119499eedb2d42b2e5de6db5
+  checksum: 10c0/89cf03e7ec4e801091d2821a93aff0af06badfc4f3b64a9e9a609d339b32e003efd0d1ba941598530d426f0c09b5933507567eff47b99ec4bb636757ace7b51c
   languageName: node
   linkType: hard
 

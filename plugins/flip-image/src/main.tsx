@@ -1,14 +1,8 @@
-import { framer, withBackgroundImage } from "@framerjs/plugin-api";
+import { framer } from "@framerjs/plugin-api";
 import { bytesFromCanvas } from "./utils";
 
 async function flipHorizontally() {
-  const selection = await framer.getSelection();
-  const firstSelection = selection[0];
-
-  const image =
-    firstSelection && withBackgroundImage(firstSelection)
-      ? firstSelection.backgroundImage
-      : undefined;
+  const image = await framer.getImage()
 
   if (!image) {
     framer.closePlugin("No Image was selected.", { variant: "error" });

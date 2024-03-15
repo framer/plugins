@@ -217,13 +217,13 @@ __metadata:
 
 "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=pong%40workspace%3A.":
   version: 0.0.0
-  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=148be2&locator=pong%40workspace%3A."
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=c66ca6&locator=pong%40workspace%3A."
   dependencies:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     valibot: "npm:^0.29.0"
     vite-plugin-mkcert: "npm:^1.17.4"
-  checksum: 10c0/d6eb40a483a1e4a5c445d6e651e674a34dfb2af7535cb22586b9bc967e59ff1f935d8e59ae0f27bf85ccfdf788074058ebc036ecaab211012754ad1e4e58aea0
+  checksum: 10c0/7587b752b715c1c658cce14d4c1c2b95ec5efd96814806de211514e05ddd72f2b28a783fb746ce5e8f085882cfbb0fabbbd7eb7e4415b983b0227a5d960a7f08
   languageName: node
   linkType: hard
 
@@ -1530,12 +1530,12 @@ __metadata:
   linkType: hard
 
 "follow-redirects@npm:^1.15.4":
-  version: 1.15.5
-  resolution: "follow-redirects@npm:1.15.5"
+  version: 1.15.6
+  resolution: "follow-redirects@npm:1.15.6"
   peerDependenciesMeta:
     debug:
       optional: true
-  checksum: 10c0/418d71688ceaf109dfd6f85f747a0c75de30afe43a294caa211def77f02ef19865b547dfb73fde82b751e1cc507c06c754120b848fe5a7400b0a669766df7615
+  checksum: 10c0/9ff767f0d7be6aa6870c82ac79cf0368cd73e01bbc00e9eb1c2a16fbb198ec105e3c9b6628bb98e9f3ac66fe29a957b9645bcb9a490bb7aa0d35f908b6b85071
   languageName: node
   linkType: hard
 

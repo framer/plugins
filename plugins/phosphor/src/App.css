@@ -6,11 +6,14 @@
     gap: 5px;
     margin-bottom: 15px;
     padding:  7px 0;
-    border-top: 1px solid #eee;
-    border-bottom: 1px solid #eee;
+    border-top: 1px solid var(--framer-color-bg-tertiary);
+    border-bottom: 1px solid var(--framer-color-bg-tertiary);
     position: sticky;
     top: 0;
-    background: white;
+}
+
+input {
+    background: none !important;
 }
 
 

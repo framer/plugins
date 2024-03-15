@@ -1,5 +1,5 @@
 {
-  "name": "@framerjs/plugin-api",
+  "name": "pong",
   "private": true,
   "version": "0.0.0",
   "type": "module",

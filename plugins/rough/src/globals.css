@@ -55,6 +55,7 @@ input, button, textarea, select {
   text-overflow: ellipsis;
   flex-shrink: 0;
   height: 30px;
+  width: 134px;
   background: var(--framer-color-bg-tertiary);
   font-size: 12px;
   font-family: var(--framer-font-family);

@@ -1,4 +1,5 @@
 import { PluginImage, framer } from "@framerjs/plugin-api"
+import { ImageAsset } from "@framerjs/plugin-api/src/api/image"
 import * as comlink from "comlink"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "./App.css"
@@ -12,14 +13,6 @@ const WorkerBase = comlink.wrap<typeof CanvasWorker>(new Worker())
 import.meta.hot?.dispose(() => {
     framer.closePlugin()
 })
-
-setTimeout(() => {
-    framer.showUI({
-        width: 500,
-        height: 500,
-        position: "top left",
-    })
-}, 100)
 
 function useSelectedImage() {
     const [image, setImage] = useState<ImageAsset | null>(null)
@@ -35,7 +28,7 @@ export function App() {
     const image = useSelectedImage()
 
     if (!image) {
-        return <div>No image</div>
+        return null
     }
 
     return (
@@ -57,6 +50,18 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: PluginImage; ma
     const [threshold, setThreshold] = useState(127)
     const canvasRef = useRef<HTMLCanvasElement>(null)
 
+    useEffect(() => {
+        framer.showUI({
+            width: 400,
+            height: 500,
+            position: "top left",
+        })
+
+        return () => {
+            framer.hideUI()
+        }
+    }, [])
+
     const handleSaveImage = async () => {
         const ctx = canvasRef.current?.getContext("2d")
         assert(ctx)
@@ -69,7 +74,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: PluginImage; ma
 
         const start = performance.now()
 
-        framer.closeWindow()
+        framer.hideUI()
         await framer.addImage({
             image: {
                 bytes: nextBytes,
@@ -141,13 +146,12 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: PluginImage; ma
 
     return (
         <div>
-            <p>Thresholded Image</p>
-
             <div
                 style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
+                    gap: '8px',
                 }}
             >
                 <canvas ref={canvasRef} />

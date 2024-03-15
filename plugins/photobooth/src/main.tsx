@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { App } from "./App.tsx";
 
 import { framer } from "@framerjs/plugin-api";
-import "./index.css";
+import "./globals.css";
 
 const root = document.getElementById("root");
 if (!root) {

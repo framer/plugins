@@ -200,7 +200,7 @@ input[type="password"]  {
   white-space: nowrap;
   padding: 8px;
   padding: 0px 10px;
-  font-size: 12px;
+  font-size: 1  px;
   color: var(--framer-color-text);
 }
 

@@ -1,0 +1,78 @@
+/* Global CSS */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+/* Reset */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body, html, #root {
+    height: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+body {
+    font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.5;
+    font-weight: 400;
+
+    color: var(--framer-color-text, #333); 
+    background: var(--framer-color-bg, #fff);
+    color-scheme: light dark;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+img, picture, video, canvas, svg {
+    display: block;
+    max-width: 100%;
+}
+
+input, button, textarea, select {
+    font-family: inherit;
+}
+
+p, h1, h2, h3, h4, h5, h6 {
+    color: inherit;
+    overflow-wrap: break-word;
+}
+
+/* Color Tokens */
+
+:root {
+    --framer-color-tint: #09f;
+    --framer-color-tint-dimmed: rgba(0,153,255, 0.1);
+    --framer-color-text: #333;
+    --framer-color-text-secondary: #666;
+    --framer-color-text-tertiary: #888;
+    --framer-color-text-reversed: #fff;
+    --framer-color-bg: #fff;
+    --framer-color-bg-secondary: #efefef;
+    --framer-color-bg-tertiary: #f3f3f3;
+    --framer-color-divider: #eee;
+}
+
+body[data-framer-theme="dark"] {
+    --framer-color-tint: #09f;
+    --framer-color-tint-dimmed: rgba(0,153,255, 0.15);
+    --framer-color-text: #fff;
+    --framer-color-text-secondary: #999;
+    --framer-color-text-tertiary: #666;
+    --framer-color-text-reversed: #fff;
+    --framer-color-bg: #111;
+    --framer-color-bg-secondary: #2b2b2b;
+    --framer-color-bg-tertiary: #555;
+    --framer-color-divider: #252525;
+}

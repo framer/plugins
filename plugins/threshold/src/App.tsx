@@ -1,7 +1,7 @@
+import { PluginImage, framer } from "@framerjs/plugin-api"
 import * as comlink from "comlink"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "./App.css"
-import { PluginImage, framer } from "@framerjs/plugin-api"
 import { assert, bytesFromCanvas } from "./utils"
 import type { CanvasWorker } from "./worker/worker"
 import Worker from "./worker/worker?worker"
@@ -14,7 +14,7 @@ import.meta.hot?.dispose(() => {
 })
 
 setTimeout(() => {
-    framer.showWindow({
+    framer.showUI({
         width: 500,
         height: 500,
         position: "top left",

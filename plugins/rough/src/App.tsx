@@ -1,11 +1,11 @@
+import { framer } from "@framerjs/plugin-api"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import rough from "roughjs"
 import "./App.css"
-import { framer } from "@framerjs/plugin-api"
 
 export function App() {
     useEffect(() => {
-        framer.showWindow()
+        framer.showUI()
     }, [])
 
     const ref = useRef<SVGSVGElement>(null)

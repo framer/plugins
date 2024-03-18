@@ -1,4 +1,4 @@
-import { PluginImage, framer } from "@framerjs/plugin-api"
+import { framer } from "@framerjs/plugin-api"
 import { ImageAsset } from "@framerjs/plugin-api/src/api/image"
 import * as comlink from "comlink"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -9,9 +9,11 @@ import Worker from "./worker/worker?worker"
 
 const WorkerBase = comlink.wrap<typeof CanvasWorker>(new Worker())
 
+void framer.showUI({ position: "top left", width: 280, height: 260 })
+
 // Remove any dangling API instances when the plugin is reloaded during development
 import.meta.hot?.dispose(() => {
-    framer.closePlugin()
+    // framer.closePlugin()
 })
 
 function useSelectedImage() {
@@ -28,14 +30,14 @@ export function App() {
     const image = useSelectedImage()
 
     if (!image) {
-        return null
+        return (
+            <div className="error-container">
+                <p>Select an Image</p>
+            </div>
+        )
     }
 
-    return (
-        <div>
-            <ThresholdImage image={image} maxWidth={400} maxHeight={400} />
-        </div>
-    )
+    return <ThresholdImage image={image} maxWidth={400} maxHeight={400} />
 }
 
 const debounce = (fn: Function, ms = 300) => {
@@ -46,21 +48,9 @@ const debounce = (fn: Function, ms = 300) => {
     }
 }
 
-function ThresholdImage({ image, maxWidth, maxHeight }: { image: PluginImage; maxWidth: number; maxHeight: number }) {
+function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; maxWidth: number; maxHeight: number }) {
     const [threshold, setThreshold] = useState(127)
     const canvasRef = useRef<HTMLCanvasElement>(null)
-
-    useEffect(() => {
-        framer.showUI({
-            width: 400,
-            height: 500,
-            position: "top left",
-        })
-
-        return () => {
-            framer.hideUI()
-        }
-    }, [])
 
     const handleSaveImage = async () => {
         const ctx = canvasRef.current?.getContext("2d")
@@ -124,6 +114,12 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: PluginImage; ma
                 canvas.width = displayWidth
                 canvas.height = displayHeight
 
+                framer.showUI({
+                    position: "top left",
+                    width: 280,
+                    height: widthRatio < heightRatio ? 260 : displayHeight + 68,
+                })
+
                 ctx.drawImage(result, 0, 0, displayWidth, displayHeight)
             }, 20),
         [image]
@@ -145,27 +141,20 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: PluginImage; ma
     }, [image])
 
     return (
-        <div>
-            <div
-                style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: '8px',
-                }}
-            >
+        <div className="container">
+            <div className="canvas-container">
                 <canvas ref={canvasRef} />
-
-                <input
-                    type="range"
-                    min="0"
-                    max="255"
-                    value={threshold}
-                    onChange={event => handleThresholdChange(Number(event.target.value))}
-                />
-
-                <button onClick={handleSaveImage}>Save Image</button>
             </div>
+
+            <input
+                type="range"
+                min="0"
+                max="255"
+                value={threshold}
+                onChange={event => handleThresholdChange(Number(event.target.value))}
+            />
+
+            <button onClick={handleSaveImage}>Save Image</button>
         </div>
     )
 }

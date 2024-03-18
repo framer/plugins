@@ -5,34 +5,38 @@ import { useAnimate } from "framer-motion"
 import "./App.css"
 
 export function App() {
-    const webcamRef = useRef<any>(null)
-    const [scope, animate] = useAnimate()
+  const webcamRef = useRef<any>(null)
+  const [scope, animate] = useAnimate()
 
-    const capture = useCallback(async () => {
-        const image = webcamRef.current.getScreenshot({
-            width: 480,
-            height: 360,
-        })
-        animate(".webcam-flash", { opacity: 1 })
+  const capture = useCallback(async () => {
+    const image = webcamRef.current.getScreenshot({
+      minWidth: 1280,
+      minHeight: 720,
+    })
+    animate(".webcam-flash", { opacity: 1 })
 
-        await framer.addImage({image, name: "selfie" })
-        animate(".webcam-flash", { opacity: 0 }, { duration: 0.3 })
-    }, [webcamRef])
+    await framer.addImage({ image, name: "selfie" })
+    animate(".webcam-flash", { opacity: 0 }, { duration: 0.3 })
+  }, [webcamRef])
 
-    return (
-        <main ref={scope}>
-            <div className="webcam-parent">
-                <div className="webcam-flash" />
-                <div className="webcam-border" />
-                <Webcam
-                    className="webcam"
-                    ref={webcamRef}
-                    mirrored={true}
-                    videoConstraints={{ facingMode: "user" }}
-                    screenshotFormat="image/jpeg"
-                />
-            </div>
-            <button onClick={capture}>Take Selfie</button>
-        </main>
-    )
+  return (
+    <main ref={scope}>
+      <div className="webcam-parent">
+        <div className="webcam-flash" />
+        <div className="webcam-border" />
+        <div className="webcam-inner-wrapper">
+          <Webcam
+            className="webcam"
+            ref={webcamRef}
+            width={1280}
+            height={720}
+            mirrored={true}
+            videoConstraints={{ facingMode: "user" }}
+            screenshotFormat="image/jpeg"
+          />
+        </div>
+      </div>
+      <button onClick={capture}>Take Selfie</button>
+    </main>
+  )
 }

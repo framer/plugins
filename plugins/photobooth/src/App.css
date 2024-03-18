@@ -10,23 +10,6 @@ main {
     gap: 10px;
 }
 
-button {
-    border-radius: 8px;
-    border: none;
-    height: 30px;
-    padding: 0 15px;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    background-color: #09F;
-    color: #fff;
-    cursor: pointer;
-    outline: none;
-    flex-shrink: 0;
-
-    width: 100%;
-}
-
 .frame-info {
     display: flex;
     padding: 15px;
@@ -57,13 +40,20 @@ button {
 
 video { 
     display: block;
-    height: 100%;
+}
+
+.webcam-inner-wrapper {
+    width: 100%;
+    height: auto;
+    transform: scale(1.1);
 }
 
 .webcam {
     width: auto;
-    margin: auto;
-    height: 100%;
+    height: 120%;
+    transform-origin: center center;
+
+    position: relative;
     opacity: 0;
     max-height: 300px;
     animation: fadeIn 1s 1s ease-in-out forwards;
@@ -92,12 +82,11 @@ video {
 .webcam-border {
     width: 100%;
     height: 100%;
-
     position: absolute;
     top: 0;
     left: 0;
     z-index: 1;
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: inset 0px 0px 0px 1px rgba(0, 0, 0, 0.1);
 }
 

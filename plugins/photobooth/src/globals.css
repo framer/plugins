@@ -126,6 +126,7 @@ input::placeholder, textarea::placeholder {
 button {
   cursor: pointer;
   font-weight: 600;
+  width: 100%;
   color: var(--framer-color-text-reversed);
   background-color: var(--framer-color-tint);  
   transition: background-color 0.2s;

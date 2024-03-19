@@ -11,8 +11,21 @@
     width: 100%;
 }
 
-.search-container {
+.error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    height: 100%;
+    padding: 0 15px 25px 15px;
+}
 
+.error-container p {
+    color: var(--framer-color-text-tertiary);
+}
+  
+
+.search-container {
     display: flex;
     flex-direction: column;
     gap: 10px;

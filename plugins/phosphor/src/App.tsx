@@ -61,7 +61,7 @@ const weightOptions: WeightOption[] = [
   },
 ]
 
-export const icons: ReadonlyArray<IconEntry> = iconData.map((entry: any) => ({
+const icons: ReadonlyArray<IconEntry> = iconData.map((entry: any) => ({
   ...entry,
   Icon: Icons[entry.pascal_name as keyof typeof Icons] as Icons.Icon,
 }))
@@ -105,6 +105,14 @@ function IconGrid(props: any) {
     },
     [weight]
   )
+
+  if (filteredIcons.length === 0) {
+    return (
+      <div className="error-container">
+        <p>No Results</p>
+      </div>
+    )
+  }
 
   return (
     <div className="grid">

@@ -111,8 +111,6 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
 
                 assert(ctx)
 
-                console.log(displayWidth, displayHeight, widthRatio, heightRatio)
-
                 canvas.width = displayWidth
                 canvas.height = displayHeight
 

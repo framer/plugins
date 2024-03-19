@@ -34,7 +34,7 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #111;
+    background-color: var(--framer-color-bg-secondary);
     overflow: hidden;
 }
 
@@ -86,8 +86,12 @@ video {
     top: 0;
     left: 0;
     z-index: 1;
-    border-radius: 6px;
+    border-radius: 8px;
     box-shadow: inset 0px 0px 0px 1px rgba(0, 0, 0, 0.1);
+}
+
+[data-framer-theme="dark"] .webcam-border {
+    box-shadow: inset 0px 0px 0px 1px rgba(255, 255, 255, 0.15);
 }
 
 @keyframes fadeIn {

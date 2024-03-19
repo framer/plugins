@@ -8,6 +8,7 @@
 }
 
 canvas {
+  border: 1px solid var(--framer-color-divider);
   border-radius: 8px;
 }
 
@@ -29,7 +30,6 @@ canvas {
   justify-content: center;
   align-items: center;
   border-radius: 10px;
-  border: 1px solid var(--framer-color-divider);
   height: 100%;
   width: 100%;
   flex-grow: 1;

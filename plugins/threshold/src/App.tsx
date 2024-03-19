@@ -37,7 +37,7 @@ export function App() {
         )
     }
 
-    return <ThresholdImage image={image} maxWidth={400} maxHeight={400} />
+    return <ThresholdImage image={image} maxWidth={248} maxHeight={400} />
 }
 
 const debounce = (fn: Function, ms = 300) => {
@@ -111,13 +111,15 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
 
                 assert(ctx)
 
+                console.log(displayWidth, displayHeight, widthRatio, heightRatio)
+
                 canvas.width = displayWidth
                 canvas.height = displayHeight
 
                 framer.showUI({
                     position: "top left",
                     width: 280,
-                    height: widthRatio < heightRatio ? 260 : displayHeight + 68,
+                    height: displayHeight + 95,
                 })
 
                 ctx.drawImage(result, 0, 0, displayWidth, displayHeight)

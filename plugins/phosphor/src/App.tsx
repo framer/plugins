@@ -90,18 +90,21 @@ function IconGrid(props: any) {
     return fuse.search(query).map((value) => value.item)
   }, [deferredQuery])
 
-  const handleIconClick = useCallback(async (entry: IconEntry) => {
-    const { Icon } = entry
+  const handleIconClick = useCallback(
+    async (entry: IconEntry) => {
+      const { Icon } = entry
 
-    const svg = renderToStaticMarkup(
-      <Icon size={32} color={"black"} weight={weight} />
-    )
+      const svg = renderToStaticMarkup(
+        <Icon size={32} color={"black"} weight={weight} />
+      )
 
-    await framer.addSVG({
-      svg,
-      name: "test.svg",
-    })
-  }, [])
+      await framer.addSVG({
+        svg,
+        name: "test.svg",
+      })
+    },
+    [weight]
+  )
 
   return (
     <div className="grid">

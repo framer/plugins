@@ -14,7 +14,7 @@ import.meta.hot?.dispose(() => {
   void framer.closePlugin()
 })
 
-void framer.showUI({ position: "top left", width: 240, height: 450 })
+void framer.showUI({ position: "top left", width: 240, height: 385 })
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>

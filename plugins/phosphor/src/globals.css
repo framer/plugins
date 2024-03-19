@@ -57,6 +57,7 @@ input, button, textarea, select {
     height: 30px;
     width: 134px;
     background: var(--framer-color-bg-tertiary);
+    color: var(--framer-color-text);
     font-size: 12px;
     font-family: var(--framer-font-family);
     border-radius: 8px;

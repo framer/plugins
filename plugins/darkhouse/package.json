@@ -1,0 +1,32 @@
+{
+  "name": "@framerjs/plugin-api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/api/index.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz",
+    "react": "^18",
+    "react-dom": "^18",
+    "vite-plugin-mkcert": "^1"
+  },
+  "devDependencies": {
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@typescript-eslint/eslint-plugin": "^6",
+    "@typescript-eslint/parser": "^6",
+    "@vitejs/plugin-react-swc": "^3",
+    "eslint": "^8",
+    "eslint-plugin-react-hooks": "^4",
+    "eslint-plugin-react-refresh": "^0",
+    "typescript": "^5.3.3",
+    "vite": "5.2.0-beta.0"
+  },
+  "packageManager": "yarn@4.1.1"
+}

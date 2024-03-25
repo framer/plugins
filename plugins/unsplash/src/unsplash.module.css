@@ -1,0 +1,125 @@
+.scroll {
+  height: 300px;
+  border-radius: 5px;
+}
+
+.columnLeft {
+  width: 110px;
+  float: left;
+}
+
+.columnRight {
+  width: 110px;
+  margin-left: 10px;
+  float: left;
+}
+
+.gridItem {
+  position: relative;
+  width: 110px;
+  animation: fadeIn 500ms ease forwards;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+.gridItem a {
+  display: block;
+  overflow: hidden;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  color: var(--framer-color-text-tertiary);
+  font-size: 12px;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photoWrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--framer-color-bg-tertiary);
+  background-size: cover;
+  cursor: pointer;
+}
+
+.photoLoadingOverlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 5px;
+  animation: fadeIn 500ms ease forwards;
+  background: rgba(0, 0, 0, 0.5);
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+.photoLoadingSpinner {
+  background: white;
+}
+
+.placeholderPhoto {
+  height: 100px;
+  /* TODO */
+  background: red;
+  pointer-events: none;
+}
+
+.placeholderTitle {
+  height: 20px;
+  border-radius: 4px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  /* TODO: */
+  background: red;
+}
+
+.placeholderColumnLeft:nth-of-type(1) .placeholderPhoto {
+  height: 80px;
+}
+
+.placeholderColumnLeft:nth-of-type(1) .placeholderTitle {
+  width: 70px;
+}
+
+.placeholderColumnLeft:nth-of-type(2) .placeholderPhoto {
+  height: 70px;
+}
+
+.placeholderColumnLeft:nth-of-type(2) .placeholderTitle {
+  width: 40px;
+}
+
+.placeholderColumnRight:nth-of-type(1) .placeholderPhoto {
+  height: 60px;
+}
+
+.placeholderColumnRight:nth-of-type(1) .placeholderTitle {
+  width: 50px;
+}
+
+.placeholderColumnRight:nth-of-type(2) .placeholderPhoto {
+  height: 100px;
+}
+
+.placeholderColumnRight:nth-of-type(2) .placeholderTitle {
+  width: 30px;
+}

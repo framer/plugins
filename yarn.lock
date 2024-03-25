@@ -385,9 +385,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=%40framerjs%2Fplugin-api%40workspace%3Aplugins%2Fdarkhouse":
+"@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz::locator=darkhouse%40workspace%3Aplugins%2Fdarkhouse":
   version: 0.0.0
-  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=40cac1&locator=%40framerjs%2Fplugin-api%40workspace%3Aplugins%2Fdarkhouse"
+  resolution: "@framerjs/plugin-api@file:./framerjs-plugin-api-0.0.0.tgz#./framerjs-plugin-api-0.0.0.tgz::hash=40cac1&locator=darkhouse%40workspace%3Aplugins%2Fdarkhouse"
   dependencies:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
@@ -468,27 +468,6 @@ __metadata:
   checksum: 10c0/0f0954e4e61ad3b63ec9b15f723134c52095659e8a73f42e7395bad131d14739fe98fed7b2bc7ddb8a05e475003c01d7af742fb54d451f7200eea9a536fb942d
   languageName: node
   linkType: hard
-
-"@framerjs/plugin-api@workspace:plugins/darkhouse":
-  version: 0.0.0-use.local
-  resolution: "@framerjs/plugin-api@workspace:plugins/darkhouse"
-  dependencies:
-    "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
-    "@typescript-eslint/eslint-plugin": "npm:^6"
-    "@typescript-eslint/parser": "npm:^6"
-    "@vitejs/plugin-react-swc": "npm:^3"
-    eslint: "npm:^8"
-    eslint-plugin-react-hooks: "npm:^4"
-    eslint-plugin-react-refresh: "npm:^0"
-    react: "npm:^18"
-    react-dom: "npm:^18"
-    typescript: "npm:^5.3.3"
-    vite: "npm:5.2.0-beta.0"
-    vite-plugin-mkcert: "npm:^1"
-  languageName: unknown
-  linkType: soft
 
 "@humanwhocodes/config-array@npm:^0.11.14":
   version: 0.11.14
@@ -1711,6 +1690,27 @@ __metadata:
   checksum: 10c0/80c089d6f7e0c5b2bd83cf0539ab41474198579584fa10d86d0cafe0642202343cbc119e076a0b1aece191989477081415d66c9fefbf3c957fc2fc4b7009f248
   languageName: node
   linkType: hard
+
+"darkhouse@workspace:plugins/darkhouse":
+  version: 0.0.0-use.local
+  resolution: "darkhouse@workspace:plugins/darkhouse"
+  dependencies:
+    "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz"
+    "@types/react": "npm:^18"
+    "@types/react-dom": "npm:^18"
+    "@typescript-eslint/eslint-plugin": "npm:^6"
+    "@typescript-eslint/parser": "npm:^6"
+    "@vitejs/plugin-react-swc": "npm:^3"
+    eslint: "npm:^8"
+    eslint-plugin-react-hooks: "npm:^4"
+    eslint-plugin-react-refresh: "npm:^0"
+    react: "npm:^18"
+    react-dom: "npm:^18"
+    typescript: "npm:^5.3.3"
+    vite: "npm:5.2.0-beta.0"
+    vite-plugin-mkcert: "npm:^1"
+  languageName: unknown
+  linkType: soft
 
 "debounce@npm:^1.2.1":
   version: 1.2.1

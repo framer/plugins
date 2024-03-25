@@ -183,7 +183,11 @@ function PhotosList({ query }: { query: string }) {
       <div className="relative">
         <div className="flex gap-2">
           {photosColumns.map((photos, i) => (
-            <div key={`column-${i}`} className="flex-1 flex flex-col gap-1">
+            <div
+              key={`column-${i}`}
+              className="flex-1 flex-shrink-0 flex flex-col gap-1"
+              style={{ width: columnWidth }}
+            >
               {photos.map((photo) => (
                 <GridItem
                   key={photo.id}
@@ -243,7 +247,7 @@ const GridItem = memo(function GridItem({
       <a
         target="_blank"
         href={photo.user.links.html}
-        className="text-2xs text-tertiary"
+        className="text-2xs text-tertiary whitespace-nowrap overflow-hidden overflow-ellipsis"
       >
         {photo.user.name}
       </a>

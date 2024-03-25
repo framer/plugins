@@ -1,8 +1,16 @@
-import { Suspense, memo, useEffect, useMemo, useRef, useState } from "react";
+import {
+  PropsWithChildren,
+  Suspense,
+  memo,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import { UnsplashPhoto, getRandomPhoto, useListPhotosInfinite } from "./api";
 import { framer } from "@framerjs/plugin-api";
 import { ErrorBoundary } from "react-error-boundary";
-import { useMutation } from "@tanstack/react-query";
+import { QueryErrorResetBoundary, useMutation } from "@tanstack/react-query";
 import { Spinner } from "./Spinner";
 import cx from "classnames";
 import { SearchIcon } from "./icons";
@@ -26,7 +34,7 @@ export function App() {
       const randomPhoto = await getRandomPhoto(query);
 
       await framer.addImage({
-        image: randomPhoto.urls.regular,
+        image: randomPhoto.urls.full,
         name:
           randomPhoto.alt_description ??
           randomPhoto.description ??
@@ -40,7 +48,7 @@ export function App() {
   });
 
   return (
-    <div className="px-4 flex flex-col gap-0 pb-4 max-h-full">
+    <div className="px-4 flex flex-col gap-0 pb-4 h-full">
       <div className="bg-primary mb-2 z-10 relative">
         <input
           type="text"
@@ -56,13 +64,11 @@ export function App() {
       </div>
 
       {/* TODO: error state */}
-      <ErrorBoundary
-        fallback={<div>Something went wrong... error boundary.</div>}
-      >
+      <AppErrorBoundary>
         <Suspense fallback={<div>Loading...</div>}>
           <PhotosList query={debouncedQuery} />
         </Suspense>
-      </ErrorBoundary>
+      </AppErrorBoundary>
       <div className="mt-2">
         <button
           className="bg-tertiary text-secondary hover:bg-tertiary hover:text-primary focus:bg-tertiary focus:text-primary items-center flex justify-center"
@@ -90,7 +96,7 @@ function PhotosList({ query }: { query: string }) {
     mutationFn: async (photo: UnsplashPhoto) => {
       const mode = await framer.getMode();
       await framer.addImage({
-        image: photo.urls.regular,
+        image: photo.urls.full,
         name: photo.alt_description ?? photo.description ?? "Unsplash Image"
       });
 
@@ -160,6 +166,14 @@ function PhotosList({ query }: { query: string }) {
 
   const isLoadingVisible = isLoading || isFetchingNextPage;
 
+  if (!isLoadingVisible && photosColumns[0]?.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-tertiary">
+        No photos found
+      </div>
+    );
+  }
+
   return (
     <div
       className="overflow-auto relative"
@@ -186,10 +200,6 @@ function PhotosList({ query }: { query: string }) {
             </div>
           ))}
         </div>
-        <div
-          // Trigger 250px before the end
-          className="absolute bottom-[300px] pointer-events-none "
-        />
       </div>
     </div>
   );
@@ -240,6 +250,29 @@ const GridItem = memo(function GridItem({
     </div>
   );
 });
+
+const AppErrorBoundary = ({ children }: PropsWithChildren<object>) => (
+  <QueryErrorResetBoundary>
+    {({ reset }) => (
+      <ErrorBoundary
+        onReset={reset}
+        fallbackRender={({ resetErrorBoundary }) => (
+          <div className="flex flex-1 items-center justify-center flex-col max-w-[200px] m-auto text-tertiary">
+            Could not load photos
+            <button
+              className="bg-transparent hover:bg-transparent active:bg-transparent text-blue-600 outline-none"
+              onClick={() => resetErrorBoundary()}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+      >
+        {children}
+      </ErrorBoundary>
+    )}
+  </QueryErrorResetBoundary>
+);
 
 const placeholderHeights = [
   [120, 70, 90],

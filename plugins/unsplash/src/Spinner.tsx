@@ -1,32 +1,46 @@
 import cx from "classnames";
+import styles from "./spinner.module.css";
 
-interface SpinnerProps {
-  size?: "small" | "medium";
+export interface SpinnerProps {
+  /** Size of the spinner */
+  size?: "normal" | "medium" | "large";
+  /** Set the spinner to have a static position inline with other content */
+  inline?: boolean;
+  className?: string;
+  inheritColor?: boolean;
 }
-export function Spinner({ size = "small" }: SpinnerProps) {
+
+function styleForSize(size: SpinnerProps["size"]) {
+  switch (size) {
+    case "normal":
+      return styles.normalStyle;
+    case "medium":
+      return styles.mediumStyle;
+    case "large":
+      return styles.largeStyle;
+  }
+}
+
+function spinnerClassNames(size: SpinnerProps["size"] = "normal") {
+  return cx(styles.spin, styles.baseStyle, styleForSize(size));
+}
+
+export const Spinner = ({
+  size,
+  inline = false,
+  inheritColor,
+  className,
+  ...rest
+}: SpinnerProps) => {
   return (
-    <svg
-      className={cx("animate-spin text-primary", {
-        "w-[12px] h-[12px]": size === "small",
-        "w-[28px] h-[28px]": size === "medium",
-      })}
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      ></circle>
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-      ></path>
-    </svg>
+    <div
+      className={cx(
+        className,
+        spinnerClassNames(size),
+        inheritColor && styles.buttonWithDepthSpinner,
+        !inline && styles.centeredStyle
+      )}
+      {...rest}
+    />
   );
-}
+};

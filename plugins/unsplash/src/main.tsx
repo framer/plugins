@@ -16,10 +16,9 @@ import.meta.hot?.dispose(() => {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      throwOnError: true,
-      retry: 0,
-    },
-  },
+      retry: 1
+    }
+  }
 });
 
 ReactDOM.createRoot(root).render(

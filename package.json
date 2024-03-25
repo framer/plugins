@@ -19,5 +19,8 @@
   "devDependencies": {
     "turbo": "^1.12.4"
   },
-  "packageManager": "yarn@4.1.1"
+  "packageManager": "yarn@4.1.1",
+  "resolutions": {
+    "@framerjs/plugin-api": "portal:/Users/niekkruse/dev/FramerStudio/src/framer-plugin-api"
+  }
 }

@@ -5,6 +5,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { useMutation } from "@tanstack/react-query";
 import { Spinner } from "./Spinner";
 import cx from "classnames";
+import { SearchIcon } from "./icons";
 
 const mode = await framer.getMode();
 
@@ -29,26 +30,29 @@ export function App() {
         name:
           randomPhoto.alt_description ??
           randomPhoto.description ??
-          "Unsplash Image",
+          "Unsplash Image"
       });
 
       if (mode !== "default") {
         await framer.closePlugin();
       }
-    },
+    }
   });
 
   return (
     <div className="px-4 flex flex-col gap-0 pb-4 max-h-full">
-      <div className="bg-primary pb-2 z-10">
+      <div className="bg-primary mb-2 z-10 relative">
         <input
           type="text"
           placeholder="Search..."
           value={query}
-          className="w-full"
+          className="w-full pr-8"
           autoFocus
           onChange={(e) => setQuery(e.target.value)}
         />
+        <div className="flex items-center justify-center absolute right-2 top-0 bottom-0 text-tertiary">
+          <SearchIcon />
+        </div>
       </div>
 
       {/* TODO: error state */}
@@ -65,7 +69,7 @@ export function App() {
           onClick={() => addRandomMutation.mutate(query)}
         >
           {addRandomMutation.isPending ? (
-            <Spinner size="small" />
+            <Spinner size="normal" inheritColor />
           ) : (
             "Random photo"
           )}
@@ -87,13 +91,13 @@ function PhotosList({ query }: { query: string }) {
       const mode = await framer.getMode();
       await framer.addImage({
         image: photo.urls.regular,
-        name: photo.alt_description ?? photo.description ?? "Unsplash Image",
+        name: photo.alt_description ?? photo.description ?? "Unsplash Image"
       });
 
       if (mode !== "default") {
         await framer.closePlugin();
       }
-    },
+    }
   });
 
   useEffect(() => {
@@ -202,7 +206,7 @@ const GridItem = memo(function GridItem({
   photo,
   loading,
   height,
-  onSelect,
+  onSelect
 }: GridItemProps) {
   const handleClick = () => onSelect(photo);
 
@@ -214,7 +218,7 @@ const GridItem = memo(function GridItem({
         style={{
           height,
           backgroundImage: `url(${photo.urls.thumb})`,
-          backgroundColor: photo.color,
+          backgroundColor: photo.color
         }}
       >
         <div
@@ -241,7 +245,7 @@ const placeholderHeights = [
   [120, 70, 90],
   [70, 140, 120],
   [140, 60, 70],
-  [90, 130, 60],
+  [90, 130, 60]
 ];
 
 const Placeholders = ({ index }: { index: number }) => {

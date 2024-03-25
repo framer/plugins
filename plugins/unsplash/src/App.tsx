@@ -18,7 +18,7 @@ import { SearchIcon } from "./icons";
 const mode = await framer.getMode();
 
 // TODO: API for resizable window
-const windowWidth = mode === "default" ? 400 : 600;
+const windowWidth = mode === "default" ? 350 : 600;
 const minColumnWidth = 100;
 const columnGap = 4;
 

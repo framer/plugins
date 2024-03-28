@@ -71,7 +71,7 @@ export function App() {
       </AppErrorBoundary>
       <div className="mt-2">
         <button
-          className="bg-tertiary text-secondary hover:bg-tertiary hover:text-primary focus:bg-tertiary focus:text-primary items-center flex justify-center"
+          className="bg-tertiary text-secondary hover:bg-tertiary hover:text-primary focus:bg-tertiary focus:text-primary items-center flex justify-center relative"
           onClick={() => addRandomMutation.mutate(query)}
         >
           {addRandomMutation.isPending ? (

@@ -18,12 +18,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
-    "paths": {
-      "@framerjs/plugin-api": [
-        "./node_modules/@framerjs/plugin-api/src/api/indexInternal.ts"
-      ]
-    }
+    "baseUrl": "."
   },
   "include": ["src"]
 }

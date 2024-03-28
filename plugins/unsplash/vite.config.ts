@@ -12,10 +12,5 @@ export default defineConfig({
     modules: {
       localsConvention: "camelCase"
     }
-  },
-  resolve: {
-    alias: {
-      "@framerjs/plugin-api": "@framerjs/plugin-api/src/api/indexInternal.ts"
-    }
   }
 });

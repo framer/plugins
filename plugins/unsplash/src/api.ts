@@ -1,20 +1,19 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import * as v from "valibot";
-import { framer } from "@framerjs/plugin-api";
 
 const urlsSchema = v.object({
   full: v.string(),
   raw: v.string(),
   regular: v.string(),
   small: v.string(),
-  thumb: v.string(),
+  thumb: v.string()
 });
 
 const unsplashUserSchema = v.object({
   name: v.string(),
   links: v.object({
-    html: v.string(),
-  }),
+    html: v.string()
+  })
 });
 
 const unsplashPhotoSchema = v.object({
@@ -25,17 +24,12 @@ const unsplashPhotoSchema = v.object({
   alt_description: v.nullable(v.string()),
   description: v.nullable(v.string()),
   urls: urlsSchema,
-  user: unsplashUserSchema,
+  user: unsplashUserSchema
 });
 
 const listPhotosSchema = v.object({
-  photos: v.array(unsplashPhotoSchema),
-  total: v.number(),
-});
-
-const searchPhotosSchema = v.object({
   results: v.array(unsplashPhotoSchema),
-  total: v.number(),
+  total: v.number()
 });
 
 export type UnsplashPhoto = v.Input<typeof unsplashPhotoSchema>;
@@ -44,11 +38,35 @@ export type UnsplashUrls = v.Input<typeof urlsSchema>;
 export type UnsplashLinks = v.Input<typeof unsplashUserSchema>;
 export type UnsplashUser = v.Input<typeof unsplashUserSchema>;
 
-function validateResponse<TSchema extends v.BaseSchema>(
+const UNSPLASH_BASE_URL = "https://api.unsplash.com";
+
+interface FetchOptions extends Omit<RequestInit, "headers"> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  body?: any;
+}
+
+export async function fetchUnsplash<TSchema extends v.BaseSchema>(
+  path: string,
   schema: TSchema,
-  response: unknown
-) {
-  const result = v.safeParse(schema, response);
+  { body, ...options }: FetchOptions = {}
+): Promise<v.Input<TSchema>> {
+  const response = await fetch(`${UNSPLASH_BASE_URL}${path}`, {
+    body: body ? JSON.stringify(body) : undefined,
+    headers: {
+      "Accept-Version": "v1",
+      Authorization: `Client-ID ${import.meta.env.VITE_UNSPLASH_ACCESS_KEY}`,
+      "Content-Type": "application/json"
+    },
+    ...options
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch Unsplash API:" + response.status);
+  }
+
+  const json = (await response.json()) as unknown;
+
+  const result = v.safeParse(schema, json);
 
   if (result.issues) {
     throw new Error("Failed to parse Unsplash API response: " + result.issues);
@@ -61,38 +79,34 @@ export function useListPhotosInfinite(query: string) {
   return useInfiniteQuery({
     queryKey: ["photos", query],
     initialPageParam: 1,
-    queryFn: async ({ pageParam }) => {
+    queryFn: async ({ pageParam, signal }) => {
       const page = pageParam ?? 1;
 
       if (query.length === 0) {
-        const response = await framer.internalApiGet(`/web/unsplash/photos`, {
-          page,
-          order_by: "latest",
-          per_page: 12,
-        });
-
-        const result = validateResponse(listPhotosSchema, response);
+        const photos = await fetchUnsplash(
+          `/photos?page=${page}`,
+          v.array(unsplashPhotoSchema),
+          {
+            signal,
+            method: "GET"
+          }
+        );
 
         return {
-          results: result.photos,
-          total: result.photos.length,
+          results: photos,
+          total: photos.length
         };
       }
 
-      const result = await framer.internalApiGet(
-        `/web/unsplash/search/photos`,
-        {
-          query,
-          page,
-          per_page: 12,
-        }
+      return fetchUnsplash(
+        `/search/photos?query=${query}&page=${pageParam ?? 1}`,
+        listPhotosSchema,
+        { signal, method: "GET" }
       );
-
-      return validateResponse(searchPhotosSchema, result);
     },
     getNextPageParam: (_, allPages) => {
       return allPages.length + 1;
-    },
+    }
   });
 }
 
@@ -103,10 +117,9 @@ export async function getRandomPhoto(searchTerm: string) {
     params.set("query", searchTerm);
   }
 
-  const response = await framer.internalApiGet(
-    `/web/unsplash/photos/random`,
-    {}
+  return fetchUnsplash(
+    `/photos/random?${params.toString()}`,
+    unsplashPhotoSchema,
+    { method: "GET" }
   );
-
-  return validateResponse(unsplashPhotoSchema, response);
 }

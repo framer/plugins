@@ -20,7 +20,8 @@ const mode = await framer.getMode();
 // TODO: API for resizable window
 const windowWidth = mode === "default" ? 350 : 600;
 const minColumnWidth = 100;
-const columnGap = 4;
+const columnGap = 8;
+const sidePadding = 16 * 2;
 
 void framer.showUI({ position: "top right", width: windowWidth, height: 400 });
 
@@ -113,12 +114,15 @@ function PhotosList({ query }: { query: string }) {
   }, [query]);
 
   const [photosColumns, columnWidth] = useMemo(() => {
+    const adjustedWindowSize = windowWidth - sidePadding;
     const columnCount = Math.max(
       1,
-      Math.floor((windowWidth + columnGap) / (minColumnWidth + columnGap))
+      Math.floor(
+        (adjustedWindowSize + columnGap) / (minColumnWidth + columnGap)
+      )
     );
     const columnWidth =
-      (windowWidth - (columnCount - 1) * columnGap) / columnCount;
+      (adjustedWindowSize - (columnCount - 1) * columnGap) / columnCount;
     const heightPerColumn = Array(columnCount).fill(0);
 
     const seenPhotos = new Set<PhotoId>();
@@ -185,7 +189,7 @@ function PhotosList({ query }: { query: string }) {
           {photosColumns.map((photos, i) => (
             <div
               key={`column-${i}`}
-              className="flex-1 flex-shrink-0 flex flex-col gap-1"
+              className="flex-shrink-0 flex flex-col gap-1"
               style={{ width: columnWidth }}
             >
               {photos.map((photo) => (

@@ -4,35 +4,35 @@ import {
   useDeferredValue,
   useMemo,
   useState,
-} from "react"
-import "./App.css"
-import { framer } from "@framerjs/plugin-api"
-import Fuse from "fuse.js"
+} from "react";
+import "./App.css";
+import { framer, Draggable } from "@framerjs/plugin-api";
+import Fuse from "fuse.js";
 
-import { IconContext, IconWeight } from "@phosphor-icons/react"
-import * as Icons from "@phosphor-icons/react"
+import { IconContext, IconWeight } from "@phosphor-icons/react";
+import * as Icons from "@phosphor-icons/react";
 
 // @ts-expect-error - Phosphor has type issues
-import { icons as iconData } from "@phosphor-icons/core"
-import { Icon } from "@phosphor-icons/react"
-import { renderToStaticMarkup } from "react-dom/server"
+import { icons as iconData } from "@phosphor-icons/core";
+import { Icon } from "@phosphor-icons/react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 interface IconEntry {
-  name: string // "cloud-lightning"
-  pascal_name: string // "CloudLightning"
+  name: string; // "cloud-lightning"
+  pascal_name: string; // "CloudLightning"
   alias?: {
-    name: string
-    pascal_name: string
-  }
-  Icon: Icon
-  codepoint: number
-  categories: readonly string[] // ["weather"]
-  tags: readonly string[] // ["*updated*", "meteorology", "thunderstorm"]
-  published_in: number // 1.0
-  updated_in: number // 1.4
+    name: string;
+    pascal_name: string;
+  };
+  Icon: Icon;
+  codepoint: number;
+  categories: readonly string[]; // ["weather"]
+  tags: readonly string[]; // ["*updated*", "meteorology", "thunderstorm"]
+  published_in: number; // 1.0
+  updated_in: number; // 1.4
 }
 
-type WeightOption = { key: string; value: IconWeight }
+type WeightOption = { key: string; value: IconWeight };
 
 const weightOptions: WeightOption[] = [
   {
@@ -59,12 +59,12 @@ const weightOptions: WeightOption[] = [
     key: "Duotone",
     value: "duotone",
   },
-]
+];
 
 const icons: ReadonlyArray<IconEntry> = iconData.map((entry: any) => ({
   ...entry,
   Icon: Icons[entry.pascal_name as keyof typeof Icons] as Icons.Icon,
-}))
+}));
 
 const fuse = new Fuse(icons, {
   keys: [
@@ -76,51 +76,57 @@ const fuse = new Fuse(icons, {
   threshold: 0.2, // Tweak this to what feels like the right number of results
   // shouldSort: false,
   useExtendedSearch: true,
-})
+});
 
 function IconGrid(props: any) {
-  const { searchQuery, weight } = props
+  const { searchQuery, weight } = props;
 
-  const deferredQuery = useDeferredValue(searchQuery)
+  const deferredQuery = useDeferredValue(searchQuery);
 
   const filteredIcons = useMemo(() => {
-    const query = deferredQuery.trim().toLowerCase()
-    if (!query) return icons
+    const query = deferredQuery.trim().toLowerCase();
+    if (!query) return icons;
 
-    return fuse.search(query).map((value) => value.item)
-  }, [deferredQuery])
+    return fuse.search(query).map((value) => value.item);
+  }, [deferredQuery]);
 
   const handleIconClick = useCallback(
     async (entry: IconEntry) => {
-      const { Icon } = entry
+      const { Icon } = entry;
 
       const svg = renderToStaticMarkup(
         <Icon size={32} color={"black"} weight={weight} />
-      )
+      );
 
       await framer.addSVG({
         svg,
         name: "test.svg",
-      })
+      });
     },
     [weight]
-  )
+  );
 
   if (filteredIcons.length === 0) {
     return (
       <div className="error-container">
         <p>No Results</p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="grid">
       {filteredIcons.map((entry: IconEntry) => {
-        const { Icon } = entry
+        const { Icon } = entry;
 
         return (
-          <div
+          <Draggable
+            data={() => ({
+              type: "svg",
+              svg: renderToStaticMarkup(
+                <Icon size={32} color={"black"} weight={weight} />
+              ),
+            })}
             key={entry.name}
             className="icon-parent"
             onClick={() => handleIconClick(entry)}
@@ -130,16 +136,16 @@ function IconGrid(props: any) {
               color={"var(--framer-color-text)"}
               weight={weight}
             />
-          </div>
-        )
+          </Draggable>
+        );
       })}
     </div>
-  )
+  );
 }
 
 export function App() {
-  const [weight, setWeight] = useState<IconWeight>("regular")
-  const [searchQuery, setSearchQuery] = useState("")
+  const [weight, setWeight] = useState<IconWeight>("regular");
+  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <>
@@ -156,7 +162,7 @@ export function App() {
           className="weight-selector"
           value={weight}
           onChange={(e) => {
-            setWeight(e.target.value as IconWeight)
+            setWeight(e.target.value as IconWeight);
           }}
         >
           {weightOptions.map((option) => (
@@ -175,5 +181,5 @@ export function App() {
         </Suspense>
       </div>
     </>
-  )
+  );
 }

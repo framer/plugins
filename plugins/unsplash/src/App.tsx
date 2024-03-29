@@ -229,9 +229,13 @@ const GridItem = memo(function GridItem({
   return (
     <div key={photo.id} className="flex flex-col gap-1">
       <Draggable
-        data={{ type: "image", image: photo.urls.full }}
+        data={{
+          type: "image",
+          image: photo.urls.full,
+          previewImage: photo.urls.thumb
+        }}
         onClick={handleClick}
-        className="cursor-pointer bg-cover relative"
+        className="cursor-pointer bg-cover relative rounded-lg"
         style={{
           height,
           backgroundImage: `url(${photo.urls.thumb})`,

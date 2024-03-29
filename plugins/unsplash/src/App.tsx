@@ -8,7 +8,7 @@ import {
   useState
 } from "react";
 import { UnsplashPhoto, getRandomPhoto, useListPhotosInfinite } from "./api";
-import { framer } from "@framerjs/plugin-api";
+import { framer, Draggable } from "@framerjs/plugin-api";
 import { ErrorBoundary } from "react-error-boundary";
 import { QueryErrorResetBoundary, useMutation } from "@tanstack/react-query";
 import { Spinner } from "./Spinner";
@@ -63,8 +63,6 @@ export function App() {
           <SearchIcon />
         </div>
       </div>
-
-      {/* TODO: error state */}
       <AppErrorBoundary>
         <Suspense fallback={<div>Loading...</div>}>
           <PhotosList query={debouncedQuery} />
@@ -230,7 +228,8 @@ const GridItem = memo(function GridItem({
 
   return (
     <div key={photo.id} className="flex flex-col gap-1">
-      <button
+      <Draggable
+        data={{ type: "image", image: photo.urls.full }}
         onClick={handleClick}
         className="cursor-pointer bg-cover relative"
         style={{
@@ -247,7 +246,7 @@ const GridItem = memo(function GridItem({
         >
           {loading && <Spinner size="medium" />}
         </div>
-      </button>
+      </Draggable>
       <a
         target="_blank"
         href={photo.user.links.html}

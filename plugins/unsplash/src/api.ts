@@ -29,7 +29,8 @@ const unsplashPhotoSchema = v.object({
 
 const listPhotosSchema = v.object({
   results: v.array(unsplashPhotoSchema),
-  total: v.number()
+  total: v.number(),
+  total_pages: v.number()
 });
 
 export type UnsplashPhoto = v.Input<typeof unsplashPhotoSchema>;
@@ -39,6 +40,8 @@ export type UnsplashLinks = v.Input<typeof unsplashUserSchema>;
 export type UnsplashUser = v.Input<typeof unsplashUserSchema>;
 
 const UNSPLASH_BASE_URL = "https://api.unsplash.com";
+
+const pageItemCount = 20;
 
 interface FetchOptions extends Omit<RequestInit, "headers"> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -84,7 +87,7 @@ export function useListPhotosInfinite(query: string) {
 
       if (query.length === 0) {
         const photos = await fetchUnsplash(
-          `/photos?page=${page}`,
+          `/photos?page=${page}&per_page=${pageItemCount}`,
           v.array(unsplashPhotoSchema),
           {
             signal,
@@ -94,18 +97,23 @@ export function useListPhotosInfinite(query: string) {
 
         return {
           results: photos,
-          total: photos.length
+          total: photos.length,
+          total_pages: undefined
         };
       }
 
       return fetchUnsplash(
-        `/search/photos?query=${query}&page=${pageParam ?? 1}`,
+        `/search/photos?query=${query}&page=${pageParam ?? 1}&per_page=${pageItemCount}`,
         listPhotosSchema,
         { signal, method: "GET" }
       );
     },
-    getNextPageParam: (_, allPages) => {
-      return allPages.length + 1;
+    getNextPageParam: (data, allPages) => {
+      if (!data.total_pages || data.total_pages >= allPages.length - 1) {
+        return allPages.length + 1;
+      }
+
+      return undefined;
     }
   });
 }

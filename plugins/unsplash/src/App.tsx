@@ -2,6 +2,7 @@ import {
   PropsWithChildren,
   Suspense,
   memo,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -17,16 +18,22 @@ import { SearchIcon } from "./icons";
 
 const mode = await framer.getMode();
 
-// TODO: API for resizable window
-const windowWidth = mode === "default" ? 350 : 600;
+const minWindowWidth = mode === "default" ? 350 : 600;
 const minColumnWidth = 100;
 const columnGap = 8;
 const sidePadding = 16 * 2;
 
-void framer.showUI({ position: "top right", width: windowWidth, height: 400 });
+void framer.showUI({
+  position: "top right",
+  width: minWindowWidth,
+  minWidth: minWindowWidth,
+  minHeight: 400,
+  resizable: true
+});
 
 export function App() {
   const [query, setQuery] = useState("");
+
   const debouncedQuery = useDebounce(query, 200);
 
   const addRandomMutation = useMutation({
@@ -86,10 +93,21 @@ export function App() {
 
 type PhotoId = string;
 
-function PhotosList({ query }: { query: string }) {
-  const { data, fetchNextPage, isFetchingNextPage, isLoading } =
+const PhotosList = memo(function PhotosList({ query }: { query: string }) {
+  const { data, fetchNextPage, isFetchingNextPage, isLoading, hasNextPage } =
     useListPhotosInfinite(query);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [windowSize, setWindowSize] = useState(window.innerWidth);
+  const deferredWindowSize = useDeferredValue(windowSize);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize(window.innerWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const addPhotoMutation = useMutation({
     mutationFn: async (photo: UnsplashPhoto) => {
@@ -111,8 +129,20 @@ function PhotosList({ query }: { query: string }) {
     if (scrollElement) scrollElement.scrollTop = 0;
   }, [query]);
 
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement || isLoading) return;
+
+    const isScrollable =
+      scrollElement.scrollHeight > scrollElement.clientHeight;
+
+    if (isScrollable || !hasNextPage) return;
+
+    fetchNextPage();
+  }, [data, hasNextPage, fetchNextPage, deferredWindowSize, isLoading]);
+
   const [photosColumns, columnWidth] = useMemo(() => {
-    const adjustedWindowSize = windowWidth - sidePadding;
+    const adjustedWindowSize = deferredWindowSize - sidePadding;
     const columnCount = Math.max(
       1,
       Math.floor(
@@ -137,6 +167,7 @@ function PhotosList({ query }: { query: string }) {
       for (const photo of page.results) {
         // Could have duplicates with pagination
         if (seenPhotos.has(photo.id)) continue;
+        seenPhotos.add(photo.id);
 
         const itemHeight = heightForPhoto(photo, columnWidth);
 
@@ -149,7 +180,7 @@ function PhotosList({ query }: { query: string }) {
       }
     }
     return [columns, columnWidth] as const;
-  }, [data]);
+  }, [data, deferredWindowSize]);
 
   const handleScroll = () => {
     if (isFetchingNextPage || isLoading) return;
@@ -209,7 +240,7 @@ function PhotosList({ query }: { query: string }) {
       </div>
     </div>
   );
-}
+});
 
 interface GridItemProps {
   photo: UnsplashPhoto;

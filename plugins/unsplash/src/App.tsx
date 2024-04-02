@@ -105,6 +105,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
       setWindowSize(window.innerWidth);
     };
 
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);

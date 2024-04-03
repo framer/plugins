@@ -41,7 +41,18 @@ export function App() {
       const mode = await framer.getMode();
       const randomPhoto = await getRandomPhoto(query);
 
-      await framer.addImage({
+      if (mode === "default") {
+        await framer.addImage({
+          image: randomPhoto.urls.full,
+          name:
+            randomPhoto.alt_description ??
+            randomPhoto.description ??
+            "Unsplash Image"
+        });
+        return;
+      }
+
+      await framer.setImage({
         image: randomPhoto.urls.full,
         name:
           randomPhoto.alt_description ??
@@ -49,9 +60,7 @@ export function App() {
           "Unsplash Image"
       });
 
-      if (mode !== "default") {
-        await framer.closePlugin();
-      }
+      await framer.closePlugin();
     }
   });
 
@@ -113,14 +122,22 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
   const addPhotoMutation = useMutation({
     mutationFn: async (photo: UnsplashPhoto) => {
       const mode = await framer.getMode();
-      await framer.addImage({
+
+      if (mode === "default") {
+        await framer.addImage({
+          image: photo.urls.full,
+          name: photo.alt_description ?? photo.description ?? "Unsplash Image"
+        });
+
+        return;
+      }
+
+      await framer.setImage({
         image: photo.urls.full,
         name: photo.alt_description ?? photo.description ?? "Unsplash Image"
       });
 
-      if (mode !== "default") {
-        await framer.closePlugin();
-      }
+      await framer.closePlugin();
     }
   });
 

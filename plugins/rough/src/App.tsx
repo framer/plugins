@@ -1,13 +1,14 @@
 import { framer } from "@framerjs/plugin-api"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import rough from "roughjs"
 import "./App.css"
 
-export function App() {
-    useEffect(() => {
-        framer.showUI()
-    }, [])
+framer.showUI({
+    minHeight: 500,
+    resizable: "height",
+})
 
+export function App() {
     const ref = useRef<SVGSVGElement>(null)
 
     const [shape, setShape] = useState<"rectangle" | "line" | "ellipse">("rectangle")

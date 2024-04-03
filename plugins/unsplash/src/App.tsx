@@ -283,22 +283,25 @@ const GridItem = memo(function GridItem({
           image: photo.urls.full,
           previewImage: photo.urls.thumb
         }}
-        onClick={handleClick}
-        className="cursor-pointer bg-cover relative rounded-lg"
-        style={{
-          height,
-          backgroundImage: `url(${photo.urls.thumb})`,
-          backgroundColor: photo.color
-        }}
       >
-        <div
-          className={cx(
-            "absolute top-0 right-0 left-0 bottom-0 rounded-lg flex items-center justify-center transition-all pointer-events-none",
-            loading && "bg-blackDimmed"
-          )}
+        <button
+          onClick={handleClick}
+          className="cursor-pointer bg-cover relative rounded-lg"
+          style={{
+            height,
+            backgroundImage: `url(${photo.urls.thumb})`,
+            backgroundColor: photo.color
+          }}
         >
-          {loading && <Spinner size="medium" />}
-        </div>
+          <div
+            className={cx(
+              "absolute top-0 right-0 left-0 bottom-0 rounded-lg flex items-center justify-center transition-all pointer-events-none",
+              loading && "bg-blackDimmed"
+            )}
+          >
+            {loading && <Spinner size="medium" />}
+          </div>
+        </button>
       </Draggable>
       <a
         target="_blank"

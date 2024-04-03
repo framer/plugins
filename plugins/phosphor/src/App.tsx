@@ -128,14 +128,17 @@ function IconGrid(props: any) {
               ),
             })}
             key={entry.name}
-            className="icon-parent"
-            onClick={() => handleIconClick(entry)}
           >
-            <Icon
-              size={32}
-              color={"var(--framer-color-text)"}
-              weight={weight}
-            />
+            <button
+              className="icon-parent"
+              onClick={() => handleIconClick(entry)}
+            >
+              <Icon
+                size={32}
+                color={"var(--framer-color-text)"}
+                weight={weight}
+              />
+            </button>
           </Draggable>
         );
       })}

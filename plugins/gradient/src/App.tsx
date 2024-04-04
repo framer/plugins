@@ -1,20 +1,20 @@
-import { useCallback, useRef } from "react"
-import { framer } from '@framerjs/plugin-api'
-import { Canvas } from "@react-three/fiber"
-import { OrbitControls } from "@react-three/drei"
-import { useResolution } from "emulsion/pre"
-import { customGlsl } from "emulsion/shaders"
-import spectral from "spectral.js"
-import { resolveLygia } from "resolve-lygia"
-import { useTime, useTransform } from "framer-motion"
-import { MotionShaderMesh } from "emulsion"
-import * as s from "emulsion/shaders"
-import "./App.css"
+import { useCallback, useRef } from "react";
+import { framer } from "framer-plugin";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import { useResolution } from "emulsion/pre";
+import { customGlsl } from "emulsion/shaders";
+import spectral from "spectral.js";
+import { resolveLygia } from "resolve-lygia";
+import { useTime, useTransform } from "framer-motion";
+import { MotionShaderMesh } from "emulsion";
+import * as s from "emulsion/shaders";
+import "./App.css";
 
 export const glsl = customGlsl([
-    (s) => resolveLygia(s),
-    (s) => s.replace('#include "spectral.glsl"', spectral.glsl()),
-])
+  (s) => resolveLygia(s),
+  (s) => s.replace('#include "spectral.glsl"', spectral.glsl()),
+]);
 
 const fragmentShader = glsl`
     uniform float time;
@@ -62,66 +62,66 @@ const fragmentShader = glsl`
 
         gl_FragColor = vec4(color, 1.0);
     }
-`
+`;
 
 function Inner(props: any) {
-    const {
-        color1 = "rgb(250, 170, 0)",
-        color2 = "rgb(53, 170, 239)",
-        color3 = "rgb(46, 188, 204)",
-    } = props
+  const {
+    color1 = "rgb(250, 170, 0)",
+    color2 = "rgb(53, 170, 239)",
+    color3 = "rgb(46, 188, 204)",
+  } = props;
 
-    const realTime = useTime()
-    const resolution = useResolution()
+  const realTime = useTime();
+  const resolution = useResolution();
 
-    const setTime = 0
-    const time = useTransform(realTime, (v: number) => v * 0.1 + setTime)
+  const setTime = 0;
+  const time = useTransform(realTime, (v: number) => v * 0.1 + setTime);
 
-    return (
-        <MotionShaderMesh
-            uniforms={{
-                time,
-                resolution,
-                color1,
-                color2,
-                color3,
-            }}
-            vertexShader={s.defaultVertex}
-            fragmentShader={fragmentShader}
-        />
-    )
+  return (
+    <MotionShaderMesh
+      uniforms={{
+        time,
+        resolution,
+        color1,
+        color2,
+        color3,
+      }}
+      vertexShader={s.defaultVertex}
+      fragmentShader={fragmentShader}
+    />
+  );
 }
 
 export function App() {
-    const canvasElement = useRef<HTMLCanvasElement>(null)
-    const glContext = useRef<WebGLRenderingContext | null>(null)
+  const canvasElement = useRef<HTMLCanvasElement>(null);
+  const glContext = useRef<WebGLRenderingContext | null>(null);
 
-    const handleAddImage = useCallback(() => {
-        if (!canvasElement.current || !glContext.current) return
+  const handleAddImage = useCallback(() => {
+    if (!canvasElement.current || !glContext.current) return;
 
-        const image = canvasElement.current.toDataURL("image/png")
+    const image = canvasElement.current.toDataURL("image/png");
 
-        framer.addImage({ image, name: "image.png" })
-    }, [canvasElement])
+    framer.addImage({ image, name: "image.png" });
+  }, [canvasElement]);
 
-    return (
-        <>
-            <Canvas
-                orthographic
-                camera={{ near: -190, far: 10000 }}
-                ref={canvasElement}
-                className="canvas"
-                gl={{ preserveDrawingBuffer: true }}
-                onCreated={({ gl }) => {
-                    glContext.current = gl.getContext()
-                }}
-            >
-                <Inner />
-                <OrbitControls />
-            </Canvas>
-            <button className="add-button" onClick={handleAddImage}>
-                Add
-            </button>
-        </>
-    )
+  return (
+    <>
+      <Canvas
+        orthographic
+        camera={{ near: -190, far: 10000 }}
+        ref={canvasElement}
+        className="canvas"
+        gl={{ preserveDrawingBuffer: true }}
+        onCreated={({ gl }) => {
+          glContext.current = gl.getContext();
+        }}
+      >
+        <Inner />
+        <OrbitControls />
+      </Canvas>
+      <button className="add-button" onClick={handleAddImage}>
+        Add
+      </button>
+    </>
+  );
 }

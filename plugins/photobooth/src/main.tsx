@@ -1,23 +1,23 @@
-import "./globals.css"
-import React from "react"
-import ReactDOM from "react-dom/client"
-import { App } from "./App.tsx"
+import "./globals.css";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { App } from "./App.tsx";
 
-import { framer } from "@framerjs/plugin-api"
+import { framer } from "framer-plugin";
 
-const root = document.getElementById("root")
+const root = document.getElementById("root");
 if (!root) {
-  throw new Error("Root element not found")
+  throw new Error("Root element not found");
 }
 
 import.meta.hot?.dispose(() => {
-  void framer.closePlugin()
-})
+  void framer.closePlugin();
+});
 
-void framer.showUI({ position: "top left", width: 240, height: 220 })
+void framer.showUI({ position: "top left", width: 240, height: 220 });
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
-)
+);

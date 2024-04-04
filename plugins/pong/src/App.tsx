@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CanvasNode, framer } from "@framerjs/plugin-api";
+import { CanvasNode, framer } from "framer-plugin";
 import { Vector2 } from "./vector2";
 import { Rect2 } from "./rect2";
 import { randomRange } from "./randomRange";
@@ -57,22 +57,39 @@ export function App() {
               // Don't collide with self.
               if (entity.id === otherEntity.id) continue;
 
-              const intersection: Rect2 | null = entity.rect.intersection(otherEntity.rect);
+              const intersection: Rect2 | null = entity.rect.intersection(
+                otherEntity.rect
+              );
 
               if (intersection) {
-                const otherEntityCenter: Vector2 = otherEntity.rect.position.add(otherEntity.rect.size.scale(0.5));
-                const entityCenter: Vector2 = entity.rect.position.add(entity.rect.size.scale(0.5));
-                const bounceDirection: Vector2 = entityCenter.sub(otherEntityCenter).normalize();
+                const otherEntityCenter: Vector2 =
+                  otherEntity.rect.position.add(
+                    otherEntity.rect.size.scale(0.5)
+                  );
+                const entityCenter: Vector2 = entity.rect.position.add(
+                  entity.rect.size.scale(0.5)
+                );
+                const bounceDirection: Vector2 = entityCenter
+                  .sub(otherEntityCenter)
+                  .normalize();
 
-                entity.velocity = bounceDirection.scale(entity.velocity.magnitude());
+                entity.velocity = bounceDirection.scale(
+                  entity.velocity.magnitude()
+                );
               }
             }
 
-            if (entity.rect.position.x < stage.position.x || entity.rect.position.x + entity.rect.size.x > stage.size.x) {
+            if (
+              entity.rect.position.x < stage.position.x ||
+              entity.rect.position.x + entity.rect.size.x > stage.size.x
+            ) {
               entity.velocity = entity.velocity.flipX();
             }
 
-            if (entity.rect.position.y < stage.position.y || entity.rect.position.y + entity.rect.size.y > stage.size.y) {
+            if (
+              entity.rect.position.y < stage.position.y ||
+              entity.rect.position.y + entity.rect.size.y > stage.size.y
+            ) {
               entity.velocity = entity.velocity.flipY();
             }
           }
@@ -84,7 +101,7 @@ export function App() {
             framer.setAttributes(entity.id, {
               left: `${entity.rect.position.x}px`,
               top: `${entity.rect.position.y}px`,
-              right:  null,
+              right: null,
               bottom: null,
             });
           }
@@ -120,7 +137,9 @@ export function App() {
         id: node.id,
         type: isSquare ? "ball" : "paddle",
         rect: new Rect2(rect.x, rect.y, rect.width, rect.height),
-        velocity: new Vector2(randomRange(-1, 1), randomRange(-1, 1)).normalize().scale(10),
+        velocity: new Vector2(randomRange(-1, 1), randomRange(-1, 1))
+          .normalize()
+          .scale(10),
       });
     }
 

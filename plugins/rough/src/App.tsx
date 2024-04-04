@@ -1,4 +1,4 @@
-import { framer } from "@framerjs/plugin-api"
+import { framer } from "framer-plugin"
 import { useLayoutEffect, useRef, useState } from "react"
 import rough from "roughjs"
 import "./App.css"

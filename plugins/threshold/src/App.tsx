@@ -1,6 +1,6 @@
-import { framer } from "@framerjs/plugin-api"
-import { ImageAsset } from "@framerjs/plugin-api/src/api/image"
 import * as comlink from "comlink"
+import { framer } from "framer-plugin"
+import { ImageAsset } from "framer-plugin/src/api/image"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "./App.css"
 import { assert, bytesFromCanvas } from "./utils"

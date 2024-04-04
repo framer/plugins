@@ -13,7 +13,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
-        "@framerjs/plugin-api": "file:./framerjs-plugin-api-0.0.0.tgz",
+        "framer-plugin": "^0.1.0",
         "react": "^18",
         "react-dom": "^18",
         "roughjs": "^4.6.6",

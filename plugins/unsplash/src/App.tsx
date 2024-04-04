@@ -9,7 +9,7 @@ import {
   useState
 } from "react";
 import { UnsplashPhoto, getRandomPhoto, useListPhotosInfinite } from "./api";
-import { framer, Draggable } from "@framerjs/plugin-api";
+import { framer, Draggable } from "framer-plugin";
 import { ErrorBoundary } from "react-error-boundary";
 import { QueryErrorResetBoundary, useMutation } from "@tanstack/react-query";
 import { Spinner } from "./Spinner";

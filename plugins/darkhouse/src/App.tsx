@@ -1,60 +1,60 @@
-import { useEffect, useState } from "react"
-import { framer } from "@framerjs/plugin-api"
-import "./App.css"
-import { PublishInfo } from "@framerjs/plugin-api/src/api/publishInfo"
+import { useEffect, useState } from "react";
+import { framer } from "framer-plugin";
+import "./App.css";
+import { PublishInfo } from "framer-plugin/src/api/publishInfo";
 
 void framer.showUI({
   title: "Darkhouse",
   position: "top left",
   width: 270,
   height: 95,
-})
+});
 
 function usePublishInfo() {
-  const [publishInfo, setPublishInfo] = useState<PublishInfo>()
+  const [publishInfo, setPublishInfo] = useState<PublishInfo>();
 
   useEffect(() => {
-    return framer.subscribeToPublishInfo(setPublishInfo)
-  }, [])
+    return framer.subscribeToPublishInfo(setPublishInfo);
+  }, []);
 
-  return publishInfo
+  return publishInfo;
 }
 
 export function App() {
-  const [isRunning, setIsRunning] = useState(false)
+  const [isRunning, setIsRunning] = useState(false);
 
   const handleRunDarkhouse = async () => {
-    if (!publishInfo?.production?.currentPageUrl) return
+    if (!publishInfo?.production?.currentPageUrl) return;
 
-    setIsRunning(true)
+    setIsRunning(true);
     void framer.showUI({
       height: 500,
-    })
-  }
+    });
+  };
 
   const closeDarkHouse = () => {
-    setIsRunning(false)
+    setIsRunning(false);
     void framer.showUI({
       width: 270,
       height: 95,
-    })
-  }
+    });
+  };
 
-  const publishInfo = usePublishInfo()
+  const publishInfo = usePublishInfo();
 
-  let pagePath
+  let pagePath;
 
   if (publishInfo) {
     pagePath = publishInfo?.production?.currentPageUrl.replace(
       publishInfo?.production?.url,
       ""
-    )
+    );
     if (pagePath === "/") {
-      pagePath = "Home"
+      pagePath = "Home";
     }
   }
 
-  let darkhouseUrl = `https://dark.house.dev/?url=${publishInfo?.production?.currentPageUrl}`
+  let darkhouseUrl = `https://dark.house.dev/?url=${publishInfo?.production?.currentPageUrl}`;
 
   return (
     <main>
@@ -81,5 +81,5 @@ export function App() {
         </>
       )}
     </main>
-  )
+  );
 }

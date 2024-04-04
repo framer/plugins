@@ -6,7 +6,7 @@ import {
   useState,
 } from "react";
 import "./App.css";
-import { framer, Draggable } from "@framerjs/plugin-api";
+import { framer, Draggable } from "framer-plugin";
 import Fuse from "fuse.js";
 
 import { IconContext, IconWeight } from "@phosphor-icons/react";

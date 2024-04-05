@@ -15,6 +15,7 @@ import { QueryErrorResetBoundary, useMutation } from "@tanstack/react-query";
 import { Spinner } from "./Spinner";
 import cx from "classnames";
 import { SearchIcon } from "./icons";
+import { Blurhash } from "react-blurhash";
 
 const mode = await framer.getMode();
 
@@ -244,6 +245,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
                   key={photo.id}
                   photo={photo}
                   height={heightForPhoto(photo, columnWidth)}
+                  width={columnWidth}
                   loading={
                     addPhotoMutation.isPending &&
                     addPhotoMutation.variables?.id === photo.id
@@ -263,6 +265,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 interface GridItemProps {
   photo: UnsplashPhoto;
   height: number;
+  width: number;
   loading: boolean;
   onSelect: (photo: UnsplashPhoto) => void;
 }
@@ -271,9 +274,17 @@ const GridItem = memo(function GridItem({
   photo,
   loading,
   height,
+  width,
   onSelect
 }: GridItemProps) {
   const handleClick = () => onSelect(photo);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = photo.urls.thumb;
+    img.onload = () => setImageLoaded(true);
+  }, [photo.urls.thumb]);
 
   return (
     <div key={photo.id} className="flex flex-col gap-1">
@@ -301,6 +312,9 @@ const GridItem = memo(function GridItem({
           >
             {loading && <Spinner size="medium" />}
           </div>
+          {!imageLoaded && (
+            <Blurhash hash={photo.blur_hash} width={width} height={height} />
+          )}
         </button>
       </Draggable>
       <a

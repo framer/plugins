@@ -1,6 +1,5 @@
 import {
   PropsWithChildren,
-  Suspense,
   memo,
   useDeferredValue,
   useEffect,
@@ -81,9 +80,7 @@ export function App() {
         </div>
       </div>
       <AppErrorBoundary>
-        <Suspense fallback={<div>Loading...</div>}>
-          <PhotosList query={debouncedQuery} />
-        </Suspense>
+        <PhotosList query={debouncedQuery} />
       </AppErrorBoundary>
       <div className="mt-2">
         <button
@@ -312,7 +309,7 @@ const GridItem = memo(function GridItem({
           >
             {loading && <Spinner size="medium" />}
           </div>
-          {!imageLoaded && (
+          {!imageLoaded && photo.blur_hash && (
             <Blurhash hash={photo.blur_hash} width={width} height={height} />
           )}
         </button>

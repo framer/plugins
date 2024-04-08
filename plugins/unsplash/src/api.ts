@@ -23,7 +23,7 @@ const unsplashPhotoSchema = v.object({
   color: v.string(),
   alt_description: v.nullable(v.string()),
   description: v.nullable(v.string()),
-  blur_hash: v.string(),
+  blur_hash: v.nullable(v.string()),
   urls: urlsSchema,
   user: unsplashUserSchema
 });

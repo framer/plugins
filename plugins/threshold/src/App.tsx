@@ -1,8 +1,8 @@
 import * as comlink from "comlink"
-import { framer } from "framer-plugin"
-import { ImageAsset } from "framer-plugin/src/api/image"
+import { ImageAsset, framer } from "framer-plugin"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "./App.css"
+import { Spinner } from "./Spinner"
 import { assert, bytesFromCanvas } from "./utils"
 import type { CanvasWorker } from "./worker/worker"
 import Worker from "./worker/worker?worker"
@@ -51,6 +51,7 @@ const debounce = (fn: Function, ms = 300) => {
 function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; maxWidth: number; maxHeight: number }) {
     const [threshold, setThreshold] = useState(127)
     const canvasRef = useRef<HTMLCanvasElement>(null)
+    const [hasPainted, setHasPainted] = useState(false)
 
     const handleSaveImage = async () => {
         const ctx = canvasRef.current?.getContext("2d")
@@ -65,7 +66,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
         const start = performance.now()
 
         framer.hideUI()
-        await framer.addImage({
+        await framer.setImage({
             image: {
                 bytes: nextBytes,
                 mimeType: originalImage.mimeType,
@@ -121,6 +122,8 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
                 })
 
                 ctx.drawImage(result, 0, 0, displayWidth, displayHeight)
+
+                setHasPainted(true)
             }, 20),
         [image]
     )
@@ -144,6 +147,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
         <div className="container">
             <div className="canvas-container">
                 <canvas ref={canvasRef} />
+                {!hasPainted && <Spinner size="medium" />}
             </div>
 
             <input

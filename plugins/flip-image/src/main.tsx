@@ -31,7 +31,7 @@ async function flipHorizontally() {
     throw new Error("Result is not defined");
   }
 
-  await framer.addImage({
+  await framer.setImage({
     image: { bytes: result, mimeType },
   });
 

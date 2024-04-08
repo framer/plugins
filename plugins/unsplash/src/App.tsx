@@ -225,7 +225,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
   return (
     <div
-      className="overflow-auto relative"
+      className="overflow-auto relative flex-1"
       ref={scrollRef}
       onScroll={handleScroll}
     >
@@ -349,10 +349,10 @@ const AppErrorBoundary = ({ children }: PropsWithChildren<object>) => (
 );
 
 const placeholderHeights = [
-  [120, 70, 90],
-  [70, 140, 120],
-  [140, 60, 70],
-  [90, 130, 60]
+  [120, 70, 90, 86],
+  [70, 140, 120, 70],
+  [140, 60, 70, 90],
+  [90, 130, 60, 120]
 ];
 
 const Placeholders = ({ index }: { index: number }) => {
@@ -360,8 +360,8 @@ const Placeholders = ({ index }: { index: number }) => {
 
   return heights.map((height) => (
     <div key={height} className="animate-pulse">
-      <div className="bg-tertiary rounded-md" style={{ height }} />
-      <div className="mt-1 bg-tertiary rounded-md h-[8px]" />
+      <div className="bg-secondary rounded-md" style={{ height }} />
+      <div className="mt-1 bg-secondary rounded-md h-[8px]" />
     </div>
   ));
 };

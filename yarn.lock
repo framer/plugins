@@ -1944,7 +1944,7 @@ __metadata:
     eslint: "npm:^8"
     eslint-plugin-react-hooks: "npm:^4"
     eslint-plugin-react-refresh: "npm:^0"
-    framer-plugin: "npm:^0.1.0"
+    framer-plugin: "npm:^0.1.2"
     react: "npm:^18"
     react-dom: "npm:^18"
     typescript: "npm:^5.3.3"
@@ -2535,7 +2535,7 @@ __metadata:
     eslint: "npm:^8"
     eslint-plugin-react-hooks: "npm:^4"
     eslint-plugin-react-refresh: "npm:^0"
-    framer-plugin: "npm:^0.1.0"
+    framer-plugin: "npm:^0.1.2"
     react: "npm:^18"
     react-dom: "npm:^18"
     typescript: "npm:^5.3.3"
@@ -2617,15 +2617,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-plugin@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "framer-plugin@npm:0.1.0"
+"framer-plugin@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "framer-plugin@npm:0.1.2"
   dependencies:
     valibot: "npm:^0.29.0"
   peerDependencies:
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 10c0/856a07892b975b458ed59a4806219a6c3711a52e0d7642c4a946cc40c09e3d3916ee69396ff292b811fb3f65eec8b215ff24acce77d3b91842291c865cd3cb1c
+  checksum: 10c0/174996fbe1297ca785b4a191a5ce812967c6cec162c756067c59da3e6cebad3de84e1e5117f9c062b21ea8e39caa220c1cbda9c8f3b96460a8a0a80cc9d8f6e4
   languageName: node
   linkType: hard
 
@@ -2788,7 +2788,7 @@ __metadata:
     eslint-plugin-react-refresh: "npm:^0.4.5"
     framer-motion: "npm:^11.0.8"
     framer-motion-3d: "npm:^11.0.8"
-    framer-plugin: "npm:^0.1.0"
+    framer-plugin: "npm:^0.1.2"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     resolve-lygia: "npm:^1.0.4"
@@ -3697,7 +3697,7 @@ __metadata:
     eslint: "npm:^8.56.0"
     eslint-plugin-react-hooks: "npm:^4.6.0"
     eslint-plugin-react-refresh: "npm:^0.4.5"
-    framer-plugin: "npm:^0.1.0"
+    framer-plugin: "npm:^0.1.2"
     fuse.js: "npm:^7.0.0"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
@@ -3721,7 +3721,7 @@ __metadata:
     eslint-plugin-react-hooks: "npm:^4"
     eslint-plugin-react-refresh: "npm:^0"
     framer-motion: "npm:^11.0.8"
-    framer-plugin: "npm:^0.1.0"
+    framer-plugin: "npm:^0.1.2"
     react: "npm:^18"
     react-dom: "npm:^18"
     react-webcam: "npm:^7.2.0"
@@ -3796,7 +3796,7 @@ __metadata:
     eslint: "npm:^8"
     eslint-plugin-react-hooks: "npm:^4"
     eslint-plugin-react-refresh: "npm:^0"
-    framer-plugin: "npm:^0.1.0"
+    framer-plugin: "npm:^0.1.2"
     react: "npm:^18"
     react-dom: "npm:^18"
     typescript: "npm:^5.3.3"
@@ -4250,7 +4250,7 @@ __metadata:
     eslint: "npm:^8"
     eslint-plugin-react-hooks: "npm:^4"
     eslint-plugin-react-refresh: "npm:^0"
-    framer-plugin: "npm:^0.1.0"
+    framer-plugin: "npm:^0.1.2"
     prettier: "npm:^3.2.5"
     prettier-plugin-organize-imports: "npm:^3.2.4"
     react: "npm:^18"
@@ -4645,7 +4645,7 @@ __metadata:
     eslint: "npm:^8"
     eslint-plugin-react-hooks: "npm:^4"
     eslint-plugin-react-refresh: "npm:^0"
-    framer-plugin: "npm:^0.1.0"
+    framer-plugin: "npm:^0.1.2"
     prettier: "npm:^3.2.5"
     prettier-plugin-organize-imports: "npm:^3.2.4"
     react: "npm:^18"
@@ -4883,7 +4883,7 @@ __metadata:
     eslint: "npm:^8.57.0"
     eslint-plugin-react-hooks: "npm:^4.6.0"
     eslint-plugin-react-refresh: "npm:^0.4.6"
-    framer-plugin: "npm:^0.1.0"
+    framer-plugin: "npm:^0.1.2"
     lightningcss: "npm:^1.24.0"
     postcss: "npm:^8.4.37"
     react: "npm:^18"

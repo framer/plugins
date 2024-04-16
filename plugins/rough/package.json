@@ -13,7 +13,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
-        "framer-plugin": "^0.1.2",
+        "framer-plugin": "^0.1.3",
         "react": "^18",
         "react-dom": "^18",
         "roughjs": "^4.6.6",

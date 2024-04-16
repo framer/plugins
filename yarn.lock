@@ -2071,7 +2071,7 @@ __metadata:
     react: "npm:^18"
     react-dom: "npm:^18"
     typescript: "npm:^5.3.3"
-    vite: "npm:5.2.0-beta.0"
+    vite: "npm:5.1.7"
     vite-plugin-mkcert: "npm:^1"
   languageName: unknown
   linkType: soft
@@ -2662,7 +2662,7 @@ __metadata:
     react: "npm:^18"
     react-dom: "npm:^18"
     typescript: "npm:^5.3.3"
-    vite: "npm:^5.1.6"
+    vite: "npm:^5.1.7"
     vite-plugin-mkcert: "npm:^1"
   languageName: unknown
   linkType: soft
@@ -2918,7 +2918,7 @@ __metadata:
     spectral.js: "npm:^2.0.2"
     three: "npm:^0.162.0"
     typescript: "npm:^5.3.3"
-    vite: "npm:^5.1.6"
+    vite: "npm:^5.1.7"
     vite-plugin-mkcert: "npm:^1.17.4"
   languageName: unknown
   linkType: soft
@@ -3834,7 +3834,7 @@ __metadata:
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
     typescript: "npm:^5.3.3"
-    vite: "npm:^5.1.6"
+    vite: "npm:^5.1.7"
     vite-plugin-mkcert: "npm:^1.17.4"
   languageName: unknown
   linkType: soft
@@ -3858,7 +3858,7 @@ __metadata:
     react-dom: "npm:^18"
     react-webcam: "npm:^7.2.0"
     typescript: "npm:^5.3.3"
-    vite: "npm:^5.1.6"
+    vite: "npm:^5.1.7"
     vite-plugin-mkcert: "npm:^1"
   languageName: unknown
   linkType: soft
@@ -3932,7 +3932,7 @@ __metadata:
     react: "npm:^18"
     react-dom: "npm:^18"
     typescript: "npm:^5.3.3"
-    vite: "npm:^5.1.6"
+    vite: "npm:^5.1.7"
     vite-plugin-mkcert: "npm:^1"
   languageName: unknown
   linkType: soft
@@ -4389,7 +4389,7 @@ __metadata:
     react-dom: "npm:^18"
     roughjs: "npm:^4.6.6"
     typescript: "npm:^5.3.3"
-    vite: "npm:^5.1.6"
+    vite: "npm:^5.1.7"
     vite-plugin-mkcert: "npm:^1"
   languageName: unknown
   linkType: soft
@@ -4784,7 +4784,7 @@ __metadata:
     react-dom: "npm:^18"
     roughjs: "npm:^4.6.6"
     typescript: "npm:^5.3.3"
-    vite: "npm:^5.1.6"
+    vite: "npm:^5.1.7"
     vite-plugin-mkcert: "npm:^1"
   languageName: unknown
   linkType: soft
@@ -5047,7 +5047,7 @@ __metadata:
     tailwindcss: "npm:^3.4.1"
     typescript: "npm:^5.3.3"
     valibot: "npm:0.29.0"
-    vite: "npm:5.2.0-beta.0"
+    vite: "npm:5.1.7"
     vite-plugin-mkcert: "npm:^1"
   languageName: unknown
   linkType: soft
@@ -5139,14 +5139,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:5.2.0-beta.0":
-  version: 5.2.0-beta.0
-  resolution: "vite@npm:5.2.0-beta.0"
+"vite@npm:5.1.7":
+  version: 5.1.7
+  resolution: "vite@npm:5.1.7"
   dependencies:
-    esbuild: "npm:^0.20.1"
+    esbuild: "npm:^0.19.3"
     fsevents: "npm:~2.3.3"
     postcss: "npm:^8.4.35"
-    rollup: "npm:^4.13.0"
+    rollup: "npm:^4.2.0"
   peerDependencies:
     "@types/node": ^18.0.0 || >=20.0.0
     less: "*"
@@ -5175,7 +5175,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/6ca952c0333e13264db3e376c0a565fbaf824d8311f88c01861b2003277ea03376b57426b975403755dbc191a51fc437c3470fd4a3c8d77ddd7a43c6de17895d
+  checksum: 10c0/f64e1d8bcb237f600790c303447b95f0972e7c5377c0e1c38c1e62ef4864df2bff00c83315994da6e2e64fb51166199403a740b685c5b69a4af648b9244fc69c
   languageName: node
   linkType: hard
 
@@ -5219,14 +5219,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^5.1.6":
-  version: 5.1.6
-  resolution: "vite@npm:5.1.6"
+"vite@npm:^5.1.7":
+  version: 5.2.9
+  resolution: "vite@npm:5.2.9"
   dependencies:
-    esbuild: "npm:^0.19.3"
+    esbuild: "npm:^0.20.1"
     fsevents: "npm:~2.3.3"
-    postcss: "npm:^8.4.35"
-    rollup: "npm:^4.2.0"
+    postcss: "npm:^8.4.38"
+    rollup: "npm:^4.13.0"
   peerDependencies:
     "@types/node": ^18.0.0 || >=20.0.0
     less: "*"
@@ -5255,7 +5255,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/b935527544741d9313143a77f811d97b8b094757e42f9c02b7aca6294a4912674dbad5379e4759629b6ba895c93b5020cc7594f74b37846715336837fdce850a
+  checksum: 10c0/2bf8faa7ae84d5fffabc28b2b2462128a839b8a7ce6d4dde1794975c8c896443df49a54ef95ad8f0326457648426fd9317a618479ef28049cb195d91985729ed
   languageName: node
   linkType: hard
 

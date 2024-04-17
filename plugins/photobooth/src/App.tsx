@@ -1,23 +1,23 @@
-import { useCallback, useRef } from "react";
-import { framer } from "framer-plugin";
-import Webcam from "react-webcam";
-import { useAnimate } from "framer-motion";
-import "./App.css";
+import { useCallback, useRef } from "react"
+import { framer } from "framer-plugin"
+import Webcam from "react-webcam"
+import { useAnimate } from "framer-motion"
+import "./App.css"
 
 export function App() {
-  const webcamRef = useRef<any>(null);
-  const [scope, animate] = useAnimate();
+  const webcamRef = useRef<any>(null)
+  const [scope, animate] = useAnimate()
 
   const capture = useCallback(async () => {
     const image = webcamRef.current.getScreenshot({
       minWidth: 1280,
       minHeight: 720,
-    });
-    animate(".webcam-flash", { opacity: 1 });
+    })
+    animate(".webcam-flash", { opacity: 1 })
 
-    await framer.addImage({ image, name: "selfie" });
-    animate(".webcam-flash", { opacity: 0 }, { duration: 0.3 });
-  }, [webcamRef]);
+    await framer.setImage({ image, name: "selfie" })
+    animate(".webcam-flash", { opacity: 0 }, { duration: 0.3 })
+  }, [webcamRef])
 
   return (
     <main ref={scope}>
@@ -38,5 +38,5 @@ export function App() {
       </div>
       <button onClick={capture}>Take Selfie</button>
     </main>
-  );
+  )
 }

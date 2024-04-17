@@ -11,7 +11,7 @@ A collection of Framer Plugins.
 
 ![plugins](assets/plugins.png)
 
-Plugins in [Framer](https://www.framer.com/) are small apps that can interact with the Framer editor, enabling you to perform various actions such as inserting images, layers, and components or modifying anything on the canvas. This repository contains a selection of Plugins, capturing a wide range of use cases. The code for which can be found in the [/plugins](https://github.com/framer/plugins/tree/main/plugins) folder. Feel free to clone and build off the existing Plugins, or open a pulll reqest with contribution of your own.
+Plugins in [Framer](https://www.framer.com/) are small apps that can interact with the Framer editor, enabling you to perform various actions such as inserting images, layers, and components or modifying anything on the canvas. This repository contains a selection of Plugins, capturing a wide range of use cases. The code for which can be found in the [/plugins](https://github.com/framer/plugins/tree/main/plugins) folder. Feel free to clone and build off the existing Plugins, or open a pull reqest with contribution of your own.
 
 Check out [our documentation](https://developers.framer.wiki/docs/beta) to learn more.
 

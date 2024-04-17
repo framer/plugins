@@ -15,7 +15,16 @@ export function App() {
     })
     animate(".webcam-flash", { opacity: 1 })
 
-    await framer.setImage({ image, name: "selfie" })
+    const imageData = await getAssetDataFromUrl(image)
+
+    const mode = await framer.getMode()
+    if (mode === "image" || mode === "editImage") {
+      await framer.setImage({ image: imageData, name: "selfie" })
+      await framer.closePlugin()
+    } else {
+      await framer.addImage({ image: imageData, name: "selfie" })
+    }
+
     animate(".webcam-flash", { opacity: 0 }, { duration: 0.3 })
   }, [webcamRef])
 
@@ -39,4 +48,27 @@ export function App() {
       <button onClick={capture}>Take Selfie</button>
     </main>
   )
+}
+
+export async function getAssetDataFromUrl(url: string) {
+  const response = await fetch(url)
+  const blob = await response.blob()
+
+  const type = response.headers.get("Content-Type")
+  if (!type) {
+    throw new Error("Unknown content-type for file at URL")
+  }
+
+  if (!type.startsWith("image/")) {
+    throw new Error("Invalid image type")
+  }
+
+  const bytes = await new Response(blob)
+    .arrayBuffer()
+    .then((buffer) => new Uint8Array(buffer))
+
+  return {
+    mimeType: type,
+    bytes,
+  }
 }

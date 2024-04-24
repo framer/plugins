@@ -1,0 +1,82 @@
+/* Plugin CSS */
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px 15px 15px;
+  height: 100%;
+  gap: 15px;
+  position: relative;
+}
+
+/* Separator */
+main::after {
+  content: "";
+  position: absolute;
+  border-top: 1px solid var(--framer-color-divider);
+  top: 0;
+  left: 15px;
+  right: 15px;
+  pointer-events: none;
+}
+
+button {
+  border-radius: 8px;
+  border: none;
+  height: 30px;
+  padding: 0 15px;
+  font-size: 1em;
+  font-weight: 600;
+  font-family: inherit;
+  background-color: var(--framer-color-bg-secondary);
+  color: var(--framer-color-text);
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.interface {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  flex: 1;
+  margin-top: 15px;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Border */
+.interface::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.color {
+  flex: 1;
+  height: 100%;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  place-content: center;
+  place-items: center;
+}
+
+.placeholder p {
+  color: var(--framer-color-text-tertiary);
+}
+
+body[data-framer-theme="dark"] .interface::before {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}

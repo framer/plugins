@@ -12,9 +12,10 @@ if (!root) {
 
 void framer.showUI({
   position: "top right",
-  width: 360,
-  height: 615,
+  width: 260,
+  height: 500,
   resizable: "height",
+  title: "Remix Icons",
 });
 
 ReactDOM.createRoot(root).render(

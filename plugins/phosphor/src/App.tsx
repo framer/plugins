@@ -73,7 +73,6 @@ const fuse = new Fuse(icons, {
     "categories",
   ],
   threshold: 0.2, // Tweak this to what feels like the right number of results
-  // shouldSort: false,
   useExtendedSearch: true,
 });
 
@@ -94,15 +93,15 @@ function IconGrid(props: any) {
       const { Icon } = entry;
 
       const svg = renderToStaticMarkup(
-        <Icon size={32} color={"black"} weight={weight} />,
+        <Icon size={32} color={"black"} weight={weight} />
       );
 
       await framer.addSVG({
         svg,
-        name: "test.svg",
+        name: "Icon",
       });
     },
-    [weight],
+    [weight]
   );
 
   if (filteredIcons.length === 0) {
@@ -122,8 +121,9 @@ function IconGrid(props: any) {
           <Draggable
             data={() => ({
               type: "svg",
+              name: "Icon",
               svg: renderToStaticMarkup(
-                <Icon size={32} color={"black"} weight={weight} />,
+                <Icon size={32} color={"black"} weight={weight} />
               ),
             })}
             key={entry.name}

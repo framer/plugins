@@ -11,7 +11,7 @@ if (!root) {
 }
 
 void framer.showUI({
-  position: "top left",
+  position: "top right",
   width: 240,
   height: 445,
   resizable: true,

@@ -52,14 +52,14 @@ async function renderApp() {
 
         framer.showUI({
             width: 350,
-            height: 400,
+            height: 385,
         })
 
         ReactDOM.createRoot(root).render(
             <React.StrictMode>
                 <QueryClientProvider client={queryClient}>
                     <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
-                        <div className="h-[1px] border-b border-divider mx-2" />
+                        <div className="h-[1px] border-b border-divider mx-4" />
                         <div className="px-4 pt-4 w-full flex flex-col overflow-auto flex-1">
                             <Suspense fallback={<CenteredSpinner />}>
                                 <App config={pluginConfig} />

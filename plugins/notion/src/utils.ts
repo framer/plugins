@@ -58,7 +58,7 @@ export function formatDate(isoDateString: string) {
     // Example: Format as 'April 26, 2024 15:30'
     return date.toLocaleString("en-US", {
         day: "2-digit",
-        month: "long",
+        month: "numeric",
         year: "numeric",
         hour: "2-digit",
         minute: "2-digit",

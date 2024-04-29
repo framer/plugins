@@ -2,13 +2,15 @@ import "./globals.css"
 
 import React, { Suspense } from "react"
 import ReactDOM from "react-dom/client"
-import { App } from "./App.tsx"
-import { QueryErrorResetBoundary, QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { App } from "./App"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ErrorBoundary } from "react-error-boundary"
-import { CenteredSpinner } from "./components/CenteredSpinner.tsx"
-import { getPluginConfig } from "./notion.ts"
+import { CenteredSpinner } from "./components/CenteredSpinner"
+import { PluginContext, PluginContextUpdate, getPluginContext, synchronizeDatabase } from "./notion"
 
 import { framer } from "framer-plugin"
+import { logSyncResult } from "./debug.ts"
+import { ErrorBoundaryFallback } from "./components/ErrorBoundaryFallback"
 
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
@@ -21,58 +23,70 @@ const queryClient = new QueryClient({
     },
 })
 
-function ErrorBoundaryFallback() {
-    return (
-        <QueryErrorResetBoundary>
-            {({ reset }) => {
-                return (
-                    <div className="flex flex-col w-full h-full gap-2 items-center justify-center">
-                        <span>Something went wrong...</span>
-                        <button onClick={reset}>Try again</button>
-                    </div>
-                )
-            }}
-        </QueryErrorResetBoundary>
-    )
+function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is PluginContextUpdate {
+    if (pluginContext.type === "new") return false
+
+    if (!pluginContext.database) return false
+    if (pluginContext.hasChangedFields) return false
+    if (!pluginContext.slugFieldId) return false
+
+    return true
 }
 
-async function renderApp() {
+function renderPlugin(context: PluginContext) {
     const root = document.getElementById("root")
     if (!root) throw new Error("Root element not found")
 
-    const mode = await framer.getMode()
-    if (mode === "default") {
-        // TODO: Dont allow launching here
-        framer.closePlugin("This Plugin can only be started from CMS ")
-        return
-    }
+    framer.showUI({
+        width: 350,
+        height: 385,
+    })
 
-    try {
-        const pluginConfig = await getPluginConfig()
-
-        framer.showUI({
-            width: 350,
-            height: 385,
-        })
-
-        ReactDOM.createRoot(root).render(
-            <React.StrictMode>
-                <QueryClientProvider client={queryClient}>
+    ReactDOM.createRoot(root).render(
+        <React.StrictMode>
+            <QueryClientProvider client={queryClient}>
+                <div className="h-[1px] border-b border-divider mx-4" />
+                <div className="px-4 pt-4 w-full flex flex-col overflow-auto flex-1">
                     <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
-                        <div className="h-[1px] border-b border-divider mx-4" />
-                        <div className="px-4 pt-4 w-full flex flex-col overflow-auto flex-1">
-                            <Suspense fallback={<CenteredSpinner />}>
-                                <App config={pluginConfig} />
-                            </Suspense>
-                        </div>
+                        <Suspense fallback={<CenteredSpinner />}>
+                            <App context={context} />
+                        </Suspense>
                     </ErrorBoundary>
-                </QueryClientProvider>
-            </React.StrictMode>
-        )
+                </div>
+            </QueryClientProvider>
+        </React.StrictMode>
+    )
+}
+
+async function runPlugin() {
+    try {
+        const pluginContext = await getPluginContext()
+
+        // TODO: Sync VS Manage intent.
+        // TODO: Error state when sync
+        if (shouldSyncImmediately(pluginContext)) {
+            const result = await synchronizeDatabase(pluginContext.database, {
+                fields: pluginContext.collectionFields,
+                ignoredFieldIds: pluginContext.ignoredFieldIds,
+                lastSyncedTime: pluginContext.lastSyncedTime,
+                slugFieldId: pluginContext.slugFieldId,
+            })
+
+            logSyncResult(result)
+
+            await framer.closePlugin()
+            return
+        }
+
+        renderPlugin(pluginContext)
     } catch (error) {
         console.error("Plugin error:", error)
-        framer.closePlugin("Something went wrong during initialization")
+
+        const message = error instanceof Error ? error.message : String(error)
+        framer.closePlugin("An unexpected error ocurred: " + message, {
+            variant: "error",
+        })
     }
 }
 
-renderApp()
+runPlugin()

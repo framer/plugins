@@ -17,7 +17,7 @@ import { IconContext } from "react-icons";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // Colors
-import { Circle } from "@uiw/react-color";
+import { Circle, RgbaColor } from "@uiw/react-color";
 
 // Size
 import * as Slider from "@radix-ui/react-slider";
@@ -38,7 +38,7 @@ const fuse = new Fuse(icons, {
 });
 
 function IconGrid(props: any) {
-  const { searchQuery, color, size } = props;
+  const { searchQuery, color, size, background } = props;
 
   const deferredQuery = useDeferredValue(searchQuery);
 
@@ -73,6 +73,8 @@ function IconGrid(props: any) {
     );
   }
 
+  const rgbaString = `rgba(${background?.r}, ${background?.g}, ${background?.b}, 0.1)`;
+
   return (
     <div className="grid">
       {filteredIcons.map((entry: IconEntry) => {
@@ -94,6 +96,11 @@ function IconGrid(props: any) {
           >
             <button
               className="icon-parent"
+              style={{
+                background: !isNaN(background?.r)
+                  ? rgbaString
+                  : "var(--framer-color-bg-tertiary)",
+              }}
               onClick={() => handleIconClick(entry, color)}
             >
               <IconComponent size={`${size}px`} color={gridColor} />
@@ -108,6 +115,7 @@ function IconGrid(props: any) {
 export function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [hex, setHex] = useState("#000000");
+  const [rgba, setRGBA] = useState<RgbaColor>();
   const [size, setSize] = useState(32);
 
   function handleSliderChange(value: number[]) {
@@ -146,6 +154,7 @@ export function App() {
           className="color-picker"
           onChange={(color) => {
             setHex(color.hex);
+            setRGBA(color.rgba);
           }}
         />
       </div>
@@ -157,7 +166,6 @@ export function App() {
         max={48}
         step={4}
         onValueChange={handleSliderChange}
-        // onPointerDown={handlePointerDown}
         value={[size]}
       >
         <Slider.Track className="SliderTrack">
@@ -166,7 +174,6 @@ export function App() {
 
           <Slider.Range className="SliderRange" />
         </Slider.Track>
-        {/* <Slider.Thumb className="SliderThumb" /> */}
       </Slider.Root>
 
       <div className="grid-container">
@@ -177,7 +184,12 @@ export function App() {
               color: hex,
             }}
           >
-            <IconGrid searchQuery={searchQuery} color={hex} size={size} />
+            <IconGrid
+              searchQuery={searchQuery}
+              color={hex}
+              size={size}
+              background={rgba}
+            />
           </IconContext.Provider>
         </Suspense>
       </div>

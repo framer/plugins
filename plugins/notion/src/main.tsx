@@ -61,10 +61,11 @@ function renderPlugin(context: PluginContext) {
 async function runPlugin() {
     try {
         const pluginContext = await getPluginContext()
+        const mode = await framer.getMode()
 
         // TODO: Sync VS Manage intent.
         // TODO: Error state when sync
-        if (shouldSyncImmediately(pluginContext)) {
+        if (mode === "syncCollection" && shouldSyncImmediately(pluginContext)) {
             const result = await synchronizeDatabase(pluginContext.database, {
                 fields: pluginContext.collectionFields,
                 ignoredFieldIds: pluginContext.ignoredFieldIds,

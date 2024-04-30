@@ -116,6 +116,13 @@ export function getCollectionFieldForProperty(
                 name: property.name,
             }
         }
+        case "number": {
+            return {
+                type: "number",
+                id: property.id,
+                name: property.name,
+            }
+        }
         case "checkbox": {
             return {
                 type: "boolean",
@@ -175,7 +182,7 @@ export function getPropertyValue(
 
             return richTextToPlainText(property.title)
         case "number": {
-            return `${property.number}`
+            return property.number
         }
         case "url": {
             return property.url

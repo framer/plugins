@@ -1,8 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { framer } from "framer-plugin";
-import { ReactSketchCanvas } from "react-sketch-canvas";
+import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
 import * as Slider from "@radix-ui/react-slider";
-import { optimize } from "svgo";
 import "./App.css";
 
 function handleFocus(event: React.FocusEvent<HTMLInputElement>) {
@@ -14,27 +13,28 @@ const drawStyles = {
   backgroundColor: "transparent",
 };
 
+export async function getAssetDataFromSVG(svgString: string): Promise<string> {
+  const encodedSvg = encodeURIComponent(svgString);
+  const imageUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
+  return imageUrl;
+}
 export function App() {
-  const handleAddSvg = async (drawing) => {
-    const result = optimize(drawing, {
-      multipass: true,
-    });
-
-    const base64SVG = btoa(result.data);
-    const imageDataURI = `data:image/svg+xml;base64,${base64SVG}`;
-
+  const handleAddSvg = async (drawing: string) => {
+    // const base64SVG = btoa(drawing);
+    // const imageDataURI = `data:image/svg+xml;base64,${base64SVG}`;
+    const svgImage = await getAssetDataFromSVG(drawing);
     await framer.addImage({
-      image: imageDataURI,
+      image: svgImage,
       name: "Doodle",
     });
   };
 
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<ReactSketchCanvasRef>(null);
   const strokeInputRef = useRef<HTMLInputElement>(null);
   const strokeHueInputRef = useRef<HTMLInputElement>(null);
 
-  const [strokeValue, setStrokeValue] = useState(3);
-  const [strokeInputValue, setStrokeInputValue] = useState("3");
+  const [strokeValue, setStrokeValue] = useState(5);
+  const [strokeInputValue, setStrokeInputValue] = useState("5");
 
   const [strokeHueInputValue, setStrokeHueInputValue] = useState("0");
   const [strokeSaturateInputValue, setStrokeSaturateInputValue] = useState("0");
@@ -118,11 +118,48 @@ export function App() {
         />
       </div>
       <section className="flex">
+        <div className={"row history"}>
+          <p>History</p>
+          <button
+            onClick={() => {
+              if (!canvasRef.current) return;
+              canvasRef.current.undo();
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">
+              <path
+                fill="transparent"
+                stroke="var(--framer-color-text-secondary)"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.75"
+                d="M7 1 3 5l4 4"
+              />
+            </svg>
+          </button>
+          <button
+            onClick={() => {
+              if (!canvasRef.current) return;
+              canvasRef.current.redo();
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">
+              <path
+                fill="transparent"
+                stroke="var(--framer-color-text-secondary)"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.75"
+                d="m3 1 4 4-4 4"
+              />
+            </svg>
+          </button>
+        </div>
         <div className={"row"}>
           <p>Stroke</p>
           <input
             type="number"
-            placeholder="2"
+            placeholder="5"
             value={strokeInputValue}
             onChange={handleStrokeInput}
             onKeyDown={handleStrokeInputKeydown}
@@ -132,9 +169,9 @@ export function App() {
 
           <Slider.Root
             className="SliderRoot"
-            defaultValue={[80]}
+            defaultValue={[5]}
             min={1}
-            max={10}
+            max={20}
             step={1}
             onValueChange={handleStrokeSliderChange}
             value={[strokeValue]}
@@ -251,13 +288,11 @@ export function App() {
           </Slider.Root>
         </div>
       </section>
-      <div class="final-buttons">
+      <div className="final-buttons">
         <button
           onClick={() => {
-            if (canvasRef) {
-              if (!canvasRef.current) return;
-              canvasRef.current.resetCanvas();
-            }
+            if (!canvasRef.current) return;
+            canvasRef.current.resetCanvas();
           }}
         >
           Clear

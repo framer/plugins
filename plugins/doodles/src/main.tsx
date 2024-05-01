@@ -16,7 +16,7 @@ void framer.showUI({
   title: "Doodles",
   position: "top right",
   width: 260,
-  height: 454,
+  height: 494,
 });
 
 ReactDOM.createRoot(root).render(

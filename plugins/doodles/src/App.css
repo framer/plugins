@@ -19,7 +19,6 @@ button {
   font-size: 1em;
   font-weight: 600;
   font-family: inherit;
-  background-color: #09f;
   color: #fff;
   cursor: pointer;
   outline: none;
@@ -29,7 +28,7 @@ button {
 .frame-info {
   display: flex;
   /* padding: 15px; */
-  overflow-y: auto;
+  overflow: hidden;
   height: 230px;
   width: 100%;
   border-radius: 8px;
@@ -130,7 +129,7 @@ button,
 }
 
 .row input:focus {
-  box-shadow: inset 0 0 0 1px #09f;
+  box-shadow: inset 0 0 0 1px var(--framer-color-tint);
 }
 
 input::-webkit-outer-spin-button,
@@ -165,7 +164,7 @@ input::-webkit-inner-spin-button {
 
 .SliderRange {
   position: absolute;
-  background-color: #09f;
+  background-color: var(--framer-color-tint);
   border-radius: 2px;
   height: 2px;
 }
@@ -215,6 +214,20 @@ input::-webkit-inner-spin-button {
     0 2px 4px rgba(0, 0, 0, 0.1) !important;
   border-radius: 20px;
   transform: translate(0, 10.5px) !important;
+}
+
+/* History */
+.history button {
+  width: 62px;
+  font-weight: 500;
+  background-color: var(--framer-color-bg-secondary);
+  color: var(--framer-color-text);
+  display: flex;
+  place-items: center;
+  place-content: center;
+}
+.history button:active {
+  background-color: var(--framer-color-bg-tertiary);
 }
 
 /* Bottom */

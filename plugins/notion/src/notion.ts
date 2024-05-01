@@ -8,14 +8,19 @@ import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
 
 export type FieldId = string
 
-// TODO: Restrict to be a more specific notion proxy instead of just a CORS proxy
-const corsProxy = "https://cors-proxy.niekkruse70.workers.dev"
+const apiBaseUrl = "https://notion-plugin-api.niekkruse70.workers.dev"
+const oauthRedirectUrl = encodeURIComponent(`${apiBaseUrl}/auth/authorize/callback`)
+
+const getOauthURL = (writeKey: string) =>
+    `https://api.notion.com/v1/oauth/authorize?client_id=3504c5a7-9f75-4f87-aa1b-b735f8480432&response_type=code&owner=user&redirect_uri=${oauthRedirectUrl}&state=${writeKey}`
+
+// Storage for the notion API key.
+const notionBearerStorageKey = "notionBearerToken"
 
 // NOTE: Changing these keys can break behavior of existing plugins.
 const pluginDatabaseIdKey = "notionPluginDatabaseId"
 const pluginLastSyncedKey = "notionPluginLastSynced"
 const ignoredFieldIdsKey = "notionPluginIgnoredFieldIds"
-const pluginSlugIdKey = "notionPluginSlugId"
 
 // A page in database consists of blocks.
 // We allow configuration to include this as a field in the collection.
@@ -26,52 +31,79 @@ export const pageContentField: CollectionField = {
     name: "Content",
 }
 
-export const notionClient = new Client({
-    fetch: async (url, fetchInit) => {
-        try {
-            return await fetch(`${corsProxy}?url=${url}`, fetchInit)
-        } catch (error) {
-            console.log("Notion API error", error)
-            throw error
-        }
-    },
-    auth: import.meta.env.VITE_NOTION_INTEGRATION_SECRET,
-})
-
-interface SlugField {
-    name: string
-    id: FieldId
+// Naive implementation to be authenticated, a token could be expired.
+// For simplicity we just close the plugin and clear storage in that case.
+export function isAuthenticated() {
+    return localStorage.getItem(notionBearerStorageKey) !== null
 }
 
-/**
- * Given a Notion Database returns a list of possible fields that can be used as
- * a slug. And a suggested field id to use as a slug.
- */
-export function getPossibleSlugFields(database: GetDatabaseResponse) {
-    let suggestedFieldId: FieldId | null = null
-    const options: SlugField[] = []
+let notion: Client | null = null
+if (isAuthenticated()) {
+    initNotionClient()
+}
 
-    for (const key in database.properties) {
-        const property = database.properties[key]
-        assert(property)
+export function initNotionClient() {
+    const token = localStorage.getItem(notionBearerStorageKey)
+    if (!token) throw new Error("Notion API token is missing")
 
-        const field: SlugField = {
-            name: property.name,
-            id: property.id,
-        }
+    notion = new Client({
+        fetch: async (url, fetchInit) => {
+            const urlObj = new URL(url)
 
-        switch (property.type) {
-            // TODO: Other field types that qualify as slug?
-            case "unique_id":
-                options.push(field)
-                break
-            case "title":
-                options.push(field)
-                suggestedFieldId = field.id
-        }
-    }
+            try {
+                const resp = await fetch(`${apiBaseUrl}/notion${urlObj.pathname}${urlObj.search}`, fetchInit)
 
-    return { options, suggestedFieldId }
+                // If status is unauthorized, clear the token
+                // And we close the plugin (for now)
+                // TODO: Improve this flow in the plugin.
+                if (resp.status === 401) {
+                    localStorage.removeItem(notionBearerStorageKey)
+                    await framer.closePlugin("Notion Authorization Failed. Re-open the plugin to re-authorize.", {
+                        variant: "error",
+                    })
+                    return resp
+                }
+
+                return resp
+            } catch (error) {
+                console.log("Notion API error", error)
+                throw error
+            }
+        },
+        auth: token,
+    })
+}
+
+export function getNotionClient() {
+    if (!notion) throw new Error("Notion Client was used before it was initialized")
+
+    return notion
+}
+
+// Authorize the plugin with Notion.
+export async function authorize() {
+    const resp = await fetch(`${apiBaseUrl}/auth/authorize`, {
+        method: "POST",
+    })
+
+    const { readKey, writeKey } = await resp.json()
+    return new Promise<void>(resolve => {
+        window.open(getOauthURL(writeKey), "_blank")
+
+        // Poll for the authorization status
+        const interval = setInterval(async () => {
+            const resp = await fetch(`${apiBaseUrl}/auth/authorize/${readKey}`)
+
+            const { token } = await resp.json()
+
+            if (resp.status === 200 && token) {
+                clearInterval(interval)
+                localStorage.setItem(notionBearerStorageKey, token)
+                initNotionClient()
+                resolve()
+            }
+        }, 2500)
+    })
 }
 
 /**
@@ -83,13 +115,6 @@ export function getCollectionFieldForProperty(
 ): CollectionField | null {
     switch (property.type) {
         case "email":
-        case "title": {
-            return {
-                type: "string",
-                id: property.id,
-                name: property.name,
-            }
-        }
         case "rich_text": {
             return {
                 type: "formattedText",
@@ -137,6 +162,9 @@ export function getCollectionFieldForProperty(
                 name: property.name,
             }
         }
+        case "title":
+            // The "title" field is required in Notion and is always used to set the "title" on the CMS item.
+            return null
         case "multi_select":
         default: {
             // TODO: Support more types
@@ -197,7 +225,6 @@ export function getPropertyValue(
 }
 
 export interface SynchronizeMutationOptions {
-    slugFieldId: string
     fields: CollectionField[]
     ignoredFieldIds: string[]
     lastSyncedTime: string | null
@@ -220,7 +247,9 @@ export interface SynchronizeResult extends SyncStatus {
 }
 
 async function getPageBlocksAsRichText(pageId: string) {
-    const blocks = await collectPaginatedAPI(notionClient.blocks.children.list, {
+    assert(notion, "Notion client is not initialized")
+
+    const blocks = await collectPaginatedAPI(notion.blocks.children.list, {
         block_id: pageId,
     })
 
@@ -232,12 +261,13 @@ async function getPageBlocksAsRichText(pageId: string) {
 async function processItem(
     item: PageObjectResponse,
     fieldsById: FieldsById,
-    slugFieldId: string,
     status: SyncStatus,
     unsyncedItemIds: Set<string>,
     lastSyncedTime: string | null
 ): Promise<CollectionItem | null> {
-    let slugValue = null
+    let slugValue: null | string = null
+    let titleValue: null | string = null
+
     const fieldData: Record<string, unknown> = {}
 
     unsyncedItemIds.delete(item.id)
@@ -255,12 +285,14 @@ async function processItem(
         const property = item.properties[key]
         assert(property)
 
-        if (property.id === slugFieldId) {
-            const resolvedSlug = getPropertyValue(property, { supportsHtml: false })
-            if (!resolvedSlug || typeof resolvedSlug !== "string") {
+        if (property.type === "title") {
+            const resolvedTitle = getPropertyValue(property, { supportsHtml: false })
+            if (!resolvedTitle || typeof resolvedTitle !== "string") {
                 continue
             }
-            slugValue = slugify(resolvedSlug)
+
+            titleValue = resolvedTitle
+            slugValue = slugify(resolvedTitle)
         }
 
         const field = fieldsById.get(property.id)
@@ -286,11 +318,10 @@ async function processItem(
         fieldData[pageContentField.id] = contentHTML
     }
 
-    if (!slugValue) {
+    if (!slugValue || !titleValue) {
         status.warnings.push({
             url: item.url,
-            fieldId: slugFieldId,
-            message: "Slug value is missing. Skipping item.",
+            message: "Slug & Title is missing. Skipping item.",
         })
         return null
     }
@@ -299,6 +330,7 @@ async function processItem(
         id: item.id,
         fieldData,
         slug: slugValue,
+        title: titleValue,
     }
 }
 
@@ -309,7 +341,6 @@ async function processAllItems(
     data: PageObjectResponse[],
     fieldsByKey: FieldsById,
     unsyncedItemIds: Set<FieldId>,
-    slugFieldId: FieldId,
     concurrencyLimit = 5,
     lastSyncedDate: string | null
 ) {
@@ -320,7 +351,7 @@ async function processAllItems(
         warnings: [],
     }
     const promises = data.map(item =>
-        limit(() => processItem(item, fieldsByKey, slugFieldId, status, unsyncedItemIds, lastSyncedDate))
+        limit(() => processItem(item, fieldsByKey, status, unsyncedItemIds, lastSyncedDate))
     )
     const results = await Promise.all(promises)
 
@@ -334,9 +365,10 @@ async function processAllItems(
 
 export async function synchronizeDatabase(
     database: GetDatabaseResponse,
-    { slugFieldId, fields, ignoredFieldIds, lastSyncedTime }: SynchronizeMutationOptions
+    { fields, ignoredFieldIds, lastSyncedTime }: SynchronizeMutationOptions
 ): Promise<SynchronizeResult> {
     assert(database)
+    assert(notion)
 
     const collection = await framer.getCollection()
     await collection.setFields(fields)
@@ -348,20 +380,13 @@ export async function synchronizeDatabase(
 
     const unsyncedItemIds = new Set(await collection.getItemIds())
 
-    const data = await collectPaginatedAPI(notionClient.databases.query, {
+    const data = await collectPaginatedAPI(notion.databases.query, {
         database_id: database.id,
     })
 
     assert(data.every(isFullPage), "Response is not a full page")
 
-    const { collectionItems, status } = await processAllItems(
-        data,
-        fieldsById,
-        unsyncedItemIds,
-        slugFieldId,
-        5,
-        lastSyncedTime
-    )
+    const { collectionItems, status } = await processAllItems(data, fieldsById, unsyncedItemIds, 5, lastSyncedTime)
 
     console.log("Submitting database")
     console.table(collectionItems)
@@ -374,7 +399,6 @@ export async function synchronizeDatabase(
     await collection.setPluginData(ignoredFieldIdsKey, JSON.stringify(ignoredFieldIds))
     await collection.setPluginData(pluginDatabaseIdKey, database.id)
     await collection.setPluginData(pluginLastSyncedKey, new Date().toISOString())
-    await collection.setPluginData(pluginSlugIdKey, slugFieldId)
 
     return {
         status: status.errors.length === 0 ? "success" : "completed_with_errors",
@@ -402,10 +426,12 @@ export function useSynchronizeDatabaseMutation(
 }
 
 export function useDatabasesQuery() {
+    assert(notion)
     return useQuery({
         queryKey: ["databases"],
         queryFn: async () => {
-            const results = await collectPaginatedAPI(notionClient.search, {
+            assert(notion)
+            const results = await collectPaginatedAPI(notion.search, {
                 filter: {
                     property: "object",
                     value: "database",
@@ -420,6 +446,7 @@ export function useDatabasesQuery() {
 interface PluginContextNew {
     type: "new"
     collection: Collection
+    isAuthenticated: boolean
 }
 
 export interface PluginContextUpdate {
@@ -430,7 +457,7 @@ export interface PluginContextUpdate {
     lastSyncedTime: string
     hasChangedFields: boolean
     ignoredFieldIds: FieldId[]
-    slugFieldId: FieldId
+    isAuthenticated: boolean
 }
 
 export type PluginContext = PluginContextNew | PluginContextUpdate
@@ -457,6 +484,8 @@ function getSuggestedFieldsForDatabase(database: GetDatabaseResponse, ignoredFie
         const property = database.properties[key]
         assert(property)
 
+        if (property.type === "title") continue
+
         const field = getCollectionFieldForProperty(property)
         if (field) {
             fields.push(field)
@@ -470,22 +499,24 @@ export async function getPluginContext(): Promise<PluginContext> {
     const collection = await framer.getCollection()
     const collectionFields = await collection.getFields()
     const databaseId = await collection.getPluginData(pluginDatabaseIdKey)
+    const hasAuthToken = isAuthenticated()
 
-    if (!databaseId) {
+    if (!databaseId || !hasAuthToken) {
         return {
             type: "new",
             collection,
+            isAuthenticated: hasAuthToken,
         }
     }
 
-    const database = await notionClient.databases.retrieve({ database_id: databaseId })
-    const slugFieldId = await collection.getPluginData(pluginSlugIdKey)
+    assert(notion, "Notion client is not initialized")
+    const database = await notion.databases.retrieve({ database_id: databaseId })
+
     const rawIgnoredFieldIds = await collection.getPluginData(ignoredFieldIdsKey)
     const lastSyncedTime = await collection.getPluginData(pluginLastSyncedKey)
 
     const ignoredFieldIds = getIgnoredFieldIds(rawIgnoredFieldIds)
 
-    assert(slugFieldId, "Expected slug field ID to be set")
     assert(lastSyncedTime, "Expected last synced time to be set")
 
     return {
@@ -494,9 +525,9 @@ export async function getPluginContext(): Promise<PluginContext> {
         collection,
         collectionFields,
         ignoredFieldIds,
-        slugFieldId,
         lastSyncedTime,
         hasChangedFields: hasFieldConfigurationChanged(collectionFields, database, ignoredFieldIds),
+        isAuthenticated: hasAuthToken,
     }
 }
 

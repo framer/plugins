@@ -26,6 +26,7 @@ export default {
                 fieldPicker: `16px 1fr 8px 1fr`,
             },
             fontSize: {
+                md: "12px",
                 "2xs": "10px",
             },
         },

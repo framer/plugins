@@ -1,6 +1,6 @@
 import "./globals.css"
 
-import React, { Suspense } from "react"
+import React, { ReactNode, Suspense } from "react"
 import ReactDOM from "react-dom/client"
 import { App } from "./App"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -28,29 +28,20 @@ function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is P
 
     if (!pluginContext.database) return false
     if (pluginContext.hasChangedFields) return false
-    if (!pluginContext.slugFieldId) return false
 
     return true
 }
 
-function renderPlugin(context: PluginContext) {
+function renderPlugin(app: ReactNode) {
     const root = document.getElementById("root")
     if (!root) throw new Error("Root element not found")
-
-    framer.showUI({
-        width: 350,
-        height: 385,
-    })
 
     ReactDOM.createRoot(root).render(
         <React.StrictMode>
             <QueryClientProvider client={queryClient}>
-                <div className="h-[1px] border-b border-divider mx-4" />
-                <div className="px-4 pt-4 w-full flex flex-col overflow-auto flex-1">
+                <div className="px-4 w-full flex flex-col overflow-auto flex-1">
                     <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
-                        <Suspense fallback={<CenteredSpinner />}>
-                            <App context={context} />
-                        </Suspense>
+                        <Suspense fallback={<CenteredSpinner />}>{app}</Suspense>
                     </ErrorBoundary>
                 </div>
             </QueryClientProvider>
@@ -63,14 +54,11 @@ async function runPlugin() {
         const pluginContext = await getPluginContext()
         const mode = await framer.getMode()
 
-        // TODO: Sync VS Manage intent.
-        // TODO: Error state when sync
         if (mode === "syncCollection" && shouldSyncImmediately(pluginContext)) {
             const result = await synchronizeDatabase(pluginContext.database, {
                 fields: pluginContext.collectionFields,
                 ignoredFieldIds: pluginContext.ignoredFieldIds,
                 lastSyncedTime: pluginContext.lastSyncedTime,
-                slugFieldId: pluginContext.slugFieldId,
             })
 
             logSyncResult(result)
@@ -79,7 +67,11 @@ async function runPlugin() {
             return
         }
 
-        renderPlugin(pluginContext)
+        framer.showUI({
+            width: 350,
+            height: pluginContext.isAuthenticated ? 370 : 340,
+        })
+        renderPlugin(<App context={pluginContext} />)
     } catch (error) {
         console.error("Plugin error:", error)
 

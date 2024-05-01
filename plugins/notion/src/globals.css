@@ -129,7 +129,6 @@ input[type="checkbox"] {
     appearance: none;
     width: 12px;
     height: 12px;
-    margin: 0;
     padding: 0;
     border-radius: 4px;
     border: 1px solid var(--framer-color-border);
@@ -199,16 +198,20 @@ button {
     transition: background-color 0.2s;
 }
 
-button:focus,
-button:hover {
+button:focus:not(:disabled),
+button:hover:not(:disabled) {
     background-color: var(--framer-color-bg-secondary);
 }
 
-button:active {
+button:active:not(:disabled) {
     background-color: #ddd;
 }
 
-[data-framer-theme="dark"] button:active {
+button:disabled {
+    opacity: 0.5;
+}
+
+[data-framer-theme="dark"] button:active(:disabled) {
     background-color: #232323;
 }
 
@@ -353,12 +356,12 @@ input::file-selector-button:hover {
     background-color: var(--framer-color-tint);
 }
 
-.framer-button-primary:hover,
-.framer-button-primary:focus {
+.framer-button-primary:hover:not(:disabled),
+.framer-button-primary:focus:not(:disabled) {
     background-color: var(--framer-color-tint-dark);
 }
 
-.framer-button-primary:active {
+.framer-button-primary:active:not(:disabled) {
     background-color: var(--framer-color-tint-extra-dark, #0077ff);
 }
 

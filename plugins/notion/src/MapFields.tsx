@@ -5,14 +5,15 @@ import {
     PluginContext,
     SynchronizeMutationOptions,
     getCollectionFieldForProperty,
-    getPossibleSlugFields,
     hasFieldConfigurationChanged,
     pageContentField,
+    richTextToPlainText,
 } from "./notion"
-import { Fragment, useMemo, useState } from "react"
+import { Fragment, useState } from "react"
 import classNames from "classnames"
 import { IconChevron } from "./components/Icons"
-import { Spinner } from "./components/Spinner"
+import { Button } from "./components/Button"
+import { isFullDatabase } from "@notionhq/client"
 
 interface CollectionFieldConfig {
     field: CollectionField | null
@@ -50,6 +51,8 @@ function createFieldConfig(database: GetDatabaseResponse, pluginContext: PluginC
         const property = database.properties[key]
         assert(property)
 
+        if (property.type === "title") continue
+
         result.push({
             field: getCollectionFieldForProperty(property),
             originalFieldName: property.name,
@@ -82,8 +85,6 @@ export function MapDatabaseFields({
     isLoading: boolean
     pluginContext: PluginContext
 }) {
-    const { options: slugFieldOptions, suggestedFieldId } = useMemo(() => getPossibleSlugFields(database), [database])
-
     const [fieldConfig] = useState<CollectionFieldConfig[]>(() => createFieldConfig(database, pluginContext))
     const [disabledFieldIds, setDisabledFieldIds] = useState(
         () => new Set<string>(pluginContext.type === "new" ? [] : pluginContext.ignoredFieldIds)
@@ -91,7 +92,8 @@ export function MapDatabaseFields({
     const [fieldNameOverrides, setFieldNameOverrides] = useState<Record<string, string>>(() =>
         getFieldNameOverrides(pluginContext)
     )
-    const [slugFieldId, setSlugFieldId] = useState<string | null>(suggestedFieldId)
+
+    assert(isFullDatabase(database))
 
     const handleFieldToggle = (key: string) => {
         setDisabledFieldIds(current => {
@@ -118,8 +120,6 @@ export function MapDatabaseFields({
 
         if (isLoading) return
 
-        assert(slugFieldId)
-
         const allFields = fieldConfig
             .filter(fieldConfig => fieldConfig.field && !disabledFieldIds.has(fieldConfig.field.id))
             .map(fieldConfig => fieldConfig.field)
@@ -140,7 +140,6 @@ export function MapDatabaseFields({
                 : pluginContext.lastSyncedTime
 
         onSubmit({
-            slugFieldId,
             fields: allFields,
             ignoredFieldIds: Array.from(disabledFieldIds),
             lastSyncedTime: lastSyncedTime,
@@ -149,25 +148,18 @@ export function MapDatabaseFields({
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 flex-1">
+            <div className="h-[1px] border-b border-divider mb-2" />
             <div className="flex-1 flex flex-col gap-4">
-                <div className="flex flex-col gap-2 w-full">
-                    <label htmlFor="collectionName">Slug Field</label>
-                    <select
-                        className="w-full"
-                        value={slugFieldId ?? ""}
-                        onChange={e => setSlugFieldId(e.target.value)}
-                        required
-                    >
-                        {slugFieldOptions.map(field => (
-                            <option key={field.id} value={field.id}>
-                                {field.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
                 <div className="grid grid-cols-fieldPicker gap-3 w-full items-center justify-center">
                     <span className="col-start-2 col-span-2">Notion Property</span>
                     <span>Collection Field</span>
+                    <input type="checkbox" readOnly checked={true} className="opacity-50 mx-auto" />
+                    <input type="text" className="w-full opacity-50" disabled value={"Title"} />
+                    <div className="flex items-center justify-center opacity-50">
+                        <IconChevron />
+                    </div>
+                    <input type="" className={"w-full opacity-50"} disabled={true} placeholder={"Title"}></input>
+
                     {fieldConfig.map(fieldConfig => {
                         const isUnsupported = !fieldConfig.field
 
@@ -177,7 +169,7 @@ export function MapDatabaseFields({
                                     type="checkbox"
                                     disabled={!fieldConfig.field}
                                     checked={!!fieldConfig.field && !disabledFieldIds.has(fieldConfig.field.id)}
-                                    className={classNames(isUnsupported && "opacity-50")}
+                                    className={classNames("mx-auto", isUnsupported && "opacity-50")}
                                     onChange={() => {
                                         assert(fieldConfig.field)
 
@@ -220,15 +212,21 @@ export function MapDatabaseFields({
                 </div>
             </div>
 
-            <div className="left-0 bottom-0 w-full flex justify-end sticky bg-primary py-4 border-t border-divider border-opacity-20 items-center">
-                <button type="submit" className="w-auto framer-button-primary relative">
-                    <span className={isLoading ? "invisible" : undefined}>Import</span>
-                    {isLoading && (
-                        <div className="absolute top-0 right-0 left-0 bottom-0 flex items-center justify-center">
-                            <Spinner />
-                        </div>
-                    )}
-                </button>
+            <div className="left-0 bottom-0 w-full flex justify-between sticky bg-primary py-4 border-t border-divider border-opacity-20 items-center">
+                <div className="inline-flex items-center gap-1">
+                    <span className="text-tertiary">Importing from</span>
+                    <a
+                        href={database.url}
+                        className="font-semibold text-secondary hover:text-primary"
+                        target="_blank"
+                        tabIndex={-1}
+                    >
+                        {richTextToPlainText(database.title)}
+                    </a>
+                </div>
+                <Button variant="primary" isLoading={isLoading} className="w-auto">
+                    Import
+                </Button>
             </div>
         </form>
     )

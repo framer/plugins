@@ -7,8 +7,13 @@ import { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import { SelectDatabase } from "./SelectDatabase"
 import { MapDatabaseFields } from "./MapFields"
 import { logSyncResult } from "./debug"
+import { Authentication } from "./Authenticate"
 
-export function App({ context }: { context: PluginContext }) {
+interface AppProps {
+    context: PluginContext
+}
+
+export function AuthenticatedApp({ context }: { context: PluginContext }) {
     const [databaseConfig, setDatabaseConfig] = useState<GetDatabaseResponse | null>(() =>
         context.type === "new" ? null : context.database
     )
@@ -46,4 +51,24 @@ export function App({ context }: { context: PluginContext }) {
             isLoading={synchronizeMutation.isPending}
         />
     )
+}
+
+export function App({ context }: AppProps) {
+    const [isAuthenticated, setIsAuthenticated] = useState(context.isAuthenticated)
+    const [appContext, setAppContext] = useState(context)
+
+    const handleAuthenticated = (authenticatedContxt: PluginContext) => {
+        setAppContext(authenticatedContxt)
+        framer.showUI({
+            width: 350,
+            height: 369,
+        })
+        setIsAuthenticated(true)
+    }
+
+    if (!isAuthenticated) {
+        return <Authentication onAuthenticated={handleAuthenticated} />
+    }
+
+    return <AuthenticatedApp context={appContext} />
 }

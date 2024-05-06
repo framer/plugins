@@ -16,7 +16,7 @@ import cx from "classnames";
 import { SearchIcon } from "./icons";
 import { Blurhash } from "react-blurhash";
 
-const mode = await framer.getMode();
+const mode = framer.mode;
 
 const minWindowWidth = mode === "default" ? 350 : 600;
 const minColumnWidth = 100;
@@ -38,7 +38,7 @@ export function App() {
 
   const addRandomMutation = useMutation({
     mutationFn: async (query: string) => {
-      const mode = await framer.getMode();
+      const mode = framer.mode;
       const randomPhoto = await getRandomPhoto(query);
 
       if (mode === "default") {
@@ -119,7 +119,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
   const addPhotoMutation = useMutation({
     mutationFn: async (photo: UnsplashPhoto) => {
-      const mode = await framer.getMode();
+      const mode = framer.mode;
 
       if (mode === "default") {
         await framer.addImage({

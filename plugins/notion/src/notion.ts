@@ -475,14 +475,18 @@ function getIgnoredFieldIds(rawIgnoredFields: string | null) {
 }
 
 function getSuggestedFieldsForDatabase(database: GetDatabaseResponse, ignoredFieldIds: FieldId[]) {
-    const fields: CollectionField[] = [pageContentField]
+    const fields: CollectionField[] = []
+
+    if (!ignoredFieldIds.includes(pageContentField.id)) {
+        fields.push(pageContentField)
+    }
 
     for (const key in database.properties) {
-        // These fields were ignored by the user
-        if (ignoredFieldIds.includes(key)) continue
-
         const property = database.properties[key]
         assert(property)
+
+        // These fields were ignored by the user
+        if (ignoredFieldIds.includes(property.id)) continue
 
         if (property.type === "title") continue
 
@@ -542,10 +546,11 @@ export function hasFieldConfigurationChanged(
     }
 
     const suggestedFields = getSuggestedFieldsForDatabase(database, ignoredFieldIds)
+    if (suggestedFields.length !== currentConfig.length) return true
+
     const includedFields = suggestedFields.filter(field => currentFieldsById.has(field.id))
 
-    if (includedFields.length !== currentConfig.length) return true
-    for (const field of suggestedFields) {
+    for (const field of includedFields) {
         const currentField = currentFieldsById.get(field.id)
 
         if (!currentField) return true

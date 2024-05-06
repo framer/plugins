@@ -17,7 +17,7 @@ export function App() {
 
     const imageData = await getAssetDataFromUrl(image)
 
-    const mode = await framer.getMode()
+    const mode = framer.mode
     if (mode === "image" || mode === "editImage") {
       await framer.setImage({ image: imageData, name: "selfie" })
       await framer.closePlugin()

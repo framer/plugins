@@ -52,7 +52,7 @@ function renderPlugin(app: ReactNode) {
 async function runPlugin() {
     try {
         const pluginContext = await getPluginContext()
-        const mode = await framer.getMode()
+        const mode = framer.mode
 
         if (mode === "syncCollection" && shouldSyncImmediately(pluginContext)) {
             const result = await synchronizeDatabase(pluginContext.database, {

@@ -1,17 +1,20 @@
 import { useState } from "react"
-import { PluginContext, authorize, getPluginContext } from "./notion"
+import { PluginContext, authorize, getOauthURL, getPluginContext } from "./notion"
 import loginIllustration from "./assets/notion-login.png"
 import { Button } from "./components/Button"
+import { generateRandomId } from "./utils"
 
 export function Authentication({ onAuthenticated }: { onAuthenticated: (context: PluginContext) => void }) {
+    const [readKey] = useState(() => generateRandomId())
+    const [writeKey] = useState(() => generateRandomId())
+
     const [isLoading, setIsLoading] = useState(false)
 
-    const handleAuth = async () => {
+    const handleAuth = () => {
         try {
             setIsLoading(true)
-            await authorize()
-            const authenticatedContext = await getPluginContext()
-            onAuthenticated(authenticatedContext)
+            window.open(getOauthURL(writeKey), "_blank")
+            authorize({ readKey, writeKey }).then(getPluginContext).then(onAuthenticated)
         } finally {
             setIsLoading(false)
         }

@@ -2,14 +2,16 @@ import { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import { CollectionField } from "framer-plugin"
 import { assert, isDefined } from "./utils"
 import {
+    NotionProperty,
     PluginContext,
     SynchronizeMutationOptions,
     getCollectionFieldForProperty,
+    getPossibleSlugFields,
     hasFieldConfigurationChanged,
     pageContentField,
     richTextToPlainText,
 } from "./notion"
-import { Fragment, useState } from "react"
+import { Fragment, useMemo, useState } from "react"
 import classNames from "classnames"
 import { IconChevron } from "./components/Icons"
 import { Button } from "./components/Button"
@@ -74,6 +76,12 @@ function getFieldNameOverrides(pluginContext: PluginContext): Record<string, str
     return result
 }
 
+function getInitialSlugFieldId(ctx: PluginContext, fieldOptions: NotionProperty[]): string | null {
+    if (ctx.type === "update" && ctx.slugFieldId) return ctx.slugFieldId
+
+    return fieldOptions[0]?.id
+}
+
 export function MapDatabaseFields({
     database,
     onSubmit,
@@ -85,6 +93,10 @@ export function MapDatabaseFields({
     isLoading: boolean
     pluginContext: PluginContext
 }) {
+    const slugFields = useMemo(() => getPossibleSlugFields(database), [database])
+    const [slugFieldId, setSlugFieldId] = useState<string | null>(() =>
+        getInitialSlugFieldId(pluginContext, slugFields)
+    )
     const [fieldConfig] = useState<CollectionFieldConfig[]>(() => createFieldConfig(database, pluginContext))
     const [disabledFieldIds, setDisabledFieldIds] = useState(
         () => new Set<string>(pluginContext.type === "new" ? [] : pluginContext.ignoredFieldIds)
@@ -132,9 +144,12 @@ export function MapDatabaseFields({
                 return field
             })
 
+        assert(slugFieldId)
+
         // Always synchronize everything if field configuration changes.
         const lastSyncedTime =
             pluginContext.type === "new" ||
+            pluginContext.slugFieldId !== slugFieldId ||
             hasFieldConfigurationChanged(pluginContext.collectionFields, database, Array.from(disabledFieldIds))
                 ? null
                 : pluginContext.lastSyncedTime
@@ -142,14 +157,30 @@ export function MapDatabaseFields({
         onSubmit({
             fields: allFields,
             ignoredFieldIds: Array.from(disabledFieldIds),
+            slugFieldId,
             lastSyncedTime: lastSyncedTime,
         })
     }
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 flex-1">
-            <div className="h-[1px] border-b border-divider mb-2" />
+            <div className="h-[1px] border-b border-divider mb-2 sticky top-0" />
             <div className="flex-1 flex flex-col gap-4">
+                <div className="flex flex-col gap-2 w-full">
+                    <label htmlFor="collectionName">Slug Field</label>
+                    <select
+                        className="w-full"
+                        value={slugFieldId ?? ""}
+                        onChange={e => setSlugFieldId(e.target.value)}
+                        required
+                    >
+                        {slugFields.map(field => (
+                            <option key={field.id} value={field.id}>
+                                {field.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
                 <div className="grid grid-cols-fieldPicker gap-3 w-full items-center justify-center">
                     <span className="col-start-2 col-span-2">Notion Property</span>
                     <span>Collection Field</span>
@@ -224,7 +255,7 @@ export function MapDatabaseFields({
                         {richTextToPlainText(database.title)}
                     </a>
                 </div>
-                <Button variant="primary" isLoading={isLoading} className="w-auto">
+                <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-auto">
                     Import
                 </Button>
             </div>

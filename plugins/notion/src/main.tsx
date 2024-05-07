@@ -11,6 +11,7 @@ import { PluginContext, PluginContextUpdate, getPluginContext, synchronizeDataba
 import { framer } from "framer-plugin"
 import { logSyncResult } from "./debug.ts"
 import { ErrorBoundaryFallback } from "./components/ErrorBoundaryFallback"
+import { assert } from "./utils.ts"
 
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
@@ -27,6 +28,7 @@ function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is P
     if (pluginContext.type === "new") return false
 
     if (!pluginContext.database) return false
+    if (!pluginContext.slugFieldId) return false
     if (pluginContext.hasChangedFields) return false
 
     return true
@@ -55,10 +57,13 @@ async function runPlugin() {
         const mode = framer.mode
 
         if (mode === "syncCollection" && shouldSyncImmediately(pluginContext)) {
+            assert(pluginContext.slugFieldId)
+
             const result = await synchronizeDatabase(pluginContext.database, {
                 fields: pluginContext.collectionFields,
                 ignoredFieldIds: pluginContext.ignoredFieldIds,
                 lastSyncedTime: pluginContext.lastSyncedTime,
+                slugFieldId: pluginContext.slugFieldId,
             })
 
             logSyncResult(result)

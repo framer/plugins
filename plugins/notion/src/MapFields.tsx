@@ -16,6 +16,7 @@ import classNames from "classnames"
 import { IconChevron } from "./components/Icons"
 import { Button } from "./components/Button"
 import { isFullDatabase } from "@notionhq/client"
+import { plugin } from "postcss"
 
 interface CollectionFieldConfig {
     field: CollectionField | null
@@ -82,6 +83,24 @@ function getInitialSlugFieldId(ctx: PluginContext, fieldOptions: NotionProperty[
     return fieldOptions[0]?.id
 }
 
+function getLastSyncedTime(
+    pluginContext: PluginContext,
+    database: GetDatabaseResponse,
+    slugFieldId: string,
+    disabledFieldIds: Set<string>
+): string | null {
+    if (pluginContext.type === "new") return null
+
+    // Always resync if the slug field changes.
+    if (pluginContext.slugFieldId !== slugFieldId) return null
+
+    // Always resync if field config changes
+    if (hasFieldConfigurationChanged(pluginContext.collectionFields, database, Array.from(disabledFieldIds)))
+        return null
+
+    return pluginContext.lastSyncedTime
+}
+
 export function MapDatabaseFields({
     database,
     onSubmit,
@@ -146,19 +165,11 @@ export function MapDatabaseFields({
 
         assert(slugFieldId)
 
-        // Always synchronize everything if field configuration changes.
-        const lastSyncedTime =
-            pluginContext.type === "new" ||
-            pluginContext.slugFieldId !== slugFieldId ||
-            hasFieldConfigurationChanged(pluginContext.collectionFields, database, Array.from(disabledFieldIds))
-                ? null
-                : pluginContext.lastSyncedTime
-
         onSubmit({
             fields: allFields,
             ignoredFieldIds: Array.from(disabledFieldIds),
             slugFieldId,
-            lastSyncedTime: lastSyncedTime,
+            lastSyncedTime: getLastSyncedTime(pluginContext, database, slugFieldId, disabledFieldIds),
         })
     }
 

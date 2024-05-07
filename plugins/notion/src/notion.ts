@@ -22,6 +22,10 @@ const pluginLastSyncedKey = "notionPluginLastSynced"
 const ignoredFieldIdsKey = "notionPluginIgnoredFieldIds"
 const pluginSlugIdKey = "notionPluginSlugId"
 
+// Maximum number of concurrent requests to Notion API
+// This is to prevent rate limiting.
+const concurrencyLimit = 5
+
 export type NotionProperty = GetDatabaseResponse["properties"][string]
 
 // A page in database consists of blocks.
@@ -107,12 +111,6 @@ export function getPossibleSlugFields(database: GetDatabaseResponse) {
     options.sort((a, b) => getOrderIndex(a.type) - getOrderIndex(b.type))
 
     return options
-}
-
-export function getNotionClient() {
-    if (!notion) throw new Error("Notion Client was used before it was initialized")
-
-    return notion
 }
 
 // Authorize the plugin with Notion.
@@ -201,7 +199,7 @@ export function getCollectionFieldForProperty(property: NotionProperty): Collect
             return null
         case "multi_select":
         default: {
-            // TODO: Support more types
+            // More Field types can be added here
             return null
         }
     }
@@ -288,7 +286,7 @@ async function getPageBlocksAsRichText(pageId: string) {
         block_id: pageId,
     })
 
-    assert(blocks.every(isFullBlock)), "Response is not a full block"
+    assert(blocks.every(isFullBlock), "Response is not a full block")
 
     return blocksToHtml(blocks)
 }
@@ -306,7 +304,9 @@ async function processItem(
 
     const fieldData: Record<string, unknown> = {}
 
+    // Mark the item as seen
     unsyncedItemIds.delete(item.id)
+
     assert(isFullPage(item))
 
     if (isUnchangedSinceLastSync(item.last_edited_time, lastSyncedTime)) {
@@ -339,6 +339,8 @@ async function processItem(
         }
 
         const field = fieldsById.get(property.id)
+
+        // We can continue if the property was not included in the field mapping
         if (!field) {
             continue
         }
@@ -385,7 +387,6 @@ async function processAllItems(
     fieldsByKey: FieldsById,
     slugFieldId: string,
     unsyncedItemIds: Set<FieldId>,
-    concurrencyLimit = 5,
     lastSyncedDate: string | null
 ) {
     const limit = pLimit(concurrencyLimit)
@@ -435,7 +436,6 @@ export async function synchronizeDatabase(
         fieldsById,
         slugFieldId,
         unsyncedItemIds,
-        5,
         lastSyncedTime
     )
 
@@ -464,11 +464,13 @@ export async function synchronizeDatabase(
 
 export function useSynchronizeDatabaseMutation(
     database: GetDatabaseResponse | null,
-    { onSuccess }: { onSuccess?: (result: SynchronizeResult) => void } = {}
+    { onSuccess, onError }: { onSuccess?: (result: SynchronizeResult) => void; onError?: (error: Error) => void } = {}
 ) {
     return useMutation({
         onError(error) {
-            console.log("Sync failed:", error)
+            console.error("Synchronization failed", error)
+
+            onError?.(error)
         },
         onSuccess,
         mutationFn: async (options: SynchronizeMutationOptions): Promise<SynchronizeResult> => {

@@ -29,16 +29,6 @@ export function AuthenticatedApp({ context }: { context: PluginContext }) {
         },
     })
 
-    // TODO: Implement a screen with warnings and errors
-    if (synchronizeMutation.data?.status === "completed_with_errors") {
-        return (
-            <div>
-                Succeeded with errors:
-                <div>{JSON.stringify(synchronizeMutation.data.errors, null, 2)}</div>
-            </div>
-        )
-    }
-
     if (!databaseConfig) {
         return <SelectDatabase onDatabaseSelected={setDatabaseConfig} />
     }
@@ -48,6 +38,7 @@ export function AuthenticatedApp({ context }: { context: PluginContext }) {
             database={databaseConfig}
             pluginContext={context}
             onSubmit={synchronizeMutation.mutate}
+            error={synchronizeMutation.error}
             isLoading={synchronizeMutation.isPending}
         />
     )
@@ -57,12 +48,15 @@ export function App({ context }: AppProps) {
     const [isAuthenticated, setIsAuthenticated] = useState(context.isAuthenticated)
     const [appContext, setAppContext] = useState(context)
 
-    const handleAuthenticated = (authenticatedContxt: PluginContext) => {
-        setAppContext(authenticatedContxt)
+    const handleAuthenticated = (authenticatedContext: PluginContext) => {
+        setAppContext(authenticatedContext)
+
+        // The authenticated UI is larger in size than the authentication screen.
         framer.showUI({
             width: 350,
-            height: 369,
+            height: 370,
         })
+
         setIsAuthenticated(true)
     }
 

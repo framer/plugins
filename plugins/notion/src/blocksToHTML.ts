@@ -91,7 +91,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
             }
             default:
-                // TODO: More blockos such as images
+                // TODO: More block types can be added here!
                 break
         }
     }

@@ -16,7 +16,6 @@ import classNames from "classnames"
 import { IconChevron } from "./components/Icons"
 import { Button } from "./components/Button"
 import { isFullDatabase } from "@notionhq/client"
-import { plugin } from "postcss"
 
 interface CollectionFieldConfig {
     field: CollectionField | null
@@ -54,6 +53,7 @@ function createFieldConfig(database: GetDatabaseResponse, pluginContext: PluginC
         const property = database.properties[key]
         assert(property)
 
+        // Title is always required in CMS API.
         if (property.type === "title") continue
 
         result.push({
@@ -77,10 +77,10 @@ function getFieldNameOverrides(pluginContext: PluginContext): Record<string, str
     return result
 }
 
-function getInitialSlugFieldId(ctx: PluginContext, fieldOptions: NotionProperty[]): string | null {
-    if (ctx.type === "update" && ctx.slugFieldId) return ctx.slugFieldId
+function getInitialSlugFieldId(context: PluginContext, fieldOptions: NotionProperty[]): string | null {
+    if (context.type === "update" && context.slugFieldId) return context.slugFieldId
 
-    return fieldOptions[0]?.id
+    return fieldOptions[0]?.id ?? null
 }
 
 function getLastSyncedTime(
@@ -95,8 +95,9 @@ function getLastSyncedTime(
     if (pluginContext.slugFieldId !== slugFieldId) return null
 
     // Always resync if field config changes
-    if (hasFieldConfigurationChanged(pluginContext.collectionFields, database, Array.from(disabledFieldIds)))
+    if (hasFieldConfigurationChanged(pluginContext.collectionFields, database, Array.from(disabledFieldIds))) {
         return null
+    }
 
     return pluginContext.lastSyncedTime
 }
@@ -105,11 +106,13 @@ export function MapDatabaseFields({
     database,
     onSubmit,
     isLoading,
+    error,
     pluginContext,
 }: {
     database: GetDatabaseResponse
     onSubmit: (options: SynchronizeMutationOptions) => void
     isLoading: boolean
+    error: Error | null
     pluginContext: PluginContext
 }) {
     const slugFields = useMemo(() => getPossibleSlugFields(database), [database])
@@ -256,15 +259,21 @@ export function MapDatabaseFields({
 
             <div className="left-0 bottom-0 w-full flex justify-between sticky bg-primary py-4 border-t border-divider border-opacity-20 items-center">
                 <div className="inline-flex items-center gap-1">
-                    <span className="text-tertiary">Importing from</span>
-                    <a
-                        href={database.url}
-                        className="font-semibold text-secondary hover:text-primary"
-                        target="_blank"
-                        tabIndex={-1}
-                    >
-                        {richTextToPlainText(database.title)}
-                    </a>
+                    {error ? (
+                        <span className="text-red-500">{error.message}</span>
+                    ) : (
+                        <>
+                            <span className="text-tertiary">Importing from</span>
+                            <a
+                                href={database.url}
+                                className="font-semibold text-secondary hover:text-primary"
+                                target="_blank"
+                                tabIndex={-1}
+                            >
+                                {richTextToPlainText(database.title)}
+                            </a>
+                        </>
+                    )}
                 </div>
                 <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-auto">
                     Import

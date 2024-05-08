@@ -266,7 +266,7 @@ export function MapDatabaseFields({
                             <span className="text-tertiary flex-shrink-0">Importing from</span>
                             <a
                                 href={database.url}
-                                className="font-semibold text-secondary hover:text-primary"
+                                className="font-semibold text-secondary hover:text-primary truncate"
                                 target="_blank"
                                 tabIndex={-1}
                             >

@@ -36,14 +36,11 @@ export function Authentication({ onAuthenticated, context }: AuthenticationProps
         // after authentication the user may not have returned to Framer yet.
         // So the toast is only displayed upon document being visible
         if (!isDocumentVisible) return
-
         // Only notify once per context
         if (notifiedForContextRef.current === context) return
-
         if (context.type !== "error") return
 
         notifiedForContextRef.current = context
-        // Display a warning when authentication has failed with a reason
         framer.notify(context.message, { variant: "error" })
     }, [context, isDocumentVisible])
 

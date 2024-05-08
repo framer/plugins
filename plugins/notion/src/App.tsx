@@ -13,8 +13,8 @@ interface AppProps {
     context: PluginContext
 }
 
-export function AuthenticatedApp({ context }: { context: PluginContext }) {
-    const [databaseConfig, setDatabaseConfig] = useState<GetDatabaseResponse | null>(() =>
+export function AuthenticatedApp({ context }: AppProps) {
+    const [databaseConfig, setDatabaseConfig] = useState<GetDatabaseResponse | null>(
         context.type === "update" ? context.database : null
     )
 

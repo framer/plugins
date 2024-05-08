@@ -1,23 +1,59 @@
-import { useState } from "react"
+import { isValidElement, useEffect, useRef, useState } from "react"
 import { PluginContext, authorize, getOauthURL, getPluginContext } from "./notion"
 import loginIllustration from "./assets/notion-login.png"
 import { Button } from "./components/Button"
 import { generateRandomId } from "./utils"
+import { framer } from "framer-plugin"
 
-export function Authentication({ onAuthenticated }: { onAuthenticated: (context: PluginContext) => void }) {
-    const [readKey] = useState(() => generateRandomId())
-    const [writeKey] = useState(() => generateRandomId())
+interface AuthenticationProps {
+    onAuthenticated: (context: PluginContext) => void
+    context: PluginContext
+}
 
+function useDocumentVisibility() {
+    const [isVisible, setIsVisible] = useState(document.visibilityState === "visible")
+
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            setIsVisible(document.visibilityState === "visible")
+        }
+
+        document.addEventListener("visibilitychange", handleVisibilityChange)
+
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange)
+        }
+    }, [])
+
+    return isVisible
+}
+
+export function Authentication({ onAuthenticated, context }: AuthenticationProps) {
     const [isLoading, setIsLoading] = useState(false)
+    const isDocumentVisible = useDocumentVisibility()
+    const notifiedForContextRef = useRef
+
+    useEffect(() => {
+        // after authenticataion the user may not have returned to Framer yet.
+        // So the toast is only displayed upon document being visible
+        if (!isDocumentVisible) return
+
+        if (context.type !== "error") return
+
+        // Display a warning when authentication has failed with a reason
+        framer.notify(context.message, { variant: "warning" })
+    }, [context, isDocumentVisible])
 
     const handleAuth = () => {
-        try {
-            setIsLoading(true)
-            window.open(getOauthURL(writeKey), "_blank")
-            authorize({ readKey, writeKey }).then(getPluginContext).then(onAuthenticated)
-        } finally {
-            setIsLoading(false)
-        }
+        setIsLoading(true)
+        const writeKey = generateRandomId()
+        window.open(getOauthURL(writeKey), "_blank")
+        authorize({ readKey: generateRandomId(), writeKey })
+            .then(getPluginContext)
+            .then(onAuthenticated)
+            .finally(() => {
+                setIsLoading(false)
+            })
     }
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-4 pb-4 overflo">

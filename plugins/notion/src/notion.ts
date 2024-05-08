@@ -1,4 +1,12 @@
-import { Client, collectPaginatedAPI, isFullBlock, isFullDatabase, isFullPage } from "@notionhq/client"
+import {
+    APIErrorCode,
+    Client,
+    collectPaginatedAPI,
+    isFullBlock,
+    isFullDatabase,
+    isFullPage,
+    isNotionClientError,
+} from "@notionhq/client"
 import pLimit from "p-limit"
 import { GetDatabaseResponse, PageObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
 import { assert, formatDate, isDefined, isString, slugify } from "./utils"
@@ -21,6 +29,7 @@ const pluginDatabaseIdKey = "notionPluginDatabaseId"
 const pluginLastSyncedKey = "notionPluginLastSynced"
 const ignoredFieldIdsKey = "notionPluginIgnoredFieldIds"
 const pluginSlugIdKey = "notionPluginSlugId"
+const databaseNameKey = "notionDatabaseName"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -412,7 +421,7 @@ export async function synchronizeDatabase(
     database: GetDatabaseResponse,
     { fields, ignoredFieldIds, lastSyncedTime, slugFieldId }: SynchronizeMutationOptions
 ): Promise<SynchronizeResult> {
-    assert(database)
+    assert(isFullDatabase(database))
     assert(notion)
 
     const collection = await framer.getCollection()
@@ -452,6 +461,7 @@ export async function synchronizeDatabase(
         collection.setPluginData(pluginDatabaseIdKey, database.id),
         collection.setPluginData(pluginLastSyncedKey, new Date().toISOString()),
         collection.setPluginData(pluginSlugIdKey, slugFieldId),
+        collection.setPluginData(databaseNameKey, richTextToPlainText(database.title)),
     ])
 
     return {
@@ -499,7 +509,7 @@ export function useDatabasesQuery() {
     })
 }
 
-interface PluginContextNew {
+export interface PluginContextNew {
     type: "new"
     collection: Collection
     isAuthenticated: boolean
@@ -517,7 +527,13 @@ export interface PluginContextUpdate {
     isAuthenticated: boolean
 }
 
-export type PluginContext = PluginContextNew | PluginContextUpdate
+export interface PluginContextError {
+    type: "error"
+    message: string
+    isAuthenticated: false
+}
+
+export type PluginContext = PluginContextNew | PluginContextUpdate | PluginContextError
 
 function getIgnoredFieldIds(rawIgnoredFields: string | null) {
     if (!rawIgnoredFields) {
@@ -570,29 +586,43 @@ export async function getPluginContext(): Promise<PluginContext> {
         }
     }
 
-    assert(notion, "Notion client is not initialized")
-    const database = await notion.databases.retrieve({ database_id: databaseId })
+    try {
+        assert(notion, "Notion client is not initialized")
+        const database = await notion.databases.retrieve({ database_id: databaseId })
 
-    const [rawIgnoredFieldIds, lastSyncedTime, slugFieldId] = await Promise.all([
-        collection.getPluginData(ignoredFieldIdsKey),
-        collection.getPluginData(pluginLastSyncedKey),
-        collection.getPluginData(pluginSlugIdKey),
-    ])
+        const [rawIgnoredFieldIds, lastSyncedTime, slugFieldId] = await Promise.all([
+            collection.getPluginData(ignoredFieldIdsKey),
+            collection.getPluginData(pluginLastSyncedKey),
+            collection.getPluginData(pluginSlugIdKey),
+        ])
 
-    const ignoredFieldIds = getIgnoredFieldIds(rawIgnoredFieldIds)
+        const ignoredFieldIds = getIgnoredFieldIds(rawIgnoredFieldIds)
 
-    assert(lastSyncedTime, "Expected last synced time to be set")
+        assert(lastSyncedTime, "Expected last synced time to be set")
 
-    return {
-        type: "update",
-        database,
-        collection,
-        collectionFields,
-        ignoredFieldIds,
-        lastSyncedTime,
-        slugFieldId,
-        hasChangedFields: hasFieldConfigurationChanged(collectionFields, database, ignoredFieldIds),
-        isAuthenticated: hasAuthToken,
+        return {
+            type: "update",
+            database,
+            collection,
+            collectionFields,
+            ignoredFieldIds,
+            lastSyncedTime,
+            slugFieldId,
+            hasChangedFields: hasFieldConfigurationChanged(collectionFields, database, ignoredFieldIds),
+            isAuthenticated: hasAuthToken,
+        }
+    } catch (error) {
+        if (isNotionClientError(error) && error.code === APIErrorCode.ObjectNotFound) {
+            const databaseName = (await collection.getPluginData(databaseNameKey)) ?? "Unkown"
+
+            return {
+                type: "error",
+                message: `The database "${databaseName}" was not found. Log in with Notion and select the Database to sync.`,
+                isAuthenticated: false,
+            }
+        }
+
+        throw error
     }
 }
 

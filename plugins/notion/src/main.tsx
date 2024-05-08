@@ -25,7 +25,7 @@ const queryClient = new QueryClient({
 })
 
 function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is PluginContextUpdate {
-    if (pluginContext.type === "new") return false
+    if (pluginContext.type !== "update") return false
 
     if (!pluginContext.database) return false
     if (!pluginContext.slugFieldId) return false
@@ -34,9 +34,14 @@ function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is P
     return true
 }
 
-function renderPlugin(app: ReactNode) {
+function renderPlugin(context: PluginContext, app: ReactNode) {
     const root = document.getElementById("root")
     if (!root) throw new Error("Root element not found")
+
+    framer.showUI({
+        width: 350,
+        height: context.isAuthenticated ? 370 : 340,
+    })
 
     ReactDOM.createRoot(root).render(
         <React.StrictMode>
@@ -72,14 +77,8 @@ async function runPlugin() {
             return
         }
 
-        framer.showUI({
-            width: 350,
-            height: pluginContext.isAuthenticated ? 370 : 340,
-        })
-        renderPlugin(<App context={pluginContext} />)
+        renderPlugin(pluginContext, <App context={pluginContext} />)
     } catch (error) {
-        console.error("Plugin error:", error)
-
         const message = error instanceof Error ? error.message : String(error)
         framer.closePlugin("An unexpected error ocurred: " + message, {
             variant: "error",

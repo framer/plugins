@@ -15,7 +15,7 @@ interface AppProps {
 
 export function AuthenticatedApp({ context }: { context: PluginContext }) {
     const [databaseConfig, setDatabaseConfig] = useState<GetDatabaseResponse | null>(() =>
-        context.type === "new" ? null : context.database
+        context.type === "update" ? context.database : null
     )
 
     const synchronizeMutation = useSynchronizeDatabaseMutation(databaseConfig, {
@@ -45,24 +45,21 @@ export function AuthenticatedApp({ context }: { context: PluginContext }) {
 }
 
 export function App({ context }: AppProps) {
-    const [isAuthenticated, setIsAuthenticated] = useState(context.isAuthenticated)
-    const [appContext, setAppContext] = useState(context)
+    const [pluginContext, setPluginContext] = useState(context)
 
     const handleAuthenticated = (authenticatedContext: PluginContext) => {
-        setAppContext(authenticatedContext)
+        setPluginContext(authenticatedContext)
 
         // The authenticated UI is larger in size than the authentication screen.
         framer.showUI({
             width: 350,
             height: 370,
         })
-
-        setIsAuthenticated(true)
     }
 
-    if (!isAuthenticated) {
-        return <Authentication onAuthenticated={handleAuthenticated} />
+    if (!pluginContext.isAuthenticated) {
+        return <Authentication context={pluginContext} onAuthenticated={handleAuthenticated} />
     }
 
-    return <AuthenticatedApp context={appContext} />
+    return <AuthenticatedApp context={pluginContext} />
 }

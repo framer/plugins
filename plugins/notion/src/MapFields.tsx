@@ -40,7 +40,7 @@ function createFieldConfig(database: GetDatabaseResponse, pluginContext: PluginC
     const result: CollectionFieldConfig[] = []
 
     const existingFieldIds = new Set(
-        pluginContext.type === "new" ? [] : pluginContext.collectionFields.map(field => field.id)
+        pluginContext.type === "update" ? pluginContext.collectionFields.map(field => field.id) : []
     )
 
     result.push({
@@ -68,7 +68,7 @@ function createFieldConfig(database: GetDatabaseResponse, pluginContext: PluginC
 
 function getFieldNameOverrides(pluginContext: PluginContext): Record<string, string> {
     const result: Record<string, string> = {}
-    if (pluginContext.type === "new") return result
+    if (pluginContext.type !== "update") return result
 
     for (const field of pluginContext.collectionFields) {
         result[field.id] = field.name
@@ -89,7 +89,7 @@ function getLastSyncedTime(
     slugFieldId: string,
     disabledFieldIds: Set<string>
 ): string | null {
-    if (pluginContext.type === "new") return null
+    if (pluginContext.type !== "update") return null
 
     // Always resync if the slug field changes.
     if (pluginContext.slugFieldId !== slugFieldId) return null
@@ -121,7 +121,7 @@ export function MapDatabaseFields({
     )
     const [fieldConfig] = useState<CollectionFieldConfig[]>(() => createFieldConfig(database, pluginContext))
     const [disabledFieldIds, setDisabledFieldIds] = useState(
-        () => new Set<string>(pluginContext.type === "new" ? [] : pluginContext.ignoredFieldIds)
+        () => new Set<string>(pluginContext.type === "update" ? pluginContext.ignoredFieldIds : [])
     )
     const [fieldNameOverrides, setFieldNameOverrides] = useState<Record<string, string>>(() =>
         getFieldNameOverrides(pluginContext)
@@ -257,13 +257,13 @@ export function MapDatabaseFields({
                 </div>
             </div>
 
-            <div className="left-0 bottom-0 w-full flex justify-between sticky bg-primary py-4 border-t border-divider border-opacity-20 items-center">
-                <div className="inline-flex items-center gap-1">
+            <div className="left-0 bottom-0 w-full flex justify-between sticky bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full overflow-hidden">
+                <div className="inline-flex items-center gap-1 min-w-0">
                     {error ? (
                         <span className="text-red-500">{error.message}</span>
                     ) : (
                         <>
-                            <span className="text-tertiary">Importing from</span>
+                            <span className="text-tertiary flex-shrink-0">Importing from</span>
                             <a
                                 href={database.url}
                                 className="font-semibold text-secondary hover:text-primary"

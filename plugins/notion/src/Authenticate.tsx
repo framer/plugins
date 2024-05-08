@@ -1,16 +1,11 @@
-import { isValidElement, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { PluginContext, authorize, getOauthURL, getPluginContext } from "./notion"
 import loginIllustration from "./assets/notion-login.png"
 import { Button } from "./components/Button"
 import { generateRandomId } from "./utils"
 import { framer } from "framer-plugin"
 
-interface AuthenticationProps {
-    onAuthenticated: (context: PluginContext) => void
-    context: PluginContext
-}
-
-function useDocumentVisibility() {
+function useIsDocumentVisibile() {
     const [isVisible, setIsVisible] = useState(document.visibilityState === "visible")
 
     useEffect(() => {
@@ -19,7 +14,6 @@ function useDocumentVisibility() {
         }
 
         document.addEventListener("visibilitychange", handleVisibilityChange)
-
         return () => {
             document.removeEventListener("visibilitychange", handleVisibilityChange)
         }
@@ -28,26 +22,39 @@ function useDocumentVisibility() {
     return isVisible
 }
 
+interface AuthenticationProps {
+    onAuthenticated: (context: PluginContext) => void
+    context: PluginContext
+}
+
 export function Authentication({ onAuthenticated, context }: AuthenticationProps) {
     const [isLoading, setIsLoading] = useState(false)
-    const isDocumentVisible = useDocumentVisibility()
-    const notifiedForContextRef = useRef
+    const isDocumentVisible = useIsDocumentVisibile()
+    const notifiedForContextRef = useRef<PluginContext | null>(null)
 
     useEffect(() => {
-        // after authenticataion the user may not have returned to Framer yet.
+        // after authentication the user may not have returned to Framer yet.
         // So the toast is only displayed upon document being visible
         if (!isDocumentVisible) return
 
+        // Only notify once per context
+        if (notifiedForContextRef.current === context) return
+
         if (context.type !== "error") return
 
+        notifiedForContextRef.current = context
         // Display a warning when authentication has failed with a reason
-        framer.notify(context.message, { variant: "warning" })
+        framer.notify(context.message, { variant: "error" })
     }, [context, isDocumentVisible])
 
     const handleAuth = () => {
         setIsLoading(true)
         const writeKey = generateRandomId()
+
+        // It is important to call `window.open` directly in the event handler
+        // So that Safari does not block any popups.
         window.open(getOauthURL(writeKey), "_blank")
+
         authorize({ readKey: generateRandomId(), writeKey })
             .then(getPluginContext)
             .then(onAuthenticated)

@@ -19,15 +19,16 @@ export function richTextToHTML(texts: RichTextItemResponse[]) {
             if (annotations.underline) {
                 html = `<u>${html}</u>`
             }
+
             if (annotations.code) {
                 html = `<code>${html}</code>`
             }
+
             if (annotations.color !== "default") {
-                const color = annotations.color.replace("_", "") // remove underscores from color names
+                const color = annotations.color.replace("_", "")
                 html = `<span style="color:${color}">${html}</span>`
             }
 
-            // Check if this particular text object includes a hyperlink
             if (href) {
                 html = `<a href="${href}" target="_blank" rel="noopener noreferrer">${html}</a>`
             }
@@ -90,11 +91,16 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 }
                 break
             }
+            case "code":
+                htmlContent += `<pre><code>${richTextToHTML(block.code.rich_text)}</code></pre>`
+                break
             default:
                 // TODO: More block types can be added here!
                 break
         }
     }
+
+    console.log("html", htmlContent)
 
     return htmlContent
 }

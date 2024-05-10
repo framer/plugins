@@ -203,7 +203,7 @@ export function MapDatabaseFields({
                     <div className="flex items-center justify-center opacity-50">
                         <IconChevron />
                     </div>
-                    <input type="" className={"w-full opacity-50"} disabled={true} placeholder={"Title"}></input>
+                    <input type="text" className={"w-full opacity-50"} disabled={true} placeholder={"Title"}></input>
 
                     {fieldConfig.map(fieldConfig => {
                         const isUnsupported = !fieldConfig.field
@@ -236,7 +236,7 @@ export function MapDatabaseFields({
                                     <IconChevron />
                                 </div>
                                 <input
-                                    type=""
+                                    type="text"
                                     className={classNames("w-full", isUnsupported && "opacity-50")}
                                     disabled={!fieldConfig.field || disabledFieldIds.has(fieldConfig.field.id)}
                                     placeholder={fieldConfig.originalFieldName}

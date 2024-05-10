@@ -90,7 +90,7 @@ export function initNotionClient() {
 }
 
 // The order in which we display slug fields
-const preferedSlugFieldOrder: NotionProperty["type"][] = ["title", "unique_id", "rich_text"]
+const preferedSlugFieldOrder: NotionProperty["type"][] = ["title", "rich_text"]
 
 /**
  * Given a Notion Database returns a list of possible fields that can be used as
@@ -107,7 +107,6 @@ export function getPossibleSlugFields(database: GetDatabaseResponse) {
             // TODO: Other field types that qualify as slug?
             case "title":
             case "rich_text":
-            case "unique_id":
                 options.push(property)
                 break
         }
@@ -451,24 +450,34 @@ export async function synchronizeDatabase(
     console.log("Submitting database")
     console.table(collectionItems)
 
-    await collection.addItems(collectionItems)
+    try {
+        await collection.addItems(collectionItems)
 
-    const itemsToDelete = Array.from(unsyncedItemIds)
-    await collection.removeItems(itemsToDelete)
+        const itemsToDelete = Array.from(unsyncedItemIds)
+        await collection.removeItems(itemsToDelete)
 
-    await Promise.all([
-        collection.setPluginData(ignoredFieldIdsKey, JSON.stringify(ignoredFieldIds)),
-        collection.setPluginData(pluginDatabaseIdKey, database.id),
-        collection.setPluginData(pluginLastSyncedKey, new Date().toISOString()),
-        collection.setPluginData(pluginSlugIdKey, slugFieldId),
-        collection.setPluginData(databaseNameKey, richTextToPlainText(database.title)),
-    ])
+        await Promise.all([
+            collection.setPluginData(ignoredFieldIdsKey, JSON.stringify(ignoredFieldIds)),
+            collection.setPluginData(pluginDatabaseIdKey, database.id),
+            collection.setPluginData(pluginLastSyncedKey, new Date().toISOString()),
+            collection.setPluginData(pluginSlugIdKey, slugFieldId),
+            collection.setPluginData(databaseNameKey, richTextToPlainText(database.title)),
+        ])
 
-    return {
-        status: status.errors.length === 0 ? "success" : "completed_with_errors",
-        errors: status.errors,
-        info: status.info,
-        warnings: status.warnings,
+        return {
+            status: status.errors.length === 0 ? "success" : "completed_with_errors",
+            errors: status.errors,
+            info: status.info,
+            warnings: status.warnings,
+        }
+    } catch (error) {
+        // There is a bug where framer-plugin throws errors as Strings instead of wrapping them in an Error object.
+        // This is a workaround until we land that PR.
+        if (isString(error)) {
+            throw new Error(error)
+        }
+
+        throw error
     }
 }
 

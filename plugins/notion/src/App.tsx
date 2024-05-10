@@ -33,6 +33,10 @@ export function AuthenticatedApp({ context }: AppProps) {
         return <SelectDatabase onDatabaseSelected={setDatabaseConfig} />
     }
 
+    if (synchronizeMutation.error) {
+        debugger
+    }
+
     return (
         <MapDatabaseFields
             database={databaseConfig}

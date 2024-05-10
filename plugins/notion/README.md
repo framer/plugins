@@ -2,4 +2,6 @@
 
 Framer Notion Sync Plugin
 
-By @edoardomercati and @niekert
+**By:** @edoardomercati and @niekert
+
+![Notion Image](../../assets/notion.png)

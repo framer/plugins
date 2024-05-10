@@ -100,7 +100,5 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
         }
     }
 
-    console.log("html", htmlContent)
-
     return htmlContent
 }

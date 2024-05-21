@@ -48,13 +48,11 @@ export function App() {
   const [profile, setProfile] = useState<GoogleProfile | null>(null);
 
   const login = () => {
-    window.open(
-      "http://localhost:8787/authorize",
-      "_blank",
-      "popup=true,width=960,height=620"
-    );
+    // TODO(anthony): Using `state` param here to force redirect back to the
+    // electron app after logging in. Ideally we'd have an API like `framer.isApp()`?
+    window.open("http://localhost:8787/authorize?state=app");
 
-    const handlePopupWindowMessage = (event: MessageEvent) => {
+    const handleMessage = (event: MessageEvent) => {
       if (!isTokensMessage(event.data)) return;
 
       // Tokens from Google are stored in `localStorage` along with a created at
@@ -80,10 +78,10 @@ export function App() {
       (event.source as Window)?.postMessage({ type: "close" }, event.origin);
 
       // Clean up event listener so that they don't build up.
-      window.removeEventListener("message", handlePopupWindowMessage);
+      window.removeEventListener("message", handleMessage);
     };
 
-    window.addEventListener("message", handlePopupWindowMessage);
+    window.addEventListener("message", handleMessage);
   };
 
   const logout = () => {

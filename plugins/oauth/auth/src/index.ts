@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 interface TokenResponse {
   access_token: string;
   expires_in: number;
@@ -13,6 +15,17 @@ export default {
       request.method === "GET" &&
       requestUrl.pathname.startsWith("/authorize")
     ) {
+      // State is used to keep track of wherever the authorization request was
+      // opened from the browser or the app. This param is carried preserved
+      // through requests.
+      const state = requestUrl.searchParams.get("state");
+
+      if (!state) {
+        return new Response("Missing state URL param", {
+          status: 400,
+        });
+      }
+
       const authorizeParams = new URLSearchParams();
       authorizeParams.append("client_id", env.CLIENT_ID);
       authorizeParams.append("redirect_uri", env.REDIRECT_URI);
@@ -20,6 +33,7 @@ export default {
       authorizeParams.append("response_type", "code");
       authorizeParams.append("access_type", "online");
       authorizeParams.append("include_granted_scopes", "true");
+      authorizeParams.append("state", state);
 
       // Generate the login URL for the provider.
       const authorizeUrl = new URL(env.AUTHORIZE_ENDPOINT);
@@ -36,6 +50,7 @@ export default {
       // When the user has authorized via the login page, they will be
       // redirected back this URL with an access code.
       const authorizationCode = requestUrl.searchParams.get("code");
+      const state = requestUrl.searchParams.get("state");
 
       if (!authorizationCode) {
         return new Response("Missing authorization code URL param", {
@@ -43,13 +58,19 @@ export default {
         });
       }
 
+      if (!state) {
+        return new Response("Missing state URL param", {
+          status: 400,
+        });
+      }
+
       // Generate a new URL with the access code and client secret.
       const tokenParams = new URLSearchParams();
-      tokenParams.append("code", authorizationCode);
       tokenParams.append("client_id", env.CLIENT_ID);
       tokenParams.append("client_secret", env.CLIENT_SECRET);
       tokenParams.append("redirect_uri", env.REDIRECT_URI);
       tokenParams.append("grant_type", "authorization_code");
+      tokenParams.append("code", authorizationCode);
 
       const tokenUrl = new URL(env.TOKEN_ENDPOINT);
       tokenUrl.search = tokenParams.toString();
@@ -69,6 +90,20 @@ export default {
       // Send the access tokens back to the plugin via a window message.
       const tokens = (await tokenResponse.json()) as TokenResponse;
       const message = JSON.stringify({ type: "tokens", tokens });
+
+      // Open the app instead if the original authorize request originated from
+      // the app.
+      if (state === "app") {
+        // The message is converted to Base64 to ensure URL encoding and
+        // decoding does not interfere with the JSON.
+        const serializedMessage = Buffer.from(message, "ascii").toString(
+          "base64"
+        );
+
+        return Response.redirect(
+          `framer-app://plugin?message=${serializedMessage}`
+        );
+      }
 
       return new Response(
         `<script>

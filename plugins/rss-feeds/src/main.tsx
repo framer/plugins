@@ -6,7 +6,7 @@ import ReactDOM from "react-dom/client"
 import { App, importData } from "./App.tsx"
 
 async function runPlugin() {
-  const mode = await framer.getMode()
+  const mode = framer.mode
   const collection = await framer.getCollection()
 
   const rssSourceId = await collection.getPluginData("rssSourceId")

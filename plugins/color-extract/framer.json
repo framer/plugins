@@ -1,5 +1,6 @@
 {
   "id": "CbX9_9",
   "name": "Color Extract",
-  "icon": "/icon.png"
+  "icon": "/icon.png",
+  "modes": ["default"]
 }

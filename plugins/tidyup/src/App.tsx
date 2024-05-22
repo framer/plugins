@@ -4,7 +4,7 @@ import {
   withPins,
   CanvasNode,
   isWebPageNode,
-  isSmartComponentNode,
+  isComponentNode,
 } from "framer-plugin";
 import {
   useState,
@@ -110,7 +110,7 @@ function useGroundNodeRects() {
           const parent = await node.getParent();
           if (!parent) continue;
           if (!active) return;
-          if (isWebPageNode(parent) || isSmartComponentNode(parent)) {
+          if (isWebPageNode(parent) || isComponentNode(parent)) {
             groundNodes.push(node);
           }
         }

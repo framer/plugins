@@ -14,7 +14,7 @@
   "dependencies": {
     "base64-arraybuffer": "^1.0.2",
     "framer-motion": "^11.0.8",
-    "framer-plugin": "^0.1.3",
+    "framer-plugin": "^0.2.0",
     "react": "^18",
     "react-dom": "^18",
     "react-webcam": "^7.2.0",

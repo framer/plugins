@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 
 framer.showUI({
@@ -9,17 +9,20 @@ framer.showUI({
   height: 250,
 });
 
-interface TokensMessage {
-  type: "tokens";
-  tokens: {
-    access_token: string;
-    expires_in: number;
-    scope: string;
-    token_type: "Bearer";
-  };
+interface Authorize {
+  url: string;
+  writeKey: string;
+  readKey: string;
 }
 
 interface Tokens {
+  access_token: string;
+  expires_in: number;
+  scope: string;
+  token_type: "Bearer";
+}
+
+interface StoredTokens {
   createdAt: number;
   expiredIn: number;
   accessToken: string;
@@ -34,54 +37,60 @@ interface GoogleProfile {
   locale: string;
 }
 
-function isTokensMessage(eventData: unknown): eventData is TokensMessage {
-  if (eventData === null) return false;
-  if (typeof eventData !== "object") return false;
-  if (!("type" in eventData)) return false;
-  if (eventData.type !== "tokens") return false;
-
-  return true;
-}
-
 export function App() {
-  const [tokens, setTokens] = useState<Tokens | null>(null);
+  const pollInterval = useRef<number>();
+  const [tokens, setTokens] = useState<StoredTokens | null>(null);
   const [profile, setProfile] = useState<GoogleProfile | null>(null);
 
-  const login = () => {
-    // TODO(anthony): Using `state` param here to force redirect back to the
-    // electron app after logging in. Ideally we'd have an API like `framer.isApp()`?
-    window.open("http://localhost:8787/authorize?state=app");
+  const pollForTokens = (readKey: string): Promise<Tokens> => {
+    if (pollInterval.current) {
+      clearInterval(pollInterval.current);
+    }
 
-    const handleMessage = (event: MessageEvent) => {
-      if (!isTokensMessage(event.data)) return;
+    return new Promise((resolve) => {
+      pollInterval.current = setInterval(async () => {
+        const response = await fetch(
+          `http://localhost:8787/poll?readKey=${readKey}`,
+          { method: "POST" }
+        );
 
-      // Tokens from Google are stored in `localStorage` along with a created at
-      // timestamp.
-      //
-      // It's not implemented in this example, but the created at timestamp
-      // would be used for checking when to refresh the tokens.
-      const tokens: Tokens = {
-        createdAt: Date.now(),
-        expiredIn: event.data.tokens.expires_in,
-        accessToken: event.data.tokens.access_token,
-      };
+        if (response.status === 200) {
+          const tokens = (await response.json()) as Tokens;
+          clearInterval(pollInterval.current);
+          resolve(tokens);
+        }
+      }, 2500);
+    });
+  };
 
-      setTokens(tokens);
-      window.localStorage.setItem("tokens", JSON.stringify(tokens));
+  const login = async () => {
+    // Retrieve the authorization URL and a set of read and write keys.
+    const response = await fetch("http://localhost:8787/authorize", {
+      method: "POST",
+    });
+    if (response.status !== 200) return;
 
-      // Tell the authorization window it's safe to close itself.
-      //
-      // TODO: A type cast is used here because the signature for
-      // `event.source.postMessage` does not include the target origin
-      // parameter, but it's required for messages to work. Are the wrong DOM
-      // types installed?
-      (event.source as Window)?.postMessage({ type: "close" }, event.origin);
+    const authorize = (await response.json()) as Authorize;
 
-      // Clean up event listener so that they don't build up.
-      window.removeEventListener("message", handleMessage);
+    // Open up the providers login window.
+    window.open(authorize.url);
+
+    // Poll the authentication server with the read key, waiting for tokens.
+    const tokens = await pollForTokens(authorize.readKey);
+
+    // Augment the tokens from the provider with a `createdAt` timestamp. It's
+    // not implemented in this example, but the `createdAt` timestamp would be
+    // used for checking when to refresh the tokens.
+    const storedTokens: StoredTokens = {
+      createdAt: Date.now(),
+      expiredIn: tokens.expires_in,
+      accessToken: tokens.access_token,
     };
 
-    window.addEventListener("message", handleMessage);
+    // Store in local storage.
+    window.localStorage.setItem("tokens", JSON.stringify(storedTokens));
+
+    setTokens(storedTokens);
   };
 
   const logout = () => {
@@ -94,7 +103,7 @@ export function App() {
     if (!tokens) return;
 
     // Ideally you'd use official Google libraries to interact with their API,
-    // but this is just an example of a standard way to Bearer tokens.
+    // but this is just an example of a standard way to use Bearer tokens.
     const response = await fetch(
       "https://www.googleapis.com/oauth2/v1/userinfo",
       {
@@ -112,7 +121,7 @@ export function App() {
     const serializedTokens = window.localStorage.getItem("tokens");
     if (!serializedTokens) return;
 
-    const tokens = JSON.parse(serializedTokens) as Tokens;
+    const tokens = JSON.parse(serializedTokens) as StoredTokens;
     setTokens(tokens);
   }, []);
 

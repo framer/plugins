@@ -1,30 +1,30 @@
-import { Buffer } from "node:buffer";
+import crypto from "node:crypto";
 
-interface TokenResponse {
-  access_token: string;
-  expires_in: number;
-  scope: string;
-  token_type: "Bearer";
+export function generateRandomId(): string {
+  const array = new Uint8Array(16);
+  crypto.webcrypto.getRandomValues(array);
+
+  let id = "";
+
+  for (let i = 0; i < array.length; i++) {
+    id += array[i].toString(16).padStart(2, "0");
+  }
+
+  return id;
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const requestUrl = new URL(request.url);
 
+    // Generate an authorization URL to login into the provider, and a set of
+    // read and write keys for retrieving the access token later on.
     if (
-      request.method === "GET" &&
+      request.method === "POST" &&
       requestUrl.pathname.startsWith("/authorize")
     ) {
-      // State is used to keep track of wherever the authorization request was
-      // opened from the browser or the app. This param is carried preserved
-      // through requests.
-      const state = requestUrl.searchParams.get("state");
-
-      if (!state) {
-        return new Response("Missing state URL param", {
-          status: 400,
-        });
-      }
+      const readKey = generateRandomId();
+      const writeKey = generateRandomId();
 
       const authorizeParams = new URLSearchParams();
       authorizeParams.append("client_id", env.CLIENT_ID);
@@ -33,24 +33,41 @@ export default {
       authorizeParams.append("response_type", "code");
       authorizeParams.append("access_type", "online");
       authorizeParams.append("include_granted_scopes", "true");
-      authorizeParams.append("state", state);
+
+      // The write key is stored in the `state` param since this will be
+      // persisted through the entire OAuth flow.
+      authorizeParams.append("state", writeKey);
 
       // Generate the login URL for the provider.
       const authorizeUrl = new URL(env.AUTHORIZE_ENDPOINT);
       authorizeUrl.search = authorizeParams.toString();
 
-      // Redirect to providers login page.
-      return Response.redirect(authorizeUrl.toString());
+      await env.keyValueStore.put(`readKey:${writeKey}`, readKey, {
+        expirationTtl: 60,
+      });
+
+      const response = JSON.stringify({
+        url: authorizeUrl.toString(),
+        readKey,
+      });
+
+      return new Response(response, {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
     }
 
+    // Once the user has been authorized via login page, the provider will
+    // redirect them back this URL with an access code (not an access token) and
+    // the write key we stored in the state param.
     if (
       request.method === "GET" &&
       requestUrl.pathname.startsWith("/redirect")
     ) {
-      // When the user has authorized via the login page, they will be
-      // redirected back this URL with an access code.
       const authorizationCode = requestUrl.searchParams.get("code");
-      const state = requestUrl.searchParams.get("state");
+      const writeKey = requestUrl.searchParams.get("state");
 
       if (!authorizationCode) {
         return new Response("Missing authorization code URL param", {
@@ -58,7 +75,7 @@ export default {
         });
       }
 
-      if (!state) {
+      if (!writeKey) {
         return new Response("Missing state URL param", {
           status: 400,
         });
@@ -75,8 +92,8 @@ export default {
       const tokenUrl = new URL(env.TOKEN_ENDPOINT);
       tokenUrl.search = tokenParams.toString();
 
-      // This second request retrieves the access token and expiry information
-      // used for further API requests to the provider.
+      // This additional POST request retrieves the access token and expiry
+      // information used for further API requests to the provider.
       const tokenResponse = await fetch(tokenUrl.toString(), {
         method: "POST",
       });
@@ -87,40 +104,59 @@ export default {
         });
       }
 
-      // Send the access tokens back to the plugin via a window message.
-      const tokens = (await tokenResponse.json()) as TokenResponse;
-      const message = JSON.stringify({ type: "tokens", tokens });
+      const readKey = await env.keyValueStore.get(`readKey:${writeKey}`);
 
-      // Open the app instead if the original authorize request originated from
-      // the app.
-      if (state === "app") {
-        // The message is converted to Base64 to ensure URL encoding and
-        // decoding does not interfere with the JSON.
-        const serializedMessage = Buffer.from(message, "ascii").toString(
-          "base64"
-        );
-
-        return Response.redirect(
-          `framer-app://plugin?message=${serializedMessage}`
-        );
+      if (!readKey) {
+        return new Response("No read key found in storage", {
+          status: 400,
+        });
       }
 
-      return new Response(
-        `<script>
-					window.addEventListener("message", (event) => {
-						if (event.data.type === "close") {
-							window.close();
-						}
-					});
+      // Store the tokens temporarily inside a key value store. This will be
+      // retrieved when the plugin polls for them.
+      const tokens = (await tokenResponse.json()) as unknown;
+      env.keyValueStore.put(`tokens:${readKey}`, JSON.stringify(tokens), {
+        expirationTtl: 300,
+      });
 
-					window.opener.postMessage(${message}, "${env.PLUGIN_URI}");
-				</script>`,
-        {
+      return new Response("You can now go back to Framer", {
+        headers: {
+          "Content-Type": "text/html",
+        },
+      });
+    }
+
+    if (request.method === "POST" && requestUrl.pathname.startsWith("/poll")) {
+      const readKey = requestUrl.searchParams.get("readKey");
+
+      if (!readKey) {
+        return new Response("Missing read key URL param", {
+          status: 400,
           headers: {
-            "Content-Type": "text/html",
+            "Access-Control-Allow-Origin": "*",
           },
-        }
-      );
+        });
+      }
+
+      const tokens = await env.keyValueStore.get(`tokens:${readKey}`);
+
+      if (!tokens) {
+        return new Response(null, {
+          status: 404,
+          headers: { "Access-Control-Allow-Origin": "*" },
+        });
+      }
+
+      // Even though the tokens have an expiry, it's important to delete them on
+      // our side to reduce the reliability of storing user's sensitive data.
+      await env.keyValueStore.delete(`tokens:${readKey}`);
+
+      return new Response(tokens, {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
     }
 
     if (

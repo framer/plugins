@@ -1,0 +1,76 @@
+/* Your Plugin CSS */
+
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  padding: 0 15px 15px 15px;
+  height: 100%;
+  gap: 15px;
+}
+
+button {
+  height: auto;
+  padding: 0;
+}
+
+.section-container {
+  padding: 10px;
+  background: var(--framer-color-bg-secondary);
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+}
+
+.section-container:hover .section-image {
+  transform: scale(1.02);
+}
+
+.section-container:hover::after {
+  opacity: 0.1;
+}
+
+.section-container::after {
+  content: "";
+  transition: opacity 0.1s ease-out;
+  border-radius: 12px;
+  padding: 10px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  background: rgba(255, 255, 255, 1);
+  opacity: 0;
+}
+
+.section-image {
+  overflow: hidden;
+  border-radius: 8px;
+  transition: transform 0.1s ease-out;
+}
+
+.search-container {
+  position: relative;
+}
+
+.search-container svg {
+  position: absolute;
+  top: 7px;
+  left: 8px;
+  bottom: 0;
+  height: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding-left: 30px;
+}
+
+.no-results {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}

@@ -4,7 +4,7 @@ An example Framer Plugin that uses OAuth 2.0 with a client secret ([Authorizatio
 
 ## Overview
 
-There are two parts to this example, the **plugin** and authentication **backend**. These are found in the `./plugin` and `./auth` directories respectively.
+There are two parts to this example, the **plugin** and authentication **backend**. These are found in the `./plugin` and `./backend` directories respectively.
 
 The backend is a Node.js CloudFlare Worker, and it's used to hide a client secret and proxy authentication requests to the provider. The provider in this example is Google.
 
@@ -22,9 +22,9 @@ You'll also need to ensure the correct scopes are enabled, these are permissions
 
 ### Add environment variables
 
-Open up two terminal windows, and `cd` into the `./plugin` directory in one, and `./auth` directory in the other.
+Open up two terminal windows, and `cd` into the `./plugin` directory in one, and `./backend` directory in the other.
 
-In the `./auth` directory, create a new `.dev.vars` file with the following config, replacing `CLIENT_ID` and `CLIENT_SECRET` with your own.
+In the `./backend` directory, create a new `.dev.vars` file with the following config, replacing `CLIENT_ID` and `CLIENT_SECRET` with your own.
 
 ```txt
 REDIRECT_URI=http://localhost:8787/redirect
@@ -37,7 +37,7 @@ CLIENT_ID=XXXXX
 CLIENT_SECRET=XXXX
 ```
 
-See the [worker README](./auth/README.md) for more details on each environment variable.
+See the [worker README](./backend/README.md) for more details on each environment variable.
 
 ### Run both apps
 

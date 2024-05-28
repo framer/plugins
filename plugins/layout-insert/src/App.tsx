@@ -222,6 +222,7 @@ export function App() {
       <div className="search-container">
         <SearchIcon />
         <input
+          autoFocus
           type="search"
           placeholder="Search..."
           className="search-input"

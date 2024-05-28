@@ -14,6 +14,10 @@ button {
   padding: 0;
 }
 
+main {
+  padding-top: 40px;
+}
+
 .section-container {
   padding: 10px;
   background: var(--framer-color-bg-secondary);
@@ -33,7 +37,7 @@ button {
 .section-container::after {
   content: "";
   transition: opacity 0.1s ease-out;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 10px;
   top: 0;
   left: 0;
@@ -44,6 +48,10 @@ button {
   opacity: 0;
 }
 
+.section-button {
+  border-radius: 12px;
+}
+
 .section-image {
   overflow: hidden;
   border-radius: 8px;
@@ -51,7 +59,13 @@ button {
 }
 
 .search-container {
-  position: relative;
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 15px;
+  right: 15px;
+  padding-bottom: 8px;
+  background: var(--framer-color-bg);
 }
 
 .search-container svg {

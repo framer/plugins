@@ -37,6 +37,12 @@ interface GoogleProfile {
   locale: string;
 }
 
+const isLocal = () => window.location.hostname.includes("localhost");
+
+const AUTH_URI = isLocal()
+  ? "https://localhost:8787"
+  : "https://framer-plugin-oauth.framer-plugin-google-auth.workers.dev/";
+
 export function App() {
   const pollInterval = useRef<number>();
   const [tokens, setTokens] = useState<StoredTokens | null>(null);
@@ -49,10 +55,9 @@ export function App() {
 
     return new Promise((resolve) => {
       pollInterval.current = setInterval(async () => {
-        const response = await fetch(
-          `http://localhost:8787/poll?readKey=${readKey}`,
-          { method: "POST" }
-        );
+        const response = await fetch(`${AUTH_URI}/poll?readKey=${readKey}`, {
+          method: "POST",
+        });
 
         if (response.status === 200) {
           const tokens = (await response.json()) as Tokens;
@@ -65,7 +70,7 @@ export function App() {
 
   const login = async () => {
     // Retrieve the authorization URL and a set of read and write keys.
-    const response = await fetch("http://localhost:8787/authorize", {
+    const response = await fetch(`${AUTH_URI}/authorize`, {
       method: "POST",
     });
     if (response.status !== 200) return;

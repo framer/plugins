@@ -1,8 +1,0 @@
-#:schema node_modules/wrangler/config-schema.json
-name = "cool-silence-d24f"
-main = "src/index.ts"
-compatibility_date = "2024-05-12"
-compatibility_flags = ["nodejs_compat"]
-kv_namespaces = [
-  { binding = "keyValueStore", id = "5f1cbf9a64964ae5be8464cc2882e58c" },
-]

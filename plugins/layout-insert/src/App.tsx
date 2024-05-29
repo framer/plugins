@@ -28,177 +28,120 @@ framer.showUI({
   width: 350,
 })
 
-interface DatasourceItem {
+interface SectionItem {
   image: string
   url: string
   title: string
   key: string
-  intrinsicWidth: number
-  intrinsicHeight: number
-  aspectRatio: number
 }
 
-const layoutSectionItems: DatasourceItem[] = [
+const layoutSectionItems: SectionItem[] = [
   {
     key: "header section",
     title: "Header",
     image: sectionHeaderImage,
-    aspectRatio: 210 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 600,
     url: "https://framer.com/m/framer/Section-Header.js",
   },
   {
     key: "header background",
     title: "Header With Background",
     image: sectionHeaderBackgroundImage,
-    aspectRatio: 210 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 600,
     url: "https://framer.com/m/framer/Section-Header-Image.js",
   },
   {
     key: "text image",
     title: "Text and Image",
     image: sectionTextImageImage,
-    aspectRatio: 210 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 600,
     url: "https://framer.com/m/framer/section-text-image.js",
   },
   {
     key: "image text",
     title: "Image and Text",
     image: sectionImageTextImage,
-    aspectRatio: 210 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 600,
     url: "https://framer.com/m/framer/section-image-text.js",
   },
   {
     key: "feature section 2",
     title: "Features Large",
     image: sectionFeaturesLargeImage,
-    aspectRatio: 368 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 1050,
     url: "https://framer.com/m/framer/section-features-large.js",
   },
   {
     key: "feature section",
     title: "Features Small",
     image: sectionFeaturesImage,
-    aspectRatio: 259 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 880,
     url: "https://framer.com/m/framer/Section-Features.js",
   },
   {
     key: "templates section",
     title: "Templates",
     image: sectionTemplatesImage,
-    aspectRatio: 207 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 840,
     url: "https://framer.com/m/framer/Section-Templates.js",
   },
   {
     key: "grid 1 section",
     title: "Grid 1",
     image: sectionGrid1Image,
-    aspectRatio: 408 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 1111,
     url: "https://framer.com/m/framer/Sections-Grid-1.js",
   },
   {
     key: "grid 2 section",
     title: "Grid 2",
     image: sectionGrid2Image,
-    aspectRatio: 413 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 1124,
     url: "https://framer.com/m/framer/Sections-Grid-2.js",
   },
   {
     key: "feature cards section",
     title: "Feature Cards",
     image: sectionFeatureCardsImage,
-    aspectRatio: 229 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 761,
     url: "https://framer.com/m/framer/Section-Blog.js",
   },
   {
     key: "testimonials section",
     title: "Testimonials",
     image: sectionTestimonialsImage,
-    aspectRatio: 196 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 668,
     url: "https://framer.com/m/framer/Section-Testimonials.js",
   },
   {
     key: "testimonials 3 section",
     title: "Testimonials 2",
     image: sectionTestimonials3Image,
-    aspectRatio: 394 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 1162,
     url: "https://framer.com/m/framer/Section-Testimonials-3.js",
   },
   {
     key: "testimonials 2 section",
     title: "Testimonials 3",
     image: sectionTestimonials2Image,
-    aspectRatio: 174 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 498,
     url: "https://framer.com/m/framer/Section-Testimonials2.js",
   },
   {
     key: "contact section",
     title: "Contact",
     image: sectionContactImage,
-    aspectRatio: 214 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 610,
     url: "https://framer.com/m/framer/Section-Contact.js",
   },
   {
     key: "pricing section",
     title: "Pricing",
     image: sectionPricingImage,
-    aspectRatio: 215 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 715,
     url: "https://framer.com/m/framer/Section-Pricing.js",
   },
   {
     key: "faq section",
     title: "FAQ",
     image: sectionFAQImage,
-    aspectRatio: 180 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 502,
     url: "https://framer.com/m/framer/Section-FAQ.js",
   },
   {
     key: "logos section",
     title: "Logos",
     image: sectionLogosImage,
-    aspectRatio: 128 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 366,
     url: "https://framer.com/m/framer/Section-Logos.js",
   },
   {
     key: "pivot section",
     title: "Pivot",
     image: sectionPivotImage,
-    aspectRatio: 116 / 420,
-    intrinsicWidth: 1200,
-    intrinsicHeight: 260,
     url: "https://framer.com/m/framer/Section-Pivot.js",
   },
 ]
@@ -239,6 +182,7 @@ export function App() {
 
       {filteredSectionItems.map((section) => (
         <button
+          key={section.key}
           onClick={() =>
             framer.addDetachedComponentLayers({
               url: section.url,

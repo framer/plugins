@@ -44,6 +44,7 @@ export function App() {
       if (mode === "default") {
         await framer.addImage({
           image: randomPhoto.urls.full,
+          altText: randomPhoto.alt_description ?? undefined,
           name:
             randomPhoto.alt_description ??
             randomPhoto.description ??
@@ -54,6 +55,7 @@ export function App() {
 
       await framer.setImage({
         image: randomPhoto.urls.full,
+        altText: randomPhoto.alt_description ?? undefined,
         name:
           randomPhoto.alt_description ??
           randomPhoto.description ??
@@ -124,7 +126,8 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
       if (mode === "default") {
         await framer.addImage({
           image: photo.urls.full,
-          name: photo.alt_description ?? photo.description ?? "Unsplash Image"
+          name: photo.alt_description ?? photo.description ?? "Unsplash Image",
+          altText: photo.alt_description ?? undefined
         });
 
         return;
@@ -132,7 +135,8 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
       await framer.setImage({
         image: photo.urls.full,
-        name: photo.alt_description ?? photo.description ?? "Unsplash Image"
+        name: photo.alt_description ?? photo.description ?? "Unsplash Image",
+        altText: photo.alt_description ?? undefined
       });
 
       await framer.closePlugin();
@@ -289,7 +293,8 @@ const GridItem = memo(function GridItem({
         data={{
           type: "image",
           image: photo.urls.full,
-          previewImage: photo.urls.thumb
+          previewImage: photo.urls.thumb,
+          altText: photo.alt_description ?? undefined
         }}
       >
         <button

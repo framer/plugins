@@ -1,88 +1,86 @@
-import { useEffect, useState } from "react";
-import { CanvasNode, framer, withBackgroundImage } from "framer-plugin";
-import { extractColors } from "extract-colors";
-import { BrowserOptions } from "extract-colors/lib/types/Options";
-import { FinalColor } from "extract-colors/lib/types/Color";
-import { motion } from "framer-motion";
-import "./App.css";
-
-function generateGradient(colors: string[]): string {
-  const step = 100 / (colors.length - 1);
-  const deg = 90;
-  let colorStops = "";
-
-  colors.map((color: string, index: number) => {
-    colorStops += color;
-
-    if (index !== colors.length - 1) {
-      colorStops += " " + index * step + "%, ";
-    } else {
-      colorStops += " " + index * step + "%";
-    }
-
-    return colorStops;
-  });
-
-  return `linear-gradient(${deg}deg, ${colorStops})`;
-}
+import { useEffect, useState } from "react"
+import {
+  CanvasNode,
+  ColorStop,
+  Gradient,
+  LinearGradient,
+  framer,
+  withBackgroundGradient,
+  withBackgroundImage,
+} from "framer-plugin"
+import { extractColors } from "extract-colors"
+import { BrowserOptions } from "extract-colors/lib/types/Options"
+import { FinalColor } from "extract-colors/lib/types/Color"
+import { motion } from "framer-motion"
+import "./App.css"
 
 function useSelection() {
-  const [selection, setSelection] = useState<CanvasNode[]>([]);
+  const [selection, setSelection] = useState<CanvasNode[]>([])
 
   useEffect(() => {
-    return framer.subscribeToSelection(setSelection);
-  }, []);
+    return framer.subscribeToSelection(setSelection)
+  }, [])
 
-  return selection;
+  return selection
 }
 
 export function App() {
-  const selection = useSelection();
-  const [colors, setColors] = useState<FinalColor[]>([]);
-  const currentSelection = selection[0];
+  const selection = useSelection()
+  const [colors, setColors] = useState<FinalColor[]>([])
+  const currentSelection = selection[0]
+
+  const supportsGradient = !!currentSelection
+    ? withBackgroundGradient(currentSelection)
+    : false
 
   useEffect(() => {
     if (currentSelection) {
       if (withBackgroundImage(currentSelection)) {
         if (currentSelection.backgroundImage) {
-          const url = currentSelection.backgroundImage.url;
+          const url = currentSelection.backgroundImage.url
           const options = {
             crossOrigin: "anonymous",
-          };
+          }
           extractColors(url, options as BrowserOptions)
             .then((value) => {
-              setColors(value);
+              setColors(value)
             })
-            .catch(console.error);
+            .catch(console.error)
         }
       }
     }
-  }, [selection]);
+  }, [selection])
 
   const handleOnClick = async (node: CanvasNode, color: string) => {
-    if (!node || !color) return;
+    if (!node || !color) return
     await framer.setAttributes(node.id, {
       backgroundColor: color,
-    });
-  };
+    })
+  }
 
   const setAsGradient = async (node: CanvasNode, colors: FinalColor[]) => {
-    if (!node || !colors) return;
+    if (!node || !colors) return
+    if (!withBackgroundGradient(node)) return
 
-    const colorStops = colors.map((color: FinalColor) => {
-      return color.hex;
-    });
+    const colorStops: ColorStop[] = colors.map(
+      (color: FinalColor, index: number) => {
+        return { color: color.hex, position: index / (colors.length - 1) }
+      }
+    )
 
-    const gradient = generateGradient(colorStops);
+    const gradient = node.backgroundGradient
+      ? node.backgroundGradient.cloneWithAttributes({ stops: colorStops })
+      : new LinearGradient({ angle: 90, stops: colorStops })
 
     await framer.setAttributes(node.id, {
       backgroundGradient: gradient,
-    });
-  };
+    })
+  }
 
   const colorList = colors.map((color: FinalColor) => {
     return (
       <motion.div
+        key={color.hex}
         className="color"
         whileHover={{
           flex: 2,
@@ -99,12 +97,12 @@ export function App() {
           restSpeed: 0.0001,
         }}
         onClick={() => {
-          handleOnClick(currentSelection, color.hex);
+          handleOnClick(currentSelection, color.hex)
         }}
         style={{ backgroundColor: color.hex }}
       ></motion.div>
-    );
-  });
+    )
+  })
 
   return (
     <main>
@@ -112,8 +110,10 @@ export function App() {
         <>
           <div className="interface">{colorList}</div>
           <button
+            disabled={!supportsGradient}
+            style={{ opacity: supportsGradient ? 1 : 0.5 }}
             onClick={() => {
-              setAsGradient(currentSelection, colors);
+              setAsGradient(currentSelection, colors)
             }}
           >
             Set Gradient
@@ -125,5 +125,5 @@ export function App() {
         </div>
       )}
     </main>
-  );
+  )
 }

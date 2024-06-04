@@ -4,8 +4,8 @@ import {
     ColorStop,
     LinearGradient,
     framer,
-    withBackgroundGradient,
-    withBackgroundImage,
+    supportsBackgroundGradient,
+    supportsBackgroundImage,
 } from "framer-plugin"
 import { extractColors } from "extract-colors"
 import { BrowserOptions } from "extract-colors/lib/types/Options"
@@ -28,11 +28,11 @@ export function App() {
     const [colors, setColors] = useState<FinalColor[]>([])
     const currentSelection = selection[0]
 
-    const supportsGradient = !!currentSelection ? withBackgroundGradient(currentSelection) : false
+    const supportsGradient = !!currentSelection ? supportsBackgroundGradient(currentSelection) : false
 
     useEffect(() => {
         if (currentSelection) {
-            if (withBackgroundImage(currentSelection)) {
+            if (supportsBackgroundImage(currentSelection)) {
                 if (currentSelection.backgroundImage) {
                     const url = currentSelection.backgroundImage.url
                     const options = {
@@ -57,7 +57,7 @@ export function App() {
 
     const setAsGradient = async (node: CanvasNode, colors: FinalColor[]) => {
         if (!node || !colors) return
-        if (!withBackgroundGradient(node)) return
+        if (!supportsBackgroundGradient(node)) return
 
         const colorStops: ColorStop[] = colors.map((color: FinalColor, index: number) => {
             return { color: color.hex, position: index / (colors.length - 1) }

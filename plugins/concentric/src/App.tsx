@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { CanvasNode, framer, withBorderRadius } from "framer-plugin"
+import { CanvasNode, framer, supportsBorderRadius } from "framer-plugin"
 import * as Slider from "@radix-ui/react-slider"
 
 import "./App.css"
@@ -92,11 +92,11 @@ export function App() {
                     childRect,
                 })
 
-                if (!withBorderRadius(parentNode)) return
+                if (!supportsBorderRadius(parentNode)) return
                 const selectionParentRadius =
                     parentNode.borderRadius !== null ? Number.parseInt(parentNode.borderRadius) : 0
 
-                if (!withBorderRadius(childNode)) return
+                if (!supportsBorderRadius(childNode)) return
                 const selectionChildRadius =
                     childNode.borderRadius !== null
                         ? Number.parseInt(childNode.borderRadius) > 0

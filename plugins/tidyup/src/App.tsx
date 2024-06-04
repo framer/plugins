@@ -1,4 +1,4 @@
-import { framer, CanvasRootNode, withPins, CanvasNode, isWebPageNode, isComponentNode } from "framer-plugin"
+import { framer, CanvasRootNode, supportsPins, CanvasNode, isWebPageNode, isComponentNode } from "framer-plugin"
 import { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback, useReducer } from "react"
 import "./App.css"
 
@@ -496,7 +496,7 @@ export function App() {
 
                     for (const rect of sortedRects) {
                         const node = await framer.getNode(rect.id)
-                        if (!node || !withPins(node)) continue
+                        if (!node || !supportsPins(node)) continue
 
                         const rawBoundingBox = getBoundingBox(Object.values(rects).filter(isRect))
 

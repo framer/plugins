@@ -1,6 +1,6 @@
 {
-  "id": "pEvFy0",
-  "name": "Concentric",
-  "icon": "/icon.png",
-  "modes": ["default"]
+    "id": "pEvFy0",
+    "name": "Concentric",
+    "icon": "/icon.png",
+    "modes": ["default"]
 }

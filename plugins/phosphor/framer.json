@@ -1,6 +1,6 @@
 {
-  "id": "XJovOL",
-  "name": "Phosphor",
-  "modes": ["default"],
-  "icon": "/PhosphorIcons.png"
+    "id": "XJovOL",
+    "name": "Phosphor",
+    "modes": ["default"],
+    "icon": "/PhosphorIcons.png"
 }

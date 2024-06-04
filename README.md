@@ -18,18 +18,19 @@ Check out [our documentation](https://developers.framer.wiki/docs/beta) to learn
 <br>
 
 ### 🎛️ Get Started
-- If you have Plugin Beta access, you can run the latest versions via the Plugin menu in the Toolbar.
-- To set up this repository for local development, clone the repo and run `npm install` in the root.
-- Run a specific plugin by entering the directory with `cd plugins/[plugin-name]` and running `npm run dev`.
+
+-   If you have Plugin Beta access, you can run the latest versions via the Plugin menu in the Toolbar.
+-   To set up this repository for local development, clone the repo and run `npm install` in the root.
+-   Run a specific plugin by entering the directory with `cd plugins/[plugin-name]` and running `npm run dev`.
 
 ### 🛠️ Contribute
 
-- Have a polished Plugin you’d like to share with others? Contributions are welcome.
+-   Have a polished Plugin you’d like to share with others? Contributions are welcome.
 
 ### 🔮 Feedback
 
-- For feature requests and bug reports, please open an Issue in this Repository.
+-   For feature requests and bug reports, please open an Issue in this Repository.
 
 ### 🧪 Join the Beta
 
-- Want to join the Plugin Beta? Sign up for [the waitlist](https://www.framer.com/plugins/).
+-   Want to join the Plugin Beta? Sign up for [the waitlist](https://www.framer.com/plugins/).

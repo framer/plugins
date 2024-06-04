@@ -1,37 +1,37 @@
 {
-  "name": "concentric",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "main": "src/api/index.ts",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@radix-ui/react-slider": "^1.1.2",
-    "framer-motion": "^11.0.8",
-    "framer-plugin": "^0.2.0",
-    "react": "^18",
-    "react-dom": "^18",
-    "react-slider": "^2.0.6",
-    "vite-plugin-framer": "^0.0.10",
-    "vite-plugin-mkcert": "^1"
-  },
-  "devDependencies": {
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "@typescript-eslint/eslint-plugin": "^6",
-    "@typescript-eslint/parser": "^6",
-    "@vitejs/plugin-react-swc": "^3",
-    "eslint": "^8",
-    "eslint-plugin-react-hooks": "^4",
-    "eslint-plugin-react-refresh": "^0",
-    "lightningcss": "^1.24.0",
-    "typescript": "^5.3.3",
-    "vite": "^5.2.10"
-  }
+    "name": "concentric",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "main": "src/api/index.ts",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
+        "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "preview": "vite preview",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@radix-ui/react-slider": "^1.1.2",
+        "framer-motion": "^11.0.8",
+        "framer-plugin": "^0.2.0",
+        "react": "^18",
+        "react-dom": "^18",
+        "react-slider": "^2.0.6",
+        "vite-plugin-framer": "^0.0.10",
+        "vite-plugin-mkcert": "^1"
+    },
+    "devDependencies": {
+        "@types/react": "^18",
+        "@types/react-dom": "^18",
+        "@typescript-eslint/eslint-plugin": "^6",
+        "@typescript-eslint/parser": "^6",
+        "@vitejs/plugin-react-swc": "^3",
+        "eslint": "^8",
+        "eslint-plugin-react-hooks": "^4",
+        "eslint-plugin-react-refresh": "^0",
+        "lightningcss": "^1.24.0",
+        "typescript": "^5.3.3",
+        "vite": "^5.2.10"
+    }
 }

@@ -1,6 +1,6 @@
 {
-  "id": "pziQ5j",
-  "name": "Flip Image",
-  "modes": ["default", "editImage"],
-  "icon": "/FlipImage.png"
+    "id": "pziQ5j",
+    "name": "Flip Image",
+    "modes": ["default", "editImage"],
+    "icon": "/FlipImage.png"
 }

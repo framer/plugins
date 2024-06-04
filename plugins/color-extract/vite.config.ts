@@ -5,5 +5,5 @@ import framer from "vite-plugin-framer"
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), mkcert(), framer()],
+    plugins: [react(), mkcert(), framer()],
 })

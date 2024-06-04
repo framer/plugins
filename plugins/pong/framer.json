@@ -1,6 +1,6 @@
 {
-  "id": "T24LXw",
-  "name": "Pong",
-  "modes": ["default"],
-  "icon": "/framer.svg"
+    "id": "T24LXw",
+    "name": "Pong",
+    "modes": ["default"],
+    "icon": "/framer.svg"
 }

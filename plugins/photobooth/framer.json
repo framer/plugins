@@ -1,6 +1,6 @@
 {
-  "id": "T24Lew",
-  "name": "Photobooth",
-  "modes": ["default", "image"],
-  "icon": "/Photobooth.png"
+    "id": "T24Lew",
+    "name": "Photobooth",
+    "modes": ["default", "image"],
+    "icon": "/Photobooth.png"
 }

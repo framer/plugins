@@ -11,15 +11,15 @@ if (!root) throw new Error("Root element not found")
 
 root.style.height = "auto"
 const resizeObserver = new ResizeObserver(([element]) => {
-  framer.showUI({
-    height: element.contentRect.height,
-  })
+    framer.showUI({
+        height: element.contentRect.height,
+    })
 })
 
 resizeObserver.observe(root)
 
 ReactDOM.createRoot(root).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>
 )

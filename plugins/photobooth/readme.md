@@ -1,4 +1,5 @@
 # Photobooth
+
 A lil selfie plugin.
 
 **By**: @huntercaron

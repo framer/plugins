@@ -1,0 +1,309 @@
+/* Your Plugin CSS */
+
+main {
+  display: block;
+  padding: 0 15px 30px 15px;
+  gap: 15px;
+  cursor: default;
+  user-select: none;
+}
+
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 2em;
+}
+
+.urls {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 0 8px;
+}
+
+.urls::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 2px;
+  left: -1px;
+  right: -1px;
+  border-left: 1px solid var(--framer-color-divider);
+  border-right: 1px solid var(--framer-color-divider);
+  z-index: -1;
+}
+
+.urls::after {
+  content: '';
+  display: block;
+  background-color: transparent;
+  height: 8px;
+  border: 1px solid var(--framer-color-divider);
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-top: 0;
+  position: absolute;
+  bottom: -6px;
+  left: -1px;
+  right: -1px;
+}
+
+.url {
+  display: block;
+  border-bottom: 1px solid var(--framer-color-divider);
+}
+
+.url:last-child {
+  margin-bottom: -6px;
+}
+
+.url a {
+  display: block;
+  color: inherit;
+  padding: 1em 0.5em;
+}
+
+.url:last-child {
+  border-bottom: 0;
+}
+
+.url-status {
+  color: var(--framer-color-text-secondary);
+}
+
+.url-title-row {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  gap: 1em;
+}
+
+.url-title-row svg {
+  width: 1.2em;
+  height: 1.2em;
+  color: var(--framer-color-text);
+  opacity: 0;
+}
+
+.url a:hover svg {
+  opacity: 1;
+}
+
+.url-title-row .url-path {
+  flex: 1;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.url-title-row svg {
+  flex-shrink: 0;
+}
+
+.group-header {
+  font-size: 1.1em;
+  position: sticky;
+  top: 0;
+  background-color: #fff;
+  padding-bottom: 0.5rem;
+  z-index: 1000;
+  margin-left: -1px;
+  margin-right: -1px;
+}
+
+.group-header::after {
+  content: '';
+  display: block;
+  background-color: transparent;
+  height: 8px;
+  border: 1px solid var(--framer-color-divider);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  border-bottom: 0;
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+}
+
+.group-header-no-stick {
+  position: static;
+}
+
+.group-header svg {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+.group-header > div {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-weight: 600;
+}
+
+.group-header--border {
+  width: 8px;
+  height: 8px;
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  background-color: #fff;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.group-header--border:last-child {
+  left: auto;
+  right: 0;
+}
+
+.group-fail svg {
+  color: #ee3838;
+}
+
+.group-warn svg {
+  color: #999;
+}
+
+.group-success svg {
+  color: #36c136;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-container {
+  text-align: center;
+  padding: 1em 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-svg {
+  animation: spin 1.5s linear infinite;
+  transform-origin: center;
+}
+
+.loading-container svg {
+  margin-bottom: 1.5em;
+  animation: spin 1.5s linear infinite;
+  transform-origin: center;
+}
+
+.pages-section {
+}
+
+.pages-section-title {
+  font-weight: 600;
+  margin-bottom: 1em;
+}
+
+.reindex-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+}
+
+.reindex-button svg {
+  width: 1.4em;
+  height: 1.4em;
+}
+
+.tabs-nav {
+  background: var(--framer-color-bg-secondary);
+  display: flex;
+  margin-bottom: 2em;
+  gap: 2px;
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.tabs-nav button {
+  flex: 1;
+  height: 26px !important;
+  background-color: transparent !important;
+  color: var(--framer-color-text-secondary) !important;
+  border-radius: 6px !important;
+}
+
+.tabs-nav button.tabs-nav--active {
+  background-color: #fff !important;
+  color: var(--framer-color-tint-dark) !important;
+  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+}
+
+.chart-offset {
+  margin-left: -5px;
+  margin-right: -5px;
+}
+
+.performance-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.performance-queries {
+  width: 100%;
+  max-width: 100%;
+}
+
+.performance-query {
+  table-layout: fixed;
+  width: 100%;
+  max-width: 100%;
+}
+
+.performance-query td {
+  padding: 0.25em 0;
+  max-width: 100%;
+
+  word-wrap: break-word;
+}
+
+.section-title {
+  font-weight: bold;
+  margin-bottom: 1em;
+}
+
+.performance-query td:first-child {
+  padding-right: 1em;
+}
+
+.performance-query td:last-child {
+  padding-left: 1em;
+}
+
+.performance-query--key {
+  position: relative;
+  padding: 0.5em 1em;
+}
+
+.performance-query--progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  height: 100%;
+  width: var(--percent);
+  background-color: var(--framer-color-bg-tertiary);
+  z-index: -1;
+  border-radius: 8px;
+  min-width: 4px;
+}
+
+.performance-query--val {
+  white-space: nowrap;
+  font-weight: bold;
+}

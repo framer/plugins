@@ -24,6 +24,7 @@ const unsplashPhotoSchema = v.object({
     alt_description: v.nullable(v.string()),
     description: v.nullable(v.string()),
     blur_hash: v.nullable(v.string()),
+    plus: v.boolean(),
     urls: urlsSchema,
     user: unsplashUserSchema,
 })
@@ -47,6 +48,10 @@ const pageItemCount = 20
 interface FetchOptions extends Omit<RequestInit, "headers"> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     body?: any
+}
+
+function filterPremiumPhotos(photos: UnsplashPhoto[]): UnsplashPhoto[] {
+    return photos.filter(photo => !photo.plus)
 }
 
 export async function fetchUnsplash<TSchema extends v.BaseSchema>(
@@ -97,17 +102,23 @@ export function useListPhotosInfinite(query: string) {
                 )
 
                 return {
-                    results: photos,
+                    results: filterPremiumPhotos(photos),
                     total: photos.length,
                     total_pages: undefined,
                 }
             }
 
-            return fetchUnsplash(
+            const result = await fetchUnsplash(
                 `/search/photos?query=${query}&page=${pageParam ?? 1}&per_page=${pageItemCount}`,
                 listPhotosSchema,
                 { signal, method: "GET" }
             )
+
+            return {
+                results: filterPremiumPhotos(result.results),
+                total: result.total,
+                total_pages: result.total_pages,
+            }
         },
         getNextPageParam: (data, allPages) => {
             if (!data.total_pages || data.total_pages >= allPages.length - 1) {

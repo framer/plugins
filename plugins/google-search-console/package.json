@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pogix3m/short-number": "^1.0.1",
+    "@triozer/framer-toolbox": "^0.1.14",
     "framer-plugin": "^0",
     "react": "^18",
     "react-dom": "^18",

@@ -8,9 +8,10 @@ import Loading from '../components/Loading';
 
 interface SiteViewProps {
   site: SiteWithGoogleSite;
+  logout: () => void;
 }
 
-export default function SiteView({ site }: SiteViewProps) {
+export default function SiteView({ site, logout }: SiteViewProps) {
   const [sitemapsState, setSitemapsState] = useState<{
     sitemaps: GoogleSitemap[] | null;
     submitted: boolean;
@@ -76,7 +77,7 @@ export default function SiteView({ site }: SiteViewProps) {
   }
 
   return sitemapsState.submitted ? (
-    <SiteHasIndexedSitemap site={site} />
+    <SiteHasIndexedSitemap site={site} logout={logout} />
   ) : (
     <SiteHasUnindexedSitemap site={site} sitemapUrl={currSitemapUrl} />
   );

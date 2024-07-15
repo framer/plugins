@@ -47,9 +47,13 @@ export async function googleApiCall<T>(
     throw new GoogleError('API call error');
   }
 
-  const json = await result.json();
+  try {
+    const json = await result.json();
 
-  return json;
+    return json;
+  } catch (e) {
+    return null as unknown as T;
+  }
 }
 
 export function getDateRange(range: number) {

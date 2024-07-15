@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useContext, useEffect, useState } from 'react';
 import {
   GoogleInspectionResult,
@@ -7,6 +8,33 @@ import {
 import { useErrorBoundary } from 'react-error-boundary';
 import { googleApiCall } from './utils';
 import { AuthContext, useGoogleToken } from './auth';
+
+export function useSingleIndexingResult(url: string, googleSiteUrl: string) {
+  const authContext = useContext(AuthContext) as NonNullable<GoogleToken>;
+  const [result, setResult] = useState<GoogleInspectionResult | null>(null);
+
+  const { refresh } = useGoogleToken();
+
+  useEffect(() => {
+    googleApiCall<{ inspectionResult: GoogleInspectionResult }>(
+      '/v1/urlInspection/index:inspect',
+      authContext.access_token,
+      refresh,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          inspectionUrl: url,
+          siteUrl: googleSiteUrl,
+          languageCode: window.navigator.language,
+        }),
+      },
+    ).then((response) => {
+      setResult(response.inspectionResult);
+    });
+  }, [authContext.access_token, googleSiteUrl, refresh, url]);
+
+  return result;
+}
 
 export function useIndexingResults(
   urls: string[] | null,

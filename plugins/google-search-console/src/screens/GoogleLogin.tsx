@@ -1,24 +1,32 @@
-import { useContext } from 'react';
-import { AuthContext } from '../auth';
+import bigG from '../images/BigG@2x.png';
 
 interface GoogleLoginProps {
   login: () => void;
   hasError?: boolean;
+  errorMessage?: string;
 }
 
-export default function GoogleLogin({ login, hasError }: GoogleLoginProps) {
-  const authContext = useContext(AuthContext);
-
+export default function GoogleLogin({
+  login,
+  hasError,
+  errorMessage,
+}: GoogleLoginProps) {
   return (
-    <div>
-      {hasError && authContext?.access_token ? (
+    <div className="interstitial">
+      <div className="interstitial-content interstitial-content--start">
+        <img className="big-g" src={bigG} alt="" />
         <div>
-          Sorry, there was an error connecting to your Google account. Please
-          try logging back in.
+          <p className="interstitial-title">Connect to Google</p>
+          <p>
+            {hasError
+              ? errorMessage ||
+                'Sorry, there was an error connecting to your Google account. Please try again.'
+              : 'Improve your performance on Google Search. Make sure your site is published first, then log in.'}
+          </p>
         </div>
-      ) : null}
+      </div>
       <button type="button" onClick={login}>
-        Login with Google
+        Log In
       </button>
     </div>
   );

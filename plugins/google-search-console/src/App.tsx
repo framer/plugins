@@ -9,18 +9,26 @@ import { AuthContext, useGoogleToken } from './auth';
 import CriticalError from './screens/CriticalError';
 import SiteView from './screens/SiteView';
 import Loading from './components/Loading';
+import { useAutoSizer } from '@triozer/framer-toolbox';
+import { ResizeContext } from './resize';
+import { LARGE_HEIGHT, PLUGIN_WIDTH, SMALL_HEIGHT } from './constants';
+import NeedsPublish from './screens/NeedsPublish';
 
 framer.showUI({
-  title: 'Google Search Console',
+  title: 'Search Console',
   position: 'top right',
-  width: 300,
-  height: 500,
+  width: PLUGIN_WIDTH,
+  height: SMALL_HEIGHT,
+  minWidth: PLUGIN_WIDTH,
+  minHeight: SMALL_HEIGHT,
 });
 
 function usePublishedSite() {
   const [publishInfo, setPublishInfo] = useState<PublishInfo | null>(null);
   const [siteInfo, setSiteInfo] = useState<Site>();
   const { showBoundary } = useErrorBoundary();
+
+  const [needsPublish, setNeedsPublish] = useState(false);
 
   const authContext = useContext(AuthContext) as NonNullable<GoogleToken>;
 
@@ -46,27 +54,33 @@ function usePublishedSite() {
   useEffect(() => {
     async function update() {
       try {
-        if (publishInfo && publishInfo.production?.url) {
-          const domain = new URL(publishInfo.production.url).hostname;
+        if (publishInfo) {
+          if (publishInfo.production?.url) {
+            const domain = new URL(publishInfo.production.url).hostname;
 
-          const googleSites = await fetchGoogleSites(authContext.access_token);
+            const googleSites = await fetchGoogleSites(
+              authContext.access_token,
+            );
 
-          const url = stripTrailingSlash(publishInfo.production.url);
+            const url = stripTrailingSlash(publishInfo.production.url);
 
-          const googleSite =
-            googleSites.find(
-              (currSite) =>
-                stripTrailingSlash(currSite.siteUrl) === url ||
-                currSite.siteUrl === `sc-domain:${domain}`,
-            ) || null;
+            const googleSite =
+              googleSites.find(
+                (currSite) =>
+                  stripTrailingSlash(currSite.siteUrl) === url ||
+                  currSite.siteUrl === `sc-domain:${domain}`,
+              ) || null;
 
-          setSiteInfo({
-            url,
-            domain,
-            custom: !domain.endsWith('.framer.app'),
-            googleSite,
-            currentPageUrl: publishInfo.production.currentPageUrl,
-          });
+            setSiteInfo({
+              url,
+              domain,
+              custom: !domain.endsWith('.framer.app'),
+              googleSite,
+              currentPageUrl: publishInfo.production.currentPageUrl,
+            });
+          } else {
+            setNeedsPublish(true);
+          }
         }
       } catch (e) {
         showBoundary(e);
@@ -76,52 +90,104 @@ function usePublishedSite() {
     update();
   }, [authContext.access_token, fetchGoogleSites, publishInfo, showBoundary]);
 
-  return siteInfo;
+  return { siteInfo, needsPublish };
 }
 
-function AppLoadSite() {
+interface AppLoadSiteProps {
+  login: () => void;
+  logout: () => void;
+}
+
+function AppLoadSite({ login, logout }: AppLoadSiteProps) {
   const site = usePublishedSite();
 
-  return !site ? (
+  if (site.needsPublish) {
+    return <NeedsPublish login={login} />;
+  }
+
+  return !site.siteInfo ? (
     <Loading />
-  ) : site && site.googleSite ? (
-    <SiteView site={site as SiteWithGoogleSite} />
+  ) : site.siteInfo && site.siteInfo.googleSite ? (
+    <SiteView site={site.siteInfo as SiteWithGoogleSite} logout={logout} />
   ) : (
-    <CriticalError />
+    <CriticalError site={site.siteInfo} />
   );
 }
 
 export function App() {
-  const { login, tokens, isReady } = useGoogleToken();
+  const { login, logout, tokens, isReady } = useGoogleToken();
+
+  const { ref, updatePluginDimensions } = useAutoSizer({
+    enabled: false,
+    options: {
+      resizable: false,
+      width: PLUGIN_WIDTH,
+      height: SMALL_HEIGHT,
+      minWidth: PLUGIN_WIDTH,
+      minHeight: SMALL_HEIGHT,
+    },
+  });
+
+  const resize = useCallback((height: 'short' | 'long') => {
+    if (height === 'short') {
+      updatePluginDimensions('manual', {
+        width: PLUGIN_WIDTH,
+        height: SMALL_HEIGHT,
+      });
+    } else {
+      updatePluginDimensions('manual', {
+        width: PLUGIN_WIDTH,
+        height: LARGE_HEIGHT,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!tokens?.access_token) {
+      resize('short');
+    }
+  }, [resize, tokens?.access_token]);
 
   return (
-    <div key={tokens?.access_token || 'logout'}>
-      <ErrorBoundary
-        FallbackComponent={() => {
-          // logout();
+    <ResizeContext.Provider value={resize}>
+      <main key={tokens?.access_token || 'logout'} ref={ref}>
+        <ErrorBoundary
+          FallbackComponent={(e) => {
+            // logout();
 
-          return <GoogleLogin hasError login={login} />;
-        }}
-        resetKeys={[tokens?.access_token]}
-      >
-        <AuthContext.Provider value={tokens}>
-          {/* <button
+            return (
+              <GoogleLogin
+                hasError
+                errorMessage={
+                  e.error.name !== 'GoogleError' ? e.error.message || '' : ''
+                }
+                login={login}
+              />
+            );
+          }}
+          resetKeys={[tokens?.access_token]}
+        >
+          <AuthContext.Provider value={tokens}>
+            {/* <button
           type="button"
           onClick={() => refresh(tokens?.refresh_token as string)}
         >
           Debug: Refresh token
         </button> */}
-          {isReady ? (
-            <main>
-              {tokens?.access_token ? (
-                <AppLoadSite key={tokens.access_token} />
+            {isReady ? (
+              tokens?.access_token ? (
+                <AppLoadSite
+                  key={tokens.access_token}
+                  login={login}
+                  logout={logout}
+                />
               ) : (
                 <GoogleLogin login={login} />
-              )}
-            </main>
-          ) : null}
-        </AuthContext.Provider>
-      </ErrorBoundary>
-    </div>
+              )
+            ) : null}
+          </AuthContext.Provider>
+        </ErrorBoundary>
+      </main>
+    </ResizeContext.Provider>
   );
 }

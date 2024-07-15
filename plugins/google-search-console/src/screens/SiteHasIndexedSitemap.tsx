@@ -1,79 +1,64 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import sitemapper from 'sitemap-urls';
 import { useErrorBoundary } from 'react-error-boundary';
-import { GoogleInspectionResult, SiteWithGoogleSite } from '../types';
-import {
-  AlertCircle,
-  CheckCircle,
-  ExternalLink,
-  HelpCircle,
-  XCircle,
-} from 'react-feather';
-import { useIndexingResults, usePerformanceResults } from '../hooks';
+import { SiteWithGoogleSite } from '../types';
+import { usePerformanceResults, useSingleIndexingResult } from '../hooks';
 import Performance from './Performance';
 import { getDateRange } from '../utils';
 import Loading from '../components/Loading';
-
-const VERDICT_ORDER = [
-  'FAIL',
-  'NEUTRAL',
-  'VERDICT_UNSPECIFIED',
-  'PASS',
-] as const;
-
-const VERDICT_LABELS = {
-  FAIL: () => (
-    <div className="group-fail">
-      <XCircle />
-      <span>Index failed</span>
-    </div>
-  ),
-  NEUTRAL: () => (
-    <div className="group-warn">
-      <AlertCircle />
-      <span>Not indexed</span>
-    </div>
-  ),
-  VERDICT_UNSPECIFIED: () => (
-    <div className="group-warn">
-      <HelpCircle />
-      <span>Status unknown</span>
-    </div>
-  ),
-  PASS: () => (
-    <div className="group-success">
-      <CheckCircle />
-      <span>Indexed</span>
-    </div>
-  ),
-};
+import { ResizeContext } from '../resize';
+import doc from '../images/Doc.svg';
+import indexNone from '../images/IndexNone.svg';
+import indexAdded from '../images/IndexAdded.svg';
+import InlineSpinner from '../components/InlineSpinner';
 
 interface URLRowProps {
   url: string;
-  inspection: GoogleInspectionResult;
+  googleSiteUrl: string;
 }
 
-function URLRow({ url, inspection }: URLRowProps) {
+function URLRow({ url, googleSiteUrl }: URLRowProps) {
   const urlObject = new URL(url);
   const formattedUrl = url.slice(
     url.indexOf(urlObject.hostname) + urlObject.hostname.length,
   );
+  const friendlyUrl = formattedUrl === '/' ? 'Home' : formattedUrl;
+
+  const inspection = useSingleIndexingResult(url, googleSiteUrl);
 
   const row = (
     <div className="url-inner">
       <div className="url-title-row">
-        <div className="url-path">{formattedUrl}</div>
-        <ExternalLink />
-      </div>
-      <div className="url-status">
-        {inspection.indexStatusResult.coverageState}
+        <img src={doc} alt="" width="12" height="12" />
+        <div className="url-path">{friendlyUrl}</div>
+        <div className="url-status-icon">
+          {inspection ? (
+            <img
+              src={
+                inspection.indexStatusResult.verdict === 'PASS'
+                  ? indexAdded
+                  : indexNone
+              }
+              alt={
+                inspection.indexStatusResult.verdict === 'PASS'
+                  ? 'Indexed'
+                  : 'Not indexed'
+              }
+              width={16}
+              height={16}
+            />
+          ) : (
+            <InlineSpinner />
+          )}
+        </div>
+        <div className="url-inspect">Inspect</div>
       </div>
     </div>
   );
 
   return (
     <div className="url">
-      {inspection.inspectionResultLink ? (
+      {inspection && inspection.inspectionResultLink ? (
         <a
           href={inspection.inspectionResultLink}
           target="_blank"
@@ -90,102 +75,26 @@ function URLRow({ url, inspection }: URLRowProps) {
 
 interface SiteHasIndexedSitemapProps {
   site: SiteWithGoogleSite;
+  logout: () => void;
 }
 
 interface URLStatusesProps {
   urls: string[] | null;
-  currentPageUrl?: string;
-  indexingResult: ReturnType<typeof useIndexingResults>;
+  googleSiteUrl: string;
 }
 
-function URLStatuses({
-  indexingResult,
-  urls,
-  currentPageUrl,
-}: URLStatusesProps) {
-  const { result, currPageResult } = indexingResult;
-
-  const groups = useMemo(
-    () =>
-      result.results?.reduce(
-        (acc, curr) => {
-          if (!acc[curr.inspection.indexStatusResult.verdict]) {
-            acc[curr.inspection.indexStatusResult.verdict] = [];
-          }
-
-          acc[curr.inspection.indexStatusResult.verdict].push(curr);
-
-          return acc;
-        },
-        {} as Record<
-          GoogleInspectionResult['indexStatusResult']['verdict'],
-          { url: string; inspection: GoogleInspectionResult }[]
-        >,
-      ),
-    [result.results],
-  );
-
-  if (!urls) {
-    return <Loading />;
-  }
-
+function URLStatuses({ urls, googleSiteUrl }: URLStatusesProps) {
   return (
     <div className="groups">
-      <div className="groups">
-        {/* {currentPageUrl || groups ? <ReIndexButton urls={urls} /> : null} */}
-        {currentPageUrl ? (
-          <div className="pages-section">
-            <div className="pages-section-title">Current page</div>
-            {currPageResult ? (
-              <div>
-                <div className="group-header">
-                  {VERDICT_LABELS[
-                    currPageResult.inspection.indexStatusResult.verdict
-                  ]()}
-                  <div className="group-header--border"></div>
-                  <div className="group-header--border"></div>
-                </div>
-                <div className="urls">
-                  <URLRow
-                    url={currPageResult.url}
-                    inspection={currPageResult.inspection}
-                  />
-                </div>
-              </div>
-            ) : (
-              <Loading />
-            )}
-          </div>
-        ) : null}
-      </div>
       <div>
-        <div className="pages-section-title">All pages</div>
-        <div className="groups">
-          {groups ? (
-            VERDICT_ORDER.map((verdict) => (
-              <Fragment key={verdict}>
-                {groups[verdict] ? (
-                  <div>
-                    <div className="group-header">
-                      {VERDICT_LABELS[verdict]()}
-                      <div className="group-header--border"></div>
-                      <div className="group-header--border"></div>
-                    </div>
-                    <div className="urls">
-                      {groups[verdict]?.map((item) => (
-                        <URLRow
-                          key={item.url}
-                          url={item.url}
-                          inspection={item.inspection}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </Fragment>
+        <div className="pages-section-title">Indexing</div>
+        <div className="urls-list">
+          {urls ? (
+            urls.map((result) => (
+              <URLRow key={result} url={result} googleSiteUrl={googleSiteUrl} />
             ))
           ) : (
-            <Loading />
+            <Loading inline />
           )}
         </div>
       </div>
@@ -197,6 +106,7 @@ const dates = getDateRange(14);
 
 export default function SiteHasIndexedSitemap({
   site,
+  logout,
 }: SiteHasIndexedSitemapProps) {
   const { showBoundary } = useErrorBoundary();
 
@@ -221,50 +131,42 @@ export default function SiteHasIndexedSitemap({
     }
   }, [showBoundary, site.domain]);
 
-  const [currentTab, setCurrentTab] = useState<'performance' | 'indexing'>(
-    'performance',
-  );
-
-  const indexingResult = useIndexingResults(
-    urls,
-    site.currentPageUrl,
-    site.googleSite.siteUrl,
-  );
-
   const performance = usePerformanceResults(site.googleSite.siteUrl, dates);
+
+  const resize = useContext(ResizeContext);
+
+  useEffect(() => {
+    if (resize && performance) {
+      resize('long');
+    }
+  }, [resize, performance]);
 
   if (site.googleSite) {
     return (
-      <div>
-        <nav className="tabs-nav">
-          <button
-            className={currentTab === 'performance' ? 'tabs-nav--active' : ''}
-            type="button"
-            onClick={() => setCurrentTab('performance')}
-          >
-            Performance
-          </button>
-          <button
-            className={currentTab === 'indexing' ? 'tabs-nav--active' : ''}
-            type="button"
-            onClick={() => setCurrentTab('indexing')}
-          >
-            Indexing
-          </button>
-        </nav>
+      <div className="in-app">
+        <Performance
+          siteUrl={site.googleSite.siteUrl}
+          performance={performance}
+        />
         <section>
-          {currentTab === 'indexing' ? (
-            <URLStatuses
-              indexingResult={indexingResult}
-              currentPageUrl={site.currentPageUrl}
-              urls={urls}
-            />
-          ) : (
-            <Performance
-              siteUrl={site.googleSite.siteUrl}
-              performance={performance}
-            />
-          )}
+          <URLStatuses urls={urls} googleSiteUrl={site.googleSite.siteUrl} />
+        </section>
+        <section className="actions-footer">
+          <button type="button" onClick={logout}>
+            Log Out
+          </button>
+          <button
+            type="button"
+            className="framer-button-primary"
+            onClick={() => {
+              window.open(
+                `https://search.google.com/search-console/inspect?resource_id=${site.url}`,
+                '_blank',
+              );
+            }}
+          >
+            Dashboard
+          </button>
         </section>
       </div>
     );

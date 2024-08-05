@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { framer } from "framer-plugin";
+import { framer, supportsBackgroundImage } from "framer-plugin";
 import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
 import * as Slider from "@radix-ui/react-slider";
 import "./App.css";
@@ -13,6 +13,20 @@ const drawStyles = {
   backgroundColor: "transparent",
 };
 
+async function svgToBytes(svgText: string) {
+  const blob = new Blob([svgText], { type: "image/svg+xml" });
+  const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as ArrayBuffer);
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(blob);
+  });
+
+  const uint8Array = new Uint8Array(arrayBuffer);
+
+  return uint8Array;
+}
+
 export async function getAssetDataFromSVG(svgString: string): Promise<string> {
   const encodedSvg = encodeURIComponent(svgString);
   const imageUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`;
@@ -20,11 +34,12 @@ export async function getAssetDataFromSVG(svgString: string): Promise<string> {
 }
 export function App() {
   const handleAddSvg = async (drawing: string) => {
-    // const base64SVG = btoa(drawing);
-    // const imageDataURI = `data:image/svg+xml;base64,${base64SVG}`;
-    const svgImage = await getAssetDataFromSVG(drawing);
     await framer.addImage({
-      image: svgImage,
+      image: {
+        type: "bytes",
+        bytes: await svgToBytes(drawing),
+        mimeType: "image/svg+xml",
+      },
       name: "Doodle",
     });
   };

@@ -141,7 +141,12 @@ export function App() {
               canvasRef.current.undo();
             }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="10"
+              height="10"
+              className="left-arrow"
+            >
               <path
                 fill="transparent"
                 stroke="var(--framer-color-text-secondary)"
@@ -158,7 +163,12 @@ export function App() {
               canvasRef.current.redo();
             }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="10"
+              height="10"
+              className="right-arrow"
+            >
               <path
                 fill="transparent"
                 stroke="var(--framer-color-text-secondary)"

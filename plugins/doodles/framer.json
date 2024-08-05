@@ -1,5 +1,6 @@
 {
   "id": "rypq3O",
   "name": "Doodles",
-  "icon": "/icon.png"
+  "icon": "/icon.png",
+  "modes": ["default"]
 }

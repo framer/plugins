@@ -1,6 +1,5 @@
 import { framer, CanvasNode, supportsBackgroundImage, supportsSize } from "framer-plugin"
 import { useState, useEffect, useRef } from "react"
-import { Pixelify } from "react-pixelify"
 import { bytesFromCanvas } from "./utils"
 import * as Slider from "@radix-ui/react-slider"
 import * as Switch from "@radix-ui/react-switch"
@@ -27,31 +26,80 @@ function handleFocus(event: React.FocusEvent<HTMLInputElement>) {
     event.target.select()
 }
 
-const PixelifyWrapper = ({ src, pixelSize }) => {
-    const wrapperRef = useRef<HTMLDivElement>(null)
+const PixelateWrapper = ({ src, pixelSize }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null)
     const [dimensions, setDimensions] = useState({ width: 210, height: 210 })
 
     useEffect(() => {
-        if (src) {
+        if (src && canvasRef.current) {
             const img = new Image()
+            img.crossOrigin = "anonymous"
             img.onload = () => {
                 const aspectRatio = img.width / img.height
+                let newWidth, newHeight
                 if (aspectRatio > 1) {
-                    setDimensions({ width: 210 * aspectRatio, height: 210 })
+                    newWidth = 210 * aspectRatio
+                    newHeight = 210
                 } else {
-                    setDimensions({ width: 210, height: 210 / aspectRatio })
+                    newWidth = 210
+                    newHeight = 210 / aspectRatio
+                }
+                setDimensions({ width: newWidth, height: newHeight })
+
+                const canvas = canvasRef.current
+                canvas.width = newWidth
+                canvas.height = newHeight
+                const ctx = canvas.getContext("2d")
+                if (ctx) {
+                    pixelify(ctx, img, newWidth, newHeight, pixelSize)
                 }
             }
             img.src = src
         }
-    }, [src])
+    }, [src, pixelSize])
 
-    const isDarkMode = document.body.getAttribute("data-framer-theme") === "dark"
-    const isCentered = document.querySelector('.SwitchRoot[data-state="checked"]') === null
+    const pixelify = (
+        ctx: CanvasRenderingContext2D,
+        img: HTMLImageElement,
+        width: number,
+        height: number,
+        pixelSize: number
+    ) => {
+        ctx.drawImage(img, 0, 0, width, height)
+        const isCentered = document.querySelector('.SwitchRoot[data-state="checked"]') === null
+        const fillTransparencyColor = document.body.getAttribute("data-framer-theme") === "dark" ? "#252525" : "#eee"
+
+        if (!isNaN(pixelSize) && pixelSize > 0) {
+            for (let x = 0; x < width + pixelSize; x += pixelSize) {
+                for (let y = 0; y < height + pixelSize; y += pixelSize) {
+                    let xColorPick = x
+                    let yColorPick = y
+                    if (x >= width) {
+                        xColorPick = x - (pixelSize - (width % pixelSize) / 2) + 1
+                    }
+                    if (y >= height) {
+                        yColorPick = y - (pixelSize - (height % pixelSize) / 2) + 1
+                    }
+                    const rgba = ctx.getImageData(xColorPick, yColorPick, 1, 1).data
+                    ctx.fillStyle =
+                        rgba[3] === 0 ? fillTransparencyColor : `rgba(${rgba[0]},${rgba[1]},${rgba[2]},${rgba[3]})`
+                    if (isCentered) {
+                        ctx.fillRect(
+                            Math.floor(x - (pixelSize - (width % pixelSize) / 2)),
+                            Math.floor(y - (pixelSize - (height % pixelSize) / 2)),
+                            pixelSize,
+                            pixelSize
+                        )
+                    } else {
+                        ctx.fillRect(x, y, pixelSize, pixelSize)
+                    }
+                }
+            }
+        }
+    }
 
     return (
         <div
-            ref={wrapperRef}
             style={{
                 width: 210,
                 height: 210,
@@ -61,13 +109,11 @@ const PixelifyWrapper = ({ src, pixelSize }) => {
                 alignItems: "center",
             }}
         >
-            <Pixelify
-                src={src}
-                centered={isCentered ? true : false}
+            <canvas
+                ref={canvasRef}
                 width={dimensions.width}
                 height={dimensions.height}
-                pixelSize={pixelSize}
-                fillTransparencyColor={isDarkMode ? "#252525" : "#eee"}
+                style={{ maxWidth: "100%", maxHeight: "100%" }}
             />
         </div>
     )
@@ -124,7 +170,6 @@ export function App() {
                 await framer.setImage({
                     image: pixelatedImageData,
                 })
-                // framer.closePlugin("Image added successfully")
             } else {
                 throw new Error("Failed to get pixelated image data")
             }
@@ -137,7 +182,7 @@ export function App() {
     return (
         <main>
             <div className="image-container" ref={containerRef}>
-                <PixelifyWrapper src={imageSource} pixelSize={sizeValue} />
+                <PixelateWrapper src={imageSource} pixelSize={sizeValue} />
             </div>
             <div className="rows-10">
                 <div className={"row"}>

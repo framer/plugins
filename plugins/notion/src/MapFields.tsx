@@ -53,9 +53,6 @@ function createFieldConfig(database: GetDatabaseResponse, pluginContext: PluginC
         const property = database.properties[key]
         assert(property)
 
-        // Title is always required in CMS API.
-        if (property.type === "title") continue
-
         result.push({
             field: getCollectionFieldForProperty(property),
             originalFieldName: property.name,
@@ -198,12 +195,6 @@ export function MapDatabaseFields({
                 <div className="grid grid-cols-fieldPicker gap-3 w-full items-center justify-center">
                     <span className="col-start-2 col-span-2">Notion Property</span>
                     <span>Collection Field</span>
-                    <input type="checkbox" readOnly checked={true} className="opacity-50 mx-auto" />
-                    <input type="text" className="w-full opacity-50" disabled value={"Title"} />
-                    <div className="flex items-center justify-center opacity-50">
-                        <IconChevron />
-                    </div>
-                    <input type="text" className={"w-full opacity-50"} disabled={true} placeholder={"Title"}></input>
 
                     {fieldConfig.map(fieldConfig => {
                         const isUnsupported = !fieldConfig.field

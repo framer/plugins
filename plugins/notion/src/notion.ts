@@ -10,7 +10,7 @@ import {
 import pLimit from "p-limit"
 import { GetDatabaseResponse, PageObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
 import { assert, formatDate, isDefined, isString, slugify } from "./utils"
-import { Collection, CollectionField, CollectionItem, framer } from "framer-plugin"
+import { Collection, CollectionField, CollectionItemData, framer, ManagedCollection } from "framer-plugin"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
 
@@ -203,8 +203,11 @@ export function getCollectionFieldForProperty(property: NotionProperty): Collect
             }
         }
         case "title":
-            // The "title" field is required in Notion and is always used to set the "title" on the CMS item.
-            return null
+            return {
+                type: "string",
+                id: property.id,
+                name: property.name,
+            }
         case "multi_select":
         default: {
             // More Field types can be added here
@@ -306,9 +309,8 @@ async function processItem(
     status: SyncStatus,
     unsyncedItemIds: Set<string>,
     lastSyncedTime: string | null
-): Promise<CollectionItem | null> {
+): Promise<CollectionItemData | null> {
     let slugValue: null | string = null
-    let titleValue: null | string = null
 
     const fieldData: Record<string, unknown> = {}
 
@@ -328,15 +330,6 @@ async function processItem(
     for (const key in item.properties) {
         const property = item.properties[key]
         assert(property)
-
-        if (property.type === "title") {
-            const resolvedTitle = getPropertyValue(property, { supportsHtml: false })
-            if (!resolvedTitle || typeof resolvedTitle !== "string") {
-                continue
-            }
-
-            titleValue = resolvedTitle
-        }
 
         if (property.id === slugFieldId) {
             const resolvedSlug = getPropertyValue(property, { supportsHtml: false })
@@ -371,7 +364,7 @@ async function processItem(
         fieldData[pageContentField.id] = contentHTML
     }
 
-    if (!slugValue || !titleValue) {
+    if (!slugValue) {
         status.warnings.push({
             url: item.url,
             message: "Slug or Title is missing. Skipping item.",
@@ -383,7 +376,6 @@ async function processItem(
         id: item.id,
         fieldData,
         slug: slugValue,
-        title: titleValue,
     }
 }
 
@@ -423,7 +415,7 @@ export async function synchronizeDatabase(
     assert(isFullDatabase(database))
     assert(notion)
 
-    const collection = await framer.getCollection()
+    const collection = await framer.getManagedCollection()
     await collection.setFields(fields)
 
     const fieldsById = new Map<string, CollectionField>()
@@ -520,14 +512,14 @@ export function useDatabasesQuery() {
 
 export interface PluginContextNew {
     type: "new"
-    collection: Collection
+    collection: ManagedCollection
     isAuthenticated: boolean
 }
 
 export interface PluginContextUpdate {
     type: "update"
     database: GetDatabaseResponse
-    collection: Collection
+    collection: ManagedCollection
     collectionFields: CollectionField[]
     lastSyncedTime: string
     hasChangedFields: boolean
@@ -570,8 +562,6 @@ function getSuggestedFieldsForDatabase(database: GetDatabaseResponse, ignoredFie
         // These fields were ignored by the user
         if (ignoredFieldIds.includes(property.id)) continue
 
-        if (property.type === "title") continue
-
         const field = getCollectionFieldForProperty(property)
         if (field) {
             fields.push(field)
@@ -582,7 +572,7 @@ function getSuggestedFieldsForDatabase(database: GetDatabaseResponse, ignoredFie
 }
 
 export async function getPluginContext(): Promise<PluginContext> {
-    const collection = await framer.getCollection()
+    const collection = await framer.getManagedCollection()
     const collectionFields = await collection.getFields()
     const databaseId = await collection.getPluginData(pluginDatabaseIdKey)
     const hasAuthToken = isAuthenticated()

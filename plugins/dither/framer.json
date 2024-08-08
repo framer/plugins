@@ -2,5 +2,5 @@
     "id": "TQeWOY",
     "name": "Dither",
     "modes": ["default", "editImage", "image"],
-    "icon": "/Threshold.png"
+    "icon": "/dither.png"
 }

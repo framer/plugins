@@ -3,7 +3,7 @@
     align-items: center;
     height: 100%;
     flex-direction: column;
-    gap: 10px;
+    /* gap: 10px; */
     padding: 0 15px 15px 15px;
 }
 
@@ -27,9 +27,9 @@
     border: 1px solid var(--framer-color-divider);
     border-radius: 8px;
     border-radius: 10px;
-    height: 100%;
+    /* height: 100%; */
     width: 100%;
-    flex-grow: 1;
+    /* flex-grow: 1; */
     position: relative;
     background-color: var(--framer-color-bg-tertiary);
 }
@@ -39,5 +39,31 @@
 }
 
 input[type="range"] {
+    width: 100%;
+}
+
+
+.gui-row {
+    position: relative;
+    display: -ms-grid;
+    display: grid;
+    width: 100%;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    -webkit-column-gap: 10px;
+    column-gap: 10px;
+    -ms-grid-columns: minmax(0, 1.5fr) repeat(2, minmax(62px, 1fr));
+    grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(62px, 1fr));
+    -ms-grid-rows: auto;
+    grid-template-rows: auto;
+}
+
+.gui-row .gui-label {
+    align-self: center;
+    padding-left: 15px;
+}
+
+.gui-row .gui-select {
+    grid-column: 2 / -1;
     width: 100%;
 }

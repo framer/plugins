@@ -1,16 +1,27 @@
 import * as comlink from "comlink"
 import { ImageAsset, framer } from "framer-plugin"
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+    forwardRef,
+    startTransition,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from "react"
 import "./App.css"
 import { Spinner } from "./Spinner"
 import { assert, bytesFromCanvas } from "./utils"
 import type { CanvasWorker } from "./worker/worker"
 import Worker from "./worker/worker?worker"
 import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
+import { RandomDither } from "./materials/random"
+import { OrderedDither } from "./materials/ordered"
 
 // const WorkerBase = comlink.wrap<typeof CanvasWorker>(new Worker())
 
-void framer.showUI({ position: "top left", width: 280, height: 260 })
+void framer.showUI({ position: "top left", width: 280, height: Infinity })
 
 function useSelectedImage() {
     const [image, setImage] = useState<ImageAsset | null>(null)
@@ -45,11 +56,23 @@ export function App() {
 //     }
 // }
 
+const CANVAS_WIDTH = 248
+
 function DitherImage({ image }: { image: ImageAsset }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
 
     const [renderer] = useState(() => new Renderer())
     const gl = renderer.gl
+
+    // cleanup on unmount
+    const isMountedRef = useRef(false)
+    // useEffect(() => {
+    //     if (!isMountedRef.current) {
+    //         isMountedRef.current = true
+    //     } else {
+    //         return () => gl.getExtension("WEBGL_lose_context")?.loseContext()
+    //     }
+    // }, [])
 
     const [camera] = useState(
         () =>
@@ -64,7 +87,21 @@ function DitherImage({ image }: { image: ImageAsset }) {
     )
     camera.position.z = 1
 
-    const [texture] = useState(() => new Texture(gl))
+    const [scene] = useState(() => new Transform())
+    const [geometry] = useState(() => new Plane(gl))
+
+    const [type, setType] = useState(1)
+    const [program, setProgram] = useState(() => new Program(gl, {}))
+
+    const [mesh] = useState(() => new Mesh(gl, { geometry, program }))
+
+    const [texture] = useState(
+        () =>
+            new Texture(gl, {
+                minFilter: gl.LINEAR,
+                magFilter: gl.LINEAR,
+            })
+    )
 
     const loadTexture = useCallback(async (image: ImageAsset) => {
         const loadedImage = await image.loadImage() // get blob src to avoid CORS
@@ -73,6 +110,9 @@ function DitherImage({ image }: { image: ImageAsset }) {
         img.src = loadedImage.currentSrc
         img.onload = () => {
             texture.image = img
+            const aspect = img.naturalWidth / img.naturalHeight
+            renderer.setSize(CANVAS_WIDTH, CANVAS_WIDTH / aspect)
+            program.resolution?.set(CANVAS_WIDTH, CANVAS_WIDTH / aspect)
             texture.update()
         }
     }, [])
@@ -88,50 +128,14 @@ function DitherImage({ image }: { image: ImageAsset }) {
         return () => gl.canvas.remove()
     }, [])
 
-    const [scene] = useState(() => new Transform())
-    const [geometry] = useState(() => new Plane(gl))
-    const [program] = useState(
-        () =>
-            new Program(gl, {
-                vertex: /*glsl*/ `
-                    precision highp float;
-                
-                    attribute vec3 position;
-                    attribute vec2 uv;
-
-                    varying vec2 vUv;
-
-                    uniform mat4 modelViewMatrix;
-                    uniform mat4 projectionMatrix;
-
-                    void main() {
-                        vUv = uv;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                    `,
-                fragment: /*glsl*/ `
-                    precision highp float;
-
-                    varying vec2 vUv;
-
-                    uniform sampler2D uTexture;
-
-                    void main() {
-                        gl_FragColor = texture2D(uTexture, vUv);
-                        // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-                    }
-                    `,
-                uniforms: {
-                    uTexture: { value: texture },
-                },
-            })
-    )
-
-    const [mesh] = useState(() => new Mesh(gl, { geometry, program }))
+    useEffect(() => {
+        if (!program) return
+        mesh.program = program
+    }, [program])
 
     useEffect(() => {
         mesh.setParent(scene)
-    }, [camera])
+    }, [mesh, scene])
 
     const render = useCallback(() => {
         renderer.render({ scene, camera })
@@ -145,25 +149,82 @@ function DitherImage({ image }: { image: ImageAsset }) {
         return () => cancelAnimationFrame(raf)
     }, [render])
 
+    const saveImage = useCallback(async () => {
+        render()
+
+        const originalImage = await image.getData()
+
+        assert(gl.canvas)
+        const nextBytes = await bytesFromCanvas(gl.canvas)
+        assert(nextBytes)
+
+        const start = performance.now()
+
+        framer.hideUI()
+        await framer.setImage({
+            image: {
+                bytes: nextBytes,
+                mimeType: originalImage.mimeType,
+            },
+        })
+
+        void framer.closePlugin("Image saved...")
+
+        console.log("total duration", performance.now() - start)
+    }, [render])
+
     return (
         <div className="container">
             <div className="canvas-container" ref={canvasContainerRef}>
                 {/* {!hasPainted && <Spinner size="medium" />} */}
             </div>
 
-            <input
+            {/* <input
                 type="range"
                 min="0"
                 max="255"
                 // value={threshold}
                 // onChange={event => handleThresholdChange(Number(event.target.value))}
-            />
+            /> */}
 
-            <button
-            // onClick={handleSaveImage}
-            >
-                Save Image
-            </button>
+            {/* {type === 1 && <OrderedDither />} */}
+
+            <div className="gui-row">
+                <label className="gui-label">Type</label>
+                <select
+                    onChange={e => {
+                        setType(Number(e.target.value))
+                    }}
+                    className="gui-select"
+                    defaultValue={type}
+                >
+                    <option value="0">Random (Noise)</option>
+                    <option value="1">Ordered</option>
+                </select>
+            </div>
+
+            {type === 0 && (
+                <RandomDither
+                    ref={node => {
+                        // TODO: fix this type
+                        setProgram(node?.program)
+                    }}
+                    gl={gl}
+                    texture={texture}
+                />
+            )}
+            {type === 1 && (
+                <OrderedDither
+                    ref={node => {
+                        // TODO: fix this type
+                        setProgram(node?.program)
+                    }}
+                    gl={gl}
+                    texture={texture}
+                />
+            )}
+
+            <button onClick={saveImage}>Save Image</button>
         </div>
     )
 }

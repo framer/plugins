@@ -7,13 +7,13 @@ import { useOrderedDitheringTexture } from "../use-ordered-dithering-texture"
 export class OrderedDitherMaterial extends Program {
     constructor(gl: OGLRenderingContext, texture: Texture, ditherTexture: Texture) {
         super(gl, {
-            vertex: /*glsl*/ `
+            vertex: /*glsl*/ `#version 300 es
                 precision highp float;
                 
-                attribute vec3 position;
-                attribute vec2 uv;
+                in vec3 position;
+                in vec2 uv;
 
-                varying vec2 vUv;
+                out vec2 vUv;
 
                 uniform mat4 modelViewMatrix;
                 uniform mat4 projectionMatrix;
@@ -23,57 +23,50 @@ export class OrderedDitherMaterial extends Program {
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
                 `,
-            fragment: /*glsl*/ `
+            fragment: /*glsl*/ `#version 300 es
                 precision highp float;
 
                 ${GLSL.LUMA}
 
-                // int bayerMatrix4x4[16] = int[16](
-                //     0, 8, 2, 10,
-                //     12, 4, 14, 6,
-                //     3, 11, 1, 9,
-                //     15, 7, 13, 5
-                // );
-
-                // const mat4x4 bayerMatrix4x4 = mat4x4(
-                //     0.0,  8.0,  2.0, 10.0,
-                //     12.0, 4.0,  14.0, 6.0,
-                //     3.0,  11.0, 1.0, 9.0,
-                //     15.0, 7.0,  13.0, 5.0
-                // ) / 16.0;
-
-                varying vec2 vUv;
+                in vec2 vUv;
+                out vec4 fragColor;
 
                 uniform sampler2D uTexture;
                 uniform sampler2D uDitherTexture;
                 uniform int uMode;
                 uniform vec2 uResolution;
+                uniform float uPixelSize;
+                // uniform float uDitherPixelSize;
 
 
-                // vec2 ditherTextureSize = textureSize(uDitherTexture, 0);
-
-                float indexValue() {
-                    vec2 coords = mod(vUv * uResolution, 4.) / 4.;
-
-                    return texture2D(uDitherTexture, coords).r;
-                }
-
-                vec3 orderedDither(vec2 uv, vec3 rgb) {
+                vec3 orderedDither(vec3 rgb) {
                     vec3 color = vec3(0.0);
 
-                    // float threshold = 0.0;
+                    ivec2 ditherTextureSize = textureSize(uDitherTexture, 0);
 
-                    // float x = mod( uv.x, 4.);
-                    // float y = mod( uv.y, 4.);
-                    // threshold = texture2D(uDitherTexture, vec2(x, y)).r;
+                    vec2 fragCoord = (vUv / uPixelSize) * uResolution;
+                    float x = float(int(fragCoord.x) % ditherTextureSize.x) / float(ditherTextureSize.x);
+                    float y = float(int(fragCoord.y) % ditherTextureSize.y) / float(ditherTextureSize.y);
+                    
+                    float threshold = texture(uDitherTexture, vec2(x, y)).r;
 
-                    float threshold = indexValue();
+                    // if (luma(rgb) >= threshold) {
+                    //     color = vec3(1.0);
+                    // }
 
-                    if (luma(rgb) >= threshold) {
-                        color = vec3(1.0);
-                    }
+                        if(rgb.r >= threshold) {
+                            color.r = 1.0;
+                        }
 
-                    color = vec3(texture2D(uDitherTexture, mod(gl_FragCoord.xy, 4.) / 4.).r);
+                        if(rgb.g >= threshold) {
+                            color.g = 1.0;
+                        }
+
+                        if(rgb.b >= threshold) {
+                            color.b = 1.0;
+                        }
+
+                        // color = vec3(texture(uDitherTexture, coords).r);
 
                     return color;
                 }
@@ -81,29 +74,47 @@ export class OrderedDitherMaterial extends Program {
 
 
                 void main() {
-                    vec4 color = texture2D(uTexture, vUv);
+                    vec2 pixelSize = uPixelSize / uResolution;
+                    vec2 pixelizedUv = floor(vUv / pixelSize) * pixelSize;
+                    vec4 color = texture(uTexture, pixelizedUv);
 
                     
-                    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+                    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 
-                    gl_FragColor = texture2D(uDitherTexture, vUv);
+                    // gl_FragColor = texture2D(uDitherTexture, vUv);
 
-                    gl_FragColor = vec4(orderedDither(vUv, color.rgb), color.a);
+                    fragColor = vec4(orderedDither(color.rgb), color.a);
+
+                    // fragColor = color;
                 }
                 `,
             uniforms: {
                 uTexture: { value: texture },
                 uResolution: { value: new Vec2(1, 1) },
                 uDitherTexture: { value: ditherTexture },
+                uPixelSize: { value: 1 },
+                uDitherPixelSize: { value: 1 },
             },
         })
 
-        this.resolution = this.uniforms.uResolution.value
+        // this.resolution = this.uniforms.uResolution.value
+    }
+
+    setResolution(x: number, y: number) {
+        this.uniforms.uResolution.value.set(Math.floor(x), Math.floor(y))
     }
 
     set mode(value: number) {
         this.uniforms.uMode.value = value
     }
+
+    set pixelSize(value: number) {
+        this.uniforms.uPixelSize.value = value
+    }
+
+    // set ditherPixelSize(value: number) {
+    //     this.uniforms.uDitherPixelSize.value = value
+    // }
 }
 
 export const OrderedDither = forwardRef(function RandomDither(
@@ -111,6 +122,8 @@ export const OrderedDither = forwardRef(function RandomDither(
     ref
 ) {
     const [mode, setMode] = useState("BAYER_4x4")
+    // const [pixelSize, setPixelSize] = useState(1)
+    // const [ditherPixelSize, setDitherPixelSize] = useState(1)
 
     const { texture: ditherTexture, canvas } = useOrderedDitheringTexture(gl, ORDERED_DITHERING_MATRICES[mode])
 
@@ -131,30 +144,33 @@ export const OrderedDither = forwardRef(function RandomDither(
     const [program] = useState(() => new OrderedDitherMaterial(gl, texture, ditherTexture))
 
     // useEffect(() => {
-    //     program?.width = width
-    //     program?.height = height
-    // }, [program,width, height])
+    //     program.pixelSize = pixelSize
+    // }, [program, pixelSize])
+
+    // useEffect(() => {
+    //     program.ditherPixelSize = ditherPixelSize
+    // }, [program, ditherPixelSize])
 
     useImperativeHandle(ref, () => ({ program }), [program])
 
-    console.log(mode)
-
     return (
-        <div className="gui-row">
-            <label className="gui-label">Mode</label>
-            <select
-                onChange={e => {
-                    setMode(e.target.value)
-                }}
-                className="gui-select"
-                defaultValue={mode}
-            >
-                {Object.keys(ORDERED_DITHERING_MATRICES).map(key => (
-                    <option key={key} value={key}>
-                        {key}
-                    </option>
-                ))}
-            </select>
+        <div>
+            <div className="gui-row">
+                <label className="gui-label">Mode</label>
+                <select
+                    onChange={e => {
+                        setMode(e.target.value)
+                    }}
+                    className="gui-select"
+                    defaultValue={mode}
+                >
+                    {Object.keys(ORDERED_DITHERING_MATRICES).map(key => (
+                        <option key={key} value={key}>
+                            {key}
+                        </option>
+                    ))}
+                </select>
+            </div>
         </div>
     )
 })

@@ -1,17 +1,17 @@
-import { OGLRenderingContext, Program, Texture } from "ogl"
+import { OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
 import { GLSL } from "../glsl"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 
 class RandomDitherMaterial extends Program {
     constructor(gl: OGLRenderingContext, texture: Texture, mode: number = 0, threshold: number = 127) {
         super(gl, {
-            vertex: /*glsl*/ `
+            vertex: /*glsl*/ `#version 300 es
                 precision highp float;
                 
-                attribute vec3 position;
-                attribute vec2 uv;
+                in vec3 position;
+                in vec2 uv;
 
-                varying vec2 vUv;
+                out vec2 vUv;
 
                 uniform mat4 modelViewMatrix;
                 uniform mat4 projectionMatrix;
@@ -21,31 +21,39 @@ class RandomDitherMaterial extends Program {
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
                 `,
-            fragment: /*glsl*/ `
+            fragment: /*glsl*/ `#version 300 es
                 precision highp float;
 
                 ${GLSL.RANDOM}
                 ${GLSL.LUMA}
 
+                in vec2 vUv;
+                out vec4 fragColor;
+
+                uniform sampler2D uTexture;
+                uniform int uMode;
+                uniform float uPixelSize;
+                uniform vec2 uResolution;
+
                 vec3 randomDither(vec2 uv, vec3 rgb, int mode) {
                     vec3 color = vec3(0.0);
 
-                    float randomValue = random(uv);
+                    float threshold = random(uv * 2.); // * 2. avoid glitches do not ask me why
 
                     if(mode == 0) {
-                        if (luma(rgb) >= randomValue) {
+                        if (luma(rgb) >= threshold) {
                             color = vec3(1.0);
                         }
                     } else if(mode == 1) {
-                        if(rgb.r >= randomValue) {
+                        if(rgb.r >= threshold) {
                             color.r = 1.0;
                         }
 
-                        if(rgb.g >= randomValue) {
+                        if(rgb.g >= threshold) {
                             color.g = 1.0;
                         }
 
-                        if(rgb.b >= randomValue) {
+                        if(rgb.b >= threshold) {
                             color.b = 1.0;
                         }
                     }
@@ -53,15 +61,17 @@ class RandomDitherMaterial extends Program {
                     return color;
                 }
 
-                varying vec2 vUv;
 
-                uniform sampler2D uTexture;
-                uniform int uMode;
+                
+                
 
                 void main() {
-                    vec4 color = texture2D(uTexture, vUv);
+                    vec2 pixelSize = uPixelSize / uResolution;
+                    vec2 pixelizedUv = floor(vUv / pixelSize) * pixelSize;
+                    vec4 color = texture(uTexture, pixelizedUv);
 
-                    gl_FragColor = vec4(randomDither(vUv, color.rgb, uMode), color.a);
+                    fragColor = vec4(randomDither(pixelizedUv, color.rgb, uMode), color.a);
+                    // fragColor = color;
                     // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
                 }
                 `,
@@ -69,12 +79,22 @@ class RandomDitherMaterial extends Program {
                 uTexture: { value: texture },
                 uMode: { value: mode },
                 uThreshold: { value: threshold },
+                uResolution: { value: new Vec2(1, 1) },
+                uPixelSize: { value: 1 },
             },
         })
     }
 
+    setResolution(x: number, y: number) {
+        this.uniforms.uResolution.value.set(Math.floor(x), Math.floor(y))
+    }
+
     set mode(value: number) {
         this.uniforms.uMode.value = value
+    }
+
+    set pixelSize(value: number) {
+        this.uniforms.uPixelSize.value = value
     }
 }
 

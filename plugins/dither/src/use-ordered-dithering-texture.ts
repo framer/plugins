@@ -32,5 +32,5 @@ export function useOrderedDitheringTexture(gl: OGLRenderingContext, orderedDithe
         texture.update()
     }, [texture, canvas, orderedDithering])
 
-    return { texture, canvas }
+    return { texture, canvas, width: orderedDithering.x, height: orderedDithering.y }
 }

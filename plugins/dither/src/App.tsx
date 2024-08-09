@@ -103,19 +103,29 @@ function DitherImage({ image }: { image: ImageAsset }) {
             })
     )
 
-    const loadTexture = useCallback(async (image: ImageAsset) => {
-        const loadedImage = await image.loadImage() // get blob src to avoid CORS
+    const [resolution, setResolution] = useState([CANVAS_WIDTH, CANVAS_WIDTH])
 
-        const img = new Image()
-        img.src = loadedImage.currentSrc
-        img.onload = () => {
-            texture.image = img
-            const aspect = img.naturalWidth / img.naturalHeight
-            renderer.setSize(CANVAS_WIDTH, CANVAS_WIDTH / aspect)
-            program.resolution?.set(CANVAS_WIDTH, CANVAS_WIDTH / aspect)
-            texture.update()
-        }
-    }, [])
+    useEffect(() => {
+        renderer.setSize(resolution[0], resolution[1])
+        program?.setResolution?.(resolution[0], resolution[1])
+    }, [renderer, program, resolution])
+
+    const loadTexture = useCallback(
+        async (image: ImageAsset) => {
+            const loadedImage = await image.loadImage() // get blob src to avoid CORS
+
+            const img = new Image()
+            img.onload = () => {
+                texture.image = img
+                const aspect = img.naturalWidth / img.naturalHeight
+
+                setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
+                texture.update()
+            }
+            img.src = loadedImage.currentSrc
+        },
+        [program, renderer, texture]
+    )
 
     useEffect(() => {
         if (!image) return
@@ -173,6 +183,12 @@ function DitherImage({ image }: { image: ImageAsset }) {
         console.log("total duration", performance.now() - start)
     }, [render])
 
+    const [pixelSize, setPixelSize] = useState(1)
+
+    useEffect(() => {
+        program.pixelSize = pixelSize
+    }, [program, pixelSize])
+
     return (
         <div className="container">
             <div className="canvas-container" ref={canvasContainerRef}>
@@ -201,6 +217,17 @@ function DitherImage({ image }: { image: ImageAsset }) {
                     <option value="0">Random (Noise)</option>
                     <option value="1">Ordered</option>
                 </select>
+            </div>
+            <div className="gui-row">
+                <label className="gui-label">Pixelation</label>
+                <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    value={pixelSize}
+                    onChange={e => setPixelSize(Number(e.target.value))}
+                    className="gui-select"
+                />
             </div>
 
             {type === 0 && (

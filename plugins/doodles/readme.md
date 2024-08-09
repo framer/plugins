@@ -1,7 +1,5 @@
-# Color Extract
+# Doodles
 
-Grab dominant colors of any image.
+Draw anything, just like a Pencil tool.
 
 **By**: @benjamindenboer
-
-![color extract](../../assets/color-extract.png)

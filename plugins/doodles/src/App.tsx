@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { framer, supportsBackgroundImage } from "framer-plugin";
+import { framer } from "framer-plugin";
 import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
 import * as Slider from "@radix-ui/react-slider";
 import "./App.css";
@@ -331,8 +331,8 @@ export function App() {
                 .then((data) => {
                   handleAddSvg(data);
                 })
-                .catch((e) => {
-                  console.log(e);
+                .catch((error) => {
+                  console.log(error);
                 });
             }
           }}

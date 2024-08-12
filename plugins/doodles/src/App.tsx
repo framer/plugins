@@ -129,7 +129,7 @@ export function App() {
           height="230"
           strokeWidth={strokeValue}
           strokeColor={`hsl(${strokeColor.h} ${strokeColor.s}% ${strokeColor.l}%)`}
-          backgroundImage="none"
+          canvasColor="transparent"
         />
       </div>
       <section className="flex">

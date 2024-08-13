@@ -10,7 +10,7 @@ import {
 import pLimit from "p-limit"
 import { GetDatabaseResponse, PageObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
 import { assert, formatDate, isDefined, isString, slugify } from "./utils"
-import { Collection, CollectionField, CollectionItemData, framer, ManagedCollection } from "framer-plugin"
+import { CollectionField, CollectionItemData, framer, ManagedCollection } from "framer-plugin"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
 

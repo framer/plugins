@@ -1,6 +1,6 @@
 {
     "id": "cad64a",
     "name": "RSS Feeds",
-    "modes": ["syncCollection", "configureCollection"],
+    "modes": ["syncManagedCollection", "configureManagedCollection"],
     "icon": "/rss.png"
 }

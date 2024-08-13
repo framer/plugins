@@ -7,10 +7,10 @@ import { App, importData } from "./App.tsx"
 
 async function runPlugin() {
     const mode = framer.mode
-    const collection = await framer.getCollection()
+    const collection = await framer.getManagedCollection()
 
     const rssSourceId = await collection.getPluginData("rssSourceId")
-    if (mode === "syncCollection" && rssSourceId) {
+    if (mode === "syncManagedCollection" && rssSourceId) {
         try {
             await importData(collection, rssSourceId)
             await framer.closePlugin()

@@ -1,0 +1,9 @@
+{
+  "id": "9bbb18",
+  "name": "Csv Export",
+  "modes": [
+    "default",
+    "collection"
+  ],
+  "icon": "/icon.svg"
+}

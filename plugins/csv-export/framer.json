@@ -1,6 +1,6 @@
 {
   "id": "9bbb18",
-  "name": "Csv Export",
+  "name": "Export CSV",
   "modes": [
     "default",
     "collection"

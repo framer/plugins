@@ -16,7 +16,7 @@ export function App() {
 
     useEffect(() => {
         framer.showUI({
-            title: "Export",
+            title: "Export CSV",
             width: 600,
             height: 370,
             resizable: "width",
@@ -102,7 +102,7 @@ export function App() {
             <div className="actions">
                 <input type="text" defaultValue={collectionName} placeholder="Filename" ref={filename} />
                 <button className="framer-button-primary" onClick={exportCSV}>
-                    Export as CSV
+                    Export
                 </button>
             </div>
         </div>

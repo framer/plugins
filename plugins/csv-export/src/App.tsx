@@ -8,6 +8,7 @@ import { exportCollectionAsCSV, getDataForCSV } from "./csv"
 export function App() {
     const container = useRef<HTMLDivElement>(null)
     const content = useRef<HTMLTableElement>(null)
+    const filename = useRef<HTMLInputElement>(null)
 
     const [showGradient, setShowGradient] = useState(false)
     const [collectionName, setCollectionName] = useState<string>()
@@ -54,10 +55,13 @@ export function App() {
         return () => {
             window.removeEventListener("resize", resize)
         }
-    }, [])
+    }, [previewCSV])
 
-    const exportCSV = () => {
-        framer.getCollection().then(exportCollectionAsCSV)
+    const exportCSV = async () => {
+        if (!filename.current) return
+
+        const collection = await framer.getCollection()
+        exportCollectionAsCSV(collection, filename.current.value)
     }
 
     if (!previewCSV?.length) return null
@@ -91,11 +95,12 @@ export function App() {
                 </div>
 
                 {showGradient && <div className="gradient" />}
+                <div className="preview-watermark">Preview</div>
                 <div className="border" />
             </div>
 
             <div className="actions">
-                <input type="text" defaultValue={collectionName} placeholder="Filename" />
+                <input type="text" defaultValue={collectionName} placeholder="Filename" ref={filename} />
                 <button className="framer-button-primary" onClick={exportCSV}>
                     Export as CSV
                 </button>

@@ -1,7 +1,7 @@
 import type { Collection, CollectionField, CollectionItem } from "framer-plugin"
 
 import { isFileAsset, isImageAsset } from "framer-plugin"
-import { assertNever } from "framer-plugin/utils"
+import { assertNever } from "./assert"
 
 function downloadFile(file: File) {
     const filename = file.name
@@ -102,7 +102,7 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
     return rows
 }
 
-export async function exportCollectionAsCSV(collection: Collection) {
+export async function exportCollectionAsCSV(collection: Collection, filename: string) {
     const fields = await collection.getFields()
     const items = await collection.getItems()
 
@@ -118,7 +118,7 @@ export async function exportCollectionAsCSV(collection: Collection) {
         })
         .join("\n")
 
-    const file = new File([csv], `${collection.name}.csv`, {
+    const file = new File([csv], `${filename}.csv`, {
         type: "text/csv",
     })
 

@@ -1,5 +1,5 @@
 {
-  "name": "csv-export",
+  "name": "export-csv",
   "private": true,
   "version": "0.0.0",
   "type": "module",

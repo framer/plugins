@@ -1,6 +1,6 @@
 {
     "id": "XJovOL",
     "name": "Phosphor",
-    "modes": ["default"],
+    "modes": ["canvas"],
     "icon": "/PhosphorIcons.png"
 }

@@ -1,9 +1,6 @@
 {
-  "id": "9bbb18",
-  "name": "Export CSV",
-  "modes": [
-    "default",
-    "collection"
-  ],
-  "icon": "/icon.svg"
+    "id": "9bbb18",
+    "name": "Export CSV",
+    "modes": ["canvas", "collection"],
+    "icon": "/icon.svg"
 }

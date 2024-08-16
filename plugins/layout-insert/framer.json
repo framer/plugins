@@ -1,6 +1,6 @@
 {
     "id": "f5e341",
     "name": "Layout Insert",
-    "modes": ["default"],
+    "modes": ["canvas"],
     "icon": "/icon.svg"
 }

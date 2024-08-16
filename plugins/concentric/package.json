@@ -14,7 +14,7 @@
     "dependencies": {
         "@radix-ui/react-slider": "^1.1.2",
         "framer-motion": "^11.0.8",
-        "framer-plugin": "^0.3.0",
+        "framer-plugin": "^0.3.1",
         "react": "^18",
         "react-dom": "^18",
         "react-slider": "^2.0.6",

@@ -1,6 +1,6 @@
 {
     "id": "pziQ5j",
     "name": "Flip Image",
-    "modes": ["default", "editImage"],
+    "modes": ["canvas", "editImage"],
     "icon": "/FlipImage.png"
 }

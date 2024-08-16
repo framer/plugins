@@ -10,7 +10,7 @@ import { Blurhash } from "react-blurhash"
 
 const mode = framer.mode
 
-const minWindowWidth = mode === "default" ? 350 : 600
+const minWindowWidth = mode === "canvas" ? 350 : 600
 const minColumnWidth = 100
 const columnGap = 8
 const sidePadding = 16 * 2
@@ -33,7 +33,7 @@ export function App() {
             const mode = framer.mode
             const randomPhoto = await getRandomPhoto(query)
 
-            if (mode === "default") {
+            if (mode === "canvas") {
                 await framer.addImage({
                     image: randomPhoto.urls.full,
                     name: randomPhoto.alt_description ?? randomPhoto.description ?? "Unsplash Image",
@@ -102,7 +102,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
         mutationFn: async (photo: UnsplashPhoto) => {
             const mode = framer.mode
 
-            if (mode === "default") {
+            if (mode === "canvas") {
                 await framer.addImage({
                     image: photo.urls.full,
                     name: photo.alt_description ?? photo.description ?? "Unsplash Image",

@@ -183,12 +183,6 @@ function DitherImage({ image }: { image: ImageAsset }) {
         console.log("total duration", performance.now() - start)
     }, [render])
 
-    const [pixelSize, setPixelSize] = useState(1)
-
-    useEffect(() => {
-        program.pixelSize = pixelSize
-    }, [program, pixelSize])
-
     return (
         <div className="container">
             <div className="canvas-container" ref={canvasContainerRef}>
@@ -205,7 +199,7 @@ function DitherImage({ image }: { image: ImageAsset }) {
 
             {/* {type === 1 && <OrderedDither />} */}
 
-            <div className="gui-row">
+            {/* <div className="gui-row">
                 <label className="gui-label">Type</label>
                 <select
                     onChange={e => {
@@ -214,23 +208,12 @@ function DitherImage({ image }: { image: ImageAsset }) {
                     className="gui-select"
                     defaultValue={type}
                 >
-                    <option value="0">Random (Noise)</option>
+                    <option value="0">Random</option>
                     <option value="1">Ordered</option>
                 </select>
-            </div>
-            <div className="gui-row">
-                <label className="gui-label">Pixelation</label>
-                <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    value={pixelSize}
-                    onChange={e => setPixelSize(Number(e.target.value))}
-                    className="gui-select"
-                />
-            </div>
+            </div> */}
 
-            {type === 0 && (
+            {/* {type === 0 && (
                 <RandomDither
                     ref={node => {
                         // TODO: fix this type
@@ -239,7 +222,7 @@ function DitherImage({ image }: { image: ImageAsset }) {
                     gl={gl}
                     texture={texture}
                 />
-            )}
+            )} */}
             {type === 1 && (
                 <OrderedDither
                     ref={node => {

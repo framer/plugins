@@ -123,7 +123,9 @@ export const RandomDither = forwardRef(function RandomDither(
                 defaultValue={mode}
             >
                 <option value="0">Black and White</option>
-                <option value="1">Color</option>
+                <option value="1">RGB</option>
+                <option value="1">Grayscale</option>
+                <option value="2">Colors</option>
             </select>
         </div>
     )

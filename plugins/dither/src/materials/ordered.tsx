@@ -8,7 +8,7 @@ export class OrderedDitherMaterial extends Program {
     constructor(gl: OGLRenderingContext, texture: Texture, ditherTexture: Texture) {
         super(gl, {
             vertex: /*glsl*/ `#version 300 es
-                precision highp float;
+                precision lowp float;
                 
                 in vec3 position;
                 in vec2 uv;
@@ -24,8 +24,9 @@ export class OrderedDitherMaterial extends Program {
                 }
                 `,
             fragment: /*glsl*/ `#version 300 es
-                precision highp float;
+                precision lowp float;
 
+                ${GLSL.RANDOM}
                 ${GLSL.LUMA}
 
                 in vec2 vUv;
@@ -36,10 +37,17 @@ export class OrderedDitherMaterial extends Program {
                 uniform int uMode;
                 uniform vec2 uResolution;
                 uniform float uPixelSize;
-                // uniform float uDitherPixelSize;
+                uniform int uColorMode;
+                uniform int uQuantization;
+                uniform int uRandom;
 
 
-                vec3 orderedDither(vec3 rgb) {
+                float quantize (float value, int quant) {
+                    return floor(value * (float(quant) - 1.0) + 0.5) / (float(quant) - 1.0);
+                }
+
+
+                vec3 orderedDither(vec3 rgb, vec2 uv) {
                     vec3 color = vec3(0.0);
 
                     ivec2 ditherTextureSize = textureSize(uDitherTexture, 0);
@@ -47,13 +55,14 @@ export class OrderedDitherMaterial extends Program {
                     vec2 fragCoord = (vUv / uPixelSize) * uResolution;
                     float x = float(int(fragCoord.x) % ditherTextureSize.x) / float(ditherTextureSize.x);
                     float y = float(int(fragCoord.y) % ditherTextureSize.y) / float(ditherTextureSize.y);
-                    
-                    float threshold = texture(uDitherTexture, vec2(x, y)).r;
 
-                    // if (luma(rgb) >= threshold) {
-                    //     color = vec3(1.0);
-                    // }
+                    float threshold = uRandom == 1 ? random(uv) : texture(uDitherTexture, vec2(x, y)).r;
 
+                    if (uColorMode == 0) { // Black and White
+                        if (luma(rgb) >= threshold) {
+                            color = vec3(1.0);
+                        }
+                    } else if (uColorMode == 1) { // RGB
                         if(rgb.r >= threshold) {
                             color.r = 1.0;
                         }
@@ -65,6 +74,37 @@ export class OrderedDitherMaterial extends Program {
                         if(rgb.b >= threshold) {
                             color.b = 1.0;
                         }
+                    } else if (uColorMode == 2) { // Grayscale
+                        color.rgb = vec3(luma(rgb));
+
+                        if(color.r >= threshold) {
+                            color.r = quantize(color.r, uQuantization);
+                        } 
+
+                        if(color.g >= threshold) {
+                            color.g = quantize(color.g, uQuantization);
+                        }
+
+                        if(color.b >= threshold) {
+                            color.b = quantize(color.b, uQuantization);
+                        }
+                    } else if (uColorMode == 3) { // True Colors
+                        color.rgb = rgb;
+
+                        if(rgb.r >= threshold) {
+                            color.r = quantize(color.r, uQuantization);
+                        }
+
+                        if(rgb.g >= threshold) {
+                            color.g = quantize(color.g, uQuantization);
+                        }
+
+                        if(rgb.b >= threshold) {
+                            color.b = quantize(color.b, uQuantization);
+                        }
+                    }
+
+
 
                         // color = vec3(texture(uDitherTexture, coords).r);
 
@@ -83,7 +123,7 @@ export class OrderedDitherMaterial extends Program {
 
                     // gl_FragColor = texture2D(uDitherTexture, vUv);
 
-                    fragColor = vec4(orderedDither(color.rgb), color.a);
+                    fragColor = vec4(orderedDither(color.rgb, pixelizedUv), color.a);
 
                     // fragColor = color;
                 }
@@ -93,7 +133,9 @@ export class OrderedDitherMaterial extends Program {
                 uResolution: { value: new Vec2(1, 1) },
                 uDitherTexture: { value: ditherTexture },
                 uPixelSize: { value: 1 },
-                uDitherPixelSize: { value: 1 },
+                uColorMode: { value: 0 },
+                uQuantization: { value: 8 },
+                uRandom: { value: 0 },
             },
         })
 
@@ -112,6 +154,18 @@ export class OrderedDitherMaterial extends Program {
         this.uniforms.uPixelSize.value = value
     }
 
+    set colorMode(value: number) {
+        this.uniforms.uColorMode.value = value
+    }
+
+    set quantization(value: number) {
+        this.uniforms.uQuantization.value = value
+    }
+
+    set isRandom(value: boolean) {
+        this.uniforms.uRandom.value = value ? 1 : 0
+    }
+
     // set ditherPixelSize(value: number) {
     //     this.uniforms.uDitherPixelSize.value = value
     // }
@@ -122,13 +176,17 @@ export const OrderedDither = forwardRef(function RandomDither(
     ref
 ) {
     const [mode, setMode] = useState("BAYER_4x4")
+    const [colorMode, setColorMode] = useState(0)
+    const [quantization, setQuantization] = useState(8)
+    const [isRandom, setIsRandom] = useState(false)
+    const [pixelSize, setPixelSize] = useState(2)
     // const [pixelSize, setPixelSize] = useState(1)
     // const [ditherPixelSize, setDitherPixelSize] = useState(1)
 
     const { texture: ditherTexture, canvas } = useOrderedDitheringTexture(gl, ORDERED_DITHERING_MATRICES[mode])
 
     useEffect(() => {
-        document.body.appendChild(canvas)
+        // document.body.appendChild(canvas)
 
         canvas.style.cssText = `
             position: absolute;
@@ -143,9 +201,21 @@ export const OrderedDither = forwardRef(function RandomDither(
 
     const [program] = useState(() => new OrderedDitherMaterial(gl, texture, ditherTexture))
 
-    // useEffect(() => {
-    //     program.pixelSize = pixelSize
-    // }, [program, pixelSize])
+    useEffect(() => {
+        program.colorMode = colorMode
+    }, [program, colorMode])
+
+    useEffect(() => {
+        program.quantization = quantization
+    }, [program, quantization])
+
+    useEffect(() => {
+        program.isRandom = isRandom
+    }, [program, isRandom])
+
+    useEffect(() => {
+        program.pixelSize = pixelSize
+    }, [program, pixelSize])
 
     // useEffect(() => {
     //     program.ditherPixelSize = ditherPixelSize
@@ -159,11 +229,19 @@ export const OrderedDither = forwardRef(function RandomDither(
                 <label className="gui-label">Mode</label>
                 <select
                     onChange={e => {
-                        setMode(e.target.value)
+                        const value = e.target.value
+
+                        if (value === "RANDOM") {
+                            setIsRandom(true)
+                        } else {
+                            setMode(value)
+                            setIsRandom(false)
+                        }
                     }}
                     className="gui-select"
                     defaultValue={mode}
                 >
+                    <option value="RANDOM">RANDOM</option>
                     {Object.keys(ORDERED_DITHERING_MATRICES).map(key => (
                         <option key={key} value={key}>
                             {key}
@@ -171,6 +249,46 @@ export const OrderedDither = forwardRef(function RandomDither(
                     ))}
                 </select>
             </div>
+            <div className="gui-row">
+                <label className="gui-label">Pixelation</label>
+                <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    value={pixelSize}
+                    onChange={e => setPixelSize(Number(e.target.value))}
+                    className="gui-select"
+                />
+            </div>
+            <div className="gui-row">
+                <label className="gui-label">Color Mode</label>
+                <select
+                    onChange={e => {
+                        setColorMode(Number(e.target.value))
+                    }}
+                    className="gui-select"
+                    defaultValue={colorMode}
+                >
+                    <option value="0">Black and White</option>
+                    <option value="1">RGB</option>
+                    <option value="2">Grayscale</option>
+                    <option value="3">True Colors</option>
+                    <option value="4">Custom Palette</option>
+                </select>
+            </div>
+            {[2, 3].includes(colorMode) && (
+                <div className="gui-row">
+                    <label className="gui-label">Quantization</label>
+                    <input
+                        type="range"
+                        min="3"
+                        max="16"
+                        value={quantization}
+                        onChange={e => setQuantization(parseInt(e.target.value))}
+                        className="gui-select"
+                    />
+                </div>
+            )}
         </div>
     )
 })

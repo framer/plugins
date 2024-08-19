@@ -1,4 +1,4 @@
-import { Collection, CollectionField, CollectionItem, framer } from "framer-plugin"
+import { CollectionField, CollectionItemData, framer, ManagedCollection } from "framer-plugin"
 
 import "./App.css"
 import { useState } from "react"
@@ -15,6 +15,7 @@ interface RSSSource {
 const linkFieldId = "link"
 const dateFieldId = "date"
 const contentFieldId = "content"
+const titleFieldId = "title"
 
 // A key to store the selected RSS source in the plugin data so it can be reused
 export const rssSourceStorageKey = "rssSourceId"
@@ -77,6 +78,11 @@ function parseRSS(xmlDoc: Document) {
 function getCollectionFields(): CollectionField[] {
     return [
         {
+            type: "string",
+            name: "Title",
+            id: titleFieldId,
+        },
+        {
             type: "link",
             id: linkFieldId,
             name: "Link",
@@ -94,7 +100,7 @@ function getCollectionFields(): CollectionField[] {
     ]
 }
 
-export async function importData(collection: Collection, sourceId: string) {
+export async function importData(collection: ManagedCollection, sourceId: string) {
     const rssSource = rssSources.find(source => source.id === sourceId)
     if (!rssSource) throw new Error("Invalid collection source id")
 
@@ -109,7 +115,7 @@ export async function importData(collection: Collection, sourceId: string) {
 
     const unseenItemIds = new Set(await collection.getItemIds())
 
-    const itemsToAdd: CollectionItem[] = []
+    const itemsToAdd: CollectionItemData[] = []
     for (const item of items) {
         // RSS items don't have an ID - we hash the title.
         const id = simpleHash(item.title)
@@ -119,8 +125,8 @@ export async function importData(collection: Collection, sourceId: string) {
         itemsToAdd.push({
             id,
             slug: slugify(item.title),
-            title: item.title,
             fieldData: {
+                [titleFieldId]: item.title,
                 [linkFieldId]: item.link,
                 [dateFieldId]: item.date,
                 [contentFieldId]: item.content,
@@ -139,7 +145,7 @@ export async function importData(collection: Collection, sourceId: string) {
 }
 
 interface Props {
-    collection: Collection
+    collection: ManagedCollection
     initialRssSourceId: string | null
 }
 

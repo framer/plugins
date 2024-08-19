@@ -183,7 +183,7 @@ function DitherImage({ image }: { image: ImageAsset }) {
         console.log("total duration", performance.now() - start)
     }, [render])
 
-    const [pixelSize, setPixelSize] = useState(1)
+    const [pixelSize, setPixelSize] = useState(2)
 
     useEffect(() => {
         program.pixelSize = pixelSize

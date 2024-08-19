@@ -1,6 +1,6 @@
 {
     "id": "Blwwee",
     "name": "Unsplash",
-    "modes": ["default", "editImage", "image"],
+    "modes": ["canvas", "editImage", "image"],
     "icon": "/Unsplash.png"
 }

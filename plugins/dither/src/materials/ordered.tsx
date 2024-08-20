@@ -61,86 +61,34 @@ export class OrderedDitherMaterial extends Program {
 
                     float threshold = uRandom == 1 ? random(uv) : texture(uDitherTexture, vec2(x, y)).r;
 
-                    // if (uColorMode == 0) { // Grayscale
-                    //     if (luma(rgb) >= threshold) {
+                    //     if (luma(rgb) >= threshold) { // Black and White
                     //         color = vec3(1.0);
                     //     }
-                    // } else if (uColorMode == 1) { // RGB
-                    //     if(rgb.r >= threshold) {
-                    //         color.r = 1.0;
-                    //     }
-
-                    //     if(rgb.g >= threshold) {
-                    //         color.g = 1.0;
-                    //     }
-
-                    //     if(rgb.b >= threshold) {
-                    //         color.b = 1.0;
-                    //     }
-                    // } else 
                     
                     if (uColorMode == 0) { // Grayscale
                         color.rgb = vec3(luma(rgb));
-                        threshold -= 0.44; // arbitraty threshold adjustment
+                        threshold -= 0.45; // arbitraty threshold adjustment
 
-                        // if(color.r >= threshold) {
-                        // if(luma(rgb) >= threshold) {
-                            color.r = quantize(color.r + threshold, uQuantization);
-                        // } 
+                        color.r = quantize(color.r + threshold, uQuantization);
+                        color.g = quantize(color.g + threshold, uQuantization);
+                        color.b = quantize(color.b + threshold, uQuantization);
 
-                        // if(color.g >= threshold) {
-                            color.g = quantize(color.g + threshold, uQuantization);
-                        // }
-
-                        // if(color.b >= threshold) {
-                            color.b = quantize(color.b + threshold, uQuantization);
-                        // }
-                    } else if (uColorMode == 1) { // True Colors
+                    } else if (uColorMode == 1) { // RGB
                         color.rgb = rgb;
-                        threshold -= 0.44; // arbitraty threshold adjustment
+                        threshold -= 0.45; // arbitraty threshold adjustment
 
-                        // if(rgb.r >= threshold) {
-                            color.r = quantize(color.r + threshold, uQuantization);
-                        // }
+                        color.r = quantize(color.r + threshold, uQuantization);
+                        color.g = quantize(color.g + threshold, uQuantization);
+                        color.b = quantize(color.b + threshold, uQuantization);
 
-                        // if(rgb.g >= threshold) {
-                            color.g = quantize(color.g + threshold, uQuantization);
-                        // }
-
-                        // if(rgb.b >= threshold) {
-                            color.b = quantize(color.b + threshold, uQuantization);
-                        // }
                     } else if (uColorMode == 2) { // Custom Palette
-                        // color.rgb = vec3(luma(rgb));
                         color.rgb = vec3(luma(rgb));
-                        threshold -= 0.44; // arbitraty threshold adjustment
+                        threshold -= 0.45; // arbitraty threshold adjustment
 
                         ivec2 paletteTextureSize = textureSize(uDitherTexture, 0);
 
                         color.rgb = texture(uPaletteTexture, vec2(quantize(1. - (luma(rgb) + threshold), paletteTextureSize.x), 0.0)).rgb;
-
-                        // color.r = texture(uPaletteTexture, vec2(quantize(1. - (color.r + threshold), paletteTextureSize.x), 0.0)).r;
-                        // color.g = texture(uPaletteTexture, vec2(quantize(1. - (color.g + threshold), paletteTextureSize.x), 0.0)).g;
-                        // color.b = texture(uPaletteTexture, vec2(quantize(1. - (color.b + threshold), paletteTextureSize.x), 0.0)).b;
-
-                        // if(color.r >= threshold) {
-                        // if(luma(rgb) >= threshold) {
-                            // float x = quantize(color.r + threshold, uQuantization);
-                        // } 
-
-                        // if(color.g >= threshold) {
-                            // color.g = quantize(color.g + threshold, uQuantization);
-                        // }
-
-                        // if(color.b >= threshold) {
-                            // color.b = quantize(color.b + threshold, uQuantization);
-                        // }
-
                     }
-
-
-
-                        // color = vec3(texture(uDitherTexture, coords).r);
 
                     return color;
                 }
@@ -223,26 +171,22 @@ export const OrderedDither = forwardRef(function RandomDither(
     const [pixelSize, setPixelSize] = useState(2)
     const [colors, setColors] = useState([] as string[])
 
-    console.log(quantization)
-    // const [pixelSize, setPixelSize] = useState(1)
-    // const [ditherPixelSize, setDitherPixelSize] = useState(1)
-
-    const { texture: ditherTexture, canvas } = useOrderedDitheringTexture(gl, ORDERED_DITHERING_MATRICES[mode])
+    const { texture: ditherTexture } = useOrderedDitheringTexture(gl, ORDERED_DITHERING_MATRICES[mode])
     const { texture: paletteTexture } = useGradientTexture(gl, colors, quantization)
 
-    useEffect(() => {
-        // document.body.appendChild(canvas)
+    // useEffect(() => {
+    //     // document.body.appendChild(canvas)
 
-        canvas.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 128px;
-            height: 128px;
-            pointer-events: none;
+    //     canvas.style.cssText = `
+    //         position: absolute;
+    //         top: 0;
+    //         left: 0;
+    //         width: 128px;
+    //         height: 128px;
+    //         pointer-events: none;
 
-        `
-    }, [ditherTexture, canvas])
+    //     `
+    // }, [ditherTexture, canvas])
 
     const [program] = useState(() => new OrderedDitherMaterial(gl, texture, ditherTexture, paletteTexture))
 

@@ -1,7 +1,7 @@
 .container {
     display: flex;
     align-items: center;
-    height: 100%;
+    /* height: 100%; */
     flex-direction: column;
     /* gap: 10px; */
     padding: 0 15px 15px 15px;
@@ -42,6 +42,15 @@ input[type="range"] {
     width: 100%;
 }
 
+body[data-framer-theme=dark] .gui-row .gui-label {
+    color: #ccc;
+}
+
+.gui {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
 
 .gui-row {
     position: relative;
@@ -67,3 +76,81 @@ input[type="range"] {
     grid-column: 2 / -1;
     width: 100%;
 }
+
+.gui-row .gui-palette {
+    width: 100%;
+    grid-column: 2 / -1;
+    gap: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.gui-row .gui-palette .color {
+    /* width: 100%; */
+    
+    /* display: grid; */
+    /* grid-template-columns: repeat(2, minmax(0, 1fr)); */
+    /* column-gap: 10px; */
+    /* display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; */
+    /* gap: 10px; */
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+}
+
+.gui-row .gui-palette .color input{
+    /* grid-column: 1 / span 1;
+    width: 100%; */
+    width: auto;
+    flex-grow: 1;
+}
+
+/* .gui-palette .color {
+    width: 100%;
+} */
+
+/* .gui-palette input { */
+    /* width: 100%; */
+    /* width: 30px; */
+/* } */
+
+/* .gui-palette .list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    width: 100%;
+}*/
+
+.gui-palette .controls {
+    /* width: 100%; */
+    display: flex;
+    /* gap: 10px; */
+    align-items: stretch;
+    /* justify-content: flex-end; */
+} 
+
+.gui-palette .controls > * {
+    display: flex;
+    align-items: center;
+}
+
+.gui-palette .add {
+    height: 30px;
+    background-color: var(--framer-color-bg-secondary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+/* .gui-row .gui-palette input {
+    width: 30px;
+    aspect-ratio: 1;
+} */

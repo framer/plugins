@@ -1,27 +1,27 @@
-import * as comlink from "comlink"
+// import * as comlink from "comlink"
 import { ImageAsset, framer } from "framer-plugin"
 import {
-    forwardRef,
-    startTransition,
+    // forwardRef,
+    // startTransition,
     useCallback,
     useEffect,
-    useImperativeHandle,
-    useMemo,
+    // useImperativeHandle,
+    // useMemo,
     useRef,
     useState,
 } from "react"
 import "./App.css"
-import { Spinner } from "./Spinner"
+// import { Spinner } from "./Spinner"
 import { assert, bytesFromCanvas } from "./utils"
-import type { CanvasWorker } from "./worker/worker"
-import Worker from "./worker/worker?worker"
+// import type { CanvasWorker } from "./worker/worker"
+// import Worker from "./worker/worker?worker"
 import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
-import { RandomDither } from "./materials/random"
+// import { RandomDither } from "./materials/random"
 import { OrderedDither } from "./materials/ordered"
 
 // const WorkerBase = comlink.wrap<typeof CanvasWorker>(new Worker())
 
-void framer.showUI({ position: "top left", width: 280, height: Infinity })
+void framer.showUI({ position: "top left", width: 280, height: 1000 })
 
 function useSelectedImage() {
     const [image, setImage] = useState<ImageAsset | null>(null)
@@ -90,7 +90,7 @@ function DitherImage({ image }: { image: ImageAsset }) {
     const [scene] = useState(() => new Transform())
     const [geometry] = useState(() => new Plane(gl))
 
-    const [type, setType] = useState(1)
+    // const [type, setType] = useState(1)
     const [program, setProgram] = useState(() => new Program(gl, {}))
 
     const [mesh] = useState(() => new Mesh(gl, { geometry, program }))
@@ -223,16 +223,16 @@ function DitherImage({ image }: { image: ImageAsset }) {
                     texture={texture}
                 />
             )} */}
-            {type === 1 && (
-                <OrderedDither
-                    ref={node => {
-                        // TODO: fix this type
-                        setProgram(node?.program)
-                    }}
-                    gl={gl}
-                    texture={texture}
-                />
-            )}
+            {/* {type === 1 && ( */}
+            <OrderedDither
+                ref={node => {
+                    // TODO: fix this type
+                    setProgram(node?.program)
+                }}
+                gl={gl}
+                texture={texture}
+            />
+            {/* )} */}
 
             <button onClick={saveImage}>Save Image</button>
         </div>

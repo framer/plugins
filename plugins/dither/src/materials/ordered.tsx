@@ -112,11 +112,16 @@ export class OrderedDitherMaterial extends Program {
                         // }
                     } else if (uColorMode == 2) { // Custom Palette
                         // color.rgb = vec3(luma(rgb));
+                        color.rgb = vec3(luma(rgb));
                         threshold -= 0.44; // arbitraty threshold adjustment
 
                         ivec2 paletteTextureSize = textureSize(uDitherTexture, 0);
 
                         color.rgb = texture(uPaletteTexture, vec2(quantize(1. - (luma(rgb) + threshold), paletteTextureSize.x), 0.0)).rgb;
+
+                        // color.r = texture(uPaletteTexture, vec2(quantize(1. - (color.r + threshold), paletteTextureSize.x), 0.0)).r;
+                        // color.g = texture(uPaletteTexture, vec2(quantize(1. - (color.g + threshold), paletteTextureSize.x), 0.0)).g;
+                        // color.b = texture(uPaletteTexture, vec2(quantize(1. - (color.b + threshold), paletteTextureSize.x), 0.0)).b;
 
                         // if(color.r >= threshold) {
                         // if(luma(rgb) >= threshold) {
@@ -154,7 +159,11 @@ export class OrderedDitherMaterial extends Program {
 
                     fragColor = vec4(orderedDither(color.rgb, pixelizedUv), color.a);
 
-                    // fragColor = texture(uPaletteTexture, vUv);
+                    if(vUv.y >= 0.9) {
+                        fragColor = texture(uPaletteTexture, vUv);
+                    }
+
+                    
 
                     // fragColor = color;
                 }
@@ -219,7 +228,7 @@ export const OrderedDither = forwardRef(function RandomDither(
     // const [ditherPixelSize, setDitherPixelSize] = useState(1)
 
     const { texture: ditherTexture, canvas } = useOrderedDitheringTexture(gl, ORDERED_DITHERING_MATRICES[mode])
-    const { texture: paletteTexture } = useGradientTexture(gl, colors)
+    const { texture: paletteTexture } = useGradientTexture(gl, colors, quantization)
 
     useEffect(() => {
         // document.body.appendChild(canvas)
@@ -314,7 +323,7 @@ export const OrderedDither = forwardRef(function RandomDither(
                     <option value="2">Custom Palette</option>
                 </select>
             </div>
-            {[0, 1].includes(colorMode) && (
+            {[0, 1, 2].includes(colorMode) && (
                 <div className="gui-row">
                     <label className="gui-label">Quantization</label>
                     <input
@@ -330,7 +339,7 @@ export const OrderedDither = forwardRef(function RandomDither(
             )}
             {[2].includes(colorMode) && (
                 <div className="gui-row">
-                    <label className="gui-label">Color Palette</label>
+                    <label className="gui-label">Palette</label>
                     <Palette
                         onChange={colors => {
                             setColors(colors)

@@ -35,5 +35,8 @@
         "typescript": "^5.4.5",
         "vite": "^5.2.9",
         "vite-plugin-framer": "^0.0.9"
+    },
+    "optionalDependencies": {
+        "@rollup/rollup-linux-x64-gnu": "4.9.5"
     }
 }

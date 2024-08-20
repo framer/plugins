@@ -13,6 +13,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
+        "@radix-ui/react-slider": "^1.2.0",
         "colorjs.io": "^0.5.2",
         "comlink": "^4.4.1",
         "framer-plugin": "^0.3.1",

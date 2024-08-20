@@ -3,9 +3,11 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { GLSL } from "../glsl"
 import { ORDERED_DITHERING_MATRICES } from "../ordered-dithering-matrices"
 import { useOrderedDitheringTexture } from "../use-ordered-dithering-texture"
+import { Palette } from "../palette"
+import { useGradientTexture } from "../use-gradient-texture"
 
 export class OrderedDitherMaterial extends Program {
-    constructor(gl: OGLRenderingContext, texture: Texture, ditherTexture: Texture) {
+    constructor(gl: OGLRenderingContext, texture: Texture, ditherTexture: Texture, paletteTexture: Texture) {
         super(gl, {
             vertex: /*glsl*/ `#version 300 es
                 precision lowp float;
@@ -34,6 +36,7 @@ export class OrderedDitherMaterial extends Program {
 
                 uniform sampler2D uTexture;
                 uniform sampler2D uDitherTexture;
+                uniform sampler2D uPaletteTexture;
                 uniform int uMode;
                 uniform vec2 uResolution;
                 uniform float uPixelSize;
@@ -58,50 +61,76 @@ export class OrderedDitherMaterial extends Program {
 
                     float threshold = uRandom == 1 ? random(uv) : texture(uDitherTexture, vec2(x, y)).r;
 
-                    if (uColorMode == 0) { // Black and White
-                        if (luma(rgb) >= threshold) {
-                            color = vec3(1.0);
-                        }
-                    } else if (uColorMode == 1) { // RGB
-                        if(rgb.r >= threshold) {
-                            color.r = 1.0;
-                        }
+                    // if (uColorMode == 0) { // Grayscale
+                    //     if (luma(rgb) >= threshold) {
+                    //         color = vec3(1.0);
+                    //     }
+                    // } else if (uColorMode == 1) { // RGB
+                    //     if(rgb.r >= threshold) {
+                    //         color.r = 1.0;
+                    //     }
 
-                        if(rgb.g >= threshold) {
-                            color.g = 1.0;
-                        }
+                    //     if(rgb.g >= threshold) {
+                    //         color.g = 1.0;
+                    //     }
 
-                        if(rgb.b >= threshold) {
-                            color.b = 1.0;
-                        }
-                    } else if (uColorMode == 2) { // Grayscale
+                    //     if(rgb.b >= threshold) {
+                    //         color.b = 1.0;
+                    //     }
+                    // } else 
+                    
+                    if (uColorMode == 0) { // Grayscale
                         color.rgb = vec3(luma(rgb));
+                        threshold -= 0.44; // arbitraty threshold adjustment
 
-                        if(color.r >= threshold) {
-                            color.r = quantize(color.r, uQuantization);
-                        } 
+                        // if(color.r >= threshold) {
+                        // if(luma(rgb) >= threshold) {
+                            color.r = quantize(color.r + threshold, uQuantization);
+                        // } 
 
-                        if(color.g >= threshold) {
-                            color.g = quantize(color.g, uQuantization);
-                        }
+                        // if(color.g >= threshold) {
+                            color.g = quantize(color.g + threshold, uQuantization);
+                        // }
 
-                        if(color.b >= threshold) {
-                            color.b = quantize(color.b, uQuantization);
-                        }
-                    } else if (uColorMode == 3) { // True Colors
+                        // if(color.b >= threshold) {
+                            color.b = quantize(color.b + threshold, uQuantization);
+                        // }
+                    } else if (uColorMode == 1) { // True Colors
                         color.rgb = rgb;
+                        threshold -= 0.44; // arbitraty threshold adjustment
 
-                        if(rgb.r >= threshold) {
-                            color.r = quantize(color.r, uQuantization);
-                        }
+                        // if(rgb.r >= threshold) {
+                            color.r = quantize(color.r + threshold, uQuantization);
+                        // }
 
-                        if(rgb.g >= threshold) {
-                            color.g = quantize(color.g, uQuantization);
-                        }
+                        // if(rgb.g >= threshold) {
+                            color.g = quantize(color.g + threshold, uQuantization);
+                        // }
 
-                        if(rgb.b >= threshold) {
-                            color.b = quantize(color.b, uQuantization);
-                        }
+                        // if(rgb.b >= threshold) {
+                            color.b = quantize(color.b + threshold, uQuantization);
+                        // }
+                    } else if (uColorMode == 2) { // Custom Palette
+                        // color.rgb = vec3(luma(rgb));
+                        threshold -= 0.44; // arbitraty threshold adjustment
+
+                        ivec2 paletteTextureSize = textureSize(uDitherTexture, 0);
+
+                        color.rgb = texture(uPaletteTexture, vec2(quantize(1. - (luma(rgb) + threshold), paletteTextureSize.x), 0.0)).rgb;
+
+                        // if(color.r >= threshold) {
+                        // if(luma(rgb) >= threshold) {
+                            // float x = quantize(color.r + threshold, uQuantization);
+                        // } 
+
+                        // if(color.g >= threshold) {
+                            // color.g = quantize(color.g + threshold, uQuantization);
+                        // }
+
+                        // if(color.b >= threshold) {
+                            // color.b = quantize(color.b + threshold, uQuantization);
+                        // }
+
                     }
 
 
@@ -125,6 +154,8 @@ export class OrderedDitherMaterial extends Program {
 
                     fragColor = vec4(orderedDither(color.rgb, pixelizedUv), color.a);
 
+                    // fragColor = texture(uPaletteTexture, vUv);
+
                     // fragColor = color;
                 }
                 `,
@@ -132,6 +163,7 @@ export class OrderedDitherMaterial extends Program {
                 uTexture: { value: texture },
                 uResolution: { value: new Vec2(1, 1) },
                 uDitherTexture: { value: ditherTexture },
+                uPaletteTexture: { value: paletteTexture },
                 uPixelSize: { value: 1 },
                 uColorMode: { value: 0 },
                 uQuantization: { value: 8 },
@@ -159,7 +191,7 @@ export class OrderedDitherMaterial extends Program {
     }
 
     set quantization(value: number) {
-        this.uniforms.uQuantization.value = value
+        this.uniforms.uQuantization.value = Math.floor(value)
     }
 
     set isRandom(value: boolean) {
@@ -176,14 +208,18 @@ export const OrderedDither = forwardRef(function RandomDither(
     ref
 ) {
     const [mode, setMode] = useState("BAYER_4x4")
-    const [colorMode, setColorMode] = useState(0)
-    const [quantization, setQuantization] = useState(8)
+    const [colorMode, setColorMode] = useState(1)
+    const [quantization, setQuantization] = useState(3)
     const [isRandom, setIsRandom] = useState(false)
     const [pixelSize, setPixelSize] = useState(2)
+    const [colors, setColors] = useState([] as string[])
+
+    console.log(quantization)
     // const [pixelSize, setPixelSize] = useState(1)
     // const [ditherPixelSize, setDitherPixelSize] = useState(1)
 
     const { texture: ditherTexture, canvas } = useOrderedDitheringTexture(gl, ORDERED_DITHERING_MATRICES[mode])
+    const { texture: paletteTexture } = useGradientTexture(gl, colors)
 
     useEffect(() => {
         // document.body.appendChild(canvas)
@@ -199,7 +235,7 @@ export const OrderedDither = forwardRef(function RandomDither(
         `
     }, [ditherTexture, canvas])
 
-    const [program] = useState(() => new OrderedDitherMaterial(gl, texture, ditherTexture))
+    const [program] = useState(() => new OrderedDitherMaterial(gl, texture, ditherTexture, paletteTexture))
 
     useEffect(() => {
         program.colorMode = colorMode
@@ -224,7 +260,7 @@ export const OrderedDither = forwardRef(function RandomDither(
     useImperativeHandle(ref, () => ({ program }), [program])
 
     return (
-        <div>
+        <div className="gui">
             <div className="gui-row">
                 <label className="gui-label">Mode</label>
                 <select
@@ -254,7 +290,8 @@ export const OrderedDither = forwardRef(function RandomDither(
                 <input
                     type="range"
                     min="1"
-                    max="5"
+                    max="6"
+                    defaultValue={pixelSize}
                     value={pixelSize}
                     onChange={e => setPixelSize(Number(e.target.value))}
                     className="gui-select"
@@ -267,25 +304,37 @@ export const OrderedDither = forwardRef(function RandomDither(
                         setColorMode(Number(e.target.value))
                     }}
                     className="gui-select"
+                    value={colorMode}
                     defaultValue={colorMode}
                 >
-                    <option value="0">Black and White</option>
+                    <option value="0">Grayscale</option>
                     <option value="1">RGB</option>
-                    <option value="2">Grayscale</option>
-                    <option value="3">True Colors</option>
-                    <option value="4">Custom Palette</option>
+                    {/* <option value="2">Grayscale</option>
+                    <option value="3">True Colors</option> */}
+                    <option value="2">Custom Palette</option>
                 </select>
             </div>
-            {[2, 3].includes(colorMode) && (
+            {[0, 1].includes(colorMode) && (
                 <div className="gui-row">
                     <label className="gui-label">Quantization</label>
                     <input
                         type="range"
-                        min="3"
-                        max="16"
+                        min="2"
+                        max="8"
                         value={quantization}
+                        defaultValue={quantization}
                         onChange={e => setQuantization(parseInt(e.target.value))}
                         className="gui-select"
+                    />
+                </div>
+            )}
+            {[2].includes(colorMode) && (
+                <div className="gui-row">
+                    <label className="gui-label">Color Palette</label>
+                    <Palette
+                        onChange={colors => {
+                            setColors(colors)
+                        }}
                     />
                 </div>
             )}

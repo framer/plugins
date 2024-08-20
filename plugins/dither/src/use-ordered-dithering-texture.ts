@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { OGLRenderingContext, Renderer, Texture } from "ogl"
+import { OGLRenderingContext, Texture } from "ogl"
 
 export function useOrderedDitheringTexture(gl: OGLRenderingContext, orderedDithering) {
     const [texture] = useState(() => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST }))
@@ -17,8 +17,6 @@ export function useOrderedDitheringTexture(gl: OGLRenderingContext, orderedDithe
             pixels[i + 2] = value * 255
             pixels[i + 3] = 255
         }
-
-        console.log(x, y, pixels)
 
         canvas.width = x
         canvas.height = y

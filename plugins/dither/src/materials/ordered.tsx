@@ -277,10 +277,10 @@ export const OrderedDither = forwardRef(function RandomDither(
                     className="gui-select"
                     defaultValue={mode}
                 >
-                    <option value="RANDOM">RANDOM</option>
-                    {Object.keys(ORDERED_DITHERING_MATRICES).map(key => (
+                    <option value="RANDOM">Random</option>
+                    {Object.entries(ORDERED_DITHERING_MATRICES).map(([key, { title }]) => (
                         <option key={key} value={key}>
-                            {key}
+                            {title}
                         </option>
                     ))}
                 </select>

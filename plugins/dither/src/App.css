@@ -28,17 +28,14 @@
     align-items: center;
     border: 1px solid var(--framer-color-divider);
     border-radius: 8px;
-    border-radius: 10px;
     /* height: 100%; */
     width: 100%;
     /* flex-grow: 1; */
     position: relative;
     background-color: var(--framer-color-bg-tertiary);
+    overflow: hidden;
 }
 
-.canvas-container canvas {
-    border-radius: 9px;
-}
 
 input[type="range"] {
     width: 100%;
@@ -53,9 +50,11 @@ body[data-framer-theme=dark] .gui-row .gui-label {
     margin-bottom: 5px;
 }
 
-.gui select, input {
+.gui select {
     cursor: pointer;
 }
+
+
 
 .gui-row {
     position: relative;
@@ -87,19 +86,11 @@ body[data-framer-theme=dark] .gui-row .gui-label {
     grid-column: 2 / -1;
     gap: 10px;
     display: flex;
-    flex-direction: column;
-}
 
-.gui-row .gui-palette .color {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-
-}
-
-.gui-row .gui-palette .color input{
-    width: auto;
-    flex-grow: 1;
+    input {
+        width: auto;
+        flex-grow: 1;
+    }
 }
 
 .gui-input {
@@ -157,3 +148,27 @@ body[data-framer-theme="dark"] .strokeWidth {
 body[data-framer-theme="light"] .gui-label {
     color: #666666;
 }
+
+.gui.disabled {
+    opacity: 0.33;
+    pointer-events: none;
+}
+
+button:disabled {
+    /* background-color: var(--framer-color-bg-tertiary); */
+    /* color: var(--framer-color-bg-primary); */
+    pointer-events: none;
+    opacity: 0.33;
+}
+
+body[data-framer-theme="dark"] .canvas-container {
+    border-color: rgba(255,255,255,0.05);
+}
+
+body[data-framer-theme="dark"] .error-container {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* button:not(:hover) {
+    transition: unset;
+} */

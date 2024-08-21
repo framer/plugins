@@ -167,7 +167,7 @@ function DitherImage({ image }: { image: ImageAsset }) {
         // void framer.closePlugin("Image saved...")
 
         console.log("total duration", performance.now() - start)
-    }, [render])
+    }, [render, image])
 
     const containerRef = useRef<HTMLDivElement>(null)
 

@@ -7,7 +7,7 @@ import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { OrderedDither } from "./materials/ordered"
 import cn from "clsx"
 
-void framer.showUI({ position: "top left", width: 280, height: 500 })
+void framer.showUI({ title: "Dither", position: "top right", width: 280, height: 500 })
 
 function useSelectedImage() {
     const [image, setImage] = useState<ImageAsset | null>(null)
@@ -177,7 +177,7 @@ function DitherImage({ image }: { image: ImageAsset }) {
 
             // console.log("resize", width, height)
 
-            void framer.showUI({ position: "top left", width, height })
+            void framer.showUI({ title: "Dither", position: "top right", width: 280, height })
         })
 
         resizeObserver.observe(containerRef.current)

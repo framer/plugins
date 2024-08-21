@@ -13,21 +13,19 @@ export function Palette({ onChange }: { onChange?: (colors: string[]) => void })
     return (
         <div className="gui-palette">
             {colors.map((color, i) => (
-                <div className="color">
-                    <input
-                        key={i}
-                        type="color"
-                        value={color}
-                        onChange={e => {
-                            const color = e.target.value
-                            setColors(colors => {
-                                const newColors = [...colors]
-                                newColors[i] = color
-                                return newColors
-                            })
-                        }}
-                    />
-                </div>
+                <input
+                    key={i}
+                    type="color"
+                    value={color}
+                    onChange={e => {
+                        const color = e.target.value
+                        setColors(colors => {
+                            const newColors = [...colors]
+                            newColors[i] = color
+                            return newColors
+                        })
+                    }}
+                />
             ))}
         </div>
     )

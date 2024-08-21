@@ -45,6 +45,7 @@ export class OrderedDitherMaterial extends Program {
                 uniform int uColorMode;
                 uniform int uQuantization;
                 uniform int uRandom;
+                uniform float uBrightness;
 
                 vec3 orderedDither(vec3 rgb, vec2 uv) {
                     vec3 color = vec3(0.0);
@@ -56,7 +57,7 @@ export class OrderedDitherMaterial extends Program {
                     float y = float(int(fragCoord.y) % ditherTextureSize.y) / float(ditherTextureSize.y);
 
                     float threshold = uRandom == 1 ? random(uv) : texture(uDitherTexture, vec2(x, y)).r;
-
+                    threshold += uBrightness;
                     //     if (luma(rgb) >= threshold) { // Black and White
                     //         color = vec3(1.0);
                     //     }
@@ -121,6 +122,7 @@ export class OrderedDitherMaterial extends Program {
                 uColorMode: { value: 0 },
                 uQuantization: { value: 8 },
                 uRandom: { value: 0 },
+                uBrightness: { value: 0 },
             },
         })
 
@@ -151,6 +153,10 @@ export class OrderedDitherMaterial extends Program {
         this.uniforms.uRandom.value = value ? 1 : 0
     }
 
+    set brightness(value: number) {
+        this.uniforms.uBrightness.value = value
+    }
+
     // set ditherPixelSize(value: number) {
     //     this.uniforms.uDitherPixelSize.value = value
     // }
@@ -166,6 +172,7 @@ export const OrderedDither = forwardRef(function RandomDither(
     const [isRandom, setIsRandom] = useState(false)
     const [pixelSize, setPixelSize] = useState(2)
     const [colors, setColors] = useState([] as string[])
+    const [brightness, setBrightness] = useState(0)
 
     const { texture: ditherTexture } = useOrderedDitheringTexture(gl, ORDERED_DITHERING_MATRICES[mode])
     const { texture: paletteTexture } = useGradientTexture(gl, colors, quantization)
@@ -201,6 +208,10 @@ export const OrderedDither = forwardRef(function RandomDither(
     useEffect(() => {
         program.pixelSize = pixelSize
     }, [program, pixelSize])
+
+    useEffect(() => {
+        program.brightness = brightness * 0.5
+    }, [program, brightness])
 
     // useEffect(() => {
     //     program.ditherPixelSize = ditherPixelSize
@@ -266,6 +277,33 @@ export const OrderedDither = forwardRef(function RandomDither(
                     step={1}
                     value={[pixelSize]}
                     onValueChange={value => setPixelSize(Number(value))}
+                >
+                    <Slider.Track className="SliderTrack strokeWidth">
+                        <Slider.Range className="SliderRange" />
+                    </Slider.Track>
+                    <Slider.Thumb className="SliderThumb" />
+                </Slider.Root>
+            </div>
+            <div className="gui-row">
+                <label className="gui-label">Brightness</label>
+                <input
+                    className="gui-input"
+                    type="number"
+                    min={-1}
+                    max={1}
+                    step={0.01}
+                    value={brightness}
+                    onChange={e => setBrightness(Number(e.target.value))}
+                />
+
+                <Slider.Root
+                    className="SliderRoot"
+                    defaultValue={[brightness]}
+                    min={-1}
+                    max={1}
+                    step={0.01}
+                    value={[brightness]}
+                    onValueChange={value => setBrightness(Number(value))}
                 >
                     <Slider.Track className="SliderTrack strokeWidth">
                         <Slider.Range className="SliderRange" />

@@ -5,8 +5,9 @@ import "./App.css"
 import { assert, bytesFromCanvas } from "./utils"
 import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { OrderedDither } from "./materials/ordered"
+import cn from "clsx"
 
-void framer.showUI({ position: "top left", width: 280, height: 1000 })
+void framer.showUI({ position: "top left", width: 280, height: 500 })
 
 function useSelectedImage() {
     const [image, setImage] = useState<ImageAsset | null>(null)
@@ -21,19 +22,19 @@ function useSelectedImage() {
 export function App() {
     const image = useSelectedImage()
 
-    if (!image) {
-        return (
-            <div className="error-container">
-                <p>Select an Image</p>
-            </div>
-        )
-    }
+    // if (!image) {
+    //     return (
+    //         <div className="error-container">
+    //             <p>Select an Image</p>
+    //         </div>
+    //     )
+    // }
     return <DitherImage image={image} />
 }
 const CANVAS_WIDTH = 248
 
 function DitherImage({ image }: { image: ImageAsset }) {
-    const canvasContainerRef = useRef<HTMLDivElement>(null)
+    // const canvasContainerRef = useRef<HTMLDivElement>(null)
 
     const [renderer] = useState(() => new Renderer())
     const gl = renderer.gl
@@ -102,15 +103,19 @@ function DitherImage({ image }: { image: ImageAsset }) {
     )
 
     useEffect(() => {
-        if (!image) return
-        loadTexture(image)
+        if (image) {
+            loadTexture(image)
+        } else {
+            texture.image = null
+            texture.update()
+        }
     }, [image])
 
-    useEffect(() => {
-        canvasContainerRef.current?.appendChild(gl.canvas)
+    // useEffect(() => {
+    //     canvasContainerRef.current?.appendChild(gl.canvas)
 
-        return () => gl.canvas.remove()
-    }, [])
+    //     return () => gl.canvas.remove()
+    // }, [])
 
     useEffect(() => {
         if (!program) return
@@ -144,23 +149,63 @@ function DitherImage({ image }: { image: ImageAsset }) {
 
         const start = performance.now()
 
-        framer.hideUI()
-        await framer.setImage({
+        await framer.addImage({
             image: {
                 bytes: nextBytes,
                 mimeType: originalImage.mimeType,
             },
         })
 
-        void framer.closePlugin("Image saved...")
+        // framer.hideUI()
+        // await framer.setImage({
+        //     image: {
+        //         bytes: nextBytes,
+        //         mimeType: originalImage.mimeType,
+        //     },
+        // })
+
+        // void framer.closePlugin("Image saved...")
 
         console.log("total duration", performance.now() - start)
     }, [render])
 
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        const resizeObserver = new ResizeObserver(([entry]) => {
+            const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0]
+
+            // console.log("resize", width, height)
+
+            void framer.showUI({ position: "top left", width, height })
+        })
+
+        resizeObserver.observe(containerRef.current)
+
+        return () => resizeObserver.disconnect()
+    }, [renderer, camera])
+
     return (
-        <div className="container">
-            <div className="canvas-container" ref={canvasContainerRef}>
-                {/* {!hasPainted && <Spinner size="medium" />} */}
+        <div className="container" ref={containerRef}>
+            <div className="canvas-container">
+                {image ? (
+                    <div
+                        style={{
+                            display: image ? "block" : "none",
+                        }}
+                        ref={node => {
+                            if (node) {
+                                node.appendChild(gl.canvas)
+                            } else {
+                                gl.canvas.remove()
+                            }
+                        }}
+                    ></div>
+                ) : (
+                    <div className="error-container">
+                        <p>Select an Image</p>
+                    </div>
+                )}
             </div>
 
             {/* {type === 0 && (
@@ -174,17 +219,20 @@ function DitherImage({ image }: { image: ImageAsset }) {
                 />
             )} */}
             {/* {type === 1 && ( */}
-            <OrderedDither
-                ref={node => {
-                    // TODO: fix this type
-                    setProgram(node?.program)
-                }}
-                gl={gl}
-                texture={texture}
-            />
-            {/* )} */}
-
-            <button onClick={saveImage}>Save Image</button>
+            <div className={cn("gui", !image && "disabled")}>
+                <OrderedDither
+                    ref={node => {
+                        // TODO: fix this type
+                        setProgram(node?.program)
+                    }}
+                    gl={gl}
+                    texture={texture}
+                />
+                {/* )} */}
+            </div>
+            <button onClick={saveImage} disabled={!image}>
+                Add Image
+            </button>
         </div>
     )
 }

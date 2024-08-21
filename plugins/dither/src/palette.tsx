@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 
-// const DEFAULT_COLORS = ["#ffffff", "#E30613"]
-const DEFAULT_COLORS = ["#E30613", "#000000"]
+const DEFAULT_COLORS = ["#ffffff", "#E30613"]
+// const DEFAULT_COLORS = ["#E30613", "#000000"]
 
 export function Palette({ onChange }: { onChange?: (colors: string[]) => void }) {
     const [colors, setColors] = useState(DEFAULT_COLORS)

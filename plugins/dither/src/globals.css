@@ -182,19 +182,6 @@ button:hover {
     background-color: var(--framer-color-tint-dark);
 }
 
-
-.gui.disabled {
-    opacity: 0.33;
-    pointer-events: none;
-}
-
-button:disabled {
-    background-color: var(--framer-color-bg-tertiary);
-    color: var(--framer-color-bg-primary);
-    pointer-events: none;
-    opacity: 0.33;
-}
-
 select {
     background-position: center;
     background-position-x: calc(100% - 8px);

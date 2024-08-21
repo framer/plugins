@@ -209,7 +209,7 @@ export const OrderedDither = forwardRef(function RandomDither(
     useImperativeHandle(ref, () => ({ program }), [program])
 
     return (
-        <div className="gui">
+        <>
             <div className="gui-row">
                 <label className="gui-label">Mode</label>
                 <select
@@ -281,7 +281,7 @@ export const OrderedDither = forwardRef(function RandomDither(
                     }}
                     className="gui-select"
                     value={colorMode}
-                    defaultValue={colorMode}
+                    // defaultValue={colorMode}
                 >
                     <option value="0">Grayscale</option>
                     <option value="1">RGB</option>
@@ -317,7 +317,7 @@ export const OrderedDither = forwardRef(function RandomDither(
 
                 <Slider.Root
                     className="SliderRoot"
-                    defaultValue={[quantization]}
+                    // defaultValue={[quantization]}
                     min={2}
                     max={8}
                     step={1}
@@ -340,6 +340,6 @@ export const OrderedDither = forwardRef(function RandomDither(
                     />
                 </div>
             )}
-        </div>
+        </>
     )
 })

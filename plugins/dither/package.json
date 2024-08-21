@@ -24,6 +24,8 @@
         "vite-plugin-mkcert": "^1.17.5"
     },
     "devDependencies": {
+        "@swc/cli": "^0.4.0",
+        "@swc/core": "^1.7.14",
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "@typescript-eslint/eslint-plugin": "^6",

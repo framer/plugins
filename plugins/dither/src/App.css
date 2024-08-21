@@ -11,9 +11,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-direction: column;
+    /* flex-direction: column;
     height: 100%;
-    padding: 0 15px 25px 15px;
+    padding: 0 15px 25px 15px; */
+    width: 100%;
+    aspect-ratio: 16/9;
 }
 
 .error-container p {
@@ -51,6 +53,9 @@ body[data-framer-theme=dark] .gui-row .gui-label {
     margin-bottom: 5px;
 }
 
+.gui select, input {
+    cursor: pointer;
+}
 
 .gui-row {
     position: relative;
@@ -143,4 +148,12 @@ body[data-framer-theme=dark] .gui-row .gui-label {
 
 .SliderThumb:focus {
     outline: none;
+}
+
+body[data-framer-theme="dark"] .strokeWidth {
+    background: #333;
+}
+
+body[data-framer-theme="light"] .gui-label {
+    color: #666666;
 }

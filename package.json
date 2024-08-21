@@ -18,5 +18,8 @@
     },
     "devDependencies": {
         "turbo": "^1.13.2"
+    },
+    "dependencies": {
+        "clsx": "^2.1.1"
     }
 }

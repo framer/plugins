@@ -52,8 +52,9 @@
         inset: 0;
         content: "";
         border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid var(--framer-color-divider);
+        /* overflow: hidden; */
+        /* border: 1px solid var(--framer-color-divider); */
+        box-shadow: 0 0 0 1px var(--framer-color-divider) inset;
     }
 }
 

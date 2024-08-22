@@ -22,19 +22,12 @@ function useSelectedImage() {
 export function App() {
     const image = useSelectedImage()
 
-    // if (!image) {
-    //     return (
-    //         <div className="error-container">
-    //             <p>Select an Image</p>
-    //         </div>
-    //     )
-    // }
     return <DitherImage image={image} />
 }
 const CANVAS_WIDTH = 248
 
-function DitherImage({ image }: { image: ImageAsset }) {
-    // const canvasContainerRef = useRef<HTMLDivElement>(null)
+function DitherImage({ image }: { image: ImageAsset | null }) {
+    const canvasContainerRef = useRef<HTMLDivElement>(null)
 
     const [renderer] = useState(() => new Renderer())
     const gl = renderer.gl
@@ -82,19 +75,29 @@ function DitherImage({ image }: { image: ImageAsset }) {
 
     useEffect(() => {
         renderer.setSize(resolution[0], resolution[1])
+        // console.log("set resolution", resolution[0], resolution[1])
         program?.setResolution?.(resolution[0], resolution[1])
     }, [renderer, program, resolution])
 
     const loadTexture = useCallback(
         async (image: ImageAsset) => {
             const loadedImage = await image.loadImage() // get blob src to avoid CORS
+            const imageData = await image.getData()
+
+            console.log("loaded image", image, loadedImage, imageData)
 
             const img = new Image()
             img.onload = () => {
                 texture.image = img
                 const aspect = img.naturalWidth / img.naturalHeight
 
+                // setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
+                // setResolution([img.naturalWidth, img.naturalHeight])
+
                 setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
+                // canvasContainerRef.current.style.width = `${CANVAS_WIDTH}px`
+                // canvasContainerRef.current.style.height = `${CANVAS_WIDTH / aspect}px`
+
                 texture.update()
             }
             img.src = loadedImage.currentSrc
@@ -187,9 +190,10 @@ function DitherImage({ image }: { image: ImageAsset }) {
 
     return (
         <div className="container" ref={containerRef}>
-            <div className="canvas-container">
+            <div className="canvas-container" ref={canvasContainerRef}>
                 {image ? (
                     <div
+                        className="canvas"
                         style={{
                             display: image ? "block" : "none",
                         }}
@@ -203,7 +207,7 @@ function DitherImage({ image }: { image: ImageAsset }) {
                     ></div>
                 ) : (
                     <div className="error-container">
-                        <p>Select an Image</p>
+                        <p>Select an Image...</p>
                     </div>
                 )}
             </div>

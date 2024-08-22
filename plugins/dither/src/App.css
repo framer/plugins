@@ -16,6 +16,8 @@
     padding: 0 15px 25px 15px; */
     width: 100%;
     aspect-ratio: 16/9;
+    border-radius: 8px;
+    border: 1px solid var(--framer-color-divider);
 }
 
 .error-container p {
@@ -26,22 +28,40 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    border: 1px solid var(--framer-color-divider);
-    border-radius: 8px;
+    /* border: 1px solid var(--framer-color-divider); */
+    /* box-shadow: 0 0 0 1px var(--framer-color-divider) inset; */
+    /* border-radius: 8px; */
     /* height: 100%; */
     width: 100%;
     /* flex-grow: 1; */
     position: relative;
-    background-color: var(--framer-color-bg-tertiary);
+    /* background-color: var(--framer-color-bg-tertiary); */
     overflow: hidden;
-}
 
+    /* canvas {
+        max-width: unset;
+    } */
+
+    .canvas {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .canvas::after {
+        position: absolute;
+        inset: 0;
+        content: "";
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--framer-color-divider);
+    }
+}
 
 input[type="range"] {
     width: 100%;
 }
 
-body[data-framer-theme=dark] .gui-row .gui-label {
+body[data-framer-theme="dark"] .gui-row .gui-label {
     color: #ccc;
 }
 
@@ -53,8 +73,6 @@ body[data-framer-theme=dark] .gui-row .gui-label {
 .gui select {
     cursor: pointer;
 }
-
-
 
 .gui-row {
     position: relative;
@@ -132,7 +150,9 @@ body[data-framer-theme=dark] .gui-row .gui-label {
     width: 10px;
     height: 10px;
     background-color: white;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.1),
+    box-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.1),
+        0 1px 2px rgba(0, 0, 0, 0.1),
         0 2px 4px rgba(0, 0, 0, 0.1);
     border-radius: 20px;
 }
@@ -161,12 +181,13 @@ button:disabled {
     opacity: 0.33;
 }
 
-body[data-framer-theme="dark"] .canvas-container {
-    border-color: rgba(255,255,255,0.05);
+body[data-framer-theme="dark"] .error-container {
+    border-color: rgba(255, 255, 255, 0.05);
+    /* box-shadow: 0 0 0 10px red inset; */
 }
 
 body[data-framer-theme="dark"] .error-container {
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.4);
 }
 
 /* button:not(:hover) {

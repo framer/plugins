@@ -43,19 +43,24 @@
     } */
 
     .canvas {
-        border-radius: 8px;
-        overflow: hidden;
+        border-radius: 10px;
+        /* overflow: hidden; */
+        position: relative;
+        border: 1px solid var(--framer-color-divider);
     }
 
-    .canvas::after {
+    .canvas canvas {
+        border-radius: 9px;
+    }
+
+    /* .canvas::after {
         position: absolute;
-        inset: 0;
+        inset: 0px;
         content: "";
         border-radius: 8px;
-        /* overflow: hidden; */
-        /* border: 1px solid var(--framer-color-divider); */
+        border: 10px solid var(--framer-color-divider);
         box-shadow: 0 0 0 1px var(--framer-color-divider) inset;
-    }
+    } */
 }
 
 input[type="range"] {

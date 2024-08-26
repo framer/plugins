@@ -1,6 +1,7 @@
 // https://github.com/makew0rld/dither/blob/master/ordered_ditherers.go
 // http://caca.zoy.org/study/part2.html
 // https://seansleblanc.itch.io/ordered-dither-maker
+// https://surma.dev/things/ditherpunk/
 
 export const ORDERED_DITHERING_MATRICES = {
     // BAYER_2x2: {

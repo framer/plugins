@@ -7,6 +7,10 @@ import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { OrderedDither } from "./materials/ordered"
 import cn from "clsx"
 
+import.meta.hot?.accept(() => {
+    import.meta.hot?.invalidate()
+})
+
 void framer.showUI({ title: "Dither", position: "top right", width: 280, height: 500 })
 
 function useSelectedImage() {
@@ -34,13 +38,13 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
 
     // cleanup on unmount
     const isMountedRef = useRef(false)
-    // useEffect(() => {
-    //     if (!isMountedRef.current) {
-    //         isMountedRef.current = true
-    //     } else {
-    //         return () => gl.getExtension("WEBGL_lose_context")?.loseContext()
-    //     }
-    // }, [])
+    useEffect(() => {
+        if (!isMountedRef.current) {
+            isMountedRef.current = true
+        } else {
+            return () => gl.getExtension("WEBGL_lose_context")?.loseContext()
+        }
+    }, [])
 
     const [camera] = useState(
         () =>
@@ -82,9 +86,9 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     const loadTexture = useCallback(
         async (image: ImageAsset) => {
             const loadedImage = await image.loadImage() // get blob src to avoid CORS
-            const imageData = await image.getData()
+            // const imageData = await image.getData()
 
-            console.log("loaded image", image, loadedImage, imageData)
+            // console.log("loaded image", image, loadedImage, imageData)
 
             const img = new Image()
             img.onload = () => {

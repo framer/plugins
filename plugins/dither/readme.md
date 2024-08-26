@@ -1,7 +1,5 @@
-# Threshold
+# Dither
 
-Apply a threshold effect to an image.
+Apply a dither effect to an image.
 
-**By**: @niekert and @huntercaron
-
-![threshold image](../../assets/threshold.png)
+**By**: @darkroom.engineering

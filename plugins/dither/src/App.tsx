@@ -33,7 +33,7 @@ const CANVAS_WIDTH = 248
 function DitherImage({ image }: { image: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
 
-    const [renderer] = useState(() => new Renderer())
+    const [renderer] = useState(() => new Renderer({ alpha: true }))
     const gl = renderer.gl
 
     // cleanup on unmount

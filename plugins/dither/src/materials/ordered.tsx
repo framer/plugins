@@ -47,7 +47,8 @@ export class OrderedDitherMaterial extends Program {
                 uniform int uRandom;
                 uniform float uBrightness;
 
-                vec3 orderedDither(vec3 rgb, vec2 uv) {
+                vec3 orderedDither(vec4 inputColor, vec2 uv) {
+                    vec3 rgb = inputColor.rgb;
                     vec3 color = vec3(0.0);
 
                     ivec2 ditherTextureSize = textureSize(uDitherTexture, 0);
@@ -102,7 +103,7 @@ export class OrderedDitherMaterial extends Program {
 
                     // gl_FragColor = texture2D(uDitherTexture, vUv);
 
-                    fragColor = vec4(orderedDither(color.rgb, pixelizedUv), color.a);
+                    fragColor = vec4(orderedDither(color, pixelizedUv), color.a);
 
                     // if(vUv.y >= 0.9) {
                     //     fragColor = texture(uPaletteTexture, vUv);
@@ -124,6 +125,7 @@ export class OrderedDitherMaterial extends Program {
                 uRandom: { value: 0 },
                 uBrightness: { value: 0 },
             },
+            transparent: true,
         })
 
         // this.resolution = this.uniforms.uResolution.value

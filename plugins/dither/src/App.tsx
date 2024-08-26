@@ -152,7 +152,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
 
         const start = performance.now()
 
-        await framer.addImage({
+        await framer.setImage({
             image: {
                 bytes: nextBytes,
                 mimeType: originalImage.mimeType,

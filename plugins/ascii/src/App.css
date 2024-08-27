@@ -1,0 +1,201 @@
+.container {
+    display: flex;
+    align-items: center;
+    /* height: 100%; */
+    flex-direction: column;
+    /* gap: 10px; */
+    padding: 0 15px 15px 15px;
+}
+
+.error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* flex-direction: column;
+    height: 100%;
+    padding: 0 15px 25px 15px; */
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 8px;
+    border: 1px solid var(--framer-color-divider);
+}
+
+.error-container p {
+    color: var(--framer-color-text-tertiary);
+}
+
+.canvas-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* border: 1px solid var(--framer-color-divider); */
+    /* box-shadow: 0 0 0 1px var(--framer-color-divider) inset; */
+    /* border-radius: 8px; */
+    /* height: 100%; */
+    width: 100%;
+    /* flex-grow: 1; */
+    position: relative;
+    /* background-color: var(--framer-color-bg-tertiary); */
+    overflow: hidden;
+
+    /* canvas {
+        max-width: unset;
+    } */
+
+    .canvas {
+        border-radius: 10px;
+        /* overflow: hidden; */
+        position: relative;
+        border: 1px solid var(--framer-color-divider);
+    }
+
+    .canvas canvas {
+        border-radius: 9px;
+    }
+
+    /* .canvas::after {
+        position: absolute;
+        inset: 0px;
+        content: "";
+        border-radius: 8px;
+        border: 10px solid var(--framer-color-divider);
+        box-shadow: 0 0 0 1px var(--framer-color-divider) inset;
+    } */
+}
+
+input[type="range"] {
+    width: 100%;
+}
+
+body[data-framer-theme="dark"] .gui-row .gui-label {
+    color: #ccc;
+}
+
+.gui {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.gui select {
+    cursor: pointer;
+}
+
+.gui-row {
+    position: relative;
+    display: -ms-grid;
+    display: grid;
+    width: 100%;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    -webkit-column-gap: 10px;
+    column-gap: 10px;
+    -ms-grid-columns: minmax(0, 1.5fr) repeat(2, minmax(62px, 1fr));
+    grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(62px, 1fr));
+    -ms-grid-rows: auto;
+    grid-template-rows: auto;
+}
+
+.gui-row .gui-label {
+    align-self: center;
+    padding-left: 15px;
+}
+
+.gui-row .gui-select {
+    grid-column: 2 / -1;
+    width: 100%;
+}
+
+.gui-row .gui-palette {
+    width: 100%;
+    grid-column: 2 / -1;
+    gap: 10px;
+    display: flex;
+
+    input {
+        width: auto;
+        flex-grow: 1;
+    }
+}
+
+.gui-input {
+    width: 100%;
+}
+
+/* Slider */
+.SliderRoot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    user-select: none;
+    touch-action: none;
+    width: 62px;
+    height: 30px;
+    border-radius: 8px;
+    cursor: ew-resize;
+}
+
+.SliderTrack {
+    background-color: #e6e6e6;
+    position: relative;
+    flex-grow: 1;
+    border-radius: 9999px;
+    height: 2px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.SliderRange {
+    position: absolute;
+    background-color: var(--framer-color-tint);
+    border-radius: 2px;
+    height: 2px;
+}
+
+.SliderThumb {
+    display: block;
+    width: 10px;
+    height: 10px;
+    background-color: white;
+    box-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.1),
+        0 1px 2px rgba(0, 0, 0, 0.1),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+}
+
+.SliderThumb:focus {
+    outline: none;
+}
+
+body[data-framer-theme="dark"] .strokeWidth {
+    background: #333;
+}
+
+body[data-framer-theme="light"] .gui-label {
+    color: #666666;
+}
+
+.gui.disabled {
+    opacity: 0.33;
+    pointer-events: none;
+}
+
+button:disabled {
+    /* background-color: var(--framer-color-bg-tertiary); */
+    /* color: var(--framer-color-bg-primary); */
+    pointer-events: none;
+    opacity: 0.33;
+}
+
+body[data-framer-theme="dark"] .error-container {
+    border-color: rgba(255, 255, 255, 0.05);
+    /* box-shadow: 0 0 0 10px red inset; */
+}
+
+body[data-framer-theme="dark"] .error-container {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+/* button:not(:hover) {
+    transition: unset;
+} */

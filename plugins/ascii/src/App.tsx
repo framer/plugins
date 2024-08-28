@@ -1,17 +1,15 @@
 import { ImageAsset, framer } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
-// import { Spinner } from "./Spinner"
-import { assert, bytesFromCanvas } from "./utils"
 import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
-import { OrderedDither } from "./materials/ordered"
+import { ASCII } from "./materials/ascii"
 import cn from "clsx"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()
 })
 
-void framer.showUI({ title: "Dither", position: "top right", width: 280, height: 500 })
+void framer.showUI({ title: "ASCII", position: "top right", width: 280, height: 500 })
 
 function useSelectedImage() {
     const [image, setImage] = useState<ImageAsset | null>(null)
@@ -26,11 +24,11 @@ function useSelectedImage() {
 export function App() {
     const image = useSelectedImage()
 
-    return <DitherImage image={image} />
+    return <ASCIIImage image={image} />
 }
 const CANVAS_WIDTH = 248
 
-function DitherImage({ image }: { image: ImageAsset | null }) {
+function ASCIIImage({ image }: { image: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
 
     const [renderer] = useState(() => new Renderer({ alpha: true }))
@@ -184,7 +182,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
 
             // console.log("resize", width, height)
 
-            void framer.showUI({ title: "Dither", position: "top right", width: 280, height })
+            void framer.showUI({ title: "ASCII", position: "top right", width: 280, height })
         })
 
         resizeObserver.observe(containerRef.current)
@@ -215,28 +213,14 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     </div>
                 )}
             </div>
-
-            {/* {type === 0 && (
-                <RandomDither
-                    ref={node => {
-                        // TODO: fix this type
-                        setProgram(node?.program)
-                    }}
-                    gl={gl}
-                    texture={texture}
-                />
-            )} */}
-            {/* {type === 1 && ( */}
             <div className={cn("gui", !image && "disabled")}>
-                <OrderedDither
+                <ASCII
                     ref={node => {
-                        // TODO: fix this type
                         setProgram(node?.program)
                     }}
                     gl={gl}
                     texture={texture}
                 />
-                {/* )} */}
             </div>
             <button onClick={saveImage} disabled={!image}>
                 Add Image

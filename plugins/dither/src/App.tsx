@@ -4,10 +4,13 @@ import "./App.css"
 import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { OrderedDither } from "./materials/ordered"
 import cn from "clsx"
+import { assert, bytesFromCanvas } from "./utils"
 
-import.meta.hot?.accept(() => {
-    import.meta.hot?.invalidate()
-})
+if (import.meta.env.DEV) {
+    import.meta.hot?.accept(() => {
+        import.meta.hot?.invalidate()
+    })
+}
 
 void framer.showUI({ title: "Dither", position: "top right", width: 280, height: 500 })
 
@@ -156,7 +159,9 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             },
         })
 
-        console.log("total duration", performance.now() - start)
+        if (import.meta.env.DEV) {
+            console.log("total duration", performance.now() - start)
+        }
     }, [render, image])
 
     const containerRef = useRef<HTMLDivElement>(null)

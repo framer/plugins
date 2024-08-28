@@ -3,7 +3,6 @@ import { OGLRenderingContext, Texture } from "ogl"
 
 export function useOrderedDitheringTexture(gl: OGLRenderingContext, orderedDithering) {
     const [texture] = useState(() => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST }))
-    const [canvas] = useState(() => document.createElement("canvas"))
 
     useEffect(() => {
         const { matrix, x, y } = orderedDithering
@@ -18,17 +17,11 @@ export function useOrderedDitheringTexture(gl: OGLRenderingContext, orderedDithe
             pixels[i + 3] = 255
         }
 
-        canvas.width = x
-        canvas.height = y
-        const ctx = canvas.getContext("2d")
-        // ctx.putImageData(pixels, 0, 0)
-        ctx?.putImageData(new ImageData(pixels, x, y), 0, 0)
-
         texture.image = pixels
         texture.width = x
         texture.height = y
         texture.update()
-    }, [texture, canvas, orderedDithering])
+    }, [texture, orderedDithering])
 
-    return { texture, canvas, width: orderedDithering.x, height: orderedDithering.y }
+    return { texture, width: orderedDithering.x, height: orderedDithering.y }
 }

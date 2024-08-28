@@ -4,7 +4,6 @@ import Color from "colorjs.io"
 
 export function useGradientTexture(gl: OGLRenderingContext, colors: string[], quantization: number) {
     const [texture] = useState(() => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST }))
-    const [canvas] = useState(() => document.createElement("canvas"))
 
     useEffect(() => {
         if (!colors.length) return
@@ -22,17 +21,11 @@ export function useGradientTexture(gl: OGLRenderingContext, colors: string[], qu
             pixels[i + 3] = 255
         }
 
-        canvas.width = list.length
-        canvas.height = 1
-        const ctx = canvas.getContext("2d")
-        // ctx.putImageData(pixels, 0, 0)
-        ctx?.putImageData(new ImageData(pixels, list.length, 1), 0, 0)
-
         texture.image = pixels
         texture.width = list.length
         texture.height = 1
         texture.update()
-    }, [texture, canvas, colors, quantization])
+    }, [texture, colors, quantization])
 
     return { texture }
 }

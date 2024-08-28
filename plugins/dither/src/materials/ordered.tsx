@@ -98,20 +98,7 @@ export class OrderedDitherMaterial extends Program {
                     vec2 pixelizedUv = floor(vUv / pixelSize) * pixelSize;
                     vec4 color = texture(uTexture, pixelizedUv);
 
-                    
-                    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-
-                    // gl_FragColor = texture2D(uDitherTexture, vUv);
-
                     fragColor = vec4(orderedDither(color, pixelizedUv), color.a);
-
-                    // if(vUv.y >= 0.9) {
-                    //     fragColor = texture(uPaletteTexture, vUv);
-                    // }
-
-                    
-
-                    // fragColor = color;
                 }
                 `,
             uniforms: {
@@ -158,10 +145,6 @@ export class OrderedDitherMaterial extends Program {
     set brightness(value: number) {
         this.uniforms.uBrightness.value = value
     }
-
-    // set ditherPixelSize(value: number) {
-    //     this.uniforms.uDitherPixelSize.value = value
-    // }
 }
 
 export const OrderedDither = forwardRef(function RandomDither(
@@ -178,20 +161,6 @@ export const OrderedDither = forwardRef(function RandomDither(
 
     const { texture: ditherTexture } = useOrderedDitheringTexture(gl, ORDERED_DITHERING_MATRICES[mode])
     const { texture: paletteTexture } = useGradientTexture(gl, colors, quantization)
-
-    // useEffect(() => {
-    //     // document.body.appendChild(canvas)
-
-    //     canvas.style.cssText = `
-    //         position: absolute;
-    //         top: 0;
-    //         left: 0;
-    //         width: 128px;
-    //         height: 128px;
-    //         pointer-events: none;
-
-    //     `
-    // }, [ditherTexture, canvas])
 
     const [program] = useState(() => new OrderedDitherMaterial(gl, texture, ditherTexture, paletteTexture))
 
@@ -214,10 +183,6 @@ export const OrderedDither = forwardRef(function RandomDither(
     useEffect(() => {
         program.brightness = brightness * 0.5
     }, [program, brightness])
-
-    // useEffect(() => {
-    //     program.ditherPixelSize = ditherPixelSize
-    // }, [program, ditherPixelSize])
 
     useImperativeHandle(ref, () => ({ program }), [program])
 
@@ -247,18 +212,6 @@ export const OrderedDither = forwardRef(function RandomDither(
                     ))}
                 </select>
             </div>
-            {/* <div className="gui-row">
-                <label className="gui-label">Pixelation</label>
-                <input
-                    type="range"
-                    min="1"
-                    max="6"
-                    defaultValue={pixelSize}
-                    value={pixelSize}
-                    onChange={e => setPixelSize(Number(e.target.value))}
-                    className="gui-select"
-                />
-            </div> */}
 
             <div className="gui-row">
                 <label className="gui-label">Pixelation</label>
@@ -321,29 +274,12 @@ export const OrderedDither = forwardRef(function RandomDither(
                     }}
                     className="gui-select"
                     value={colorMode}
-                    // defaultValue={colorMode}
                 >
                     <option value="0">Grayscale</option>
                     <option value="1">RGB</option>
-                    {/* <option value="2">Grayscale</option>
-                    <option value="3">True Colors</option> */}
                     <option value="2">Custom Palette</option>
                 </select>
             </div>
-            {/* {[0, 1, 2].includes(colorMode) && (
-                <div className="gui-row">
-                    <label className="gui-label">Quantization</label>
-                    <input
-                        type="range"
-                        min="2"
-                        max="8"
-                        value={quantization}
-                        defaultValue={quantization}
-                        onChange={e => setQuantization(parseInt(e.target.value))}
-                        className="gui-select"
-                    />
-                </div>
-            )} */}
             <div className="gui-row">
                 <label className="gui-label">Quantization</label>
                 <input
@@ -357,7 +293,6 @@ export const OrderedDither = forwardRef(function RandomDither(
 
                 <Slider.Root
                     className="SliderRoot"
-                    // defaultValue={[quantization]}
                     min={2}
                     max={8}
                     step={1}

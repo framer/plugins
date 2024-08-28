@@ -1,8 +1,6 @@
 import { ImageAsset, framer } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
-// import { Spinner } from "./Spinner"
-import { assert, bytesFromCanvas } from "./utils"
 import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { OrderedDither } from "./materials/ordered"
 import cn from "clsx"
@@ -62,7 +60,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     const [scene] = useState(() => new Transform())
     const [geometry] = useState(() => new Plane(gl))
 
-    // const [type, setType] = useState(1)
     const [program, setProgram] = useState(() => new Program(gl, {}))
 
     const [mesh] = useState(() => new Mesh(gl, { geometry, program }))
@@ -79,16 +76,12 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
 
     useEffect(() => {
         renderer.setSize(resolution[0], resolution[1])
-        // console.log("set resolution", resolution[0], resolution[1])
         program?.setResolution?.(resolution[0], resolution[1])
     }, [renderer, program, resolution])
 
     const loadTexture = useCallback(
         async (image: ImageAsset) => {
             const loadedImage = await image.loadImage() // get blob src to avoid CORS
-            // const imageData = await image.getData()
-
-            // console.log("loaded image", image, loadedImage, imageData)
 
             const img = new Image()
             img.onload = () => {
@@ -163,16 +156,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             },
         })
 
-        // framer.hideUI()
-        // await framer.setImage({
-        //     image: {
-        //         bytes: nextBytes,
-        //         mimeType: originalImage.mimeType,
-        //     },
-        // })
-
-        // void framer.closePlugin("Image saved...")
-
         console.log("total duration", performance.now() - start)
     }, [render, image])
 
@@ -181,8 +164,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     useEffect(() => {
         const resizeObserver = new ResizeObserver(([entry]) => {
             const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0]
-
-            // console.log("resize", width, height)
 
             void framer.showUI({ title: "Dither", position: "top right", width: 280, height })
         })
@@ -215,28 +196,14 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     </div>
                 )}
             </div>
-
-            {/* {type === 0 && (
-                <RandomDither
-                    ref={node => {
-                        // TODO: fix this type
-                        setProgram(node?.program)
-                    }}
-                    gl={gl}
-                    texture={texture}
-                />
-            )} */}
-            {/* {type === 1 && ( */}
             <div className={cn("gui", !image && "disabled")}>
                 <OrderedDither
                     ref={node => {
-                        // TODO: fix this type
                         setProgram(node?.program)
                     }}
                     gl={gl}
                     texture={texture}
                 />
-                {/* )} */}
             </div>
             <button onClick={saveImage} disabled={!image}>
                 Add Image

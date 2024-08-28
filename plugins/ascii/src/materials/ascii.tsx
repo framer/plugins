@@ -2,7 +2,7 @@ import { OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { GLSL } from "../glsl"
 import { ORDERED_DITHERING_MATRICES } from "../ordered-dithering-matrices"
-import { useOrderedDitheringTexture } from "../use-ordered-dithering-texture"
+import { useCharactersAtlasTexture, useOrderedDitheringTexture } from "../use-characters-atlas-texture"
 import { Palette } from "../palette"
 import { useGradientTexture } from "../use-gradient-texture"
 import * as Slider from "@radix-ui/react-slider"
@@ -96,6 +96,8 @@ export const ASCII = forwardRef(function RandomDither(
 
     const [program] = useState(() => new ASCIIMaterial(gl, texture))
 
+    const { texture: charactersAtlasTexture } = useCharactersAtlasTexture(gl, { characters })
+
     useEffect(() => {
         program.colorMode = colorMode
     }, [program, colorMode])
@@ -129,6 +131,21 @@ export const ASCII = forwardRef(function RandomDither(
                     onChange={e => setCharacters(e.target.value)}
                 />
             </div>
+            {/* <div className="gui-row">
+                <label className="gui-label">Font</label>
+                <select
+                    onChange={e => {
+                        setColorMode(Number(e.target.value))
+                    }}
+                    className="gui-select"
+                    value={colorMode}
+                    // defaultValue={colorMode}
+                >
+                    <option value="0">Grayscale</option>
+                    <option value="1">RGB</option>
+                    <option value="2">Custom Palette</option>
+                </select>
+            </div> */}
             <div className="gui-row">
                 <label className="gui-label">Pixelation</label>
                 <input

@@ -1,11 +1,9 @@
 import { OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
-import { GLSL } from "../glsl"
-import { ORDERED_DITHERING_MATRICES } from "../ordered-dithering-matrices"
-import { useCharactersAtlasTexture, useOrderedDitheringTexture } from "../use-characters-atlas-texture"
+import { useCharactersAtlasTexture } from "../use-characters-atlas-texture"
 import { Palette } from "../palette"
-import { useGradientTexture } from "../use-gradient-texture"
 import * as Slider from "@radix-ui/react-slider"
+import { GLSL } from "../glsl"
 
 export class ASCIIMaterial extends Program {
     constructor(gl: OGLRenderingContext, texture: Texture) {
@@ -29,24 +27,75 @@ export class ASCIIMaterial extends Program {
             fragment: /*glsl*/ `#version 300 es
                 precision lowp float;
 
+                ${GLSL.LUMA}
+                ${GLSL.QUANTIZE}
+
                 in vec2 vUv;
                 out vec4 fragColor;
 
                 uniform sampler2D uTexture;
+                uniform sampler2D uCharactersAtlasTexture;
+                uniform vec2 uCharactersAtlasTextureSize;
+
+                uniform float uPixelSize;
+                uniform vec2 uResolution;
+                uniform int uColorMode;
+                uniform float uBrightness;
 
                 void main() {
-                    fragColor = texture(uTexture, vUv);
+                    vec2 pixelSize = uPixelSize / uResolution;
+                    vec2 pixelizedUv = floor(vUv / pixelSize) * pixelSize;
+                    vec4 color = texture(uTexture, pixelizedUv);
+
+                    float luma = luma(color.rgb);
+                    float characterIndex = floor(clamp(0., luma + uBrightness, 1.) * uCharactersAtlasTextureSize.x);
+
+                    // fragColor = color;
+                    // fragColor = vec4(uPixelSize / 10.,1.,1.,1.);
+                    // fragColor = vec4(vec2(0.), index, 1.0);
+                    fragColor = vec4(pixelizedUv, 0., 1.0);
+                    
+                    vec2 pixelizedMappedUv = mod(vUv / pixelSize, 1.);
+                    // fragColor = vec4(pixelizedMappedUv, 0., 1.0);
+                    vec4 ascii = texture(uCharactersAtlasTexture, (pixelizedMappedUv + vec2(characterIndex, 0.)) / uCharactersAtlasTextureSize);
+
+                    if(uColorMode == 0) { // RGB
+                        // ascii.rgb *= color.rgb;
+
+                        ascii.r = quantize(color.r, int(uCharactersAtlasTextureSize.x));
+                        ascii.g = quantize(color.g, int(uCharactersAtlasTextureSize.x));
+                        ascii.b = quantize(color.b, int(uCharactersAtlasTextureSize.x));
+
+                    } else if(uColorMode == 1) { // Grayscale
+                        // ascii.rgb *= luma; 
+
+                        ascii.rgb = vec3(quantize(luma, int(uCharactersAtlasTextureSize.x)));
+                    }
+
+                    // ascii.rgb *= luma;
+                    // ascii.rgb *= color.rgb;
+                    fragColor = vec4(ascii.rgb, color.a * ascii.a);
+
+                    // if(vUv.x > 0.5) {
+                    //     fragColor = vec4(pixelizedUv, 0., 1.);
+                    // }
+
+                    // fragColor = texture(uTexture, vUv * uPixelSize);
+
+                    // fragColor = texture(uCharactersAtlasTexture, ((vUv + vec2(7., 0.)) / uCharactersAtlasTextureSize));
                 }
                 `,
             uniforms: {
                 uTexture: { value: texture },
                 uResolution: { value: new Vec2(1, 1) },
+                uCharactersAtlasTexture: { value: new Texture(gl) },
+                uCharactersAtlasTextureSize: { value: new Vec2(1, 1) },
                 // uDitherTexture: { value: ditherTexture },
                 // uPaletteTexture: { value: paletteTexture },
                 uPixelSize: { value: 1 },
                 uColorMode: { value: 0 },
                 uQuantization: { value: 8 },
-                uRandom: { value: 0 },
+                // uRandom: { value: 0 },
                 uBrightness: { value: 0 },
             },
             transparent: true,
@@ -55,6 +104,15 @@ export class ASCIIMaterial extends Program {
 
     setResolution(x: number, y: number) {
         this.uniforms.uResolution.value.set(Math.floor(x), Math.floor(y))
+    }
+
+    setCharactersAtlasTextureSize(x: number, y: number) {
+        this.uniforms.uCharactersAtlasTextureSize.value.x = Math.floor(x)
+        this.uniforms.uCharactersAtlasTextureSize.value.y = Math.floor(y)
+    }
+
+    set charatersAtlasTexture(value: Texture) {
+        this.uniforms.uCharactersAtlasTexture.value = value
     }
 
     set mode(value: number) {
@@ -73,9 +131,9 @@ export class ASCIIMaterial extends Program {
         this.uniforms.uQuantization.value = Math.floor(value)
     }
 
-    set isRandom(value: boolean) {
-        this.uniforms.uRandom.value = value ? 1 : 0
-    }
+    // set isRandom(value: boolean) {
+    //     this.uniforms.uRandom.value = value ? 1 : 0
+    // }
 
     set brightness(value: number) {
         this.uniforms.uBrightness.value = value
@@ -86,29 +144,40 @@ export const ASCII = forwardRef(function RandomDither(
     { gl, texture }: { gl: OGLRenderingContext; texture: Texture },
     ref
 ) {
-    const [characters, setCharacters] = useState(" .●FR░▒▓█")
-    const [colorMode, setColorMode] = useState(1)
-    const [quantization, setQuantization] = useState(3)
-    const [isRandom, setIsRandom] = useState(false)
-    const [pixelSize, setPixelSize] = useState(2)
+    const [characters, setCharacters] = useState(" ●░▒▓█")
+    const [colorMode, setColorMode] = useState(0)
+    // const [isRandom, setIsRandom] = useState(false)
+    const [pixelSize, setPixelSize] = useState(8)
     const [colors, setColors] = useState([] as string[])
     const [brightness, setBrightness] = useState(0)
 
     const [program] = useState(() => new ASCIIMaterial(gl, texture))
 
-    const { texture: charactersAtlasTexture } = useCharactersAtlasTexture(gl, { characters })
+    const {
+        texture: charactersAtlasTexture,
+        width: charactersAtlasTextureWidth,
+        height: charactersAtlasTextureHeight,
+    } = useCharactersAtlasTexture(gl, {
+        characters,
+        size: 64,
+    })
+
+    useEffect(() => {
+        program.charatersAtlasTexture = charactersAtlasTexture
+        program.setCharactersAtlasTextureSize(charactersAtlasTextureWidth, charactersAtlasTextureHeight)
+    }, [program, charactersAtlasTexture, charactersAtlasTextureWidth, charactersAtlasTextureHeight])
 
     useEffect(() => {
         program.colorMode = colorMode
     }, [program, colorMode])
 
-    useEffect(() => {
-        program.quantization = quantization
-    }, [program, quantization])
+    // useEffect(() => {
+    //     program.quantization = quantization
+    // }, [program, quantization])
 
-    useEffect(() => {
-        program.isRandom = isRandom
-    }, [program, isRandom])
+    // useEffect(() => {
+    //     program.isRandom = isRandom
+    // }, [program, isRandom])
 
     useEffect(() => {
         program.pixelSize = pixelSize
@@ -147,12 +216,12 @@ export const ASCII = forwardRef(function RandomDither(
                 </select>
             </div> */}
             <div className="gui-row">
-                <label className="gui-label">Pixelation</label>
+                <label className="gui-label">Size</label>
                 <input
                     className="gui-input"
                     type="number"
-                    min="1"
-                    max="6"
+                    min="8"
+                    max="64"
                     value={pixelSize}
                     onChange={e => setPixelSize(Number(e.target.value))}
                 />
@@ -160,8 +229,8 @@ export const ASCII = forwardRef(function RandomDither(
                 <Slider.Root
                     className="SliderRoot"
                     defaultValue={[pixelSize]}
-                    min={1}
-                    max={6}
+                    min={8}
+                    max={64}
                     step={1}
                     value={[pixelSize]}
                     onValueChange={value => setPixelSize(Number(value))}
@@ -209,36 +278,10 @@ export const ASCII = forwardRef(function RandomDither(
                     value={colorMode}
                     // defaultValue={colorMode}
                 >
-                    <option value="0">Grayscale</option>
-                    <option value="1">RGB</option>
+                    <option value="0">RGB</option>
+                    <option value="1">Grayscale</option>
                     <option value="2">Custom Palette</option>
                 </select>
-            </div>
-            <div className="gui-row">
-                <label className="gui-label">Quantization</label>
-                <input
-                    className="gui-input"
-                    type="number"
-                    min="2"
-                    max="8"
-                    value={quantization}
-                    onChange={e => setQuantization(parseInt(e.target.value))}
-                />
-
-                <Slider.Root
-                    className="SliderRoot"
-                    // defaultValue={[quantization]}
-                    min={2}
-                    max={8}
-                    step={1}
-                    value={[quantization]}
-                    onValueChange={value => setQuantization(Number(value))}
-                >
-                    <Slider.Track className="SliderTrack strokeWidth">
-                        <Slider.Range className="SliderRange" />
-                    </Slider.Track>
-                    <Slider.Thumb className="SliderThumb" />
-                </Slider.Root>
             </div>
             {[2].includes(colorMode) && (
                 <div className="gui-row">

@@ -16,4 +16,13 @@ export const GLSL = {
             return floor(value * (float(quant) - 1.0) + 0.5) / (float(quant) - 1.0);
         }
     `,
+    MAP_RANGE: /*glsl*/ `
+        float mapRange(float inMin, float inMax, float value, float outMin, float outMax) {
+            return (value - inMin) / (inMax - inMin) * (outMax - outMin) + outMin;
+        }
+
+        vec2 mapRange(vec2 inMin, vec2 inMax, vec2 value, vec2 outMin, vec2 outMax) {
+            return (value - inMin) / (inMax - inMin) * (outMax - outMin) + outMin;
+        }
+    `,
 }

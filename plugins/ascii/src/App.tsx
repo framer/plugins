@@ -4,6 +4,7 @@ import "./App.css"
 import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { ASCII } from "./materials/ascii"
 import cn from "clsx"
+import { assert, bytesFromCanvas } from "./utils"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()

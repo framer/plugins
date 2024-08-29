@@ -59,17 +59,18 @@ export class ASCIIMaterial extends Program {
                     // fragColor = vec4(pixelizedMappedUv, 0., 1.0);
                     vec4 ascii = texture(uCharactersAtlasTexture, (pixelizedMappedUv + vec2(characterIndex, 0.)) / uCharactersAtlasTextureSize);
 
+                    int maxCharacterIndex = int(uCharactersAtlasTextureSize.x);
+
                     if(uColorMode == 0) { // RGB
-                        // ascii.rgb *= color.rgb;
-
-                        ascii.r = quantize(color.r, int(uCharactersAtlasTextureSize.x));
-                        ascii.g = quantize(color.g, int(uCharactersAtlasTextureSize.x));
-                        ascii.b = quantize(color.b, int(uCharactersAtlasTextureSize.x));
-
+                        ascii.rgb *= color.rgb;
                     } else if(uColorMode == 1) { // Grayscale
-                        // ascii.rgb *= luma; 
-
-                        ascii.rgb = vec3(quantize(luma, int(uCharactersAtlasTextureSize.x)));
+                        ascii.r = quantize(color.r, maxCharacterIndex);
+                        ascii.g = quantize(color.g, maxCharacterIndex);
+                        ascii.b = quantize(color.b, maxCharacterIndex);
+                    } else if(uColorMode == 2) { // Grayscale
+                        ascii.rgb *= luma; 
+                    } else if(uColorMode == 3) { // Grayscale (quantized)
+                        ascii.rgb = vec3(quantize(luma, maxCharacterIndex));
                     }
 
                     // ascii.rgb *= luma;
@@ -94,7 +95,7 @@ export class ASCIIMaterial extends Program {
                 // uPaletteTexture: { value: paletteTexture },
                 uPixelSize: { value: 1 },
                 uColorMode: { value: 0 },
-                uQuantization: { value: 8 },
+                uQuantization: { value: 0 },
                 // uRandom: { value: 0 },
                 uBrightness: { value: 0 },
             },
@@ -279,8 +280,10 @@ export const ASCII = forwardRef(function RandomDither(
                     // defaultValue={colorMode}
                 >
                     <option value="0">RGB</option>
-                    <option value="1">Grayscale</option>
-                    <option value="2">Custom Palette</option>
+                    <option value="1">RGB (quantized)</option>
+                    <option value="2">Grayscale</option>
+                    <option value="3">Grayscale (quantized)</option>
+                    <option value="4">Custom Palette</option>
                 </select>
             </div>
             {[2].includes(colorMode) && (

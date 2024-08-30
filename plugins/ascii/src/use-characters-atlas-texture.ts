@@ -7,10 +7,12 @@ export function useCharactersAtlasTexture(
         characters,
         size = 64,
         debug = import.meta.env.DEV,
+        font,
     }: {
         characters: string
         size?: number
         debug?: boolean
+        font?: string
     }
 ) {
     const [texture] = useState(() => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST }))
@@ -31,7 +33,7 @@ export function useCharactersAtlasTexture(
         // context.rect(10, 20, 150, 100) // Add a rectangle to the current path
         // context.fill() // Render the path
 
-        context.font = `${size}px monospace`
+        context.font = `${size}px ${font}, monospace`
         context.textBaseline = "middle"
         context.textAlign = "center"
 
@@ -51,7 +53,7 @@ export function useCharactersAtlasTexture(
         texture.width = canvas.width
         texture.height = canvas.height
         texture.update()
-    }, [texture, canvas, characters])
+    }, [texture, canvas, characters,font])
 
     useEffect(() => {
         if (!debug) return

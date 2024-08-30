@@ -44,6 +44,7 @@ export class ASCIIMaterial extends Program {
                 uniform float uBrightness;
                 uniform vec3 uBackgroundColor;
                 uniform bool uIsTransparent;
+                uniform bool uIsFilled;
 
                 void main() {
                     vec2 pixelSize = uPixelSize / uResolution;
@@ -66,7 +67,7 @@ export class ASCIIMaterial extends Program {
 
                     if(uColorMode == 0) { // RGB
                         ascii.rgb *= color.rgb;
-                    } else if(uColorMode == 1) { // Grayscale
+                    } else if(uColorMode == 1) { // RGB (quantized)
                         ascii.r = quantize(color.r, maxCharacterIndex);
                         ascii.g = quantize(color.g, maxCharacterIndex);
                         ascii.b = quantize(color.b, maxCharacterIndex);
@@ -85,6 +86,25 @@ export class ASCIIMaterial extends Program {
                     if(uIsTransparent == false) {
                         fragColor = vec4(blendNormal(uBackgroundColor.rgb, fragColor.rgb, fragColor.a), 1.);
                     }
+
+                    if(uIsFilled == true) {
+                        if(uColorMode == 0) { // RGB
+                            color.rgb = color.rgb;
+                        } else if(uColorMode == 1) { // RGB (quantized)
+                            color.r = quantize(color.r, maxCharacterIndex);
+                            color.g = quantize(color.g, maxCharacterIndex);
+                            color.b = quantize(color.b, maxCharacterIndex);
+                        } else if(uColorMode == 2) { // Grayscale
+                            color.rgb = vec3(luma); 
+                        } else if(uColorMode == 3) { // Grayscale (quantized)
+                            color.rgb = vec3(quantize(luma, maxCharacterIndex));
+                        }
+
+                        fragColor = vec4(blendNormal(color.rgb, vec3(1.), color.a * ascii.a), color.a);
+                    }
+
+                    
+                    // fragColor.rgb = ascii.rgb;
 
                     // if(vUv.x > 0.5) {
                     //     fragColor = vec4(pixelizedUv, 0., 1.);
@@ -109,6 +129,7 @@ export class ASCIIMaterial extends Program {
                 // uQuantization: { value: 0 },
                 // uRandom: { value: 0 },
                 uBrightness: { value: 0 },
+                uIsFilled: { value: false },
             },
             transparent: true,
         })
@@ -158,13 +179,19 @@ export class ASCIIMaterial extends Program {
     set isTransparent(value: boolean) {
         this.uniforms.uIsTransparent.value = value
     }
+
+    set isFilled(value: boolean) {
+        this.uniforms.uIsFilled.value = value
+    }
 }
 
 export const ASCII = forwardRef(function RandomDither(
     { gl, texture }: { gl: OGLRenderingContext; texture: Texture },
     ref
 ) {
-    const [characters, setCharacters] = useState(" ●░▒▓█")
+    // const [characters, setCharacters] = useState(" ●░▒▓█")
+    const [characters, setCharacters] = useState(" ./FR█")
+
     const [colorMode, setColorMode] = useState(0)
     // const [isRandom, setIsRandom] = useState(false)
     const [pixelSize, setPixelSize] = useState(8)
@@ -172,6 +199,7 @@ export const ASCII = forwardRef(function RandomDither(
     const [brightness, setBrightness] = useState(0)
     const [backgroundColor, setBackgroundColor] = useState("#000")
     const [isTransparent, setIsTransparent] = useState(false)
+    const [isFilled, setIsFilled] = useState(true)
 
     const [program] = useState(() => new ASCIIMaterial(gl, texture))
 
@@ -216,6 +244,10 @@ export const ASCII = forwardRef(function RandomDither(
     useEffect(() => {
         program.backgroundColor = backgroundColor
     }, [program, backgroundColor])
+
+    useEffect(() => {
+        program.isFilled = isFilled
+    }, [program, isFilled])
 
     useImperativeHandle(ref, () => ({ program }), [program])
 
@@ -297,6 +329,12 @@ export const ASCII = forwardRef(function RandomDither(
                     </Slider.Track>
                     <Slider.Thumb className="SliderThumb" />
                 </Slider.Root>
+            </div>
+            <div className="gui-row">
+                <label className="gui-label">Fill</label>
+                <div className="gui-background">
+                    <input type="checkbox" checked={isFilled} onChange={e => setIsFilled(Boolean(e.target.checked))} />
+                </div>
             </div>
             <div className="gui-row">
                 <label className="gui-label">Color Mode</label>

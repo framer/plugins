@@ -29,6 +29,7 @@ export class ASCIIMaterial extends Program {
 
                 ${GLSL.LUMA}
                 ${GLSL.QUANTIZE}
+                ${GLSL.BLEND_NORMAL}
 
                 in vec2 vUv;
                 out vec4 fragColor;
@@ -75,9 +76,15 @@ export class ASCIIMaterial extends Program {
                         ascii.rgb = vec3(quantize(luma, maxCharacterIndex));
                     }
 
+                    // fragColor = vec4(vec3(1., 0., 0.), 1.);
+
                     // ascii.rgb *= luma;
                     // ascii.rgb *= color.rgb;
                     fragColor = vec4(ascii.rgb, color.a * ascii.a);
+
+                    if(uIsTransparent == false) {
+                        fragColor = vec4(blendNormal(uBackgroundColor.rgb, fragColor.rgb, fragColor.a), 1.);
+                    }
 
                     // if(vUv.x > 0.5) {
                     //     fragColor = vec4(pixelizedUv, 0., 1.);
@@ -201,6 +208,14 @@ export const ASCII = forwardRef(function RandomDither(
     useEffect(() => {
         program.brightness = brightness * 0.5
     }, [program, brightness])
+
+    useEffect(() => {
+        program.isTransparent = isTransparent
+    }, [program, isTransparent])
+
+    useEffect(() => {
+        program.backgroundColor = backgroundColor
+    }, [program, backgroundColor])
 
     useImperativeHandle(ref, () => ({ program }), [program])
 

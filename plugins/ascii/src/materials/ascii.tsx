@@ -1,4 +1,4 @@
-import { OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
+import { Color, OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { useCharactersAtlasTexture } from "../use-characters-atlas-texture"
 import { Palette } from "../palette"
@@ -41,6 +41,8 @@ export class ASCIIMaterial extends Program {
                 uniform vec2 uResolution;
                 uniform int uColorMode;
                 uniform float uBrightness;
+                uniform vec3 uBackgroundColor;
+                uniform bool uIsTransparent;
 
                 void main() {
                     vec2 pixelSize = uPixelSize / uResolution;
@@ -95,7 +97,9 @@ export class ASCIIMaterial extends Program {
                 // uPaletteTexture: { value: paletteTexture },
                 uPixelSize: { value: 1 },
                 uColorMode: { value: 0 },
-                uQuantization: { value: 0 },
+                uBackgroundColor: { value: new Color("#000") },
+                uIsTransparent: { value: false },
+                // uQuantization: { value: 0 },
                 // uRandom: { value: 0 },
                 uBrightness: { value: 0 },
             },
@@ -128,9 +132,9 @@ export class ASCIIMaterial extends Program {
         this.uniforms.uColorMode.value = value
     }
 
-    set quantization(value: number) {
-        this.uniforms.uQuantization.value = Math.floor(value)
-    }
+    // set quantization(value: number) {
+    //     this.uniforms.uQuantization.value = Math.floor(value)
+    // }
 
     // set isRandom(value: boolean) {
     //     this.uniforms.uRandom.value = value ? 1 : 0
@@ -138,6 +142,14 @@ export class ASCIIMaterial extends Program {
 
     set brightness(value: number) {
         this.uniforms.uBrightness.value = value
+    }
+
+    set backgroundColor(value: string) {
+        this.uniforms.uBackgroundColor.value.set(value)
+    }
+
+    set isTransparent(value: boolean) {
+        this.uniforms.uIsTransparent.value = value
     }
 }
 
@@ -151,6 +163,8 @@ export const ASCII = forwardRef(function RandomDither(
     const [pixelSize, setPixelSize] = useState(8)
     const [colors, setColors] = useState([] as string[])
     const [brightness, setBrightness] = useState(0)
+    const [backgroundColor, setBackgroundColor] = useState("#000")
+    const [isTransparent, setIsTransparent] = useState(false)
 
     const [program] = useState(() => new ASCIIMaterial(gl, texture))
 
@@ -285,6 +299,17 @@ export const ASCII = forwardRef(function RandomDither(
                     <option value="3">Grayscale (quantized)</option>
                     <option value="4">Custom Palette</option>
                 </select>
+            </div>
+            <div className="gui-row">
+                <label className="gui-label">Background</label>
+                <div className="gui-background">
+                    <input
+                        type="checkbox"
+                        checked={!isTransparent}
+                        onChange={e => setIsTransparent(!Boolean(e.target.checked))}
+                    />
+                    <input type="color" value={backgroundColor} onChange={e => setBackgroundColor(e.target.value)} />
+                </div>
             </div>
             {[2].includes(colorMode) && (
                 <div className="gui-row">

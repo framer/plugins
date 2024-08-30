@@ -117,6 +117,18 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
     }
 }
 
+.gui-row .gui-background {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    grid-column: span 2;
+
+    input[type="color"] {
+        width: unset;
+        flex-grow: 1;
+    }
+}
+
 .gui-input[type="text"] {
     width: 100%;
     grid-column: span 2;

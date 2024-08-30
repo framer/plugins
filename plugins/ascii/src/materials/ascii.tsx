@@ -185,6 +185,8 @@ export class ASCIIMaterial extends Program {
     }
 }
 
+const FONTS = ["IBM Plex Mono", "Share Tech Mono", "Overpass Mono", "Anonymus Pro"]
+
 export const ASCII = forwardRef(function RandomDither(
     { gl, texture }: { gl: OGLRenderingContext; texture: Texture },
     ref
@@ -198,6 +200,7 @@ export const ASCII = forwardRef(function RandomDither(
     const [colors, setColors] = useState([] as string[])
     const [brightness, setBrightness] = useState(0)
     const [backgroundColor, setBackgroundColor] = useState("#000")
+    const [font, setFont] = useState(FONTS[0])
     const [isTransparent, setIsTransparent] = useState(false)
     const [isFilled, setIsFilled] = useState(true)
 
@@ -210,6 +213,7 @@ export const ASCII = forwardRef(function RandomDither(
     } = useCharactersAtlasTexture(gl, {
         characters,
         size: 64,
+        font,
     })
 
     useEffect(() => {
@@ -329,6 +333,22 @@ export const ASCII = forwardRef(function RandomDither(
                     </Slider.Track>
                     <Slider.Thumb className="SliderThumb" />
                 </Slider.Root>
+            </div>{" "}
+            <div className="gui-row">
+                <label className="gui-label">Font</label>
+                <select
+                    onChange={e => {
+                        setFont(e.target.value)
+                    }}
+                    className="gui-select"
+                    value={font}
+                >
+                    {FONTS.map(font => (
+                        <option key={font} value={font}>
+                            {font}
+                        </option>
+                    ))}
+                </select>
             </div>
             <div className="gui-row">
                 <label className="gui-label">Fill</label>

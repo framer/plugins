@@ -51,7 +51,15 @@ export function Authenticate({ onAuthenticated, context }: AuthenticationProps) 
         }
 
         return new Promise(
-            resolve => (pollInterval.current = setInterval(() => auth.fetchTokens(readKey).then(resolve), 2500))
+            resolve =>
+                (pollInterval.current = setInterval(
+                    () =>
+                        auth.fetchTokens(readKey).then(tokens => {
+                            clearInterval(pollInterval.current)
+                            resolve(tokens)
+                        }),
+                    2500
+                ))
         )
     }
 

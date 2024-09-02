@@ -196,9 +196,6 @@ const FONTS = [
     "Pixelify Sans",
     "Rubik Mono One",
     "Pirata One",
-    // "VT323",
-    // "Syne Mono",
-    // "Nova Mono",
 ]
 
 export const ASCII = forwardRef(function RandomDither(

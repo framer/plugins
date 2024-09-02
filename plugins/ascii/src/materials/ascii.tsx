@@ -45,6 +45,7 @@ export class ASCIIMaterial extends Program {
                 uniform vec3 uBackgroundColor;
                 uniform bool uIsTransparent;
                 uniform bool uIsFilled;
+                uniform vec3 uTextColor;
 
                 void main() {
                     vec2 pixelSize = uPixelSize / uResolution;
@@ -75,6 +76,8 @@ export class ASCIIMaterial extends Program {
                         ascii.rgb *= luma; 
                     } else if(uColorMode == 3) { // Grayscale (quantized)
                         ascii.rgb = vec3(quantize(luma, maxCharacterIndex));
+                    } else if(uColorMode == 4) { // Custom
+                        ascii.rgb = uTextColor;
                     }
 
                     // fragColor = vec4(vec3(1., 0., 0.), 1.);
@@ -124,12 +127,13 @@ export class ASCIIMaterial extends Program {
                 // uPaletteTexture: { value: paletteTexture },
                 uPixelSize: { value: 1 },
                 uColorMode: { value: 0 },
-                uBackgroundColor: { value: new Color("#000") },
+                uBackgroundColor: { value: new Color("#000000") },
                 uIsTransparent: { value: false },
                 // uQuantization: { value: 0 },
                 // uRandom: { value: 0 },
                 uBrightness: { value: 0 },
                 uIsFilled: { value: false },
+                uTextColor: { value: new Color("#ffffff") },
             },
             transparent: true,
         })
@@ -183,6 +187,10 @@ export class ASCIIMaterial extends Program {
     set isFilled(value: boolean) {
         this.uniforms.uIsFilled.value = value
     }
+
+    set textColor(value: string) {
+        this.uniforms.uTextColor.value.set(value)
+    }
 }
 
 const FONTS = [
@@ -208,9 +216,9 @@ export const ASCII = forwardRef(function RandomDither(
     const [colorMode, setColorMode] = useState(0)
     // const [isRandom, setIsRandom] = useState(false)
     const [pixelSize, setPixelSize] = useState(8)
-    const [colors, setColors] = useState([] as string[])
+    const [textColor, setTextColor] = useState("#ffffff")
     const [brightness, setBrightness] = useState(0)
-    const [backgroundColor, setBackgroundColor] = useState("#000")
+    const [backgroundColor, setBackgroundColor] = useState("#000000")
     const [font, setFont] = useState(FONTS[0])
     const [isTransparent, setIsTransparent] = useState(false)
     const [isFilled, setIsFilled] = useState(true)
@@ -264,6 +272,10 @@ export const ASCII = forwardRef(function RandomDither(
         program.isFilled = isFilled
     }, [program, isFilled])
 
+    useEffect(() => {
+        program.textColor = textColor
+    }, [program, textColor])
+
     useImperativeHandle(ref, () => ({ program }), [program])
 
     return (
@@ -276,6 +288,33 @@ export const ASCII = forwardRef(function RandomDither(
                     value={characters}
                     onChange={e => setCharacters(e.target.value)}
                 />
+            </div>
+            <div className="gui-row">
+                <label className="gui-label">Font</label>
+                <select
+                    onChange={e => {
+                        setFont(e.target.value)
+                    }}
+                    className="gui-select"
+                    value={font}
+                >
+                    {FONTS.map(font => (
+                        <option key={font} value={font}>
+                            {font}
+                        </option>
+                    ))}
+                </select>
+                {/* Font preload */}
+                <div
+                    style={{
+                        visibility: "hidden",
+                        position: "absolute",
+                    }}
+                >
+                    {FONTS.map(font => (
+                        <span style={{ fontFamily: font }}>{font}</span>
+                    ))}
+                </div>
             </div>
             <div className="gui-row">
                 <label className="gui-label">Size</label>
@@ -332,38 +371,37 @@ export const ASCII = forwardRef(function RandomDither(
             </div>
 
             <div className="gui-row">
-                <label className="gui-label">Font</label>
-                <select
-                    onChange={e => {
-                        setFont(e.target.value)
-                    }}
-                    className="gui-select"
-                    value={font}
-                >
-                    {FONTS.map(font => (
-                        <option key={font} value={font}>
-                            {font}
-                        </option>
-                    ))}
-                </select>
-                {/* Font preload */}
-                <div
-                    style={{
-                        visibility: "hidden",
-                        position: "absolute",
-                    }}
-                >
-                    {FONTS.map(font => (
-                        <span style={{ fontFamily: font }}>{font}</span>
-                    ))}
-                </div>
-            </div>
-            <div className="gui-row">
                 <label className="gui-label">Fill</label>
-                <div className="gui-background">
-                    <input type="checkbox" checked={isFilled} onChange={e => setIsFilled(Boolean(e.target.checked))} />
-                </div>
+                <input
+                    type="checkbox"
+                    checked={isFilled}
+                    onChange={e => {
+                        const value = Boolean(e.target.checked)
+                        setIsFilled(value)
+
+                        if (value) {
+                            setColorMode(0)
+                        }
+                    }}
+                />
             </div>
+            {!isFilled && (
+                <div className="gui-row">
+                    <label className="gui-label">Background</label>
+                    <div className="gui-background">
+                        <input
+                            type="checkbox"
+                            checked={!isTransparent}
+                            onChange={e => setIsTransparent(!Boolean(e.target.checked))}
+                        />
+                        <input
+                            type="color"
+                            value={backgroundColor}
+                            onChange={e => setBackgroundColor(e.target.value)}
+                        />
+                    </div>
+                </div>
+            )}
             <div className="gui-row">
                 <label className="gui-label">Color Mode</label>
                 <select
@@ -378,28 +416,14 @@ export const ASCII = forwardRef(function RandomDither(
                     <option value="1">RGB (quantized)</option>
                     <option value="2">Grayscale</option>
                     <option value="3">Grayscale (quantized)</option>
-                    <option value="4">Custom Palette</option>
+                    {!isFilled && <option value="4">Solid Color</option>}
                 </select>
             </div>
-            <div className="gui-row">
-                <label className="gui-label">Background</label>
-                <div className="gui-background">
-                    <input
-                        type="checkbox"
-                        checked={!isTransparent}
-                        onChange={e => setIsTransparent(!Boolean(e.target.checked))}
-                    />
-                    <input type="color" value={backgroundColor} onChange={e => setBackgroundColor(e.target.value)} />
-                </div>
-            </div>
-            {[2].includes(colorMode) && (
-                <div className="gui-row">
-                    <label className="gui-label">Palette</label>
-                    <Palette
-                        onChange={colors => {
-                            setColors(colors)
-                        }}
-                    />
+
+            {[4].includes(colorMode) && (
+                <div className="gui-row gui-color">
+                    <label className="gui-label">Text Color</label>
+                    <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} />
                 </div>
             )}
         </>

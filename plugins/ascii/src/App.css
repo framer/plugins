@@ -93,6 +93,8 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
     grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(62px, 1fr));
     -ms-grid-rows: auto;
     grid-template-rows: auto;
+    height: 40px;
+    align-items: center;
 }
 
 .gui-row .gui-label {
@@ -136,6 +138,13 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
 
 .gui-input {
     width: 100%;
+}
+
+.gui-color {
+    input {
+        grid-column: span 2;
+        width: 100%;
+    }
 }
 
 /* Slider */

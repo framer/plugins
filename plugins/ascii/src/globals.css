@@ -5,8 +5,7 @@
 /* Reset */
 
 :root {
-    --framer-font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif, "IBM Plex Mono", "Share Tech Mono",
-        "Overpass Mono", "Anonymous Pro", monospace;
+    --framer-font-family: "Inter", system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
 *,

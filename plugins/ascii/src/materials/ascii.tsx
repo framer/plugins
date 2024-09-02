@@ -206,10 +206,7 @@ const FONTS = [
     "Pirata One",
 ]
 
-export const ASCII = forwardRef(function RandomDither(
-    { gl, texture }: { gl: OGLRenderingContext; texture: Texture },
-    ref
-) {
+export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderingContext; texture: Texture }, ref) {
     // const [characters, setCharacters] = useState(" ●░▒▓█")
     const [characters, setCharacters] = useState(" ./FR█")
 
@@ -312,7 +309,9 @@ export const ASCII = forwardRef(function RandomDither(
                     }}
                 >
                     {FONTS.map(font => (
-                        <span style={{ fontFamily: font }}>{font}</span>
+                        <span style={{ fontFamily: font }} key={font}>
+                            {font}
+                        </span>
                     ))}
                 </div>
             </div>

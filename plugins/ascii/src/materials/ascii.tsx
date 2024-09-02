@@ -185,7 +185,21 @@ export class ASCIIMaterial extends Program {
     }
 }
 
-const FONTS = ["IBM Plex Mono", "Share Tech Mono", "Overpass Mono", "Anonymus Pro"]
+const FONTS = [
+    // "IBM Plex Mono",
+    // "Share Tech Mono",
+    // "Overpass Mono",
+    // "Anonymus Pro",
+    // "Arial",
+    "Roboto Mono",
+    "Courier Prime",
+    "Pixelify Sans",
+    "Rubik Mono One",
+    "Pirata One",
+    // "VT323",
+    // "Syne Mono",
+    // "Nova Mono",
+]
 
 export const ASCII = forwardRef(function RandomDither(
     { gl, texture }: { gl: OGLRenderingContext; texture: Texture },
@@ -266,21 +280,6 @@ export const ASCII = forwardRef(function RandomDither(
                     onChange={e => setCharacters(e.target.value)}
                 />
             </div>
-            {/* <div className="gui-row">
-                <label className="gui-label">Font</label>
-                <select
-                    onChange={e => {
-                        setColorMode(Number(e.target.value))
-                    }}
-                    className="gui-select"
-                    value={colorMode}
-                    // defaultValue={colorMode}
-                >
-                    <option value="0">Grayscale</option>
-                    <option value="1">RGB</option>
-                    <option value="2">Custom Palette</option>
-                </select>
-            </div> */}
             <div className="gui-row">
                 <label className="gui-label">Size</label>
                 <input
@@ -333,7 +332,8 @@ export const ASCII = forwardRef(function RandomDither(
                     </Slider.Track>
                     <Slider.Thumb className="SliderThumb" />
                 </Slider.Root>
-            </div>{" "}
+            </div>
+
             <div className="gui-row">
                 <label className="gui-label">Font</label>
                 <select
@@ -349,6 +349,17 @@ export const ASCII = forwardRef(function RandomDither(
                         </option>
                     ))}
                 </select>
+                {/* Font preload */}
+                <div
+                    style={{
+                        visibility: "hidden",
+                        position: "absolute",
+                    }}
+                >
+                    {FONTS.map(font => (
+                        <span style={{ fontFamily: font }}>{font}</span>
+                    ))}
+                </div>
             </div>
             <div className="gui-row">
                 <label className="gui-label">Fill</label>

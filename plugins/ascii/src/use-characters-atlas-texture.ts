@@ -15,7 +15,7 @@ export function useCharactersAtlasTexture(
         font?: string
     }
 ) {
-    const [texture] = useState(() => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST }))
+    const [texture] = useState(() => new Texture(gl, { minFilter: gl.LINEAR, magFilter: gl.LINEAR }))
     const [canvas] = useState(() => document.createElement("canvas"))
 
     useEffect(() => {
@@ -53,7 +53,7 @@ export function useCharactersAtlasTexture(
         texture.width = canvas.width
         texture.height = canvas.height
         texture.update()
-    }, [texture, canvas, characters,font])
+    }, [texture, canvas, characters, font])
 
     useEffect(() => {
         if (!debug) return

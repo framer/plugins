@@ -89,7 +89,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     }, [render, framerCanvasImage])
 
     return (
-        // <Theme appearance="dark">
         <div className="container" ref={containerRef}>
             <div className="canvas-container" ref={canvasContainerRef}>
                 {framerCanvasImage ? (
@@ -123,7 +122,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                 {savingInAction ? "Adding..." : "   Add Image"}
             </button>
         </div>
-        // </Theme>
     )
 }
 
@@ -181,6 +179,9 @@ function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
                 texture.image = img
                 const aspect = img.naturalWidth / img.naturalHeight
                 setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
+                // setResolution([Math.floor(img.naturalWidth), Math.floor(img.naturalHeight)])
+                // gl.canvas.width = img.naturalWidth
+                // gl.canvas.height = img.naturalHeight
             }
             img.src = loadedImage.currentSrc
         },
@@ -190,8 +191,6 @@ function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
     const loadVideoTexture = useCallback(
         async (video: DroppedAsset["asset"]) => {
             video.play()
-
-            console.log("loadVideoTexture")
 
             if (!texture.image || texture.image.src !== video.src) {
                 texture.image = video

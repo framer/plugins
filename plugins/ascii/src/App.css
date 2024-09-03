@@ -36,11 +36,13 @@
     /* box-shadow: 0 0 0 1px var(--framer-color-divider) inset; */
     /* border-radius: 8px; */
     /* height: 100%; */
+    /* height: 248px;
+    overflow: auto; */
     width: 100%;
     /* flex-grow: 1; */
     position: relative;
     /* background-color: var(--framer-color-bg-tertiary); */
-    overflow: hidden;
+    /* overflow: hidden; */
 
     /* canvas {
         max-width: unset;
@@ -165,6 +167,9 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
 
     span {
         flex-grow: 1;
+    }
+
+    .color {
         text-transform: uppercase;
     }
 

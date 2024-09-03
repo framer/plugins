@@ -54,11 +54,8 @@ export class ASCIIMaterial extends Program {
                     vec4 color = texture(uTexture, pixelizedUv);
 
                     float luma = luma(color.rgb);
-                    float characterIndex = floor(clamp(0., luma + uBrightness, 1.) * uCharactersAtlasTextureSize.x);
+                    float characterIndex = round(clamp(luma + uBrightness, 0., 1.) * (uCharactersAtlasTextureSize.x - 1.));
 
-                    // fragColor = color;
-                    // fragColor = vec4(uPixelSize / 10.,1.,1.,1.);
-                    // fragColor = vec4(vec2(0.), index, 1.0);
                     fragColor = vec4(pixelizedUv, 0., 1.0);
                     
                     vec2 pixelizedMappedUv = mod(vUv / pixelSize, 1.);
@@ -209,7 +206,7 @@ const FONTS = [
 
 export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderingContext; texture: Texture }, ref) {
     // const [characters, setCharacters] = useState(" ●░▒▓█")
-    const [characters, setCharacters] = useState(" ./FR█")
+    const [characters, setCharacters] = useState("./FR█")
 
     const [colorMode, setColorMode] = useState(0)
     // const [isRandom, setIsRandom] = useState(false)
@@ -219,7 +216,7 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
     const [backgroundColor, setBackgroundColor] = useState("#000000")
     const [font, setFont] = useState(FONTS[0])
     const [isTransparent, setIsTransparent] = useState(false)
-    const [isFilled, setIsFilled] = useState(true)
+    const [isFilled, setIsFilled] = useState(false)
 
     const [program] = useState(() => new ASCIIMaterial(gl, texture))
 
@@ -429,6 +426,22 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
                     />
                 </div>
             )}
+
+            {/* <div className="gui-row">
+                <label className="gui-label">Export Size</label>
+                <select
+                    onChange={e => {
+                        setFont(e.target.value)
+                    }}
+                    className="gui-select"
+                    value={font}
+                >
+                    <option value="4x6">248px</option>
+                    <option value="5x7">512px</option>
+                    <option value="6x8">1024px</option>
+                    <option value="6x8">Original</option>
+                </select>
+            </div> */}
         </>
     )
 })

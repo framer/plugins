@@ -12,7 +12,15 @@ export function ColorInput({
     const inputRef = useRef<HTMLInputElement>(null)
 
     return (
-        <div className="color-input" onClick={() => inputRef.current?.click()}>
+        <div
+            className="color-input"
+            onClick={() => {
+                inputRef.current?.click()
+                if (!value) {
+                    onChange?.("#000000")
+                }
+            }}
+        >
             <input
                 ref={inputRef}
                 type="color"
@@ -22,7 +30,7 @@ export function ColorInput({
                     onChange?.(value)
                 }}
             />
-            {value ? <span>{value}</span> : <span className="placeholder">Add...</span>}
+            {value ? <span className="color">{value}</span> : <span className="placeholder">Add...</span>}
             {value && erasable && (
                 <div
                     className="erase"

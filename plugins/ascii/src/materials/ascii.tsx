@@ -3,7 +3,8 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { useCharactersAtlasTexture } from "../use-characters-atlas-texture"
 import * as Slider from "@radix-ui/react-slider"
 import { GLSL } from "../glsl"
-import { SegmentedControl, Theme } from "@radix-ui/themes"
+import { SegmentedControl } from "@radix-ui/themes"
+import { ColorInput } from "../color-input"
 
 export class ASCIIMaterial extends Program {
     constructor(gl: OGLRenderingContext, texture: Texture) {
@@ -373,44 +374,30 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
                 <SegmentedControl.Root
                     defaultValue="true"
                     onValueChange={value => {
-                        console.log(value)
+                        setIsFilled(value === "true")
                     }}
+                    className="gui-segmented-control"
                 >
                     <SegmentedControl.Item value="true">Yes</SegmentedControl.Item>
                     <SegmentedControl.Item value="false">No</SegmentedControl.Item>
                 </SegmentedControl.Root>
             </div>
 
-            <div className="gui-row">
-                <label className="gui-label">Fill</label>
-                <input
-                    type="checkbox"
-                    checked={isFilled}
-                    onChange={e => {
-                        const value = Boolean(e.target.checked)
-                        setIsFilled(value)
-
-                        if (value) {
-                            setColorMode(0)
-                        }
-                    }}
-                />
-            </div>
             {!isFilled && (
                 <div className="gui-row">
                     <label className="gui-label">Background</label>
-                    <div className="gui-background">
-                        <input
-                            type="checkbox"
-                            checked={!isTransparent}
-                            onChange={e => setIsTransparent(!Boolean(e.target.checked))}
-                        />
-                        <input
-                            type="color"
-                            value={backgroundColor}
-                            onChange={e => setBackgroundColor(e.target.value)}
-                        />
-                    </div>
+                    <ColorInput
+                        value={isTransparent ? false : backgroundColor}
+                        onChange={value => {
+                            if (value) {
+                                setBackgroundColor(value as string)
+                                setIsTransparent(false)
+                            } else {
+                                setIsTransparent(true)
+                            }
+                        }}
+                        erasable
+                    />
                 </div>
             )}
             <div className="gui-row">
@@ -432,9 +419,14 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
             </div>
 
             {[4].includes(colorMode) && (
-                <div className="gui-row gui-color">
+                <div className="gui-row">
                     <label className="gui-label">Text Color</label>
-                    <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} />
+                    <ColorInput
+                        value={textColor}
+                        onChange={value => {
+                            setTextColor(value as string)
+                        }}
+                    />
                 </div>
             )}
         </>

@@ -106,8 +106,8 @@ function ASCIIPlugin({ image }: { image: ImageAsset | null }) {
                     texture={texture}
                 />
             </div>
-            <button onClick={saveEffect} disabled={!image}>
-                Apply Effect
+            <button onClick={saveEffect} disabled={!image} className="submit">
+                Add Image
             </button>
         </div>
         // </Theme>

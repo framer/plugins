@@ -58,10 +58,10 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     }, [droppedAsset, framerCanvasImage])
 
     const saveEffect = useCallback(async () => {
-        render()
         const originalImage = await framerCanvasImage.getData()
 
         assert(gl.canvas)
+        render()
         const nextBytes = await bytesFromCanvas(gl.canvas)
         assert(nextBytes)
 
@@ -191,6 +191,8 @@ function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
         async (video: DroppedAsset["asset"]) => {
             video.play()
 
+            console.log("loadVideoTexture")
+
             if (!texture.image || texture.image.src !== video.src) {
                 texture.image = video
                 const aspect = video.videoWidth / video.videoHeight
@@ -206,8 +208,8 @@ function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
     }, [texture])
 
     const render = useCallback(() => {
-        renderer.render({ scene, camera })
         texture.needsUpdate = true
+        renderer.render({ scene, camera })
 
         requestAnimationFrame(render)
     }, [renderer, scene, camera, texture])

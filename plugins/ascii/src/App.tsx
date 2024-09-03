@@ -41,8 +41,8 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     const containerRef = useRef<HTMLDivElement>(null)
     const [savingInAction, setSavingInAction] = useState<boolean>(false)
     const [droppedAsset, setDroppedAsset] = useState<DroppedAsset>({ type: "image", asset: framerCanvasImage })
-    const { gl, texture, render, setProgram, loadImgTexture, loadVideoTexture, clearTexture } =
-        useOGLPipeline(containerRef)
+    const { gl, texture, render, toBytes, setProgram, loadImgTexture, loadVideoTexture, clearTexture } =
+        useOGLPipeline()
 
     useEffect(() => {
         if (!framerCanvasImage) {
@@ -58,19 +58,21 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     }, [droppedAsset, framerCanvasImage])
 
     const saveEffect = useCallback(async () => {
-        const originalImage = await framerCanvasImage.getData()
-
-        assert(gl.canvas)
-        render()
-        const nextBytes = await bytesFromCanvas(gl.canvas)
-        assert(nextBytes)
+        // assert(gl.canvas)
+        // setResolution([Math.floor(img.naturalWidth), Math.floor(img.naturalHeight)])
+        // gl.canvas.width = img.naturalWidth
+        // gl.canvas.height = img.naturalHeight
+        const bytes = await toBytes()
+        // const nextBytes = await bytesFromCanvas(gl.canvas)
+        // assert(bytes)
 
         // const start = performance.now()
         setSavingInAction(true)
 
+        const originalImage = await framerCanvasImage.getData()
         await framer.setImage({
             image: {
-                bytes: nextBytes,
+                bytes,
                 mimeType: originalImage.mimeType,
             },
         })
@@ -86,7 +88,24 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         // void framer.closePlugin("Image saved...")
 
         // console.log("total duration", performance.now() - start)
-    }, [render, framerCanvasImage])
+    }, [toBytes, framerCanvasImage])
+
+    // resize observer
+    useEffect(() => {
+        if (!containerRef.current) return
+
+        const resizeObserver = new ResizeObserver(([entry]) => {
+            const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0]
+
+            // console.log("resize", width, height)
+
+            void framer.showUI({ title: "ASCII", position: "top right", width: 280, height })
+        })
+
+        resizeObserver.observe(containerRef.current)
+
+        return () => resizeObserver.disconnect()
+    }, [])
 
     return (
         <div className="container" ref={containerRef}>
@@ -125,11 +144,12 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     )
 }
 
-function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
+function useOGLPipeline() {
     const isMountedRef = useRef(false)
     const [resolution, setResolution] = useState([CANVAS_WIDTH, CANVAS_WIDTH])
     const [renderer] = useState(() => new Renderer({ alpha: true }))
     const gl = renderer.gl
+    const [exportResolution, setExportResolution] = useState([CANVAS_WIDTH, CANVAS_WIDTH])
 
     //config
     const [scene] = useState(() => new Transform())
@@ -179,6 +199,8 @@ function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
                 texture.image = img
                 const aspect = img.naturalWidth / img.naturalHeight
                 setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
+
+                setExportResolution([Math.floor(img.naturalWidth), Math.floor(img.naturalHeight)])
                 // setResolution([Math.floor(img.naturalWidth), Math.floor(img.naturalHeight)])
                 // gl.canvas.width = img.naturalWidth
                 // gl.canvas.height = img.naturalHeight
@@ -213,6 +235,27 @@ function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
         requestAnimationFrame(render)
     }, [renderer, scene, camera, texture])
 
+    const toBytes = useCallback(async () => {
+        renderer.setSize(exportResolution[0], exportResolution[1])
+        program?.setResolution?.(exportResolution[0], exportResolution[1])
+        // gl.canvas.width = exportResolution[0]
+        // gl.canvas.height = exportResolution[1]
+
+        texture.needsUpdate = true
+        renderer.render({ scene, camera })
+
+        const bytes = await bytesFromCanvas(gl.canvas)
+
+        // return () => {
+        renderer.setSize(resolution[0], resolution[1])
+        program?.setResolution?.(resolution[0], resolution[1])
+        // gl.canvas.width = resolution[0]
+        // gl.canvas.height = resolution[1]
+        // }
+
+        return bytes
+    }, [renderer, scene, camera, gl, exportResolution, resolution])
+
     // cleanup on unmount
     useEffect(() => {
         if (!isMountedRef.current) {
@@ -229,20 +272,5 @@ function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
         return () => cancelAnimationFrame(raf)
     }, [render])
 
-    // resize observer
-    useEffect(() => {
-        const resizeObserver = new ResizeObserver(([entry]) => {
-            const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0]
-
-            // console.log("resize", width, height)
-
-            void framer.showUI({ title: "ASCII", position: "top right", width: 280, height })
-        })
-
-        resizeObserver.observe(containerRef.current)
-
-        return () => resizeObserver.disconnect()
-    }, [renderer, camera])
-
-    return { gl, texture, render, setProgram, loadImgTexture, loadVideoTexture, clearTexture }
+    return { gl, texture, render, toBytes, setProgram, loadImgTexture, loadVideoTexture, clearTexture }
 }

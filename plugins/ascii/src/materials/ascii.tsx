@@ -210,7 +210,7 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
 
     const [colorMode, setColorMode] = useState(0)
     // const [isRandom, setIsRandom] = useState(false)
-    const [pixelSize, setPixelSize] = useState(8)
+    const [pixelSize, setPixelSize] = useState(10)
     const [textColor, setTextColor] = useState("#ffffff")
     const [brightness, setBrightness] = useState(0)
     const [backgroundColor, setBackgroundColor] = useState("#000000")
@@ -369,7 +369,7 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
             <div className="gui-row">
                 <label className="gui-label">Fill</label>
                 <SegmentedControl.Root
-                    defaultValue="true"
+                    value={isFilled ? "true" : "false"}
                     onValueChange={value => {
                         setIsFilled(value === "true")
                     }}

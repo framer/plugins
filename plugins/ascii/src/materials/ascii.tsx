@@ -1,9 +1,9 @@
 import { Color, OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { useCharactersAtlasTexture } from "../use-characters-atlas-texture"
-import { Palette } from "../palette"
 import * as Slider from "@radix-ui/react-slider"
 import { GLSL } from "../glsl"
+import { SegmentedControl, Theme } from "@radix-ui/themes"
 
 export class ASCIIMaterial extends Program {
     constructor(gl: OGLRenderingContext, texture: Texture) {
@@ -368,6 +368,18 @@ export const ASCII = forwardRef(function RandomDither(
                     </Slider.Track>
                     <Slider.Thumb className="SliderThumb" />
                 </Slider.Root>
+            </div>
+            <div className="gui-row">
+                <label className="gui-label">Fill</label>
+                <SegmentedControl.Root
+                    defaultValue="true"
+                    onValueChange={value => {
+                        console.log(value)
+                    }}
+                >
+                    <SegmentedControl.Item value="true">Yes</SegmentedControl.Item>
+                    <SegmentedControl.Item value="false">No</SegmentedControl.Item>
+                </SegmentedControl.Root>
             </div>
 
             <div className="gui-row">

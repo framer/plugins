@@ -1,10 +1,12 @@
 import { ImageAsset, framer } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
+import "@radix-ui/themes/styles.css"
 import "./App.css"
 import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { ASCII } from "./materials/ascii"
 import cn from "clsx"
 import { assert, bytesFromCanvas } from "./utils"
+import { Theme } from "@radix-ui/themes"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()
@@ -192,6 +194,7 @@ function ASCIIImage({ image }: { image: ImageAsset | null }) {
     }, [renderer, camera])
 
     return (
+        // <Theme appearance="dark">
         <div className="container" ref={containerRef}>
             <div className="canvas-container" ref={canvasContainerRef}>
                 {image ? (
@@ -227,5 +230,6 @@ function ASCIIImage({ image }: { image: ImageAsset | null }) {
                 Add Image
             </button>
         </div>
+        // </Theme>
     )
 }

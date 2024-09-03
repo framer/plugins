@@ -51,6 +51,10 @@ svg {
     max-width: 100%;
 }
 
+canvas {
+    display: block;
+}
+
 p,
 h1,
 h2,

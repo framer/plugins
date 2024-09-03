@@ -1,4 +1,4 @@
-import { ImageAsset, framer } from "framer-plugin"
+import { CanvasNode, ImageAsset, framer } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "@radix-ui/themes/styles.css"
 import "./App.css"
@@ -13,20 +13,32 @@ import.meta.hot?.accept(() => {
 })
 
 void framer.showUI({ title: "ASCII", position: "top right", width: 280, height: 500 })
-const CANVAS_WIDTH = 248
+const CANVAS_WIDTH = 250
 
 export function useSelectedImage() {
-    const [framerCanvasImage, setFramerCanvasImage] = useState<ImageAsset | null>(null)
+    const [selection, setSelection] = useState<ImageAsset | null>(null)
 
     useEffect(() => {
-        return framer.subscribeToImage(setFramerCanvasImage)
+        return framer.subscribeToImage(setSelection)
     }, [])
 
-    return framerCanvasImage
+    return selection
+}
+export function useSelectedNode() {
+    const [selection, setSelection] = useState<CanvasNode[]>([])
+
+    useEffect(() => {
+        return framer.subscribeToSelection(setSelection)
+    }, [])
+
+    return selection
 }
 
 export function App() {
     const framerCanvasImage = useSelectedImage()
+    // const selectedNode = useSelectedNode()
+
+    // console.log(selectedNode)
 
     return <ASCIIPlugin framerCanvasImage={framerCanvasImage} />
 }
@@ -41,8 +53,39 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     const containerRef = useRef<HTMLDivElement>(null)
     const [savingInAction, setSavingInAction] = useState<boolean>(false)
     const [droppedAsset, setDroppedAsset] = useState<DroppedAsset>({ type: "image", asset: framerCanvasImage })
-    const { gl, texture, render, toBytes, setProgram, loadImgTexture, loadVideoTexture, clearTexture } =
+    const [assetResolution, setAssetResolution] = useState<[number, number]>([CANVAS_WIDTH, CANVAS_WIDTH])
+    const [exportSize, setExportSize] = useState<number>(CANVAS_WIDTH)
+    const { gl, texture, toBytes, setProgram, loadVideoTexture, clearTexture, resolution, setResolution } =
         useOGLPipeline()
+
+    useEffect(() => {
+        const aspect = assetResolution[0] / assetResolution[1]
+        canvasContainerRef.current.style.width = `${CANVAS_WIDTH}px`
+        canvasContainerRef.current.style.height = `${CANVAS_WIDTH / aspect}px`
+    }, [assetResolution])
+
+    useEffect(() => {
+        const assetAspect = assetResolution[0] / assetResolution[1]
+        setResolution([exportSize, exportSize / assetAspect])
+    }, [exportSize, assetResolution])
+
+    const loadImgTexture = useCallback(
+        async (image: ImageAsset) => {
+            const loadedImage = await image.loadImage() // get blob src to avoid CORS
+
+            const img = new Image()
+            img.onload = () => {
+                texture.image = img
+                // const aspect = img.naturalWidth / img.naturalHeight
+                setAssetResolution([img.naturalWidth, img.naturalHeight])
+                // setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
+
+                //   setExportResolution([Math.floor(img.naturalWidth), Math.floor(img.naturalHeight)])
+            }
+            img.src = loadedImage.currentSrc
+        },
+        [texture]
+    )
 
     useEffect(() => {
         if (!framerCanvasImage) {
@@ -136,6 +179,23 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     gl={gl}
                     texture={texture}
                 />
+                <div className="gui-row">
+                    <label className="gui-label">Resolution</label>
+                    <select
+                        value={exportSize}
+                        className="gui-select"
+                        onChange={e => {
+                            const value = Number(e.target.value)
+                            setExportSize(value)
+                        }}
+                    >
+                        <option value={CANVAS_WIDTH}>{CANVAS_WIDTH}px</option>
+                        <option value="500">500px</option>
+                        <option value="1000">1000px</option>
+                        <option value="2000">2000px</option>
+                        <option value={assetResolution[0]}>Source ({assetResolution[0]}px)</option>
+                    </select>
+                </div>
             </div>
             <button onClick={saveEffect} disabled={!framerCanvasImage} className="submit">
                 {savingInAction ? "Adding..." : "   Add Image"}
@@ -190,26 +250,6 @@ function useOGLPipeline() {
         mesh.setParent(scene)
     }, [mesh, scene])
 
-    const loadImgTexture = useCallback(
-        async (image: ImageAsset) => {
-            const loadedImage = await image.loadImage() // get blob src to avoid CORS
-
-            const img = new Image()
-            img.onload = () => {
-                texture.image = img
-                const aspect = img.naturalWidth / img.naturalHeight
-                setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
-
-                setExportResolution([Math.floor(img.naturalWidth), Math.floor(img.naturalHeight)])
-                // setResolution([Math.floor(img.naturalWidth), Math.floor(img.naturalHeight)])
-                // gl.canvas.width = img.naturalWidth
-                // gl.canvas.height = img.naturalHeight
-            }
-            img.src = loadedImage.currentSrc
-        },
-        [program, renderer, texture]
-    )
-
     const loadVideoTexture = useCallback(
         async (video: DroppedAsset["asset"]) => {
             video.play()
@@ -218,6 +258,8 @@ function useOGLPipeline() {
                 texture.image = video
                 const aspect = video.videoWidth / video.videoHeight
                 setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
+
+                // setExportResolution([Math.floor(video.videoWidth), Math.floor(video.videoHeight)])
             }
         },
         [gl, texture]
@@ -236,22 +278,18 @@ function useOGLPipeline() {
     }, [renderer, scene, camera, texture])
 
     const toBytes = useCallback(async () => {
-        renderer.setSize(exportResolution[0], exportResolution[1])
-        program?.setResolution?.(exportResolution[0], exportResolution[1])
-        // gl.canvas.width = exportResolution[0]
-        // gl.canvas.height = exportResolution[1]
+        // renderer.setSize(exportResolution[0], exportResolution[1])
+        // program?.setResolution?.(exportResolution[0], exportResolution[1])
 
         texture.needsUpdate = true
         renderer.render({ scene, camera })
 
+        assert(gl.canvas)
         const bytes = await bytesFromCanvas(gl.canvas)
+        assert(bytes)
 
-        // return () => {
-        renderer.setSize(resolution[0], resolution[1])
-        program?.setResolution?.(resolution[0], resolution[1])
-        // gl.canvas.width = resolution[0]
-        // gl.canvas.height = resolution[1]
-        // }
+        // renderer.setSize(resolution[0], resolution[1])
+        // program?.setResolution?.(resolution[0], resolution[1])
 
         return bytes
     }, [renderer, scene, camera, gl, exportResolution, resolution])
@@ -272,5 +310,5 @@ function useOGLPipeline() {
         return () => cancelAnimationFrame(raf)
     }, [render])
 
-    return { gl, texture, render, toBytes, setProgram, loadImgTexture, loadVideoTexture, clearTexture }
+    return { gl, texture, render, toBytes, setProgram, resolution, setResolution, loadVideoTexture, clearTexture }
 }

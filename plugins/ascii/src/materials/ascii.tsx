@@ -85,7 +85,7 @@ export class ASCIIMaterial extends Program {
                     fragColor = vec4(ascii.rgb, color.a * ascii.a);
 
                     if(uIsTransparent == false) {
-                        fragColor = vec4(blendNormal(uBackgroundColor.rgb, fragColor.rgb, fragColor.a), 1.);
+                        fragColor = vec4(blendNormal(uBackgroundColor.rgb, fragColor.rgb, fragColor.a), color.a);
                     }
 
                     if(uIsFilled == true) {
@@ -206,7 +206,7 @@ const FONTS = [
 
 export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderingContext; texture: Texture }, ref) {
     // const [characters, setCharacters] = useState(" ●░▒▓█")
-    const [characters, setCharacters] = useState("./FR█")
+    const [characters, setCharacters] = useState(" ./FR█")
 
     const [colorMode, setColorMode] = useState(0)
     // const [isRandom, setIsRandom] = useState(false)
@@ -426,22 +426,6 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
                     />
                 </div>
             )}
-
-            {/* <div className="gui-row">
-                <label className="gui-label">Export Size</label>
-                <select
-                    onChange={e => {
-                        setFont(e.target.value)
-                    }}
-                    className="gui-select"
-                    value={font}
-                >
-                    <option value="4x6">248px</option>
-                    <option value="5x7">512px</option>
-                    <option value="6x8">1024px</option>
-                    <option value="6x8">Original</option>
-                </select>
-            </div> */}
         </>
     )
 })

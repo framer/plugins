@@ -14,14 +14,18 @@
     /* flex-direction: column;
     height: 100%;
     padding: 0 15px 25px 15px; */
+    height: 100%;
     width: 100%;
     aspect-ratio: 16/9;
     border-radius: 8px;
     border: 1px solid var(--framer-color-divider);
+    cursor: pointer;
 }
 
 .error-container p {
     color: var(--framer-color-text-tertiary);
+    padding: 25px; 
+    text-align: center;
 }
 
 .canvas-container {

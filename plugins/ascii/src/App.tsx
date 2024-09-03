@@ -15,45 +15,58 @@ import.meta.hot?.accept(() => {
 void framer.showUI({ title: "ASCII", position: "top right", width: 280, height: 500 })
 const CANVAS_WIDTH = 248
 
-function useSelectedImage() {
-    const [image, setImage] = useState<ImageAsset | null>(null)
+export function useSelectedImage() {
+    const [framerCanvasImage, setFramerCanvasImage] = useState<ImageAsset | null>(null)
 
     useEffect(() => {
-        return framer.subscribeToImage(setImage)
+        return framer.subscribeToImage(setFramerCanvasImage)
     }, [])
 
-    return image
+    return framerCanvasImage
 }
 
 export function App() {
-    const image = useSelectedImage()
+    const framerCanvasImage = useSelectedImage()
 
-    return <ASCIIPlugin image={image} />
+    return <ASCIIPlugin framerCanvasImage={framerCanvasImage} />
 }
 
-function ASCIIPlugin({ image }: { image: ImageAsset | null }) {
+export interface DroppedAsset {
+    type: string
+    asset: any
+}
+
+function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
-    const { gl, texture, render, setProgram, loadTexture, clearTexture } = useOGLPipeline(containerRef)
+    const [savingInAction, setSavingInAction] = useState<boolean>(false)
+    const [droppedAsset, setDroppedAsset] = useState<DroppedAsset>({ type: "image", asset: framerCanvasImage })
+    const { gl, texture, render, setProgram, loadImgTexture, loadVideoTexture, clearTexture } =
+        useOGLPipeline(containerRef)
 
     useEffect(() => {
-        if (image) {
-            loadTexture(image)
-        } else {
+        if (!framerCanvasImage) {
             clearTexture()
+            return
         }
-    }, [image])
+
+        if (droppedAsset.type === "image") {
+            loadImgTexture(framerCanvasImage)
+        } else if (droppedAsset.type === "video") {
+            loadVideoTexture(droppedAsset.asset)
+        }
+    }, [droppedAsset, framerCanvasImage])
 
     const saveEffect = useCallback(async () => {
         render()
-
-        const originalImage = await image.getData()
+        const originalImage = await framerCanvasImage.getData()
 
         assert(gl.canvas)
         const nextBytes = await bytesFromCanvas(gl.canvas)
         assert(nextBytes)
 
-        const start = performance.now()
+        // const start = performance.now()
+        setSavingInAction(true)
 
         await framer.setImage({
             image: {
@@ -61,6 +74,7 @@ function ASCIIPlugin({ image }: { image: ImageAsset | null }) {
                 mimeType: originalImage.mimeType,
             },
         })
+        setSavingInAction(false)
 
         // framer.hideUI()
         // await framer.setImage({
@@ -69,21 +83,20 @@ function ASCIIPlugin({ image }: { image: ImageAsset | null }) {
         //         mimeType: originalImage.mimeType,
         //     },
         // })
-
         // void framer.closePlugin("Image saved...")
 
-        console.log("total duration", performance.now() - start)
-    }, [render, image])
+        // console.log("total duration", performance.now() - start)
+    }, [render, framerCanvasImage])
 
     return (
         // <Theme appearance="dark">
         <div className="container" ref={containerRef}>
             <div className="canvas-container" ref={canvasContainerRef}>
-                {image ? (
+                {framerCanvasImage ? (
                     <div
                         className="canvas"
                         style={{
-                            display: image ? "block" : "none",
+                            display: framerCanvasImage ? "block" : "none",
                         }}
                         ref={node => {
                             if (node) {
@@ -94,10 +107,10 @@ function ASCIIPlugin({ image }: { image: ImageAsset | null }) {
                         }}
                     ></div>
                 ) : (
-                    <DragAndDrop framer={framer} />
+                    <DragAndDrop setDroppedAsset={setDroppedAsset} />
                 )}
             </div>
-            <div className={cn("gui", !image && "disabled")}>
+            <div className={cn("gui", !framerCanvasImage && "disabled")}>
                 <ASCII
                     ref={node => {
                         setProgram(node?.program)
@@ -106,8 +119,8 @@ function ASCIIPlugin({ image }: { image: ImageAsset | null }) {
                     texture={texture}
                 />
             </div>
-            <button onClick={saveEffect} disabled={!image} className="submit">
-                Add Image
+            <button onClick={saveEffect} disabled={!framerCanvasImage} className="submit">
+                {savingInAction ? "Adding..." : "   Add Image"}
             </button>
         </div>
         // </Theme>
@@ -159,22 +172,32 @@ function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
         mesh.setParent(scene)
     }, [mesh, scene])
 
-    const loadTexture = useCallback(
+    const loadImgTexture = useCallback(
         async (image: ImageAsset) => {
             const loadedImage = await image.loadImage() // get blob src to avoid CORS
-            // const imageData = await image.getData()
 
             const img = new Image()
             img.onload = () => {
                 texture.image = img
                 const aspect = img.naturalWidth / img.naturalHeight
                 setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
-
-                texture.update()
             }
             img.src = loadedImage.currentSrc
         },
         [program, renderer, texture]
+    )
+
+    const loadVideoTexture = useCallback(
+        async (video: DroppedAsset["asset"]) => {
+            video.play()
+
+            if (!texture.image || texture.image.src !== video.src) {
+                texture.image = video
+                const aspect = video.videoWidth / video.videoHeight
+                setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
+            }
+        },
+        [gl, texture]
     )
 
     const clearTexture = useCallback(() => {
@@ -184,9 +207,10 @@ function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
 
     const render = useCallback(() => {
         renderer.render({ scene, camera })
+        texture.needsUpdate = true
 
         requestAnimationFrame(render)
-    }, [renderer, scene, camera])
+    }, [renderer, scene, camera, texture])
 
     // cleanup on unmount
     useEffect(() => {
@@ -219,5 +243,5 @@ function useOGLPipeline(containerRef: RefObject<HTMLDivElement>) {
         return () => resizeObserver.disconnect()
     }, [renderer, camera])
 
-    return { gl, texture, render, setProgram, loadTexture, clearTexture }
+    return { gl, texture, render, setProgram, loadImgTexture, loadVideoTexture, clearTexture }
 }

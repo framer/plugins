@@ -40,11 +40,6 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
                 onSheetSelected={(selectedSpreadsheetId, selectedSheetTitle) => {
                     setSpreadsheetId(selectedSpreadsheetId)
                     setSheetTitle(selectedSheetTitle)
-
-                    framer.showUI({
-                        width: 340,
-                        height: 425,
-                    })
                 }}
             />
         )
@@ -54,6 +49,11 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
 
     const [headerRow, ...rows] = sheet?.values ?? []
     assert(headerRow, "Expected a header row to be present in the sheet.")
+
+    framer.showUI({
+        width: 340,
+        height: 425,
+    })
 
     return (
         <MapSheetFieldsPage
@@ -71,9 +71,9 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
 export function App({ pluginContext }: AppProps) {
     const [context, setContext] = useState(pluginContext)
 
-    if (!context.isAuthenticated) {
-        return <Authenticate onAuthenticated={setContext} context={context} />
+    if (context.isAuthenticated) {
+        return <AuthenticatedApp pluginContext={context} />
     }
 
-    return <AuthenticatedApp pluginContext={context} />
+    return <Authenticate onAuthenticated={setContext} context={context} />
 }

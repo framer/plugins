@@ -32,6 +32,7 @@ function renderPlugin(app: ReactNode) {
     const root = document.getElementById("root")
     if (!root) throw new Error("Root element not found")
 
+    // Login page
     framer.showUI({
         width: 320,
         height: 345,

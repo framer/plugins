@@ -15,6 +15,7 @@ function useIsDocumentVisibile() {
         }
 
         document.addEventListener("visibilitychange", handleVisibilityChange)
+
         return () => {
             document.removeEventListener("visibilitychange", handleVisibilityChange)
         }
@@ -87,9 +88,9 @@ export function Authenticate({ onAuthenticated, context }: AuthenticationProps) 
     }
 
     return (
-        <div className="col-lg">
+        <div className="col-lg pb-[15px]">
             <Hero />
-            <ol className="list-decimal list-inside space-y-2.5 *:text-tertiary marker:text-secondary">
+            <ol className="list-decimal list-inside space-y-2.5 marker:text-secondary *:text-tertiary *:leading-none *:tracking-normal py-[7px]">
                 <li>Log in to your Google account</li>
                 <li>Ensure your sheet has a header row</li>
                 <li>Map the column fields to the CMS</li>

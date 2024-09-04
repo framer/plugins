@@ -5,6 +5,7 @@ import * as Slider from "@radix-ui/react-slider"
 import { GLSL } from "../glsl"
 import { SegmentedControl } from "@radix-ui/themes"
 import { ColorInput } from "../color-input"
+import { NumberInput } from "../number-input"
 
 export class ASCIIMaterial extends Program {
     constructor(gl: OGLRenderingContext, texture: Texture) {
@@ -191,22 +192,11 @@ export class ASCIIMaterial extends Program {
     }
 }
 
-const FONTS = [
-    // "IBM Plex Mono",
-    // "Share Tech Mono",
-    // "Overpass Mono",
-    // "Anonymus Pro",
-    // "Arial",
-    "Roboto Mono",
-    "Courier Prime",
-    "Pixelify Sans",
-    "Rubik Mono One",
-    "Pirata One",
-]
+const FONTS = ["Roboto Mono", "Fragment Mono", "Martian Mono", "Space Mono", "Courier Prime"]
 
 export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderingContext; texture: Texture }, ref) {
     // const [characters, setCharacters] = useState(" ●░▒▓█")
-    const [characters, setCharacters] = useState(" ./FR█")
+    const [characters, setCharacters] = useState(" ./FR#")
 
     const [colorMode, setColorMode] = useState(0)
     // const [isRandom, setIsRandom] = useState(false)
@@ -315,13 +305,38 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
             </div>
             <div className="gui-row">
                 <label className="gui-label">Size</label>
+                <NumberInput
+                    value={pixelSize}
+                    onValueChange={value => {
+                        setPixelSize(value)
+                    }}
+                    min={8}
+                    max={64}
+                    step={1}
+                />
+            </div>
+            {/* <div className="gui-row">
+                <label className="gui-label">Size</label>
                 <input
                     className="gui-input"
                     type="number"
                     min="8"
                     max="64"
-                    value={pixelSize}
-                    onChange={e => setPixelSize(Number(e.target.value))}
+                    step={1}
+                    value={pixelSize.toString()}
+                    onChange={e => {
+                        // e.target.value = `${parseInt(e.target.value)}`
+                        setPixelSize(Number(e.target.value))
+                    }}
+                    // onChange={e => {
+                    //     console.log(e.nativeEvent.inputType)
+                    //     e.target.value = e.target.value
+                    // }}
+                    // onBlur={e => {
+                    //     const value = Math.min(Math.max(8, parseInt(e.target.value)), 64)
+                    //     e.target.value = value.toString()
+                    //     setPixelSize(value)
+                    // }}
                 />
 
                 <Slider.Root
@@ -338,8 +353,20 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
                     </Slider.Track>
                     <Slider.Thumb className="SliderThumb" />
                 </Slider.Root>
-            </div>
+            </div> */}
             <div className="gui-row">
+                <label className="gui-label">Brightness</label>
+                <NumberInput
+                    value={brightness}
+                    onValueChange={value => {
+                        setBrightness(value)
+                    }}
+                    min={-1}
+                    max={1}
+                    step={0.01}
+                />
+            </div>
+            {/* <div className="gui-row">
                 <label className="gui-label">Brightness</label>
                 <input
                     className="gui-input"
@@ -365,7 +392,7 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
                     </Slider.Track>
                     <Slider.Thumb className="SliderThumb" />
                 </Slider.Root>
-            </div>
+            </div> */}
             <div className="gui-row">
                 <label className="gui-label">Fill</label>
                 <SegmentedControl.Root

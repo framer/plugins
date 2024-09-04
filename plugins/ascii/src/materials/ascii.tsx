@@ -311,7 +311,7 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
                         setPixelSize(value)
                     }}
                     min={8}
-                    max={64}
+                    max={100}
                     step={1}
                 />
             </div>

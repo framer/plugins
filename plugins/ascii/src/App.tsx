@@ -2,18 +2,19 @@ import { CanvasNode, ImageAsset, framer } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "@radix-ui/themes/styles.css"
 import "./App.css"
-import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { ASCII } from "./materials/ascii"
 import cn from "clsx"
-import { assert, bytesFromCanvas } from "./utils"
-import { DragAndDrop } from "./drag-and-drop"
+import { Upload } from "./drag-and-drop"
+import { useOGLPipeline } from "./ogl/pipeline"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()
 })
 
 void framer.showUI({ title: "ASCII", position: "top right", width: 280, height: 500 })
-const CANVAS_WIDTH = 250
+
+export const CANVAS_WIDTH = 250
+export const initResolution = 500
 
 export function useSelectedImage() {
     const [selection, setSelection] = useState<ImageAsset | null>(null)
@@ -52,11 +53,10 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [savingInAction, setSavingInAction] = useState<boolean>(false)
-    const [droppedAsset, setDroppedAsset] = useState<DroppedAsset>({ type: "image", asset: framerCanvasImage })
-    const [assetResolution, setAssetResolution] = useState<[number, number]>([CANVAS_WIDTH, CANVAS_WIDTH])
-    const [exportSize, setExportSize] = useState<number>(CANVAS_WIDTH)
-    const { gl, texture, toBytes, setProgram, loadVideoTexture, clearTexture, resolution, setResolution } =
-        useOGLPipeline()
+    const [droppedAsset, setDroppedAsset] = useState<DroppedAsset>({ type: "model", asset: null })
+    const [assetResolution] = useState<[number, number]>([initResolution, initResolution])
+    const [exportSize, setExportSize] = useState<number>(initResolution)
+    const { gl, texture, toBytes, setProgram, setResolution } = useOGLPipeline(droppedAsset)
 
     useEffect(() => {
         if (!canvasContainerRef.current) return
@@ -73,37 +73,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         setResolution([exportSize, exportSize / assetAspect])
     }, [exportSize, assetResolution])
 
-    const loadImgTexture = useCallback(
-        async (image: ImageAsset) => {
-            const loadedImage = await image.loadImage() // get blob src to avoid CORS
-
-            const img = new Image()
-            img.onload = () => {
-                texture.image = img
-                // const aspect = img.naturalWidth / img.naturalHeight
-                setAssetResolution([img.naturalWidth, img.naturalHeight])
-                // setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
-
-                //   setExportResolution([Math.floor(img.naturalWidth), Math.floor(img.naturalHeight)])
-            }
-            img.src = loadedImage.currentSrc
-        },
-        [texture]
-    )
-
-    useEffect(() => {
-        if (!framerCanvasImage) {
-            clearTexture()
-            return
-        }
-
-        if (droppedAsset.type === "image") {
-            loadImgTexture(framerCanvasImage)
-        } else if (droppedAsset.type === "video") {
-            loadVideoTexture(droppedAsset.asset)
-        }
-    }, [droppedAsset, framerCanvasImage])
-
     const saveEffect = useCallback(async () => {
         // assert(gl.canvas)
         // setResolution([Math.floor(img.naturalWidth), Math.floor(img.naturalHeight)])
@@ -117,6 +86,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         setSavingInAction(true)
 
         const originalImage = await framerCanvasImage.getData()
+
         await framer.setImage({
             image: {
                 bytes,
@@ -157,58 +127,53 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     return (
         <div className="container" ref={containerRef}>
             <div className="canvas-container" ref={canvasContainerRef}>
-                {framerCanvasImage ? (
-                    <div
-                        className="canvas"
-                        style={{
-                            display: framerCanvasImage ? "block" : "none",
-                        }}
-                        ref={node => {
-                            if (node) {
-                                node.appendChild(gl.canvas)
-                            } else {
-                                gl.canvas.remove()
-                            }
-                        }}
-                        onMouseMove={e => {
-                            const canvasContainerRect = canvasContainerRef.current?.getBoundingClientRect()
+                <div
+                    className="canvas"
+                    ref={node => {
+                        if (node) {
+                            node.appendChild(gl.canvas)
+                        } else {
+                            gl.canvas.remove()
+                        }
+                    }}
+                    onMouseMove={e => {
+                        if (droppedAsset.type === "model") return
 
-                            if (!canvasContainerRect) return
+                        const canvasContainerRect = canvasContainerRef.current?.getBoundingClientRect()
 
-                            const aspect = assetResolution[0] / assetResolution[1]
-                            const canvasRect = {
-                                width: exportSize,
-                                height: exportSize / aspect,
-                            }
+                        if (!canvasContainerRect) return
 
-                            if (
-                                canvasRect.width <= canvasContainerRect.width &&
-                                canvasRect.height <= canvasContainerRect.height
-                            ) {
-                                return
-                            }
+                        const aspect = assetResolution[0] / assetResolution[1]
+                        const canvasRect = {
+                            width: exportSize,
+                            height: exportSize / aspect,
+                        }
 
-                            const offsetX = e.nativeEvent.clientX - canvasContainerRect.left
-                            const offsetY = e.nativeEvent.clientY - canvasContainerRect.top
+                        if (
+                            canvasRect.width <= canvasContainerRect.width &&
+                            canvasRect.height <= canvasContainerRect.height
+                        ) {
+                            return
+                        }
 
-                            const xPourcent = offsetX / canvasContainerRect.width
-                            const yPourcent = offsetY / canvasContainerRect.height
+                        const offsetX = e.nativeEvent.clientX - canvasContainerRect.left
+                        const offsetY = e.nativeEvent.clientY - canvasContainerRect.top
 
-                            const x = xPourcent * (canvasRect.width - canvasContainerRect.width)
-                            const y = yPourcent * (canvasRect.height - canvasContainerRect.height)
+                        const xPourcent = offsetX / canvasContainerRect.width
+                        const yPourcent = offsetY / canvasContainerRect.height
 
-                            gl.canvas.style.transform = `translate(${-x}px, ${-y}px)`
-                            gl.canvas.classList.add("zoom")
-                        }}
-                        onMouseLeave={() => {
-                            gl.canvas.classList.remove("zoom")
-                        }}
-                    ></div>
-                ) : (
-                    <DragAndDrop setDroppedAsset={setDroppedAsset} />
-                )}
+                        const x = xPourcent * (canvasRect.width - canvasContainerRect.width)
+                        const y = yPourcent * (canvasRect.height - canvasContainerRect.height)
+
+                        gl.canvas.style.transform = `translate(${-x}px, ${-y}px)`
+                        gl.canvas.classList.add("zoom")
+                    }}
+                    onMouseLeave={() => {
+                        gl.canvas.classList.remove("zoom")
+                    }}
+                ></div>
             </div>
-            <div className={cn("gui", !framerCanvasImage && "disabled")}>
+            <div className={cn("gui")}>
                 <ASCII
                     ref={node => {
                         setProgram(node?.program)
@@ -234,118 +199,10 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     </select>
                 </div>
             </div>
-            <button onClick={saveEffect} disabled={!framerCanvasImage} className="submit">
+            <Upload setDroppedAsset={setDroppedAsset} />
+            <button onClick={saveEffect} className="submit">
                 {savingInAction ? "Adding..." : "   Add Image"}
             </button>
         </div>
     )
-}
-
-function useOGLPipeline() {
-    const isMountedRef = useRef(false)
-    const [resolution, setResolution] = useState([CANVAS_WIDTH, CANVAS_WIDTH])
-    const [renderer] = useState(() => new Renderer({ alpha: true }))
-    const gl = renderer.gl
-    const [exportResolution, setExportResolution] = useState([CANVAS_WIDTH, CANVAS_WIDTH])
-
-    //config
-    const [scene] = useState(() => new Transform())
-    const [geometry] = useState(() => new Plane(gl))
-    const [program, setProgram] = useState(() => new Program(gl, {}))
-    const [mesh] = useState(() => new Mesh(gl, { geometry, program }))
-    const [camera] = useState(
-        () =>
-            new Camera(gl, {
-                left: -0.5,
-                right: 0.5,
-                bottom: -0.5,
-                top: 0.5,
-                near: 0.01,
-                far: 100,
-            })
-    )
-    camera.position.z = 1
-    const [texture] = useState(
-        () =>
-            new Texture(gl, {
-                minFilter: gl.LINEAR,
-                magFilter: gl.LINEAR,
-            })
-    )
-
-    useEffect(() => {
-        renderer.setSize(resolution[0], resolution[1])
-        program?.setResolution?.(resolution[0], resolution[1])
-    }, [renderer, program, resolution])
-
-    useEffect(() => {
-        if (!program) return
-        mesh.program = program
-    }, [program])
-
-    useEffect(() => {
-        mesh.setParent(scene)
-    }, [mesh, scene])
-
-    const loadVideoTexture = useCallback(
-        async (video: DroppedAsset["asset"]) => {
-            video.play()
-
-            if (!texture.image || texture.image.src !== video.src) {
-                texture.image = video
-                const aspect = video.videoWidth / video.videoHeight
-                setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
-
-                // setExportResolution([Math.floor(video.videoWidth), Math.floor(video.videoHeight)])
-            }
-        },
-        [gl, texture]
-    )
-
-    const clearTexture = useCallback(() => {
-        texture.image = undefined
-        texture.update()
-    }, [texture])
-
-    const render = useCallback(() => {
-        texture.needsUpdate = true
-        renderer.render({ scene, camera })
-
-        requestAnimationFrame(render)
-    }, [renderer, scene, camera, texture])
-
-    const toBytes = useCallback(async () => {
-        // renderer.setSize(exportResolution[0], exportResolution[1])
-        // program?.setResolution?.(exportResolution[0], exportResolution[1])
-
-        texture.needsUpdate = true
-        renderer.render({ scene, camera })
-
-        assert(gl.canvas)
-        const bytes = await bytesFromCanvas(gl.canvas)
-        assert(bytes)
-
-        // renderer.setSize(resolution[0], resolution[1])
-        // program?.setResolution?.(resolution[0], resolution[1])
-
-        return bytes
-    }, [renderer, scene, camera, gl, exportResolution, resolution])
-
-    // cleanup on unmount
-    useEffect(() => {
-        if (!isMountedRef.current) {
-            isMountedRef.current = true
-        } else {
-            return () => gl.getExtension("WEBGL_lose_context")?.loseContext()
-        }
-    }, [])
-
-    // Subscribe to raf
-    useEffect(() => {
-        const raf = requestAnimationFrame(render)
-
-        return () => cancelAnimationFrame(raf)
-    }, [render])
-
-    return { gl, texture, render, toBytes, setProgram, resolution, setResolution, loadVideoTexture, clearTexture }
 }

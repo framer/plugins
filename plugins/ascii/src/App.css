@@ -22,12 +22,6 @@
     cursor: pointer;
 }
 
-.error-container p {
-    color: var(--framer-color-text-tertiary);
-    padding: 25px;
-    text-align: center;
-}
-
 html * {
     scrollbar-width: thin;
 }
@@ -359,7 +353,7 @@ body[data-framer-theme="light"] .gui-label {
 
 .gui.disabled {
     opacity: 0.33;
-    pointer-events: none;
+    /* pointer-events: none; */
 }
 
 .submit:disabled {
@@ -376,6 +370,16 @@ body[data-framer-theme="dark"] .error-container {
 
 body[data-framer-theme="dark"] .error-container {
     background: rgba(0, 0, 0, 0.4);
+}
+
+.upload {
+    width: 100%;
+    margin-bottom: 7px;
+}
+
+.upload-cta{
+    width: 100%;
+    cursor: pointer;
 }
 
 .submit {

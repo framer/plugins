@@ -57,12 +57,28 @@ html * {
     .canvas {
         position: absolute;
         inset: 0;
-        overflow: auto;
+        /* overflow: auto; */
         /* border-radius: 10px; */
         /* overflow: hidden; */
         /* position: relative; */
         /* border: 1px solid var(--framer-color-divider); */
         /* box-shadow: inset 0 0 0 1px var(--framer-color-divider); */
+
+        /* canvas {
+            cursor: zoom-in;
+        } */
+
+        canvas:not(.zoom) {
+            width: 100% !important;
+            height: 100% !important;
+            transform: translate(0, 0) !important;
+        }
+
+        canvas {
+            /* min-width: 100%;
+            min-height: 100%; */
+            /* transform: translate(0, 0); */
+        }
     }
 
     /* .canvas .canvas canvas {

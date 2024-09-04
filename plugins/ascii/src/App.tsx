@@ -24,15 +24,15 @@ export function useSelectedImage() {
 
     return selection
 }
-export function useSelectedNode() {
-    const [selection, setSelection] = useState<CanvasNode[]>([])
+// export function useSelectedNode() {
+//     const [selection, setSelection] = useState<CanvasNode[]>([])
 
-    useEffect(() => {
-        return framer.subscribeToSelection(setSelection)
-    }, [])
+//     useEffect(() => {
+//         return framer.subscribeToSelection(setSelection)
+//     }, [])
 
-    return selection
-}
+//     return selection
+// }
 
 export function App() {
     const framerCanvasImage = useSelectedImage()
@@ -62,6 +62,8 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         const aspect = assetResolution[0] / assetResolution[1]
         canvasContainerRef.current.style.width = `${CANVAS_WIDTH}px`
         canvasContainerRef.current.style.height = `${CANVAS_WIDTH / aspect}px`
+
+        setExportSize(assetResolution[0])
     }, [assetResolution])
 
     useEffect(() => {
@@ -165,6 +167,47 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                             } else {
                                 gl.canvas.remove()
                             }
+                        }}
+                        onMouseMove={e => {
+                            // gl.canvas.style.removeProperty("width")
+                            // gl.canvas.style.removeProperty("height")
+
+                            const canvasContainerRect = canvasContainerRef.current.getBoundingClientRect()
+                            // const canvasRect = gl.canvas.getBoundingClientRect()
+
+                            const aspect = assetResolution[0] / assetResolution[1]
+                            const canvasRect = {
+                                width: exportSize,
+                                height: exportSize / aspect,
+                            }
+
+                            if (
+                                canvasRect.width <= canvasContainerRect.width &&
+                                canvasRect.height <= canvasContainerRect.height
+                            ) {
+                                return
+                            }
+
+                            const offsetX = e.nativeEvent.clientX - canvasContainerRect.left
+                            const offsetY = e.nativeEvent.clientY - canvasContainerRect.top
+
+                            const xPourcent = offsetX / canvasContainerRect.width
+                            const yPourcent = offsetY / canvasContainerRect.height
+
+                            const x = xPourcent * (canvasRect.width - canvasContainerRect.width)
+                            const y = yPourcent * (canvasRect.height - canvasContainerRect.height)
+
+                            console.log(x, y)
+
+                            gl.canvas.style.transform = `translate(${-x}px, ${-y}px)`
+                            gl.canvas.classList.add("zoom")
+                        }}
+                        onMouseLeave={() => {
+                            // gl.canvas.style.removeProperty("transform")
+                            console.log("mouse leave", gl.canvas)
+                            gl.canvas.classList.remove("zoom")
+                            // gl.canvas.style.width = "100% !important"
+                            // gl.canvas.style.height = "100% !important"
                         }}
                     ></div>
                 ) : (

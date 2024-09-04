@@ -59,6 +59,8 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         useOGLPipeline()
 
     useEffect(() => {
+        if (!canvasContainerRef.current) return
+
         const aspect = assetResolution[0] / assetResolution[1]
         canvasContainerRef.current.style.width = `${CANVAS_WIDTH}px`
         canvasContainerRef.current.style.height = `${CANVAS_WIDTH / aspect}px`
@@ -169,11 +171,9 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                             }
                         }}
                         onMouseMove={e => {
-                            // gl.canvas.style.removeProperty("width")
-                            // gl.canvas.style.removeProperty("height")
+                            const canvasContainerRect = canvasContainerRef.current?.getBoundingClientRect()
 
-                            const canvasContainerRect = canvasContainerRef.current.getBoundingClientRect()
-                            // const canvasRect = gl.canvas.getBoundingClientRect()
+                            if (!canvasContainerRect) return
 
                             const aspect = assetResolution[0] / assetResolution[1]
                             const canvasRect = {
@@ -197,17 +197,11 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                             const x = xPourcent * (canvasRect.width - canvasContainerRect.width)
                             const y = yPourcent * (canvasRect.height - canvasContainerRect.height)
 
-                            console.log(x, y)
-
                             gl.canvas.style.transform = `translate(${-x}px, ${-y}px)`
                             gl.canvas.classList.add("zoom")
                         }}
                         onMouseLeave={() => {
-                            // gl.canvas.style.removeProperty("transform")
-                            console.log("mouse leave", gl.canvas)
                             gl.canvas.classList.remove("zoom")
-                            // gl.canvas.style.width = "100% !important"
-                            // gl.canvas.style.height = "100% !important"
                         }}
                     ></div>
                 ) : (

@@ -287,6 +287,7 @@ export function MapSheetFieldsPage({
                                             handleFieldToggle(fieldConfig.field.id)
                                         }
                                     }}
+                                    onChange={() => {}}
                                 />
                                 <p className="text-primary truncate flex-grow min-w-0">
                                     {fieldConfig.originalFieldName}
@@ -309,7 +310,7 @@ export function MapSheetFieldsPage({
                                 value={
                                     !fieldConfig.field
                                         ? "Unsupported Field"
-                                        : fieldNameOverrides[fieldConfig.field.id] ?? ""
+                                        : (fieldNameOverrides[fieldConfig.field.id] ?? "")
                                 }
                                 onChange={e => {
                                     assert(fieldConfig.field, "Expected field to be defined on fieldConfig")

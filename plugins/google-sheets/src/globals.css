@@ -9,12 +9,12 @@
 @layer utilities {
     /* Chrome, Safari and Opera */
     .no-scrollbar::-webkit-scrollbar {
-      display: none;
+        display: none;
     }
 
     .no-scrollbar {
-      -ms-overflow-style: none; /* IE and Edge */
-      scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
     }
 }
 
@@ -166,6 +166,7 @@ input[type="checkbox"] {
     appearance: none;
     width: 12px;
     height: 12px;
+    margin: 0;
     padding: 0;
     border-radius: 4px;
     border: 1px solid var(--framer-color-border);
@@ -235,21 +236,22 @@ button {
     transition: background-color 0.2s;
 }
 
-button:focus:not(:disabled),
-button:hover:not(:disabled) {
+button:focus,
+button:hover {
     background-color: var(--framer-color-bg-secondary);
 }
 
-button:active:not(:disabled) {
+button:active {
     background-color: #ddd;
 }
 
-button:disabled {
-    opacity: 0.5;
+[data-framer-theme="dark"] button:active {
+    background-color: #232323;
 }
 
-[data-framer-theme="dark"] button:active(:disabled) {
-    background-color: #232323;
+button:disabled {
+    background-color: var(--framer-color-bg-tertiary);
+    opacity: 0.5;
 }
 
 select {
@@ -393,21 +395,22 @@ input::file-selector-button:hover {
     background-color: var(--framer-color-tint);
 }
 
-.framer-button-primary:hover:not(:disabled),
-.framer-button-primary:focus:not(:disabled) {
+.framer-button-primary:hover,
+.framer-button-primary:focus {
     background-color: var(--framer-color-tint-dark);
 }
 
-.framer-button-primary:active:not(:disabled) {
+.framer-button-primary:active {
     background-color: var(--framer-color-tint-extra-dark, #0077ff);
-}
-
-.framer-button-primary:disabled {
-    opacity: 0.5;
 }
 
 [data-framer-theme="dark"] .framer-button-primary:active {
     background-color: var(--framer-color-tint-extra-dark, #0077ff);
+}
+
+.framer-button-primary:disabled {
+    background-color: var(--framer-color-tint);
+    opacity: 0.5;
 }
 
 #framer-environment-error {
@@ -432,8 +435,4 @@ input::file-selector-button:hover {
 
 #framer-environment-error p {
     max-width: 220px;
-}
-
-.reset {
-    all: initial;
 }

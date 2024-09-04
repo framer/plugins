@@ -380,6 +380,7 @@ body[data-framer-theme="dark"] .error-container {
 
 .submit {
     width: 100%;
+    color: #fff;
 }
 
 body[data-framer-theme="light"] {

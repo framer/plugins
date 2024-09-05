@@ -73,6 +73,9 @@ void main() {
   color.rgb = ambient + diffuseLighting + specular;
   color.rgb = linearToSRGB(color.rgb);
 
+  // Just normals
+  color.rgb = normalSurface;
+
   gl_FragColor = color;
   gl_FragColor.a = uBaseColorFactor.a;
 }
@@ -154,7 +157,7 @@ export function useOGLFBOPipeline({
                     uLightDirection: { value: new Vec3(0, 1, 1) },
                     uLightColor: { value: new Vec3(1) },
                     uAmbientStrength: { value: 0.1 },
-                    uSpecularStrength: { value: 0.25 },
+                    uSpecularStrength: { value: 0.1 },
                     uShininess: { value: 16 },
                 },
                 transparent: gltf?.alphaMode === "BLEND",

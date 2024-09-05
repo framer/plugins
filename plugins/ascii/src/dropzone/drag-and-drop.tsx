@@ -4,50 +4,6 @@ import { useState } from "react"
 import { DroppedAsset } from "../App"
 import { GLTFLoader } from "ogl"
 
-export function DragAndDrop({
-    setDroppedAsset,
-}: {
-    setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
-}) {
-    const [message, setMessage] = useState<string>("Drag 'n' drop some files here, or click to select files")
-
-    return (
-        <Dropzone
-            maxFiles={1}
-            accept={{
-                "image/*": [".png", ".jpeg", ".jpg"],
-                "video/*": [".mp4", ".webm", ".ogg"],
-                "model/gltf+json": [".gltf"],
-                "model/gltf-binary": [".glb"],
-            }}
-            onDrop={async acceptedFiles => {
-                const file = acceptedFiles[0]
-
-                if (file.type.includes("image")) {
-                    await handleImageOnFramer(file, setDroppedAsset)
-                } else if (file.type.includes("video")) {
-                    handleVideoLocally(file, setDroppedAsset)
-                } else if (file.name.match(/\.glb$/)) {
-                    handleModelOnFramer(file, setDroppedAsset)
-                }
-            }}
-            onError={error => {
-                console.log(error)
-                setMessage("Something went wrong please try again")
-            }}
-        >
-            {({ getRootProps, getInputProps }) => (
-                <div className="error-container">
-                    <div {...getRootProps()}>
-                        <input {...getInputProps()} />
-                        <p>{message}</p>
-                    </div>
-                </div>
-            )}
-        </Dropzone>
-    )
-}
-
 export function Upload({
     setDroppedAsset,
     disabled = false,

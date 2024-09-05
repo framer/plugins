@@ -6,7 +6,7 @@ import { ASCII } from "./materials/ascii"
 import cn from "clsx"
 import { Upload } from "./dropzone/drag-and-drop"
 import { useOGLPipeline } from "./ogl/pipeline"
-import { GLTF, GLTFDescription } from "ogl"
+import { GLTFDescription } from "ogl"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()

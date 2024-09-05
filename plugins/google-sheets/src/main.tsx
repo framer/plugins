@@ -1,16 +1,14 @@
 import "./globals.css"
 
-import React, { ReactNode, Suspense } from "react"
+import React, { ReactNode } from "react"
 import ReactDOM from "react-dom/client"
 import { framer } from "framer-plugin"
-import { ErrorBoundary } from "react-error-boundary"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { PluginContext, PluginContextUpdate, getPluginContext, syncSheet } from "./sheets.ts"
 import { assert } from "./utils.ts"
 
 import { App } from "./App.tsx"
-import { CenteredSpinner } from "./components/CenteredSpinner.tsx"
-import { ErrorBoundaryFallback } from "./components/ErrorBoundaryFallback.tsx"
+import { PageErrorBoundaryFallback } from "./components/ErrorBoundaryFallback.tsx"
 
 export const queryClient = new QueryClient({
     defaultOptions: {
@@ -42,9 +40,7 @@ function renderPlugin(app: ReactNode) {
         <React.StrictMode>
             <QueryClientProvider client={queryClient}>
                 <div className="w-full px-[15px] flex flex-col flex-1 overflow-y-auto no-scrollbar">
-                    <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
-                        <Suspense fallback={<CenteredSpinner />}>{app}</Suspense>
-                    </ErrorBoundary>
+                    <PageErrorBoundaryFallback>{app}</PageErrorBoundaryFallback>
                 </div>
             </QueryClientProvider>
         </React.StrictMode>

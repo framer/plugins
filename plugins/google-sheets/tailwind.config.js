@@ -21,6 +21,7 @@ export default {
                 tertiary: "var(--framer-color-text-tertiary)",
                 inverted: "var(--framer-color-text-inverted)",
                 "sheets-green": "#00C43E",
+                "framer-red": "#FF3366",
             },
             borderColor: {
                 divider: "var(--framer-color-divider)",

@@ -1,8 +1,7 @@
 import { framer } from "framer-plugin"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { PluginContext, useSheetQuery, useSyncSheetMutation } from "./sheets"
 import { logSyncResult } from "./debug"
-import { assert } from "./utils"
 
 import { Authenticate } from "./pages/Authenticate"
 import { MapSheetFieldsPage } from "./pages/MapSheetFields"
@@ -48,7 +47,9 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
     if (isSheetPending) return <CenteredSpinner />
 
     const [headerRow, ...rows] = sheet?.values ?? []
-    assert(headerRow, "Expected a header row to be present in the sheet.")
+    if (!headerRow) {
+        throw new Error("The provided sheet requires at least one row")
+    }
 
     framer.showUI({
         width: 340,

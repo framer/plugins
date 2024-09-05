@@ -430,6 +430,7 @@ function useFBO(gl: OGLRenderingContext, { width = 1024, height = 1024 }: { widt
 export function useGLBTexture(
     gl: OGLRenderingContext,
     src: string | undefined,
+    type: string | undefined = "glb",
     onUpdate: (texture: Texture) => void,
     deps: any[] = []
 ) {
@@ -600,7 +601,7 @@ export function useGLBTexture(
                 .add(center)
             controls.target.copy(center)
             controls.forcePosition()
-            const far = maxRadius * 5
+            const far = maxRadius * 100
             const near = far * 0.001
             camera.perspective({ near, far })
         },
@@ -633,14 +634,30 @@ export function useGLBTexture(
         if (!src) return
 
         fetch(src)
-            .then(response => response.arrayBuffer())
-            .then(arrayBuffer => GLTFLoader.unpackGLB(arrayBuffer))
-            .then(desc => GLTFLoader.parse(gl, desc, ""))
+            .then(response => {
+                if (type === "glb") {
+                    return response.arrayBuffer()
+                } else {
+                    return response.text()
+                }
+            })
+            .then(result => {
+                let desc
+
+                if (type === "glb") {
+                    desc = GLTFLoader.unpackGLB(result)
+                } else {
+                    desc = JSON.parse(result)
+                }
+
+                return GLTFLoader.parse(gl, desc, "")
+            })
+            // .then(desc => GLTFLoader.parse(gl, desc, ""))
             .then(glb => {
                 if (currentSrcRef.current !== src) return
                 setGlb(glb)
                 addToScene(glb)
                 onUpdate(target.texture)
             })
-    }, [src, target, scene, ...deps])
+    }, [src, target, scene, type, ...deps])
 }

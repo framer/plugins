@@ -91,7 +91,12 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
     useGLBTexture(
         gl,
-        isPlaceholder ? DEFAUL_ASSET.src : droppedAsset?.type === "glb" ? droppedAsset?.src : undefined,
+        isPlaceholder
+            ? DEFAUL_ASSET.src
+            : droppedAsset?.type === "glb" || droppedAsset?.type === "gltf"
+              ? droppedAsset?.src
+              : undefined,
+        droppedAsset?.type,
         texture => {
             program.texture = texture
             setAssetResolution([texture.width, texture.height])

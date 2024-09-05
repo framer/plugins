@@ -69,7 +69,7 @@ class Auth {
         })
 
         if (res.status !== 200) {
-            throw new Error("Failed to get tokens.")
+            throw new Error("Failed to fetch tokens")
         }
 
         const tokens = (await res.json()) as Tokens
@@ -83,7 +83,7 @@ class Auth {
         })
 
         if (res.status !== 200) {
-            throw new Error("Failed to generate OAuth URL.")
+            throw new Error("Failed to generate OAuth URL")
         }
 
         const authorize = (await res.json()) as Authorize

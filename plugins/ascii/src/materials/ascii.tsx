@@ -1,6 +1,6 @@
 import { Color, OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
-import { useCharactersAtlasTexture } from "../use-characters-atlas-texture"
+import { useCharactersAtlasTexture } from "../hooks/use-characters-atlas-texture"
 import * as Slider from "@radix-ui/react-slider"
 import { GLSL } from "../glsl"
 import { SegmentedControl } from "@radix-ui/themes"

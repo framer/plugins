@@ -1,10 +1,10 @@
-import { CanvasNode, ImageAsset, framer } from "framer-plugin"
+import { ImageAsset, framer } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "@radix-ui/themes/styles.css"
 import "./App.css"
 import { ASCII } from "./materials/ascii"
 import cn from "clsx"
-import { Upload } from "./drag-and-drop"
+import { Upload } from "./dropzone/drag-and-drop"
 import { useOGLPipeline } from "./ogl/pipeline"
 
 import.meta.hot?.accept(() => {
@@ -199,7 +199,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     </select>
                 </div>
             </div>
-            <Upload setDroppedAsset={setDroppedAsset} />
+            <Upload setDroppedAsset={setDroppedAsset} disabled={false} />
             <button onClick={saveEffect} className="submit">
                 {savingInAction ? "Adding..." : "   Add Image"}
             </button>

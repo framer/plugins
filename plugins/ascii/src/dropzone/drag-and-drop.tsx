@@ -1,7 +1,7 @@
 import Dropzone from "react-dropzone"
 import { framer, ImageAsset } from "framer-plugin"
 import { useState } from "react"
-import { DroppedAsset, useSelectedImage } from "./App"
+import { DroppedAsset, useSelectedImage } from "../App"
 import { GLTFLoader } from "ogl"
 
 export function DragAndDrop({
@@ -25,7 +25,7 @@ export function DragAndDrop({
                 const file = acceptedFiles[0]
 
                 if (file.type.includes("image")) {
-                    await handleImageOnFramer(file, framerCanvasImage, setDroppedAsset)
+                    await handleImageOnFramer(file, setDroppedAsset)
                 } else if (file.type.includes("video")) {
                     handleVideoLocally(file, setDroppedAsset)
                 } else if (file.name.match(/\.glb$/)) {
@@ -110,7 +110,7 @@ function handleModelOnFramer(file: File, setter: React.Dispatch<React.SetStateAc
         let asset
         asset = GLTFLoader.unpackGLB(target?.result as ArrayBuffer)
 
-        setter({ type: "GLB", asset })
+        setter({ type: "model", asset })
     }
 }
 

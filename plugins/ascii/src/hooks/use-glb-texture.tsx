@@ -3,7 +3,7 @@ import { DroppedAsset } from "../App"
 
 export function useGLBTexture(asset: DroppedAsset, onUpdate: () => void) {
     useEffect(() => {
-        if (asset.type !== "GLB") return
+        if (asset.type !== "model") return
 
         onUpdate()
     }, [asset])

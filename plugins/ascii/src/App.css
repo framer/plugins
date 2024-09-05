@@ -116,7 +116,7 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
 
 .gui {
     margin-top: 5px;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 }
 
 .gui select {
@@ -374,12 +374,16 @@ body[data-framer-theme="dark"] .error-container {
 
 .submit {
     width: 100%;
-    color: #fff;
+    color: #000;
+    background-color: #fff;
+    font-weight: 700;
 }
 
 body[data-framer-theme="light"] {
     .submit {
         background-color: #000;
+        color: #fff;
+        font-weight: 400;
     }
 }
 
@@ -403,10 +407,22 @@ body[data-framer-theme="light"] {
     gap: 10px;
     width: 100%;
     margin-bottom: 10px;
+    border-top: 1px solid var(--framer-color-divider);
+    padding-top: 15px;
 
     * {
         flex-grow: 1;
         width: auto;
         cursor: pointer;
+        color: #fff;
+        font-weight: 700;
+    }
+}
+
+body[data-framer-theme="light"] {
+    .asset-buttons * {
+        /* background-color: #000; */
+        color: #000;
+        font-weight: 700;
     }
 }

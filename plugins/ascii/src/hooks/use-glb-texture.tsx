@@ -594,7 +594,7 @@ export function useGLBTexture(
             center.add(min, max).divide(2)
 
             camera.position
-                .set(1, 0.5, -1)
+                .set(0, 0.5, 1)
                 .normalize()
                 .multiply(maxRadius * 2.5)
                 .add(center)

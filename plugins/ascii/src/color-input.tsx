@@ -43,16 +43,16 @@ export function ColorInput({
                         <path
                             d="M 1.5 6.5 L 6.5 1.5"
                             fill="transparent"
-                            stroke-width="1.5"
+                            strokeWidth="1.5"
                             stroke="currentColor"
-                            stroke-linecap="round"
+                            strokeLinecap="round"
                         ></path>
                         <path
                             d="M 6.5 6.5 L 1.5 1.5"
                             fill="transparent"
-                            stroke-width="1.5"
+                            strokeWidth="1.5"
                             stroke="currentColor"
-                            stroke-linecap="round"
+                            strokeLinecap="round"
                         ></path>
                     </svg>
                 </div>

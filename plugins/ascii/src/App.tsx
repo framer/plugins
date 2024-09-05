@@ -177,11 +177,11 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         }
 
         canvasContainerRef.current?.addEventListener("mousedown", handleMouseDown)
-        canvasContainerRef.current?.addEventListener("mouseup", handleMouseUp)
+        window.addEventListener("mouseup", handleMouseUp)
 
         return () => {
             canvasContainerRef.current?.removeEventListener("mousedown", handleMouseDown)
-            canvasContainerRef.current?.removeEventListener("mouseup", handleMouseUp)
+            window.removeEventListener("mouseup", handleMouseUp)
         }
     }, [])
 
@@ -198,7 +198,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                         }
                     }}
                     onMouseMove={e => {
-                        console.log(isPlaceholder)
                         if ((droppedAsset?.type === "glb" || isPlaceholder) && isMouseDown) {
                             gl.canvas.classList.remove("zoom")
                             return
@@ -279,7 +278,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                 )}
             </div>
             <button onClick={saveEffect} className="submit">
-                {savingInAction ? "Adding..." : "   Add Image"}
+                {savingInAction ? "Adding..." : "Insert"}
             </button>
         </div>
     )

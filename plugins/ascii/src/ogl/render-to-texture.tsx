@@ -1,6 +1,7 @@
 import {
     Camera,
     GLTF,
+    GLTFDescription,
     GLTFLoader,
     Mesh,
     OGLRenderingContext,
@@ -22,6 +23,12 @@ out vec2 vUv;
 out vec3 vNormal;
 out vec3 vMPos;
 
+#ifdef UV
+  attribute vec2 uv;
+#else
+  const vec2 uv = vec2(0);   
+#endif  
+
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
 uniform mat4 modelMatrix;
@@ -41,6 +48,12 @@ const fragmentShader = /*glsl*/ `
 in vec3 vNormal;
 in vec3 vMPos;
 
+#ifdef USECOLOR
+  bool useColor = true;
+#else
+  bool useColor = false;
+#endif  
+
 uniform vec4 uBaseColorFactor;
 uniform vec3 uLightColor;
 uniform vec3 uLightDirection;
@@ -53,12 +66,7 @@ vec3 linearToSRGB(vec3 color) {
   return pow(color, vec3(1.0 / 2.2));
 }
 
-void main() {
-  vec4 color = uBaseColorFactor;
-  vec3 normalSurface = normalize(vNormal);
-  vec3 viewDir = normalize(cameraPosition - vMPos);
-  vec3 lightDir = normalize(uLightDirection);
-
+vec3 colorLighting(vec3 normalSurface, vec3 viewDir, vec3 lightDir) {
   // Ambient lighting
   vec3 ambient = uAmbientStrength * uLightColor;
 
@@ -70,11 +78,20 @@ void main() {
   float spec = pow(max(dot(viewDir, halfDir), 0.0), uShininess);
   vec3 specular = uSpecularStrength * spec * uLightColor;
 
-  color.rgb = ambient + diffuseLighting + specular;
-  color.rgb = linearToSRGB(color.rgb);
+  return ambient + diffuseLighting + specular;
+}
 
-  // Just normals
-  color.rgb = normalSurface;
+void main() {
+  vec4 color = uBaseColorFactor;
+  vec3 normalSurface = normalize(vNormal);
+  vec3 viewDir = normalize(cameraPosition - vMPos);
+  vec3 lightDir = normalize(uLightDirection);
+
+  if (useColor) {
+    color.rgb = colorLighting(normalSurface, viewDir, lightDir);
+  } else {
+    color.rgb = linearToSRGB(normalSurface);
+  }
 
   gl_FragColor = color;
   gl_FragColor.a = uBaseColorFactor.a;
@@ -147,6 +164,7 @@ export function useOGLFBOPipeline({
         ${node.geometry.attributes.uv ? `#define UV` : ``}
         ${node.geometry.attributes.normal ? `#define NORMAL` : ``}
         ${node.geometry.isInstanced ? `#define INSTANCED` : ``}
+        // #define USECOLOR
         `
 
             const program = new Program(gl, {
@@ -193,7 +211,7 @@ export function useOGLFBOPipeline({
     )
 
     const loadModelFromFile = useCallback(
-        async (asset: GLTF) => {
+        async (asset: GLTFDescription) => {
             try {
                 const gltf = await GLTFLoader.parse(gl, asset, "")
 
@@ -219,7 +237,7 @@ export function useOGLFBOPipeline({
     )
 
     const loadModel = useCallback(
-        async (asset: GLTF | string) => {
+        async (asset: GLTFDescription | string) => {
             if (typeof asset === "string") {
                 await loadModelFromSrc(asset)
             } else {
@@ -238,16 +256,33 @@ export function useOGLFBOPipeline({
         }
     }, [])
 
-    const updateRenderTarget = useCallback(() => {
-        controls.update()
+    const updateRenderTarget = useCallback(
+        ({
+            program,
+            animateModel = true,
+            orbitControls = true,
+        }: {
+            animateModel?: boolean
+            orbitControls?: boolean
+            program: Program
+        }) => {
+            if (orbitControls) {
+                controls.update()
+            }
 
-        return {
-            targetScene: scene,
-            targetCamera: camera,
-            target,
-            animate,
-        }
-    }, [scene, camera, target, controls, animate])
+            if (animateModel) {
+                animate()
+            }
+
+            // Render to the framebuffer (off-screen)
+            renderer.render({ scene, camera, target, frustumCull: false, sort: false })
+
+            if (target) {
+                program.uniforms.uTexture.value = target.texture
+            }
+        },
+        [renderer, scene, camera, target, controls, animate]
+    )
 
     return { updateRenderTarget, loadModelFromSrc, loadModelFromFile, loadModel }
 }

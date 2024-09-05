@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { framer } from "framer-plugin"
 import { getPluginContext, PluginContext } from "../sheets"
 import auth from "../auth"
@@ -6,45 +6,13 @@ import auth from "../auth"
 import { Button } from "../components/Button"
 import { Hero } from "../components/Hero"
 
-function useIsDocumentVisibile() {
-    const [isVisible, setIsVisible] = useState(document.visibilityState === "visible")
-
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            setIsVisible(document.visibilityState === "visible")
-        }
-
-        document.addEventListener("visibilitychange", handleVisibilityChange)
-
-        return () => {
-            document.removeEventListener("visibilitychange", handleVisibilityChange)
-        }
-    }, [])
-
-    return isVisible
-}
-
 interface AuthenticationProps {
     onAuthenticated: (context: PluginContext) => void
-    context: PluginContext
 }
 
-export function Authenticate({ onAuthenticated, context }: AuthenticationProps) {
+export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const [isLoading, setIsLoading] = useState(false)
-    const notifiedForContextRef = useRef<PluginContext | null>(null)
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
-    const isDocumentVisible = useIsDocumentVisibile()
-
-    useEffect(() => {
-        // User may not have returned to Framer yet, so only notify when they do
-        if (!isDocumentVisible) return
-        // Only notify once per context
-        if (notifiedForContextRef.current === context) return
-        if (context.type !== "error") return
-
-        notifiedForContextRef.current = context
-        framer.notify(context.message, { variant: "error" })
-    }, [context, isDocumentVisible])
 
     const pollForTokens = (readKey: string) => {
         if (pollInterval.current) {
@@ -79,9 +47,7 @@ export function Authenticate({ onAuthenticated, context }: AuthenticationProps) 
 
             onAuthenticated(await getPluginContext())
         } catch (e) {
-            framer.notify(e instanceof Error ? e.message : "An unknown error ocurred.", {
-                variant: "error",
-            })
+            framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
         } finally {
             setIsLoading(false)
         }

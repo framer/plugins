@@ -1,16 +1,23 @@
+import { PropsWithChildren } from "react"
 import { QueryErrorResetBoundary } from "@tanstack/react-query"
+import { ErrorBoundary } from "react-error-boundary"
 
-export function ErrorBoundaryFallback() {
-    return (
-        <QueryErrorResetBoundary>
-            {({ reset }) => {
-                return (
+export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
+    <QueryErrorResetBoundary>
+        {({ reset }) => (
+            <ErrorBoundary
+                onReset={reset}
+                fallbackRender={({ resetErrorBoundary, error }) => (
                     <div className="flex flex-col w-full h-full gap-2 items-center justify-center">
-                        <span>Something went wrong...</span>
-                        <button onClick={reset}>Try again</button>
+                        <p className="text-framer-red w-full line-clamp-6">{error.message}</p>
+                        <button className="w-full" onClick={resetErrorBoundary}>
+                            Try again
+                        </button>
                     </div>
-                )
-            }}
-        </QueryErrorResetBoundary>
-    )
-}
+                )}
+            >
+                {children}
+            </ErrorBoundary>
+        )}
+    </QueryErrorResetBoundary>
+)

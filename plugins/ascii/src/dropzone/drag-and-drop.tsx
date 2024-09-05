@@ -1,53 +1,8 @@
 import Dropzone from "react-dropzone"
-import { framer, ImageAsset } from "framer-plugin"
+import { framer } from "framer-plugin"
 import { useState } from "react"
-import { DroppedAsset, useSelectedImage } from "../App"
+import { DroppedAsset } from "../App"
 import { GLTFLoader } from "ogl"
-
-export function DragAndDrop({
-    setDroppedAsset,
-}: {
-    setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
-}) {
-    const framerCanvasImage = useSelectedImage()
-    const [message, setMessage] = useState<string>("Drag 'n' drop some files here, or click to select files")
-
-    return (
-        <Dropzone
-            maxFiles={1}
-            accept={{
-                "image/*": [".png", ".jpeg", ".jpg"],
-                "video/*": [".mp4", ".webm", ".ogg"],
-                "model/gltf+json": [".gltf"],
-                "model/gltf-binary": [".glb"],
-            }}
-            onDrop={async acceptedFiles => {
-                const file = acceptedFiles[0]
-
-                if (file.type.includes("image")) {
-                    await handleImageOnFramer(file, setDroppedAsset)
-                } else if (file.type.includes("video")) {
-                    handleVideoLocally(file, setDroppedAsset)
-                } else if (file.name.match(/\.glb$/)) {
-                    handleModelOnFramer(file, setDroppedAsset)
-                }
-            }}
-            onError={error => {
-                console.log(error)
-                setMessage("Something went wrong please try again")
-            }}
-        >
-            {({ getRootProps, getInputProps }) => (
-                <div className="error-container">
-                    <div {...getRootProps()}>
-                        <input {...getInputProps()} />
-                        <p>{message}</p>
-                    </div>
-                </div>
-            )}
-        </Dropzone>
-    )
-}
 
 export function Upload({
     setDroppedAsset,
@@ -56,7 +11,6 @@ export function Upload({
     setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
     disabled: boolean
 }) {
-    const framerCanvasImage = useSelectedImage()
     const [message, setMessage] = useState<string>("Upload")
 
     return (
@@ -107,10 +61,7 @@ function handleModelOnFramer(file: File, setter: React.Dispatch<React.SetStateAc
     const reader = new FileReader()
     reader.readAsArrayBuffer(file)
     reader.onload = async function ({ target }) {
-        let asset
-        asset = GLTFLoader.unpackGLB(target?.result as ArrayBuffer)
-
-        setter({ type: "model", asset })
+        setter({ type: "model", asset: GLTFLoader.unpackGLB(target?.result as ArrayBuffer) })
     }
 }
 

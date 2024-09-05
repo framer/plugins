@@ -73,6 +73,9 @@ void main() {
   color.rgb = ambient + diffuseLighting + specular;
   color.rgb = linearToSRGB(color.rgb);
 
+  // Just normals
+  color.rgb = normalSurface;
+
   gl_FragColor = color;
   gl_FragColor.a = uBaseColorFactor.a;
 }
@@ -154,7 +157,7 @@ export function useOGLFBOPipeline({
                     uLightDirection: { value: new Vec3(0, 1, 1) },
                     uLightColor: { value: new Vec3(1) },
                     uAmbientStrength: { value: 0.1 },
-                    uSpecularStrength: { value: 0.25 },
+                    uSpecularStrength: { value: 0.1 },
                     uShininess: { value: 16 },
                 },
                 transparent: gltf?.alphaMode === "BLEND",
@@ -189,7 +192,7 @@ export function useOGLFBOPipeline({
         [gl, scene]
     )
 
-    const loadModel = useCallback(
+    const loadModelFromFile = useCallback(
         async (asset: GLTF) => {
             try {
                 const gltf = await GLTFLoader.parse(gl, asset, "")
@@ -202,7 +205,7 @@ export function useOGLFBOPipeline({
         [gl]
     )
 
-    const initLoad = useCallback(
+    const loadModelFromSrc = useCallback(
         async (src: string) => {
             try {
                 const gltf = await GLTFLoader.load(gl, src)
@@ -210,6 +213,17 @@ export function useOGLFBOPipeline({
                 setGLTF(gltf)
             } catch (e) {
                 console.log("Loading model error:", e)
+            }
+        },
+        [gl]
+    )
+
+    const loadModel = useCallback(
+        async (asset: GLTF | string) => {
+            if (typeof asset === "string") {
+                await loadModelFromSrc(asset)
+            } else {
+                await loadModelFromFile(asset)
             }
         },
         [gl]
@@ -235,5 +249,5 @@ export function useOGLFBOPipeline({
         }
     }, [scene, camera, target, controls, animate])
 
-    return { updateRenderTarget, loadModel, initLoad }
+    return { updateRenderTarget, loadModelFromSrc, loadModelFromFile, loadModel }
 }

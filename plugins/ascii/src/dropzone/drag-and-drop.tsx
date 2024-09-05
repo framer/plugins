@@ -1,7 +1,7 @@
 import Dropzone from "react-dropzone"
-import { framer, ImageAsset } from "framer-plugin"
+import { framer } from "framer-plugin"
 import { useState } from "react"
-import { DroppedAsset, useSelectedImage } from "../App"
+import { DroppedAsset } from "../App"
 import { GLTFLoader } from "ogl"
 
 export function DragAndDrop({
@@ -9,7 +9,6 @@ export function DragAndDrop({
 }: {
     setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
 }) {
-    const framerCanvasImage = useSelectedImage()
     const [message, setMessage] = useState<string>("Drag 'n' drop some files here, or click to select files")
 
     return (
@@ -56,7 +55,6 @@ export function Upload({
     setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
     disabled: boolean
 }) {
-    const framerCanvasImage = useSelectedImage()
     const [message, setMessage] = useState<string>("Upload")
 
     return (
@@ -107,10 +105,7 @@ function handleModelOnFramer(file: File, setter: React.Dispatch<React.SetStateAc
     const reader = new FileReader()
     reader.readAsArrayBuffer(file)
     reader.onload = async function ({ target }) {
-        let asset
-        asset = GLTFLoader.unpackGLB(target?.result as ArrayBuffer)
-
-        setter({ type: "model", asset })
+        setter({ type: "model", asset: GLTFLoader.unpackGLB(target?.result as ArrayBuffer) })
     }
 }
 

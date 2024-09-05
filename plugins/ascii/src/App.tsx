@@ -6,6 +6,7 @@ import { ASCII } from "./materials/ascii"
 import cn from "clsx"
 import { Upload } from "./dropzone/drag-and-drop"
 import { useOGLPipeline } from "./ogl/pipeline"
+import { GLTF, GLTFDescription } from "ogl"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()
@@ -46,14 +47,14 @@ export function App() {
 
 export interface DroppedAsset {
     type: string
-    asset: any
+    asset: GLTFDescription | HTMLVideoElement | URL
 }
 
 function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [savingInAction, setSavingInAction] = useState<boolean>(false)
-    const [droppedAsset, setDroppedAsset] = useState<DroppedAsset>({ type: "model", asset: null })
+    const [droppedAsset, setDroppedAsset] = useState<DroppedAsset>({ type: "model", asset: "/framer_raw.glb" })
     const [assetResolution] = useState<[number, number]>([initResolution, initResolution])
     const [exportSize, setExportSize] = useState<number>(initResolution)
     const { gl, texture, toBytes, setProgram, setResolution } = useOGLPipeline(droppedAsset)

@@ -189,7 +189,7 @@ export function useOGLFBOPipeline({
         [gl, scene]
     )
 
-    const loadModel = useCallback(
+    const loadModelFromFile = useCallback(
         async (asset: GLTF) => {
             try {
                 const gltf = await GLTFLoader.parse(gl, asset, "")
@@ -202,7 +202,7 @@ export function useOGLFBOPipeline({
         [gl]
     )
 
-    const initLoad = useCallback(
+    const loadModelFromSrc = useCallback(
         async (src: string) => {
             try {
                 const gltf = await GLTFLoader.load(gl, src)
@@ -210,6 +210,17 @@ export function useOGLFBOPipeline({
                 setGLTF(gltf)
             } catch (e) {
                 console.log("Loading model error:", e)
+            }
+        },
+        [gl]
+    )
+
+    const loadModel = useCallback(
+        async (asset: GLTF | string) => {
+            if (typeof asset === "string") {
+                await loadModelFromSrc(asset)
+            } else {
+                await loadModelFromFile(asset)
             }
         },
         [gl]
@@ -235,5 +246,5 @@ export function useOGLFBOPipeline({
         }
     }, [scene, camera, target, controls, animate])
 
-    return { updateRenderTarget, loadModel, initLoad }
+    return { updateRenderTarget, loadModelFromSrc, loadModelFromFile, loadModel }
 }

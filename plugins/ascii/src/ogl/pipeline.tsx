@@ -13,7 +13,7 @@ export function useOGLPipeline(droppedAsset: DroppedAsset) {
     const [resolution, setResolution] = useState<[number, number]>([initResolution, initResolution])
     const [renderer] = useState(() => new Renderer({ alpha: true }))
     const gl = renderer.gl
-    const { updateRenderTarget, loadModel, initLoad } = useOGLFBOPipeline({
+    const { updateRenderTarget, loadModel } = useOGLFBOPipeline({
         gl,
         resolution: resolution,
         renderer,
@@ -57,13 +57,6 @@ export function useOGLPipeline(droppedAsset: DroppedAsset) {
         loadModel(droppedAsset.asset)
         useFBORef.current = true
     })
-
-    useEffect(() => {
-        if (droppedAsset.asset) return
-
-        initLoad("framer_raw.glb")
-        useFBORef.current = true
-    }, [])
 
     useEffect(() => {
         renderer.setSize(resolution[0], resolution[1])

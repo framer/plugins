@@ -115,25 +115,29 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     }, [exportSize, assetResolution])
 
     const saveEffect = useCallback(async () => {
-        // assert(gl.canvas)
-        // setResolution([Math.floor(img.naturalWidth), Math.floor(img.naturalHeight)])
-        // gl.canvas.width = img.naturalWidth
-        // gl.canvas.height = img.naturalHeight
         const bytes = await toBytes()
-        // const nextBytes = await bytesFromCanvas(gl.canvas)
-        // assert(bytes)
 
-        // const start = performance.now()
         setSavingInAction(true)
 
-        const originalImage = await framerCanvasImage.getData()
+        if (framerCanvasImage) {
+            const originalImage = await framerCanvasImage.getData()
 
-        await framer.setImage({
-            image: {
-                bytes,
-                mimeType: originalImage.mimeType,
-            },
-        })
+            await framer.setImage({
+                image: {
+                    bytes,
+                    mimeType: originalImage.mimeType,
+                },
+            })
+        } else {
+            await framer.addImage({
+                image: {
+                    type: "bytes",
+                    bytes: bytes,
+                    mimeType: "image/png",
+                },
+            })
+        }
+
         setSavingInAction(false)
 
         // framer.hideUI()

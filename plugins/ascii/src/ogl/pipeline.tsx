@@ -73,23 +73,15 @@ export function useOGLPipeline() {
     }, [mesh, scene])
 
     const render = useCallback(() => {
-        // if (useFBORef.current) {
-        //     const targetToRender = updateRenderTarget()
-        //     const { targetScene, targetCamera, target, animate } = targetToRender
-
-        //     animate()
-        //     // Render to the framebuffer (off-screen)
-        //     renderer.render({ scene: targetScene, camera: targetCamera, target, frustumCull: false, sort: false })
-
-        //     if (target) {
-        //         program.uniforms.uTexture.value = target.texture
-        //     }
-        // }
-
-        // texture.needsUpdate = true
+        window.dispatchEvent(
+            new CustomEvent("gl:beforerender", {
+                detail: { scene, camera },
+            })
+        )
 
         renderer.render({ scene, camera }) // Render to screen
-        requestAnimationFrame(render)
+
+        window.dispatchEvent(new CustomEvent("gl:afterrender"))
     }, [renderer, scene, camera, program, updateRenderTarget])
 
     const toBytes = useCallback(async () => {
@@ -114,7 +106,14 @@ export function useOGLPipeline() {
 
     // Subscribe to raf
     useEffect(() => {
-        const raf = requestAnimationFrame(render)
+        let raf: number
+
+        function update() {
+            render()
+            raf = requestAnimationFrame(update)
+        }
+
+        raf = requestAnimationFrame(update)
 
         return () => cancelAnimationFrame(raf)
     }, [render])

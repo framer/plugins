@@ -4,9 +4,12 @@ import { OGLRenderingContext, Texture } from "ogl"
 export function useImageTexture(
     gl: OGLRenderingContext,
     src: string | undefined,
-    onUpdate: (texture: Texture) => void
+    onUpdate: (texture: Texture) => void,
+    deps: any[] = []
 ) {
-    const [texture] = useState(() => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST }))
+    const [texture] = useState(
+        () => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST, generateMipmaps: false })
+    )
 
     useEffect(() => {
         if (!src) return
@@ -21,5 +24,5 @@ export function useImageTexture(
         }
 
         img.src = src
-    }, [texture, src])
+    }, [texture, src, ...deps])
 }

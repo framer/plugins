@@ -9,6 +9,7 @@ import { useOGLPipeline } from "./ogl/pipeline"
 import { GLTFDescription } from "ogl"
 import { useImageTexture } from "./hooks/use-image-texture"
 import { useVideoTexture } from "./hooks/use-video-texture"
+import { useGLBTexture } from "./hooks/use-glb-texture"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()
@@ -54,35 +55,49 @@ export interface DroppedAsset {
 
 // { type: "model", src: "/framer_raw.glb" }
 
+const DEFAUL_ASSET = { type: "glb", src: "/framer.glb" }
+
 function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [savingInAction, setSavingInAction] = useState<boolean>(false)
-    const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>(null)
+    // const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>(null)
+    const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>()
     const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
     const { gl, toBytes, program, setProgram, setResolution } = useOGLPipeline()
 
-    useImageTexture(gl, droppedAsset?.src ? undefined : framerCanvasImage?.url, texture => {
-        program.texture = texture
-        setAssetResolution([texture.width, texture.height])
-    })
+    useImageTexture(
+        gl,
+        droppedAsset?.src ? undefined : framerCanvasImage?.url,
+        texture => {
+            program.texture = texture
+            setAssetResolution([texture.width, texture.height])
+        },
+        [program]
+    )
 
-    // console.log(droppedAsset)
+    useVideoTexture(
+        gl,
+        droppedAsset?.type === "video" ? droppedAsset?.src : undefined,
+        texture => {
+            program.texture = texture
+            setAssetResolution([texture.width, texture.height])
+        },
+        [program]
+    )
 
-    useVideoTexture(gl, droppedAsset?.type === "video" ? droppedAsset?.src : undefined, texture => {
-        program.texture = texture
-        setAssetResolution([texture.width, texture.height])
-    })
+    const isPlaceholder = !framerCanvasImage?.url && !droppedAsset?.src
 
-    // useEffect(() => {
-    //     // console.log(imageTexture)
-    //     if (!imageTexture) return
-
-    //     // setAssetResolution([imageTexture.width, imageTexture.height])
-    //     console.log(imageTexture)
-
-    // }, [program, imageTexture])
+    useGLBTexture(
+        gl,
+        isPlaceholder ? DEFAUL_ASSET.src : droppedAsset?.type === "glb" ? droppedAsset?.src : undefined,
+        texture => {
+            program.texture = texture
+            setAssetResolution([texture.width, texture.height])
+        },
+        [program]
+    )
 
     useEffect(() => {
         if (!canvasContainerRef.current) return
@@ -150,6 +165,26 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         return () => resizeObserver.disconnect()
     }, [])
 
+    const [isMouseDown, setIsMouseDown] = useState(false)
+
+    useEffect(() => {
+        const handleMouseDown = () => {
+            setIsMouseDown(true)
+        }
+
+        const handleMouseUp = () => {
+            setIsMouseDown(false)
+        }
+
+        canvasContainerRef.current?.addEventListener("mousedown", handleMouseDown)
+        canvasContainerRef.current?.addEventListener("mouseup", handleMouseUp)
+
+        return () => {
+            canvasContainerRef.current?.removeEventListener("mousedown", handleMouseDown)
+            canvasContainerRef.current?.removeEventListener("mouseup", handleMouseUp)
+        }
+    }, [])
+
     return (
         <div className="container" ref={containerRef}>
             <div className="canvas-container" ref={canvasContainerRef}>
@@ -163,7 +198,11 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                         }
                     }}
                     onMouseMove={e => {
-                        if (droppedAsset.type === "model") return
+                        console.log(isPlaceholder)
+                        if ((droppedAsset?.type === "glb" || isPlaceholder) && isMouseDown) {
+                            gl.canvas.classList.remove("zoom")
+                            return
+                        }
 
                         const canvasContainerRect = canvasContainerRef.current?.getBoundingClientRect()
 

@@ -31,7 +31,7 @@ export function Upload({
                 } else if (file.type.includes("video")) {
                     handleVideoLocally(file, setDroppedAsset)
                 } else if (file.name.match(/\.glb$/)) {
-                    handleModelOnFramer(file, setDroppedAsset)
+                    handleGLBOnFramer(file, setDroppedAsset)
                 }
             }}
             onError={error => {
@@ -57,12 +57,18 @@ async function handleImageOnFramer(file: File, setter: React.Dispatch<React.SetS
     setter({ type: "image", src: url })
 }
 
-function handleModelOnFramer(file: File, setter: React.Dispatch<React.SetStateAction<DroppedAsset>>) {
-    const reader = new FileReader()
-    reader.readAsArrayBuffer(file)
-    reader.onload = async function ({ target }) {
-        setter({ type: "model", src: GLTFLoader.unpackGLB(target?.result as ArrayBuffer) })
-    }
+function handleGLBOnFramer(file: File, setter: React.Dispatch<React.SetStateAction<DroppedAsset>>) {
+    const url = URL.createObjectURL(file)
+
+    setter({ type: "glb", src: url })
+
+    // const reader = new FileReader()
+    // reader.readAsArrayBuffer(file)
+    // reader.onload = async function ({ target }) {
+    //     console.log(target)
+    //     // setter({ type: "model", src: GLTFLoader.unpackGLB(target?.result as ArrayBuffer) })
+    //     // setter({ type: "model", src: target?.result as GLTFDescription })
+    // }
 }
 
 function handleVideoLocally(file: File, setter: React.Dispatch<React.SetStateAction<DroppedAsset>>) {

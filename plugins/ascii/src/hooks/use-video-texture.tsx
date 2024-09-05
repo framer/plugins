@@ -4,7 +4,8 @@ import { OGLRenderingContext, Texture } from "ogl"
 export function useVideoTexture(
     gl: OGLRenderingContext,
     src: string | undefined,
-    onUpdate: (texture: Texture) => void
+    onUpdate: (texture: Texture) => void,
+    deps: any[] = []
 ) {
     const [texture] = useState(
         () => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST, generateMipmaps: false })
@@ -41,7 +42,10 @@ export function useVideoTexture(
         let raf: number
 
         function update() {
-            texture.needsUpdate = true
+            if (video.readyState >= video.HAVE_ENOUGH_DATA) {
+                if (!texture.image) texture.image = video
+                texture.needsUpdate = true
+            }
             raf = requestAnimationFrame(update)
         }
 
@@ -51,5 +55,5 @@ export function useVideoTexture(
             cancelAnimationFrame(raf)
         }
         // }
-    }, [texture, src])
+    }, [texture, src, ...deps])
 }

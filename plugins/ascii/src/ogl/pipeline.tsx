@@ -74,16 +74,7 @@ export function useOGLPipeline(droppedAsset: DroppedAsset) {
 
     const render = useCallback(() => {
         if (useFBORef.current) {
-            const targetToRender = updateRenderTarget()
-            const { targetScene, targetCamera, target, animate } = targetToRender
-
-            animate()
-            // Render to the framebuffer (off-screen)
-            renderer.render({ scene: targetScene, camera: targetCamera, target, frustumCull: false, sort: false })
-
-            if (target) {
-                program.uniforms.uTexture.value = target.texture
-            }
+            updateRenderTarget({ program })
         }
 
         texture.needsUpdate = true

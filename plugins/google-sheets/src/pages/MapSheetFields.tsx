@@ -255,14 +255,14 @@ export function MapSheetFieldsPage({
                 <span className="col-span-2">Column</span>
                 <span>Field</span>
                 <span>Type</span>
-                {fieldConfig.map(fieldConfig => {
+                {fieldConfig.map((fieldConfig, i) => {
                     const isSlugField = slugFieldColumnIndex === Number(fieldConfig.field?.id)
                     const isDisabled = disabledFieldColumnIndexes.has(Number(fieldConfig.field?.id))
 
                     if (isSlugField) return null
 
                     return (
-                        <Fragment key={fieldConfig.originalFieldName}>
+                        <Fragment key={i}>
                             <div
                                 className={cx(
                                     "flex items-center gap-2.5 px-2 h-[30px] bg-tertiary rounded-md overflow-hidden cursor-pointer",

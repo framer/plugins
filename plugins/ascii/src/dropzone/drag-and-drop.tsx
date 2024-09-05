@@ -1,8 +1,6 @@
 import Dropzone from "react-dropzone"
-import { framer } from "framer-plugin"
 import { useState } from "react"
 import { DroppedAsset } from "../App"
-import { GLTFLoader } from "ogl"
 
 export function Upload({
     setDroppedAsset,

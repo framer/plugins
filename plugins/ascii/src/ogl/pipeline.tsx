@@ -1,23 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { assert, bytesFromCanvas } from "../utils"
-import { useOGLFBOPipeline } from "./render-to-texture"
-import { DEFAULT_WIDTH, DroppedAsset } from "../App"
-// import { useImgTexture } from "../hooks/use-image-texture"
-// import { useVideoTexture } from "../hooks/use-video-texture"
-// import { useGLBTexture } from "../hooks/use-glb-texture"
+import { DEFAULT_WIDTH } from "../App"
 
 export function useOGLPipeline() {
     const isMountedRef = useRef(false)
-    const useFBORef = useRef(false)
+    // const useFBORef = useRef(false)
     const [resolution, setResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [renderer] = useState(() => new Renderer({ alpha: true }))
     const gl = renderer.gl
-    const { updateRenderTarget, loadModel } = useOGLFBOPipeline({
-        gl,
-        resolution: resolution,
-        renderer,
-    })
 
     //config
     const [scene] = useState(() => new Transform())
@@ -82,7 +73,7 @@ export function useOGLPipeline() {
         renderer.render({ scene, camera }) // Render to screen
 
         window.dispatchEvent(new CustomEvent("gl:afterrender"))
-    }, [renderer, scene, camera, program, updateRenderTarget])
+    }, [renderer, scene, camera, program])
 
     const toBytes = useCallback(async () => {
         // texture.needsUpdate = true

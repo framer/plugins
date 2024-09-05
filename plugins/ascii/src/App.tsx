@@ -7,6 +7,8 @@ import cn from "clsx"
 import { Upload } from "./dropzone/drag-and-drop"
 import { useOGLPipeline } from "./ogl/pipeline"
 import { GLTFDescription } from "ogl"
+import { useImageTexture } from "./hooks/use-image-texture"
+import { useVideoTexture } from "./hooks/use-video-texture"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()
@@ -15,7 +17,7 @@ import.meta.hot?.accept(() => {
 void framer.showUI({ title: "ASCII", position: "top right", width: 280, height: 500 })
 
 export const CANVAS_WIDTH = 250
-export const initResolution = 500
+export const DEFAULT_WIDTH = 500
 
 export function useSelectedImage() {
     const [selection, setSelection] = useState<ImageAsset | null>(null)
@@ -47,17 +49,40 @@ export function App() {
 
 export interface DroppedAsset {
     type: string
-    asset: GLTFDescription | HTMLVideoElement | URL
+    src: string
 }
+
+// { type: "model", src: "/framer_raw.glb" }
 
 function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [savingInAction, setSavingInAction] = useState<boolean>(false)
-    const [droppedAsset, setDroppedAsset] = useState<DroppedAsset>({ type: "model", asset: "/framer_raw.glb" })
-    const [assetResolution] = useState<[number, number]>([initResolution, initResolution])
-    const [exportSize, setExportSize] = useState<number>(initResolution)
-    const { gl, texture, toBytes, setProgram, setResolution } = useOGLPipeline(droppedAsset)
+    const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>(null)
+    const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
+    const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
+    const { gl, toBytes, program, setProgram, setResolution } = useOGLPipeline()
+
+    useImageTexture(gl, droppedAsset?.src ? undefined : framerCanvasImage?.url, texture => {
+        program.texture = texture
+        setAssetResolution([texture.width, texture.height])
+    })
+
+    // console.log(droppedAsset)
+
+    useVideoTexture(gl, droppedAsset?.type === "video" ? droppedAsset?.src : undefined, texture => {
+        program.texture = texture
+        setAssetResolution([texture.width, texture.height])
+    })
+
+    // useEffect(() => {
+    //     // console.log(imageTexture)
+    //     if (!imageTexture) return
+
+    //     // setAssetResolution([imageTexture.width, imageTexture.height])
+    //     console.log(imageTexture)
+
+    // }, [program, imageTexture])
 
     useEffect(() => {
         if (!canvasContainerRef.current) return
@@ -180,7 +205,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                         setProgram(node?.program)
                     }}
                     gl={gl}
-                    texture={texture}
+                    // texture={texture}
                 />
                 <div className="gui-row">
                     <label className="gui-label">Resolution</label>
@@ -200,7 +225,20 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     </select>
                 </div>
             </div>
-            <Upload setDroppedAsset={setDroppedAsset} disabled={false} />
+            <div className="asset-buttons">
+                <Upload
+                    setDroppedAsset={asset => {
+                        // console.log(asset)
+                        setDroppedAsset(asset)
+                    }}
+                    disabled={false}
+                />
+                {droppedAsset && (
+                    <button className="clear" onClick={() => setDroppedAsset(null)}>
+                        Clear
+                    </button>
+                )}
+            </div>
             <button onClick={saveEffect} className="submit">
                 {savingInAction ? "Adding..." : "   Add Image"}
             </button>

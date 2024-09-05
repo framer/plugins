@@ -8,7 +8,7 @@ import { ColorInput } from "../color-input"
 import { NumberInput } from "../number-input"
 
 export class ASCIIMaterial extends Program {
-    constructor(gl: OGLRenderingContext, texture: Texture) {
+    constructor(gl: OGLRenderingContext) {
         super(gl, {
             vertex: /*glsl*/ `#version 300 es
                 precision lowp float;
@@ -120,7 +120,7 @@ export class ASCIIMaterial extends Program {
                 }
                 `,
             uniforms: {
-                uTexture: { value: texture },
+                uTexture: { value: new Texture(gl) },
                 uResolution: { value: new Vec2(1, 1) },
                 uCharactersAtlasTexture: { value: new Texture(gl) },
                 uCharactersAtlasTextureSize: { value: new Vec2(1, 1) },
@@ -147,6 +147,10 @@ export class ASCIIMaterial extends Program {
     setCharactersAtlasTextureSize(x: number, y: number) {
         this.uniforms.uCharactersAtlasTextureSize.value.x = Math.floor(x)
         this.uniforms.uCharactersAtlasTextureSize.value.y = Math.floor(y)
+    }
+
+    set texture(value: Texture) {
+        this.uniforms.uTexture.value = value
     }
 
     set charatersAtlasTexture(value: Texture) {
@@ -196,7 +200,7 @@ export class ASCIIMaterial extends Program {
 
 const FONTS = ["Roboto Mono", "Fragment Mono", "Martian Mono", "Space Mono", "Courier Prime"]
 
-export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderingContext; texture: Texture }, ref) {
+export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext }, ref) {
     // const [characters, setCharacters] = useState(" ●░▒▓█")
     const [characters, setCharacters] = useState(" ./FR#")
 
@@ -210,7 +214,7 @@ export const ASCII = forwardRef(function Ascii({ gl, texture }: { gl: OGLRenderi
     const [isTransparent, setIsTransparent] = useState(false)
     const [isFilled, setIsFilled] = useState(false)
 
-    const [program] = useState(() => new ASCIIMaterial(gl, texture))
+    const [program] = useState(() => new ASCIIMaterial(gl))
 
     const {
         texture: charactersAtlasTexture,

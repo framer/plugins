@@ -1,8 +1,8 @@
 .container {
-    display: flex;
-    align-items: center;
+    /* display: flex;
+    align-items: center; */
     /* height: 100%; */
-    flex-direction: column;
+    /* flex-direction: column; */
     /* gap: 10px; */
     padding: 0 15px 15px 15px;
 }
@@ -372,16 +372,6 @@ body[data-framer-theme="dark"] .error-container {
     background: rgba(0, 0, 0, 0.4);
 }
 
-.upload {
-    width: 100%;
-    margin-bottom: 7px;
-}
-
-.upload-cta{
-    width: 100%;
-    cursor: pointer;
-}
-
 .submit {
     width: 100%;
     color: #fff;
@@ -396,3 +386,27 @@ body[data-framer-theme="light"] {
 /* button:not(:hover) {
     transition: unset;
 } */
+
+.upload {
+    /* width: 100%; */
+    /* margin-bottom: 7px; */
+
+    .upload-cta {
+        width: 100%;
+        cursor: pointer;
+    }
+}
+
+.asset-buttons {
+    display: flex;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+
+    * {
+        flex-grow: 1;
+        width: auto;
+        cursor: pointer;
+    }
+}

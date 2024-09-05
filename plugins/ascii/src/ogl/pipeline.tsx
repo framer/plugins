@@ -2,15 +2,15 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { assert, bytesFromCanvas } from "../utils"
 import { useOGLFBOPipeline } from "./render-to-texture"
-import { initResolution, DroppedAsset } from "../App"
-import { useImgTexture } from "../hooks/use-texture"
-import { useVideoTexture } from "../hooks/use-video-texture"
-import { useGLBTexture } from "../hooks/use-glb-texture"
+import { DEFAULT_WIDTH, DroppedAsset } from "../App"
+// import { useImgTexture } from "../hooks/use-image-texture"
+// import { useVideoTexture } from "../hooks/use-video-texture"
+// import { useGLBTexture } from "../hooks/use-glb-texture"
 
-export function useOGLPipeline(droppedAsset: DroppedAsset) {
+export function useOGLPipeline() {
     const isMountedRef = useRef(false)
     const useFBORef = useRef(false)
-    const [resolution, setResolution] = useState<[number, number]>([initResolution, initResolution])
+    const [resolution, setResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [renderer] = useState(() => new Renderer({ alpha: true }))
     const gl = renderer.gl
     const { updateRenderTarget, loadModel } = useOGLFBOPipeline({
@@ -37,26 +37,26 @@ export function useOGLPipeline(droppedAsset: DroppedAsset) {
     )
     camera.position.z = 1
 
-    const [texture] = useState(
-        () =>
-            new Texture(gl, {
-                minFilter: gl.LINEAR,
-                magFilter: gl.LINEAR,
-            })
-    )
+    // const [texture] = useState(
+    //     () =>
+    //         new Texture(gl, {
+    //             minFilter: gl.LINEAR,
+    //             magFilter: gl.LINEAR,
+    //         })
+    // )
 
-    useImgTexture(texture, droppedAsset, () => {
-        useFBORef.current = false
-        program.uniforms.uTexture.value = texture
-    })
-    useVideoTexture(texture, droppedAsset, () => {
-        useFBORef.current = false
-        program.uniforms.uTexture.value = texture
-    })
-    useGLBTexture(droppedAsset, () => {
-        loadModel(droppedAsset.asset)
-        useFBORef.current = true
-    })
+    // useImgTexture(texture, droppedAsset, () => {
+    //     useFBORef.current = false
+    //     program.uniforms.uTexture.value = texture
+    // })
+    // useVideoTexture(texture, droppedAsset, () => {
+    //     useFBORef.current = false
+    //     program.uniforms.uTexture.value = texture
+    // })
+    // useGLBTexture(droppedAsset, () => {
+    //     loadModel(droppedAsset.asset)
+    //     useFBORef.current = true
+    // })
 
     useEffect(() => {
         renderer.setSize(resolution[0], resolution[1])
@@ -73,27 +73,27 @@ export function useOGLPipeline(droppedAsset: DroppedAsset) {
     }, [mesh, scene])
 
     const render = useCallback(() => {
-        if (useFBORef.current) {
-            const targetToRender = updateRenderTarget()
-            const { targetScene, targetCamera, target, animate } = targetToRender
+        // if (useFBORef.current) {
+        //     const targetToRender = updateRenderTarget()
+        //     const { targetScene, targetCamera, target, animate } = targetToRender
 
-            animate()
-            // Render to the framebuffer (off-screen)
-            renderer.render({ scene: targetScene, camera: targetCamera, target, frustumCull: false, sort: false })
+        //     animate()
+        //     // Render to the framebuffer (off-screen)
+        //     renderer.render({ scene: targetScene, camera: targetCamera, target, frustumCull: false, sort: false })
 
-            if (target) {
-                program.uniforms.uTexture.value = target.texture
-            }
-        }
+        //     if (target) {
+        //         program.uniforms.uTexture.value = target.texture
+        //     }
+        // }
 
-        texture.needsUpdate = true
+        // texture.needsUpdate = true
 
         renderer.render({ scene, camera }) // Render to screen
         requestAnimationFrame(render)
-    }, [renderer, scene, camera, texture, program, updateRenderTarget])
+    }, [renderer, scene, camera, program, updateRenderTarget])
 
     const toBytes = useCallback(async () => {
-        texture.needsUpdate = true
+        // texture.needsUpdate = true
         renderer.render({ scene, camera })
 
         assert(gl.canvas)
@@ -121,10 +121,11 @@ export function useOGLPipeline(droppedAsset: DroppedAsset) {
 
     return {
         gl,
-        texture,
+        // texture,
         resolution,
         render,
         toBytes,
+        program,
         setProgram,
         setResolution,
     }

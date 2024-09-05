@@ -18,8 +18,8 @@ export function Upload({
             noDrag
             maxFiles={1}
             accept={{
-                "image/*": [".png", ".jpeg", ".jpg"],
-                "video/*": [".mp4", ".webm", ".ogg"],
+                // "image/*": [".png", ".jpeg", ".jpg"],
+                "video/*": [".mp4", ".webm", ".mov"],
                 "model/gltf+json": [".gltf"],
                 "model/gltf-binary": [".glb"],
             }}
@@ -54,62 +54,63 @@ export function Upload({
 async function handleImageOnFramer(file: File, setter: React.Dispatch<React.SetStateAction<DroppedAsset>>) {
     const url = URL.createObjectURL(file)
 
-    setter({ type: "image", asset: url })
+    setter({ type: "image", src: url })
 }
 
 function handleModelOnFramer(file: File, setter: React.Dispatch<React.SetStateAction<DroppedAsset>>) {
     const reader = new FileReader()
     reader.readAsArrayBuffer(file)
     reader.onload = async function ({ target }) {
-        setter({ type: "model", asset: GLTFLoader.unpackGLB(target?.result as ArrayBuffer) })
+        setter({ type: "model", src: GLTFLoader.unpackGLB(target?.result as ArrayBuffer) })
     }
 }
 
 function handleVideoLocally(file: File, setter: React.Dispatch<React.SetStateAction<DroppedAsset>>) {
     const url = URL.createObjectURL(file)
-    const video = document.createElement("video")
+    // const video = document.createElement("video")
+    // video.src = url
 
-    video.muted = true
-    video.playsInline = true
-    video.setAttribute("playsinline", "playsinline")
-    video.loop = true
-    video.autoplay = true
-    video.src = url
+    // video.muted = true
+    // video.playsInline = true
+    // video.setAttribute("playsinline", "playsinline")
+    // video.loop = true
+    // video.autoplay = true
+    // video.src = url
 
-    // Grab first frame
-    video.addEventListener(
-        "loadedmetadata",
-        () => {
-            video.currentTime = 0 // Adjust the time if necessary
-        },
-        { once: true }
-    )
+    // // Grab first frame
+    // video.addEventListener(
+    //     "loadedmetadata",
+    //     () => {
+    //         video.currentTime = 0 // Adjust the time if necessary
+    //     },
+    //     { once: true }
+    // )
 
     // Create a snapshot to load a framer Image and give user feedback of loading
-    video.addEventListener(
-        "seeked",
-        () => {
-            const canvas = document.createElement("canvas")
-            canvas.width = video.videoWidth
-            canvas.height = video.videoHeight
-            const context = canvas.getContext("2d")
-            context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    // video.addEventListener(
+    //     "seeked",
+    //     () => {
+    //         const canvas = document.createElement("canvas")
+    //         canvas.width = video.videoWidth
+    //         canvas.height = video.videoHeight
+    //         const context = canvas.getContext("2d")
+    //         context.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-            // Convert the canvas to a Blob (PNG format)
-            canvas.toBlob(async blob => {
-                if (blob) {
-                    const thumbnailFile = new File([blob], "thumbnail.png", { type: "image/png" })
+    //         // Convert the canvas to a Blob (PNG format)
+    //         // canvas.toBlob(async blob => {
+    //         //     if (blob) {
+    //         //         const thumbnailFile = new File([blob], "thumbnail.png", { type: "image/png" })
 
-                    await framer.addImage(thumbnailFile)
+    //         //         await framer.addImage(thumbnailFile)
 
-                    URL.revokeObjectURL(url)
-                } else {
-                    console.error("Could not generate thumbnail blob.")
-                }
-            }, "image/png")
-        },
-        { once: true }
-    )
+    //         //         URL.revokeObjectURL(url)
+    //         //     } else {
+    //         //         console.error("Could not generate thumbnail blob.")
+    //         //     }
+    //         // }, "image/png")
+    //     },
+    //     { once: true }
+    // )
 
-    setter({ type: "video", asset: video })
+    setter({ type: "video", src: url })
 }

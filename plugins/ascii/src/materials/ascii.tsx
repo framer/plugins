@@ -115,6 +115,8 @@ export class ASCIIMaterial extends Program {
                     // fragColor = texture(uTexture, vUv * uPixelSize);
 
                     // fragColor = texture(uCharactersAtlasTexture, ((vUv + vec2(7., 0.)) / uCharactersAtlasTextureSize));
+
+                    // fragColor = texture(uTexture, vUv);
                 }
                 `,
             uniforms: {

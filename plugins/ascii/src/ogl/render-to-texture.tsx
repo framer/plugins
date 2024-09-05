@@ -14,7 +14,7 @@ import {
 import { useCallback, useState, useRef } from "react"
 
 // Set up basic shaders
-const vertexShader = `
+const vertexShader = /*glsl*/ `
 in vec3 position;
 in vec3 normal;
 
@@ -37,7 +37,7 @@ void main() {
 }
 `
 
-const fragmentShader = `
+const fragmentShader = /*glsl*/ `
 in vec3 vNormal;
 in vec3 vMPos;
 

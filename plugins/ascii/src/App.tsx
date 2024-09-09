@@ -207,7 +207,12 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                         }
                     }}
                     onMouseMove={e => {
-                        if ((droppedAsset?.type === "glb" || isPlaceholder) && isMouseDown) {
+                        if (droppedAsset?.type === "glb" || isPlaceholder) {
+                            gl.canvas.classList.remove("zoom")
+                            return
+                        }
+
+                        if (isMouseDown) {
                             gl.canvas.classList.remove("zoom")
                             return
                         }
@@ -242,6 +247,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                         gl.canvas.classList.add("zoom")
                     }}
                     onMouseLeave={() => {
+                        setIsMouseDown(true)
                         gl.canvas.classList.remove("zoom")
                     }}
                 ></div>

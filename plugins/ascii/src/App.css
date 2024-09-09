@@ -41,7 +41,7 @@ html * {
     /* flex-grow: 1; */
     position: relative;
     border-radius: 10px;
-    /* background-color: var(--framer-color-bg-tertiary); */
+    background-color: #000;
     overflow: hidden;
 
     /* canvas {
@@ -232,7 +232,8 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
         height: 22px;
         width: 22px;
         margin-right: 8px;
-        margin-left: 3px;
+        margin-left: 4px;
+
         outline: none;
         box-shadow: unset;
     }
@@ -269,11 +270,10 @@ body[data-framer-theme="light"] {
     height: 30px;
     grid-column: span 2;
     border: 1px solid transparent;
-    /* border-radius: 8px; */
     --segmented-control-indicator-background-color: rgb(85, 85, 85);
     --segmented-control-border-radius: 8px;
     --segmented-control-transition-duration: 0.2s;
-    --font-weight-medium: 500;
+    --font-weight-medium: 600;
     color: #999999;
     background-image: unset;
 
@@ -322,7 +322,7 @@ body[data-framer-theme="light"] {
 
 .SliderRange {
     position: absolute;
-    background-color: var(--framer-color-tint);
+    background-color: var(--framer-color-text);
     border-radius: 2px;
     height: 2px;
 }
@@ -383,21 +383,15 @@ body[data-framer-theme="light"] {
     .submit {
         background-color: #000;
         color: #fff;
-        font-weight: 400;
+        font-weight: 300;
     }
 }
 
-/* button:not(:hover) {
-    transition: unset;
-} */
-
 .upload {
-    /* width: 100%; */
-    /* margin-bottom: 7px; */
-
     .upload-cta {
         width: 100%;
         cursor: pointer;
+        font-weight: 300;
     }
 }
 
@@ -423,6 +417,6 @@ body[data-framer-theme="light"] {
     .asset-buttons * {
         /* background-color: #000; */
         color: #000;
-        font-weight: 700;
+        /* font-weight: 600; */
     }
 }

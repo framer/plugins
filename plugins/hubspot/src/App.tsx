@@ -10,7 +10,7 @@ interface Size {
 const usePluginResizeObserver = (ref: React.RefObject<HTMLDivElement>) => {
     const [{ width, height }, setSize] = useState<Size>({
         width: 260,
-        height: 186,
+        height: 344,
     })
 
     const onResize = useDebounceCallback(setSize, 20)
@@ -22,7 +22,6 @@ const usePluginResizeObserver = (ref: React.RefObject<HTMLDivElement>) => {
 
     useEffect(() => {
         framer.showUI({
-            title: "HubSpot",
             width,
             height,
         })

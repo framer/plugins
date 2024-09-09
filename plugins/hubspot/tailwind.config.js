@@ -22,6 +22,7 @@ export default {
                 inverted: "var(--framer-color-text-inverted)",
                 tint: "var(--framer-color-tint)",
                 "framer-red": "#FF3366",
+                "hubspot-orange": "#FF5C35",
             },
             borderColor: {
                 divider: "var(--framer-color-divider)",

@@ -9,7 +9,7 @@
 
 @layer base {
     h6 {
-        @apply font-semibold text-primary;
+        @apply font-semibold text-primary leading-[1.2];
     }
 }
 

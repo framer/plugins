@@ -79,15 +79,17 @@ export function AuthenticatePage() {
     }
 
     return (
-        <div className="col-lg items-center">
-            <Logo />
-            <div className="col items-center">
-                <h6>Connect to HubSpot</h6>
-                <p className="text-center max-w-50 text-tertiary">
-                    Sign in to HubSpot to access your forms, enable tracking and more.
-                </p>
+        <div className="col-lg h-[314px]">
+            <div className="col-lg items-center my-auto">
+                <Logo />
+                <div className="col items-center">
+                    <h6>Connect to HubSpot</h6>
+                    <p className="text-center max-w-[200px] text-tertiary">
+                        Sign in to HubSpot to access your forms, enable tracking and more.
+                    </p>
+                </div>
             </div>
-            <Button className="framer-button-primary w-full" onClick={login} isLoading={isLoading}>
+            <Button className="w-full mt-auto" onClick={login} isLoading={isLoading} variant="secondary">
                 Log In
             </Button>
         </div>

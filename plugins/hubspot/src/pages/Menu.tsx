@@ -1,28 +1,31 @@
 import { useLocation } from "wouter"
 import { Logo } from "../components/Logo"
-import { CalendarIcon, ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon } from "../components/Icons"
+import { ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon, WidgetsIcon } from "../components/Icons"
+import { framer } from "framer-plugin"
+import cx from "classnames"
 
 const MenuOption = ({
     icon,
     title,
     to,
-    disabled = false,
+    className,
+    onClick,
 }: {
     icon: React.ReactElement
     title: string
     to: string
-    disabled?: boolean
+    className?: string
+    onClick?: () => void
 }) => {
-    const [, setLocation] = useLocation()
+    const [, navigate] = useLocation()
 
     return (
         <button
-            className="h-[110px] w-full tile col items-center justify-center rounded-md"
-            onClick={() => setLocation(to)}
-            disabled={disabled}
+            className={cx("h-[110px] w-full tile col items-center justify-center rounded-md", className)}
+            onClick={() => (onClick ? onClick() : navigate(to))}
         >
             {icon}
-            <p className="font-semibold">{title}</p>
+            <p className="font-semibold text-tertiary">{title}</p>
         </button>
     )
 }
@@ -30,19 +33,26 @@ const MenuOption = ({
 export function MenuPage() {
     return (
         <div className="col-lg">
-            <div className="col items-center py-15">
+            <div className="col-lg items-center pt-[30px] pb-15">
                 <Logo />
-                <h6>Welcome to HubSpot</h6>
-                <p className="text-center text-tertiary">
-                    View your forms, monitor your site traffic, embed widgets and more.
-                </p>
+                <div className="col items-center">
+                    <h6>Welcome to HubSpot</h6>
+                    <p className="text-center text-tertiary max-w-[200px]">
+                        View forms, monitor site traffic, embed widgets and much more.
+                    </p>
+                </div>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
                 <MenuOption title="Forms" to="/forms" icon={<FormsIcon />} />
                 <MenuOption title="Tracking" to="/tracking" icon={<ChartIcon />} />
-                <MenuOption title="Widgets" to="/widgets" icon={<CalendarIcon />} />
-                <MenuOption title="Chatflows" to="/chat" icon={<MessageIcon />} />
-                <MenuOption title="Events" to="/events" icon={<LightningIcon />} disabled />
+                <MenuOption title="Widgets" to="/widgets" icon={<WidgetsIcon />} />
+                <MenuOption title="Chats" to="/chat" icon={<MessageIcon />} className="gap-[7px]" />
+                <MenuOption
+                    title="Events"
+                    to="/events"
+                    icon={<LightningIcon />}
+                    onClick={() => framer.notify("The events feature will be out soon", { variant: "info" })}
+                />
                 <MenuOption title="Account" to="/account" icon={<PersonIcon />} />
             </div>
         </div>

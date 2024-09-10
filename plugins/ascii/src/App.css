@@ -292,7 +292,7 @@ body[data-framer-theme="light"] {
         --segmented-control-indicator-background-color: #ffffff;
 
         .rt-SegmentedControlItemLabelActive {
-            color: #0099ff;
+            color: #000000;
         }
     }
 }
@@ -376,22 +376,22 @@ body[data-framer-theme="dark"] .error-container {
     width: 100%;
     color: #000;
     background-color: #fff;
-    font-weight: 700;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 body[data-framer-theme="light"] {
     .submit {
         background-color: #000;
         color: #fff;
-        font-weight: 400;
+        font-weight: 500;
     }
 }
 
 .upload {
     .upload-cta {
         width: 100%;
-        cursor: pointer;
-        font-weight: 400;
+        /* cursor: pointer; */
     }
 }
 
@@ -409,7 +409,7 @@ body[data-framer-theme="light"] {
         width: auto;
         cursor: pointer;
         color: #fff;
-        font-weight: 700;
+        font-weight: 500;
     }
 }
 
@@ -417,6 +417,6 @@ body[data-framer-theme="light"] {
     .asset-buttons * {
         /* background-color: #000; */
         color: #000;
-        /* font-weight: 600; */
+        font-weight: 600;
     }
 }

@@ -19,7 +19,7 @@ export function NumberInput({
     max?: number
     step?: number
 }) {
-    const [currentValue, setCurrentValue] = useState(value)
+    const [currentValue, setCurrentValue] = useState<string | number>(value)
 
     useEffect(() => {
         setCurrentValue(value)
@@ -42,9 +42,9 @@ export function NumberInput({
                 min={min}
                 max={max}
                 step={step}
-                value={currentValue.toString()}
+                value={currentValue}
                 onChange={e => {
-                    setCurrentValue(Number(e.target.value))
+                    setCurrentValue(e.target.value)
                 }}
                 onFocus={e => e.target.select()}
                 onBlur={e => {

@@ -383,7 +383,7 @@ body[data-framer-theme="light"] {
     .submit {
         background-color: #000;
         color: #fff;
-        font-weight: 300;
+        font-weight: 400;
     }
 }
 
@@ -391,7 +391,7 @@ body[data-framer-theme="light"] {
     .upload-cta {
         width: 100%;
         cursor: pointer;
-        font-weight: 300;
+        font-weight: 400;
     }
 }
 

@@ -212,10 +212,10 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                             return
                         }
 
-                        if (isMouseDown) {
-                            gl.canvas.classList.remove("zoom")
-                            return
-                        }
+                        // if (isMouseDown) {
+                        //     gl.canvas.classList.remove("zoom")
+                        //     return
+                        // }
 
                         const canvasContainerRect = canvasContainerRef.current?.getBoundingClientRect()
 

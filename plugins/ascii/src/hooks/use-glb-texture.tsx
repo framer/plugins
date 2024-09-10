@@ -382,7 +382,7 @@ function useFBO(gl: OGLRenderingContext, { width = 1024, height = 1024 }: { widt
         () =>
             new Orbit(camera, {
                 target: new Vec3(0, 0, 0),
-                enableZoom: false,
+                // enableZoom: false,
             })
     )
 
@@ -411,6 +411,8 @@ function useFBO(gl: OGLRenderingContext, { width = 1024, height = 1024 }: { widt
     //     const mesh = new Mesh(gl, { geometry, program })
     //     mesh.setParent(scene)
     // }, [scene, target, gl])
+
+    // controls.enabled = false
 
     const render = useCallback(() => {
         controls.update()
@@ -524,7 +526,7 @@ export function useGLBTexture(
                     uEnvSpecular: { value: 0.5 },
 
                     uLightDirection: { value: new Vec3(0, 1, 1) },
-                    uLightColor: { value: new Vec3(2.5) },
+                    uLightColor: { value: new Vec3(20) },
 
                     uAlpha: { value: 1 },
                     uAlphaCutoff: { value: gltf.alphaCutoff },
@@ -596,7 +598,7 @@ export function useGLBTexture(
             center.add(min, max).divide(2)
 
             camera.position
-                .set(0, 0.5, 1)
+                .set(0.5, 0.5, 1)
                 .normalize()
                 .multiply(maxRadius * 2.5)
                 .add(center)

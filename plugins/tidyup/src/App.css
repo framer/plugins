@@ -12,11 +12,24 @@ main {
 .row {
     display: grid;
     width: 100%;
-    grid-template-columns: 90px 1fr;
+    grid-template-columns: 80px 1fr;
     align-items: center;
+    padding-left: 15px;
+}
+
+.row label {
+    color: var(--framer-color-text-secondary);
 }
 
 .row input,
 .row select {
     width: 100%;
+}
+
+[data-framer-theme="light"] .preview-frame {
+    background: white;
+}
+
+[data-framer-theme="dark"] .preview-frame {
+    background: rgba(187, 187, 187, 0.2);
 }

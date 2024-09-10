@@ -1,14 +1,14 @@
 import { framer, CanvasRootNode, supportsPins, CanvasNode, isWebPageNode, isComponentNode } from "framer-plugin"
 import { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback, useReducer } from "react"
 import "./App.css"
+import { Stepper } from "./Stepper"
+import { isNumber } from "./isNumber"
 
 framer.showUI({
-    title: "Tidy Up",
-    position: "top left",
-    width: 240,
-    height: 340,
-    minHeight: 340,
-    resizable: true,
+    position: "top right",
+    width: 260,
+    height: 350,
+    resizable: false,
 })
 
 function useCanvasRoot() {
@@ -350,8 +350,90 @@ export function App() {
     const boundingBox = getBoundingBox(sortedRects)
     const [previewScale, previewOffset] = getPreviewScaleAndOffset(boundingBox, previewSize)
 
+    const scaleValue = (value: number) => {
+        return value * (value / previewScale)
+    }
+
     return (
         <main>
+            <div
+                style={{
+                    position: "relative",
+                    flexGrow: 1,
+                    width: "100%",
+                    borderRadius: 10,
+                    backgroundColor: "var(--framer-color-bg-tertiary)",
+                    overflow: "hidden",
+                    cursor: layout === "random" ? "pointer" : "default",
+                }}
+                title={layout === "random" ? "Randomize" : undefined}
+                onClick={() => {
+                    if (layout !== "random") return
+                    setTransitionEnabled(true)
+                    randomize()
+                }}
+            >
+                {!isEnabled && (
+                    <div
+                        style={{
+                            color: "var(--framer-color-text-tertiary)",
+                            position: "absolute",
+                            inset: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            userSelect: "none",
+                            zIndex: 1,
+                        }}
+                    >
+                        Add Frames to Canvas
+                    </div>
+                )}
+                <div
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        filter: "drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1))",
+                    }}
+                >
+                    <div
+                        ref={previewElement}
+                        style={{
+                            position: "absolute",
+                            top: 20,
+                            right: 20,
+                            bottom: 20,
+                            left: 20,
+                            transform: `translate(${previewOffset.x}px, ${previewOffset.y}px) scale(${previewScale})`,
+                            transformOrigin: "0 0",
+                            transition: transitionEnabled && layout === "random" ? "transform 0.2s" : "none",
+                        }}
+                    >
+                        {isEnabled &&
+                            sortedRects.map(rect => (
+                                <div
+                                    key={rect.id}
+                                    className="preview-frame"
+                                    style={{
+                                        top: 0,
+                                        left: 0,
+                                        transform: `translate(${rect.x}px, ${rect.y}px)`,
+                                        willChange: "transform",
+                                        transition:
+                                            transitionEnabled && layout === "random"
+                                                ? "transform 0.2s, border-radius 0.2s"
+                                                : "none",
+                                        width: rect.width,
+                                        height: rect.height,
+                                        position: "absolute",
+                                        borderRadius: scaleValue(1.5),
+                                        boxShadow: `0px ${scaleValue(1.5)}px ${scaleValue(2.5)}px 0px rgba(0, 0, 0, 0.15)`,
+                                    }}
+                                />
+                            ))}
+                    </div>
+                </div>
+            </div>
             <Row title="Layout">
                 <select
                     value={layout}
@@ -388,26 +470,21 @@ export function App() {
             )}
             {layout === "grid" && (
                 <Row title={"Columns"}>
-                    <input
-                        type="number"
+                    <Stepper
                         value={columnCount}
                         min={1}
-                        onChange={event => {
-                            const numberValue = event.currentTarget.valueAsNumber
-                            const value = isNumber(numberValue) ? numberValue : 1
+                        onChange={value => {
                             setColumnCount(value)
                         }}
                     />
                 </Row>
             )}
             <Row title={layout === "random" ? "Min Gap" : layout === "grid" ? "Column Gap" : "Gap"}>
-                <input
-                    type="number"
+                <Stepper
                     value={columnGap}
                     min={0}
-                    onChange={event => {
-                        const numberValue = event.currentTarget.valueAsNumber
-                        const value = isNumber(numberValue) ? numberValue : 0
+                    step={10}
+                    onChange={value => {
                         setColumnGap(value)
                         setTransitionEnabled(true)
                     }}
@@ -415,80 +492,17 @@ export function App() {
             </Row>
             {layout === "grid" && (
                 <Row title={"Row Gap"}>
-                    <input
-                        type="number"
+                    <Stepper
                         value={rowGap}
                         min={0}
-                        onChange={event => {
-                            const numberValue = event.currentTarget.valueAsNumber
-                            const value = isNumber(numberValue) ? numberValue : 0
+                        step={10}
+                        onChange={value => {
                             setRowGap(value)
                             setTransitionEnabled(true)
                         }}
                     />
                 </Row>
             )}
-            <div
-                style={{
-                    position: "relative",
-                    flexGrow: 1,
-                    width: "100%",
-                    borderRadius: 8,
-                    backgroundColor: "var(--framer-color-bg-tertiary)",
-                    overflow: "hidden",
-                    cursor: layout === "random" ? "pointer" : "default",
-                }}
-                title={layout === "random" ? "Randomize" : undefined}
-                onClick={() => {
-                    if (layout !== "random") return
-                    setTransitionEnabled(true)
-                    randomize()
-                }}
-            >
-                <div
-                    style={{
-                        width: "100%",
-                        height: "100%",
-                        filter: "drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1))",
-                    }}
-                >
-                    <div
-                        ref={previewElement}
-                        style={{
-                            position: "absolute",
-                            top: 10,
-                            right: 10,
-                            bottom: 10,
-                            left: 10,
-                            transform: `translate(${previewOffset.x}px, ${previewOffset.y}px) scale(${previewScale})`,
-                            transformOrigin: "0 0",
-                            transition: transitionEnabled && layout === "random" ? "transform 0.2s" : "none",
-                        }}
-                    >
-                        {isEnabled &&
-                            sortedRects.map(rect => (
-                                <div
-                                    key={rect.id}
-                                    style={{
-                                        backgroundColor: "white",
-                                        top: 0,
-                                        left: 0,
-                                        transform: `translate(${rect.x}px, ${rect.y}px)`,
-                                        willChange: "transform",
-                                        transition:
-                                            transitionEnabled && layout === "random"
-                                                ? "transform 0.2s, border-radius 0.2s"
-                                                : "none",
-                                        width: rect.width,
-                                        height: rect.height,
-                                        position: "absolute",
-                                        borderRadius: 1 * (1 / previewScale),
-                                    }}
-                                />
-                            ))}
-                    </div>
-                </div>
-            </div>
             <button
                 disabled={!isEnabled}
                 onClick={async () => {
@@ -544,10 +558,6 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isString(value: unknown): value is string {
     return typeof value === "string"
-}
-
-function isNumber(value: unknown): value is number {
-    return typeof value === "number" && Number.isFinite(value)
 }
 
 function isRoundedNumberWithMinimumOfOne(value: unknown): value is number {

@@ -39,6 +39,7 @@ export function NumberInput({
                 onChange={e => {
                     setCurrentValue(Number(e.target.value))
                 }}
+                onFocus={e => e.target.select()}
                 onBlur={e => {
                     const value = sanitize(e.target.value)
 

@@ -14,6 +14,7 @@ import {
     TextureLoader,
     GLTFDescription,
 } from "ogl"
+import { GLSL } from "../glsl"
 
 const shader = {
     vertex: /* glsl */ `
@@ -268,6 +269,19 @@ const shader = {
                         specular *= uEnvSpecular;
                     }
 
+                    vec3 normals(vec3 pos) {
+                        vec3 fdx = dFdx(pos);
+                        vec3 fdy = dFdy(pos);
+                        return normalize(cross(fdx, fdy)) * 0.5 + 0.5;
+                    }
+
+                    // vec3 packNormalToRGB( const in vec3 normal ) {
+                    //     return normalize( normal ) * 0.5 + 0.5;
+                    // }
+
+                    ${GLSL.LUMA}
+                    ${GLSL.CONTRAST}
+
                     void main() {
                         vec4 baseColor = uBaseColorFactor;
                         #ifdef COLOR_MAP
@@ -347,6 +361,11 @@ const shader = {
 
                         // Apply uAlpha uniform at the end to overwrite any specular additions on transparent surfaces
                         gl_FragColor.a = alpha * uAlpha;
+
+                        float grey = luma(normals(vMVPos.xyz));
+                        grey = contrast(grey, 2.);
+
+                        gl_FragColor = vec4(vec3(grey), 1.);
                     }
                 `,
 }

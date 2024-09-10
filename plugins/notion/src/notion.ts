@@ -16,7 +16,7 @@ import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
 
 export type FieldId = string
 
-const apiBaseUrl = "https://notion-plugin-api.niekkruse70.workers.dev"
+const apiBaseUrl = "https://notion-plugin-api.framer-team.workers.dev"
 const oauthRedirectUrl = encodeURIComponent(`${apiBaseUrl}/auth/authorize/callback`)
 
 export const getOauthURL = (writeKey: string) =>

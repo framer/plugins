@@ -1,6 +1,11 @@
 import * as Slider from "@radix-ui/react-slider"
 import { useEffect, useState } from "react"
 
+function numDigitsAfterDecimal(x) {
+    var afterDecimalStr = x.toString().split(".")[1] || ""
+    return afterDecimalStr.length
+}
+
 export function NumberInput({
     value,
     onValueChange,
@@ -24,6 +29,8 @@ export function NumberInput({
         value = Number(value)
         value = Math.min(Math.max(min, value), max)
         value = Math.floor(value / step) * step
+        value = value.toFixed(numDigitsAfterDecimal(step))
+        value = Number(value)
         return value
     }
 

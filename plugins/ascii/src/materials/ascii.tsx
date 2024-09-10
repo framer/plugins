@@ -267,7 +267,16 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
         program.textColor = textColor
     }, [program, textColor])
 
-    useImperativeHandle(ref, () => ({ program }), [program])
+    useImperativeHandle(
+        ref,
+        () => ({
+            program,
+            setPixelSize: (value: number) => {
+                setPixelSize(Math.max(8, Math.min(Math.round(value), 64)))
+            },
+        }),
+        [program, setPixelSize]
+    )
 
     return (
         <>

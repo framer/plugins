@@ -6,7 +6,6 @@ import { ASCII } from "./materials/ascii"
 import cn from "clsx"
 import { Upload } from "./dropzone/drag-and-drop"
 import { useOGLPipeline } from "./ogl/pipeline"
-import { GLTFDescription } from "ogl"
 import { useImageTexture } from "./hooks/use-image-texture"
 import { useVideoTexture } from "./hooks/use-video-texture"
 import { useGLBTexture } from "./hooks/use-glb-texture"
@@ -65,7 +64,12 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>()
     const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
+    const asciiRef = useRef()
     const { gl, toBytes, program, setProgram, setResolution } = useOGLPipeline()
+
+    useEffect(() => {
+        asciiRef.current?.setPixelSize(exportSize * 0.02)
+    }, [exportSize])
 
     useImageTexture(
         gl,
@@ -255,6 +259,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
             <div className={cn("gui")}>
                 <ASCII
                     ref={node => {
+                        asciiRef.current = node
                         setProgram(node?.program)
                     }}
                     gl={gl}

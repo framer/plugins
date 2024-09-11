@@ -278,6 +278,10 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
         [program, setPixelSize]
     )
 
+    useEffect(() => {
+        if (isFilled) setColorMode(0)
+    }, [isFilled])
+
     return (
         <>
             <div className="gui-row">

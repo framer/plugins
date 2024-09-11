@@ -2,5 +2,5 @@
     "id": "e00c8d",
     "name": "Notion",
     "modes": ["configureManagedCollection", "syncManagedCollection"],
-    "icon": "/notion.png"
+    "icon": "/icon.png"
 }

@@ -3,7 +3,7 @@ import type { CollectionItem } from "framer-plugin"
 import "./App.css"
 import { framer } from "framer-plugin"
 import { useEffect, useRef, useState } from "react"
-import { exportCollectionAsCSV, getDataForCSV } from "./csv"
+import { exportCollectionAsCSV, convertCollectionToCSV, getDataForCSV } from "./csv"
 
 export function App() {
     const container = useRef<HTMLDivElement>(null)
@@ -64,6 +64,31 @@ export function App() {
         exportCollectionAsCSV(collection, filename.current.value)
     }
 
+    const copyCSVtoClipboard = async () => {
+        if (!previewCSV?.length) return
+
+        const collection = await framer.getCollection()
+        const csv = await convertCollectionToCSV(collection)
+
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(csv);
+            } else {
+                // Fallback method for browsers that don't support clipboard.writeText
+                const textArea = document.createElement("textarea");
+                textArea.value = csv;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+            framer.notify("CSV copied to clipboard", { variant: "success" });
+        } catch (error) {
+            console.error("Failed to copy CSV:", error);
+            framer.notify("Failed to copy CSV to clipboard", { variant: "error" });
+        }
+    }
+
     if (!previewCSV?.length) return null
 
     return (
@@ -101,6 +126,7 @@ export function App() {
 
             <div className="actions">
                 <input type="text" defaultValue={collectionName} placeholder="Filename" ref={filename} />
+                <button onClick={copyCSVtoClipboard}>Copy to Clipboard</button>
                 <button className="framer-button-primary" onClick={exportCSV}>
                     Export
                 </button>

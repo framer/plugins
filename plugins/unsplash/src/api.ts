@@ -24,7 +24,7 @@ const unsplashPhotoSchema = v.object({
     alt_description: v.nullable(v.string()),
     description: v.nullable(v.string()),
     blur_hash: v.nullable(v.string()),
-    plus: v.boolean(),
+    plus: v.optional(v.boolean()),
     urls: urlsSchema,
     user: unsplashUserSchema,
 })
@@ -41,17 +41,13 @@ export type UnsplashUrls = v.Input<typeof urlsSchema>
 export type UnsplashLinks = v.Input<typeof unsplashUserSchema>
 export type UnsplashUser = v.Input<typeof unsplashUserSchema>
 
-const UNSPLASH_BASE_URL = "https://api.unsplash.com"
+const UNSPLASH_BASE_URL = "https://unsplash-plugin.framer-team.workers.dev"
 
 const pageItemCount = 20
 
 interface FetchOptions extends Omit<RequestInit, "headers"> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     body?: any
-}
-
-function filterPremiumPhotos(photos: UnsplashPhoto[]): UnsplashPhoto[] {
-    return photos.filter(photo => !photo.plus)
 }
 
 export async function fetchUnsplash<TSchema extends v.BaseSchema>(
@@ -61,11 +57,6 @@ export async function fetchUnsplash<TSchema extends v.BaseSchema>(
 ): Promise<v.Input<TSchema>> {
     const response = await fetch(`${UNSPLASH_BASE_URL}${path}`, {
         body: body ? JSON.stringify(body) : undefined,
-        headers: {
-            "Accept-Version": "v1",
-            Authorization: `Client-ID ${import.meta.env.VITE_UNSPLASH_ACCESS_KEY}`,
-            "Content-Type": "application/json",
-        },
         ...options,
     })
 
@@ -102,7 +93,7 @@ export function useListPhotosInfinite(query: string) {
                 )
 
                 return {
-                    results: filterPremiumPhotos(photos),
+                    results: photos,
                     total: photos.length,
                     total_pages: undefined,
                 }
@@ -115,7 +106,7 @@ export function useListPhotosInfinite(query: string) {
             )
 
             return {
-                results: filterPremiumPhotos(result.results),
+                results: result.results,
                 total: result.total,
                 total_pages: result.total_pages,
             }

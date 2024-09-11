@@ -287,6 +287,7 @@ body[data-framer-theme="light"] {
 
     .rt-SegmentedControlIndicator::before {
         box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.15);
+        border-radius: max(0.5px, calc(var(--segmented-control-border-radius) - 2px));
     }
 }
 

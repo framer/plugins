@@ -401,6 +401,7 @@ function useFBO(gl: OGLRenderingContext, { width = 1024, height = 1024 }: { widt
         () =>
             new Orbit(camera, {
                 target: new Vec3(0, 0, 0),
+                element: gl.canvas,
                 // enableZoom: false,
             })
     )

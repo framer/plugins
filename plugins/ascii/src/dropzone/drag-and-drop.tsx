@@ -16,7 +16,7 @@ export function Upload({
             noDrag
             maxFiles={1}
             accept={{
-                // "image/*": [".png", ".jpeg", ".jpg"],
+                "image/*": [".png", ".jpeg", ".jpg", ".webp", ".avif"],
                 "video/*": [".mp4", ".webm", ".mov"],
                 "model/gltf+json": [".gltf"],
                 "model/gltf-binary": [".glb"],

@@ -73,7 +73,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
     useImageTexture(
         gl,
-        droppedAsset?.src ? undefined : framerCanvasImage?.url,
+        droppedAsset?.src ? (droppedAsset?.type === "image" ? droppedAsset?.src : undefined) : framerCanvasImage?.url,
         texture => {
             program.texture = texture
             setAssetResolution([texture.width, texture.height])

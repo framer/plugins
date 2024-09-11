@@ -5,6 +5,7 @@ import { framer } from "framer-plugin"
 import { ChangeEvent, useEffect, useState } from "react"
 import { exportCollectionAsCSV, convertCollectionToCSV } from "./csv"
 import { PreviewTable } from "./PreviewTable"
+import splashImageSrc from "./assets/splash.png"
 
 export function App() {
     const [collections, setCollections] = useState<Collection[]>([])
@@ -65,7 +66,7 @@ export function App() {
             <div className="preview-container">
                 <div className={`preview-container-layer-a ${selectedCollection ? "preview-container-layer-a--hidden" : ""}`}>
                     <div className="empty-state">
-                        <img className="empty-state-image" src="./splash.png" alt="" />
+                        <img className="empty-state-image" src={splashImageSrc} alt="" />
                         <p className="empty-state-message">Export all your CMS content to CSV files.</p>
                     </div>
                 </div>

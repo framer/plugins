@@ -102,7 +102,7 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
     return rows
 }
 
-export async function exportCollectionAsCSV(collection: Collection, filename: string) {
+export async function convertCollectionToCSV(collection: Collection) {
     const fields = await collection.getFields()
     const items = await collection.getItems()
 
@@ -117,6 +117,12 @@ export async function exportCollectionAsCSV(collection: Collection, filename: st
                 .join(", ")
         })
         .join("\n")
+
+    return csv
+}
+
+export async function exportCollectionAsCSV(collection: Collection, filename: string) {
+    const csv = await convertCollectionToCSV(collection)
 
     const file = new File([csv], `${filename}.csv`, {
         type: "text/csv",

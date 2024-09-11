@@ -1,0 +1,83 @@
+
+.preview-table {
+  background: color-mix(in srgb, transparent, var(--framer-color-bg-tertiary) 10%);
+  border-radius: 8px;
+  height: 100%;
+  position: relative;
+  user-select: none;
+}
+
+.preview-table-scrollable {
+  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overflow-x: scroll;
+  position: absolute;
+}
+
+.preview-table-border {
+  content: "";
+  box-shadow: 0 0 0 1px var(--framer-color-divider) inset;
+  border-radius: 8px;
+  inset: 0;
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.preview-table-gradient {
+  background: linear-gradient(color-mix(in srgb, transparent, var(--framer-color-bg) 0%), var(--framer-color-bg));
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  bottom: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 1;
+  transition: height 400ms ease;
+}
+
+table {
+  background: var(--framer-color-bg);
+  text-align: left;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+thead {
+  color: var(--framer-color-text);
+  font-weight: 600;
+}
+
+[data-framer-theme="light"] thead {
+  background: rgba(0, 0, 0, 0.01);
+}
+
+[data-framer-theme="dark"] thead {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-framer-theme="light"] tbody {
+  color: #999999;
+}
+
+[data-framer-theme="dark"] tbody {
+  color: #666666;
+}
+
+th,
+td,
+tr {
+  border: 1px solid var(--framer-color-divider);
+}
+
+td {
+  vertical-align: top;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 8px 10px;
+  width: 103px;
+}

@@ -34,7 +34,7 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
     rows.push(fields.map(field => field.name))
 
     // Add slug header to the start.
-    rows[0].unshift("slug")
+    rows[0].unshift("Slug")
 
     // Add all the data rows.
     for (const item of items) {

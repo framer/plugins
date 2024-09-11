@@ -13,6 +13,7 @@ import { LearnMoreTrackingPage } from "./pages/tracking/learn-more"
 import { WidgetsPage } from "./pages/Widgets"
 import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
 import auth from "./auth"
+import { CenteredSpinner } from "./components/CenteredSpinner"
 
 interface PluginRoute {
     path: string
@@ -131,16 +132,29 @@ function useRoutes(routes: PluginRoute[]) {
     }
 
     for (const { match, route } of matches) {
-        const shouldRedirect = isAuthenticated && route.path === "/"
+        const { path } = route
+        // Determine whether the user should start on the login page
+        // or the menu page
+        const shouldRedirect = isAuthenticated && path === "/"
         const [isMatch, params] = match
         const { title, component: Component } = route
 
         if (!isMatch) continue
 
+        if (isAuthenticated === null) {
+            return (
+                <div className="w-[260px] h-[344px] flex items-center justify-center">
+                    <CenteredSpinner />
+                </div>
+            )
+        }
+
         return (
             <motion.div
                 // Don't animate on first page load
-                initial={isAuthenticated === null ? "stay" : animateForward ? "initialForward" : "initialBackward"}
+                initial={
+                    shouldRedirect || path === "/" ? "stay" : animateForward ? "initialForward" : "initialBackward"
+                }
                 animate="stay"
                 exit={animateForward ? "exitForward" : "exitBackward"}
                 transition={{

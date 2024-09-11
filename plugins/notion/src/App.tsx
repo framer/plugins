@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import "./App.css"
 import { PluginContext, useSynchronizeDatabaseMutation } from "./notion"
 
@@ -17,6 +17,13 @@ export function AuthenticatedApp({ context }: AppProps) {
     const [databaseConfig, setDatabaseConfig] = useState<GetDatabaseResponse | null>(
         context.type === "update" ? context.database : null
     )
+
+    useEffect(() => {
+        framer.showUI({
+            width: databaseConfig ? 340 : 325,
+            height: databaseConfig ? 425 : 370,
+        })
+    }, [databaseConfig])
 
     const synchronizeMutation = useSynchronizeDatabaseMutation(databaseConfig, {
         onSuccess(result) {
@@ -49,12 +56,6 @@ export function App({ context }: AppProps) {
 
     const handleAuthenticated = (authenticatedContext: PluginContext) => {
         setPluginContext(authenticatedContext)
-
-        // The authenticated UI is larger in size than the authentication screen.
-        framer.showUI({
-            width: 350,
-            height: 370,
-        })
     }
 
     if (!pluginContext.isAuthenticated) {

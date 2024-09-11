@@ -34,13 +34,13 @@ function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is P
     return true
 }
 
-function renderPlugin(context: PluginContext, app: ReactNode) {
+function renderPlugin(app: ReactNode) {
     const root = document.getElementById("root")
     if (!root) throw new Error("Root element not found")
 
     framer.showUI({
-        width: 350,
-        height: context.isAuthenticated ? 370 : 340,
+        width: 320,
+        height: 345,
     })
 
     ReactDOM.createRoot(root).render(
@@ -77,7 +77,7 @@ async function runPlugin() {
             return
         }
 
-        renderPlugin(pluginContext, <App context={pluginContext} />)
+        renderPlugin(<App context={pluginContext} />)
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         framer.closePlugin("An unexpected error ocurred: " + message, {

@@ -477,6 +477,8 @@ export function useGLBTexture(
 
     const { scene, camera, controls, target } = useFBO(gl, { width: 500, height: 500 })
 
+    controls.enabled = !!src
+
     const createProgram = useCallback(
         node => {
             const gltf = node.program.gltfMaterial || {}

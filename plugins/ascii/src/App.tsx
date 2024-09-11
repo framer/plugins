@@ -211,7 +211,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                         }
                     }}
                     onMouseMove={e => {
-                        if (droppedAsset?.type === "glb" || isPlaceholder) {
+                        if (droppedAsset?.type === "glb" || droppedAsset?.type === "gltf" || isPlaceholder) {
                             gl.canvas.classList.remove("zoom")
                             return
                         }
@@ -263,7 +263,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                         setProgram(node?.program)
                     }}
                     gl={gl}
-                    // texture={texture}
                 />
                 <div className="gui-row">
                     <label className="gui-label">Resolution</label>

@@ -106,6 +106,10 @@ body[data-framer-theme="light"] {
     }
 }
 
+* {
+    user-select: none;
+}
+
 input[type="range"] {
     width: 100%;
 }
@@ -417,6 +421,6 @@ body[data-framer-theme="light"] {
     .asset-buttons * {
         /* background-color: #000; */
         color: #000;
-        font-weight: 600;
+        font-weight: 500;
     }
 }

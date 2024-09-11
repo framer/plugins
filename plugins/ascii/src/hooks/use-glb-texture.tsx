@@ -365,7 +365,7 @@ const shader = {
                         float grey = luma(normals(vMVPos.xyz));
                         grey = contrast(grey, 2.);
 
-                        gl_FragColor = vec4(vec3(grey), 1.);
+                        gl_FragColor = vec4(vec3(grey), alpha * uAlpha);
                     }
                 `,
 }

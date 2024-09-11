@@ -86,7 +86,7 @@ export class ASCIIMaterial extends Program {
                     fragColor = vec4(ascii.rgb, color.a * ascii.a);
 
                     if(uIsTransparent == false) {
-                        fragColor = vec4(blendNormal(uBackgroundColor.rgb, fragColor.rgb, fragColor.a), color.a);
+                        fragColor = vec4(blendNormal(uBackgroundColor.rgb, fragColor.rgb, fragColor.a), 1.);
                     }
 
                     if(uIsFilled == true) {
@@ -272,7 +272,7 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
         () => ({
             program,
             setPixelSize: (value: number) => {
-                setPixelSize(Math.max(8, Math.min(Math.round(value), 64)))
+                setPixelSize(Math.max(8, Math.min(Math.round(value), 100)))
             },
         }),
         [program, setPixelSize]

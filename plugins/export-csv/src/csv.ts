@@ -114,7 +114,7 @@ export async function exportCollectionAsCSV(collection: Collection, filename: st
                 .map(column => {
                     return `"${escapeCell(column)}"`
                 })
-                .join(", ")
+                .join(",")
         })
         .join("\n")
 

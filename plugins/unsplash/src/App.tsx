@@ -59,6 +59,7 @@ export function App() {
                     value={query}
                     className="w-full pl-7 pr-8"
                     autoFocus
+                    style={{ paddingLeft: 30 }}
                     onChange={e => setQuery(e.target.value)}
                 />
                 <div className="flex items-center justify-center absolute left-2 top-0 bottom-0 text-tertiary">

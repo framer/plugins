@@ -3,7 +3,6 @@ import { richTextToPlainText, useDatabasesQuery } from "./notion"
 import { FormEvent, useEffect, useState } from "react"
 import notionConnectSrc from "./assets/notion-connect.png"
 import { assert } from "./utils"
-import { ReloadIcon } from "./components/Icons"
 
 interface SelectDatabaseProps {
     onDatabaseSelected: (database: GetDatabaseResponse) => void
@@ -82,11 +81,12 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
                     </select>
 
                     <button
-                        className="w-[32px] h[16px] flex items-center justify-center text-secondary"
+                        className="w-auto h[16px] flex items-center justify-center text-secondary"
                         type="button"
                         onClick={() => refetch()}
+                        disabled={isLoading || isRefetching}
                     >
-                        <ReloadIcon className={isRefetching || isLoading ? "animate-spin" : undefined} />
+                        Refresh
                     </button>
                 </div>
 

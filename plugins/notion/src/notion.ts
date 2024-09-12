@@ -208,6 +208,24 @@ export function getCollectionFieldForProperty(property: NotionProperty): Collect
                 id: property.id,
                 name: property.name,
             }
+        case "status":
+            return {
+                type: "enum",
+                id: property.id,
+                name: property.name,
+                cases: property.status.groups.map((group) => {
+                    return {
+                        id: group.id,
+                        name: group.name,
+                    }
+                })
+            }
+        case "url":
+            return {
+                type: "link",
+                id: property.id,
+                name: property.name
+            }
         case "multi_select":
         default: {
             // More Field types can be added here

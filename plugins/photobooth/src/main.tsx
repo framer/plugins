@@ -1,4 +1,5 @@
-import "./globals.css"
+import "framer-plugin/framer.css"
+
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { App } from "./App.tsx"
@@ -10,7 +11,7 @@ if (!root) {
     throw new Error("Root element not found")
 }
 
-void framer.showUI({ position: "top left", width: 240, height: 220 })
+void framer.showUI({ position: "top right", width: 240, height: 220 })
 
 ReactDOM.createRoot(root).render(
     <React.StrictMode>

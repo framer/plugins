@@ -1,4 +1,5 @@
 import "./globals.css"
+import "framer-plugin/framer.css"
 
 import React, { ReactNode, Suspense } from "react"
 import ReactDOM from "react-dom/client"

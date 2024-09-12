@@ -2,6 +2,7 @@ import { useCallback, useRef } from "react"
 import { framer } from "framer-plugin"
 import Webcam from "react-webcam"
 import { useAnimate } from "framer-motion"
+
 import "./App.css"
 
 export function App() {

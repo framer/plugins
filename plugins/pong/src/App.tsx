@@ -20,8 +20,7 @@ interface GameState {
 const FPS = 60
 
 void framer.showUI({
-    title: "Pong",
-    position: "top left",
+    position: "top right",
     width: 240,
     height: 110,
 })

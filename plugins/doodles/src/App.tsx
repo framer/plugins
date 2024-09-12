@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { framer } from "framer-plugin";
 import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
 import * as Slider from "@radix-ui/react-slider";
+
 import "./App.css";
 
 function handleFocus(event: React.FocusEvent<HTMLInputElement>) {

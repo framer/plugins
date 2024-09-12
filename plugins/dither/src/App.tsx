@@ -12,7 +12,7 @@ if (import.meta.env.DEV) {
     })
 }
 
-void framer.showUI({ title: "Dither", position: "top right", width: 280, height: 500 })
+void framer.showUI({ position: "top right", width: 280, height: 500 })
 
 function useSelectedImage() {
     const [image, setImage] = useState<ImageAsset | null>(null)
@@ -170,7 +170,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         const resizeObserver = new ResizeObserver(([entry]) => {
             const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0]
 
-            void framer.showUI({ title: "Dither", position: "top right", width: 280, height })
+            void framer.showUI({ position: "top right", width: 280, height })
         })
 
         resizeObserver.observe(containerRef.current)

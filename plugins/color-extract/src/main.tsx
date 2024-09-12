@@ -1,4 +1,4 @@
-import "./globals.css"
+import "framer-plugin/framer.css"
 
 import React from "react"
 import ReactDOM from "react-dom/client"
@@ -13,7 +13,6 @@ import.meta.hot?.dispose(() => {
 })
 
 void framer.showUI({
-    title: "Get Colors",
     position: "top right",
     width: 240,
     height: 120,

@@ -3,10 +3,10 @@ import { Spinner } from "./Spinner"
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: "primary" | "secondary"
-    isPending?: boolean
+    isLoading?: boolean
 }
 
-export const Button = ({ variant = "primary", children, className, isPending = false, disabled, ...rest }: Props) => (
+export const Button = ({ variant = "primary", children, className, isLoading = false, disabled, ...rest }: Props) => (
     <button
         className={cx(
             "flex justify-center items-center relative py-2",
@@ -16,10 +16,10 @@ export const Button = ({ variant = "primary", children, className, isPending = f
             },
             className
         )}
-        disabled={isPending || disabled}
+        disabled={isLoading || disabled}
         {...rest}
     >
-        {isPending ? (
+        {isLoading ? (
             <div className="p-5">
                 <Spinner inheritColor={variant === "secondary"} />
             </div>

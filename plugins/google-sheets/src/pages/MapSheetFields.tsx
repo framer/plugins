@@ -2,7 +2,7 @@ import { Fragment, useMemo, useState } from "react"
 import { CollectionField } from "framer-plugin"
 import { useInView } from "react-intersection-observer"
 import cx from "classnames"
-import { assert, isDefined } from "../utils"
+import { isDefined } from "../utils"
 import {
     CellValue,
     CollectionFieldType,
@@ -15,9 +15,11 @@ import {
 
 import { IconChevron } from "../components/Icons"
 import { Button } from "../components/Button"
+import { CheckboxTextfield } from "../components/CheckboxTextField"
 
 interface CollectionFieldConfig {
-    field: CollectionField | null
+    // field: CollectionField | null
+    field: CollectionField
     originalFieldName: string
 }
 
@@ -115,15 +117,8 @@ const getFieldNameOverrides = (context: PluginContext): Record<string, string> =
     return result
 }
 
-const getPossibleSlugFields = (
-    fieldConfig: CollectionFieldConfig[],
-    disabledFieldIds: Set<number>
-): CollectionField[] => {
-    return fieldConfig
-        .filter(fieldConfig => fieldConfig.field?.type === "string")
-        .map(fieldConfig => fieldConfig.field)
-        .filter(isDefined)
-        .filter(field => !disabledFieldIds.has(Number(field.id)))
+const getPossibleSlugFields = (fieldConfig: CollectionFieldConfig[]): CollectionField[] => {
+    return fieldConfig.filter(fieldConfig => fieldConfig.field?.type === "string").map(fieldConfig => fieldConfig.field)
 }
 
 interface Props {
@@ -150,12 +145,9 @@ export function MapSheetFieldsPage({
     const [fieldConfig, setFieldConfig] = useState<CollectionFieldConfig[]>(() =>
         createFieldConfig(headerRow, pluginContext, rows[0])
     )
+    const slugFields = useMemo(() => getPossibleSlugFields(fieldConfig), [fieldConfig])
     const [disabledFieldColumnIndexes, setDisabledFieldColumnIndexes] = useState(
         () => new Set<number>(pluginContext.type === "update" ? pluginContext.ignoredFieldColumnIndexes : [])
-    )
-    const slugFields = useMemo(
-        () => getPossibleSlugFields(fieldConfig, disabledFieldColumnIndexes),
-        [fieldConfig, disabledFieldColumnIndexes]
     )
     const [slugFieldColumnIndex, setSlugFieldColumnIndex] = useState<number>(() =>
         getInitialSlugFieldColumnIndex(pluginContext, slugFields)
@@ -256,75 +248,34 @@ export function MapSheetFieldsPage({
                 <span>Field</span>
                 <span>Type</span>
                 {fieldConfig.map((fieldConfig, i) => {
-                    const isSlugField = slugFieldColumnIndex === Number(fieldConfig.field?.id)
-                    const isDisabled = disabledFieldColumnIndexes.has(Number(fieldConfig.field?.id))
-
-                    if (isSlugField) return null
+                    const isDisabled = disabledFieldColumnIndexes.has(Number(fieldConfig.field.id))
 
                     return (
                         <Fragment key={i}>
-                            <div
-                                className={cx(
-                                    "flex items-center gap-2.5 px-2 h-[30px] bg-tertiary rounded-md overflow-hidden cursor-pointer",
-                                    {
-                                        "opacity-50": isDisabled,
-                                    }
-                                )}
-                                onClick={() => {
-                                    if (fieldConfig.field) {
-                                        handleFieldToggle(fieldConfig.field.id)
-                                    }
-                                }}
-                            >
-                                <input
-                                    type="checkbox"
-                                    disabled={!fieldConfig.field || isSlugField}
-                                    checked={!isDisabled}
-                                    className="flex-shrink-0 checked:!bg-sheets-green focus:ring-1 focus:ring-sheets-green"
-                                    onClick={e => {
-                                        e.stopPropagation()
-                                        if (fieldConfig.field) {
-                                            handleFieldToggle(fieldConfig.field.id)
-                                        }
-                                    }}
-                                    onChange={() => {}}
-                                />
-                                <p className="text-primary truncate flex-grow min-w-0">
-                                    {fieldConfig.originalFieldName}
-                                </p>
-                            </div>
-                            <div
-                                className={cx("flex items-center justify-center", {
-                                    "opacity-50": isDisabled,
-                                })}
-                            >
+                            <CheckboxTextfield
+                                value={fieldConfig.originalFieldName}
+                                darken={isDisabled}
+                                checked={!isDisabled}
+                                onChange={() => handleFieldToggle(fieldConfig.field.id)}
+                            />
+                            <div className="flex items-center justify-center">
                                 <IconChevron />
                             </div>
                             <input
                                 type="text"
-                                className={cx("w-full", { "opacity-50": isDisabled })}
-                                disabled={
-                                    !fieldConfig.field || disabledFieldColumnIndexes.has(Number(fieldConfig.field.id))
-                                }
+                                className={cx("w-full", {
+                                    "opacity-50": isDisabled,
+                                })}
+                                disabled={isDisabled}
                                 placeholder={fieldConfig.originalFieldName}
-                                value={
-                                    !fieldConfig.field
-                                        ? "Unsupported Field"
-                                        : (fieldNameOverrides[fieldConfig.field.id] ?? "")
-                                }
-                                onChange={e => {
-                                    assert(fieldConfig.field, "Expected field to be defined on fieldConfig")
-                                    handleFieldNameChange(fieldConfig.field.id, e.target.value)
-                                }}
+                                value={fieldNameOverrides[fieldConfig.field.id] ?? ""}
+                                onChange={e => handleFieldNameChange(fieldConfig.field.id, e.target.value)}
                             />
                             <select
-                                className={cx("w-full", { "opacity-50": isDisabled })}
-                                disabled={
-                                    !fieldConfig.field || disabledFieldColumnIndexes.has(Number(fieldConfig.field.id))
-                                }
+                                className="w-full"
+                                disabled={isDisabled}
                                 value={fieldConfig.field?.type}
                                 onChange={e => {
-                                    assert(fieldConfig.field, "Expected field to be defined on fieldConfig")
                                     handleFieldTypeChange(
                                         Number(fieldConfig.field.id),
                                         e.target.value as CollectionFieldType
@@ -346,7 +297,7 @@ export function MapSheetFieldsPage({
                 <div ref={scrollRef} className="h-0 w-0 bg-red-500 "></div>
             </div>
             <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full overflow-hidden">
-                <Button variant="secondary" isPending={isPending} className="w-full">
+                <Button variant="secondary" isLoading={isPending} className="w-full">
                     {`Import from ${sheetTitle}`}
                 </Button>
             </div>

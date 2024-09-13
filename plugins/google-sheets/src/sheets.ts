@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import auth from "./auth"
 import { CollectionField, ManagedCollection, framer } from "framer-plugin"
+import auth from "./auth"
 import { assert, columnToLetter, generateHashId, isDefined, parseStringToArray, slugify } from "./utils"
 import { logSyncResult } from "./debug.ts"
 import { queryClient } from "./main.tsx"
@@ -303,9 +303,9 @@ function processSheetRow({
     let itemId: string | null = null
 
     for (const [colIndex, cell] of row.entries()) {
-        if (ignoredFieldColumnIndexes.includes(colIndex)) continue
+        // +1 as zero-indexed, another +1 to account for header row
+        const location = columnToLetter(colIndex + 1) + (rowIndex + 2)
 
-        const location = `${columnToLetter(colIndex)}${rowIndex + 2}`
         const fieldValue = getFieldValue(fieldTypes[colIndex], cell)
 
         if (fieldValue === null) {
@@ -317,20 +317,19 @@ function processSheetRow({
         }
 
         if (colIndex === slugFieldColumnIndex) {
-            if (typeof fieldValue === "string") {
-                titleValue = fieldValue
-                slugValue = slugify(fieldValue)
-                itemId = generateHashId(fieldValue)
-
-                // Mark row as seen
-                unsyncedRowIds.delete(itemId)
-            } else {
-                status.warnings.push({
-                    rowIndex,
-                    message: `Slug value must be string at ${location}. Skipping item.`,
-                })
+            if (typeof fieldValue !== "string") {
+                continue
             }
+
+            titleValue = fieldValue
+            slugValue = slugify(fieldValue)
+            itemId = generateHashId(fieldValue)
+
+            // Mark row as seen
+            unsyncedRowIds.delete(itemId)
         }
+
+        if (ignoredFieldColumnIndexes.includes(colIndex)) continue
 
         fieldData[colIndex] = cell
     }
@@ -494,7 +493,7 @@ export const useSyncSheetMutation = ({
     onError,
 }: {
     onSuccess?: (result: SyncResult) => void
-    onError: (e: Error) => void
+    onError?: (e: Error) => void
 }) => {
     return useMutation({
         mutationFn: (args: SyncMutationOptions) => syncSheet(args),

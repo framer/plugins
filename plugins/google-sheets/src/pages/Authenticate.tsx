@@ -61,7 +61,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                 <li>Ensure your sheet has a header row</li>
                 <li>Map the column fields to the CMS</li>
             </ol>
-            <Button variant="secondary" onClick={login} isPending={isLoading} className="w-full">
+            <Button variant="secondary" onClick={login} isLoading={isLoading} className="w-full">
                 Log In
             </Button>
         </div>

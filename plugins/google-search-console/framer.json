@@ -1,6 +1,6 @@
 {
   "id": "53ebdd",
   "name": "Search Console",
-  "modes": ["default"],
+  "modes": ["canvas"],
   "icon": "/icon.svg"
 }

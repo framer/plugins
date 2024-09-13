@@ -19,5 +19,8 @@
     "devDependencies": {
         "turbo": "^2.1.2"
     },
+    "dependencies": {
+        "framer-plugin": "^0.3.3"
+    },
     "packageManager": "npm@9.8.0"
 }

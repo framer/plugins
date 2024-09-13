@@ -1,4 +1,5 @@
 import "./globals.css"
+import "framer-plugin/framer.css"
 
 import React, { ReactNode } from "react"
 import ReactDOM from "react-dom/client"
@@ -14,6 +15,7 @@ export const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
             retry: false,
+            staleTime: 5 * 60 * 1000,
         },
     },
 })
@@ -30,7 +32,6 @@ function renderPlugin(app: ReactNode) {
     const root = document.getElementById("root")
     if (!root) throw new Error("Root element not found")
 
-    // Login page
     framer.showUI({
         width: 320,
         height: 345,

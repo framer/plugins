@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { PluginContext, useSheetQuery, useSyncSheetMutation } from "./sheets"
 import { logSyncResult } from "./debug"
 
@@ -30,8 +30,15 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
                 return
             }
         },
-        onError: (e: Error) => framer.notify(e.message, { variant: "error" }),
+        onError: e => framer.notify(e.message, { variant: "error" }),
     })
+
+    useEffect(() => {
+        framer.showUI({
+            width: sheetTitle ? 340 : 320,
+            height: sheetTitle ? 425 : 345,
+        })
+    }, [sheetTitle])
 
     if (!spreadsheetId || !sheetTitle) {
         return (
@@ -50,11 +57,6 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
     if (!headerRow) {
         throw new Error("The provided sheet requires at least one row")
     }
-
-    framer.showUI({
-        width: 340,
-        height: 425,
-    })
 
     return (
         <MapSheetFieldsPage

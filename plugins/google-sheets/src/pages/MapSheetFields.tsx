@@ -2,7 +2,6 @@ import { Fragment, useMemo, useState } from "react"
 import { CollectionField } from "framer-plugin"
 import { useInView } from "react-intersection-observer"
 import cx from "classnames"
-import { isDefined } from "../utils"
 import {
     CellValue,
     CollectionFieldType,
@@ -18,7 +17,6 @@ import { Button } from "../components/Button"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 
 interface CollectionFieldConfig {
-    // field: CollectionField | null
     field: CollectionField
     originalFieldName: string
 }
@@ -203,7 +201,6 @@ export function MapSheetFieldsPage({
         const allFields = fieldConfig
             .filter(fieldConfig => fieldConfig.field && !disabledFieldColumnIndexes.has(Number(fieldConfig.field.id)))
             .map(fieldConfig => fieldConfig.field)
-            .filter(isDefined)
             .map(field => {
                 if (fieldNameOverrides[field.id]) {
                     field.name = fieldNameOverrides[field.id]

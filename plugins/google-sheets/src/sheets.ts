@@ -302,6 +302,17 @@ function processSheetRow({
     let titleValue: string | null = null
     let itemId: string | null = null
 
+    // Rows may have empty values for the cell is empty and the field type is set
+    // to something like date time
+    if (fieldTypes.length !== row.length) {
+        status.warnings.push({
+            rowIndex,
+            message: `Row ${rowIndex + 1} does not match the expected number of columns: ${fieldTypes.length}. There may be an empty cell. Skipping item.`,
+        })
+
+        return null
+    }
+
     for (const [colIndex, cell] of row.entries()) {
         // +1 as zero-indexed, another +1 to account for header row
         const location = columnToLetter(colIndex + 1) + (rowIndex + 2)
@@ -339,6 +350,7 @@ function processSheetRow({
             rowIndex,
             message: "Slug or title missing. Skipping item.",
         })
+
         return null
     }
 

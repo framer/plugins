@@ -18,5 +18,8 @@
     },
     "devDependencies": {
         "turbo": "^1.13.2"
+    },
+    "dependencies": {
+        "framer-plugin": "^0.3.3"
     }
 }

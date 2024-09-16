@@ -16,7 +16,7 @@ import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
 
 export type FieldId = string
 
-const apiBaseUrl = "https://notion-plugin-api.niekkruse70.workers.dev"
+const apiBaseUrl = "https://notion-plugin-api.framer-team.workers.dev"
 const oauthRedirectUrl = encodeURIComponent(`${apiBaseUrl}/auth/authorize/callback`)
 
 export const getOauthURL = (writeKey: string) =>
@@ -207,6 +207,24 @@ export function getCollectionFieldForProperty(property: NotionProperty): Collect
                 type: "string",
                 id: property.id,
                 name: property.name,
+            }
+        case "status":
+            return {
+                type: "enum",
+                id: property.id,
+                name: property.name,
+                cases: property.status.groups.map((group) => {
+                    return {
+                        id: group.id,
+                        name: group.name,
+                    }
+                })
+            }
+        case "url":
+            return {
+                type: "link",
+                id: property.id,
+                name: property.name
             }
         case "multi_select":
         default: {

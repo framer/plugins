@@ -11,11 +11,12 @@ import {
     pageContentField,
     richTextToPlainText,
 } from "./notion"
-import { Fragment, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import classNames from "classnames"
 import { IconChevron } from "./components/Icons"
 import { Button } from "./components/Button"
 import { isFullDatabase } from "@notionhq/client"
+import { CheckboxTextfield } from "./components/CheckboxTexfield"
 
 interface CollectionFieldConfig {
     field: CollectionField | null
@@ -173,12 +174,17 @@ export function MapDatabaseFields({
         })
     }
 
+    const title = richTextToPlainText(database.title)
+
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 flex-1">
+            <div className="tailwind-hell-escape-hatch-gradient-top" />
+
             <div className="h-[1px] border-b border-divider mb-2 sticky top-0" />
-            <div className="flex-1 flex flex-col gap-4">
+
+            <div className="flex-1 flex flex-col gap-6">
                 <div className="flex flex-col gap-2 w-full">
-                    <label htmlFor="collectionName">Slug Field</label>
+                    <label className="text-tertiary" htmlFor="collectionName">Slug Field</label>
                     <select
                         className="w-full"
                         value={slugFieldId ?? ""}
@@ -192,35 +198,34 @@ export function MapDatabaseFields({
                         ))}
                     </select>
                 </div>
-                <div className="grid grid-cols-fieldPicker gap-3 w-full items-center justify-center">
-                    <span className="col-start-2 col-span-2">Notion Property</span>
-                    <span>Collection Field</span>
+
+                <div className="flex flex-col gap-[10px] w-full items-center justify-center pb-[10px]">
+                    <div className="grid grid-cols-fieldPicker gap-3 w-full items-center justify-center text-tertiary mb-[-3px]">
+                        <span>Notion Property</span>
+                        <span className="col-start-3">Collection Field</span>
+                    </div>
 
                     {fieldConfig.map(fieldConfig => {
                         const isUnsupported = !fieldConfig.field
 
                         return (
-                            <Fragment key={fieldConfig.originalFieldName}>
-                                <input
-                                    type="checkbox"
+                            <div
+                                key={fieldConfig.originalFieldName}
+                                className="grid grid-cols-fieldPicker gap-3 w-full items-center justify-center"
+                            >
+                                <CheckboxTextfield
+                                    value={fieldConfig.originalFieldName}
                                     disabled={!fieldConfig.field}
                                     checked={!!fieldConfig.field && !disabledFieldIds.has(fieldConfig.field.id)}
-                                    className={classNames("mx-auto", isUnsupported && "opacity-50")}
                                     onChange={() => {
                                         assert(fieldConfig.field)
 
                                         handleFieldToggle(fieldConfig.field.id)
                                     }}
                                 />
-                                <input
-                                    type="text"
-                                    className={classNames("w-full", isUnsupported && "opacity-50")}
-                                    disabled
-                                    value={fieldConfig.originalFieldName}
-                                />
                                 <div
                                     className={classNames(
-                                        "flex items-center justify-center",
+                                        "flex items-center justify-center place-self-center text-tertiary",
                                         isUnsupported && "opacity-50"
                                     )}
                                 >
@@ -242,32 +247,19 @@ export function MapDatabaseFields({
                                         handleFieldNameChange(fieldConfig.field.id, e.target.value)
                                     }}
                                 ></input>
-                            </Fragment>
+                            </div>
                         )
                     })}
                 </div>
             </div>
 
-            <div className="left-0 bottom-0 w-full flex justify-between sticky bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full overflow-hidden">
-                <div className="inline-flex items-center gap-1 min-w-0">
-                    {error ? (
-                        <span className="text-red-500">{error.message}</span>
-                    ) : (
-                        <>
-                            <span className="text-tertiary flex-shrink-0">Importing from</span>
-                            <a
-                                href={database.url}
-                                className="font-semibold text-secondary hover:text-primary truncate"
-                                target="_blank"
-                                tabIndex={-1}
-                            >
-                                {richTextToPlainText(database.title)}
-                            </a>
-                        </>
-                    )}
-                </div>
-                <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-auto">
-                    Import
+            <div className="left-0 bottom-0 pb-[15px] w-full flex justify-between sticky bg-primary pt-4 border-t border-divider border-opacity-20 items-center max-w-full">
+                <div className="tailwind-hell-escape-hatch-gradient-bottom" />
+
+                {error && <span className="text-red-500">{error.message}</span>}
+
+                <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-full">
+                    Import from {title.trim() ? title : "Untitled"}
                 </Button>
             </div>
         </form>

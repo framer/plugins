@@ -3,7 +3,6 @@ import { richTextToPlainText, useDatabasesQuery } from "./notion"
 import { FormEvent, useEffect, useState } from "react"
 import notionConnectSrc from "./assets/notion-connect.png"
 import { assert } from "./utils"
-import { ReloadIcon } from "./components/Icons"
 
 interface SelectDatabaseProps {
     onDatabaseSelected: (database: GetDatabaseResponse) => void
@@ -44,39 +43,57 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
     }
 
     return (
-        <form className="flex flex-col gap-4 w-full" onSubmit={handleSubmit}>
+        <form className="flex flex-col gap-[10px] w-full h-full" onSubmit={handleSubmit}>
             <img src={notionConnectSrc} className="rounded-md" />
+
             <p>
-                Connect your databases: open a database in Notion, click the ... button in the top-right corner of the
-                page, then pick Connections → Connect to → Framer.
+                To manually connect a database, open it in Notion, click on the three dots icon in the top right corner,
+                then select Connections and connect to Framer.
             </p>
-            <div className="inline-flex gap-2 items-center">
-                <span>Database</span>
-                <button
-                    className="w-[32px] h[16px] bg-transparent flex items-center justify-center text-secondary"
-                    type="button"
-                    onClick={() => refetch()}
-                >
-                    <ReloadIcon className={isRefetching || isLoading ? "animate-spin" : undefined} />
+
+            <div className="flex flex-col gap-[10px] mt-auto pb-[15px]">
+                <div className="flex gap-[10px]">
+                    <select
+                        value={selectedDatabase ?? ""}
+                        onChange={e => setSelectedDatabase(e.target.value)}
+                        className="flex-1 shrink-1"
+                        disabled={data && data.length === 0}
+                    >
+                        {isLoading && (
+                            <option disabled selected>
+                                Loading…
+                            </option>
+                        )}
+                        {!isLoading && (
+                            <option disabled selected>
+                                Select Database…
+                            </option>
+                        )}
+                        {data && data.length === 0 && <option>No databases...</option>}
+                        {data?.map(database => {
+                            const label = richTextToPlainText(database.title)
+                            return (
+                                <option key={database.id} value={database.id}>
+                                    {label.trim() ? label : "Untitled"}
+                                </option>
+                            )
+                        })}
+                    </select>
+
+                    <button
+                        className="w-auto h[16px] flex items-center justify-center text-secondary"
+                        type="button"
+                        onClick={() => refetch()}
+                        disabled={isLoading || isRefetching}
+                    >
+                        Refresh
+                    </button>
+                </div>
+
+                <button type="submit" disabled={!selectedDatabase}>
+                    Next
                 </button>
-                <select
-                    value={selectedDatabase ?? ""}
-                    onChange={e => setSelectedDatabase(e.target.value)}
-                    className="ml-auto min-w-[50%]"
-                    disabled={data && data.length === 0}
-                >
-                    {isLoading && <option>Loading...</option>}
-                    {data && data.length === 0 && <option>No databases...</option>}
-                    {data?.map(database => (
-                        <option key={database.id} value={database.id}>
-                            {richTextToPlainText(database.title)}
-                        </option>
-                    ))}
-                </select>
             </div>
-            <button className="framer-button-primary" type="submit" disabled={!selectedDatabase}>
-                Next
-            </button>
         </form>
     )
 }

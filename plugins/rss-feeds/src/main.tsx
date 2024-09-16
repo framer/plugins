@@ -1,4 +1,4 @@
-import "./globals.css"
+import "framer-plugin/framer.css"
 
 import { framer } from "framer-plugin"
 import React from "react"

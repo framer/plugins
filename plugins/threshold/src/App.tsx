@@ -9,7 +9,7 @@ import Worker from "./worker/worker?worker"
 
 const WorkerBase = comlink.wrap<typeof CanvasWorker>(new Worker())
 
-void framer.showUI({ position: "top left", width: 280, height: 260 })
+void framer.showUI({ position: "top right", width: 280, height: 260 })
 
 function useSelectedImage() {
     const [image, setImage] = useState<ImageAsset | null>(null)
@@ -111,7 +111,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
                 canvas.height = displayHeight
 
                 framer.showUI({
-                    position: "top left",
+                    position: "top right",
                     width: 280,
                     height: displayHeight + 95,
                 })

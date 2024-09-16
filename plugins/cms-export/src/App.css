@@ -1,0 +1,89 @@
+.export-collection {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+    height: 100%;
+    padding: 0 15px 15px 15px;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Divider under the titlebar. */
+.empty-state::before {
+    content: "";
+    border-top: 1px solid var(--framer-color-divider);
+    position: absolute;
+    width: 100%;
+    top: 0;
+}
+
+.empty-state-image {
+    width: 180px;
+}
+
+.empty-state-message {
+    color: var(--framer-color-text-tertiary);
+    width: 140px;
+    text-align: center;
+}
+
+.footer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.footer-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.footer-select {
+    width: 100%;
+}
+
+[data-framer-theme="light"] .footer-select--unselected {
+    color: #999999;
+}
+
+[data-framer-theme="dark"] .footer-select--unselected {
+    color: #666666;
+}
+
+.footer-actions button {
+    flex-shrink: 1;
+}
+
+.preview-container {
+    position: relative;
+    height: 100%;
+}
+
+.preview-container-layer-a,
+.preview-container-layer-b {
+    position: absolute;
+    inset: 0;
+}
+
+.preview-container-layer-a--hidden {
+    animation: fade-in 300ms forwards reverse linear;
+}
+
+.preview-container-layer-b {
+    animation: fade-in 300ms forwards linear;
+}
+
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}

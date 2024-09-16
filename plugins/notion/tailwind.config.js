@@ -23,7 +23,7 @@ export default {
                 divider: "var(--framer-color-divider)",
             },
             gridTemplateColumns: {
-                fieldPicker: `16px 1fr 8px 1fr`,
+                fieldPicker: `1fr 8px 1fr`,
             },
             fontSize: {
                 md: "12px",

@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { framer } from "framer-plugin";
 import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
 import * as Slider from "@radix-ui/react-slider";
+
 import "./App.css";
 
 function handleFocus(event: React.FocusEvent<HTMLInputElement>) {
@@ -60,6 +61,10 @@ export function App() {
     s: 0,
     l: 50,
   });
+
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [historyIndex, setHistoryIndex] = useState(0)
+  const [historySize, setHistorySize] = useState(0)
 
   const handleStrokeInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
@@ -130,12 +135,26 @@ export function App() {
           strokeWidth={strokeValue}
           strokeColor={`hsl(${strokeColor.h} ${strokeColor.s}% ${strokeColor.l}%)`}
           canvasColor="transparent"
+          withTimestamp
+          onChange={(paths) => setHistoryIndex(paths.length)}
+          onStroke={(props) => {
+            if (historyIndex < historySize) {
+              setHistorySize(historyIndex)
+            }
+
+            if (props.endTimestamp) {
+              setHistorySize((previous) => previous + 1)
+            }
+
+            setIsDrawing(props.endTimestamp === 0)
+          }}
         />
       </div>
       <section className="flex">
         <div className={"row history"}>
           <p>History</p>
           <button
+            disabled={historyIndex === 0}
             onClick={() => {
               if (!canvasRef.current) return;
               canvasRef.current.undo();
@@ -158,6 +177,7 @@ export function App() {
             </svg>
           </button>
           <button
+            disabled={historyIndex === historySize || isDrawing}
             onClick={() => {
               if (!canvasRef.current) return;
               canvasRef.current.redo();

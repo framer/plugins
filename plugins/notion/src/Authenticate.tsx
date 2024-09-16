@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { PluginContext, authorize, getOauthURL, getPluginContext } from "./notion"
-import loginIllustration from "./assets/notion-login.png"
+import loginIllustration from "./assets/notion-doodle.png"
 import { Button } from "./components/Button"
 import { generateRandomId } from "./utils"
 import { framer } from "framer-plugin"
@@ -60,24 +60,25 @@ export function Authentication({ onAuthenticated, context }: AuthenticationProps
             })
     }
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-4 pb-4 overflo">
-            <img src={loginIllustration} className="max-w-100% rounded-md flex-shrink-0" />
+        <div className="w-full h-full flex flex-col items-center justify-center gap-[20px] pb-4 overflo">
+            <img src={loginIllustration} className="max-w-100% rounded-md flex-shrink-0 select-none pointer-events-none" />
+
             <div className="flex flex-col items-center gap-2 flex-1 justify-center w-full">
                 {isLoading ? (
                     <span className="text-center max-w-[80%] block text-secondary">
                         Complete the authentication and return to this page.
                     </span>
                 ) : (
-                    <ol className="list-inside list-decimal w-full text-secondary gap-2 text-md flex flex-col flex-1">
-                        <li>Log in to your Notion account</li>
-                        <li>Pick the database you want to import</li>
-                        <li>Map the database fields to the CMS</li>
+                    <ol className="list-inside list-decimal w-full text-secondary gap-[4px] text-md flex flex-col flex-1">
+                        <li className="marker:primary"><span className="text-tertiary pl-[6px]">Log in to your Notion account</span></li>
+                        <li className="marker:primary"><span className="text-tertiary pl-[6px]">Pick the database you want to import</span></li>
+                        <li className="marker:primary"><span className="text-tertiary pl-[6px]">Map the database fields to the CMS</span></li>
                     </ol>
                 )}
             </div>
 
-            <Button variant="primary" onClick={handleAuth} isLoading={isLoading} disabled={isLoading}>
-                Log in to Notion
+            <Button onClick={handleAuth} isLoading={isLoading} disabled={isLoading}>
+                Log In
             </Button>
         </div>
     )

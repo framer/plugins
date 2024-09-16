@@ -1,5 +1,4 @@
 import { framer, Draggable } from "framer-plugin"
-import "./App.css"
 
 import sectionContactImage from "./images/Contact.png"
 import sectionFAQImage from "./images/FAQ.png"
@@ -22,8 +21,9 @@ import sectionTextImageImage from "./images/TextImage.png"
 import { SearchIcon } from "./icons"
 import { useMemo, useState } from "react"
 
+import "./App.css"
+
 framer.showUI({
-    title: "Layout Insert",
     position: "top right",
     width: 350,
 })

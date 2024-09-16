@@ -34,7 +34,7 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
     rows.push(fields.map(field => field.name))
 
     // Add slug header to the start.
-    rows[0].unshift("slug")
+    rows[0].unshift("Slug")
 
     // Add all the data rows.
     for (const item of items) {
@@ -102,7 +102,7 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
     return rows
 }
 
-export async function exportCollectionAsCSV(collection: Collection, filename: string) {
+export async function convertCollectionToCSV(collection: Collection) {
     const fields = await collection.getFields()
     const items = await collection.getItems()
 
@@ -114,9 +114,15 @@ export async function exportCollectionAsCSV(collection: Collection, filename: st
                 .map(column => {
                     return `"${escapeCell(column)}"`
                 })
-                .join(", ")
+                .join(",")
         })
         .join("\n")
+
+    return csv
+}
+
+export async function exportCollectionAsCSV(collection: Collection, filename: string) {
+    const csv = await convertCollectionToCSV(collection)
 
     const file = new File([csv], `${filename}.csv`, {
         type: "text/csv",

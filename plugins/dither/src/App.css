@@ -80,15 +80,78 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
     width: 100%;
 }
 
-.gui-row .gui-palette {
-    width: 100%;
-    grid-column: 2 / -1;
-    gap: 10px;
+.color-input {
+    grid-column: span 2;
+    height: 30px;
+    min-height: 30px;
+    border-radius: 8px;
+    border: transparent;
+    background-color: rgb(43, 43, 43);
     display: flex;
+    align-items: center;
+    display: flex;
+    cursor: pointer;
 
-    input {
-        width: auto;
+    span {
         flex-grow: 1;
+    }
+
+    .color {
+        text-transform: uppercase;
+    }
+
+    .placeholder {
+        color: #999999;
+    }
+
+    .erase {
+        width: 24px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999999;
+    }
+
+    input[type="color"] {
+        cursor: pointer;
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 4px;
+        padding: 0;
+        height: 22px;
+        width: 22px;
+        margin-right: 8px;
+        margin-left: 4px;
+
+        outline: none;
+        box-shadow: unset;
+    }
+
+    input[type="color"]::after {
+        content: "";
+        position: absolute;
+        inset: 0px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    input[type="color"]::-webkit-color-swatch-wrapper {
+        padding: 0;
+    }
+
+    input[type="color"]::-webkit-color-swatch {
+        border: none;
+    }
+}
+
+body[data-framer-theme="light"] {
+    .color-input {
+        background-color: #f3f3f3;
+
+        input[type="color"]::after {
+            border: 1px solid rgba(0, 0, 0, 0.15);
+        }
     }
 }
 
@@ -166,4 +229,8 @@ body[data-framer-theme="dark"] .error-container {
 
 body[data-framer-theme="dark"] .error-container {
     background: rgba(0, 0, 0, 0.4);
+}
+
+* {
+    user-select: none;
 }

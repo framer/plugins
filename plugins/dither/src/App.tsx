@@ -29,10 +29,12 @@ export function App() {
 
     return <DitherImage image={image} />
 }
-const CANVAS_WIDTH = 248
+const DEFAULT_WIDTH = 250
 
 function DitherImage({ image }: { image: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
+    const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
+    const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
 
     const [renderer] = useState(() => new Renderer({ alpha: true }))
     const gl = renderer.gl
@@ -75,7 +77,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             })
     )
 
-    const [resolution, setResolution] = useState([CANVAS_WIDTH, CANVAS_WIDTH])
+    const [resolution, setResolution] = useState([DEFAULT_WIDTH, DEFAULT_WIDTH])
 
     useEffect(() => {
         renderer.setSize(resolution[0], resolution[1])
@@ -91,12 +93,12 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                 texture.image = img
                 const aspect = img.naturalWidth / img.naturalHeight
 
-                // setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
+                // setResolution([Math.floor(DEFAULT_WIDTH), Math.floor(DEFAULT_WIDTH / aspect)])
                 // setResolution([img.naturalWidth, img.naturalHeight])
 
-                setResolution([Math.floor(CANVAS_WIDTH), Math.floor(CANVAS_WIDTH / aspect)])
-                // canvasContainerRef.current.style.width = `${CANVAS_WIDTH}px`
-                // canvasContainerRef.current.style.height = `${CANVAS_WIDTH / aspect}px`
+                setResolution([Math.floor(DEFAULT_WIDTH), Math.floor(DEFAULT_WIDTH / aspect)])
+                // canvasContainerRef.current.style.width = `${DEFAULT_WIDTH}px`
+                // canvasContainerRef.current.style.height = `${DEFAULT_WIDTH / aspect}px`
 
                 texture.update()
             }
@@ -167,8 +169,23 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     const containerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
+        if (!canvasContainerRef.current) return
+
+        const aspect = assetResolution[0] / assetResolution[1]
+        canvasContainerRef.current.style.width = `${DEFAULT_WIDTH}px`
+        canvasContainerRef.current.style.height = `${DEFAULT_WIDTH / aspect}px`
+
+        setExportSize(assetResolution[0])
+    }, [assetResolution])
+
+    useEffect(() => {
+        const assetAspect = assetResolution[0] / assetResolution[1]
+        setResolution([exportSize, exportSize / assetAspect])
+    }, [exportSize, assetResolution])
+
+    useEffect(() => {
         const resizeObserver = new ResizeObserver(([entry]) => {
-            const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0]
+            const { blockSize: height } = entry.borderBoxSize[0]
 
             void framer.showUI({ position: "top right", width: 280, height })
         })
@@ -209,6 +226,23 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     gl={gl}
                     texture={texture}
                 />
+                <div className="gui-row">
+                    <label className="gui-label">Resolution</label>
+                    <select
+                        value={exportSize}
+                        className="gui-select"
+                        onChange={e => {
+                            const value = Number(e.target.value)
+                            setExportSize(value)
+                        }}
+                    >
+                        <option value={DEFAULT_WIDTH}>{DEFAULT_WIDTH}px</option>
+                        <option value="500">500px</option>
+                        <option value="1000">1000px</option>
+                        <option value="2000">2000px</option>
+                        <option value={assetResolution[0]}>Source ({assetResolution[0]}px)</option>
+                    </select>
+                </div>
             </div>
             <button onClick={saveImage} disabled={!image}>
                 Add Image

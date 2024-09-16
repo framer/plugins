@@ -231,7 +231,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
             <div className="asset-buttons">
                 <Upload
                     setDroppedAsset={asset => {
-                        // console.log(asset)
                         setDroppedAsset(asset)
                     }}
                     disabled={false}

@@ -5,7 +5,6 @@ import { DEFAULT_WIDTH } from "../App"
 
 export function useOGLPipeline() {
     const isMountedRef = useRef(false)
-    // const useFBORef = useRef(false)
     const [resolution, setResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [renderer] = useState(() => new Renderer({ alpha: true }))
     const gl = renderer.gl
@@ -27,27 +26,6 @@ export function useOGLPipeline() {
             })
     )
     camera.position.z = 1
-
-    // const [texture] = useState(
-    //     () =>
-    //         new Texture(gl, {
-    //             minFilter: gl.LINEAR,
-    //             magFilter: gl.LINEAR,
-    //         })
-    // )
-
-    // useImgTexture(texture, droppedAsset, () => {
-    //     useFBORef.current = false
-    //     program.uniforms.uTexture.value = texture
-    // })
-    // useVideoTexture(texture, droppedAsset, () => {
-    //     useFBORef.current = false
-    //     program.uniforms.uTexture.value = texture
-    // })
-    // useGLBTexture(droppedAsset, () => {
-    //     loadModel(droppedAsset.asset)
-    //     useFBORef.current = true
-    // })
 
     useEffect(() => {
         renderer.setSize(resolution[0], resolution[1])
@@ -111,7 +89,6 @@ export function useOGLPipeline() {
 
     return {
         gl,
-        // texture,
         resolution,
         render,
         toBytes,

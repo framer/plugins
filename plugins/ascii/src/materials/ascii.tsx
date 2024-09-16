@@ -1,7 +1,6 @@
 import { Color, OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { useCharactersAtlasTexture } from "../hooks/use-characters-atlas-texture"
-import * as Slider from "@radix-ui/react-slider"
 import { GLSL } from "../glsl"
 import { SegmentedControl } from "@radix-ui/themes"
 import { ColorInput } from "../color-input"
@@ -79,10 +78,6 @@ export class ASCIIMaterial extends Program {
                         ascii.rgb = uTextColor;
                     }
 
-                    // fragColor = vec4(vec3(1., 0., 0.), 1.);
-
-                    // ascii.rgb *= luma;
-                    // ascii.rgb *= color.rgb;
                     fragColor = vec4(ascii.rgb, color.a * ascii.a);
 
                     if(uIsTransparent == false) {
@@ -105,17 +100,6 @@ export class ASCIIMaterial extends Program {
                         fragColor = vec4(blendNormal(color.rgb, vec3(1.), color.a * ascii.a), color.a);
                     }
 
-                    
-                    // fragColor.rgb = ascii.rgb;
-
-                    // if(vUv.x > 0.5) {
-                    //     fragColor = vec4(pixelizedUv, 0., 1.);
-                    // }
-
-                    // fragColor = texture(uTexture, vUv * uPixelSize);
-
-                    // fragColor = texture(uCharactersAtlasTexture, ((vUv + vec2(7., 0.)) / uCharactersAtlasTextureSize));
-
                     // fragColor = texture(uTexture, vUv);
                 }
                 `,
@@ -124,14 +108,10 @@ export class ASCIIMaterial extends Program {
                 uResolution: { value: new Vec2(1, 1) },
                 uCharactersAtlasTexture: { value: new Texture(gl) },
                 uCharactersAtlasTextureSize: { value: new Vec2(1, 1) },
-                // uDitherTexture: { value: ditherTexture },
-                // uPaletteTexture: { value: paletteTexture },
                 uPixelSize: { value: 1 },
                 uColorMode: { value: 0 },
                 uBackgroundColor: { value: new Color("#000000") },
                 uIsTransparent: { value: false },
-                // uQuantization: { value: 0 },
-                // uRandom: { value: 0 },
                 uBrightness: { value: 0 },
                 uIsFilled: { value: false },
                 uTextColor: { value: new Color("#ffffff") },
@@ -169,14 +149,6 @@ export class ASCIIMaterial extends Program {
         this.uniforms.uColorMode.value = value
     }
 
-    // set quantization(value: number) {
-    //     this.uniforms.uQuantization.value = Math.floor(value)
-    // }
-
-    // set isRandom(value: boolean) {
-    //     this.uniforms.uRandom.value = value ? 1 : 0
-    // }
-
     set brightness(value: number) {
         this.uniforms.uBrightness.value = value
     }
@@ -201,11 +173,8 @@ export class ASCIIMaterial extends Program {
 const FONTS = ["Roboto Mono", "Fragment Mono", "Martian Mono", "Space Mono", "Courier Prime"]
 
 export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext }, ref) {
-    // const [characters, setCharacters] = useState(" ●░▒▓█")
     const [characters, setCharacters] = useState(" ./FR#")
-
     const [colorMode, setColorMode] = useState(0)
-    // const [isRandom, setIsRandom] = useState(false)
     const [pixelSize, setPixelSize] = useState(10)
     const [textColor, setTextColor] = useState("#ffffff")
     const [brightness, setBrightness] = useState(0)
@@ -234,14 +203,6 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
     useEffect(() => {
         program.colorMode = colorMode
     }, [program, colorMode])
-
-    // useEffect(() => {
-    //     program.quantization = quantization
-    // }, [program, quantization])
-
-    // useEffect(() => {
-    //     program.isRandom = isRandom
-    // }, [program, isRandom])
 
     useEffect(() => {
         program.pixelSize = pixelSize
@@ -334,45 +295,6 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
                     step={1}
                 />
             </div>
-            {/* <div className="gui-row">
-                <label className="gui-label">Size</label>
-                <input
-                    className="gui-input"
-                    type="number"
-                    min="8"
-                    max="64"
-                    step={1}
-                    value={pixelSize.toString()}
-                    onChange={e => {
-                        // e.target.value = `${parseInt(e.target.value)}`
-                        setPixelSize(Number(e.target.value))
-                    }}
-                    // onChange={e => {
-                    //     console.log(e.nativeEvent.inputType)
-                    //     e.target.value = e.target.value
-                    // }}
-                    // onBlur={e => {
-                    //     const value = Math.min(Math.max(8, parseInt(e.target.value)), 64)
-                    //     e.target.value = value.toString()
-                    //     setPixelSize(value)
-                    // }}
-                />
-
-                <Slider.Root
-                    className="SliderRoot"
-                    defaultValue={[pixelSize]}
-                    min={8}
-                    max={64}
-                    step={1}
-                    value={[pixelSize]}
-                    onValueChange={value => setPixelSize(Number(value))}
-                >
-                    <Slider.Track className="SliderTrack strokeWidth">
-                        <Slider.Range className="SliderRange" />
-                    </Slider.Track>
-                    <Slider.Thumb className="SliderThumb" />
-                </Slider.Root>
-            </div> */}
             <div className="gui-row">
                 <label className="gui-label">Brightness</label>
                 <NumberInput
@@ -385,33 +307,6 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
                     step={0.01}
                 />
             </div>
-            {/* <div className="gui-row">
-                <label className="gui-label">Brightness</label>
-                <input
-                    className="gui-input"
-                    type="number"
-                    min={-1}
-                    max={1}
-                    step={0.01}
-                    value={brightness}
-                    onChange={e => setBrightness(Number(e.target.value))}
-                />
-
-                <Slider.Root
-                    className="SliderRoot"
-                    defaultValue={[brightness]}
-                    min={-1}
-                    max={1}
-                    step={0.01}
-                    value={[brightness]}
-                    onValueChange={value => setBrightness(Number(value))}
-                >
-                    <Slider.Track className="SliderTrack strokeWidth">
-                        <Slider.Range className="SliderRange" />
-                    </Slider.Track>
-                    <Slider.Thumb className="SliderThumb" />
-                </Slider.Root>
-            </div> */}
             <div className="gui-row">
                 <label className="gui-label">Fill</label>
                 <SegmentedControl.Root

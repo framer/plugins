@@ -170,20 +170,6 @@ textarea::placeholder {
         url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='9'><path d='M 1.5 7.5 L 7.5 1.5' fill='transparent' stroke-width='1.5' stroke='%23555555' stroke-linecap='round'></path><path d='M 5.5 7.5 L 7.5 5.5' fill='transparent' stroke-width='1.5' stroke='%23555555' stroke-linecap='round'></path></svg>");
 }
 
-/* button {
-    cursor: pointer;
-    font-weight: 600;
-    width: 100%;
-    color: var(--framer-color-text-reversed);
-    background-color: var(--framer-color-tint);
-    transition: background-color 0.2s;
-}
-
-button:focus,
-button:hover {
-    background-color: var(--framer-color-tint-dark);
-} */
-
 select {
     background-position: center;
     background-position-x: calc(100% - 8px);

@@ -8,13 +8,13 @@ import {
     Camera,
     Orbit,
     Vec3,
-    Box,
     Program,
-    Mesh,
     TextureLoader,
     GLTFDescription,
 } from "ogl"
 import { GLSL } from "../glsl"
+
+// https://github.com/oframe/ogl/blob/master/examples/load-gltf.html
 
 const shader = {
     vertex: /* glsl */ `
@@ -374,9 +374,7 @@ function useFBO(gl: OGLRenderingContext, { width = 1024, height = 1024 }: { widt
     const [scene] = useState(() => new Transform())
     const [camera] = useState(() => {
         const camera = new Camera(gl, { near: 1, far: 1000 })
-        // camera.position.set(60, 25, -60);
         camera.position.set(30, 15, -30)
-        // camera.lookAt(new Vec3(0, 0, 0))
         return camera
     })
 
@@ -385,8 +383,6 @@ function useFBO(gl: OGLRenderingContext, { width = 1024, height = 1024 }: { widt
             aspect: width / height,
         })
     }, [camera, width, height])
-
-    // const [texture] = useState(() => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST }))
 
     const [target] = useState(
         () =>
@@ -405,34 +401,6 @@ function useFBO(gl: OGLRenderingContext, { width = 1024, height = 1024 }: { widt
                 // enableZoom: false,
             })
     )
-
-    // useEffect(() => {
-    //     const geometry = new Box(gl)
-    //     const program = new Program(gl, {
-    //         vertex: /* glsl */ `
-    //             attribute vec3 position;
-
-    //             uniform mat4 modelViewMatrix;
-    //             uniform mat4 projectionMatrix;
-
-    //             void main() {
-    //                 gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    //             }
-    //         `,
-    //         fragment: /* glsl */ `
-    //             void main() {
-    //                 gl_FragColor = vec4(1.0);
-    //             }
-    //         `,
-    //         uniforms: {},
-    //         // transparent: true,
-    //     })
-
-    //     const mesh = new Mesh(gl, { geometry, program })
-    //     mesh.setParent(scene)
-    // }, [scene, target, gl])
-
-    // controls.enabled = false
 
     const render = useCallback(() => {
         controls.update()
@@ -457,8 +425,6 @@ export function useGLBTexture(
     onUpdate: (texture: Texture) => void,
     deps: any[] = []
 ) {
-    // const [texture] = useState(() => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST }))
-
     const [lutTexture] = useState(() =>
         TextureLoader.load(gl, {
             src: "assets/pbr/lut.png",

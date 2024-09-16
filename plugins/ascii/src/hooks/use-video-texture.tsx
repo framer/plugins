@@ -14,7 +14,6 @@ export function useVideoTexture(
     useEffect(() => {
         if (!src) return
 
-        // if (src.endsWith(".mp4") || src.endsWith(".webm") || src.endsWith(".mov")) {
         const video = document.createElement("video")
         video.src = src
         video.autoplay = true
@@ -31,14 +30,6 @@ export function useVideoTexture(
             onUpdate(texture)
         })
 
-        // if (asset.type !== "video") return
-        // const video = asset.asset
-        // video.play()
-        // if (!texture.image || texture.image.src !== video.src) {
-        //     texture.image = video
-        //     onUpdate()
-        // }
-
         let raf: number
 
         function update() {
@@ -54,6 +45,5 @@ export function useVideoTexture(
         return () => {
             cancelAnimationFrame(raf)
         }
-        // }
     }, [texture, src, ...deps])
 }

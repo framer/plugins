@@ -14,7 +14,7 @@ import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()
 })
 
-void framer.showUI({ title: "ASCII", position: "top right", width: 280, height: 500 })
+void framer.showUI({ position: "top right", width: 280, height: 500 })
 
 export const CANVAS_WIDTH = 250
 export const DEFAULT_WIDTH = 500
@@ -28,21 +28,9 @@ export function useSelectedImage() {
 
     return selection
 }
-// export function useSelectedNode() {
-//     const [selection, setSelection] = useState<CanvasNode[]>([])
-
-//     useEffect(() => {
-//         return framer.subscribeToSelection(setSelection)
-//     }, [])
-
-//     return selection
-// }
 
 export function App() {
     const framerCanvasImage = useSelectedImage()
-    // const selectedNode = useSelectedNode()
-
-    // console.log(selectedNode)
 
     return <ASCIIPlugin framerCanvasImage={framerCanvasImage} />
 }
@@ -52,15 +40,12 @@ export interface DroppedAsset {
     src: string
 }
 
-// { type: "model", src: "/framer_raw.glb" }
-
 const DEFAUL_ASSET = { type: "glb", src: "/framer.glb" }
 
 function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [savingInAction, setSavingInAction] = useState<boolean>(false)
-    // const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>(null)
     const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>()
     const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
@@ -148,17 +133,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         }
 
         setSavingInAction(false)
-
-        // framer.hideUI()
-        // await framer.setImage({
-        //     image: {
-        //         bytes: nextBytes,
-        //         mimeType: originalImage.mimeType,
-        //     },
-        // })
-        // void framer.closePlugin("Image saved...")
-
-        // console.log("total duration", performance.now() - start)
     }, [toBytes, framerCanvasImage])
 
     // resize observer
@@ -166,36 +140,14 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         if (!containerRef.current) return
 
         const resizeObserver = new ResizeObserver(([entry]) => {
-            const { inlineSize: width, blockSize: height } = entry.borderBoxSize[0]
+            const { blockSize: height } = entry.borderBoxSize[0]
 
-            // console.log("resize", width, height)
-
-            void framer.showUI({ title: "ASCII", position: "top right", width: 280, height })
+            void framer.showUI({ position: "top right", width: 280, height })
         })
 
         resizeObserver.observe(containerRef.current)
 
         return () => resizeObserver.disconnect()
-    }, [])
-
-    const [isMouseDown, setIsMouseDown] = useState(false)
-
-    useEffect(() => {
-        const handleMouseDown = () => {
-            setIsMouseDown(true)
-        }
-
-        const handleMouseUp = () => {
-            setIsMouseDown(false)
-        }
-
-        canvasContainerRef.current?.addEventListener("mousedown", handleMouseDown)
-        window.addEventListener("mouseup", handleMouseUp)
-
-        return () => {
-            canvasContainerRef.current?.removeEventListener("mousedown", handleMouseDown)
-            window.removeEventListener("mouseup", handleMouseUp)
-        }
     }, [])
 
     return (
@@ -215,11 +167,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                             gl.canvas.classList.remove("zoom")
                             return
                         }
-
-                        // if (isMouseDown) {
-                        //     gl.canvas.classList.remove("zoom")
-                        //     return
-                        // }
 
                         const canvasContainerRect = canvasContainerRef.current?.getBoundingClientRect()
 
@@ -251,7 +198,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                         gl.canvas.classList.add("zoom")
                     }}
                     onMouseLeave={() => {
-                        setIsMouseDown(true)
                         gl.canvas.classList.remove("zoom")
                     }}
                 ></div>

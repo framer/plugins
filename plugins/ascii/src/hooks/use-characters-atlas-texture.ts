@@ -29,20 +29,11 @@ export function useCharactersAtlasTexture(
         canvas.width = size * characters.length
         canvas.height = size
 
-        // context.beginPath() // Start a new path
-        // context.rect(10, 20, 150, 100) // Add a rectangle to the current path
-        // context.fill() // Render the path
-
         context.font = `${size}px ${font}, monospace`
         context.textBaseline = "middle"
         context.textAlign = "center"
 
         characters.split("").forEach((character, index) => {
-            if (debug) {
-                // context.strokeStyle = "#f00"
-                // context.strokeRect(index * size, 0, size, size)
-            }
-
             context.fillStyle = "#fff"
             context.fillText(character, index * size + size / 2, size / 1.65)
         })

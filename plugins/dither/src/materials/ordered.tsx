@@ -6,6 +6,8 @@ import { useOrderedDitheringTexture } from "../use-ordered-dithering-texture"
 import { Palette } from "../palette"
 import { useGradientTexture } from "../use-gradient-texture"
 import * as Slider from "@radix-ui/react-slider"
+import { NumberInput } from "../inputs/number-input"
+import { ColorInput } from "../inputs/color-input"
 
 export class OrderedDitherMaterial extends Program {
     constructor(gl: OGLRenderingContext, texture: Texture, ditherTexture: Texture, paletteTexture: Texture) {
@@ -156,7 +158,8 @@ export const OrderedDither = forwardRef(function RandomDither(
     const [quantization, setQuantization] = useState(3)
     const [isRandom, setIsRandom] = useState(false)
     const [pixelSize, setPixelSize] = useState(2)
-    const [colors, setColors] = useState([] as string[])
+    const [colors, setColors] = useState(["#FFFFFF", "#E30613"] as string[])
+
     const [brightness, setBrightness] = useState(0)
 
     const { texture: ditherTexture } = useOrderedDitheringTexture(gl, ORDERED_DITHERING_MATRICES[mode])
@@ -214,59 +217,6 @@ export const OrderedDither = forwardRef(function RandomDither(
             </div>
 
             <div className="gui-row">
-                <label className="gui-label">Pixelation</label>
-                <input
-                    className="gui-input"
-                    type="number"
-                    min="1"
-                    max="6"
-                    value={pixelSize}
-                    onChange={e => setPixelSize(Number(e.target.value))}
-                />
-
-                <Slider.Root
-                    className="SliderRoot"
-                    defaultValue={[pixelSize]}
-                    min={1}
-                    max={6}
-                    step={1}
-                    value={[pixelSize]}
-                    onValueChange={value => setPixelSize(Number(value))}
-                >
-                    <Slider.Track className="SliderTrack strokeWidth">
-                        <Slider.Range className="SliderRange" />
-                    </Slider.Track>
-                    <Slider.Thumb className="SliderThumb" />
-                </Slider.Root>
-            </div>
-            <div className="gui-row">
-                <label className="gui-label">Brightness</label>
-                <input
-                    className="gui-input"
-                    type="number"
-                    min={-1}
-                    max={1}
-                    step={0.01}
-                    value={brightness}
-                    onChange={e => setBrightness(Number(e.target.value))}
-                />
-
-                <Slider.Root
-                    className="SliderRoot"
-                    defaultValue={[brightness]}
-                    min={-1}
-                    max={1}
-                    step={0.01}
-                    value={[brightness]}
-                    onValueChange={value => setBrightness(Number(value))}
-                >
-                    <Slider.Track className="SliderTrack strokeWidth">
-                        <Slider.Range className="SliderRange" />
-                    </Slider.Track>
-                    <Slider.Thumb className="SliderThumb" />
-                </Slider.Root>
-            </div>
-            <div className="gui-row">
                 <label className="gui-label">Color Mode</label>
                 <select
                     onChange={e => {
@@ -275,46 +225,74 @@ export const OrderedDither = forwardRef(function RandomDither(
                     className="gui-select"
                     value={colorMode}
                 >
-                    <option value="0">Grayscale</option>
                     <option value="1">RGB</option>
-                    <option value="2">Custom Palette</option>
+                    <option value="0">Grayscale</option>
+                    <option value="2">Palette</option>
                 </select>
+            </div>
+
+            {[2].includes(colorMode) && (
+                <>
+                    <div className="gui-row">
+                        <label className="gui-label">Color A</label>
+                        <ColorInput
+                            value={colors[0]}
+                            onChange={(color: string) => {
+                                console.log(colors, color)
+                                setColors(v => {
+                                    const newColors = [...v]
+                                    newColors[0] = color
+                                    return newColors
+                                })
+                            }}
+                        />
+                    </div>
+                    <div className="gui-row">
+                        <label className="gui-label">Color B</label>
+                        <ColorInput
+                            value={colors[1]}
+                            onChange={(color: string) => {
+                                setColors(v => {
+                                    const newColors = [...v]
+                                    newColors[1] = color
+                                    return newColors
+                                })
+                            }}
+                        />
+                    </div>
+                </>
+            )}
+
+            <div className="gui-row">
+                <label className="gui-label">Pixelation</label>
+                <NumberInput
+                    value={pixelSize}
+                    onValueChange={value => setPixelSize(Number(value))}
+                    min={1}
+                    max={6}
+                    step={1}
+                />
+            </div>
+            <div className="gui-row">
+                <label className="gui-label">Brightness</label>
+                <NumberInput
+                    value={brightness}
+                    onValueChange={value => setBrightness(Number(value))}
+                    min={-1}
+                    max={1}
+                    step={0.01}
+                />
             </div>
             <div className="gui-row">
                 <label className="gui-label">Quantization</label>
-                <input
-                    className="gui-input"
-                    type="number"
-                    min="2"
-                    max="8"
+                <NumberInput
                     value={quantization}
-                    onChange={e => setQuantization(parseInt(e.target.value))}
-                />
-
-                <Slider.Root
-                    className="SliderRoot"
+                    onValueChange={value => setQuantization(Number(value))}
                     min={2}
                     max={8}
                     step={1}
-                    value={[quantization]}
-                    onValueChange={value => setQuantization(Number(value))}
-                >
-                    <Slider.Track className="SliderTrack strokeWidth">
-                        <Slider.Range className="SliderRange" />
-                    </Slider.Track>
-                    <Slider.Thumb className="SliderThumb" />
-                </Slider.Root>
+                />
             </div>
-            {[2].includes(colorMode) && (
-                <div className="gui-row">
-                    <label className="gui-label">Palette</label>
-                    <Palette
-                        onChange={colors => {
-                            setColors(colors)
-                        }}
-                    />
-                </div>
-            )}
         </>
     )
 })

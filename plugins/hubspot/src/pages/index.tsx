@@ -5,38 +5,22 @@ import auth from "../auth"
 import { Button } from "../components/Button"
 import { Logo } from "../components/Logo"
 
-function useIsDocumentVisibile() {
-    const [isVisible, setIsVisible] = useState(document.visibilityState === "visible")
-
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            setIsVisible(document.visibilityState === "visible")
-        }
-
-        document.addEventListener("visibilitychange", handleVisibilityChange)
-        return () => {
-            document.removeEventListener("visibilitychange", handleVisibilityChange)
-        }
-    }, [])
-
-    return isVisible
-}
-
 export function AuthenticatePage() {
     const [, navigate] = useLocation()
-    const [isLoading, setIsLoading] = useState(false)
-    const [errorMessage, setErrorMessage] = useState("")
-    const [hasSeenError, setHasSeenError] = useState(false)
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
-    const isDocumentVisible = useIsDocumentVisibile()
+    const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
-        // User may still be on the authorization page, so show when they're back
-        if (isDocumentVisible && errorMessage && !hasSeenError) {
-            framer.notify(errorMessage, { variant: "error" })
-            setHasSeenError(true)
+        async function checkAuthOnLoad() {
+            const isAuth = await auth.isAuthenticated()
+
+            if (isAuth) {
+                navigate("/menu")
+            }
         }
-    }, [isDocumentVisible, errorMessage, hasSeenError])
+
+        checkAuthOnLoad()
+    }, [navigate])
 
     const pollForTokens = (readKey: string) => {
         if (pollInterval.current) {
@@ -58,7 +42,6 @@ export function AuthenticatePage() {
 
     const login = async () => {
         setIsLoading(true)
-        setHasSeenError(false)
 
         try {
             // Retrieve the auth URL and a set of read and write keys
@@ -72,7 +55,7 @@ export function AuthenticatePage() {
 
             navigate("/menu")
         } catch (e) {
-            setErrorMessage(e instanceof Error ? e.message : "An unknown error occurred.")
+            framer.notify(e instanceof Error ? e.message : "An unknown error occurred.", { variant: "error" })
         } finally {
             setIsLoading(false)
         }

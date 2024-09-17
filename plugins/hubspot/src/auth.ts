@@ -25,7 +25,7 @@ export const isLocal = () => window.location.hostname.includes("localhost")
 
 export const AUTH_URI = isLocal()
     ? "https://localhost:8787"
-    : "https://framer-hubspot-api.sakibulislam25800.workers.dev/auth"
+    : "https://oauth.fetch.tools/hubspot-plugin"
 
 class Auth {
     storedTokens?: StoredTokens | null

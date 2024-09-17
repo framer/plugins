@@ -288,9 +288,7 @@ export function MapSheetFieldsPage({
                         </Fragment>
                     )
                 })}
-                {fieldConfig.length > 4 && !isAtBottom && (
-                    <div className="flex-shrink-0 h-[45px] w-full block bg-gradient-to-b from-transparent to-white overflow-visible z-10 absolute left-0 bottom-[63px] dark:bg-[linear-gradient(180deg,rgba(18,18,18,0)_0%,rgb(17,17,17)_97.8%)]"></div>
-                )}
+                {fieldConfig.length > 4 && !isAtBottom && <div className="scroll-fade"></div>}
                 <div ref={scrollRef} className="h-0 w-0 bg-red-500 "></div>
             </div>
             <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full overflow-hidden">

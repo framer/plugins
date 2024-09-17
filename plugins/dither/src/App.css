@@ -39,6 +39,10 @@ html * {
             height: 100% !important;
             transform: translate(0, 0) !important;
         }
+
+        canvas.zoom {
+            max-width: unset;
+        }
     }
 }
 

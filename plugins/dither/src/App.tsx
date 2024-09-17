@@ -212,6 +212,39 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                                 gl.canvas.remove()
                             }
                         }}
+                        onMouseMove={e => {
+                            const canvasContainerRect = canvasContainerRef.current?.getBoundingClientRect()
+
+                            if (!canvasContainerRect) return
+
+                            const aspect = assetResolution[0] / assetResolution[1]
+                            const canvasRect = {
+                                width: exportSize,
+                                height: exportSize / aspect,
+                            }
+
+                            if (
+                                canvasRect.width <= canvasContainerRect.width &&
+                                canvasRect.height <= canvasContainerRect.height
+                            ) {
+                                return
+                            }
+
+                            const offsetX = e.nativeEvent.clientX - canvasContainerRect.left
+                            const offsetY = e.nativeEvent.clientY - canvasContainerRect.top
+
+                            const xPourcent = offsetX / canvasContainerRect.width
+                            const yPourcent = offsetY / canvasContainerRect.height
+
+                            const x = xPourcent * (canvasRect.width - canvasContainerRect.width)
+                            const y = yPourcent * (canvasRect.height - canvasContainerRect.height)
+
+                            gl.canvas.style.transform = `translate(${-x}px, ${-y}px)`
+                            gl.canvas.classList.add("zoom")
+                        }}
+                        onMouseLeave={() => {
+                            gl.canvas.classList.remove("zoom")
+                        }}
                     ></div>
                 ) : (
                     <div className="error-container">

@@ -124,6 +124,7 @@ function useRoutes(routes: PluginRoute[]) {
     }
 
     for (const { match, route } of matches) {
+        console.log({ match, route, fullPath })
         const { path } = route
         const [isMatch, params] = match
         const { title, component: Component } = route

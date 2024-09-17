@@ -14,7 +14,7 @@ import { WidgetsPage } from "./pages/Widgets"
 import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
 import { isLocal } from "./auth"
 
-const BASE_PATH = isLocal() ? "/hubspot" : ""
+const BASE_PATH = isLocal() ? "" : "/hubspot"
 
 interface PluginRoute {
     path: string

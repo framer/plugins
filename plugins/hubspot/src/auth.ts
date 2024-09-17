@@ -24,7 +24,7 @@ const pluginTokensKey = "hubspotTokens"
 export const isLocal = () => window.location.hostname.includes("localhost")
 
 export const AUTH_URI = isLocal()
-    ? "https://localhost:8787/auth"
+    ? "https://localhost:8787"
     : "https://framer-hubspot-api.sakibulislam25800.workers.dev/auth"
 
 class Auth {

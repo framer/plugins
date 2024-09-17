@@ -1,5 +1,5 @@
 import { framer, PublishInfo } from 'framer-plugin';
-import { useState, useEffect, useContext, useCallback } from 'react';
+import { useState, useEffect, useContext, useCallback, useRef } from 'react';
 import './App.css';
 import { GoogleSite, GoogleToken, Site, SiteWithGoogleSite } from './types';
 import { googleApiCall, stripTrailingSlash } from './utils';
@@ -116,7 +116,8 @@ function AppLoadSite({ login, logout }: AppLoadSiteProps) {
 export function App() {
   const { login, logout, tokens, isReady } = useGoogleToken();
 
-  const { ref, updatePluginDimensions } = useAutoSizer({
+  const ref = useRef<HTMLDivElement>(null)
+  const { updatePluginDimensions } = useAutoSizer(ref, {
     enabled: false,
     options: {
       resizable: false,

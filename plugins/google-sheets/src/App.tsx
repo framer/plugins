@@ -78,5 +78,5 @@ export function App({ pluginContext }: AppProps) {
         return <AuthenticatedApp pluginContext={context} />
     }
 
-    return <Authenticate onAuthenticated={setContext} context={context} />
+    return <Authenticate onAuthenticated={setContext} />
 }

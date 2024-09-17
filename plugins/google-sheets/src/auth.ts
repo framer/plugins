@@ -27,7 +27,7 @@ class Auth {
     constructor() {
         this.AUTH_URI = location.hostname.includes("localhost")
             ? "https://localhost:8787"
-            : "https://framer-google-sheets-api.sakibulislam25800.workers.dev/auth"
+            : "https://oauth.fetch.tools/google-search-console-plugin"
     }
 
     async refreshTokens() {

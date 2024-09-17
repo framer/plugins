@@ -55,7 +55,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
     useEffect(() => {
         asciiRef.current?.setPixelSize(exportSize * 0.04)
-        console.log(exportSize * 0.04)
     }, [exportSize])
 
     useImageTexture(

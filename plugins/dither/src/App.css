@@ -19,19 +19,26 @@
     color: var(--framer-color-text-tertiary);
 }
 
+html * {
+    scrollbar-width: thin;
+}
+
 .canvas-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
+    min-width: 100%;
     position: relative;
-    overflow: hidden;
     border-radius: 10px;
+    background-color: #000;
+    overflow: hidden;
 
     .canvas {
-        border-radius: 10px;
-        position: relative;
-        /* border: 1px solid var(--framer-color-divider); */
+        position: absolute;
+        inset: 0;
+
+        canvas:not(.zoom) {
+            width: 100% !important;
+            height: 100% !important;
+            transform: translate(0, 0) !important;
+        }
     }
 }
 

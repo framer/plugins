@@ -35,6 +35,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
+    const ditherRef = useRef()
 
     const [renderer] = useState(() => new Renderer({ alpha: true }))
     const gl = renderer.gl
@@ -84,6 +85,10 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         program?.setResolution?.(resolution[0], resolution[1])
     }, [renderer, program, resolution])
 
+    useEffect(() => {
+        ditherRef.current?.setPixelSize(exportSize * 0.01)
+    }, [exportSize])
+
     const loadTexture = useCallback(
         async (image: ImageAsset) => {
             const loadedImage = await image.loadImage() // get blob src to avoid CORS
@@ -93,12 +98,8 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                 texture.image = img
                 const aspect = img.naturalWidth / img.naturalHeight
 
-                // setResolution([Math.floor(DEFAULT_WIDTH), Math.floor(DEFAULT_WIDTH / aspect)])
-                // setResolution([img.naturalWidth, img.naturalHeight])
-
+                setAssetResolution([img.naturalWidth, img.naturalHeight])
                 setResolution([Math.floor(DEFAULT_WIDTH), Math.floor(DEFAULT_WIDTH / aspect)])
-                // canvasContainerRef.current.style.width = `${DEFAULT_WIDTH}px`
-                // canvasContainerRef.current.style.height = `${DEFAULT_WIDTH / aspect}px`
 
                 texture.update()
             }
@@ -221,6 +222,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             <div className={cn("gui", !image && "disabled")}>
                 <OrderedDither
                     ref={node => {
+                        ditherRef.current = node
                         setProgram(node?.program)
                     }}
                     gl={gl}

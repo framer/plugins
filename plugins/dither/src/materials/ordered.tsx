@@ -187,7 +187,16 @@ export const OrderedDither = forwardRef(function RandomDither(
         program.brightness = brightness * 0.5
     }, [program, brightness])
 
-    useImperativeHandle(ref, () => ({ program }), [program])
+    useImperativeHandle(
+        ref,
+        () => ({
+            program,
+            setPixelSize: (value: number) => {
+                setPixelSize(Math.max(1, Math.min(Math.round(value), 100)))
+            },
+        }),
+        [program, setPixelSize]
+    )
 
     return (
         <>
@@ -238,7 +247,6 @@ export const OrderedDither = forwardRef(function RandomDither(
                         <ColorInput
                             value={colors[0]}
                             onChange={(color: string) => {
-                                console.log(colors, color)
                                 setColors(v => {
                                     const newColors = [...v]
                                     newColors[0] = color
@@ -269,7 +277,7 @@ export const OrderedDither = forwardRef(function RandomDither(
                     value={pixelSize}
                     onValueChange={value => setPixelSize(Number(value))}
                     min={1}
-                    max={6}
+                    max={100}
                     step={1}
                 />
             </div>

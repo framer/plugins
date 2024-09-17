@@ -111,7 +111,6 @@ function useRoutes(routes: PluginRoute[]) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const match = useRoute(fullPath)
         matches.push({ match, route: { ...route, path: fullPath } })
-        console.log({ match, route, fullPath })
 
         if (route.children) {
             for (const child of route.children) {
@@ -131,10 +130,12 @@ function useRoutes(routes: PluginRoute[]) {
 
         if (!isMatch) continue
 
+        console.log(path === BASE_PATH + "/", path, BASE_PATH)
+
         return (
             <motion.div
                 // Don't animate on first page load
-                initial={path === BASE_PATH ? "stay" : animateForward ? "initialForward" : "initialBackward"}
+                initial={path === BASE_PATH + "/" ? false : animateForward ? "initialForward" : "initialBackward"}
                 animate="stay"
                 exit={animateForward ? "exitForward" : "exitBackward"}
                 transition={{

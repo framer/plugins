@@ -51,7 +51,7 @@ interface HSFormsResponse {
     results: HSForm[]
 }
 
-const PROXY_URL = "https://framer-proxy.sakibulislam25800.workers.dev/?"
+const PROXY_URL = "https://oauth.fetch.tools/hubspot-plugin/?"
 const API_URL = "https://api.hubapi.com"
 
 interface RequestOptions {

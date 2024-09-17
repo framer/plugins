@@ -198,7 +198,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
 
     return (
         <div className="container" ref={containerRef}>
-            <div className="canvas-container" ref={canvasContainerRef}>
+            <div className={cn("canvas-container", !image && "empty")} ref={canvasContainerRef}>
                 {image ? (
                     <div
                         className="canvas"

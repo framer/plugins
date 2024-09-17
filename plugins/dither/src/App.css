@@ -46,6 +46,11 @@ html * {
     }
 }
 
+.canvas-container.empty {
+    width: 100% !important;
+    height: 100% !important;
+}
+
 .canvas-container::after {
     content: "";
     z-index: 1;

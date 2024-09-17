@@ -117,7 +117,7 @@ export function App() {
   const { login, logout, tokens, isReady } = useGoogleToken();
 
   const ref = useRef<HTMLDivElement>(null)
-  const { updatePluginDimensions } = useAutoSizer(ref, {
+  const { updatePluginDimensions } = useAutoSizer({
     enabled: false,
     options: {
       resizable: false,

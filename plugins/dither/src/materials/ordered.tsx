@@ -184,7 +184,7 @@ export const OrderedDither = forwardRef(function RandomDither(
     }, [program, pixelSize])
 
     useEffect(() => {
-        program.brightness = brightness * 0.5
+        program.brightness = brightness / 200
     }, [program, brightness])
 
     useImperativeHandle(
@@ -285,10 +285,12 @@ export const OrderedDither = forwardRef(function RandomDither(
                 <label className="gui-label">Brightness</label>
                 <NumberInput
                     value={brightness}
-                    onValueChange={value => setBrightness(Number(value))}
-                    min={-1}
-                    max={1}
-                    step={0.01}
+                    onValueChange={value => {
+                        setBrightness(Number(value))
+                    }}
+                    min={-100}
+                    max={100}
+                    step={1}
                 />
             </div>
             <div className="gui-row">

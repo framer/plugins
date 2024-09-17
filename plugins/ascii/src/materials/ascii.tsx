@@ -209,7 +209,7 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
     }, [program, pixelSize])
 
     useEffect(() => {
-        program.brightness = brightness * 0.5
+        program.brightness = brightness / 200
     }, [program, brightness])
 
     useEffect(() => {
@@ -302,9 +302,9 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
                     onValueChange={value => {
                         setBrightness(value)
                     }}
-                    min={-1}
-                    max={1}
-                    step={0.01}
+                    min={-100}
+                    max={100}
+                    step={1}
                 />
             </div>
             <div className="gui-row">

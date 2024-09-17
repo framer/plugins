@@ -5,7 +5,6 @@ import { assert, columnToLetter, generateHashId, isDefined, parseStringToArray, 
 import { logSyncResult } from "./debug.ts"
 import { queryClient } from "./main.tsx"
 
-const PROXY_URL = "https://framer-semrush-proxy.sakibulislam25800.workers.dev/?"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
 const DRIVE_API_URL = "https://www.googleapis.com/drive/v3"
 
@@ -91,7 +90,7 @@ const request = async <T = unknown>({ path, service = "sheets", method = "get", 
             throw new Error("Invalid service.")
     }
 
-    let url = `${PROXY_URL}${serviceUrl}${path}`
+    let url = `${serviceUrl}${path}`
 
     if (query) {
         const queryParams = Object.entries(query)

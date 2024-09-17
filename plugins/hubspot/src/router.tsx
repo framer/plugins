@@ -130,8 +130,6 @@ function useRoutes(routes: PluginRoute[]) {
 
         if (!isMatch) continue
 
-        console.log(path === BASE_PATH + "/", path, BASE_PATH)
-
         return (
             <motion.div
                 // Don't animate on first page load

@@ -12,6 +12,9 @@ import { Tracking } from "./pages/tracking"
 import { LearnMoreTrackingPage } from "./pages/tracking/learn-more"
 import { WidgetsPage } from "./pages/Widgets"
 import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
+import { isLocal } from "./auth"
+
+const BASE_PATH = isLocal() ? "/hubspot" : ""
 
 interface PluginRoute {
     path: string
@@ -104,7 +107,7 @@ function useRoutes(routes: PluginRoute[]) {
     const matches: Match[] = []
 
     const addToMatch = (route: PluginRoute, parentPath = "") => {
-        const fullPath = parentPath + route.path
+        const fullPath = BASE_PATH + parentPath + route.path
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const match = useRoute(fullPath)
         matches.push({ match, route: { ...route, path: fullPath } })
@@ -130,7 +133,7 @@ function useRoutes(routes: PluginRoute[]) {
         return (
             <motion.div
                 // Don't animate on first page load
-                initial={path === "/" ? "stay" : animateForward ? "initialForward" : "initialBackward"}
+                initial={path === BASE_PATH ? "stay" : animateForward ? "initialForward" : "initialBackward"}
                 animate="stay"
                 exit={animateForward ? "exitForward" : "exitBackward"}
                 transition={{

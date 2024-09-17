@@ -13,6 +13,7 @@ import {
     GLTFDescription,
 } from "ogl"
 import { GLSL } from "../glsl"
+import { BASE_PATH } from "../utils"
 
 // https://github.com/oframe/ogl/blob/master/examples/load-gltf.html
 
@@ -427,17 +428,17 @@ export function useGLBTexture(
 ) {
     const [lutTexture] = useState(() =>
         TextureLoader.load(gl, {
-            src: "assets/pbr/lut.png",
+            src: `${BASE_PATH}/assets/pbr/lut.png`,
         })
     )
     const [envDiffuseTexture] = useState(() =>
         TextureLoader.load(gl, {
-            src: "assets/sunset-diffuse-RGBM.png",
+            src: `${BASE_PATH}/assets/sunset-diffuse-RGBM.png`,
         })
     )
     const [envSpecularTexture] = useState(() =>
         TextureLoader.load(gl, {
-            src: "assets/sunset-specular-RGBM.png",
+            src: `${BASE_PATH}/assets/sunset-specular-RGBM.png`,
         })
     )
 

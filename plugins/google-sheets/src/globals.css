@@ -38,30 +38,29 @@
         flex-direction: column;
         gap: 15px;
     }
+
+    .scroll-fade {
+        flex-shrink: 0;
+        height: 45px;
+        width: 100%;
+        display: block;
+        overflow: visible;
+        z-index: 10;
+        position: absolute;
+        left: 0;
+        bottom: 63px;
+    }
+
+    [data-framer-theme="light"] .scroll-fade {
+        background: linear-gradient(to bottom, transparent, white);
+    }
+
+    [data-framer-theme="dark"] .scroll-fade {
+        background: linear-gradient(180deg, rgba(18, 18, 18, 0) 0%, rgb(17, 17, 17) 97.8%);
+    }
 }
 
 #root {
     display: flex;
     flex-direction: column;
-}
-
-.scroll-fade {
-    flex-shrink: 0;
-    height: 45px;
-    width: 100%;
-    display: block;
-    background-image: linear-gradient(to bottom, transparent, white);
-    overflow: visible;
-    z-index: 10;
-    position: absolute;
-    left: 0;
-    bottom: 63px;
-}
-
-[data-framer-theme="light"] .scroll-fade {
-    background: linear-gradient(to bottom, transparent, white);
-}
-
-[data-framer-theme="dark"] .scroll-fade {
-    background: linear-gradient(180deg, rgba(18, 18, 18, 0) 0%, rgb(17, 17, 17) 97.8%);
 }

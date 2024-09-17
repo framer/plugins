@@ -15,7 +15,6 @@ import { LARGE_HEIGHT, PLUGIN_WIDTH, SMALL_HEIGHT } from './constants';
 import NeedsPublish from './screens/NeedsPublish';
 
 framer.showUI({
-  title: 'Search Console',
   position: 'top right',
   width: PLUGIN_WIDTH,
   height: SMALL_HEIGHT,

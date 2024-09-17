@@ -111,6 +111,7 @@ function useRoutes(routes: PluginRoute[]) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const match = useRoute(fullPath)
         matches.push({ match, route: { ...route, path: fullPath } })
+        console.log({ match, route, fullPath })
 
         if (route.children) {
             for (const child of route.children) {
@@ -124,7 +125,6 @@ function useRoutes(routes: PluginRoute[]) {
     }
 
     for (const { match, route } of matches) {
-        console.log({ match, route, fullPath })
         const { path } = route
         const [isMatch, params] = match
         const { title, component: Component } = route

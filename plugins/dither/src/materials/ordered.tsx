@@ -9,7 +9,7 @@ import { ColorInput } from "../inputs/color-input"
 import { useImageTexture } from "../use-image-texture"
 
 export class OrderedDitherMaterial extends Program {
-    constructor(gl: OGLRenderingContext, texture: Texture, paletteTexture: Texture) {
+    constructor(gl: OGLRenderingContext, paletteTexture: Texture) {
         super(gl, {
             vertex: /*glsl*/ `#version 300 es
                 precision lowp float;
@@ -120,7 +120,7 @@ export class OrderedDitherMaterial extends Program {
                 }
                 `,
             uniforms: {
-                uTexture: { value: texture },
+                uTexture: { value: new Texture(gl) },
                 uResolution: { value: new Vec2(1, 1) },
                 uDitherTexture: { value: new Texture(gl) },
                 uPaletteTexture: { value: paletteTexture },
@@ -166,6 +166,10 @@ export class OrderedDitherMaterial extends Program {
 
     set ditheredTexture(value: Texture) {
         this.uniforms.uDitherTexture.value = value
+    }
+
+    set texture(value: Texture) {
+        this.uniforms.uTexture.value = value
     }
 }
 
@@ -517,10 +521,7 @@ const MATRICES = [
     },
 ]
 
-export const OrderedDither = forwardRef(function RandomDither(
-    { gl, texture }: { gl: OGLRenderingContext; texture: Texture },
-    ref
-) {
+export const OrderedDither = forwardRef(function RandomDither({ gl }: { gl: OGLRenderingContext }, ref) {
     const [mode, setMode] = useState<string>("BAYER_4x4")
     const [colorMode, setColorMode] = useState(1)
     const [quantization, setQuantization] = useState(3)
@@ -557,7 +558,7 @@ export const OrderedDither = forwardRef(function RandomDither(
     // const { texture: ditherTexture } = useOrderedDitheringTexture(gl, ORDERED_DITHERING_MATRICES[mode])
     const { texture: paletteTexture } = useGradientTexture(gl, colors, quantization)
 
-    const [program] = useState(() => new OrderedDitherMaterial(gl, texture, paletteTexture))
+    const [program] = useState(() => new OrderedDitherMaterial(gl, paletteTexture))
 
     useImageTexture(
         gl,

@@ -5,6 +5,8 @@ import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
 import { OrderedDither } from "./materials/ordered"
 import cn from "clsx"
 import { assert, bytesFromCanvas } from "./utils"
+import { Upload } from "./dropzone/drag-and-drop"
+import { useImageTexture } from "./use-image-texture"
 
 if (import.meta.env.DEV) {
     import.meta.hot?.accept(() => {
@@ -31,8 +33,14 @@ export function App() {
 }
 const DEFAULT_WIDTH = 250
 
+export interface DroppedAsset {
+    type: string
+    src: string
+}
+
 function DitherImage({ image }: { image: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)
+    const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>()
     const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
     const ditherRef = useRef()
@@ -89,33 +97,52 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         ditherRef.current?.setPixelSize(exportSize * 0.009)
     }, [exportSize])
 
-    const loadTexture = useCallback(
-        async (image: ImageAsset) => {
-            const loadedImage = await image.loadImage() // get blob src to avoid CORS
-
-            const img = new Image()
-            img.onload = () => {
-                texture.image = img
-                const aspect = img.naturalWidth / img.naturalHeight
-
-                setAssetResolution([img.naturalWidth, img.naturalHeight])
-                setResolution([Math.floor(DEFAULT_WIDTH), Math.floor(DEFAULT_WIDTH / aspect)])
-
-                texture.update()
-            }
-            img.src = loadedImage.currentSrc
-        },
-        [program, renderer, texture]
-    )
-
     useEffect(() => {
-        if (image) {
-            loadTexture(image)
-        } else {
-            texture.image = null
-            texture.update()
-        }
-    }, [image])
+        const assetAspect = assetResolution[0] / assetResolution[1]
+        setResolution([exportSize, exportSize / assetAspect])
+    }, [exportSize, assetResolution])
+
+    console.log(image)
+
+    // const loadTexture = useCallback(
+    //     async (image: ImageAsset) => {
+    //         const loadedImage = await image.loadImage() // get blob src to avoid CORS
+
+    //         const img = new Image()
+    //         img.onload = () => {
+    //             texture.image = img
+    //             // const aspect = img.naturalWidth / img.naturalHeight
+
+    //             setAssetResolution([img.naturalWidth, img.naturalHeight])
+    //             // setResolution([Math.floor(DEFAULT_WIDTH), Math.floor(DEFAULT_WIDTH / aspect)])
+
+    //             texture.update()
+    //         }
+    //         img.src = loadedImage.currentSrc
+    //     },
+    //     [program, renderer, texture]
+    // )
+
+    // useEffect(() => {
+    //     if (image) {
+    //         loadTexture(image)
+    //     } else {
+    //         texture.image = null
+    //         texture.update()
+    //     }
+    // }, [image])
+
+    useImageTexture(
+        gl,
+        droppedAsset?.src || image?.url,
+        texture => {
+            console.log("droppedAsset?.src", droppedAsset?.src)
+            program.texture = texture
+            console.log("texture", texture)
+            setAssetResolution([texture.width, texture.height])
+        },
+        [program]
+    )
 
     // useEffect(() => {
     //     canvasContainerRef.current?.appendChild(gl.canvas)
@@ -196,14 +223,16 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         return () => resizeObserver.disconnect()
     }, [renderer, camera])
 
+    const disabled = !(droppedAsset?.src || image)
+
     return (
         <div className="container" ref={containerRef}>
-            <div className={cn("canvas-container", !image && "empty")} ref={canvasContainerRef}>
-                {image ? (
+            <div className={cn("canvas-container", disabled && "empty")} ref={canvasContainerRef}>
+                {!disabled ? (
                     <div
                         className="canvas"
                         style={{
-                            display: image ? "block" : "none",
+                            display: disabled ? "none" : "block",
                         }}
                         ref={node => {
                             if (node) {
@@ -248,18 +277,26 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     ></div>
                 ) : (
                     <div className="error-container">
+                        {/* <Upload
+                        className="error-container"
+                        onUpload={e => {
+                            setDroppedAsset(e)
+                        }}
+                    >
+                        Select an Image...
+                    </Upload> */}
                         <p>Select an Image...</p>
                     </div>
                 )}
             </div>
-            <div className={cn("gui", !image && "disabled")}>
+            <div className={cn("gui", disabled && "disabled")}>
                 <OrderedDither
                     ref={node => {
                         ditherRef.current = node
                         setProgram(node?.program)
                     }}
                     gl={gl}
-                    texture={texture}
+                    // texture={texture}
                 />
                 <div className="gui-row">
                     <label className="gui-label">Resolution</label>
@@ -279,8 +316,21 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     </select>
                 </div>
             </div>
-            <button onClick={saveImage} disabled={!image}>
-                Add Image
+            <div className="asset-buttons">
+                <Upload
+                    setDroppedAsset={asset => {
+                        setDroppedAsset(asset)
+                    }}
+                    disabled={false}
+                />
+                {droppedAsset && (
+                    <button className="clear" onClick={() => setDroppedAsset(null)}>
+                        Clear
+                    </button>
+                )}
+            </div>
+            <button onClick={saveImage} disabled={disabled}>
+                Set Image
             </button>
         </div>
     )

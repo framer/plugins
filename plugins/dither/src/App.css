@@ -256,10 +256,51 @@ body[data-framer-theme="dark"] .error-container {
     border-color: rgba(255, 255, 255, 0.05);
 }
 
+body[data-framer-theme="light"] {
+    .canvas-container {
+        background: unset;
+    }
+
+    .error-container {
+        background: rgba(0, 0, 0, 0.05);
+    }
+}
+
 body[data-framer-theme="dark"] .error-container {
     background: rgba(0, 0, 0, 0.4);
 }
 
 * {
     user-select: none;
+}
+
+.upload {
+    .upload-cta {
+        width: 100%;
+    }
+}
+
+.asset-buttons {
+    display: flex;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+    border-top: 1px solid var(--framer-color-divider);
+    padding-top: 15px;
+
+    * {
+        flex-grow: 1;
+        width: auto;
+        cursor: pointer;
+        color: #fff;
+        font-weight: 500;
+    }
+}
+
+body[data-framer-theme="light"] {
+    .asset-buttons * {
+        color: #000;
+        font-weight: 500;
+    }
 }

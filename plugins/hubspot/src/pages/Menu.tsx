@@ -1,8 +1,8 @@
-import { useLocation } from "wouter"
-import { Logo } from "../components/Logo"
-import { ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon, WidgetsIcon } from "../components/Icons"
 import { framer } from "framer-plugin"
+import { useLocation } from "wouter"
 import cx from "classnames"
+import { Logo } from "../components/Logo"
+import { ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon, MeetingsIcon } from "../components/Icons"
 import { BASE_PATH } from "../router"
 
 const MenuOption = ({
@@ -46,7 +46,7 @@ export function MenuPage() {
             <div className="grid grid-cols-2 gap-2.5">
                 <MenuOption title="Forms" to="/forms" icon={<FormsIcon />} />
                 <MenuOption title="Tracking" to="/tracking" icon={<ChartIcon />} />
-                <MenuOption title="Widgets" to="/widgets" icon={<WidgetsIcon />} />
+                <MenuOption title="Meetings" to="/meetings" icon={<MeetingsIcon />} />
                 <MenuOption title="Chats" to="/chat" icon={<MessageIcon />} className="gap-[7px]" />
                 <MenuOption
                     title="Events"

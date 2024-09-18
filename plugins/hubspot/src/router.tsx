@@ -10,7 +10,7 @@ import { FormsInstallationPage } from "./pages/forms/installation"
 import { MenuPage } from "./pages/Menu"
 import { Tracking } from "./pages/tracking"
 import { LearnMoreTrackingPage } from "./pages/tracking/learn-more"
-import { WidgetsPage } from "./pages/Widgets"
+import { MeetingsPage } from "./pages/Meetings"
 import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
 import { isLocal } from "./auth"
 
@@ -38,9 +38,9 @@ const pluginRoutes: PluginRoute[] = [
         component: MenuPage,
     },
     {
-        path: "/widgets",
-        component: WidgetsPage,
-        title: "Widgets",
+        path: "/meetings",
+        component: MeetingsPage,
+        title: "Meetings",
     },
     {
         path: "/account",

@@ -3,6 +3,7 @@ import { Logo } from "../components/Logo"
 import { ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon, WidgetsIcon } from "../components/Icons"
 import { framer } from "framer-plugin"
 import cx from "classnames"
+import { BASE_PATH } from "../router"
 
 const MenuOption = ({
     icon,
@@ -22,7 +23,7 @@ const MenuOption = ({
     return (
         <button
             className={cx("h-[110px] w-full tile col items-center justify-center rounded-md", className)}
-            onClick={() => (onClick ? onClick() : navigate(to))}
+            onClick={() => (onClick ? onClick() : navigate(`${BASE_PATH}${to}`))}
         >
             {icon}
             <p className="font-semibold text-tertiary">{title}</p>

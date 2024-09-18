@@ -4,6 +4,7 @@ import { useLocation } from "wouter"
 import auth from "../auth"
 import { Button } from "../components/Button"
 import { Logo } from "../components/Logo"
+import { BASE_PATH } from "../router"
 
 export function AuthenticatePage() {
     const [, navigate] = useLocation()
@@ -15,7 +16,7 @@ export function AuthenticatePage() {
             const isAuth = await auth.isAuthenticated()
 
             if (isAuth) {
-                navigate("/menu")
+                navigate(`${BASE_PATH}/menu`)
             }
         }
 
@@ -53,7 +54,7 @@ export function AuthenticatePage() {
             // Poll the auth server and wait for tokens
             await pollForTokens(authorization.readKey)
 
-            navigate("/menu")
+            navigate(`${BASE_PATH}/menu`)
         } catch (e) {
             framer.notify(e instanceof Error ? e.message : "An unknown error occurred.", { variant: "error" })
         } finally {

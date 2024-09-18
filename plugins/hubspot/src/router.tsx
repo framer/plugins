@@ -14,7 +14,7 @@ import { WidgetsPage } from "./pages/Widgets"
 import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
 import { isLocal } from "./auth"
 
-const BASE_PATH = isLocal() ? "" : "/hubspot"
+export const BASE_PATH = isLocal() ? "" : "/hubspot"
 
 interface PluginRoute {
     path: string
@@ -108,6 +108,7 @@ function useRoutes(routes: PluginRoute[]) {
 
     const addToMatch = (route: PluginRoute, parentPath = "") => {
         const fullPath = BASE_PATH + parentPath + route.path
+
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const match = useRoute(fullPath)
         matches.push({ match, route: { ...route, path: fullPath } })

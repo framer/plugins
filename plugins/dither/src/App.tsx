@@ -86,7 +86,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     }, [renderer, program, resolution])
 
     useEffect(() => {
-        ditherRef.current?.setPixelSize(exportSize * 0.008)
+        ditherRef.current?.setPixelSize(exportSize * 0.009)
     }, [exportSize])
 
     const loadTexture = useCallback(

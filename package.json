@@ -12,11 +12,15 @@
     "scripts": {
         "clean": "rm -rf ./p",
         "copy": "bash ./scripts/copy-build.sh",
-        "dev": "turbo run dev",
-        "build": "turbo run build && npm run copy",
+        "dev": "turbo run dev --concurrency=20",
+        "build": "turbo run build --env-mode=loose && npm run copy",
         "typecheck": "turbo run typecheck"
     },
     "devDependencies": {
-        "turbo": "^1.13.2"
-    }
+        "turbo": "^2.1.2"
+    },
+    "dependencies": {
+        "framer-plugin": "^0.3.3"
+    },
+    "packageManager": "npm@9.8.0"
 }

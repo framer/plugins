@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    h6 {
+        @apply font-semibold text-primary leading-[1.2];
+    }
+}
+
+@layer components {
+    .row {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+    }
+
+    .col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .row-lg {
+        display: flex;
+        flex-direction: row;
+        gap: 15px;
+    }
+
+    .col-lg {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .framer-button-destructive {
+        background-color: theme(colors.framer-red);
+        color: white;
+    }
+
+    .framer-button-destructive:hover,
+    .framer-button-destructive:focus {
+        background-color: #e15;
+    }
+
+    .framer-button-super-destructive {
+        background-color: theme(colors.framer-red);
+        box-shadow: 0 4px 8px 0 theme(colors.framer-red / 30%);
+        color: white;
+    }
+
+    .framer-button-super-destructive:hover,
+    .framer-button-super-destructive:focus {
+        background-color: #e15;
+    }
+
+    .input-container {
+        @apply row items-center justify-between pl-[15px] text-tertiary;
+    }
+
+    .input-container > p {
+        @apply text-primary max-w-[134px] truncate;
+    }
+
+    [data-framer-theme="light"] .tile {
+        background-color: theme("backgroundColor.tertiaryDimmedLight");
+    }
+
+    [data-framer-theme="dark"] .tile {
+        background-color: theme("backgroundColor.tertiaryDimmedDark");
+    }
+
+    .tile:hover {
+        background-color: theme("backgroundColor.tertiary");
+    }
+}
+
+body,
+html,
+#root {
+    height: fit-content;
+    width: fit-content;
+    overflow: hidden;
+}

@@ -14,7 +14,7 @@
     },
     "dependencies": {
         "comlink": "^4.4.1",
-        "framer-plugin": "^0.3.3",
+        "framer-plugin": "^0.4.0",
         "react": "^18",
         "react-dom": "^18",
         "roughjs": "^4.6.6",

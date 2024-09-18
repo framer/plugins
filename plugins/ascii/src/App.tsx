@@ -9,6 +9,7 @@ import { useOGLPipeline } from "./ogl/pipeline"
 import { useImageTexture } from "./hooks/use-image-texture"
 import { useVideoTexture } from "./hooks/use-video-texture"
 import { useGLBTexture } from "./hooks/use-glb-texture"
+import { BASE_PATH } from "./utils"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()
@@ -40,7 +41,7 @@ export interface DroppedAsset {
     src: string
 }
 
-const DEFAUL_ASSET = { type: "glb", src: "/framer.glb" }
+const DEFAUL_ASSET = { type: "glb", src: `${BASE_PATH}/framer.glb` }
 
 function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | null }) {
     const canvasContainerRef = useRef<HTMLDivElement>(null)

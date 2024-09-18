@@ -16,6 +16,7 @@ export function getLocalStorageTokens() {
 }
 
 export function useGoogleToken() {
+  const [loading, setLoading] = useState(false);
   const pollInterval = useRef<number>();
 
   const pollForTokens = (readKey: string) => {
@@ -58,29 +59,35 @@ export function useGoogleToken() {
   }, []);
 
   const login = async () => {
-    // Retrieve the authorization URL & set of unique read/write keys
-    const response = await fetch(
-      `${import.meta.env.VITE_OAUTH_API_DOMAIN}/authorize`,
-      {
-        method: 'POST',
-      },
-    );
-    if (response.status !== 200) return;
+    try {
+      setLoading(true)
 
-    const authorize = await response.json();
+      // Retrieve the authorization URL & set of unique read/write keys
+      const response = await fetch(
+        `${import.meta.env.VITE_OAUTH_API_DOMAIN}/authorize`,
+        {
+          method: 'POST',
+        },
+      );
+      if (response.status !== 200) return;
 
-    // Open up the provider's login window.
-    window.open(authorize.url);
+      const authorize = await response.json();
 
-    // While the user is logging in, poll the backend with the
-    // read key. On successful login, tokens will be returned.
-    const tokens = await pollForTokens(authorize.readKey);
+      // Open up the provider's login window.
+      window.open(authorize.url);
 
-    // Store tokens in local storage to keep the user logged in.
-    window.localStorage.setItem('tokens', JSON.stringify(tokens));
+      // While the user is logging in, poll the backend with the
+      // read key. On successful login, tokens will be returned.
+      const tokens = await pollForTokens(authorize.readKey);
 
-    // Update the component state.
-    setTokens(tokens as GoogleToken);
+      // Store tokens in local storage to keep the user logged in.
+      window.localStorage.setItem('tokens', JSON.stringify(tokens));
+
+      // Update the component state.
+      setTokens(tokens as GoogleToken);
+    } finally {
+      setLoading(false)
+    }
   };
 
   const refresh = useCallback(async (): Promise<GoogleToken | null> => {
@@ -129,5 +136,5 @@ export function useGoogleToken() {
     setTokens(null);
   };
 
-  return { isReady, login, refresh, tokens, logout };
+  return { isReady, login, refresh, tokens, logout, loading };
 }

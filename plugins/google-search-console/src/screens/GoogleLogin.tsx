@@ -2,12 +2,14 @@ import bigG from '../images/BigG@2x.png';
 
 interface GoogleLoginProps {
   login: () => void;
+  loading: boolean;
   hasError?: boolean;
   errorMessage?: string;
 }
 
 export default function GoogleLogin({
   login,
+  loading,
   hasError,
   errorMessage,
 }: GoogleLoginProps) {
@@ -26,7 +28,7 @@ export default function GoogleLogin({
         </div>
       </div>
       <button type="button" onClick={login}>
-        Log In
+        {loading ? "Loading..." : "Log In"}
       </button>
     </div>
   );

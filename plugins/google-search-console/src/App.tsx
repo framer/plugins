@@ -112,7 +112,7 @@ function AppLoadSite({ login, logout }: AppLoadSiteProps) {
 }
 
 export function App() {
-  const { login, logout, tokens, isReady } = useGoogleToken();
+  const { login, logout, tokens, isReady, loading } = useGoogleToken();
 
   const ref = useRef<HTMLDivElement>(null)
 
@@ -125,6 +125,7 @@ export function App() {
 
             return (
               <GoogleLogin
+                loading={loading}
                 hasError
                 errorMessage={
                   e.error.name !== 'GoogleError' ? e.error.message || '' : ''
@@ -150,7 +151,7 @@ export function App() {
                   logout={logout}
                 />
               ) : (
-                <GoogleLogin login={login} />
+                <GoogleLogin login={login} loading={loading} />
               )
             ) : null}
           </AuthContext.Provider>

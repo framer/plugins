@@ -144,7 +144,7 @@ export async function authorize(options: { readKey: string; writeKey: string }) 
                 initNotionClient()
                 resolve()
             }
-        }, 2500)
+        }, 10_000)
     })
 }
 

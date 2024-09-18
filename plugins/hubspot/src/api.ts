@@ -51,7 +51,7 @@ interface HSFormsResponse {
     results: HSForm[]
 }
 
-const PROXY_URL = "https://oauth.fetch.tools/hubspot-plugin/?"
+const PROXY_URL = "https://cors.farpace.workers.dev/"
 const API_URL = "https://api.hubapi.com"
 
 interface RequestOptions {

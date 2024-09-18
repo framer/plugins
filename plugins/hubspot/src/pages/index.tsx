@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from "react"
 import { framer } from "framer-plugin"
 import { useLocation } from "wouter"
 import auth from "../auth"
+import { BASE_PATH } from "../router"
 import { Button } from "../components/Button"
 import { Logo } from "../components/Logo"
-import { BASE_PATH } from "../router"
 
 export function AuthenticatePage() {
     const [, navigate] = useLocation()

@@ -1,7 +1,7 @@
+import { Link } from "wouter"
 import { useAccountQuery, useFormsQuery } from "../../api"
 import { CenteredSpinner } from "../../components/CenteredSpinner"
 import { ComponentInsert } from "../../components/ComponentInsert"
-import { Link } from "wouter"
 
 const buildFormScript = (portalId: number, dataHostingLocation: string, formId: string) => {
     return `
@@ -26,7 +26,7 @@ export function FormsPage() {
 
     if (!account) return <p className="text-tertiary">No account found</p>
 
-    const { portalId, dataHostingLocation } = account
+    const { portalId, uiDomain, dataHostingLocation } = account
 
     return (
         <div className="col-lg">
@@ -55,7 +55,7 @@ export function FormsPage() {
             )}
             <button
                 className="framer-button-primary w-full"
-                onClick={() => window.open(`https://${account?.uiDomain}/forms/${portalId}`, "_blank")}
+                onClick={() => window.open(`https://${uiDomain}/forms/${portalId}`, "_blank")}
             >
                 View Forms
             </button>

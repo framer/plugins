@@ -51,7 +51,7 @@ interface HSFormsResponse {
     results: HSForm[]
 }
 
-const PROXY_URL = "https://cors.farpace.workers.dev/"
+const PROXY_URL = "https://framer-cors-proxy.framer-team.workers.dev/?"
 const API_URL = "https://api.hubapi.com"
 
 interface RequestOptions {

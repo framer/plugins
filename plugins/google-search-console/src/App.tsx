@@ -128,8 +128,6 @@ export function App() {
       <main key={tokens?.access_token || 'logout'} ref={ref}>
         <ErrorBoundary
           FallbackComponent={(e) => {
-            // logout();
-
             return (
               <GoogleLogin
                 loading={loading}
@@ -144,12 +142,6 @@ export function App() {
           resetKeys={[tokens?.access_token]}
         >
           <AuthContext.Provider value={tokens}>
-            {/* <button
-          type="button"
-          onClick={() => refresh(tokens?.refresh_token as string)}
-        >
-          Debug: Refresh token
-        </button> */}
             {isReady ? (
               tokens?.access_token ? (
                 <AppLoadSite

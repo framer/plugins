@@ -9,7 +9,9 @@ import { AuthContext, useGoogleToken } from './auth';
 import CriticalError from './screens/CriticalError';
 import SiteView from './screens/SiteView';
 import Loading from './components/Loading';
-import { PLUGIN_WIDTH, SMALL_HEIGHT } from './constants';
+import { useAutoSizer } from '@triozer/framer-toolbox';
+import { ResizeContext } from './resize';
+import { LARGE_HEIGHT, PLUGIN_WIDTH, SMALL_HEIGHT } from './constants';
 import NeedsPublish from './screens/NeedsPublish';
 
 framer.showUI({
@@ -115,9 +117,39 @@ export function App() {
   const { login, logout, tokens, isReady, loading } = useGoogleToken();
 
   const ref = useRef<HTMLDivElement>(null)
+  const { updatePluginDimensions } = useAutoSizer({
+    enabled: false,
+    options: {
+      resizable: false,
+      width: PLUGIN_WIDTH,
+      height: SMALL_HEIGHT,
+      minWidth: PLUGIN_WIDTH,
+      minHeight: SMALL_HEIGHT,
+    },
+  });
 
+  const resize = useCallback((height: 'short' | 'long') => {
+    if (height === 'short') {
+      updatePluginDimensions('manual', {
+        width: PLUGIN_WIDTH,
+        height: SMALL_HEIGHT,
+      });
+    } else {
+      updatePluginDimensions('manual', {
+        width: PLUGIN_WIDTH,
+        height: LARGE_HEIGHT,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!tokens?.access_token) {
+      resize('short');
+    }
+  }, [resize, tokens?.access_token]);
 
   return (
+    <ResizeContext.Provider value={resize}>
       <main key={tokens?.access_token || 'logout'} ref={ref}>
         <ErrorBoundary
           FallbackComponent={(e) => {
@@ -157,5 +189,6 @@ export function App() {
           </AuthContext.Provider>
         </ErrorBoundary>
       </main>
+    </ResizeContext.Provider>
   );
 }

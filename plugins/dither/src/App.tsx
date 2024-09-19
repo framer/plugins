@@ -291,7 +291,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     </button>
                 )}
             </div>
-            <button onClick={saveEffect} disabled={disabled}>
+            <button onClick={saveEffect} disabled={disabled} className="submit">
                 {savingInAction ? "Adding..." : "Insert Image"}
             </button>
         </div>

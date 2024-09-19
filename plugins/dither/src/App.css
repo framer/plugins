@@ -274,10 +274,31 @@ body[data-framer-theme="dark"] .error-container {
     user-select: none;
 }
 
+.submit {
+    width: 100%;
+    color: #000;
+    background-color: #fff !important;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+body[data-framer-theme="light"] {
+    .submit {
+        background-color: #000 !important;
+        color: #fff;
+        font-weight: 500;
+    }
+}
+
 .upload {
     .upload-cta {
         width: 100%;
+        background: var(--framer-color-bg-tertiary);
     }
+}
+
+.clear {
+    background: var(--framer-color-bg-tertiary) !important;
 }
 
 .asset-buttons {

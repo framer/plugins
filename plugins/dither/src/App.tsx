@@ -43,6 +43,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>()
     const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
+    const [savingInAction, setSavingInAction] = useState<boolean>(false)
     const ditherRef = useRef()
 
     const [renderer] = useState(() => new Renderer({ alpha: true }))
@@ -78,14 +79,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
 
     const [mesh] = useState(() => new Mesh(gl, { geometry, program }))
 
-    const [texture] = useState(
-        () =>
-            new Texture(gl, {
-                minFilter: gl.LINEAR,
-                magFilter: gl.LINEAR,
-            })
-    )
-
     const [resolution, setResolution] = useState([DEFAULT_WIDTH, DEFAULT_WIDTH])
 
     useEffect(() => {
@@ -102,53 +95,15 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         setResolution([exportSize, exportSize / assetAspect])
     }, [exportSize, assetResolution])
 
-    console.log(image)
-
-    // const loadTexture = useCallback(
-    //     async (image: ImageAsset) => {
-    //         const loadedImage = await image.loadImage() // get blob src to avoid CORS
-
-    //         const img = new Image()
-    //         img.onload = () => {
-    //             texture.image = img
-    //             // const aspect = img.naturalWidth / img.naturalHeight
-
-    //             setAssetResolution([img.naturalWidth, img.naturalHeight])
-    //             // setResolution([Math.floor(DEFAULT_WIDTH), Math.floor(DEFAULT_WIDTH / aspect)])
-
-    //             texture.update()
-    //         }
-    //         img.src = loadedImage.currentSrc
-    //     },
-    //     [program, renderer, texture]
-    // )
-
-    // useEffect(() => {
-    //     if (image) {
-    //         loadTexture(image)
-    //     } else {
-    //         texture.image = null
-    //         texture.update()
-    //     }
-    // }, [image])
-
     useImageTexture(
         gl,
         droppedAsset?.src || image?.url,
         texture => {
-            console.log("droppedAsset?.src", droppedAsset?.src)
             program.texture = texture
-            console.log("texture", texture)
             setAssetResolution([texture.width, texture.height])
         },
         [program]
     )
-
-    // useEffect(() => {
-    //     canvasContainerRef.current?.appendChild(gl.canvas)
-
-    //     return () => gl.canvas.remove()
-    // }, [])
 
     useEffect(() => {
         if (!program) return
@@ -171,28 +126,43 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         return () => cancelAnimationFrame(raf)
     }, [render])
 
-    const saveImage = useCallback(async () => {
-        render()
-
-        const originalImage = await image.getData()
+    const toBytes = useCallback(async () => {
+        // texture.needsUpdate = true
+        renderer.render({ scene, camera })
 
         assert(gl.canvas)
-        const nextBytes = await bytesFromCanvas(gl.canvas)
-        assert(nextBytes)
+        const bytes = await bytesFromCanvas(gl.canvas)
+        assert(bytes)
 
-        const start = performance.now()
+        return bytes
+    }, [renderer, scene, camera, gl, resolution])
 
-        await framer.setImage({
-            image: {
-                bytes: nextBytes,
-                mimeType: originalImage.mimeType,
-            },
-        })
+    const saveEffect = useCallback(async () => {
+        const bytes = await toBytes()
 
-        if (import.meta.env.DEV) {
-            console.log("total duration", performance.now() - start)
+        setSavingInAction(true)
+
+        if (droppedAsset) {
+            await framer.addImage({
+                image: {
+                    type: "bytes",
+                    bytes: bytes,
+                    mimeType: "image/png",
+                },
+            })
+        } else {
+            const originalImage = await image.getData()
+
+            await framer.setImage({
+                image: {
+                    bytes,
+                    mimeType: originalImage.mimeType,
+                },
+            })
         }
-    }, [render, image])
+
+        setSavingInAction(false)
+    }, [toBytes, image, droppedAsset])
 
     const containerRef = useRef<HTMLDivElement>(null)
 
@@ -277,14 +247,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     ></div>
                 ) : (
                     <div className="error-container">
-                        {/* <Upload
-                        className="error-container"
-                        onUpload={e => {
-                            setDroppedAsset(e)
-                        }}
-                    >
-                        Select an Image...
-                    </Upload> */}
                         <p>Select an Image...</p>
                     </div>
                 )}
@@ -329,8 +291,8 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     </button>
                 )}
             </div>
-            <button onClick={saveImage} disabled={disabled}>
-                Set Image
+            <button onClick={saveEffect} disabled={disabled}>
+                {savingInAction ? "Adding..." : "Insert Image"}
             </button>
         </div>
     )

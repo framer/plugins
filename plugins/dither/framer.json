@@ -1,5 +1,5 @@
 {
-    "id": "TQeWOY",
+    "id": "tQeWOY",
     "name": "Dither",
     "modes": ["canvas", "editImage", "image"],
     "icon": "/dither.png"

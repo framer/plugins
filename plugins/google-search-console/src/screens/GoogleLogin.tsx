@@ -27,7 +27,7 @@ export default function GoogleLogin({
           </p>
         </div>
       </div>
-      <button type="button" onClick={login}>
+      <button type="button" onClick={login} disabled={loading}>
         {loading ? "Loading..." : "Log In"}
       </button>
     </div>

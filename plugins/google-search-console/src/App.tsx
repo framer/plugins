@@ -9,7 +9,7 @@ import { AuthContext, useGoogleToken } from './auth';
 import CriticalError from './screens/CriticalError';
 import SiteView from './screens/SiteView';
 import Loading from './components/Loading';
-import { PLUGIN_WIDTH, SMALL_HEIGHT } from './constants';
+import { LARGE_HEIGHT, PLUGIN_WIDTH, SMALL_HEIGHT } from './constants';
 import NeedsPublish from './screens/NeedsPublish';
 
 framer.showUI({
@@ -116,6 +116,13 @@ export function App() {
 
   const ref = useRef<HTMLDivElement>(null)
 
+  useEffect(() => {
+    if (!tokens?.access_token) {
+      framer.showUI({ width: PLUGIN_WIDTH, height: SMALL_HEIGHT })
+    } else {
+      framer.showUI({ width: PLUGIN_WIDTH, height: LARGE_HEIGHT })
+    }
+  }, [tokens?.access_token]);
 
   return (
       <main key={tokens?.access_token || 'logout'} ref={ref}>

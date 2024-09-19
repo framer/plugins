@@ -26,6 +26,12 @@ const usePluginResizeObserver = (ref: React.RefObject<HTMLDivElement>) => {
             height,
         })
     }, [width, height])
+
+    useEffect(() => {
+        if (!tokens?.access_token) {
+          resize('short');
+        }
+      }, [resize, tokens?.access_token]);
 }
 
 export function App() {

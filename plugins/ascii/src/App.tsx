@@ -114,7 +114,15 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
         setSavingInAction(true)
 
-        if (framerCanvasImage) {
+        if (droppedAsset || isPlaceholder) {
+            await framer.addImage({
+                image: {
+                    type: "bytes",
+                    bytes: bytes,
+                    mimeType: "image/png",
+                },
+            })
+        } else {
             const originalImage = await framerCanvasImage.getData()
 
             await framer.setImage({
@@ -123,18 +131,10 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     mimeType: originalImage.mimeType,
                 },
             })
-        } else {
-            await framer.addImage({
-                image: {
-                    type: "bytes",
-                    bytes: bytes,
-                    mimeType: "image/png",
-                },
-            })
         }
 
         setSavingInAction(false)
-    }, [toBytes, framerCanvasImage])
+    }, [toBytes, framerCanvasImage, droppedAsset, isPlaceholder])
 
     // resize observer
     useEffect(() => {

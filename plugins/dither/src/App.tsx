@@ -87,7 +87,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     }, [renderer, program, resolution])
 
     useEffect(() => {
-        ditherRef.current?.setPixelSize(exportSize * 0.0099)
+        ditherRef.current?.setPixelSize(exportSize * 0.008)
     }, [exportSize])
 
     useEffect(() => {

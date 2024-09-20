@@ -87,7 +87,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     }, [renderer, program, resolution])
 
     useEffect(() => {
-        ditherRef.current?.setPixelSize(exportSize * 0.009)
+        ditherRef.current?.setPixelSize(exportSize * 0.0099)
     }, [exportSize])
 
     useEffect(() => {
@@ -281,7 +281,9 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                         <option value="500">500px</option>
                         <option value="1000">1000px</option>
                         <option value="2000">2000px</option>
-                        <option value={assetResolution[0]}>Source ({assetResolution[0]}px)</option>
+                        <option value={Math.min(4000, assetResolution[0])}>
+                            Source ({Math.min(4000, assetResolution[0])}px)
+                        </option>
                     </select>
                 </div>
             </div>

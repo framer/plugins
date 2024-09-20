@@ -7,7 +7,7 @@ import { ColorInput } from "../inputs/color-input"
 import { useImageTexture } from "../use-image-texture"
 
 export class OrderedDitherMaterial extends Program {
-    constructor(gl: OGLRenderingContext, paletteTexture: Texture) {
+    constructor(gl: OGLRenderingContext) {
         super(gl, {
             vertex: /*glsl*/ `#version 300 es
                 precision lowp float;
@@ -112,7 +112,7 @@ export class OrderedDitherMaterial extends Program {
                 uTexture: { value: new Texture(gl) },
                 uResolution: { value: new Vec2(1, 1) },
                 uDitherTexture: { value: new Texture(gl) },
-                uPaletteTexture: { value: paletteTexture },
+                uPaletteTexture: { value: new Texture(gl) },
                 uPixelSize: { value: 1 },
                 uColorMode: { value: 0 },
                 uQuantization: { value: 8 },
@@ -162,6 +162,10 @@ export class OrderedDitherMaterial extends Program {
 
     set texture(value: Texture) {
         this.uniforms.uTexture.value = value
+    }
+
+    set paletteTexture(value: Texture) {
+        this.uniforms.uPaletteTexture.value = value
     }
 
     set red(value: number) {
@@ -232,9 +236,11 @@ export const OrderedDither = forwardRef(function RandomDither({ gl }: { gl: OGLR
 
     const [brightness, setBrightness] = useState(0)
 
-    const { texture: paletteTexture } = useGradientTexture(gl, colors, quantization)
+    useGradientTexture(gl, { colors, quantization }, (texture: Texture) => {
+        program.paletteTexture = texture
+    })
 
-    const [program] = useState(() => new OrderedDitherMaterial(gl, paletteTexture))
+    const [program] = useState(() => new OrderedDitherMaterial(gl))
 
     useImageTexture(
         gl,

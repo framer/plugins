@@ -74,11 +74,6 @@ export class OrderedDitherMaterial extends Program {
                     
                     if (uColorMode == 0) { // Grayscale
                         color.rgb = vec3(luma(rgb));
-                        
-
-                        // color.r = quantize(color.r + threshold.r, uQuantization);
-                        // color.g = quantize(color.g + threshold.g, uQuantization);
-                        // color.b = quantize(color.b + threshold.b, uQuantization);
 
                         color.r = quantize(color.r + threshold, uQuantization);
                         color.g = quantize(color.g + threshold, uQuantization);
@@ -91,19 +86,11 @@ export class OrderedDitherMaterial extends Program {
                         color.g = quantize(color.g + threshold, uQuantization);
                         color.b = quantize(color.b + threshold, uQuantization);
 
-                        // color.r = quantize(color.r + threshold.r, uQuantization);
-                        // color.g = quantize(color.g + threshold.g, uQuantization);
-                        // color.b = quantize(color.b + threshold.b, uQuantization);
-
                     } else if (uColorMode == 2) { // Custom Palette
                         color.rgb = vec3(luma(rgb));
 
-                        ivec2 paletteTextureSize = textureSize(uDitherTexture, 0);
+                        ivec2 paletteTextureSize = textureSize(uPaletteTexture, 0);
                         color = texture(uPaletteTexture, vec2(quantize(1. - (luma(rgb) + threshold), paletteTextureSize.x), 0.0)).rgb;
-
-                        // color.r = texture(uPaletteTexture, vec2(quantize(1. - (luma(rgb) + threshold.r), paletteTextureSize.x), 0.0)).r;
-                        // color.g = texture(uPaletteTexture, vec2(quantize(1. - (luma(rgb) + threshold.g), paletteTextureSize.x), 0.0)).r;
-                        // color.b = texture(uPaletteTexture, vec2(quantize(1. - (luma(rgb) + threshold.b), paletteTextureSize.x), 0.0)).r;
                     }
 
                     return color;
@@ -118,9 +105,6 @@ export class OrderedDitherMaterial extends Program {
 
                     fragColor = vec4(orderedDither(color, pixelizedUv), color.a);
 
-                    // float l = grayscale(texture(uDitherTexture, vUv).rgb);
-
-                    // fragColor = vec4(vec3(l), 1.);
                     
                 }
                 `,

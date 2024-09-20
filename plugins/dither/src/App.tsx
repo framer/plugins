@@ -173,7 +173,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         canvasContainerRef.current.style.width = `${DEFAULT_WIDTH}px`
         canvasContainerRef.current.style.height = `${DEFAULT_WIDTH / aspect}px`
 
-        setExportSize(assetResolution[0])
+        setExportSize(DEFAULT_WIDTH)
     }, [assetResolution])
 
     useEffect(() => {
@@ -194,6 +194,8 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     }, [renderer, camera])
 
     const disabled = !(droppedAsset?.src || image)
+
+    const uploadRef = useRef<HTMLDivElement>(null)
 
     return (
         <div className="container" ref={containerRef}>
@@ -246,7 +248,12 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                         }}
                     ></div>
                 ) : (
-                    <div className="error-container">
+                    <div
+                        className="error-container"
+                        onClick={() => {
+                            uploadRef.current?.click()
+                        }}
+                    >
                         <p>Select an Image...</p>
                     </div>
                 )}
@@ -280,6 +287,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             </div>
             <div className="asset-buttons">
                 <Upload
+                    ref={uploadRef}
                     setDroppedAsset={asset => {
                         setDroppedAsset(asset)
                     }}

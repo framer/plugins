@@ -1,15 +1,25 @@
 import Dropzone from "react-dropzone"
-import { useState } from "react"
+import { forwardRef, useImperativeHandle, useRef, useState } from "react"
 import { DroppedAsset } from "../App"
 
-export function Upload({
-    setDroppedAsset,
-    disabled = false,
-}: {
-    setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
-    disabled: boolean
-}) {
+export const Upload = forwardRef(function Upload(
+    {
+        setDroppedAsset,
+        disabled = false,
+    }: {
+        setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
+        disabled: boolean
+    },
+    ref
+) {
     const [message, setMessage] = useState<string>("Upload")
+    const buttonRef = useRef<HTMLButtonElement>(null)
+
+    useImperativeHandle(ref, () => ({
+        click: () => {
+            buttonRef.current?.click()
+        },
+    }))
 
     return (
         <Dropzone
@@ -34,11 +44,11 @@ export function Upload({
             {({ getRootProps, getInputProps }) => (
                 <div {...getRootProps()} className="upload">
                     <input {...getInputProps()} />
-                    <button type="button" className="upload-cta" disabled={disabled}>
+                    <button ref={buttonRef} type="button" className="upload-cta" disabled={disabled}>
                         {message}
                     </button>
                 </div>
             )}
         </Dropzone>
     )
-}
+})

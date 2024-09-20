@@ -62,7 +62,7 @@ export class OrderedDitherMaterial extends Program {
                     // vec3 threshold = uRandom == 1 ? vec3(random(uv)) : texture(uDitherTexture, vec2(x, y)).rgb;
                     float threshold = uRandom == 1 ? random(uv) : grayscale(texture(uDitherTexture, vec2(x, y)).rgb);
                     threshold += uBrightness;
-                    threshold -= 0.35; // arbitraty threshold adjustment
+                    threshold -= 0.33; // arbitraty threshold adjustment
                     //     if (luma(rgb) >= threshold) { // Black and White
                     //         color = vec3(1.0);
                     //     }

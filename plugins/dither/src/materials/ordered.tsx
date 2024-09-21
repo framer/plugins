@@ -394,7 +394,7 @@ export const OrderedDither = forwardRef(function RandomDither({ gl }: { gl: OGLR
                     value={pixelSize}
                     onValueChange={value => setPixelSize(Number(value))}
                     min={1}
-                    max={100}
+                    max={50}
                     step={1}
                 />
             </div>

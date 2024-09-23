@@ -3,19 +3,6 @@ import { useAccountQuery, useFormsQuery } from "../../api"
 import { CenteredSpinner } from "../../components/CenteredSpinner"
 import { ComponentInsert } from "../../components/ComponentInsert"
 
-const buildFormScript = (portalId: number, dataHostingLocation: string, formId: string) => {
-    return `
-    <script charset="utf-8" type="text/javascript" src="//js-${dataHostingLocation}.hsforms.net/forms/embed/v2.js"></script>
-    <script>
-      hbspt.forms.create({
-        region: "${dataHostingLocation}",
-        portalId: "${portalId}",
-        formId: "${formId}",
-      });
-    </script>
-  `
-}
-
 export function FormsPage() {
     const { data: account, isLoading: isLoadingAccount } = useAccountQuery()
     const { data: formsData, isLoading: isLoadingForms } = useFormsQuery()
@@ -37,11 +24,12 @@ export function FormsPage() {
                 forms.map((form, i) => (
                     <ComponentInsert
                         key={i}
-                        url="https://framer.com/m/Embed-UI5d.js"
+                        url="https://framer.com/m/HubSpot-Form-qRu7.js"
                         attributes={{
                             controls: {
-                                type: "html",
-                                html: buildFormScript(portalId, dataHostingLocation, form.id),
+                                portalId: String(portalId),
+                                formId: form.id,
+                                dataHostingLocation,
                             },
                         }}
                     >

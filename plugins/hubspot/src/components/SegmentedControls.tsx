@@ -21,10 +21,9 @@ export const SegmentedControls = ({ options, value, onValueChange }: SegmentedCo
         <div className="relative bg-tertiary w-[134px] h-[32px] p-0.5 rounded-lg flex items-center justify-center gap-1 font-semibold text-xs select-none">
             <motion.div
                 style={{
-                    boxShadow: "0px 2px 4px 0px rgba(0, 0, 0, .1), 0px 1px 0px 0px rgba(0, 0, 0, .05)",
                     width: `${segmentWidth}px`,
                 }}
-                className="absolute top-[2px] left-[2px] h-[28px] bg-white dark:bg-[#555555] rounded-lg"
+                className="absolute top-[2px] left-[2px] h-[28px] bg-white dark:bg-[#555555] rounded-md segment-control-shadow"
                 initial={false}
                 animate={{ x: `${selectedIndex * segmentWidth}px` }}
                 transition={{ type: "spring", stiffness: 700, damping: 50 }}

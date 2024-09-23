@@ -1,7 +1,6 @@
 import React, { cloneElement, useEffect, useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
 import { useLocation, useRoute, RouteComponentProps } from "wouter"
-import { PluginPage } from "./components/PluginPage"
+import { AnimatePresence, MotionProps, motion } from "framer-motion"
 import { AuthenticatePage } from "./pages"
 import { AccountPage } from "./pages/Account"
 import { ChatPage } from "./pages/Chat"
@@ -11,10 +10,9 @@ import { MenuPage } from "./pages/Menu"
 import { Tracking } from "./pages/tracking"
 import { LearnMoreTrackingPage } from "./pages/tracking/learn-more"
 import { MeetingsPage } from "./pages/Meetings"
+import { PluginPage } from "./components/PluginPage"
 import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
 import { isLocal } from "./auth"
-
-export const BASE_PATH = isLocal() ? "" : "/hubspot"
 
 interface PluginRoute {
     path: string
@@ -30,7 +28,7 @@ interface Match {
 
 const pluginRoutes: PluginRoute[] = [
     {
-        path: "/",
+        path: isLocal() ? "/" : "/hubspot",
         component: AuthenticatePage,
     },
     {
@@ -78,7 +76,8 @@ const pluginRoutes: PluginRoute[] = [
 
 function useRoutes(routes: PluginRoute[]) {
     const [location] = useLocation()
-    const [animateForward, setAnimateForward] = useState(true)
+    const [animationDirection, setAnimationDirection] = useState(1)
+    const [isFirstPage, setIsFirstPage] = useState(true)
     // Save the length of the `routes` array that we receive on the first render
     const [routesLen] = useState(() => routes.length)
 
@@ -88,10 +87,14 @@ function useRoutes(routes: PluginRoute[]) {
     }
 
     useEffect(() => {
+        setIsFirstPage(false)
+    }, [])
+
+    useEffect(() => {
         const originalHistoryBack = history.back
 
         history.back = () => {
-            setAnimateForward(false)
+            setAnimationDirection(-1)
             originalHistoryBack.call(history)
         }
 
@@ -101,13 +104,13 @@ function useRoutes(routes: PluginRoute[]) {
     }, [])
 
     useEffect(() => {
-        setAnimateForward(true)
+        setAnimationDirection(1)
     }, [location])
 
     const matches: Match[] = []
 
     const addToMatch = (route: PluginRoute, parentPath = "") => {
-        const fullPath = BASE_PATH + parentPath + route.path
+        const fullPath = parentPath + route.path
 
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const match = useRoute(fullPath)
@@ -125,51 +128,23 @@ function useRoutes(routes: PluginRoute[]) {
     }
 
     for (const { match, route } of matches) {
-        const { path } = route
         const [isMatch, params] = match
         const { title, component: Component } = route
 
         if (!isMatch) continue
 
+        const animationProps = isFirstPage
+            ? {}
+            : {
+                  initial: { x: `${animationDirection * 100}vw`, opacity: 0, position: "absolute" },
+                  animate: { x: 0, opacity: 1, position: "relative" },
+                  exit: { x: `${animationDirection * -100}vw`, opacity: 0, position: "absolute" },
+                  transition: { ease: "easeInOut", duration: 0.28 },
+              }
+
         return (
-            <motion.div
-                // Don't animate on first page load
-                initial={path === BASE_PATH + "/" ? false : animateForward ? "initialForward" : "initialBackward"}
-                animate="stay"
-                exit={animateForward ? "exitForward" : "exitBackward"}
-                transition={{
-                    ease: "easeInOut",
-                    duration: 0.28,
-                }}
-                variants={{
-                    initialForward: {
-                        x: "100vw",
-                        opacity: 0,
-                        position: "absolute",
-                    },
-                    initialBackward: {
-                        x: "-100vw",
-                        opacity: 0,
-                        position: "absolute",
-                    },
-                    stay: {
-                        x: 0,
-                        opacity: 1,
-                        position: "relative",
-                    },
-                    exitForward: {
-                        x: "-100vw",
-                        opacity: 0,
-                        position: "absolute",
-                    },
-                    exitBackward: {
-                        x: "100vw",
-                        opacity: 0,
-                        position: "absolute",
-                    },
-                }}
-            >
-                <PluginPage title={title}>
+            <motion.div {...(animationProps as MotionProps)}>
+                <PluginPage title={title} animateForward={animationDirection === 1}>
                     <PageErrorBoundaryFallback>
                         <Component params={params} />
                     </PageErrorBoundaryFallback>

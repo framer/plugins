@@ -1,9 +1,18 @@
+import { useEffect } from "react"
 import { framer } from "framer-plugin"
 import { useLocation } from "wouter"
 import cx from "classnames"
+import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "../api"
 import { Logo } from "../components/Logo"
 import { ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon, MeetingsIcon } from "../components/Icons"
-import { BASE_PATH } from "../router"
+
+const queryHooks = {
+    "/forms": { hook: useFormsQuery, shouldRefetch: true },
+    "/account": { hook: useAccountQuery, shouldRefetch: false },
+    "/tracking": { hook: useUserQuery, shouldRefetch: true },
+    "/chat": { hook: useInboxesQuery, shouldRefetch: true },
+    "/meetings": { hook: useMeetingsQuery, shouldRefetch: true },
+}
 
 const MenuOption = ({
     icon,
@@ -23,7 +32,7 @@ const MenuOption = ({
     return (
         <button
             className={cx("h-[110px] w-full tile col items-center justify-center rounded-md", className)}
-            onClick={() => (onClick ? onClick() : navigate(`${BASE_PATH}${to}`))}
+            onClick={() => (onClick ? onClick() : navigate(to))}
         >
             {icon}
             <p className="font-semibold text-tertiary">{title}</p>
@@ -32,6 +41,19 @@ const MenuOption = ({
 }
 
 export function MenuPage() {
+    const [location] = useLocation()
+
+    const queries = Object.fromEntries(
+        Object.entries(queryHooks).map(([key, { hook, shouldRefetch }]) => [key, { query: hook(), shouldRefetch }])
+    )
+
+    useEffect(() => {
+        const pageQuery = queries[location]
+        if (pageQuery && pageQuery.shouldRefetch) {
+            pageQuery.query.refetch()
+        }
+    }, [location, queries])
+
     return (
         <div className="col-lg">
             <div className="col-lg items-center pt-[30px] pb-15">

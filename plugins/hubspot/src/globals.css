@@ -34,23 +34,11 @@
     }
 
     .framer-button-destructive {
-        background-color: theme(colors.framer-red);
-        color: white;
+        @apply bg-framer-red text-white;
     }
 
     .framer-button-destructive:hover,
     .framer-button-destructive:focus {
-        background-color: #e15;
-    }
-
-    .framer-button-super-destructive {
-        background-color: theme(colors.framer-red);
-        box-shadow: 0 4px 8px 0 theme(colors.framer-red / 30%);
-        color: white;
-    }
-
-    .framer-button-super-destructive:hover,
-    .framer-button-super-destructive:focus {
         background-color: #e15;
     }
 
@@ -59,19 +47,17 @@
     }
 
     .input-container > p {
-        @apply text-primary max-w-[134px] truncate;
+        @apply max-w-[134px] truncate text-primary;
     }
 
-    [data-framer-theme="light"] .tile {
-        background-color: theme("backgroundColor.tertiaryDimmedLight");
+    .tile {
+        @apply bg-tertiaryDimmedLight dark:bg-tertiaryDimmedDark hover:bg-tertiary;
     }
 
-    [data-framer-theme="dark"] .tile {
-        background-color: theme("backgroundColor.tertiaryDimmedDark");
-    }
-
-    .tile:hover {
-        background-color: theme("backgroundColor.tertiary");
+    .segment-control-shadow {
+        box-shadow:
+            0px 2px 4px 0px rgba(0, 0, 0, 0.1),
+            0px 1px 0px 0px rgba(0, 0, 0, 0.05);
     }
 }
 

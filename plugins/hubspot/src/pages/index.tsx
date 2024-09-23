@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { framer } from "framer-plugin"
-import { useLocation } from "wouter"
+import { Redirect, useLocation } from "wouter"
 import auth from "../auth"
-import { BASE_PATH } from "../router"
 import { Button } from "../components/Button"
 import { Logo } from "../components/Logo"
 
@@ -11,17 +10,9 @@ export function AuthenticatePage() {
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
     const [isLoading, setIsLoading] = useState(false)
 
-    useEffect(() => {
-        async function checkAuthOnLoad() {
-            const isAuth = await auth.isAuthenticated()
-
-            if (isAuth) {
-                navigate(`${BASE_PATH}/menu`)
-            }
-        }
-
-        checkAuthOnLoad()
-    }, [navigate])
+    if (auth.isAuthenticated()) {
+        return <Redirect to="/menu" />
+    }
 
     const pollForTokens = (readKey: string) => {
         if (pollInterval.current) {
@@ -54,7 +45,7 @@ export function AuthenticatePage() {
             // Poll the auth server and wait for tokens
             await pollForTokens(authorization.readKey)
 
-            navigate(`${BASE_PATH}/menu`)
+            navigate("/menu")
         } catch (e) {
             framer.notify(e instanceof Error ? e.message : "An unknown error occurred.", { variant: "error" })
         } finally {

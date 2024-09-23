@@ -82,7 +82,11 @@ interface RequestOptions {
 
 const request = async <T = unknown>({ path, method, query, body }: RequestOptions): Promise<T> => {
     try {
-        const tokens = auth.tokens.getOrThrow()
+        let tokens = auth.tokens.getOrThrow()
+
+        if (auth.isTokensExpired()) {
+            tokens = await auth.refreshTokens()
+        }
 
         const url = new URL(`${PROXY_URL}${API_URL}${path}`)
 

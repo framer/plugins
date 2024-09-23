@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+    darkMode: ["class", "[data-framer-theme='dark']"],
     content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
     theme: {
         extend: {
@@ -14,6 +15,9 @@ export default {
                 tintDimmed: "var(--framer-color-tint-dimmed)",
                 tintDark: "var(--framer-color-tint-dark)",
                 blackDimmed: "rgba(0, 0, 0, 0.5)",
+                "hs-orange": "#FF5C35",
+                "framer-red": "#FF3366",
+                "framer-blue": "#0099FF",
             },
             colors: {
                 primary: "var(--framer-color-text)",
@@ -22,7 +26,6 @@ export default {
                 inverted: "var(--framer-color-text-inverted)",
                 tint: "var(--framer-color-tint)",
                 "framer-red": "#FF3366",
-                "hubspot-orange": "#FF5C35",
             },
             borderColor: {
                 divider: "var(--framer-color-divider)",

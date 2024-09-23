@@ -3,7 +3,7 @@ import { GoogleToken } from './types';
 
 export const AuthContext = createContext<GoogleToken | null>(null);
 
-const STORAGE_KEY = 'framer-search-console-tokens'
+const STORAGE_KEY = 'framer-search-console-tokens';
 
 export function getLocalStorageTokens() {
   const serializedTokens = window.localStorage.getItem(STORAGE_KEY);
@@ -28,7 +28,9 @@ export function useGoogleToken() {
       clearInterval(pollInterval.current);
     }
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      window.setTimeout(reject, 60_000); // Timeout after 60 seconds
+
       pollInterval.current = setInterval(async () => {
         const response = await fetch(
           `${import.meta.env.VITE_OAUTH_API_DOMAIN}/poll?readKey=${readKey}`,
@@ -62,7 +64,7 @@ export function useGoogleToken() {
 
   const login = async () => {
     try {
-      setLoading(true)
+      setLoading(true);
 
       // Retrieve the authorization URL & set of unique read/write keys
       const response = await fetch(
@@ -88,7 +90,7 @@ export function useGoogleToken() {
       // Update the component state.
       setTokens(tokens as GoogleToken);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   };
 

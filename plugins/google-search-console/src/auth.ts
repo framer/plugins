@@ -3,8 +3,10 @@ import { GoogleToken } from './types';
 
 export const AuthContext = createContext<GoogleToken | null>(null);
 
+const STORAGE_KEY = 'framer-search-console-tokens'
+
 export function getLocalStorageTokens() {
-  const serializedTokens = window.localStorage.getItem('tokens');
+  const serializedTokens = window.localStorage.getItem(STORAGE_KEY);
 
   if (serializedTokens) {
     const tokens = JSON.parse(serializedTokens);
@@ -48,7 +50,7 @@ export function useGoogleToken() {
 
   useEffect(() => {
     // Check for tokens on first load.
-    const serializedTokens = window.localStorage.getItem('tokens');
+    const serializedTokens = window.localStorage.getItem(STORAGE_KEY);
 
     if (serializedTokens) {
       const tokens = JSON.parse(serializedTokens);
@@ -81,7 +83,7 @@ export function useGoogleToken() {
       const tokens = await pollForTokens(authorize.readKey);
 
       // Store tokens in local storage to keep the user logged in.
-      window.localStorage.setItem('tokens', JSON.stringify(tokens));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
 
       // Update the component state.
       setTokens(tokens as GoogleToken);
@@ -114,7 +116,7 @@ export function useGoogleToken() {
           tokens.refresh_token = refreshToken;
         }
 
-        window.localStorage.setItem('tokens', JSON.stringify(tokens));
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
 
         setTokens(tokens as GoogleToken);
 
@@ -132,7 +134,7 @@ export function useGoogleToken() {
   }, [tokens?.refresh_token]);
 
   const logout = () => {
-    window.localStorage.removeItem('tokens');
+    window.localStorage.removeItem(STORAGE_KEY);
     setTokens(null);
   };
 

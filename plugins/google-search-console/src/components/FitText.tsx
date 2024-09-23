@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { Textfit } from 'react-textfit';
+import { Textfit } from '@ataverascrespo/react18-ts-textfit';
 
 interface FitTextProps {
   children: ReactNode;
@@ -10,7 +10,7 @@ export default function FitText({ children }: FitTextProps) {
 
   return (
     <div style={{ opacity: ready ? 1 : 0 }}>
-      <Textfit mode="single" onReady={() => setReady(true)}>
+      <Textfit min={12} max={32} mode="single" onReady={() => setReady(true)}>
         {children}
       </Textfit>
     </div>

@@ -1,4 +1,5 @@
 import React from "react"
+import { motion } from "framer-motion"
 import cx from "classnames"
 import { CaretLeftIcon } from "./Icons"
 
@@ -8,29 +9,43 @@ const PageDivider = () => (
     </div>
 )
 
-const Title = ({ title }: { title: string }) => (
+const Title = ({ title, animateForward }: { title: string; animateForward?: boolean }) => (
     <React.Fragment>
         <PageDivider />
-        <div className="flex gap-[5px]">
+        <div className="flex gap-[5px] overflow-hidden">
             <div onClick={history.back} className="flex items-center pl-15 cursor-pointer">
                 <CaretLeftIcon />
             </div>
-            <div className="py-15">
+            <motion.div
+                className="py-15"
+                initial={{ opacity: 0.75, x: animateForward ? 20 : -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{
+                    type: "spring",
+                    damping: 20,
+                    stiffness: 400,
+                    mass: 0.1,
+                    velocity: 300,
+                    duration: 0.15,
+                    delay: 0.17,
+                }}
+            >
                 <h6>{title}</h6>
-            </div>
+            </motion.div>
         </div>
     </React.Fragment>
 )
 
 interface Props {
     children: React.ReactNode
+    animateForward?: boolean
     title?: string
     className?: string
 }
 
-export const PluginPage = ({ children, title, className }: Props) => (
+export const PluginPage = ({ children, title, className, animateForward }: Props) => (
     <div className={cx("flex flex-col h-fit w-[260px]", className)}>
-        {title && <Title title={title} />}
+        {title && <Title title={title} animateForward={animateForward} />}
         <PageDivider />
         <div className="col-lg p-15">{children}</div>
     </div>

@@ -43,9 +43,7 @@ class Auth {
             const json = await res.json()
             const newTokens = json as Tokens
 
-            this.tokens.save(newTokens)
-
-            return newTokens
+            return this.tokens.save(newTokens)
         } catch (e) {
             this.tokens.clear()
             throw e
@@ -62,7 +60,9 @@ class Auth {
         }
 
         const tokens = (await res.json()) as Tokens
+
         this.tokens.save(tokens)
+
         return tokens
     }
 
@@ -90,13 +90,9 @@ class Auth {
         return Date.now() >= expirationTime
     }
 
-    async isAuthenticated() {
+    isAuthenticated() {
         const tokens = this.tokens.get()
         if (!tokens) return false
-
-        if (this.isTokensExpired()) {
-            await this.refreshTokens()
-        }
 
         return true
     }
@@ -112,6 +108,8 @@ class Auth {
 
             this.storedTokens = storedTokens
             window.localStorage.setItem(pluginTokensKey, JSON.stringify(storedTokens))
+
+            return storedTokens
         },
         get: (): StoredTokens | null => {
             if (this.storedTokens) return this.storedTokens

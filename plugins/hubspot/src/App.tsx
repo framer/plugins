@@ -2,6 +2,8 @@ import { framer } from "framer-plugin"
 import { useEffect, useRef, useState } from "react"
 import { useDebounceCallback, useResizeObserver } from "usehooks-ts"
 import { Router } from "./router"
+import auth from "./auth"
+
 interface Size {
     width?: number
     height?: number
@@ -10,10 +12,11 @@ interface Size {
 const usePluginResizeObserver = (ref: React.RefObject<HTMLDivElement>) => {
     const [{ width, height }, setSize] = useState<Size>({
         width: 260,
-        height: 344,
+        // Menu Page : Auth Page heights
+        height: auth.isAuthenticated() ? 545 : 344,
     })
 
-    const onResize = useDebounceCallback(setSize, 20)
+    const onResize = useDebounceCallback(setSize, 0)
 
     useResizeObserver({
         ref,

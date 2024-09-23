@@ -1,7 +1,7 @@
-import { Button } from "../../../components/Button"
+import { useState, useEffect } from "react"
 import { CustomCode, framer } from "framer-plugin"
 import { useUserQuery } from "../../../api"
-import { useState, useEffect } from "react"
+import { Button } from "../../../components/Button"
 
 const useCustomCode = () => {
     const [customCode, setCustomCode] = useState<CustomCode | null>(null)
@@ -40,12 +40,12 @@ export const ToggleTrackingButton = ({ className }: { className?: string }) => {
 
     return (
         <Button
-            variant={isTrackingEnabled === null ? "secondary" : isTrackingEnabled === true ? "destructive" : "primary"}
+            variant={isTrackingEnabled ? "secondary" : "primary"}
             onClick={toggleTracking}
             isLoading={isLoadingUser}
             className={className}
         >
-            {isTrackingEnabled === true ? "Disable" : "Enable"}
+            {isTrackingEnabled ? "Disable" : "Enable"}
         </Button>
     )
 }

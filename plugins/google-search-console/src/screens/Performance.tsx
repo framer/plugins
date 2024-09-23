@@ -2,7 +2,7 @@
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import { GoogleQueryResult } from '../types';
 import { mapQueries } from '../utils';
-import { CSSProperties, useMemo } from 'react';
+import { CSSProperties, useMemo, useState } from 'react';
 import Loading from '../components/Loading';
 import aveta from 'aveta';
 import FitText from '../components/FitText';
@@ -126,7 +126,7 @@ const CustomTooltip = ({
         <div>
           {[...payload].reverse().map((pld) => (
             <div className={`chart-tooltip--${pld.dataKey}`}>
-              {uppercase(pld.dataKey)}: {pld.value}
+              {uppercase(pld.dataKey)}: {pld.value.toLocaleString()}
             </div>
           ))}
         </div>
@@ -164,6 +164,10 @@ export default function Performance({ performance }: PerformanceProps) {
     [chartData],
   );
 
+  const [metricFocus, setMetricFocus] = useState<
+    'clicks' | 'impressions' | null
+  >(null);
+
   if (!performance) {
     return <Loading />;
   }
@@ -181,13 +185,35 @@ export default function Performance({ performance }: PerformanceProps) {
       ) : performance?.dailyPerformance ? (
         <section>
           <div className="stat-boxes">
-            <div className="stat-box--clicks">
+            <div
+              role="button"
+              className="stat-box--clicks"
+              style={{
+                opacity: metricFocus && metricFocus !== 'clicks' ? 0.5 : 1,
+              }}
+              onClick={() =>
+                setMetricFocus((currFocus) =>
+                  currFocus === 'clicks' ? null : 'clicks',
+                )
+              }
+            >
               <div>
                 <FitText>{aveta(totalClicks)}</FitText>
               </div>
               <div>{`Click${totalClicks === 1 ? '' : 's'}`}</div>
             </div>
-            <div className="stat-box--impressions">
+            <div
+              role="button"
+              className="stat-box--impressions"
+              style={{
+                opacity: metricFocus && metricFocus !== 'impressions' ? 0.5 : 1,
+              }}
+              onClick={() =>
+                setMetricFocus((currFocus) =>
+                  currFocus === 'impressions' ? null : 'impressions',
+                )
+              }
+            >
               <div>
                 <FitText>{aveta(totalImpressions)}</FitText>
               </div>
@@ -256,22 +282,26 @@ export default function Performance({ performance }: PerformanceProps) {
                       return [value.toLocaleString(), type];
                     }}
                   />
-                  <Area
-                    isAnimationActive={false}
-                    type={lineType}
-                    dataKey="clicks"
-                    stroke="#0099FF"
-                    fillOpacity={1}
-                    fill="url(#colorPv)"
-                  />
-                  <Area
-                    isAnimationActive={false}
-                    type={lineType}
-                    dataKey="impressions"
-                    stroke="#8855FF"
-                    fillOpacity={1}
-                    fill="url(#colorImpressions)"
-                  />
+                  {!metricFocus || metricFocus === 'clicks' ? (
+                    <Area
+                      isAnimationActive={false}
+                      type={lineType}
+                      dataKey="clicks"
+                      stroke="#0099FF"
+                      fillOpacity={1}
+                      fill="url(#colorPv)"
+                    />
+                  ) : null}
+                  {!metricFocus || metricFocus === 'impressions' ? (
+                    <Area
+                      isAnimationActive={false}
+                      type={lineType}
+                      dataKey="impressions"
+                      stroke="#8855FF"
+                      fillOpacity={1}
+                      fill="url(#colorImpressions)"
+                    />
+                  ) : null}
                 </AreaChart>
               </ResponsiveContainer>
             </div>

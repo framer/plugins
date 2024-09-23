@@ -410,9 +410,6 @@ export async function syncSheet({
         slugFieldColumnIndex,
     })
 
-    console.log("Submitting sheet...")
-    console.table(collectionItems)
-
     await collection.addItems(collectionItems)
 
     const itemsToDelete = Array.from(unsyncedItemIds)
@@ -434,7 +431,7 @@ export async function syncSheet({
         warnings: status.warnings,
     }
 
-    logSyncResult(result)
+    logSyncResult(result, collectionItems)
 
     return result
 }

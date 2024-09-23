@@ -1,7 +1,7 @@
 import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { PluginContext, useSheetQuery, useSyncSheetMutation } from "./sheets"
-import { logSyncResult } from "./debug"
+import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
 
 import { Authenticate } from "./pages/Authenticate"
 import { MapSheetFieldsPage } from "./pages/MapSheetFields"
@@ -10,6 +10,31 @@ import { CenteredSpinner } from "./components/CenteredSpinner"
 
 interface AppProps {
     pluginContext: PluginContext
+}
+
+const useLoggingToggle = () => {
+    useEffect(() => {
+        const isLoggingEnabled = () => localStorage.getItem(PLUGIN_LOG_SYNC_KEY) === "true"
+
+        const toggle = () => {
+            const newState = !isLoggingEnabled()
+            localStorage.setItem(PLUGIN_LOG_SYNC_KEY, newState ? "true" : "false")
+            framer.notify(`Logging ${newState ? "enabled" : "disabled"}`, { variant: "info" })
+        }
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.shiftKey && e.key === "L") {
+                e.preventDefault()
+                toggle()
+            }
+        }
+
+        document.addEventListener("keydown", handleKeyDown)
+
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown)
+        }
+    }, [])
 }
 
 export function AuthenticatedApp({ pluginContext }: AppProps) {
@@ -72,6 +97,8 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
 }
 
 export function App({ pluginContext }: AppProps) {
+    useLoggingToggle()
+
     const [context, setContext] = useState(pluginContext)
 
     if (context.isAuthenticated) {

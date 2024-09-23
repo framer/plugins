@@ -1,34 +1,32 @@
-import classNames from "classnames"
-import { useState } from "react"
+import cx from "classnames"
 
 interface Props {
     value: string
     darken: boolean
     checked: boolean
-    onChange: () => void
+    onChange: (newChecked: boolean) => void
 }
 
-export function CheckboxTextfield({ value, darken, checked: initialChecked, onChange }: Props) {
-    const [checked, setChecked] = useState(initialChecked)
-
+export function CheckboxTextfield({ value, darken, checked, onChange }: Props) {
     const toggle = () => {
-        setChecked(!checked)
-        onChange()
+        onChange(!checked)
+    }
+
+    const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        onChange(event.target.checked)
     }
 
     return (
         <div
-            className={classNames(
-                "flex bg-tertiary rounded-lg items-center pl-[10px] select-none",
-                darken && "opacity-50"
-            )}
+            className={cx("flex bg-tertiary rounded-lg items-center pl-[10px] select-none", { "opacity-50": darken })}
             onClick={toggle}
             role="button"
         >
             <input
                 type="checkbox"
                 checked={checked}
-                onChange={toggle}
+                onChange={handleCheckboxChange}
+                onClick={e => e.stopPropagation()}
                 className="checked:!bg-sheets-green focus:ring-1 focus:ring-sheets-green"
             />
             <input

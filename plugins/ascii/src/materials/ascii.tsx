@@ -233,7 +233,7 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
         () => ({
             program,
             setPixelSize: (value: number) => {
-                setPixelSize(Math.max(8, Math.min(Math.round(value), 100)))
+                setPixelSize(Math.max(8, Math.min(Math.round(value), 160)))
             },
         }),
         [program, setPixelSize]
@@ -291,7 +291,7 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
                         setPixelSize(value)
                     }}
                     min={8}
-                    max={100}
+                    max={160}
                     step={1}
                 />
             </div>

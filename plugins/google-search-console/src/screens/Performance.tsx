@@ -4,7 +4,8 @@ import { GoogleQueryResult } from '../types';
 import { mapQueries } from '../utils';
 import { CSSProperties, useMemo } from 'react';
 import Loading from '../components/Loading';
-import shortNumber from '@pogix3m/short-number';
+import aveta from 'aveta';
+import FitText from '../components/FitText';
 
 function dateFormatter(value: number) {
   const date = new Date(value * 1000);
@@ -181,11 +182,15 @@ export default function Performance({ performance }: PerformanceProps) {
         <section>
           <div className="stat-boxes">
             <div className="stat-box--clicks">
-              <div>{shortNumber(totalClicks)}</div>
+              <div>
+                <FitText>{aveta(totalClicks)}</FitText>
+              </div>
               <div>{`Click${totalClicks === 1 ? '' : 's'}`}</div>
             </div>
             <div className="stat-box--impressions">
-              <div>{shortNumber(totalImpressions)}</div>
+              <div>
+                <FitText>{aveta(totalImpressions)}</FitText>
+              </div>
               <div>{`Impression${totalImpressions === 1 ? '' : 's'}`}</div>
             </div>
           </div>

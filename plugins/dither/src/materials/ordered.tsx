@@ -124,8 +124,6 @@ export class OrderedDitherMaterial extends Program {
             },
             transparent: true,
         })
-
-        // this.resolution = this.uniforms.uResolution.value
     }
 
     setResolution(x: number, y: number) {
@@ -329,11 +327,6 @@ export const OrderedDither = forwardRef(function RandomDither({ gl }: { gl: OGLR
                     defaultValue={mode}
                 >
                     <option value="RANDOM">Random</option>
-                    {/* {Object.entries(ORDERED_DITHERING_MATRICES).map(([key, { title }]) => (
-                        <option key={key} value={key}>
-                            {title}
-                        </option>
-                    ))} */}
                     {MATRICES.map(({ title, id }) => (
                         <option key={id} value={id}>
                             {title}

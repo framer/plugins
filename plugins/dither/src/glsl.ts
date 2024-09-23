@@ -14,7 +14,6 @@ export const GLSL = {
     GREYSCALE: /*glsl*/ `
         float grayscale(vec3 color) {
             return dot(color, vec3(0.299, 0.587, 0.114));
-            // return (color.r*2126. + color.g*7152. + color.b*722.) / 10000.;
         }
     `,
     QUANTIZE: /*glsl*/ `

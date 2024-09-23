@@ -34,6 +34,10 @@ html * {
             height: 100% !important;
             transform: translate(0, 0) !important;
         }
+
+        canvas.zoom {
+            max-width: unset;
+        }
     }
 }
 
@@ -49,6 +53,10 @@ html * {
 }
 
 body[data-framer-theme="light"] {
+    .canvas-container {
+        background-color: rgba(0, 0, 0, 0.15);
+    }
+
     .canvas-container::after {
         box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
     }
@@ -324,14 +332,14 @@ body[data-framer-theme="dark"] .error-container {
 .submit {
     width: 100%;
     color: #000;
-    background-color: #fff;
+    background-color: #fff !important;
     font-weight: 600;
     cursor: pointer;
 }
 
 body[data-framer-theme="light"] {
     .submit {
-        background-color: #000;
+        background-color: #000 !important;
         color: #fff;
         font-weight: 500;
     }
@@ -340,7 +348,12 @@ body[data-framer-theme="light"] {
 .upload {
     .upload-cta {
         width: 100%;
+        background: var(--framer-color-bg-tertiary);
     }
+}
+
+.clear {
+    background: var(--framer-color-bg-tertiary) !important;
 }
 
 .asset-buttons {

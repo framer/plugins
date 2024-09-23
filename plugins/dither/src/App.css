@@ -19,22 +19,52 @@
     color: var(--framer-color-text-tertiary);
 }
 
+html * {
+    scrollbar-width: thin;
+}
+
 .canvas-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
+    min-width: 100%;
     position: relative;
+    border-radius: 10px;
+    background-color: #000;
     overflow: hidden;
 
     .canvas {
-        border-radius: 10px;
-        position: relative;
-        border: 1px solid var(--framer-color-divider);
-    }
+        position: absolute;
+        inset: 0;
 
-    .canvas canvas {
-        border-radius: 9px;
+        canvas:not(.zoom) {
+            width: 100% !important;
+            height: 100% !important;
+            transform: translate(0, 0) !important;
+        }
+
+        canvas.zoom {
+            max-width: unset;
+        }
+    }
+}
+
+.canvas-container.empty {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.canvas-container::after {
+    content: "";
+    z-index: 1;
+    position: absolute;
+    inset: 0px;
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    /* border: 1px solid red; */
+    pointer-events: none;
+}
+
+body[data-framer-theme="light"] {
+    .canvas-container::after {
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
     }
 }
 
@@ -80,15 +110,77 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
     width: 100%;
 }
 
-.gui-row .gui-palette {
-    width: 100%;
-    grid-column: 2 / -1;
-    gap: 10px;
+.color-input {
+    grid-column: span 2;
+    height: 30px;
+    min-height: 30px;
+    border-radius: 8px;
+    border: transparent;
+    background-color: rgb(43, 43, 43);
     display: flex;
+    align-items: center;
+    display: flex;
+    cursor: pointer;
 
-    input {
-        width: auto;
+    span {
         flex-grow: 1;
+    }
+
+    .color {
+        text-transform: uppercase;
+    }
+
+    .placeholder {
+        color: #999999;
+    }
+
+    .erase {
+        width: 24px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999999;
+    }
+
+    input[type="color"] {
+        cursor: pointer;
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 4px;
+        padding: 0;
+        height: 22px;
+        width: 22px;
+        margin-right: 8px;
+        margin-left: 4px;
+        outline: none;
+        box-shadow: unset;
+    }
+
+    input[type="color"]::after {
+        content: "";
+        position: absolute;
+        inset: 0px;
+        border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    input[type="color"]::-webkit-color-swatch-wrapper {
+        padding: 0;
+    }
+
+    input[type="color"]::-webkit-color-swatch {
+        border: none;
+    }
+}
+
+body[data-framer-theme="light"] {
+    .color-input {
+        background-color: #f3f3f3;
+
+        input[type="color"]::after {
+            border: 1px solid rgba(0, 0, 0, 0.15);
+        }
     }
 }
 
@@ -164,6 +256,72 @@ body[data-framer-theme="dark"] .error-container {
     border-color: rgba(255, 255, 255, 0.05);
 }
 
+body[data-framer-theme="light"] {
+    .canvas-container {
+        background: unset;
+    }
+
+    .error-container {
+        background: rgba(0, 0, 0, 0.05);
+    }
+}
+
 body[data-framer-theme="dark"] .error-container {
     background: rgba(0, 0, 0, 0.4);
+}
+
+* {
+    user-select: none;
+}
+
+.submit {
+    width: 100%;
+    color: #000;
+    background-color: #fff !important;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+body[data-framer-theme="light"] {
+    .submit {
+        background-color: #000 !important;
+        color: #fff;
+        font-weight: 500;
+    }
+}
+
+.upload {
+    .upload-cta {
+        width: 100%;
+        background: var(--framer-color-bg-tertiary);
+    }
+}
+
+.clear {
+    background: var(--framer-color-bg-tertiary) !important;
+}
+
+.asset-buttons {
+    display: flex;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 10px;
+    border-top: 1px solid var(--framer-color-divider);
+    padding-top: 15px;
+
+    * {
+        flex-grow: 1;
+        width: auto;
+        cursor: pointer;
+        color: #fff;
+        font-weight: 500;
+    }
+}
+
+body[data-framer-theme="light"] {
+    .asset-buttons * {
+        color: #000;
+        font-weight: 500;
+    }
 }

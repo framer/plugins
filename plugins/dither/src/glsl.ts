@@ -11,6 +11,11 @@ export const GLSL = {
             return dot(color, vec3(0.299, 0.587, 0.114));
         }
     `,
+    GREYSCALE: /*glsl*/ `
+        float grayscale(vec3 color) {
+            return dot(color, vec3(0.299, 0.587, 0.114));
+        }
+    `,
     QUANTIZE: /*glsl*/ `
         float quantize(float value, int quant) {
             return floor(value * (float(quant) - 1.0) + 0.5) / (float(quant) - 1.0);

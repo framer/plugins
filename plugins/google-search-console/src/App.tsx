@@ -9,7 +9,7 @@ import { AuthContext, useGoogleToken } from './auth';
 import CriticalError from './screens/CriticalError';
 import SiteView from './screens/SiteView';
 import Loading from './components/Loading';
-import { PLUGIN_WIDTH, SMALL_HEIGHT } from './constants';
+import { LARGE_HEIGHT, PLUGIN_WIDTH, SMALL_HEIGHT } from './constants';
 import NeedsPublish from './screens/NeedsPublish';
 
 framer.showUI({
@@ -112,19 +112,25 @@ function AppLoadSite({ login, logout }: AppLoadSiteProps) {
 }
 
 export function App() {
-  const { login, logout, tokens, isReady } = useGoogleToken();
+  const { login, logout, tokens, isReady, loading } = useGoogleToken();
 
   const ref = useRef<HTMLDivElement>(null)
 
+  useEffect(() => {
+    if (!tokens?.access_token) {
+      framer.showUI({ width: PLUGIN_WIDTH, height: SMALL_HEIGHT })
+    } else {
+      framer.showUI({ width: PLUGIN_WIDTH, height: LARGE_HEIGHT })
+    }
+  }, [tokens?.access_token]);
 
   return (
       <main key={tokens?.access_token || 'logout'} ref={ref}>
         <ErrorBoundary
           FallbackComponent={(e) => {
-            // logout();
-
             return (
               <GoogleLogin
+                loading={loading}
                 hasError
                 errorMessage={
                   e.error.name !== 'GoogleError' ? e.error.message || '' : ''
@@ -136,12 +142,6 @@ export function App() {
           resetKeys={[tokens?.access_token]}
         >
           <AuthContext.Provider value={tokens}>
-            {/* <button
-          type="button"
-          onClick={() => refresh(tokens?.refresh_token as string)}
-        >
-          Debug: Refresh token
-        </button> */}
             {isReady ? (
               tokens?.access_token ? (
                 <AppLoadSite
@@ -150,7 +150,7 @@ export function App() {
                   logout={logout}
                 />
               ) : (
-                <GoogleLogin login={login} />
+                <GoogleLogin login={login} loading={loading} />
               )
             ) : null}
           </AuthContext.Provider>

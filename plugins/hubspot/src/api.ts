@@ -51,7 +51,25 @@ interface HSFormsResponse {
     results: HSForm[]
 }
 
-const PROXY_URL = "https://oauth.fetch.tools/hubspot-plugin/?"
+interface HSMeeting {
+    id: string
+    slug: string
+    link: string
+    name: string
+    type: "PERSONAL_LINK" | "GROUP_CALENDAR" | "ROUND_ROBIN_CALENDAR"
+    organizerUserId: string
+    userIdsOfLinkMembers: string[]
+    defaultLink: boolean
+    createdAt: string
+    updatedAt: string
+}
+
+interface HSMeetingsResponse {
+    total: number
+    results?: HSMeeting[]
+}
+
+const PROXY_URL = "https://framer-cors-proxy.framer-team.workers.dev/?"
 const API_URL = "https://api.hubapi.com"
 
 interface RequestOptions {
@@ -150,6 +168,17 @@ export const useFormsQuery = () => {
             request({
                 method: "get",
                 path: "/marketing/v3/forms/",
+            }),
+    })
+}
+
+export const useMeetingsQuery = () => {
+    return useQuery<HSMeetingsResponse>({
+        queryKey: ["meetings"],
+        queryFn: () =>
+            request({
+                method: "get",
+                path: "/scheduler/v3/meetings/meeting-links",
             }),
     })
 }

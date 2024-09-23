@@ -7,7 +7,7 @@ export const FormsIcon = () => (
     </svg>
 )
 
-export const WidgetsIcon = () => (
+export const MeetingsIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18">
         <path
             d="M 0 9.5 C 0 8.395 0.895 7.5 2 7.5 L 16 7.5 C 17.105 7.5 18 8.395 18 9.5 L 18 14 C 18 16.209 16.209 18 14 18 L 4 18 C 1.791 18 0 16.209 0 14 Z M 0 4 C 0 1.791 1.791 0 4 0 L 14 0 C 16.209 0 18 1.791 18 4 L 18 4.5 C 18 5.605 17.105 6.5 16 6.5 L 2 6.5 C 0.895 6.5 0 5.605 0 4.5 Z"

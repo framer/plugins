@@ -4,4 +4,4 @@ Framer Google Sheets Sync Plugin
 
 **By:** @sakib25800 and @benjamindenboer
 
-![Airtable Image](../../assets/google-sheets.png)
+![Google Sheets Image](../../assets/google-sheets.png)

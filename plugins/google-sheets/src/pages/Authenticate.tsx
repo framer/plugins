@@ -27,7 +27,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                             clearInterval(pollInterval.current)
                             resolve(tokens)
                         }),
-                    2500
+                    10_000
                 ))
         )
     }

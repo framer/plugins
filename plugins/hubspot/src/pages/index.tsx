@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { framer } from "framer-plugin"
 import { useLocation } from "wouter"
 import auth from "../auth"
+import { BASE_PATH } from "../router"
 import { Button } from "../components/Button"
 import { Logo } from "../components/Logo"
 
@@ -15,7 +16,7 @@ export function AuthenticatePage() {
             const isAuth = await auth.isAuthenticated()
 
             if (isAuth) {
-                navigate("/menu")
+                navigate(`${BASE_PATH}/menu`)
             }
         }
 
@@ -35,7 +36,7 @@ export function AuthenticatePage() {
                             clearInterval(pollInterval.current)
                             resolve(tokens)
                         }),
-                    2500
+                    10_000
                 ))
         )
     }
@@ -53,7 +54,7 @@ export function AuthenticatePage() {
             // Poll the auth server and wait for tokens
             await pollForTokens(authorization.readKey)
 
-            navigate("/menu")
+            navigate(`${BASE_PATH}/menu`)
         } catch (e) {
             framer.notify(e instanceof Error ? e.message : "An unknown error occurred.", { variant: "error" })
         } finally {

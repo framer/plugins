@@ -10,11 +10,11 @@ import { FormsInstallationPage } from "./pages/forms/installation"
 import { MenuPage } from "./pages/Menu"
 import { Tracking } from "./pages/tracking"
 import { LearnMoreTrackingPage } from "./pages/tracking/learn-more"
-import { WidgetsPage } from "./pages/Widgets"
+import { MeetingsPage } from "./pages/Meetings"
 import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
 import { isLocal } from "./auth"
 
-const BASE_PATH = isLocal() ? "" : "/hubspot"
+export const BASE_PATH = isLocal() ? "" : "/hubspot"
 
 interface PluginRoute {
     path: string
@@ -38,9 +38,9 @@ const pluginRoutes: PluginRoute[] = [
         component: MenuPage,
     },
     {
-        path: "/widgets",
-        component: WidgetsPage,
-        title: "Widgets",
+        path: "/meetings",
+        component: MeetingsPage,
+        title: "Meetings",
     },
     {
         path: "/account",
@@ -108,6 +108,7 @@ function useRoutes(routes: PluginRoute[]) {
 
     const addToMatch = (route: PluginRoute, parentPath = "") => {
         const fullPath = BASE_PATH + parentPath + route.path
+
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const match = useRoute(fullPath)
         matches.push({ match, route: { ...route, path: fullPath } })

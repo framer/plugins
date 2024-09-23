@@ -68,7 +68,7 @@ function QueriesTable({ queries }: QueriesTableProps) {
 }
 
 const randomDataGen = [...new Array(30)].map(() => {
-  return [Math.round(Math.random() * 1500), Math.round(Math.random() * 1500)];
+  return [Math.round(Math.random() * 15000), Math.round(Math.random() * 15000)];
 });
 
 let randomData = [];
@@ -85,7 +85,7 @@ try {
 }
 
 // Change this to true to show randomised chart data for testing.
-const SHOW_RANDOM_CHART_DATA = false;
+const SHOW_RANDOM_CHART_DATA = true;
 
 const mapPerfToChart = (performance: GoogleQueryResult) => {
   return (performance.rows || []).map((row, index) => {

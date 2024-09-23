@@ -530,7 +530,7 @@ body[data-framer-theme='dark'] .chart-tooltip-wrapper {
 }
 
 .stat-boxes > div {
-  flex: 1;
+  width: calc(50% - 5px);
   border-radius: 10px;
   aspect-ratio: 1;
   display: flex;

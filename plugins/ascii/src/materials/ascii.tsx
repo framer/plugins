@@ -209,7 +209,7 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
     }, [program, pixelSize])
 
     useEffect(() => {
-        program.brightness = brightness * 0.5
+        program.brightness = brightness / 200
     }, [program, brightness])
 
     useEffect(() => {
@@ -233,7 +233,7 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
         () => ({
             program,
             setPixelSize: (value: number) => {
-                setPixelSize(Math.max(8, Math.min(Math.round(value), 100)))
+                setPixelSize(Math.max(8, Math.min(Math.round(value), 160)))
             },
         }),
         [program, setPixelSize]
@@ -291,7 +291,7 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
                         setPixelSize(value)
                     }}
                     min={8}
-                    max={100}
+                    max={160}
                     step={1}
                 />
             </div>
@@ -302,9 +302,9 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
                     onValueChange={value => {
                         setBrightness(value)
                     }}
-                    min={-1}
-                    max={1}
-                    step={0.01}
+                    min={-100}
+                    max={100}
+                    step={1}
                 />
             </div>
             <div className="gui-row">

@@ -2,7 +2,11 @@ import { useEffect, useState } from "react"
 import { OGLRenderingContext, Texture } from "ogl"
 import Color from "colorjs.io"
 
-export function useGradientTexture(gl: OGLRenderingContext, colors: string[], quantization: number) {
+export function useGradientTexture(
+    gl: OGLRenderingContext,
+    { colors, quantization }: { colors: string[]; quantization: number },
+    onUpdate?: (texture: Texture) => void
+) {
     const [texture] = useState(() => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST }))
 
     useEffect(() => {
@@ -25,6 +29,8 @@ export function useGradientTexture(gl: OGLRenderingContext, colors: string[], qu
         texture.width = list.length
         texture.height = 1
         texture.update()
+
+        onUpdate?.(texture)
     }, [texture, colors, quantization])
 
     return { texture }

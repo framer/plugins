@@ -54,7 +54,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     const { gl, toBytes, program, setProgram, setResolution } = useOGLPipeline()
 
     useEffect(() => {
-        asciiRef.current?.setPixelSize(exportSize * 0.02)
+        asciiRef.current?.setPixelSize(exportSize * 0.04)
     }, [exportSize])
 
     useImageTexture(
@@ -101,7 +101,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         canvasContainerRef.current.style.width = `${CANVAS_WIDTH}px`
         canvasContainerRef.current.style.height = `${CANVAS_WIDTH / aspect}px`
 
-        setExportSize(assetResolution[0])
+        setExportSize(Math.min(4000, assetResolution[0]))
     }, [assetResolution])
 
     useEffect(() => {
@@ -114,7 +114,15 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
         setSavingInAction(true)
 
-        if (framerCanvasImage) {
+        if (droppedAsset || isPlaceholder) {
+            await framer.addImage({
+                image: {
+                    type: "bytes",
+                    bytes: bytes,
+                    mimeType: "image/png",
+                },
+            })
+        } else {
             const originalImage = await framerCanvasImage.getData()
 
             await framer.setImage({
@@ -123,18 +131,10 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     mimeType: originalImage.mimeType,
                 },
             })
-        } else {
-            await framer.addImage({
-                image: {
-                    type: "bytes",
-                    bytes: bytes,
-                    mimeType: "image/png",
-                },
-            })
         }
 
         setSavingInAction(false)
-    }, [toBytes, framerCanvasImage])
+    }, [toBytes, framerCanvasImage, droppedAsset, isPlaceholder])
 
     // resize observer
     useEffect(() => {
@@ -225,7 +225,9 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                         <option value="500">500px</option>
                         <option value="1000">1000px</option>
                         <option value="2000">2000px</option>
-                        <option value={assetResolution[0]}>Source ({assetResolution[0]}px)</option>
+                        <option value={Math.min(4000, assetResolution[0])}>
+                            Source ({Math.min(4000, assetResolution[0])}px)
+                        </option>
                     </select>
                 </div>
             </div>

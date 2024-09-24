@@ -11,6 +11,9 @@ interface SiteViewProps {
   logout: () => void;
 }
 
+// Change this to true to show mock sitemap data for testing.
+const SHOW_MOCK_SITEMAP_DATA = !!import.meta.env.VITE_MOCK_DATA;
+
 export default function SiteView({ site, logout }: SiteViewProps) {
   const [sitemapsState, setSitemapsState] = useState<{
     sitemaps: GoogleSitemap[] | null;
@@ -38,6 +41,10 @@ export default function SiteView({ site, logout }: SiteViewProps) {
 
   useEffect(() => {
     async function update() {
+      if (SHOW_MOCK_SITEMAP_DATA) {
+        return;
+      }
+
       try {
         if (site.googleSite) {
           const sitemaps = await fetchGoogleSitemaps(
@@ -72,11 +79,11 @@ export default function SiteView({ site, logout }: SiteViewProps) {
     throw error;
   }
 
-  if (!sitemapsState) {
+  if (!sitemapsState && !SHOW_MOCK_SITEMAP_DATA) {
     return <Loading />;
   }
 
-  return sitemapsState.submitted ? (
+  return sitemapsState?.submitted || SHOW_MOCK_SITEMAP_DATA ? (
     <SiteHasIndexedSitemap site={site} logout={logout} />
   ) : (
     <SiteHasUnindexedSitemap site={site} sitemapUrl={currSitemapUrl} />

@@ -42,7 +42,7 @@ export interface GoogleSitemap {
 export interface GoogleInspectionResult {
   indexStatusResult: {
     verdict: 'VERDICT_UNSPECIFIED' | 'PASS' | 'FAIL' | 'NEUTRAL';
-    coverageState: string;
+    coverageState?: string;
   };
   inspectionResultLink: string;
 }

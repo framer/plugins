@@ -68,41 +68,8 @@ function QueriesTable({ queries }: QueriesTableProps) {
   );
 }
 
-const randomDataGen = [...new Array(30)].map(() => {
-  const clicks = Math.round(Math.random() * 15000);
-  const impressions = Math.round(
-    clicks * 2 + Math.round(Math.random() * 15000),
-  );
-
-  return [clicks, impressions];
-});
-
-let randomData = [];
-
-try {
-  const savedData = window.localStorage.getItem('chartData') as string;
-  randomData = savedData ? JSON.parse(savedData) : randomDataGen;
-
-  if (!savedData) {
-    window.localStorage.setItem('chartData', JSON.stringify(randomDataGen));
-  }
-} catch (e) {
-  console.log('Chart error', e);
-}
-
-// Change this to true to show randomised chart data for testing.
-const SHOW_RANDOM_CHART_DATA = true;
-
 const mapPerfToChart = (performance: GoogleQueryResult) => {
-  return (performance.rows || []).map((row, index) => {
-    if (SHOW_RANDOM_CHART_DATA) {
-      return {
-        date: new Date(row.keys[0]).getTime() / 1000,
-        clicks: randomData?.[index]?.[0] || 0,
-        impressions: randomData?.[index]?.[1] || 0,
-      };
-    }
-
+  return (performance.rows || []).map((row) => {
     return {
       date: new Date(row.keys[0]).getTime() / 1000,
       clicks: row.clicks,

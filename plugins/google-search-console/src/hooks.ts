@@ -134,6 +134,64 @@ export function useIndexingResults(
   return { currPageResult, result };
 }
 
+function randomIntFromInterval(min: number, max: number) {
+  return Math.floor(min + Math.random() * (max - min + 1));
+}
+
+export function useMockPerformanceResults(): {
+  dailyPerformance: GoogleQueryResult;
+  queryPerformance: GoogleQueryResult;
+} {
+  const getRandomData = (): number[][] => {
+    const savedData = window.localStorage.getItem(
+      'searchConsoleRandomChartData',
+    ) as string;
+
+    if (savedData) {
+      return JSON.parse(savedData);
+    }
+
+    const randomDataGen = [...new Array(14)].map(() => {
+      const clicks = randomIntFromInterval(1000, 3000);
+      const impressions = clicks + randomIntFromInterval(1000, 3000);
+
+      return [clicks, impressions];
+    });
+
+    window.localStorage.setItem(
+      'searchConsoleRandomChartData',
+      JSON.stringify(randomDataGen),
+    );
+
+    return randomDataGen;
+  };
+
+  const randomData = getRandomData();
+
+  const dailyPerformance = randomData.map((row, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - index);
+
+    return {
+      keys: [date.toISOString()],
+      clicks: row[0] || 0,
+      impressions: row[1] || 0,
+      ctr: 0,
+      position: 0,
+    };
+  });
+
+  return {
+    dailyPerformance: {
+      responseAggregationType: 'byProperty',
+      rows: dailyPerformance,
+    },
+    queryPerformance: {
+      responseAggregationType: 'byProperty',
+    },
+  };
+}
+
 export function usePerformanceResults(siteUrl: string, dates: string[]) {
   const [data, setData] = useState<{
     dailyPerformance: GoogleQueryResult;

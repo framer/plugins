@@ -11,6 +11,7 @@ import SiteView from './screens/SiteView';
 import Loading from './components/Loading';
 import { LARGE_HEIGHT, PLUGIN_WIDTH, SMALL_HEIGHT } from './constants';
 import NeedsPublish from './screens/NeedsPublish';
+import { mockSiteInfo } from './mocks';
 
 framer.showUI({
   position: 'top right',
@@ -19,6 +20,9 @@ framer.showUI({
   minWidth: PLUGIN_WIDTH,
   minHeight: SMALL_HEIGHT,
 });
+
+// Change this to true to show mock sitemap data for testing.
+const SHOW_MOCK_SITEMAP_DATA = !!import.meta.env.VITE_MOCK_DATA;
 
 function usePublishedSite() {
   const [publishInfo, setPublishInfo] = useState<PublishInfo | null>(null);
@@ -50,6 +54,10 @@ function usePublishedSite() {
 
   useEffect(() => {
     async function update() {
+      if (SHOW_MOCK_SITEMAP_DATA) {
+        return;
+      }
+
       try {
         if (publishInfo) {
           if (publishInfo.production?.url) {
@@ -86,6 +94,10 @@ function usePublishedSite() {
 
     update();
   }, [authContext.access_token, fetchGoogleSites, publishInfo, showBoundary]);
+
+  if (SHOW_MOCK_SITEMAP_DATA) {
+    return mockSiteInfo;
+  }
 
   return { siteInfo, needsPublish };
 }

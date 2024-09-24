@@ -1,8 +1,12 @@
 import { useContext, useEffect, useState } from 'react';
 import sitemapper from 'sitemap-urls';
 import { useErrorBoundary } from 'react-error-boundary';
-import { SiteWithGoogleSite } from '../types';
-import { usePerformanceResults, useSingleIndexingResult } from '../hooks';
+import { GoogleInspectionResult, SiteWithGoogleSite } from '../types';
+import {
+  useMockPerformanceResults,
+  usePerformanceResults,
+  useSingleIndexingResult,
+} from '../hooks';
 import Performance from './Performance';
 import { getDateRange } from '../utils';
 import Loading from '../components/Loading';
@@ -11,11 +15,28 @@ import doc from '../images/Doc.svg';
 import indexNone from '../images/IndexNone.svg';
 import indexAdded from '../images/IndexAdded.svg';
 import InlineSpinner from '../components/InlineSpinner';
+import { mockUrls } from '../mocks';
 
 interface URLRowProps {
   url: string;
   googleSiteUrl: string;
 }
+
+// Change this to true to show mock sitemap data for testing.
+const SHOW_MOCK_SITEMAP_DATA = !!import.meta.env.VITE_MOCK_DATA;
+
+function useMockIndexingResult(url: string): GoogleInspectionResult {
+  return {
+    indexStatusResult: {
+      verdict: url === 'https://benframer.lionfeet.com/' ? 'PASS' : 'NEUTRAL',
+    },
+    inspectionResultLink: '#',
+  };
+}
+
+const useIndexingResult = SHOW_MOCK_SITEMAP_DATA
+  ? useMockIndexingResult
+  : useSingleIndexingResult;
 
 function URLRow({ url, googleSiteUrl }: URLRowProps) {
   const urlObject = new URL(url);
@@ -24,7 +45,7 @@ function URLRow({ url, googleSiteUrl }: URLRowProps) {
   );
   const friendlyUrl = formattedUrl === '/' ? 'Home' : formattedUrl;
 
-  const inspection = useSingleIndexingResult(url, googleSiteUrl);
+  const inspection = useIndexingResult(url, googleSiteUrl);
 
   const row = (
     <div className="url-inner">
@@ -104,6 +125,10 @@ function URLStatuses({ urls, googleSiteUrl }: URLStatusesProps) {
 
 const dates = getDateRange(14);
 
+const usePerformanceResultsHook = SHOW_MOCK_SITEMAP_DATA
+  ? useMockPerformanceResults
+  : usePerformanceResults;
+
 export default function SiteHasIndexedSitemap({
   site,
   logout,
@@ -114,14 +139,18 @@ export default function SiteHasIndexedSitemap({
 
   useEffect(() => {
     async function update() {
-      const sitemapResult = await fetch(
-        `https://cors.farpace.workers.dev/${site.domain}/sitemap.xml`,
-      );
-      const sitemapText = await sitemapResult.text();
+      if (SHOW_MOCK_SITEMAP_DATA) {
+        setUrls([...new Set(mockUrls)].sort());
+      } else {
+        const sitemapResult = await fetch(
+          `https://cors.farpace.workers.dev/${site.domain}/sitemap.xml`,
+        );
+        const sitemapText = await sitemapResult.text();
 
-      const extracted = await sitemapper.extractUrls(sitemapText);
+        const extracted = await sitemapper.extractUrls(sitemapText);
 
-      setUrls([...new Set(extracted)].sort());
+        setUrls([...new Set(extracted)].sort());
+      }
     }
 
     try {
@@ -131,7 +160,7 @@ export default function SiteHasIndexedSitemap({
     }
   }, [showBoundary, site.domain]);
 
-  const performance = usePerformanceResults(site.googleSite.siteUrl, dates);
+  const performance = usePerformanceResultsHook(site.googleSite.siteUrl, dates);
 
   const resize = useContext(ResizeContext);
 

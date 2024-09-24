@@ -3,9 +3,10 @@ import plus from '../images/Plus@2x.png';
 
 interface CriticalErrorProps {
   site: Site;
+  logout: () => void;
 }
 
-export default function CriticalError({ site }: CriticalErrorProps) {
+export default function CriticalError({ site, logout }: CriticalErrorProps) {
   return (
     <div className="interstitial">
       <div className="interstitial-content">
@@ -19,17 +20,23 @@ export default function CriticalError({ site }: CriticalErrorProps) {
           </p>
         </div>
       </div>
-      <button
-        type="button"
-        onClick={() => {
-          window.open(
-            `https://search.google.com/search-console/inspect?resource_id=${site.url}`,
-            '_blank',
-          );
-        }}
-      >
-        Open Dashboard
-      </button>
+      <section className="actions-footer">
+        <button type="button" onClick={logout}>
+          Log Out
+        </button>
+        <button
+          type="button"
+          className="framer-button-primary"
+          onClick={() => {
+            window.open(
+              `https://search.google.com/search-console/inspect?resource_id=${site.url}`,
+              '_blank',
+            );
+          }}
+        >
+          Dashboard
+        </button>
+      </section>
     </div>
   );
 }

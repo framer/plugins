@@ -107,54 +107,54 @@ function AppLoadSite({ login, logout }: AppLoadSiteProps) {
   ) : site.siteInfo && site.siteInfo.googleSite ? (
     <SiteView site={site.siteInfo as SiteWithGoogleSite} logout={logout} />
   ) : (
-    <CriticalError site={site.siteInfo} />
+    <CriticalError site={site.siteInfo} logout={logout} />
   );
 }
 
 export function App() {
   const { login, logout, tokens, isReady, loading } = useGoogleToken();
 
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!tokens?.access_token) {
-      framer.showUI({ width: PLUGIN_WIDTH, height: SMALL_HEIGHT })
+      framer.showUI({ width: PLUGIN_WIDTH, height: SMALL_HEIGHT });
     } else {
-      framer.showUI({ width: PLUGIN_WIDTH, height: LARGE_HEIGHT })
+      framer.showUI({ width: PLUGIN_WIDTH, height: LARGE_HEIGHT });
     }
   }, [tokens?.access_token]);
 
   return (
-      <main key={tokens?.access_token || 'logout'} ref={ref}>
-        <ErrorBoundary
-          FallbackComponent={(e) => {
-            return (
-              <GoogleLogin
-                loading={loading}
-                hasError
-                errorMessage={
-                  e.error.name !== 'GoogleError' ? e.error.message || '' : ''
-                }
+    <main key={tokens?.access_token || 'logout'} ref={ref}>
+      <ErrorBoundary
+        FallbackComponent={(e) => {
+          return (
+            <GoogleLogin
+              loading={loading}
+              hasError
+              errorMessage={
+                e.error.name !== 'GoogleError' ? e.error.message || '' : ''
+              }
+              login={login}
+            />
+          );
+        }}
+        resetKeys={[tokens?.access_token]}
+      >
+        <AuthContext.Provider value={tokens}>
+          {isReady ? (
+            tokens?.access_token ? (
+              <AppLoadSite
+                key={tokens.access_token}
                 login={login}
+                logout={logout}
               />
-            );
-          }}
-          resetKeys={[tokens?.access_token]}
-        >
-          <AuthContext.Provider value={tokens}>
-            {isReady ? (
-              tokens?.access_token ? (
-                <AppLoadSite
-                  key={tokens.access_token}
-                  login={login}
-                  logout={logout}
-                />
-              ) : (
-                <GoogleLogin login={login} loading={loading} />
-              )
-            ) : null}
-          </AuthContext.Provider>
-        </ErrorBoundary>
-      </main>
+            ) : (
+              <GoogleLogin login={login} loading={loading} />
+            )
+          ) : null}
+        </AuthContext.Provider>
+      </ErrorBoundary>
+    </main>
   );
 }

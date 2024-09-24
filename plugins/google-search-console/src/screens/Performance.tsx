@@ -69,7 +69,12 @@ function QueriesTable({ queries }: QueriesTableProps) {
 }
 
 const randomDataGen = [...new Array(30)].map(() => {
-  return [Math.round(Math.random() * 15000), Math.round(Math.random() * 15000)];
+  const clicks = Math.round(Math.random() * 15000);
+  const impressions = Math.round(
+    clicks * 2 + Math.round(Math.random() * 15000),
+  );
+
+  return [clicks, impressions];
 });
 
 let randomData = [];

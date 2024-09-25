@@ -29,9 +29,10 @@ function escapeCell(value: string) {
 
 export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]): Rows {
     const rows: Rows = []
+    const supportedFields = fields.filter(field => field.type !== "unsupported")
 
     // Add header row.
-    rows.push(fields.map(field => field.name))
+    rows.push(supportedFields.map(field => field.name))
 
     // Add slug header to the start.
     rows[0].unshift("Slug")
@@ -43,7 +44,7 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
         // Add the slug cell.
         columns.push(item.slug)
 
-        for (const field of fields) {
+        for (const field of supportedFields) {
             const value = item.fieldData[field.id]
 
             switch (field.type) {
@@ -85,10 +86,6 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
                 case "link":
                 case "number":
                     columns.push(`${value}`)
-                    continue
-
-                case "unsupported":
-                    columns.push("")
                     continue
 
                 default:

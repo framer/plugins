@@ -1,6 +1,6 @@
 {
     "id": "TQeWOY",
     "name": "Dither",
-    "modes": ["canvas", "editImage", "image"],
+    "modes": ["canvas", "editImage"],
     "icon": "/dither.png"
 }

@@ -12,7 +12,6 @@ import { LearnMoreTrackingPage } from "./pages/tracking/learn-more"
 import { MeetingsPage } from "./pages/Meetings"
 import { PluginPage } from "./components/PluginPage"
 import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
-import { isLocal } from "./auth"
 
 interface PluginRoute {
     path: string
@@ -28,7 +27,7 @@ interface Match {
 
 const pluginRoutes: PluginRoute[] = [
     {
-        path: isLocal() ? "/" : "/hubspot",
+        path: "/",
         component: AuthenticatePage,
     },
     {

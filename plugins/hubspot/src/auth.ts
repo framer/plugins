@@ -21,7 +21,7 @@ export interface Authorize {
 
 const pluginTokensKey = "hubspotTokens"
 
-export const isLocal = () => window.location.hostname.includes("localhost")
+const isLocal = () => window.location.hostname.includes("localhost")
 
 export const AUTH_URI = isLocal() ? "https://localhost:8787" : "https://oauth.fetch.tools/hubspot-plugin"
 

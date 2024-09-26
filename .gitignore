@@ -34,3 +34,5 @@ p
 *.njsproj
 *.sln
 *.sw?
+
+plugin.zip

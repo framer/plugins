@@ -1,4 +1,4 @@
-export const BASE_PATH = import.meta.env.DEV ? "" : "/ascii"
+export const BASE_PATH = ""
 
 /**
  * Convenience method to load an image from a canvas.

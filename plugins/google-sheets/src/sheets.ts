@@ -401,7 +401,7 @@ export async function syncSheet({
     const unsyncedItemIds = new Set(await collection.getItemIds())
 
     const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
-    const [headerRow, ...rows] = sheet.values
+    const [headerRow, ...rows] = sheet.values 
 
     const { collectionItems, status } = processSheet(rows, {
         unsyncedRowIds: unsyncedItemIds,

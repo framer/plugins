@@ -1,4 +1,5 @@
 import "./globals.css"
+import "./google.css"
 import "framer-plugin/framer.css"
 
 import React, { ReactNode } from "react"
@@ -34,7 +35,7 @@ function renderPlugin(app: ReactNode) {
 
     framer.showUI({
         width: 320,
-        height: 345,
+        height: 355,
     })
 
     ReactDOM.createRoot(root).render(

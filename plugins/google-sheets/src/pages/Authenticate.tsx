@@ -3,15 +3,15 @@ import { framer } from "framer-plugin"
 import { getPluginContext, PluginContext } from "../sheets"
 import auth from "../auth"
 
-import { Button } from "../components/Button"
 import { Hero } from "../components/Hero"
+import { GoogleLoginButton } from "../components/GoogleLoginButton"
 
 interface AuthenticationProps {
     onAuthenticated: (context: PluginContext) => void
 }
 
 export function Authenticate({ onAuthenticated }: AuthenticationProps) {
-    const [isLoading, setIsLoading] = useState(false)
+    const [, setIsLoading] = useState(false)
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     const pollForTokens = (readKey: string) => {
@@ -61,9 +61,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                 <li>Ensure your sheet has a header row</li>
                 <li>Map the column fields to the CMS</li>
             </ol>
-            <Button variant="secondary" onClick={login} isLoading={isLoading} className="w-full">
-                Log In
-            </Button>
+            <GoogleLoginButton onClick={login} />
         </div>
     )
 }

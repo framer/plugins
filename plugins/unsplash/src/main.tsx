@@ -1,5 +1,5 @@
-import "framer-plugin/framer.css"
 import "./global.css"
+import "framer-plugin/framer.css"
 
 import React from "react"
 import ReactDOM from "react-dom/client"

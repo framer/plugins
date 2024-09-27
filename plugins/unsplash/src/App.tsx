@@ -10,7 +10,7 @@ import { Blurhash } from "react-blurhash"
 
 const mode = framer.mode
 
-const minWindowWidth = mode === "canvas" ? 350 : 600
+const minWindowWidth = mode === "canvas" ? 260 : 600
 const minColumnWidth = 100
 const columnGap = 8
 const sidePadding = 16 * 2
@@ -20,7 +20,7 @@ void framer.showUI({
     width: minWindowWidth,
     minWidth: minWindowWidth,
     minHeight: 400,
-    resizable: true,
+    resizable: false,
 })
 
 export function App() {
@@ -51,30 +51,30 @@ export function App() {
     })
 
     return (
-        <div className="px-4 flex flex-col gap-0 pb-4 h-full">
-            <div className="bg-primary mb-2 z-10 relative">
+        <div className="flex flex-col gap-0 pb-4 h-full">
+            <div className="bg-primary mb-[15px] z-10 relative px-[15px]">
                 <input
                     type="text"
                     placeholder="Search..."
                     value={query}
-                    className="w-full pl-7 pr-8"
+                    className="w-full pl-[33px] pr-8"
                     autoFocus
                     style={{ paddingLeft: 30 }}
                     onChange={e => setQuery(e.target.value)}
                 />
-                <div className="flex items-center justify-center absolute left-2 top-0 bottom-0 text-tertiary">
+                <div className="flex items-center justify-center absolute left-[25px] top-0 bottom-0 text-tertiary">
                     <SearchIcon />
                 </div>
             </div>
             <AppErrorBoundary>
                 <PhotosList query={debouncedQuery} />
             </AppErrorBoundary>
-            <div className="mt-2">
+            <div className="mt-[15px] px-[15px]">
                 <button
-                    className="bg-tertiary text-secondary hover:bg-tertiary hover:text-primary focus:bg-tertiary focus:text-primary items-center flex justify-center relative"
+                    className="items-center flex justify-center relative"
                     onClick={() => addRandomMutation.mutate(query)}
                 >
-                    {addRandomMutation.isPending ? <Spinner size="normal" inheritColor /> : "Random photo"}
+                    {addRandomMutation.isPending ? <Spinner size="normal" inheritColor /> : "Random Image"}
                 </button>
             </div>
         </div>
@@ -189,12 +189,12 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
     return (
         <div className="overflow-auto relative flex-1" ref={scrollRef} onScroll={handleScroll}>
-            <div className="relative">
-                <div className="flex gap-2">
+            <div className="relative px-[15px]">
+                <div className="flex gap-[5px]">
                     {photosColumns.map((photos, i) => (
                         <div
                             key={`column-${i}`}
-                            className="flex-shrink-0 flex flex-col gap-1"
+                            className="flex-shrink-0 flex flex-col gap-[5px]"
                             style={{ width: columnWidth }}
                         >
                             {photos.map(photo => (
@@ -235,7 +235,7 @@ const GridItem = memo(function GridItem({ photo, loading, height, width, onSelec
     }, [photo.urls.thumb])
 
     return (
-        <div key={photo.id} className="flex flex-col gap-1">
+        <div key={photo.id} className="flex flex-col gap-[5px]">
             <Draggable
                 data={{
                     type: "image",
@@ -261,7 +261,9 @@ const GridItem = memo(function GridItem({ photo, loading, height, width, onSelec
                         {loading && <Spinner size="medium" />}
                     </div>
                     {!imageLoaded && photo.blur_hash && (
-                        <Blurhash hash={photo.blur_hash} width={width} height={height} />
+                        <div className="absolute top-0 left-0">
+                            <Blurhash hash={photo.blur_hash} width={width} height={height} />
+                        </div>
                     )}
                 </button>
             </Draggable>

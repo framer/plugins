@@ -23,7 +23,7 @@ export default {
                 divider: "var(--framer-color-divider)",
             },
             fontSize: {
-                "2xs": "10px",
+                "2xs": "9px",
             },
         },
     },

@@ -61,7 +61,7 @@ export interface Sheet {
     values: [HeaderRow, ...Row[]]
 }
 
-type QueryParams = Record<string, string | number>
+type QueryParams = Record<string, string | number | boolean>
 
 interface RequestOptions {
     path: string
@@ -98,6 +98,7 @@ const request = async <T = unknown>({ path, service = "sheets", method = "get", 
                 if (value !== undefined) {
                     return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
                 }
+
                 return ""
             })
             .filter(Boolean)
@@ -135,6 +136,8 @@ function fetchSpreadsheets() {
         path: "/files",
         query: {
             q: "mimeType='application/vnd.google-apps.spreadsheet'",
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
         },
     })
 }
@@ -401,7 +404,7 @@ export async function syncSheet({
     const unsyncedItemIds = new Set(await collection.getItemIds())
 
     const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
-    const [headerRow, ...rows] = sheet.values 
+    const [headerRow, ...rows] = sheet.values
 
     const { collectionItems, status } = processSheet(rows, {
         unsyncedRowIds: unsyncedItemIds,

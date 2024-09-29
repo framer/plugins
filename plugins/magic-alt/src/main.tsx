@@ -13,8 +13,8 @@ function renderPlugin() {
 
     framer.showUI({
         position: "top right",
-        width: 240,
-        height: 95,
+        minWidth: 240,
+        minHeight: 300,
         resizable: true,
     })
 

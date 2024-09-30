@@ -71,6 +71,8 @@ body {
 
 .url {
   display: block;
+  content-visibility: auto;
+  contain-intrinsic-height: auto 30px;
 }
 
 .url a {

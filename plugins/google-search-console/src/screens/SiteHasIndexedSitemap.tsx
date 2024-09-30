@@ -6,10 +6,9 @@ import {
   useBatchIndexingResult,
   useMockPerformanceResults,
   usePerformanceResults,
-  useSingleIndexingResult,
 } from '../hooks';
 import Performance from './Performance';
-import { batchGoogleApiCall, getDateRange } from '../utils';
+import { getDateRange } from '../utils';
 import Loading from '../components/Loading';
 import { ResizeContext } from '../resize';
 import doc from '../images/Doc.svg';
@@ -20,34 +19,33 @@ import { mockUrls } from '../mocks';
 
 interface URLRowProps {
   url: string;
-  googleSiteUrl: string;
   inspection?: GoogleInspectionResult | null;
 }
 
 // Change this to true to show mock sitemap data for testing.
 const SHOW_MOCK_SITEMAP_DATA = !!import.meta.env.VITE_MOCK_DATA;
 
-function useMockIndexingResult(url: string): GoogleInspectionResult {
-  return {
-    indexStatusResult: {
-      verdict: url === 'https://benframer.lionfeet.com/' ? 'PASS' : 'NEUTRAL',
-    },
-    inspectionResultLink: '#',
-  };
+function useMockBatchIndexingResult() {
+  const result: Record<string, GoogleInspectionResult> = {};
+
+  for (const url of mockUrls) {
+    result[url] = {
+      indexStatusResult: {
+        verdict: url === 'https://benframer.lionfeet.com/' ? 'PASS' : 'NEUTRAL',
+      },
+      inspectionResultLink: '#',
+    };
+  }
+
+  return result;
 }
 
-const useIndexingResult = SHOW_MOCK_SITEMAP_DATA
-  ? useMockIndexingResult
-  : useSingleIndexingResult;
-
-function URLRow({ url, googleSiteUrl, inspection }: URLRowProps) {
+function URLRow({ url, inspection }: URLRowProps) {
   const urlObject = new URL(url);
   const formattedUrl = url.slice(
     url.indexOf(urlObject.hostname) + urlObject.hostname.length,
   );
   const friendlyUrl = formattedUrl === '/' ? 'Home' : formattedUrl;
-
-  // const inspection = useIndexingResult(url, googleSiteUrl);
 
   const row = (
     <div className="url-inner">
@@ -106,8 +104,12 @@ interface URLStatusesProps {
   googleSiteUrl: string;
 }
 
+const useBatchIndexingResultHook = SHOW_MOCK_SITEMAP_DATA
+  ? useMockBatchIndexingResult
+  : useBatchIndexingResult;
+
 function URLStatuses({ urls, googleSiteUrl }: URLStatusesProps) {
-  const batchResult = useBatchIndexingResult(urls, googleSiteUrl);
+  const batchResult = useBatchIndexingResultHook(urls, googleSiteUrl);
 
   return (
     <div className="groups">
@@ -119,7 +121,6 @@ function URLStatuses({ urls, googleSiteUrl }: URLStatusesProps) {
               <URLRow
                 key={result}
                 url={result}
-                googleSiteUrl={googleSiteUrl}
                 inspection={batchResult?.[result]}
               />
             ))

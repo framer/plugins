@@ -16,7 +16,7 @@
     "@uiw/react-color-shade-slider": "^2.1.1",
     "extract-colors": "^4.0.2",
     "framer-motion": "^11.0.18",
-    "framer-plugin": "^0.4.0",
+    "framer-plugin": "^0.5.0",
     "react": "^18",
     "react-color": "^2.19.3",
     "react-dom": "^18",

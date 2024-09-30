@@ -1,6 +1,6 @@
 import type { Collection, CollectionField, CollectionItem } from "framer-plugin"
 
-import { isFileAsset, isImageAsset } from "framer-plugin"
+import { isFileAsset, isImageAsset, isColorStyle } from "framer-plugin"
 import { assertNever } from "./assert"
 
 function downloadFile(file: File) {
@@ -79,9 +79,18 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
                     continue
                 }
 
+                case "color": {
+                    if (isColorStyle(value)) {
+                        columns.push(value.light)
+                        continue
+                    }
+
+                    columns.push(typeof value === "string" ? value : "")
+                    continue
+                }
+
                 case "string":
                 case "boolean":
-                case "color":
                 case "date":
                 case "link":
                 case "number":

@@ -3,12 +3,13 @@ import sitemapper from 'sitemap-urls';
 import { useErrorBoundary } from 'react-error-boundary';
 import { GoogleInspectionResult, SiteWithGoogleSite } from '../types';
 import {
+  useBatchIndexingResult,
   useMockPerformanceResults,
   usePerformanceResults,
   useSingleIndexingResult,
 } from '../hooks';
 import Performance from './Performance';
-import { getDateRange } from '../utils';
+import { batchGoogleApiCall, getDateRange } from '../utils';
 import Loading from '../components/Loading';
 import { ResizeContext } from '../resize';
 import doc from '../images/Doc.svg';
@@ -20,6 +21,7 @@ import { mockUrls } from '../mocks';
 interface URLRowProps {
   url: string;
   googleSiteUrl: string;
+  inspection?: GoogleInspectionResult | null;
 }
 
 // Change this to true to show mock sitemap data for testing.
@@ -38,14 +40,14 @@ const useIndexingResult = SHOW_MOCK_SITEMAP_DATA
   ? useMockIndexingResult
   : useSingleIndexingResult;
 
-function URLRow({ url, googleSiteUrl }: URLRowProps) {
+function URLRow({ url, googleSiteUrl, inspection }: URLRowProps) {
   const urlObject = new URL(url);
   const formattedUrl = url.slice(
     url.indexOf(urlObject.hostname) + urlObject.hostname.length,
   );
   const friendlyUrl = formattedUrl === '/' ? 'Home' : formattedUrl;
 
-  const inspection = useIndexingResult(url, googleSiteUrl);
+  // const inspection = useIndexingResult(url, googleSiteUrl);
 
   const row = (
     <div className="url-inner">
@@ -105,6 +107,8 @@ interface URLStatusesProps {
 }
 
 function URLStatuses({ urls, googleSiteUrl }: URLStatusesProps) {
+  const batchResult = useBatchIndexingResult(urls, googleSiteUrl);
+
   return (
     <div className="groups">
       <div>
@@ -112,7 +116,12 @@ function URLStatuses({ urls, googleSiteUrl }: URLStatusesProps) {
         <div className="urls-list">
           {urls ? (
             urls.map((result) => (
-              <URLRow key={result} url={result} googleSiteUrl={googleSiteUrl} />
+              <URLRow
+                key={result}
+                url={result}
+                googleSiteUrl={googleSiteUrl}
+                inspection={batchResult?.[result]}
+              />
             ))
           ) : (
             <Loading inline />

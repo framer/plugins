@@ -12,8 +12,8 @@ const mode = framer.mode
 
 const minWindowWidth = mode === "canvas" ? 260 : 600
 const minColumnWidth = 100
-const columnGap = 8
-const sidePadding = 16 * 2
+const columnGap = 5
+const sidePadding = 15 * 2
 
 void framer.showUI({
     position: "top right",
@@ -55,7 +55,7 @@ export function App() {
             <div className="bg-primary mb-[15px] z-10 relative px-[15px]">
                 <input
                     type="text"
-                    placeholder="Search..."
+                    placeholder="Search…"
                     value={query}
                     className="w-full pl-[33px] pr-8"
                     autoFocus
@@ -188,8 +188,12 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
     }
 
     return (
-        <div className="overflow-auto relative flex-1" ref={scrollRef} onScroll={handleScroll}>
-            <div className="relative px-[15px]">
+        <div
+            className="overflow-auto relative flex-1 rounded-[8px] mx-[15px] no-scrollbar"
+            ref={scrollRef}
+            onScroll={handleScroll}
+        >
+            <div className="relative">
                 <div className="flex gap-[5px]">
                     {photosColumns.map((photos, i) => (
                         <div

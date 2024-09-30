@@ -165,7 +165,7 @@ export function App() {
                 <input
                     autoFocus
                     type="search"
-                    placeholder="Search..."
+                    placeholder="Search…"
                     className="search-input"
                     onChange={e => setSearch(e.target.value)}
                     value={search}

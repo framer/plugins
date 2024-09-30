@@ -51,8 +51,10 @@ export function useBatchIndexingResult(
       if (response) {
         const urlsWithStatus: Record<string, GoogleInspectionResult> = {};
         for (const responseUrl of response) {
-          urlsWithStatus[responseUrl.request.body.inspectionUrl] =
-            responseUrl.response.inspectionResult;
+          if (responseUrl) {
+            urlsWithStatus[responseUrl.request.body.inspectionUrl] =
+              responseUrl.response.inspectionResult;
+          }
         }
 
         setResult(urlsWithStatus);

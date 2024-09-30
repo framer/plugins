@@ -5,6 +5,8 @@ import { AuthContext, useGoogleToken } from '../auth';
 import SiteHasIndexedSitemap from './SiteHasIndexedSitemap';
 import SiteHasUnindexedSitemap from './SiteHasUnindexedSitemap';
 import Loading from '../components/Loading';
+import { GoogleError } from '../errors';
+import NeedsVerify from './NeedsVerify';
 
 interface SiteViewProps {
   site: SiteWithGoogleSite;
@@ -20,7 +22,10 @@ export default function SiteView({ site, logout }: SiteViewProps) {
     submitted: boolean;
   } | null>(null);
   const currSitemapUrl = sitemapUrl(site.url);
-  const [error, setError] = useState<Error>();
+  const [error, setError] = useState<{
+    level: 'throw' | 'display';
+    e: Error;
+  } | null>(null);
 
   const authContext = useContext(AuthContext) as NonNullable<GoogleToken>;
 
@@ -39,44 +44,53 @@ export default function SiteView({ site, logout }: SiteViewProps) {
     [refresh],
   );
 
-  useEffect(() => {
-    async function update() {
-      if (SHOW_MOCK_SITEMAP_DATA) {
-        return;
-      }
+  const update = useCallback(async () => {
+    setError(null);
 
-      try {
-        if (site.googleSite) {
-          const sitemaps = await fetchGoogleSitemaps(
-            site.googleSite.siteUrl,
-            authContext.access_token,
-          );
-          const submittedSitemap = sitemaps?.find(
-            (currSitemap) => currSitemap.path === currSitemapUrl,
-          );
-
-          setSitemapsState({ sitemaps, submitted: !!submittedSitemap });
-
-          if (sitemaps && !submittedSitemap) {
-            // console.log('Search Console debug submit sitemap', currSitemapUrl);
-          }
-        }
-      } catch (e) {
-        setError(e as Error);
-      }
+    if (SHOW_MOCK_SITEMAP_DATA) {
+      return;
     }
 
-    update();
+    try {
+      if (site.googleSite) {
+        const sitemaps = await fetchGoogleSitemaps(
+          site.googleSite.siteUrl,
+          authContext.access_token,
+        );
+        const submittedSitemap = sitemaps?.find(
+          (currSitemap) => currSitemap.path === currSitemapUrl,
+        );
+
+        setSitemapsState({ sitemaps, submitted: !!submittedSitemap });
+
+        if (sitemaps && !submittedSitemap) {
+          // console.log('Search Console debug submit sitemap', currSitemapUrl);
+        }
+      }
+    } catch (e) {
+      if (((e as GoogleError)?.cause as { status: number })?.status === 403) {
+        setError({ level: 'display', e: e as unknown as GoogleError });
+      } else {
+        setError({ level: 'throw', e: e as unknown as GoogleError });
+      }
+    }
   }, [
     authContext.access_token,
     currSitemapUrl,
     fetchGoogleSitemaps,
     site.googleSite,
-    site.url,
   ]);
 
+  useEffect(() => {
+    update();
+  }, [update]);
+
   if (error) {
-    throw error;
+    if (error.level === 'throw') {
+      throw error.e;
+    } else {
+      return <NeedsVerify site={site} logout={logout} retry={update} />;
+    }
   }
 
   if (!sitemapsState && !SHOW_MOCK_SITEMAP_DATA) {

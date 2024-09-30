@@ -501,6 +501,15 @@ body[data-framer-theme='dark'] .chart-tooltip-wrapper {
   align-items: flex-end;
 }
 
+.actions-footer--vertical {
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.actions-footer.actions-footer--vertical button {
+  flex: none;
+}
+
 .in-app section {
   padding-top: 15px;
   border-top: 1px solid var(--framer-color-divider);

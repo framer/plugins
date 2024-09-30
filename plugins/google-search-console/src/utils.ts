@@ -13,6 +13,103 @@ export function stripTrailingSlash(str: string) {
   return str.endsWith('/') ? str.slice(0, str.length - 1) : str;
 }
 
+interface BatchGoogleApiCallRequest {
+  apiPath: string;
+  method: 'GET' | 'PUT' | 'POST';
+  body: object;
+}
+
+export async function batchGoogleApiCall<
+  T,
+  P extends BatchGoogleApiCallRequest,
+>(
+  token: string,
+  refresh: () => Promise<GoogleToken | null>,
+  parts: P[],
+): Promise<{ request: P; response: T }[] | null> {
+  if (!parts.length) {
+    return null;
+  }
+
+  const initialToken = getLocalStorageTokens();
+
+  const boundary = 'batch_boundary';
+
+  const fetchBody = `
+${parts
+  .map(
+    (part, index) => `
+--${boundary}
+Content-Type: application/http
+Content-ID: <request-${index}>
+
+${part.method} ${part.apiPath} HTTP/1.1
+Content-Type: application/json
+
+${JSON.stringify(part.body)}
+
+`,
+  )
+  .join('')}
+
+--${boundary}--
+`;
+
+  const attempt = async (currToken: string) =>
+    await fetch(`https://searchconsole.googleapis.com/batch`, {
+      headers: {
+        Authorization: `Bearer ${currToken}`,
+        Accept: 'application/json',
+        'Content-Type': `multipart/mixed; boundary=${boundary}`,
+      },
+      body: fetchBody,
+      method: 'POST',
+    });
+
+  let result = await attempt(initialToken?.access_token || token);
+
+  if (!result.ok) {
+    const newToken = await refresh();
+
+    if (newToken) {
+      result = await attempt(newToken.access_token);
+    }
+  }
+
+  if (!result.ok) {
+    throw new GoogleError('API call error');
+  }
+
+  try {
+    const text = await result.text();
+
+    const textParts = text
+      .split('--batch_')
+      .map((part) => {
+        try {
+          const indexId = part.match(/<response-request-([0-9]+)>/)?.[1];
+          if (indexId) {
+            const numericIndexId = Number(indexId);
+
+            const json = JSON.parse(part.slice(part.indexOf('{')));
+
+            return { request: parts[numericIndexId], response: json };
+          }
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter((part) => part) as {
+      request: P;
+      response: T;
+    }[];
+
+    return textParts;
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function googleApiCall<T>(
   path: string,
   token: string,

@@ -6,8 +6,62 @@ import {
   GoogleToken,
 } from './types';
 import { useErrorBoundary } from 'react-error-boundary';
-import { googleApiCall } from './utils';
+import { batchGoogleApiCall, googleApiCall } from './utils';
 import { AuthContext, useGoogleToken } from './auth';
+
+interface GoogleInspectCall {
+  apiPath: string;
+  method: 'GET' | 'PUT' | 'POST';
+  body: {
+    inspectionUrl: string;
+    siteUrl: string;
+    languageCode: string;
+  };
+}
+
+export function useBatchIndexingResult(
+  urls: string[] | null,
+  googleSiteUrl: string,
+) {
+  const authContext = useContext(AuthContext) as NonNullable<GoogleToken>;
+  const [result, setResult] = useState<Record<
+    string,
+    GoogleInspectionResult
+  > | null>(null);
+
+  const { refresh } = useGoogleToken();
+
+  useEffect(() => {
+    batchGoogleApiCall<
+      { inspectionResult: GoogleInspectionResult },
+      GoogleInspectCall
+    >(
+      authContext.access_token,
+      refresh,
+      (urls || []).map((url) => ({
+        apiPath: '/v1/urlInspection/index:inspect',
+        method: 'POST',
+        body: {
+          inspectionUrl: url,
+          siteUrl: googleSiteUrl,
+          languageCode: window.navigator.language,
+        },
+      })),
+    ).then((response) => {
+      if (response) {
+        const urlsWithStatus: Record<string, GoogleInspectionResult> = {};
+        for (const responseUrl of response) {
+          urlsWithStatus[responseUrl.request.body.inspectionUrl] =
+            responseUrl.response.inspectionResult;
+        }
+
+        setResult(urlsWithStatus);
+      }
+    });
+  }, [authContext.access_token, googleSiteUrl, refresh, urls]);
+
+  return result;
+}
 
 export function useSingleIndexingResult(url: string, googleSiteUrl: string) {
   const authContext = useContext(AuthContext) as NonNullable<GoogleToken>;

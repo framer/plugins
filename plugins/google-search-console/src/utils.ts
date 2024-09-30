@@ -44,7 +44,9 @@ export async function googleApiCall<T>(
   }
 
   if (!result.ok) {
-    throw new GoogleError('API call error');
+    const err = new GoogleError('API call error');
+    err.cause = result;
+    throw err;
   }
 
   try {

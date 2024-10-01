@@ -64,7 +64,7 @@ html * {
 
 body[data-framer-theme="light"] {
     .canvas-container::after {
-        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
     }
 }
 

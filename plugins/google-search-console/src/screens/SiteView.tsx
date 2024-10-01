@@ -62,10 +62,6 @@ export default function SiteView({ site, logout }: SiteViewProps) {
         );
 
         setSitemapsState({ sitemaps, submitted: !!submittedSitemap });
-
-        if (sitemaps && !submittedSitemap) {
-          // console.log('Search Console debug submit sitemap', currSitemapUrl);
-        }
       }
     } catch (e) {
       if (((e as GoogleError)?.cause as { status: number })?.status === 403) {

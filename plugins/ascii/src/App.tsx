@@ -54,7 +54,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     const { gl, toBytes, program, setProgram, setResolution } = useOGLPipeline()
 
     useEffect(() => {
-        asciiRef.current?.setPixelSize(exportSize * 0.04)
+        asciiRef.current?.setPixelSize(exportSize * 0.02)
     }, [exportSize])
 
     useImageTexture(

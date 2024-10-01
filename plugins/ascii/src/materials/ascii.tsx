@@ -291,7 +291,7 @@ export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext
                         setPixelSize(value)
                     }}
                     min={8}
-                    max={160}
+                    max={50}
                     step={1}
                 />
             </div>

@@ -77,8 +77,9 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
 }
 
 .gui {
-    margin-top: 5px;
-    margin-bottom: 5px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    width: 100%;
 }
 
 .gui select {

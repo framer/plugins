@@ -224,6 +224,8 @@ const MATRICES = [
     },
 ]
 
+const SHOW_DEV_TOOLS = false
+
 export const OrderedDither = forwardRef(function RandomDither({ gl }: { gl: OGLRenderingContext }, ref) {
     const [mode, setMode] = useState<string>("BAYER_4x4")
     const [colorMode, setColorMode] = useState(1)
@@ -282,7 +284,7 @@ export const OrderedDither = forwardRef(function RandomDither({ gl }: { gl: OGLR
 
     return (
         <>
-            {process.env.NODE_ENV === "development" && (
+            {process.env.NODE_ENV === "development" && SHOW_DEV_TOOLS && (
                 <>
                     <input
                         type="range"

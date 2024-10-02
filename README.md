@@ -19,9 +19,9 @@ Check out [our documentation](https://developers.framer.wiki/plugins/docs/beta) 
 
 ### 🎛️ Get Started
 
--   If you have Plugin Beta access, you can run the latest versions via the Plugin menu in the Toolbar.
 -   To set up this repository for local development, clone the repo and run `npm install` in the root.
 -   Run a specific plugin by entering the directory with `cd plugins/[plugin-name]` and running `npm run dev`.
+-   In Framer, enable "Developer Tools" via the Plugin sub-menu in the Main Menu
 
 ### 🛠️ Contribute
 

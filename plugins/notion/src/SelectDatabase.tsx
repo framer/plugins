@@ -12,6 +12,22 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
     const { data, refetch, isRefetching, isLoading } = useDatabasesQuery()
     const [selectedDatabase, setSelectedDatabase] = useState<string | null>(null)
 
+    const isLoadingOrFetching = isLoading || isRefetching
+
+    useEffect(() => {
+        if (isLoadingOrFetching) return
+
+        function handleFocus() {
+            refetch()
+        }
+
+        window.addEventListener("focus", handleFocus)
+
+        return () => {
+            window.removeEventListener("focus", handleFocus)
+        }
+    }, [refetch, isLoadingOrFetching])
+
     useEffect(() => {
         const firstItem = data?.[0]
         if (!firstItem) return
@@ -42,6 +58,8 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
         onDatabaseSelected(database)
     }
 
+    const selectEnabled = !isLoadingOrFetching && Boolean(data && data.length > 0)
+
     return (
         <form className="flex flex-col gap-[10px] w-full h-full" onSubmit={handleSubmit}>
             <img src={notionConnectSrc} className="rounded-md" />
@@ -55,39 +73,26 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
                 <div className="flex gap-[10px]">
                     <select
                         value={selectedDatabase ?? ""}
-                        onChange={e => setSelectedDatabase(e.target.value)}
+                        onChange={event => setSelectedDatabase(event.target.value)}
                         className="flex-1 shrink-1"
-                        disabled={data && data.length === 0}
+                        disabled={!selectEnabled}
                     >
-                        {isLoading && (
-                            <option disabled selected>
-                                Loading…
-                            </option>
+                        {isLoadingOrFetching && <option disabled>Loading…</option>}
+                        {!isLoadingOrFetching && (
+                            <>
+                                <option disabled>Select Database…</option>
+                                {(!data || data.length === 0) && <option disabled>No databases…</option>}
+                                {data?.map(database => {
+                                    const label = richTextToPlainText(database.title)
+                                    return (
+                                        <option key={database.id} value={database.id}>
+                                            {label.trim() ? label : "Untitled"}
+                                        </option>
+                                    )
+                                })}
+                            </>
                         )}
-                        {!isLoading && (
-                            <option disabled selected>
-                                Select Database…
-                            </option>
-                        )}
-                        {data && data.length === 0 && <option>No databases...</option>}
-                        {data?.map(database => {
-                            const label = richTextToPlainText(database.title)
-                            return (
-                                <option key={database.id} value={database.id}>
-                                    {label.trim() ? label : "Untitled"}
-                                </option>
-                            )
-                        })}
                     </select>
-
-                    <button
-                        className="w-auto h[16px] flex items-center justify-center text-secondary"
-                        type="button"
-                        onClick={() => refetch()}
-                        disabled={isLoading || isRefetching}
-                    >
-                        Refresh
-                    </button>
                 </div>
 
                 <button type="submit" disabled={!selectedDatabase}>

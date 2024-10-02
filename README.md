@@ -30,7 +30,3 @@ Check out [our documentation](https://framer.com/developers/plugins) to learn mo
 ### 🔮 Feedback
 
 -   For feature requests and bug reports, please open an Issue in this Repository.
-
-### 🧪 Join the Beta
-
--   Want to join the Plugin Beta? Sign up for [the waitlist](https://www.framer.com/plugins/).

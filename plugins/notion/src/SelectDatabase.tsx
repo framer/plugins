@@ -1,6 +1,6 @@
 import { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import { richTextToPlainText, useDatabasesQuery } from "./notion"
-import { FormEvent, useEffect, useState } from "react"
+import { FormEvent, useEffect, useRef, useState } from "react"
 import notionConnectSrc from "./assets/notion-connect.png"
 import { assert } from "./utils"
 
@@ -12,13 +12,18 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
     const { data, refetch, isRefetching, isLoading } = useDatabasesQuery()
     const [selectedDatabase, setSelectedDatabase] = useState<string | null>(null)
 
+    const hasBeenFocussedRef = useRef(false)
     const isLoadingOrFetching = isLoading || isRefetching
 
     useEffect(() => {
         if (isLoadingOrFetching) return
 
         function handleFocus() {
-            refetch()
+            if (hasBeenFocussedRef.current) {
+                refetch()
+            } else {
+                hasBeenFocussedRef.current = true
+            }
         }
 
         window.addEventListener("focus", handleFocus)

@@ -77,10 +77,16 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
                         className="flex-1 shrink-1"
                         disabled={!selectEnabled}
                     >
-                        {isLoadingOrFetching && <option disabled>Loading…</option>}
+                        {isLoadingOrFetching && (
+                            <option disabled selected>
+                                Loading…
+                            </option>
+                        )}
                         {!isLoadingOrFetching && (
                             <>
-                                <option disabled>Select Database…</option>
+                                <option disabled selected>
+                                    Select Database…
+                                </option>
                                 {(!data || data.length === 0) && <option disabled>No databases…</option>}
                                 {data?.map(database => {
                                     const label = richTextToPlainText(database.title)

@@ -59,6 +59,7 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
                     continue
                 }
 
+                case "collectionReference":
                 case "formattedText": {
                     if (typeof value !== "string") {
                         columns.push("")
@@ -66,6 +67,16 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
                     }
 
                     columns.push(`${value}`)
+                    continue
+                }
+
+                case "multiCollectionReference": {
+                    if (!Array.isArray(value) || value.some(v => typeof v !== "string")) {
+                        columns.push("")
+                        continue
+                    }
+
+                    columns.push(`${value.join(",")}`)
                     continue
                 }
 
@@ -93,12 +104,14 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
                 case "boolean":
                 case "date":
                 case "link":
-                case "number":
+                case "number": {
                     columns.push(`${value}`)
                     continue
+                }
 
-                default:
+                default: {
                     assertNever(field)
+                }
             }
         }
 

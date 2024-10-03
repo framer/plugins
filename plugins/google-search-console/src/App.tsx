@@ -69,12 +69,17 @@ function usePublishedSite() {
 
             const url = stripTrailingSlash(publishInfo.production.url);
 
-            const googleSite =
+            let googleSite =
               googleSites.find(
-                (currSite) =>
-                  stripTrailingSlash(currSite.siteUrl) === url ||
-                  currSite.siteUrl === `sc-domain:${domain}`,
+                (currSite) => currSite.siteUrl === `sc-domain:${domain}`,
               ) || null;
+
+            if (!googleSite) {
+              googleSite =
+                googleSites.find(
+                  (currSite) => stripTrailingSlash(currSite.siteUrl) === url,
+                ) || null;
+            }
 
             setSiteInfo({
               url,

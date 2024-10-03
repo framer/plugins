@@ -199,7 +199,7 @@ export default function SiteHasIndexedSitemap({
             className="framer-button-primary"
             onClick={() => {
               window.open(
-                `https://search.google.com/search-console/inspect?resource_id=${site.url}`,
+                `https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(site.googleSite?.siteUrl || site.url)}`,
                 '_blank',
               );
             }}

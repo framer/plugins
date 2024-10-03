@@ -163,13 +163,6 @@ function fetchSheet(spreadsheetId: string, sheetTitle: string, range?: string) {
     })
 }
 
-export const useSpreadsheetsQuery = () => {
-    return useQuery<DriveFileList>({
-        queryKey: ["spreadsheets"],
-        queryFn: fetchSpreadsheets,
-    })
-}
-
 export const useSpreadsheetInfoQuery = (spreadsheetId: string) => {
     return useQuery<SpreadsheetInfo>({
         queryKey: ["spreadsheet", spreadsheetId],

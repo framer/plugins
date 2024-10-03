@@ -16,7 +16,7 @@
         "@radix-ui/react-slider": "^1.2.0",
         "clsx": "^2.1.1",
         "colorjs.io": "^0.5.2",
-        "framer-plugin": "^0.5.0",
+        "framer-plugin": "^1.0.0",
         "ogl": "^1.0.8",
         "react": "^18",
         "react-dom": "^18",
@@ -37,7 +37,7 @@
         "prettier-plugin-organize-imports": "^3.2.4",
         "typescript": "^5.4.5",
         "vite": "^5.2.9",
-        "vite-plugin-framer": "^0.0.9"
+        "vite-plugin-framer": "^1.0.1"
     },
     "optionalDependencies": {
         "@rollup/rollup-linux-x64-gnu": "4.9.5"

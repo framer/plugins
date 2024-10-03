@@ -12,7 +12,7 @@
     },
     "dependencies": {
         "classnames": "^2.5.1",
-        "framer-plugin": "^0.5.0",
+        "framer-plugin": "^1.0.0",
         "react": "^18",
         "react-dom": "^18",
         "vite-plugin-mkcert": "^1"
@@ -28,6 +28,6 @@
         "eslint-plugin-react-refresh": "^0",
         "typescript": "^5.3.3",
         "vite": "^5",
-        "vite-plugin-framer": "^0"
+        "vite-plugin-framer": "^1.0.1"
     }
 }

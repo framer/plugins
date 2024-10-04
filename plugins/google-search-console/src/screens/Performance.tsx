@@ -6,6 +6,9 @@ import { CSSProperties, useMemo, useState } from 'react';
 import Loading from '../components/Loading';
 import aveta from 'aveta';
 import FitText from '../components/FitText';
+import Select, { SelectOption } from '../components/Select';
+import { rangeOptions } from './SiteHasIndexedSitemap';
+import { UseSelectSelectedItemChange } from 'downshift';
 
 function dateFormatter(value: number) {
   const date = new Date(value * 1000);
@@ -19,6 +22,8 @@ interface PerformanceProps {
     dailyPerformance: GoogleQueryResult;
     queryPerformance: GoogleQueryResult;
   } | null;
+  selectedRange: SelectOption;
+  onRangeChange: (changes: UseSelectSelectedItemChange<SelectOption>) => void;
 }
 
 interface QueriesTableProps {
@@ -111,7 +116,11 @@ const CustomTooltip = ({
 
 const lineType = 'monotone';
 
-export default function Performance({ performance }: PerformanceProps) {
+export default function Performance({
+  performance,
+  selectedRange,
+  onRangeChange,
+}: PerformanceProps) {
   const chartData = useMemo(
     () =>
       performance?.dailyPerformance
@@ -150,136 +159,155 @@ export default function Performance({ performance }: PerformanceProps) {
 
   return (
     <>
-      {emptyPerformance ? (
-        <section>
-          <p>Your site doesn’t have enough performance data to show yet.</p>
-        </section>
-      ) : performance?.dailyPerformance ? (
-        <section>
-          <div className="stat-boxes">
-            <div
-              role="button"
-              className="stat-box--clicks"
-              style={{
-                opacity: metricFocus && metricFocus !== 'clicks' ? 0.5 : 1,
-              }}
-              onClick={() =>
-                setMetricFocus((currFocus) =>
-                  currFocus === 'clicks' ? null : 'clicks',
-                )
-              }
-            >
-              <div>
-                <FitText>{aveta(totalClicks)}</FitText>
+      <section>
+        <div className="date-range-header">
+          <Select
+            options={rangeOptions}
+            selected={selectedRange}
+            onChange={onRangeChange}
+          />
+        </div>
+        {emptyPerformance ? (
+          <div>
+            <p>Your site doesn’t have enough performance data to show yet.</p>
+          </div>
+        ) : performance?.dailyPerformance ? (
+          <div>
+            <div className="stat-boxes">
+              <div
+                role="button"
+                className="stat-box--clicks"
+                style={{
+                  opacity: metricFocus && metricFocus !== 'clicks' ? 0.5 : 1,
+                }}
+                onClick={() =>
+                  setMetricFocus((currFocus) =>
+                    currFocus === 'clicks' ? null : 'clicks',
+                  )
+                }
+              >
+                <div>
+                  <FitText>{aveta(totalClicks)}</FitText>
+                </div>
+                <div>{`Click${totalClicks === 1 ? '' : 's'}`}</div>
               </div>
-              <div>{`Click${totalClicks === 1 ? '' : 's'}`}</div>
+              <div
+                role="button"
+                className="stat-box--impressions"
+                style={{
+                  opacity:
+                    metricFocus && metricFocus !== 'impressions' ? 0.5 : 1,
+                }}
+                onClick={() =>
+                  setMetricFocus((currFocus) =>
+                    currFocus === 'impressions' ? null : 'impressions',
+                  )
+                }
+              >
+                <div>
+                  <FitText>{aveta(totalImpressions)}</FitText>
+                </div>
+                <div>{`Impression${totalImpressions === 1 ? '' : 's'}`}</div>
+              </div>
             </div>
-            <div
-              role="button"
-              className="stat-box--impressions"
-              style={{
-                opacity: metricFocus && metricFocus !== 'impressions' ? 0.5 : 1,
-              }}
-              onClick={() =>
-                setMetricFocus((currFocus) =>
-                  currFocus === 'impressions' ? null : 'impressions',
-                )
-              }
-            >
-              <div>
-                <FitText>{aveta(totalImpressions)}</FitText>
+            <div className="chart-offset">
+              <div className="responsive-5">
+                <ResponsiveContainer aspect={1.5}>
+                  <AreaChart
+                    margin={{ top: 10, left: 5, right: 5, bottom: 0 }}
+                    data={chartData}
+                  >
+                    <defs>
+                      <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
+                        <stop
+                          offset="5%"
+                          stopColor="#0099FF"
+                          stopOpacity={0.15}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#0099FF"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                      <linearGradient
+                        id="colorImpressions"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="#8855FF"
+                          stopOpacity={0.15}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#8855FF"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="date"
+                      domain={['dataMin', 'dataMax']}
+                      interval="equidistantPreserveStart"
+                      tickLine={false}
+                      tick={CustomYAxisTick}
+                      scale="time"
+                      type="number"
+                      tickFormatter={(value: number) => dateFormatter(value)}
+                      axisLine={false}
+                      tickMargin={10}
+                      minTickGap={10}
+                    />
+                    <Tooltip
+                      // @ts-expect-error Props are added to component clone
+                      content={<CustomTooltip />}
+                      cursor={false}
+                      wrapperClassName="chart-tooltip-wrapper"
+                      labelFormatter={(value) => dateFormatter(value as number)}
+                      formatter={(value, type) => {
+                        if (type === 'clicks') {
+                          return [value.toLocaleString(), 'Clicks'];
+                        }
+
+                        if (type === 'impressions') {
+                          return [value.toLocaleString(), 'Impressions'];
+                        }
+
+                        return [value.toLocaleString(), type];
+                      }}
+                    />
+                    {!metricFocus || metricFocus === 'clicks' ? (
+                      <Area
+                        isAnimationActive={false}
+                        type={lineType}
+                        dataKey="clicks"
+                        stroke="#0099FF"
+                        fillOpacity={1}
+                        fill="url(#colorPv)"
+                      />
+                    ) : null}
+                    {!metricFocus || metricFocus === 'impressions' ? (
+                      <Area
+                        isAnimationActive={false}
+                        type={lineType}
+                        dataKey="impressions"
+                        stroke="#8855FF"
+                        fillOpacity={1}
+                        fill="url(#colorImpressions)"
+                      />
+                    ) : null}
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
-              <div>{`Impression${totalImpressions === 1 ? '' : 's'}`}</div>
             </div>
           </div>
-          <div className="chart-offset">
-            <div className="responsive-5">
-              <ResponsiveContainer aspect={1.5}>
-                <AreaChart
-                  margin={{ top: 10, left: 5, right: 5, bottom: 0 }}
-                  data={chartData}
-                >
-                  <defs>
-                    <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="5%"
-                        stopColor="#0099FF"
-                        stopOpacity={0.15}
-                      />
-                      <stop offset="95%" stopColor="#0099FF" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient
-                      id="colorImpressions"
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="5%"
-                        stopColor="#8855FF"
-                        stopOpacity={0.15}
-                      />
-                      <stop offset="95%" stopColor="#8855FF" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="date"
-                    domain={['dataMin', 'dataMax']}
-                    interval="equidistantPreserveStart"
-                    tickLine={false}
-                    tick={CustomYAxisTick}
-                    scale="time"
-                    type="number"
-                    tickFormatter={(value: number) => dateFormatter(value)}
-                    axisLine={false}
-                    tickMargin={10}
-                    minTickGap={10}
-                  />
-                  <Tooltip
-                    // @ts-expect-error Props are added to component clone
-                    content={<CustomTooltip />}
-                    cursor={false}
-                    wrapperClassName="chart-tooltip-wrapper"
-                    labelFormatter={(value) => dateFormatter(value as number)}
-                    formatter={(value, type) => {
-                      if (type === 'clicks') {
-                        return [value.toLocaleString(), 'Clicks'];
-                      }
+        ) : null}
+      </section>
 
-                      if (type === 'impressions') {
-                        return [value.toLocaleString(), 'Impressions'];
-                      }
-
-                      return [value.toLocaleString(), type];
-                    }}
-                  />
-                  {!metricFocus || metricFocus === 'clicks' ? (
-                    <Area
-                      isAnimationActive={false}
-                      type={lineType}
-                      dataKey="clicks"
-                      stroke="#0099FF"
-                      fillOpacity={1}
-                      fill="url(#colorPv)"
-                    />
-                  ) : null}
-                  {!metricFocus || metricFocus === 'impressions' ? (
-                    <Area
-                      isAnimationActive={false}
-                      type={lineType}
-                      dataKey="impressions"
-                      stroke="#8855FF"
-                      fillOpacity={1}
-                      fill="url(#colorImpressions)"
-                    />
-                  ) : null}
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </section>
-      ) : null}
       {performance?.queryPerformance?.rows?.length ? (
         <section>
           <div className="section-title">Top Queries</div>

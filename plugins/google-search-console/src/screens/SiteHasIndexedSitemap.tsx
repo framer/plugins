@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import sitemapper from 'sitemap-urls';
 import { useErrorBoundary } from 'react-error-boundary';
 import { GoogleInspectionResult, SiteWithGoogleSite } from '../types';
@@ -16,6 +16,7 @@ import indexNone from '../images/IndexNone.svg';
 import indexAdded from '../images/IndexAdded.svg';
 import InlineSpinner from '../components/InlineSpinner';
 import { mockUrls } from '../mocks';
+import { SelectOption } from '../components/Select';
 
 interface URLRowProps {
   url: string;
@@ -133,7 +134,29 @@ function URLStatuses({ urls, googleSiteUrl }: URLStatusesProps) {
   );
 }
 
-const dates = getDateRange(14);
+export const rangeOptions: SelectOption[] = [
+  {
+    id: 7,
+    title: 'Last 7 days',
+  },
+  {
+    id: 14,
+    title: 'Last 14 days',
+  },
+  {
+    id: 30,
+    title: 'Last 30 days',
+  },
+  {
+    id: 90,
+    title: 'Last 90 days',
+  },
+];
+
+const defaultRange: SelectOption = {
+  id: 14,
+  title: 'Last 14 days',
+};
 
 const usePerformanceResultsHook = SHOW_MOCK_SITEMAP_DATA
   ? useMockPerformanceResults
@@ -170,6 +193,14 @@ export default function SiteHasIndexedSitemap({
     }
   }, [showBoundary, site.domain]);
 
+  const [selectedRange, setSelectedRange] =
+    useState<SelectOption>(defaultRange);
+
+  const dates = useMemo(
+    () => getDateRange(selectedRange.id as number),
+    [selectedRange.id],
+  );
+
   const performance = usePerformanceResultsHook(site.googleSite.siteUrl, dates);
 
   const resize = useContext(ResizeContext);
@@ -186,6 +217,10 @@ export default function SiteHasIndexedSitemap({
         <Performance
           siteUrl={site.googleSite.siteUrl}
           performance={performance}
+          selectedRange={selectedRange}
+          onRangeChange={(changes) => {
+            setSelectedRange(changes.selectedItem);
+          }}
         />
         <section>
           <URLStatuses urls={urls} googleSiteUrl={site.googleSite.siteUrl} />

@@ -13,6 +13,7 @@
     "@ataverascrespo/react18-ts-textfit": "^1.0.0",
     "@triozer/framer-toolbox": "^0.1.14",
     "aveta": "^1.4.1",
+    "downshift": "^9.0.8",
     "framer-plugin": "^1.0.0",
     "react": "^18",
     "react-dom": "^18",

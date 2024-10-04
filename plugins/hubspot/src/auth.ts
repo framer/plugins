@@ -27,27 +27,33 @@ export const AUTH_URI = isLocal() ? "https://localhost:8787" : "https://oauth.fe
 
 class Auth {
     storedTokens?: StoredTokens | null
+    private refreshPromise: Promise<StoredTokens> | null = null
 
     async refreshTokens() {
-        try {
-            const tokens = this.tokens.getOrThrow()
+        if (!this.refreshPromise) {
+            this.refreshPromise = (async () => {
+                try {
+                    const tokens = this.tokens.getOrThrow()
+                    const res = await fetch(`${AUTH_URI}/refresh?code=${tokens.refreshToken}`, {
+                        method: "POST",
+                    })
 
-            const res = await fetch(`${AUTH_URI}/refresh?code=${tokens.refreshToken}`, {
-                method: "POST",
-            })
+                    if (res.status !== 200) {
+                        throw new Error("Failed to refresh tokens. Please sign in again.")
+                    }
 
-            if (res.status !== 200) {
-                throw new Error("Failed to refresh tokens. Please sign in again.")
-            }
-
-            const json = await res.json()
-            const newTokens = json as Tokens
-
-            return this.tokens.save(newTokens)
-        } catch (e) {
-            this.tokens.clear()
-            throw e
+                    const newTokens = (await res.json()) as Tokens
+                    return this.tokens.save(newTokens)
+                } catch (e) {
+                    this.tokens.clear()
+                    throw e
+                } finally {
+                    this.refreshPromise = null
+                }
+            })()
         }
+
+        return this.refreshPromise
     }
 
     async fetchTokens(readKey: string) {

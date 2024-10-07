@@ -8,9 +8,14 @@ import {
     isNotionClientError,
 } from "@notionhq/client"
 import pLimit from "p-limit"
-import { GetDatabaseResponse, PageObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
-import { assert, formatDate, isDefined, isString, slugify } from "./utils"
-import { CollectionField, CollectionItemData, framer, ManagedCollection } from "framer-plugin"
+import {
+    BlockObjectResponse,
+    GetDatabaseResponse,
+    PageObjectResponse,
+    RichTextItemResponse,
+} from "@notionhq/client/build/src/api-endpoints"
+import { assert, assertNever, formatDate, isDefined, isString, slugify } from "./utils"
+import { ManagedCollectionField, CollectionItemData, framer, ManagedCollection } from "framer-plugin"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
 
@@ -37,13 +42,14 @@ const concurrencyLimit = 5
 
 export type NotionProperty = GetDatabaseResponse["properties"][string]
 
-// A page in database consists of blocks.
-// We allow configuration to include this as a field in the collection.
-// This is used as an identifier to recognize that property and treat it as page content
-export const pageContentField: CollectionField = {
-    type: "formattedText",
-    id: "page-content",
+const pageContentId = "page-content"
+
+export const pageContentProperty: SupportedNotionProperty = {
+    type: "rich_text",
+    id: pageContentId,
     name: "Content",
+    description: "Page Content",
+    rich_text: {},
 }
 
 // Naive implementation to be authenticated, a token could be expired.
@@ -55,6 +61,24 @@ export function isAuthenticated() {
 let notion: Client | null = null
 if (isAuthenticated()) {
     initNotionClient()
+}
+
+export function getNotionProperties(database: GetDatabaseResponse) {
+    const result: NotionProperty[] = []
+
+    // Every page has content which is a rich text property. We add it as a
+    // property so it displays in the list where you can disable properties To
+    // be synchronize
+    result.push(pageContentProperty)
+
+    for (const key in database.properties) {
+        const property = database.properties[key]
+        assert(property)
+
+        result.push(property)
+    }
+
+    return result
 }
 
 export function initNotionClient() {
@@ -99,18 +123,16 @@ const preferedSlugFieldOrder: NotionProperty["type"][] = ["title", "rich_text"]
 export function getPossibleSlugFields(database: GetDatabaseResponse) {
     const options: NotionProperty[] = []
 
-    for (const key in database.properties) {
-        const property = database.properties[key]
-        assert(property)
-
+    const properties = getNotionProperties(database)
+    for (const property of properties) {
         switch (property.type) {
-            // TODO: Other field types that qualify as slug?
             case "title":
             case "rich_text":
                 options.push(property)
                 break
         }
     }
+
     function getOrderIndex(type: NotionProperty["type"]): number {
         const index = preferedSlugFieldOrder.indexOf(type)
         return index === -1 ? preferedSlugFieldOrder.length : index
@@ -148,29 +170,87 @@ export async function authorize(options: { readKey: string; writeKey: string }) 
     })
 }
 
+export const supportedNotionPropertyTypes = [
+    "email",
+    "rich_text",
+    "date",
+    "last_edited_time",
+    "select",
+    "number",
+    "checkbox",
+    "created_time",
+    "title",
+    "status",
+    "url",
+    "files",
+] satisfies NotionProperty["type"][]
+
+type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
+type SupportedNotionProperty = Extract<NotionProperty, { type: SupportedPropertyType }>
+
+export function isSupportedNotionProperty(property: NotionProperty): property is SupportedNotionProperty {
+    return supportedNotionPropertyTypes.includes(property.type as SupportedPropertyType)
+}
+
+export const supportedCMSTypeByNotionPropertyType = {
+    checkbox: ["boolean"],
+    date: ["date"],
+    number: ["number"],
+    title: ["string"],
+    rich_text: ["formattedText", "string"],
+    created_time: ["date"],
+    last_edited_time: ["date"],
+    select: ["enum"],
+    status: ["enum"],
+    url: ["link"],
+    email: ["formattedText", "string"],
+    files: ["file", "image"],
+} satisfies Record<SupportedPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
+
+function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
+    propertyType: T,
+    fieldType: ManagedCollectionField["type"]
+): asserts fieldType is (typeof supportedCMSTypeByNotionPropertyType)[T][number] {
+    const allowedFieldTypes = supportedCMSTypeByNotionPropertyType[propertyType]
+
+    if (!allowedFieldTypes.includes(fieldType as never)) {
+        throw new Error(`Field type '${fieldType}' is not valid for property type '${propertyType}'.`)
+    }
+}
+
 /**
  * Given a Notion Database Properties object returns a CollectionField object
  * That maps the Notion Property to the Framer CMS collection property type
  */
-export function getCollectionFieldForProperty(property: NotionProperty): CollectionField | null {
+export function getCollectionFieldForProperty<
+    TProperty extends Extract<NotionProperty, { type: SupportedPropertyType }>,
+>(property: TProperty, fieldType: ManagedCollectionField["type"]): ManagedCollectionField | null {
     switch (property.type) {
         case "email":
         case "rich_text": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
             return {
-                type: "formattedText",
+                type: fieldType,
                 id: property.id,
                 name: property.name,
+                userEditable: false,
             }
         }
         case "date":
         case "last_edited_time": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
             return {
                 type: "date",
                 id: property.id,
                 name: property.name,
+                userEditable: false,
             }
         }
         case "select": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
             return {
                 type: "enum",
                 cases: property.select.options.map(option => ({
@@ -179,55 +259,97 @@ export function getCollectionFieldForProperty(property: NotionProperty): Collect
                 })),
                 id: property.id,
                 name: property.name,
+                userEditable: false,
             }
         }
         case "number": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
             return {
                 type: "number",
                 id: property.id,
                 name: property.name,
+                userEditable: false,
             }
         }
         case "checkbox": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
             return {
                 type: "boolean",
                 id: property.id,
                 name: property.name,
+                userEditable: false,
             }
         }
         case "created_time": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
             return {
                 type: "date",
                 id: property.id,
                 name: property.name,
+                userEditable: false,
             }
         }
-        case "title":
+        case "title": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
             return {
                 type: "string",
                 id: property.id,
                 name: property.name,
+                userEditable: false,
             }
-        case "status":
+        }
+        case "status": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
             return {
                 type: "enum",
                 id: property.id,
                 name: property.name,
-                cases: property.status.groups.map((group) => {
+                cases: property.status.groups.map(group => {
                     return {
                         id: group.id,
                         name: group.name,
                     }
-                })
+                }),
+                userEditable: false,
             }
-        case "url":
+        }
+        case "url": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
             return {
                 type: "link",
                 id: property.id,
-                name: property.name
+                name: property.name,
+                userEditable: false,
             }
-        case "multi_select":
+        }
+        case "files": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
+            if (fieldType === "file") {
+                return {
+                    type: fieldType,
+                    id: property.id,
+                    name: property.name,
+                    userEditable: false,
+                    allowedFileTypes: [],
+                }
+            }
+
+            return {
+                type: fieldType,
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
         default: {
+            assertNever(property)
+
             // More Field types can be added here
             return null
         }
@@ -282,14 +404,35 @@ export function getPropertyValue(
         case "date": {
             return property.date?.start
         }
+        case "files": {
+            const firstFile = property.files[0]
+            if (!firstFile) return ""
+
+            if (firstFile.type === "external") {
+                return firstFile.external.url
+            }
+
+            if (firstFile.type === "file") {
+                return firstFile.file.url
+            }
+        }
     }
 }
 
+export interface SynchronizeProgress {
+    totalCount: number
+    completedCount: number
+    completedPercent: number
+}
+
+type OnProgressHandler = (progress: SynchronizeProgress) => void
+
 export interface SynchronizeMutationOptions {
-    fields: CollectionField[]
+    fields: ManagedCollectionField[]
     ignoredFieldIds: string[]
     lastSyncedTime: string | null
     slugFieldId: string
+    onProgress: OnProgressHandler
 }
 
 export interface ItemResult {
@@ -311,9 +454,15 @@ export interface SynchronizeResult extends SyncStatus {
 async function getPageBlocksAsRichText(pageId: string) {
     assert(notion, "Notion client is not initialized")
 
-    const blocks = await collectPaginatedAPI(notion.blocks.children.list, {
+    const iterator = iteratePaginatedAPI(notion.blocks.children.list, {
         block_id: pageId,
     })
+
+    const blocks: BlockObjectResponse[] = []
+    for await (const block of iterator) {
+        if (!isFullBlock(block)) continue
+        blocks.push(block)
+    }
 
     assert(blocks.every(isFullBlock), "Response is not a full block")
 
@@ -324,26 +473,13 @@ async function processItem(
     item: PageObjectResponse,
     fieldsById: FieldsById,
     slugFieldId: string,
-    status: SyncStatus,
-    unsyncedItemIds: Set<string>,
-    lastSyncedTime: string | null
+    status: SyncStatus
 ): Promise<CollectionItemData | null> {
     let slugValue: null | string = null
 
     const fieldData: Record<string, unknown> = {}
 
-    // Mark the item as seen
-    unsyncedItemIds.delete(item.id)
-
     assert(isFullPage(item))
-
-    if (isUnchangedSinceLastSync(item.last_edited_time, lastSyncedTime)) {
-        status.info.push({
-            message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSyncedTime!)}`,
-            url: item.url,
-        })
-        return null
-    }
 
     for (const key in item.properties) {
         const property = item.properties[key]
@@ -354,6 +490,7 @@ async function processItem(
             if (!resolvedSlug || typeof resolvedSlug !== "string") {
                 continue
             }
+
             slugValue = slugify(resolvedSlug)
         }
 
@@ -365,7 +502,7 @@ async function processItem(
         }
 
         const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
-        if (!fieldValue) {
+        if (fieldValue === null) {
             status.warnings.push({
                 url: item.url,
                 fieldId: field.id,
@@ -377,9 +514,9 @@ async function processItem(
         fieldData[field.id] = fieldValue
     }
 
-    if (fieldsById.has(pageContentField.id) && item.id) {
+    if (fieldsById.has(pageContentProperty.id) && item.id) {
         const contentHTML = await getPageBlocksAsRichText(item.id)
-        fieldData[pageContentField.id] = contentHTML
+        fieldData[pageContentProperty.id] = contentHTML
     }
 
     if (!slugValue) {
@@ -397,24 +534,56 @@ async function processItem(
     }
 }
 
-type FieldsById = Map<FieldId, CollectionField>
+type FieldsById = Map<FieldId, ManagedCollectionField>
 
-// Function to process all items concurrently with a limit
 async function processAllItems(
     data: PageObjectResponse[],
     fieldsByKey: FieldsById,
     slugFieldId: string,
-    unsyncedItemIds: Set<FieldId>,
-    lastSyncedDate: string | null
+    lastSyncedDate: string | null,
+    hasFieldChanges: boolean,
+    onProgress: OnProgressHandler
 ) {
+    const seenItemIds = new Set<string>()
     const limit = pLimit(concurrencyLimit)
     const status: SyncStatus = {
         errors: [],
         info: [],
         warnings: [],
     }
+
+    const totalCount = data.length
+    let completedCount = 0
+
+    onProgress({
+        totalCount,
+        completedCount,
+        completedPercent: 0,
+    })
+
     const promises = data.map(item =>
-        limit(() => processItem(item, fieldsByKey, slugFieldId, status, unsyncedItemIds, lastSyncedDate))
+        limit(async () => {
+            seenItemIds.add(item.id)
+
+            if (!hasFieldChanges && isUnchangedSinceLastSync(item.last_edited_time, lastSyncedDate)) {
+                status.info.push({
+                    message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSyncedDate!)}`,
+                    url: item.url,
+                })
+                return null
+            }
+
+            const result = await processItem(item, fieldsByKey, slugFieldId, status)
+
+            completedCount++
+            onProgress({
+                completedCount,
+                totalCount,
+                completedPercent: Math.round((completedCount / totalCount) * 100),
+            })
+
+            return result
+        })
     )
     const results = await Promise.all(promises)
 
@@ -423,83 +592,88 @@ async function processAllItems(
     return {
         collectionItems,
         status,
+        seenItemIds,
     }
+}
+
+function hasFieldConfigurationChanged(a: ManagedCollectionField[], b: ManagedCollectionField[]) {
+    if (a.length !== b.length) return true
+
+    for (let i = 0; i < a.length; i++) {
+        const fieldA = a[i]
+        const fieldB = b[i]
+
+        if (fieldA.id !== fieldB.id) return true
+        if (fieldA.type !== fieldB.type) return true
+    }
+
+    return false
 }
 
 export async function synchronizeDatabase(
     database: GetDatabaseResponse,
-    { fields, ignoredFieldIds, lastSyncedTime, slugFieldId }: SynchronizeMutationOptions
+    { fields, ignoredFieldIds, lastSyncedTime, slugFieldId, onProgress }: SynchronizeMutationOptions
 ): Promise<SynchronizeResult> {
     assert(isFullDatabase(database))
     assert(notion)
 
     const collection = await framer.getManagedCollection()
+    const hasChangedFields = hasFieldConfigurationChanged(fields, await collection.getFields())
+
     await collection.setFields(fields)
 
-    const fieldsById = new Map<string, CollectionField>()
+    const fieldsById = new Map<string, ManagedCollectionField>()
     for (const field of fields) {
         fieldsById.set(field.id, field)
     }
 
-    const unsyncedItemIds = new Set(await collection.getItemIds())
-
     const data = await collectPaginatedAPI(notion.databases.query, {
         database_id: database.id,
     })
-
     assert(data.every(isFullPage), "Response is not a full page")
 
-    const { collectionItems, status } = await processAllItems(
+    const { collectionItems, status, seenItemIds } = await processAllItems(
         data,
         fieldsById,
         slugFieldId,
-        unsyncedItemIds,
-        lastSyncedTime
+        lastSyncedTime,
+        hasChangedFields,
+        onProgress
     )
 
-    console.log("Submitting database")
+    const itemIdsToDelete = new Set(await collection.getItemIds())
+    for (const itemId of seenItemIds) {
+        itemIdsToDelete.delete(itemId)
+    }
+
     console.table(collectionItems)
 
-    try {
-        await collection.addItems(collectionItems)
+    await collection.addItems(collectionItems)
+    await collection.removeItems(Array.from(itemIdsToDelete))
 
-        const itemsToDelete = Array.from(unsyncedItemIds)
-        await collection.removeItems(itemsToDelete)
+    await Promise.all([
+        collection.setPluginData(ignoredFieldIdsKey, JSON.stringify(ignoredFieldIds)),
+        collection.setPluginData(pluginDatabaseIdKey, database.id),
+        collection.setPluginData(pluginLastSyncedKey, new Date().toISOString()),
+        collection.setPluginData(pluginSlugIdKey, slugFieldId),
+        collection.setPluginData(databaseNameKey, richTextToPlainText(database.title)),
+    ])
 
-        await Promise.all([
-            collection.setPluginData(ignoredFieldIdsKey, JSON.stringify(ignoredFieldIds)),
-            collection.setPluginData(pluginDatabaseIdKey, database.id),
-            collection.setPluginData(pluginLastSyncedKey, new Date().toISOString()),
-            collection.setPluginData(pluginSlugIdKey, slugFieldId),
-            collection.setPluginData(databaseNameKey, richTextToPlainText(database.title)),
-        ])
-
-        return {
-            status: status.errors.length === 0 ? "success" : "completed_with_errors",
-            errors: status.errors,
-            info: status.info,
-            warnings: status.warnings,
-        }
-    } catch (error) {
-        // There is a bug where framer-plugin throws errors as Strings instead of wrapping them in an Error object.
-        // This is a workaround until we land that PR.
-        if (isString(error)) {
-            throw new Error(error)
-        }
-
-        throw error
+    return {
+        status: status.errors.length === 0 ? "success" : "completed_with_errors",
+        errors: status.errors,
+        info: status.info,
+        warnings: status.warnings,
     }
 }
 
 export function useSynchronizeDatabaseMutation(
     database: GetDatabaseResponse | null,
-    { onSuccess, onError }: { onSuccess?: (result: SynchronizeResult) => void; onError?: (error: Error) => void } = {}
+    { onSuccess }: { onSuccess?: (result: SynchronizeResult) => void } = {}
 ) {
     return useMutation({
         onError(error) {
-            console.error("Synchronization failed", error)
-
-            onError?.(error)
+            framer.closePlugin("Failed to synchronize with Notion: " + error.message, { variant: "error" })
         },
         onSuccess,
         mutationFn: async (options: SynchronizeMutationOptions): Promise<SynchronizeResult> => {
@@ -538,7 +712,7 @@ export interface PluginContextUpdate {
     type: "update"
     database: GetDatabaseResponse
     collection: ManagedCollection
-    collectionFields: CollectionField[]
+    collectionFields: ManagedCollectionField[]
     lastSyncedTime: string
     hasChangedFields: boolean
     ignoredFieldIds: FieldId[]
@@ -564,29 +738,6 @@ function getIgnoredFieldIds(rawIgnoredFields: string | null) {
     if (!parsed.every(isString)) return []
 
     return parsed
-}
-
-function getSuggestedFieldsForDatabase(database: GetDatabaseResponse, ignoredFieldIds: FieldId[]) {
-    const fields: CollectionField[] = []
-
-    if (!ignoredFieldIds.includes(pageContentField.id)) {
-        fields.push(pageContentField)
-    }
-
-    for (const key in database.properties) {
-        const property = database.properties[key]
-        assert(property)
-
-        // These fields were ignored by the user
-        if (ignoredFieldIds.includes(property.id)) continue
-
-        const field = getCollectionFieldForProperty(property)
-        if (field) {
-            fields.push(field)
-        }
-    }
-
-    return fields
 }
 
 export async function getPluginContext(): Promise<PluginContext> {
@@ -625,7 +776,7 @@ export async function getPluginContext(): Promise<PluginContext> {
             ignoredFieldIds,
             lastSyncedTime,
             slugFieldId,
-            hasChangedFields: hasFieldConfigurationChanged(collectionFields, database, ignoredFieldIds),
+            hasChangedFields: hasDatabaseFieldsChanged(collectionFields, database, ignoredFieldIds),
             isAuthenticated: hasAuthToken,
         }
     } catch (error) {
@@ -643,26 +794,39 @@ export async function getPluginContext(): Promise<PluginContext> {
     }
 }
 
-export function hasFieldConfigurationChanged(
-    currentConfig: CollectionField[],
+export function hasDatabaseFieldsChanged(
+    currentFields: ManagedCollectionField[],
     database: GetDatabaseResponse,
     ignoredFieldIds: string[]
 ): boolean {
-    const currentFieldsById = new Map<string, CollectionField>()
-    for (const field of currentConfig) {
+    const currentFieldsById = new Map<string, ManagedCollectionField>()
+    for (const field of currentFields) {
         currentFieldsById.set(field.id, field)
     }
 
-    const suggestedFields = getSuggestedFieldsForDatabase(database, ignoredFieldIds)
-    if (suggestedFields.length !== currentConfig.length) return true
+    const properties = getNotionProperties(database)
 
-    const includedFields = suggestedFields.filter(field => currentFieldsById.has(field.id))
+    const supportedfieldsById: Map<string, ManagedCollectionField["type"][]> = new Map()
+    for (const property of properties) {
+        if (!isSupportedNotionProperty(property)) continue
+        if (ignoredFieldIds.includes(property.id)) continue
 
-    for (const field of includedFields) {
-        const currentField = currentFieldsById.get(field.id)
+        const supportedFieldTypes = supportedCMSTypeByNotionPropertyType[property.type]
+        if (!supportedFieldTypes.length) continue
 
+        supportedfieldsById.set(property.id, supportedFieldTypes)
+    }
+
+    if (supportedfieldsById.size !== currentFields.length) return true
+
+    for (const [fieldId, supportedFieldTypes] of supportedfieldsById) {
+        const currentField = currentFieldsById.get(fieldId)
+
+        // A new Field was added
         if (!currentField) return true
-        if (currentField.type !== field.type) return true
+
+        // The supported field Types of this field changed.
+        if (!supportedFieldTypes.includes(currentField.type)) return true
     }
 
     return false
@@ -678,4 +842,41 @@ export function isUnchangedSinceLastSync(lastEditedTime: string, lastSyncedTime:
     lastSynced.setSeconds(0, 0)
 
     return lastSynced > lastEdited
+}
+
+interface PaginatedArgs {
+    start_cursor?: string
+}
+
+interface PaginatedList<T> {
+    object: "list"
+    results: T[]
+    next_cursor: string | null
+    has_more: boolean
+}
+
+export async function* iteratePaginatedAPI<Args extends PaginatedArgs, Item>(
+    listFn: (args: Args) => Promise<PaginatedList<Item>>,
+    firstPageArgs: Args
+): AsyncIterableIterator<Item> {
+    const seenCursors = new Set<string>()
+    let nextCursor: string | null | undefined = firstPageArgs.start_cursor
+
+    do {
+        const response: PaginatedList<Item> = await listFn({
+            ...firstPageArgs,
+            start_cursor: nextCursor,
+        })
+        yield* response.results
+
+        if (!response.next_cursor) return
+
+        if (seenCursors.has(response.next_cursor)) {
+            console.warn("Notion has a bug with pagination")
+            return
+        }
+
+        seenCursors.add(response.next_cursor)
+        nextCursor = response.next_cursor
+    } while (nextCursor)
 }

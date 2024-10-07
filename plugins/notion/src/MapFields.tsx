@@ -1,67 +1,67 @@
 import { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
-import { CollectionField } from "framer-plugin"
-import { assert, isDefined } from "./utils"
+import { ManagedCollectionField } from "framer-plugin"
+import { assert } from "./utils"
 import {
     NotionProperty,
     PluginContext,
     SynchronizeMutationOptions,
+    SynchronizeProgress,
     getCollectionFieldForProperty,
     getPossibleSlugFields,
-    hasFieldConfigurationChanged,
-    pageContentField,
+    hasDatabaseFieldsChanged,
+    isSupportedNotionProperty,
+    supportedCMSTypeByNotionPropertyType,
     richTextToPlainText,
+    getNotionProperties,
 } from "./notion"
-import { useMemo, useState } from "react"
+import { Fragment, useMemo, useState } from "react"
 import classNames from "classnames"
 import { IconChevron } from "./components/Icons"
 import { Button } from "./components/Button"
 import { isFullDatabase } from "@notionhq/client"
 import { CheckboxTextfield } from "./components/CheckboxTexfield"
 
-interface CollectionFieldConfig {
-    field: CollectionField | null
-    isNewField: boolean
-    originalFieldName: string
-}
-
-function sortField(fieldA: CollectionFieldConfig, fieldB: CollectionFieldConfig): number {
-    // Sort unsupported fields to bottom
-    if (!fieldA.field && !fieldB.field) {
+function sortProperties(propertyA: NotionProperty, propertyB: NotionProperty): number {
+    // Properties that are not supported in the Plugin are displayed at the bottom of the list.
+    if (!isSupportedNotionProperty(propertyA) && !isSupportedNotionProperty(propertyB)) {
         return 0
-    } else if (!fieldA.field) {
+    } else if (!isSupportedNotionProperty(propertyA)) {
         return 1
-    } else if (!fieldB.field) {
+    } else if (!isSupportedNotionProperty(propertyB)) {
         return -1
     }
 
     return -1
 }
 
-function createFieldConfig(database: GetDatabaseResponse, pluginContext: PluginContext): CollectionFieldConfig[] {
-    const result: CollectionFieldConfig[] = []
+function getSortedProperties(database: GetDatabaseResponse): NotionProperty[] {
+    return getNotionProperties(database).sort(sortProperties)
+}
 
-    const existingFieldIds = new Set(
-        pluginContext.type === "update" ? pluginContext.collectionFields.map(field => field.id) : []
-    )
+function getInitialFieldTypeState(
+    database: GetDatabaseResponse,
+    pluginContext: PluginContext
+): Record<string, ManagedCollectionField["type"]> {
+    const result: Record<string, ManagedCollectionField["type"]> = {}
 
-    result.push({
-        field: pageContentField,
-        originalFieldName: pageContentField.name,
-        isNewField: existingFieldIds.size > 0 && !existingFieldIds.has(pageContentField.id),
-    })
+    const properties = getNotionProperties(database)
+    for (const property of properties) {
+        if (!isSupportedNotionProperty(property)) continue
 
-    for (const key in database.properties) {
-        const property = database.properties[key]
-        assert(property)
+        const fieldType = supportedCMSTypeByNotionPropertyType[property.type][0]
+        assert(fieldType)
 
-        result.push({
-            field: getCollectionFieldForProperty(property),
-            originalFieldName: property.name,
-            isNewField: existingFieldIds.size > 0 && !existingFieldIds.has(property.id),
-        })
+        result[property.id] = fieldType
     }
 
-    return result.sort(sortField)
+    if (pluginContext.type !== "update") return result
+
+    // If we are updating a managed collection the field type could differ from the default.
+    for (const field of pluginContext.collectionFields) {
+        result[field.id] = field.type
+    }
+
+    return result
 }
 
 function getFieldNameOverrides(pluginContext: PluginContext): Record<string, string> {
@@ -93,11 +93,24 @@ function getLastSyncedTime(
     if (pluginContext.slugFieldId !== slugFieldId) return null
 
     // Always resync if field config changes
-    if (hasFieldConfigurationChanged(pluginContext.collectionFields, database, Array.from(disabledFieldIds))) {
+    if (hasDatabaseFieldsChanged(pluginContext.collectionFields, database, Array.from(disabledFieldIds))) {
         return null
     }
 
     return pluginContext.lastSyncedTime
+}
+
+const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
+    boolean: "Boolean",
+    date: "Date",
+    number: "Number",
+    formattedText: "Formatted Text",
+    color: "Color",
+    enum: "Enum",
+    file: "File",
+    image: "Image",
+    link: "Link",
+    string: "String",
 }
 
 export function MapDatabaseFields({
@@ -117,13 +130,20 @@ export function MapDatabaseFields({
     const [slugFieldId, setSlugFieldId] = useState<string | null>(() =>
         getInitialSlugFieldId(pluginContext, slugFields)
     )
-    const [fieldConfig] = useState<CollectionFieldConfig[]>(() => createFieldConfig(database, pluginContext))
+    const [sortedProperties] = useState(() => getSortedProperties(database))
     const [disabledFieldIds, setDisabledFieldIds] = useState(
         () => new Set<string>(pluginContext.type === "update" ? pluginContext.ignoredFieldIds : [])
+    )
+    const [fieldTypeByFieldId, setFieldTypeByFieldId] = useState(() =>
+        getInitialFieldTypeState(database, pluginContext)
     )
     const [fieldNameOverrides, setFieldNameOverrides] = useState<Record<string, string>>(() =>
         getFieldNameOverrides(pluginContext)
     )
+
+    // TODO: Render progress in UI.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_, setProgress] = useState<SynchronizeProgress | null>(null)
 
     assert(isFullDatabase(database))
 
@@ -147,27 +167,51 @@ export function MapDatabaseFields({
         }))
     }
 
+    const handleFieldTypeChange = (fieldID: string, type: ManagedCollectionField["type"]) => {
+        setFieldTypeByFieldId(current => ({
+            ...current,
+            [fieldID]: type,
+        }))
+    }
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
 
         if (isLoading) return
 
-        const allFields = fieldConfig
-            .filter(fieldConfig => fieldConfig.field && !disabledFieldIds.has(fieldConfig.field.id))
-            .map(fieldConfig => fieldConfig.field)
-            .filter(isDefined)
-            .map(field => {
-                if (fieldNameOverrides[field.id]) {
-                    field.name = fieldNameOverrides[field.id]
-                }
+        const propertiesById = new Map<string, NotionProperty>()
+        const properties = getNotionProperties(database)
+        for (const property of properties) {
+            propertiesById.set(property.id, property)
+        }
 
-                return field
-            })
+        const cmsFields: ManagedCollectionField[] = []
+        for (const fieldId in fieldTypeByFieldId) {
+            if (disabledFieldIds.has(fieldId)) continue
+
+            const property = propertiesById.get(fieldId)
+            assert(property)
+
+            if (!isSupportedNotionProperty(property)) continue
+
+            const fieldType = fieldTypeByFieldId[fieldId]
+            const fieldName = fieldNameOverrides[fieldId] ?? propertiesById.get(fieldId)?.name
+
+            assert(fieldType)
+            assert(fieldName)
+
+            const field = getCollectionFieldForProperty(property, fieldType)
+            if (!field) continue
+
+            cmsFields.unshift(field)
+        }
 
         assert(slugFieldId)
+        setProgress(null)
 
         onSubmit({
-            fields: allFields,
+            onProgress: setProgress,
+            fields: cmsFields,
             ignoredFieldIds: Array.from(disabledFieldIds),
             slugFieldId,
             lastSyncedTime: getLastSyncedTime(pluginContext, database, slugFieldId, disabledFieldIds),
@@ -184,7 +228,9 @@ export function MapDatabaseFields({
 
             <div className="flex-1 flex flex-col gap-6">
                 <div className="flex flex-col gap-2 w-full">
-                    <label className="text-tertiary" htmlFor="collectionName">Slug Field</label>
+                    <label className="text-tertiary" htmlFor="collectionName">
+                        Slug Field
+                    </label>
                     <select
                         className="w-full"
                         value={slugFieldId ?? ""}
@@ -202,63 +248,77 @@ export function MapDatabaseFields({
                 <div className="flex flex-col gap-[10px] w-full items-center justify-center pb-[10px]">
                     <div className="grid grid-cols-fieldPicker gap-3 w-full items-center justify-center text-tertiary mb-[-3px]">
                         <span>Notion Property</span>
-                        <span className="col-start-3">Collection Field</span>
+                        <span className="col-start-3">Field Name</span>
+                        <span>Field Type</span>
+
+                        {sortedProperties.map(property => {
+                            const isUnsupported = !isSupportedNotionProperty(property)
+
+                            const fieldOptions = isSupportedNotionProperty(property)
+                                ? supportedCMSTypeByNotionPropertyType[property.type]
+                                : null
+
+                            return (
+                                <Fragment key={property.id}>
+                                    <CheckboxTextfield
+                                        value={property.name}
+                                        disabled={isUnsupported}
+                                        checked={!disabledFieldIds.has(property.id)}
+                                        onChange={() => {
+                                            handleFieldToggle(property.id)
+                                        }}
+                                    />
+                                    <div
+                                        className={classNames(
+                                            "flex items-center justify-center place-self-center text-tertiary",
+                                            isUnsupported && "opacity-50"
+                                        )}
+                                    >
+                                        <IconChevron />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        className={classNames("w-full", isUnsupported && "opacity-50")}
+                                        disabled={disabledFieldIds.has(property.id)}
+                                        placeholder={property.name}
+                                        value={
+                                            isUnsupported
+                                                ? "Unsupported Field"
+                                                : (fieldNameOverrides[property.id] ?? "")
+                                        }
+                                        onChange={e => {
+                                            handleFieldNameChange(property.id, e.target.value)
+                                        }}
+                                    ></input>
+                                    <select
+                                        className="w-auto"
+                                        onChange={event =>
+                                            handleFieldTypeChange(
+                                                property.id,
+                                                event.target.value as ManagedCollectionField["type"]
+                                            )
+                                        }
+                                        value={fieldTypeByFieldId[property.id]}
+                                    >
+                                        {isUnsupported && <option disabled>Unsupported</option>}
+                                        {fieldOptions?.map(fieldOption => (
+                                            <option key={fieldOption} value={fieldOption}>
+                                                {labelByFieldTypeOption[fieldOption]}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Fragment>
+                            )
+                        })}
                     </div>
-
-                    {fieldConfig.map(fieldConfig => {
-                        const isUnsupported = !fieldConfig.field
-
-                        return (
-                            <div
-                                key={fieldConfig.originalFieldName}
-                                className="grid grid-cols-fieldPicker gap-3 w-full items-center justify-center"
-                            >
-                                <CheckboxTextfield
-                                    value={fieldConfig.originalFieldName}
-                                    disabled={!fieldConfig.field}
-                                    checked={!!fieldConfig.field && !disabledFieldIds.has(fieldConfig.field.id)}
-                                    onChange={() => {
-                                        assert(fieldConfig.field)
-
-                                        handleFieldToggle(fieldConfig.field.id)
-                                    }}
-                                />
-                                <div
-                                    className={classNames(
-                                        "flex items-center justify-center place-self-center text-tertiary",
-                                        isUnsupported && "opacity-50"
-                                    )}
-                                >
-                                    <IconChevron />
-                                </div>
-                                <input
-                                    type="text"
-                                    className={classNames("w-full", isUnsupported && "opacity-50")}
-                                    disabled={!fieldConfig.field || disabledFieldIds.has(fieldConfig.field.id)}
-                                    placeholder={fieldConfig.originalFieldName}
-                                    value={
-                                        !fieldConfig.field
-                                            ? "Unsupported Field"
-                                            : fieldNameOverrides[fieldConfig.field.id] ?? ""
-                                    }
-                                    onChange={e => {
-                                        assert(fieldConfig.field)
-
-                                        handleFieldNameChange(fieldConfig.field.id, e.target.value)
-                                    }}
-                                ></input>
-                            </div>
-                        )
-                    })}
                 </div>
             </div>
 
+            <div className="tailwind-hell-escape-hatch-gradient-bottom" />
             <div className="left-0 bottom-0 pb-[15px] w-full flex justify-between sticky bg-primary pt-4 border-t border-divider border-opacity-20 items-center max-w-full">
-                <div className="tailwind-hell-escape-hatch-gradient-bottom" />
-
                 {error && <span className="text-red-500">{error.message}</span>}
 
-                <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-full">
+                <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-full ">
                     Import from {title.trim() ? title : "Untitled"}
                 </Button>
             </div>

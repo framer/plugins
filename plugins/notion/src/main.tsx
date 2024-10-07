@@ -66,6 +66,9 @@ async function runPlugin() {
             assert(pluginContext.slugFieldId)
 
             const result = await synchronizeDatabase(pluginContext.database, {
+                onProgress: () => {
+                    // TODO: Update toast maybe?
+                },
                 fields: pluginContext.collectionFields,
                 ignoredFieldIds: pluginContext.ignoredFieldIds,
                 lastSyncedTime: pluginContext.lastSyncedTime,

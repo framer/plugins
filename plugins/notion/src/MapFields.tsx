@@ -121,13 +121,11 @@ export function MapDatabaseFields({
     database,
     onSubmit,
     isLoading,
-    error,
     pluginContext,
 }: {
     database: GetDatabaseResponse
     onSubmit: (options: SynchronizeMutationOptions) => void
     isLoading: boolean
-    error: Error | null
     pluginContext: PluginContext
 }) {
     const slugFields = useMemo(() => getPossibleSlugFields(database), [database])
@@ -182,11 +180,6 @@ export function MapDatabaseFields({
         e.preventDefault()
 
         if (isLoading) return
-
-        const propertiesById = new Map<string, NotionProperty>()
-        for (const property of notionProperties) {
-            propertiesById.set(property.id, property)
-        }
 
         const cmsFields: ManagedCollectionField[] = []
         for (const property of notionProperties) {
@@ -259,9 +252,8 @@ export function MapDatabaseFields({
                         <span>Field Type</span>
 
                         {notionProperties.map(property => {
-                            const isUnsupported = !isSupportedNotionProperty(property)
-
-                            const fieldOptions = isSupportedNotionProperty(property)
+                            const isSupported = isSupportedNotionProperty(property)
+                            const fieldOptions = isSupported
                                 ? supportedCMSTypeByNotionPropertyType[property.type]
                                 : null
 
@@ -269,7 +261,7 @@ export function MapDatabaseFields({
                                 <Fragment key={property.id}>
                                     <CheckboxTextfield
                                         value={property.name}
-                                        disabled={isUnsupported}
+                                        disabled={!isSupported}
                                         checked={!disabledFieldIds.has(property.id)}
                                         onChange={() => {
                                             handleFieldToggle(property.id)
@@ -278,17 +270,17 @@ export function MapDatabaseFields({
                                     <div
                                         className={classNames(
                                             "flex items-center justify-center place-self-center text-tertiary",
-                                            isUnsupported && "opacity-50"
+                                            !isSupported && "opacity-50"
                                         )}
                                     >
                                         <IconChevron />
                                     </div>
                                     <input
                                         type="text"
-                                        className={classNames("w-full", isUnsupported && "opacity-50")}
-                                        disabled={isUnsupported || disabledFieldIds.has(property.id)}
+                                        className={classNames("w-full", !isSupported && "opacity-50")}
+                                        disabled={!isSupported || disabledFieldIds.has(property.id)}
                                         placeholder={property.name}
-                                        value={isUnsupported ? "Unsupported" : (fieldNameOverrides[property.id] ?? "")}
+                                        value={isSupported ? (fieldNameOverrides[property.id] ?? "") : "Unsupported"}
                                         onChange={e => {
                                             handleFieldNameChange(property.id, e.target.value)
                                         }}
@@ -301,10 +293,10 @@ export function MapDatabaseFields({
                                                 event.target.value as ManagedCollectionField["type"]
                                             )
                                         }
-                                        disabled={isUnsupported}
-                                        value={isUnsupported ? "unsupported" : fieldTypeByFieldId[property.id]}
+                                        disabled={!isSupported}
+                                        value={!isSupported ? "unsupported" : fieldTypeByFieldId[property.id]}
                                     >
-                                        {isUnsupported && (
+                                        {!isSupported && (
                                             <option value="unsupported" disabled>
                                                 Unsupported
                                             </option>
@@ -324,7 +316,6 @@ export function MapDatabaseFields({
 
             <div className="left-0 bottom-0 pb-[15px] w-full flex justify-between sticky bg-primary pt-4 border-t border-divider border-opacity-20 items-center max-w-full">
                 <div className="tailwind-hell-escape-hatch-gradient-bottom" />
-                {error && <span className="text-red-500">{error.message}</span>}
 
                 <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-full">
                     Import from {title.trim() ? title : "Untitled"}

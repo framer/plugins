@@ -22,6 +22,9 @@ export function AuthenticatedApp({ context }: AppProps) {
         framer.showUI({
             width: databaseConfig ? 360 : 325,
             height: databaseConfig ? 425 : 370,
+            // Only allow resizing when mapping fields as the default size could not be enough.
+            // This will keep the given dimensions in the Splash Screen.
+            resizable: Boolean(databaseConfig),
         })
     }, [databaseConfig])
 

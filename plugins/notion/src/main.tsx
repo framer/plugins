@@ -67,7 +67,7 @@ async function runPlugin() {
 
             const result = await synchronizeDatabase(pluginContext.database, {
                 onProgress: () => {
-                    // TODO: Update toast maybe?
+                    // TODO: Progress indicator.
                 },
                 fields: pluginContext.collectionFields,
                 ignoredFieldIds: pluginContext.ignoredFieldIds,

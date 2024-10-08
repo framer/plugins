@@ -20,7 +20,7 @@ export function AuthenticatedApp({ context }: AppProps) {
 
     useEffect(() => {
         framer.showUI({
-            width: databaseConfig ? 450 : 325,
+            width: databaseConfig ? 360 : 325,
             height: databaseConfig ? 425 : 370,
         })
     }, [databaseConfig])
@@ -30,7 +30,7 @@ export function AuthenticatedApp({ context }: AppProps) {
             logSyncResult(result)
 
             if (result.status === "success") {
-                // framer.closePlugin("Synchronization successful")
+                framer.closePlugin("Synchronization successful")
                 return
             }
         },

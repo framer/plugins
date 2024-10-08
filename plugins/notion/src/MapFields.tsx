@@ -279,28 +279,29 @@ export function MapDatabaseFields({
                                     <input
                                         type="text"
                                         className={classNames("w-full", isUnsupported && "opacity-50")}
-                                        disabled={disabledFieldIds.has(property.id)}
+                                        disabled={isUnsupported || disabledFieldIds.has(property.id)}
                                         placeholder={property.name}
-                                        value={
-                                            isUnsupported
-                                                ? "Unsupported Field"
-                                                : (fieldNameOverrides[property.id] ?? "")
-                                        }
+                                        value={isUnsupported ? "Unsupported" : (fieldNameOverrides[property.id] ?? "")}
                                         onChange={e => {
                                             handleFieldNameChange(property.id, e.target.value)
                                         }}
                                     ></input>
                                     <select
-                                        className="w-auto"
+                                        className="w-full"
                                         onChange={event =>
                                             handleFieldTypeChange(
                                                 property.id,
                                                 event.target.value as ManagedCollectionField["type"]
                                             )
                                         }
-                                        value={fieldTypeByFieldId[property.id]}
+                                        disabled={isUnsupported}
+                                        value={isUnsupported ? "unsupported" : fieldTypeByFieldId[property.id]}
                                     >
-                                        {isUnsupported && <option disabled>Unsupported</option>}
+                                        {isUnsupported && (
+                                            <option value="unsupported" disabled>
+                                                Unsupported
+                                            </option>
+                                        )}
                                         {fieldOptions?.map(fieldOption => (
                                             <option key={fieldOption} value={fieldOption}>
                                                 {labelByFieldTypeOption[fieldOption]}
@@ -314,8 +315,8 @@ export function MapDatabaseFields({
                 </div>
             </div>
 
-            <div className="tailwind-hell-escape-hatch-gradient-bottom" />
             <div className="left-0 bottom-0 pb-[15px] w-full flex justify-between sticky bg-primary pt-4 border-t border-divider border-opacity-20 items-center max-w-full">
+                <div className="tailwind-hell-escape-hatch-gradient-bottom" />
                 {error && <span className="text-red-500">{error.message}</span>}
 
                 <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-full ">

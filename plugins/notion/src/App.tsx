@@ -29,6 +29,9 @@ export function AuthenticatedApp({ context }: AppProps) {
     }, [databaseConfig])
 
     const synchronizeMutation = useSynchronizeDatabaseMutation(databaseConfig, {
+        onError(error) {
+            framer.notify(error.message, { variant: "error" })
+        },
         onSuccess(result) {
             logSyncResult(result)
 
@@ -48,7 +51,6 @@ export function AuthenticatedApp({ context }: AppProps) {
             database={databaseConfig}
             pluginContext={context}
             onSubmit={synchronizeMutation.mutate}
-            error={synchronizeMutation.error}
             isLoading={synchronizeMutation.isPending}
         />
     )

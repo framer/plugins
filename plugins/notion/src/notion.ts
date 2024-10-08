@@ -666,13 +666,11 @@ export async function synchronizeDatabase(
 
 export function useSynchronizeDatabaseMutation(
     database: GetDatabaseResponse | null,
-    { onSuccess }: { onSuccess?: (result: SynchronizeResult) => void } = {}
+    { onSuccess, onError }: { onSuccess?: (result: SynchronizeResult) => void; onError?: (error: Error) => void } = {}
 ) {
     return useMutation({
-        onError(error) {
-            framer.closePlugin("Failed to synchronize with Notion: " + error.message, { variant: "error" })
-        },
         onSuccess,
+        onError,
         mutationFn: async (options: SynchronizeMutationOptions): Promise<SynchronizeResult> => {
             assert(database)
 

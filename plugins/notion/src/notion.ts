@@ -42,8 +42,10 @@ const concurrencyLimit = 5
 
 export type NotionProperty = GetDatabaseResponse["properties"][string]
 
+// Every page has content which can be fetched as blocks. We add it as a
+// property so it displays in the list where you can configure properties to be
+// synced with the CMS
 const pageContentId = "page-content"
-
 export const pageContentProperty: SupportedNotionProperty = {
     type: "rich_text",
     id: pageContentId,
@@ -66,9 +68,7 @@ if (isAuthenticated()) {
 export function getNotionProperties(database: GetDatabaseResponse) {
     const result: NotionProperty[] = []
 
-    // Every page has content which is a rich text property. We add it as a
-    // property so it displays in the list where you can disable properties To
-    // be synchronize
+    // This property is always there but not included in `"database.properties"
     result.push(pageContentProperty)
 
     for (const key in database.properties) {
@@ -123,8 +123,10 @@ const preferedSlugFieldOrder: NotionProperty["type"][] = ["title", "rich_text"]
 export function getPossibleSlugFields(database: GetDatabaseResponse) {
     const options: NotionProperty[] = []
 
-    const properties = getNotionProperties(database)
-    for (const property of properties) {
+    for (const key in database.properties) {
+        const property = database.properties[key]
+        assert(property)
+
         switch (property.type) {
             case "title":
             case "rich_text":
@@ -183,7 +185,7 @@ export const supportedNotionPropertyTypes = [
     "status",
     "url",
     "files",
-] satisfies NotionProperty["type"][]
+] satisfies ReadonlyArray<NotionProperty["type"]>
 
 type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
 type SupportedNotionProperty = Extract<NotionProperty, { type: SupportedPropertyType }>
@@ -294,6 +296,7 @@ export function getCollectionFieldForProperty<
         }
         case "title": {
             assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
             return {
                 type: "string",
                 id: property.id,
@@ -349,9 +352,6 @@ export function getCollectionFieldForProperty<
         }
         default: {
             assertNever(property)
-
-            // More Field types can be added here
-            return null
         }
     }
 }
@@ -406,7 +406,7 @@ export function getPropertyValue(
         }
         case "files": {
             const firstFile = property.files[0]
-            if (!firstFile) return ""
+            if (!firstFile) return null
 
             if (firstFile.type === "external") {
                 return firstFile.external.url
@@ -454,12 +454,12 @@ export interface SynchronizeResult extends SyncStatus {
 async function getPageBlocksAsRichText(pageId: string) {
     assert(notion, "Notion client is not initialized")
 
-    const iterator = iteratePaginatedAPI(notion.blocks.children.list, {
+    const blocksIterator = iteratePaginatedAPI(notion.blocks.children.list, {
         block_id: pageId,
     })
 
     const blocks: BlockObjectResponse[] = []
-    for await (const block of iterator) {
+    for await (const block of blocksIterator) {
         if (!isFullBlock(block)) continue
         blocks.push(block)
     }
@@ -502,13 +502,12 @@ async function processItem(
         }
 
         const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
-        if (fieldValue === null) {
+        if (!fieldValue) {
             status.warnings.push({
                 url: item.url,
                 fieldId: field.id,
                 message: `Value is missing for field ${field.name}`,
             })
-            continue
         }
 
         fieldData[field.id] = fieldValue
@@ -642,7 +641,9 @@ export async function synchronizeDatabase(
         itemIdsToDelete.delete(itemId)
     }
 
-    console.table(collectionItems)
+    if (import.meta.env.DEV) {
+        console.table(collectionItems)
+    }
 
     await collection.addItems(collectionItems)
     await collection.removeItems(Array.from(itemIdsToDelete))
@@ -851,6 +852,15 @@ interface PaginatedList<T> {
     has_more: boolean
 }
 
+/**
+ * Copied from:
+ * https://github.com/makenotion/notion-sdk-js/blob/main/src/helpers.ts#L47
+ * Notion has a bug where pagination returns the same page cursor when fetching
+ * another page in some rare cases. This results in the same pages being fetched
+ * over and over, resulting in infinite loop. This function is modified to keep
+ * track of which page cursors we've seen and bail out early in case the same
+ * cursor is seen twice
+ */
 export async function* iteratePaginatedAPI<Args extends PaginatedArgs, Item>(
     listFn: (args: Args) => Promise<PaginatedList<Item>>,
     firstPageArgs: Args
@@ -868,7 +878,9 @@ export async function* iteratePaginatedAPI<Args extends PaginatedArgs, Item>(
         if (!response.next_cursor) return
 
         if (seenCursors.has(response.next_cursor)) {
-            console.warn("Notion has a bug with pagination")
+            console.warn(
+                "Encountered an infinite loop while paginating. This is a bug on the Notion side. Proceeding with partial content."
+            )
             return
         }
 

@@ -326,7 +326,7 @@ export function MapDatabaseFields({
                 <div className="tailwind-hell-escape-hatch-gradient-bottom" />
                 {error && <span className="text-red-500">{error.message}</span>}
 
-                <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-full ">
+                <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-full">
                     Import from {title.trim() ? title : "Untitled"}
                 </Button>
             </div>

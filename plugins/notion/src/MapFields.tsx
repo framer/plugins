@@ -13,6 +13,7 @@ import {
     supportedCMSTypeByNotionPropertyType,
     richTextToPlainText,
     getNotionProperties,
+    hasFieldConfigurationChanged,
 } from "./notion"
 import { Fragment, useMemo, useState } from "react"
 import classNames from "classnames"
@@ -21,30 +22,27 @@ import { Button } from "./components/Button"
 import { isFullDatabase } from "@notionhq/client"
 import { CheckboxTextfield } from "./components/CheckboxTexfield"
 
-function sortProperties(propertyA: NotionProperty, propertyB: NotionProperty): number {
-    // Properties that are not supported in the Plugin are displayed at the bottom of the list.
-    if (!isSupportedNotionProperty(propertyA) && !isSupportedNotionProperty(propertyB)) {
-        return 0
-    } else if (!isSupportedNotionProperty(propertyA)) {
-        return 1
-    } else if (!isSupportedNotionProperty(propertyB)) {
-        return -1
-    }
-
-    return -1
-}
-
 function getSortedProperties(database: GetDatabaseResponse): NotionProperty[] {
-    return getNotionProperties(database).sort(sortProperties)
+    return getNotionProperties(database).sort((propertyA, propertyB) => {
+        // Properties that are not supported in the Plugin are displayed at the bottom of the list.
+        if (isSupportedNotionProperty(propertyA) && isSupportedNotionProperty(propertyB)) {
+            return -1
+        } else if (isSupportedNotionProperty(propertyA)) {
+            return -1
+        } else if (!isSupportedNotionProperty(propertyB)) {
+            return 1
+        }
+
+        return 0
+    })
 }
 
 function getInitialFieldTypeState(
-    database: GetDatabaseResponse,
+    properties: NotionProperty[],
     pluginContext: PluginContext
 ): Record<string, ManagedCollectionField["type"]> {
     const result: Record<string, ManagedCollectionField["type"]> = {}
 
-    const properties = getNotionProperties(database)
     for (const property of properties) {
         if (!isSupportedNotionProperty(property)) continue
 
@@ -81,9 +79,10 @@ function getInitialSlugFieldId(context: PluginContext, fieldOptions: NotionPrope
     return fieldOptions[0]?.id ?? null
 }
 
-function getLastSyncedTime(
+function getLastSynchronizedAtTimestamp(
     pluginContext: PluginContext,
     database: GetDatabaseResponse,
+    fields: ManagedCollectionField[],
     slugFieldId: string,
     disabledFieldIds: Set<string>
 ): string | null {
@@ -94,6 +93,11 @@ function getLastSyncedTime(
 
     // Always resync if field config changes
     if (hasDatabaseFieldsChanged(pluginContext.collectionFields, database, Array.from(disabledFieldIds))) {
+        return null
+    }
+
+    // If the field configuration such as types changed always resync.
+    if (hasFieldConfigurationChanged(pluginContext.collectionFields, fields)) {
         return null
     }
 
@@ -130,12 +134,12 @@ export function MapDatabaseFields({
     const [slugFieldId, setSlugFieldId] = useState<string | null>(() =>
         getInitialSlugFieldId(pluginContext, slugFields)
     )
-    const [sortedProperties] = useState(() => getSortedProperties(database))
+    const [notionProperties] = useState(() => getSortedProperties(database))
     const [disabledFieldIds, setDisabledFieldIds] = useState(
         () => new Set<string>(pluginContext.type === "update" ? pluginContext.ignoredFieldIds : [])
     )
     const [fieldTypeByFieldId, setFieldTypeByFieldId] = useState(() =>
-        getInitialFieldTypeState(database, pluginContext)
+        getInitialFieldTypeState(notionProperties, pluginContext)
     )
     const [fieldNameOverrides, setFieldNameOverrides] = useState<Record<string, string>>(() =>
         getFieldNameOverrides(pluginContext)
@@ -180,30 +184,27 @@ export function MapDatabaseFields({
         if (isLoading) return
 
         const propertiesById = new Map<string, NotionProperty>()
-        const properties = getNotionProperties(database)
-        for (const property of properties) {
+        for (const property of notionProperties) {
             propertiesById.set(property.id, property)
         }
 
         const cmsFields: ManagedCollectionField[] = []
-        for (const fieldId in fieldTypeByFieldId) {
-            if (disabledFieldIds.has(fieldId)) continue
-
-            const property = propertiesById.get(fieldId)
-            assert(property)
-
+        for (const property of notionProperties) {
             if (!isSupportedNotionProperty(property)) continue
+            if (disabledFieldIds.has(property.id)) continue
 
-            const fieldType = fieldTypeByFieldId[fieldId]
-            const fieldName = fieldNameOverrides[fieldId] ?? propertiesById.get(fieldId)?.name
-
+            const fieldType = fieldTypeByFieldId[property.id]
             assert(fieldType)
-            assert(fieldName)
 
             const field = getCollectionFieldForProperty(property, fieldType)
             if (!field) continue
 
-            cmsFields.unshift(field)
+            const nameOverride = fieldNameOverrides[property.id]
+            if (nameOverride) {
+                field.name = nameOverride
+            }
+
+            cmsFields.push(field)
         }
 
         assert(slugFieldId)
@@ -214,7 +215,13 @@ export function MapDatabaseFields({
             fields: cmsFields,
             ignoredFieldIds: Array.from(disabledFieldIds),
             slugFieldId,
-            lastSyncedTime: getLastSyncedTime(pluginContext, database, slugFieldId, disabledFieldIds),
+            lastSyncedTime: getLastSynchronizedAtTimestamp(
+                pluginContext,
+                database,
+                cmsFields,
+                slugFieldId,
+                disabledFieldIds
+            ),
         })
     }
 
@@ -251,7 +258,7 @@ export function MapDatabaseFields({
                         <span className="col-start-3">Field Name</span>
                         <span>Field Type</span>
 
-                        {sortedProperties.map(property => {
+                        {notionProperties.map(property => {
                             const isUnsupported = !isSupportedNotionProperty(property)
 
                             const fieldOptions = isSupportedNotionProperty(property)

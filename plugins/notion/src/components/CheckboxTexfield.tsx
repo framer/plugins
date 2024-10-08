@@ -19,12 +19,11 @@ export function CheckboxTextfield({ value, disabled, checked: initialChecked, on
     }
 
     return (
-        <div
+        <label
             className={classNames(
                 "flex bg-tertiary rounded-[8px] items-center pl-[10px]",
                 disabled && "opacity-50 cursor-default"
             )}
-            onClick={toggle}
             role="button"
         >
             <input
@@ -40,6 +39,6 @@ export function CheckboxTextfield({ value, disabled, checked: initialChecked, on
                 disabled
                 value={value}
             />
-        </div>
+        </label>
     )
 }

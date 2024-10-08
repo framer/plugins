@@ -541,7 +541,6 @@ async function processAllItems(
     fieldsByKey: FieldsById,
     slugFieldId: string,
     lastSyncedDate: string | null,
-    hasFieldChanges: boolean,
     onProgress: OnProgressHandler
 ) {
     const seenItemIds = new Set<string>()
@@ -565,7 +564,7 @@ async function processAllItems(
         limit(async () => {
             seenItemIds.add(item.id)
 
-            if (!hasFieldChanges && isUnchangedSinceLastSync(item.last_edited_time, lastSyncedDate)) {
+            if (isUnchangedSinceLastSync(item.last_edited_time, lastSyncedDate)) {
                 status.info.push({
                     message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSyncedDate!)}`,
                     url: item.url,
@@ -596,7 +595,7 @@ async function processAllItems(
     }
 }
 
-function hasFieldConfigurationChanged(a: ManagedCollectionField[], b: ManagedCollectionField[]) {
+export function hasFieldConfigurationChanged(a: ManagedCollectionField[], b: ManagedCollectionField[]) {
     if (a.length !== b.length) return true
 
     for (let i = 0; i < a.length; i++) {
@@ -618,8 +617,6 @@ export async function synchronizeDatabase(
     assert(notion)
 
     const collection = await framer.getManagedCollection()
-    const hasChangedFields = hasFieldConfigurationChanged(fields, await collection.getFields())
-
     await collection.setFields(fields)
 
     const fieldsById = new Map<string, ManagedCollectionField>()
@@ -637,7 +634,6 @@ export async function synchronizeDatabase(
         fieldsById,
         slugFieldId,
         lastSyncedTime,
-        hasChangedFields,
         onProgress
     )
 

@@ -55,7 +55,7 @@ export function PreviewTable({ collection }: Props) {
         return () => {
             window.removeEventListener("resize", resize)
         }
-    }, [collection, previewCSV])
+    }, [collection])
 
     if (!previewCSV?.length) return null
 

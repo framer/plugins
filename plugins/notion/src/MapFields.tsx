@@ -24,16 +24,9 @@ import { CheckboxTextfield } from "./components/CheckboxTexfield"
 
 function getSortedProperties(database: GetDatabaseResponse): NotionProperty[] {
     return getNotionProperties(database).sort((propertyA, propertyB) => {
-        // Properties that are not supported in the Plugin are displayed at the bottom of the list.
-        if (isSupportedNotionProperty(propertyA) && isSupportedNotionProperty(propertyB)) {
-            return -1
-        } else if (isSupportedNotionProperty(propertyA)) {
-            return -1
-        } else if (!isSupportedNotionProperty(propertyB)) {
-            return 1
-        }
-
-        return 0
+        const a = isSupportedNotionProperty(propertyA) ? -1 : 0
+        const b = isSupportedNotionProperty(propertyB) ? -1 : 0
+        return a - b
     })
 }
 

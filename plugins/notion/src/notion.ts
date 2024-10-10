@@ -852,7 +852,7 @@ interface PaginatedList<T> {
 
 /**
  * Copied from:
- * https://github.com/makenotion/notion-sdk-js/blob/main/src/helpers.ts#L47
+ * https://github.com/makenotion/notion-sdk-js/blob/7950edc034d3007b0612b80d3f424baef89746d9/src/helpers.ts#L47
  * Notion has a bug where pagination returns the same page cursor when fetching
  * another page in some rare cases. This results in the same pages being fetched
  * over and over, resulting in infinite loop. This function is modified to keep

@@ -20,12 +20,18 @@ export function AuthenticatedApp({ context }: AppProps) {
 
     useEffect(() => {
         framer.showUI({
-            width: databaseConfig ? 340 : 325,
+            width: databaseConfig ? 360 : 325,
             height: databaseConfig ? 425 : 370,
+            // Only allow resizing when mapping fields as the default size could not be enough.
+            // This will keep the given dimensions in the Splash Screen.
+            resizable: Boolean(databaseConfig),
         })
     }, [databaseConfig])
 
     const synchronizeMutation = useSynchronizeDatabaseMutation(databaseConfig, {
+        onError(error) {
+            framer.notify(error.message, { variant: "error" })
+        },
         onSuccess(result) {
             logSyncResult(result)
 
@@ -45,7 +51,6 @@ export function AuthenticatedApp({ context }: AppProps) {
             database={databaseConfig}
             pluginContext={context}
             onSubmit={synchronizeMutation.mutate}
-            error={synchronizeMutation.error}
             isLoading={synchronizeMutation.isPending}
         />
     )

@@ -1,8 +1,9 @@
 import { useState } from "react"
 import { framer } from "framer-plugin"
-import { useSpreadsheetInfoQuery, useSpreadsheetsQuery } from "../sheets"
+import { useSpreadsheetInfoQuery } from "../sheets"
 import { Hero } from "../components/Hero"
 
+type InputChangeEvent = React.ChangeEvent<HTMLInputElement>
 type SelectChangeEvent = React.ChangeEvent<HTMLSelectElement>
 
 interface Props {
@@ -13,13 +14,7 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
     const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState("")
     const [selectedSheetId, setSelectedSheetId] = useState("")
 
-    const { data: spreadsheets, isFetching: isFetchingSpreadsheets } = useSpreadsheetsQuery()
     const { data: spreadsheetInfo, isFetching: isFetchingSheets } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
-
-    const handleSpreadsheetSelect = (e: SelectChangeEvent) => {
-        setSelectedSpreadsheetId(e.target.value)
-        setSelectedSheetId("")
-    }
 
     const handleSheetSelect = (e: SelectChangeEvent) => {
         setSelectedSheetId(e.target.value)
@@ -34,29 +29,33 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
         onSheetSelected(selectedSpreadsheetId, selectedSheetId)
     }
 
+    const handleSheetURLChange = (e: InputChangeEvent) => {
+        try {
+            const url = new URL(e.target.value)
+            const id = url.pathname.replace("/spreadsheets/d/", "").replace("/edit", "")
+
+            setSelectedSpreadsheetId(id)
+        } catch(err) {
+            // TODO(anthony): Show an error.
+        }
+    }
+
     return (
         <div className="col-lg">
             <Hero />
             <div className="col pl-[15px]">
-                <div className="row justify-between">
+                <div className="row justify-between align-middle">
                     <p>Spreadsheet</p>
-                    <select onChange={handleSpreadsheetSelect} value={selectedSpreadsheetId || ""}>
-                        <option value="" disabled>
-                            {isFetchingSpreadsheets ? "Loading..." : "Choose..."}
-                        </option>
-                        {spreadsheets?.files.map((spreadsheet, i) => (
-                            <option value={spreadsheet.id} key={i}>
-                                {spreadsheet.name}
-                            </option>
-                        ))}
-                    </select>
+                    <input placeholder="URL" onChange={handleSheetURLChange}/>
                 </div>
                 <div className="row justify-between">
                     <p>Sheet</p>
-                    <select onChange={handleSheetSelect} value={selectedSheetId || ""}>
+
+                    <select onChange={handleSheetSelect} value={selectedSheetId || ""} disabled={!spreadsheetInfo?.sheets.length}>
                         <option value="" disabled>
                             {isFetchingSheets ? "Loading..." : "Choose..."}
                         </option>
+
                         {spreadsheetInfo?.sheets.map(({ properties: { title } }, i) => (
                             <option value={title} key={i}>
                                 {title}
@@ -65,6 +64,7 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
                     </select>
                 </div>
             </div>
+
             <button onClick={handleSheetSelected}>Next</button>
         </div>
     )

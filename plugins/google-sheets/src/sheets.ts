@@ -294,21 +294,11 @@ function processSheetRow({
 }: ProcessSheetRowParams) {
     const fieldData: Record<string, unknown> = {}
     let slugValue: string | null = null
-    let titleValue: string | null = null
     let itemId: string | null = null
 
-    // Rows may have empty values for the cell is empty and the field type is set
-    // to something like date time
-    if (fieldTypes.length !== row.length) {
-        status.warnings.push({
-            rowIndex,
-            message: `Row ${rowIndex + 1} does not match the expected number of columns: ${fieldTypes.length}. There may be an empty cell. Skipping item.`,
-        })
-
-        return null
-    }
-
     for (const [colIndex, cell] of row.entries()) {
+        if (ignoredFieldColumnIndexes.includes(colIndex)) continue
+
         // +1 as zero-indexed, another +1 to account for header row
         const location = columnToLetter(colIndex + 1) + (rowIndex + 2)
 
@@ -327,7 +317,6 @@ function processSheetRow({
                 continue
             }
 
-            titleValue = fieldValue
             slugValue = slugify(fieldValue)
             itemId = generateHashId(fieldValue)
 
@@ -335,12 +324,10 @@ function processSheetRow({
             unsyncedRowIds.delete(itemId)
         }
 
-        if (ignoredFieldColumnIndexes.includes(colIndex)) continue
-
-        fieldData[colIndex] = cell
+        fieldData[colIndex] = fieldValue
     }
 
-    if (!slugValue || !titleValue || !itemId) {
+    if (!slugValue || !itemId) {
         status.warnings.push({
             rowIndex,
             message: "Slug or title missing. Skipping item.",
@@ -352,7 +339,6 @@ function processSheetRow({
     return {
         id: itemId,
         slug: slugValue,
-        title: titleValue,
         fieldData,
     }
 }

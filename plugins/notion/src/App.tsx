@@ -19,9 +19,13 @@ export function AuthenticatedApp({ context }: AppProps) {
     )
 
     useEffect(() => {
+        const width = databaseConfig ? 360 : 325
+        const height = databaseConfig ? 425 : 370
         framer.showUI({
-            width: databaseConfig ? 360 : 325,
-            height: databaseConfig ? 425 : 370,
+            width,
+            height,
+            minWidth: width,
+            minHeight: height,
             // Only allow resizing when mapping fields as the default size could not be enough.
             // This will keep the given dimensions in the Splash Screen.
             resizable: Boolean(databaseConfig),

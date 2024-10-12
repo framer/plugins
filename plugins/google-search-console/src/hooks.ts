@@ -194,20 +194,23 @@ function randomIntFromInterval(min: number, max: number) {
   return Math.floor(min + Math.random() * (max - min + 1));
 }
 
-export function useMockPerformanceResults(): {
+export function useMockPerformanceResults(
+  siteUrl: string,
+  dates: string[],
+): {
   dailyPerformance: GoogleQueryResult;
   queryPerformance: GoogleQueryResult;
 } {
   const getRandomData = (): number[][] => {
     const savedData = window.localStorage.getItem(
-      'searchConsoleRandomChartData',
+      `searchConsoleRandomChartData_${dates.length}`,
     ) as string;
 
     if (savedData) {
       return JSON.parse(savedData);
     }
 
-    const randomDataGen = [...new Array(14)].map(() => {
+    const randomDataGen = [...new Array(dates.length)].map(() => {
       const clicks = randomIntFromInterval(1000, 3000);
       const impressions = clicks + randomIntFromInterval(1000, 3000);
 

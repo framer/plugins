@@ -2,6 +2,7 @@ import { useState } from "react"
 import { framer } from "framer-plugin"
 import { useSpreadsheetInfoQuery } from "../sheets"
 import { Hero } from "../components/Hero"
+import classNames from "classnames"
 
 type InputChangeEvent = React.ChangeEvent<HTMLInputElement>
 type SelectChangeEvent = React.ChangeEvent<HTMLSelectElement>
@@ -13,8 +14,13 @@ interface Props {
 export function SelectSheetPage({ onSheetSelected }: Props) {
     const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState("")
     const [selectedSheetId, setSelectedSheetId] = useState("")
+    const [isInputError, setIsInputError] = useState(false)
 
-    const { data: spreadsheetInfo, isFetching: isFetchingSheets } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
+    const {
+        data: spreadsheetInfo,
+        isFetching: isFetchingSheets,
+        isError: isSheetQueryError,
+    } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
 
     const handleSheetSelect = (e: SelectChangeEvent) => {
         setSelectedSheetId(e.target.value)
@@ -36,9 +42,20 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
 
             setSelectedSpreadsheetId(id)
         } catch (err) {
-            // TODO(anthony): Show an error.
+            // Will display an error on blur if value is not correct
+            setSelectedSpreadsheetId("")
         }
     }
+
+    const handleSheetUrlBlur = () => {
+        setIsInputError(!selectedSpreadsheetId)
+    }
+
+    const handleSheetUrlFocus = () => {
+        setIsInputError(false)
+    }
+
+    const isError = isSheetQueryError || isInputError
 
     return (
         <div className="col-lg">
@@ -46,7 +63,13 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
             <div className="col pl-[15px]">
                 <div className="row justify-between align-middle">
                     <p>Spreadsheet</p>
-                    <input placeholder="URL" onChange={handleSheetURLChange} />
+                    <input
+                        placeholder="URL"
+                        onChange={handleSheetURLChange}
+                        className={classNames(isError && "border-warning")}
+                        onBlur={handleSheetUrlBlur}
+                        onFocus={handleSheetUrlFocus}
+                    />
                 </div>
                 <div className="row justify-between">
                     <p>Sheet</p>

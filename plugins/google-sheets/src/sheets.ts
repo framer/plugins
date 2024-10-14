@@ -173,7 +173,7 @@ export interface PluginContextUpdate {
     type: "update"
     spreadsheetId: string
     sheetTitle: string
-    collectionFields: CollectionField[]
+    collectionFields: ManagedCollectionField[]
     collection: ManagedCollection
     hasChangedFields: boolean
     ignoredFieldColumnIndexes: number[]
@@ -434,7 +434,7 @@ export async function getPluginContext(): Promise<PluginContext> {
     const slugFieldColumnIndex = Number(rawSlugFieldColumnIndex)
 
     const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle).catch(() => {
-        throw new Error("Failed to fetch sheet. Do you not have permissions to view the sheet?")
+        throw new Error("Failed to load sheet. Do you have permissions to view the sheet?")
     })
 
     assert(lastSyncedTime, "Expected last synced time to be set")

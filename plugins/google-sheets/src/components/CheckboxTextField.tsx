@@ -18,7 +18,9 @@ export function CheckboxTextfield({ value, darken, checked, onChange }: Props) {
 
     return (
         <div
-            className={cx("flex bg-tertiary rounded-lg items-center pl-[10px] select-none", { "opacity-50": darken })}
+            className={cx("flex bg-tertiary rounded-lg items-center pl-[10px] select-none", {
+                "opacity-50": darken,
+            })}
             onClick={toggle}
             role="button"
         >
@@ -27,7 +29,7 @@ export function CheckboxTextfield({ value, darken, checked, onChange }: Props) {
                 checked={checked}
                 onChange={handleCheckboxChange}
                 onClick={e => e.stopPropagation()}
-                className="checked:!bg-sheets-green focus:ring-1 focus:ring-sheets-green"
+                className="checked:!bg-sheets-green focus:ring-1 focus:ring-sheets-green checked:border-none"
             />
             <input
                 className="bg-transparent w-full shrink pointer-events-none select-none"

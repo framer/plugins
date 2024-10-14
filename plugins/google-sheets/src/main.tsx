@@ -35,7 +35,7 @@ function renderPlugin(app: ReactNode) {
 
     framer.showUI({
         width: 320,
-        height: 355,
+        height: 345,
     })
 
     ReactDOM.createRoot(root).render(

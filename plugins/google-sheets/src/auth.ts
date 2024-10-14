@@ -37,6 +37,14 @@ class Auth {
                 throw new Error("Refresh attempted with no stored tokens.")
             }
 
+            // TODO: After initial authentication Google no longer includes a refresh token.
+            // We have to explicitly prompt for scope access to always get it
+            // In this case we always act as if we have to fully re-authenticate
+            if (!tokens.refreshToken) {
+                this.tokens.clear()
+                return
+            }
+
             const res = await fetch(`${this.AUTH_URI}/refresh?code=${tokens.refreshToken}`, {
                 method: "POST",
             })

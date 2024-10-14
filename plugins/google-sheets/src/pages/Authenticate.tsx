@@ -4,14 +4,16 @@ import { getPluginContext, PluginContext } from "../sheets"
 import auth from "../auth"
 
 import { Hero } from "../components/Hero"
-import { GoogleLoginButton } from "../components/GoogleLoginButton"
+
+import { Button } from "../components/Button"
+import { GoogleLogo } from "../components/GoogleLogo"
 
 interface AuthenticationProps {
     onAuthenticated: (context: PluginContext) => void
 }
 
 export function Authenticate({ onAuthenticated }: AuthenticationProps) {
-    const [, setIsLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     const pollForTokens = (readKey: string) => {
@@ -56,12 +58,19 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     return (
         <div className="col-lg pb-[15px]">
             <Hero />
-            <ol className="list-decimal list-inside space-y-2.5 marker:text-secondary *:text-tertiary *:leading-none *:tracking-normal py-[7px]">
+            <ol className="list-decimal list-inside space-y-2.5 marker:text-secondary *:text-content *:leading-none *:tracking-normal py-[7px]">
                 <li>Log in to your Google account</li>
                 <li>Ensure your sheet has a header row</li>
                 <li>Map the column fields to the CMS</li>
             </ol>
-            <GoogleLoginButton onClick={login} />
+            <Button
+                variant="secondary"
+                onClick={login}
+                isLoading={isLoading}
+                className="w-full inline-flex gap-[5px] items-center"
+            >
+                <GoogleLogo /> <span className="relative top-[1px]">Sign In</span>
+            </Button>
         </div>
     )
 }

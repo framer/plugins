@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { CollectionField, ManagedCollection, framer } from "framer-plugin"
+import { CollectionField, ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
 import auth from "./auth"
 import { assert, columnToLetter, generateHashId, isDefined, parseStringToArray, slugify } from "./utils"
 import { logSyncResult } from "./debug.ts"
@@ -16,19 +16,6 @@ const PLUGIN_SLUG_INDEX_COLUMN_KEY = "sheetsPluginSlugIndexColumn"
 const PLUGIN_LAST_SYNCED_KEY = "sheetsPluginLastSynced"
 
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
-
-interface DriveFile {
-    kind: string
-    mimeType: string
-    id: string
-    name: string
-}
-
-interface DriveFileList {
-    kind: string
-    incompleteSearch: boolean
-    files: DriveFile[]
-}
 
 interface SpreadsheetInfoProperties {
     title: string
@@ -128,18 +115,6 @@ const request = async <T = unknown>({ path, service = "sheets", method = "get", 
     }
 
     return json as T
-}
-
-function fetchSpreadsheets() {
-    return request<DriveFileList>({
-        service: "drive",
-        path: "/files",
-        query: {
-            q: "mimeType='application/vnd.google-apps.spreadsheet'",
-            supportsAllDrives: true,
-            includeItemsFromAllDrives: true,
-        },
-    })
 }
 
 function fetchSpreadsheetInfo(spreadsheetId: string) {
@@ -246,7 +221,7 @@ export interface SyncMutationOptions {
     spreadsheetId: string
     sheetTitle: string
     fetchedSheet?: Sheet
-    fields: CollectionField[]
+    fields: ManagedCollectionField[]
     ignoredFieldColumnIndexes: number[]
     slugFieldColumnIndex: number
     colFieldTypes: CollectionFieldType[]
@@ -458,7 +433,9 @@ export async function getPluginContext(): Promise<PluginContext> {
     const sheetHeaderRow = parseStringToArray<string>(rawSheetHeaderRow, "string")
     const slugFieldColumnIndex = Number(rawSlugFieldColumnIndex)
 
-    const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle)
+    const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle).catch(() => {
+        throw new Error("Failed to fetch sheet. Do you not have permissions to view the sheet?")
+    })
 
     assert(lastSyncedTime, "Expected last synced time to be set")
 

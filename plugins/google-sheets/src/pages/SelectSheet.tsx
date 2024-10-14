@@ -35,7 +35,7 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
             const id = url.pathname.replace("/spreadsheets/d/", "").replace("/edit", "")
 
             setSelectedSpreadsheetId(id)
-        } catch(err) {
+        } catch (err) {
             // TODO(anthony): Show an error.
         }
     }
@@ -46,12 +46,17 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
             <div className="col pl-[15px]">
                 <div className="row justify-between align-middle">
                     <p>Spreadsheet</p>
-                    <input placeholder="URL" onChange={handleSheetURLChange}/>
+                    <input placeholder="URL" onChange={handleSheetURLChange} />
                 </div>
                 <div className="row justify-between">
                     <p>Sheet</p>
 
-                    <select onChange={handleSheetSelect} value={selectedSheetId || ""} disabled={!spreadsheetInfo?.sheets.length}>
+                    <select
+                        onChange={handleSheetSelect}
+                        value={selectedSheetId || ""}
+                        disabled={!spreadsheetInfo?.sheets.length}
+                        className="px[16px] py-0"
+                    >
                         <option value="" disabled>
                             {isFetchingSheets ? "Loading..." : "Choose..."}
                         </option>

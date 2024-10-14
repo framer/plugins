@@ -61,7 +61,7 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
     useEffect(() => {
         framer.showUI({
             width: sheetTitle ? 340 : 320,
-            height: sheetTitle ? 425 : 355,
+            height: sheetTitle ? 425 : 345,
         })
     }, [sheetTitle])
 

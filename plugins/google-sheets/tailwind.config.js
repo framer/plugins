@@ -20,6 +20,7 @@ export default {
                 secondary: "var(--framer-color-text-secondary)",
                 tertiary: "var(--framer-color-text-tertiary)",
                 inverted: "var(--framer-color-text-inverted)",
+                content: "#999",
                 "sheets-green": "#00C43E",
                 "framer-red": "#FF3366",
             },

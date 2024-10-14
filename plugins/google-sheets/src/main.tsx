@@ -1,5 +1,4 @@
 import "./globals.css"
-import "./google.css"
 import "framer-plugin/framer.css"
 
 import React, { ReactNode } from "react"
@@ -91,7 +90,8 @@ async function runPlugin() {
         renderPlugin(<App pluginContext={pluginContext} />)
     } catch (e) {
         const message = e instanceof Error ? e.message : String(e)
-        framer.closePlugin("An unexpected error ocurred: " + message, {
+
+        framer.closePlugin(message, {
             variant: "error",
         })
     }

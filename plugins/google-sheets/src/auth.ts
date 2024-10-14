@@ -10,7 +10,9 @@ interface StoredTokens {
     createdAt: number
     expiredIn: number
     accessToken: string
-    refreshToken: string
+    // When you have previously logged into the app with oAuth Google no longer gives a refresh token.
+    // https://stackoverflow.com/a/10857806
+    refreshToken: string | undefined
 }
 
 interface Authorize {
@@ -37,14 +39,6 @@ class Auth {
                 throw new Error("Refresh attempted with no stored tokens.")
             }
 
-            // TODO: After initial authentication Google no longer includes a refresh token.
-            // We have to explicitly prompt for scope access to always get it
-            // In this case we always act as if we have to fully re-authenticate
-            if (!tokens.refreshToken) {
-                this.tokens.clear()
-                return
-            }
-
             const res = await fetch(`${this.AUTH_URI}/refresh?code=${tokens.refreshToken}`, {
                 method: "POST",
             })
@@ -65,7 +59,15 @@ class Auth {
         if (!tokens) return null
 
         if (this.isTokensExpired()) {
-            await this.refreshTokens()
+            if (tokens.refreshToken) {
+                await this.refreshTokens()
+            } else {
+                // After an app has previously authenticated with oAuth Google no longer gives a refresh token.
+                // Unless we explicitly send users through the consent screens in every Login.
+                // Instead of doing that we let them log in again.
+                this.tokens.clear()
+                return
+            }
         }
 
         return this.tokens.get()

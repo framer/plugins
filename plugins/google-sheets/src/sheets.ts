@@ -371,6 +371,7 @@ export async function syncSheet({
 
     const itemsToDelete = Array.from(unsyncedItemIds)
     await collection.removeItems(itemsToDelete)
+    await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
 
     await Promise.all([
         collection.setPluginData(PLUGIN_SPREADSHEET_ID_KEY, spreadsheetId),

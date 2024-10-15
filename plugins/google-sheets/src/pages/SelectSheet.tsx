@@ -61,7 +61,7 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
         <div className="col-lg">
             <Hero />
             <div className="col pl-[15px]">
-                <div className="row justify-between align-middle">
+                <div className="row justify-between items-center">
                     <p>Spreadsheet</p>
                     <input
                         placeholder="Sheet URL…"
@@ -71,7 +71,7 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
                         onFocus={handleSheetUrlFocus}
                     />
                 </div>
-                <div className="row justify-between">
+                <div className="row justify-between items-center">
                     <p>Sheet</p>
 
                     <select

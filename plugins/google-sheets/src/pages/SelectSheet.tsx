@@ -2,7 +2,6 @@ import { useState } from "react"
 import { framer } from "framer-plugin"
 import { useSpreadsheetInfoQuery } from "../sheets"
 import { Hero } from "../components/Hero"
-import classNames from "classnames"
 
 type InputChangeEvent = React.ChangeEvent<HTMLInputElement>
 type SelectChangeEvent = React.ChangeEvent<HTMLSelectElement>
@@ -14,13 +13,8 @@ interface Props {
 export function SelectSheetPage({ onSheetSelected }: Props) {
     const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState("")
     const [selectedSheetId, setSelectedSheetId] = useState("")
-    const [isInputError, setIsInputError] = useState(false)
 
-    const {
-        data: spreadsheetInfo,
-        isFetching: isFetchingSheets,
-        isError: isSheetQueryError,
-    } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
+    const { data: spreadsheetInfo, isFetching: isFetchingSheets } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
 
     const handleSheetSelect = (e: SelectChangeEvent) => {
         setSelectedSheetId(e.target.value)
@@ -48,29 +42,13 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
         }
     }
 
-    const handleSheetUrlBlur = () => {
-        setIsInputError(!selectedSpreadsheetId)
-    }
-
-    const handleSheetUrlFocus = () => {
-        setIsInputError(false)
-    }
-
-    const isError = isSheetQueryError || isInputError
-
     return (
         <div className="col-lg">
             <Hero />
             <div className="col pl-[15px]">
                 <div className="row justify-between items-center">
                     <p>Spreadsheet</p>
-                    <input
-                        placeholder="Sheet URL…"
-                        onChange={handleSheetURLChange}
-                        className={classNames(isError && "border-warning")}
-                        onBlur={handleSheetUrlBlur}
-                        onFocus={handleSheetUrlFocus}
-                    />
+                    <input placeholder="Sheet URL…" onChange={handleSheetURLChange} />
                 </div>
                 <div className="row justify-between items-center">
                     <p>Sheet</p>

@@ -12,7 +12,7 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
-        "framer-plugin": "^1.0.0",
+        "framer-plugin": "^1.1.0",
         "react": "^18",
         "react-dom": "^18",
         "vite-plugin-mkcert": "^1.17.5"

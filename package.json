@@ -1,10 +1,6 @@
 {
     "name": "plugins",
-    "version": "1.0.0",
     "private": true,
-    "main": "index.js",
-    "repository": "https://huntercaron@github.com/framer/plugins.git",
-    "author": "Hunter Caron <huntercaron@me.com>",
     "license": "MIT",
     "workspaces": [
         "plugins/*"
@@ -18,9 +14,6 @@
     },
     "devDependencies": {
         "turbo": "^2.1.2"
-    },
-    "dependencies": {
-        "framer-plugin": "^0.3.3"
     },
     "packageManager": "npm@9.8.0"
 }

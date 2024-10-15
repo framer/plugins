@@ -7,6 +7,7 @@ import { Authenticate } from "./pages/Authenticate"
 import { MapSheetFieldsPage } from "./pages/MapSheetFields"
 import { SelectSheetPage } from "./pages/SelectSheet"
 import { CenteredSpinner } from "./components/CenteredSpinner"
+import { NoSpreadsheetAccess } from "./pages/NoSpreadsheetAccess"
 
 interface AppProps {
     pluginContext: PluginContext
@@ -100,6 +101,10 @@ export function App({ pluginContext }: AppProps) {
     useLoggingToggle()
 
     const [context, setContext] = useState(pluginContext)
+
+    if (context.type === "no-sheet-access") {
+        return <NoSpreadsheetAccess context={context} />
+    }
 
     if (context.isAuthenticated) {
         return <AuthenticatedApp pluginContext={context} />

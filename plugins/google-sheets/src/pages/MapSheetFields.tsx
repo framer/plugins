@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from "react"
-import { CollectionField } from "framer-plugin"
+import { CollectionField, ManagedCollectionField } from "framer-plugin"
 import { useInView } from "react-intersection-observer"
 import cx from "classnames"
 import {
@@ -17,7 +17,7 @@ import { Button } from "../components/Button"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 
 interface CollectionFieldConfig {
-    field: CollectionField
+    field: ManagedCollectionField
     originalFieldName: string
 }
 
@@ -99,7 +99,7 @@ const createFieldConfig = (headerRow: HeaderRow, context: PluginContext, row?: R
             id: String(columnIndex),
             name: headerName,
             type: getFieldType(context, columnIndex, row?.[columnIndex]),
-        } as CollectionField,
+        } as ManagedCollectionField,
         originalFieldName: headerName,
     }))
 }
@@ -183,7 +183,7 @@ export function MapSheetFieldsPage({
                         field: {
                             ...config.field,
                             type,
-                        } as CollectionField,
+                        } as ManagedCollectionField,
                         cases: [],
                     }
                 }
@@ -221,8 +221,8 @@ export function MapSheetFieldsPage({
     }
 
     return (
-        <form onSubmit={handleSubmit} className="col gap-2 flex-1 text-tertiary">
-            <div className="h-px border-b border-divider mb-2 sticky top-0" />
+        <form onSubmit={handleSubmit} className="col gap-[15px] flex-1 text-tertiary">
+            <div className="h-px border-b border-divider sticky top-0" />
             <div className="flex flex-col gap-4 h-fit">
                 <div className="flex flex-col gap-2 w-full">
                     <label htmlFor="collectionName">Slug Field</label>
@@ -240,7 +240,7 @@ export function MapSheetFieldsPage({
                     </select>
                 </div>
             </div>
-            <div className="grid grid-cols items-center grid-cols-fieldPicker gap-2.5 mb-auto overflow-hidden">
+            <div className="grid grid-cols items-center grid-cols-fieldPicker gap-2.5 mb-auto overflow-hidden mt-[10px]">
                 <span className="col-span-2">Column</span>
                 <span>Field</span>
                 <span>Type</span>

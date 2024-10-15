@@ -10,6 +10,7 @@ import { assert } from "./utils.ts"
 
 import { App } from "./App.tsx"
 import { PageErrorBoundaryFallback } from "./components/ErrorBoundaryFallback.tsx"
+import { NoSpreadsheetAccess } from "./pages/NoSpreadsheetAccess.tsx"
 
 export const queryClient = new QueryClient({
     defaultOptions: {
@@ -52,6 +53,10 @@ async function runPlugin() {
     try {
         const pluginContext = await getPluginContext()
         const mode = framer.mode
+
+        if (pluginContext.type === "no-sheet-access") {
+            return renderPlugin(<App pluginContext={pluginContext} />)
+        }
 
         if (mode === "syncManagedCollection" && shouldSyncImmediately(pluginContext)) {
             assert(pluginContext.slugFieldColumnIndex !== null, "Expected slug field column index")

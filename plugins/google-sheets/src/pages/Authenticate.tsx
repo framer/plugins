@@ -80,9 +80,9 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                 variant="secondary"
                 onClick={login}
                 isLoading={isLoading}
-                className="w-full inline-flex gap-[5px] items-center"
+                className="w-full inline-flex gap-[8px] items-center"
             >
-                <GoogleLogo /> <span className="relative top-[1px]">Sign In</span>
+                <GoogleLogo /> <span className="relative">Sign In</span>
             </Button>
         </div>
     )

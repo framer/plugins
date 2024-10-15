@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
-import { useEffect, useState } from "react"
-import { PluginContext, useSheetQuery, useSyncSheetMutation } from "./sheets"
+import { useEffect, useLayoutEffect, useState } from "react"
+import { PluginContext, PluginContextUpdate, syncSheet, useSheetQuery, useSyncSheetMutation } from "./sheets"
 import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
 
 import { Authenticate } from "./pages/Authenticate"
@@ -8,6 +8,7 @@ import { MapSheetFieldsPage } from "./pages/MapSheetFields"
 import { SelectSheetPage } from "./pages/SelectSheet"
 import { CenteredSpinner } from "./components/CenteredSpinner"
 import { NoSpreadsheetAccess } from "./pages/NoSpreadsheetAccess"
+import { assert } from "./utils"
 
 interface AppProps {
     pluginContext: PluginContext
@@ -59,7 +60,7 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
         onError: e => framer.notify(e.message, { variant: "error" }),
     })
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         framer.showUI({
             width: sheetTitle ? 340 : 320,
             height: sheetTitle ? 425 : 345,
@@ -97,13 +98,59 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
     )
 }
 
+function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is PluginContextUpdate {
+    if (pluginContext.type !== "update") return false
+    if (pluginContext.slugFieldColumnIndex === null) return false
+    if (pluginContext.hasChangedFields) return false
+
+    return true
+}
+
 export function App({ pluginContext }: AppProps) {
     useLoggingToggle()
 
     const [context, setContext] = useState(pluginContext)
+    const mode = framer.mode
+
+    const shouldSyncOnly = mode === "syncManagedCollection" && shouldSyncImmediately(context)
+    useLayoutEffect(() => {
+        if (!shouldSyncOnly) return
+        assert(context.type === "update")
+        assert(context.slugFieldColumnIndex !== null, "Expected slug field column index")
+
+        framer.hideUI()
+
+        const {
+            spreadsheetId,
+            sheetTitle,
+            collectionFields: fields,
+            ignoredFieldColumnIndexes,
+            slugFieldColumnIndex,
+            lastSyncedTime,
+            sheet,
+        } = context
+        const [headerRow] = sheet.values
+
+        syncSheet({
+            ignoredFieldColumnIndexes,
+            slugFieldColumnIndex,
+            fetchedSheet: sheet,
+            lastSyncedTime,
+            spreadsheetId,
+            sheetTitle,
+            fields,
+            // Determine if the field type is already configured, otherwise default to "string"
+            colFieldTypes: headerRow.map((_, colIndex) => {
+                const field = fields.find(field => Number(field.id) === colIndex)
+                return field?.type ?? "string"
+            }),
+        }).then(() => framer.closePlugin())
+    }, [context, shouldSyncOnly])
+
+    if (shouldSyncOnly) return null
 
     if (context.type === "no-sheet-access") {
-        return <NoSpreadsheetAccess context={context} />
+        return <NoSpreadsheetAccess context={context} setContext={setContext} />
     }
 
     if (context.isAuthenticated) {

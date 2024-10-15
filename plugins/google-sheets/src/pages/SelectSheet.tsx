@@ -38,11 +38,12 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
     const handleSheetURLChange = (e: InputChangeEvent) => {
         try {
             const url = new URL(e.target.value)
+            if (url.hostname !== "docs.google.com") throw new Error("Not a Google Sheets URL")
+
             const id = url.pathname.replace("/spreadsheets/d/", "").replace("/edit", "")
 
             setSelectedSpreadsheetId(id)
         } catch (err) {
-            // Will display an error on blur if value is not correct
             setSelectedSpreadsheetId("")
         }
     }

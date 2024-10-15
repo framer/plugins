@@ -59,9 +59,15 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
         <div className="col-lg pb-[15px]">
             <Hero />
             <ol className="list-decimal list-inside space-y-2.5 marker:text-secondary *:text-content *:leading-none *:tracking-normal py-[7px]">
-                <li>Log in to your Google account</li>
-                <li>Ensure your sheet has a header row</li>
-                <li>Map the column fields to the CMS</li>
+                <li>
+                    <span className="pl-[10px]">Log in to your Google account</span>
+                </li>
+                <li>
+                    <span className="pl-[10px]">Ensure your sheet has a header row</span>
+                </li>
+                <li>
+                    <span className="pl-[10px]">Map the column fields to the CMS</span>
+                </li>
             </ol>
             <Button
                 variant="secondary"

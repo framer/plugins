@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { CollectionField, ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
+import { ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
 import auth from "./auth"
 import { assert, columnToLetter, generateHashId, isDefined, parseStringToArray, slugify } from "./utils"
 import { logSyncResult } from "./debug.ts"
@@ -161,7 +161,7 @@ function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?:
     })
 }
 
-export type CollectionFieldType = CollectionField["type"]
+export type CollectionFieldType = ManagedCollectionField["type"]
 
 export interface PluginContextNew {
     type: "new"
@@ -184,13 +184,13 @@ export interface PluginContextUpdate {
     sheetHeaderRow: string[]
 }
 
-export interface PluginContextError {
-    type: "error"
-    message: string
-    isAuthenticated: false
+export interface PluginContextNoSheetAccess {
+    type: "no-sheet-access"
+    sheetUrl: string
+    sheetName: string
 }
 
-export type PluginContext = PluginContextNew | PluginContextUpdate | PluginContextError
+export type PluginContext = PluginContextNew | PluginContextUpdate | PluginContextNoSheetAccess
 
 interface ItemResult {
     rowIndex?: number
@@ -429,29 +429,35 @@ export async function getPluginContext(): Promise<PluginContext> {
             collection.getPluginData(PLUGIN_SHEET_HEADER_ROW),
             collection.getPluginData(PLUGIN_LAST_SYNCED_KEY),
         ])
+
     const ignoredFieldColumnIndexes = parseStringToArray<number>(rawIgnoredFieldColumnIndexes, "number")
     const sheetHeaderRow = parseStringToArray<string>(rawSheetHeaderRow, "string")
     const slugFieldColumnIndex = Number(rawSlugFieldColumnIndex)
 
-    const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle).catch(() => {
-        throw new Error("Failed to load sheet. Do you have permissions to view the sheet?")
-    })
+    try {
+        const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle)
+        assert(lastSyncedTime, "Expected last synced time to be set")
 
-    assert(lastSyncedTime, "Expected last synced time to be set")
-
-    return {
-        type: "update",
-        isAuthenticated,
-        spreadsheetId,
-        sheetTitle,
-        collection,
-        slugFieldColumnIndex,
-        ignoredFieldColumnIndexes,
-        sheet,
-        lastSyncedTime,
-        collectionFields,
-        sheetHeaderRow,
-        hasChangedFields: hasFieldConfigurationChanged(sheetHeaderRow, sheet.values[0]),
+        return {
+            type: "update",
+            isAuthenticated,
+            spreadsheetId,
+            sheetTitle,
+            collection,
+            slugFieldColumnIndex,
+            ignoredFieldColumnIndexes,
+            sheet,
+            lastSyncedTime,
+            collectionFields,
+            sheetHeaderRow,
+            hasChangedFields: hasFieldConfigurationChanged(sheetHeaderRow, sheet.values[0]),
+        }
+    } catch (error) {
+        return {
+            type: "no-sheet-access",
+            sheetName: sheetTitle,
+            sheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
+        }
     }
 }
 

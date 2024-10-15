@@ -64,7 +64,7 @@ export function SelectSheetPage({ onSheetSelected }: Props) {
                 <div className="row justify-between align-middle">
                     <p>Spreadsheet</p>
                     <input
-                        placeholder="URL"
+                        placeholder="Sheet URL…"
                         onChange={handleSheetURLChange}
                         className={classNames(isError && "border-warning")}
                         onBlur={handleSheetUrlBlur}

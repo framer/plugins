@@ -32,6 +32,10 @@ class Auth {
             : "https://oauth.fetch.tools/google-sheets-plugin"
     }
 
+    logout() {
+        this.tokens.clear()
+    }
+
     async refreshTokens() {
         try {
             const tokens = this.tokens.get()

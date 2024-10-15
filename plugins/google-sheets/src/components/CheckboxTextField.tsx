@@ -29,7 +29,7 @@ export function CheckboxTextfield({ value, darken, checked, onChange }: Props) {
                 checked={checked}
                 onChange={handleCheckboxChange}
                 onClick={e => e.stopPropagation()}
-                className="checked:!bg-sheets-green focus:ring-1 focus:ring-sheets-green checked:border-none"
+                className="checked:!bg-sheets-green focus:ring-1 focus:ring-sheets-green checked:border-none dark:!bg-[#777] !bg-[#CCC]"
             />
             <input
                 className="bg-transparent w-full shrink pointer-events-none select-none"

@@ -30,6 +30,7 @@ const pluginLastSyncedKey = "notionPluginLastSynced"
 const ignoredFieldIdsKey = "notionPluginIgnoredFieldIds"
 const pluginSlugIdKey = "notionPluginSlugId"
 const databaseNameKey = "notionDatabaseName"
+const databaseIdKey = "notionDatabaseId"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -152,7 +153,10 @@ export async function authorize(options: { readKey: string; writeKey: string }) 
  * Given a Notion Database Properties object returns a CollectionField object
  * That maps the Notion Property to the Framer CMS collection property type
  */
-export function getCollectionFieldForProperty(property: NotionProperty): CollectionField | null {
+export function getCollectionFieldForProperty(
+    property: NotionProperty,
+    databaseIdMap: DatabaseIdMap
+): CollectionField | null {
     switch (property.type) {
         case "email":
         case "rich_text": {
@@ -213,19 +217,36 @@ export function getCollectionFieldForProperty(property: NotionProperty): Collect
                 type: "enum",
                 id: property.id,
                 name: property.name,
-                cases: property.status.groups.map((group) => {
+                cases: property.status.groups.map(group => {
                     return {
                         id: group.id,
                         name: group.name,
                     }
-                })
+                }),
             }
         case "url":
             return {
                 type: "link",
                 id: property.id,
-                name: property.name
+                name: property.name,
             }
+        case "relation": {
+            const collectionId = databaseIdMap.get(property.relation.database_id)
+
+            console.log({ collectionId, databaseId: property.relation.database_id })
+
+            if (!collectionId) {
+                // TODO: How should we handle this?
+                throw new Error("Trying to import a relation to a table that doesn't exist as a collecton")
+            }
+
+            return {
+                type: "multiCollectionReference",
+                id: property.id,
+                name: property.name,
+                collectionId: collectionId,
+            }
+        }
         case "multi_select":
         default: {
             // More Field types can be added here
@@ -281,6 +302,10 @@ export function getPropertyValue(
         }
         case "date": {
             return property.date?.start
+        }
+        case "relation": {
+            console.log(JSON.stringify(property, null, 2))
+            return property.relation.map(({ id }) => id)
         }
     }
 }
@@ -472,6 +497,7 @@ export async function synchronizeDatabase(
             collection.setPluginData(pluginLastSyncedKey, new Date().toISOString()),
             collection.setPluginData(pluginSlugIdKey, slugFieldId),
             collection.setPluginData(databaseNameKey, richTextToPlainText(database.title)),
+            collection.setPluginData(databaseIdKey, database.id),
         ])
 
         return {
@@ -532,6 +558,7 @@ export interface PluginContextNew {
     type: "new"
     collection: ManagedCollection
     isAuthenticated: boolean
+    databaseIdMap: DatabaseIdMap
 }
 
 export interface PluginContextUpdate {
@@ -544,12 +571,14 @@ export interface PluginContextUpdate {
     ignoredFieldIds: FieldId[]
     slugFieldId: string | null
     isAuthenticated: boolean
+    databaseIdMap: DatabaseIdMap
 }
 
 export interface PluginContextError {
     type: "error"
     message: string
     isAuthenticated: false
+    databaseIdMap: DatabaseIdMap
 }
 
 export type PluginContext = PluginContextNew | PluginContextUpdate | PluginContextError
@@ -566,7 +595,11 @@ function getIgnoredFieldIds(rawIgnoredFields: string | null) {
     return parsed
 }
 
-function getSuggestedFieldsForDatabase(database: GetDatabaseResponse, ignoredFieldIds: FieldId[]) {
+function getSuggestedFieldsForDatabase(
+    database: GetDatabaseResponse,
+    ignoredFieldIds: FieldId[],
+    databaseIdMap: DatabaseIdMap
+) {
     const fields: CollectionField[] = []
 
     if (!ignoredFieldIds.includes(pageContentField.id)) {
@@ -580,7 +613,7 @@ function getSuggestedFieldsForDatabase(database: GetDatabaseResponse, ignoredFie
         // These fields were ignored by the user
         if (ignoredFieldIds.includes(property.id)) continue
 
-        const field = getCollectionFieldForProperty(property)
+        const field = getCollectionFieldForProperty(property, databaseIdMap)
         if (field) {
             fields.push(field)
         }
@@ -589,17 +622,29 @@ function getSuggestedFieldsForDatabase(database: GetDatabaseResponse, ignoredFie
     return fields
 }
 
+type DatabaseIdMap = Map<string, string>
+
 export async function getPluginContext(): Promise<PluginContext> {
     const collection = await framer.getManagedCollection()
     const collectionFields = await collection.getFields()
     const databaseId = await collection.getPluginData(pluginDatabaseIdKey)
     const hasAuthToken = isAuthenticated()
 
+    const databaseIdMap: DatabaseIdMap = new Map()
+
+    for (const collection of await framer.getCollections()) {
+        console.log({ collection })
+        const collectionDatabaseId = await collection.getPluginData(databaseIdKey)
+        console.log({ collectionDatabaseId })
+        if (collectionDatabaseId) databaseIdMap.set(collectionDatabaseId, collection.id)
+    }
+
     if (!databaseId || !hasAuthToken) {
         return {
             type: "new",
             collection,
             isAuthenticated: hasAuthToken,
+            databaseIdMap,
         }
     }
 
@@ -625,8 +670,9 @@ export async function getPluginContext(): Promise<PluginContext> {
             ignoredFieldIds,
             lastSyncedTime,
             slugFieldId,
-            hasChangedFields: hasFieldConfigurationChanged(collectionFields, database, ignoredFieldIds),
+            hasChangedFields: hasFieldConfigurationChanged(collectionFields, database, ignoredFieldIds, databaseIdMap),
             isAuthenticated: hasAuthToken,
+            databaseIdMap,
         }
     } catch (error) {
         if (isNotionClientError(error) && error.code === APIErrorCode.ObjectNotFound) {
@@ -636,6 +682,7 @@ export async function getPluginContext(): Promise<PluginContext> {
                 type: "error",
                 message: `The database "${databaseName}" was not found. Log in with Notion and select the Database to sync.`,
                 isAuthenticated: false,
+                databaseIdMap,
             }
         }
 
@@ -646,14 +693,15 @@ export async function getPluginContext(): Promise<PluginContext> {
 export function hasFieldConfigurationChanged(
     currentConfig: CollectionField[],
     database: GetDatabaseResponse,
-    ignoredFieldIds: string[]
+    ignoredFieldIds: string[],
+    databaseIdMap: DatabaseIdMap
 ): boolean {
     const currentFieldsById = new Map<string, CollectionField>()
     for (const field of currentConfig) {
         currentFieldsById.set(field.id, field)
     }
 
-    const suggestedFields = getSuggestedFieldsForDatabase(database, ignoredFieldIds)
+    const suggestedFields = getSuggestedFieldsForDatabase(database, ignoredFieldIds, databaseIdMap)
     if (suggestedFields.length !== currentConfig.length) return true
 
     const includedFields = suggestedFields.filter(field => currentFieldsById.has(field.id))

@@ -55,7 +55,7 @@ function createFieldConfig(database: GetDatabaseResponse, pluginContext: PluginC
         assert(property)
 
         result.push({
-            field: getCollectionFieldForProperty(property),
+            field: getCollectionFieldForProperty(property, pluginContext.databaseIdMap),
             originalFieldName: property.name,
             isNewField: existingFieldIds.size > 0 && !existingFieldIds.has(property.id),
         })
@@ -93,7 +93,14 @@ function getLastSyncedTime(
     if (pluginContext.slugFieldId !== slugFieldId) return null
 
     // Always resync if field config changes
-    if (hasFieldConfigurationChanged(pluginContext.collectionFields, database, Array.from(disabledFieldIds))) {
+    if (
+        hasFieldConfigurationChanged(
+            pluginContext.collectionFields,
+            database,
+            Array.from(disabledFieldIds),
+            pluginContext.databaseIdMap
+        )
+    ) {
         return null
     }
 
@@ -184,7 +191,9 @@ export function MapDatabaseFields({
 
             <div className="flex-1 flex flex-col gap-6">
                 <div className="flex flex-col gap-2 w-full">
-                    <label className="text-tertiary" htmlFor="collectionName">Slug Field</label>
+                    <label className="text-tertiary" htmlFor="collectionName">
+                        Slug Field
+                    </label>
                     <select
                         className="w-full"
                         value={slugFieldId ?? ""}
@@ -239,7 +248,7 @@ export function MapDatabaseFields({
                                     value={
                                         !fieldConfig.field
                                             ? "Unsupported Field"
-                                            : fieldNameOverrides[fieldConfig.field.id] ?? ""
+                                            : (fieldNameOverrides[fieldConfig.field.id] ?? "")
                                     }
                                     onChange={e => {
                                         assert(fieldConfig.field)

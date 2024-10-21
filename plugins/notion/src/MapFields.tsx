@@ -1,26 +1,26 @@
+import { isFullDatabase } from "@notionhq/client"
 import { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
+import classNames from "classnames"
 import { ManagedCollectionField } from "framer-plugin"
-import { assert } from "./utils"
+import { Fragment, useMemo, useState } from "react"
+import { Button } from "./components/Button"
+import { CheckboxTextfield } from "./components/CheckboxTexfield"
+import { IconChevron } from "./components/Icons"
 import {
     NotionProperty,
     PluginContext,
     SynchronizeMutationOptions,
     SynchronizeProgress,
     getCollectionFieldForProperty,
+    getNotionProperties,
     getPossibleSlugFields,
     hasDatabaseFieldsChanged,
-    isSupportedNotionProperty,
-    supportedCMSTypeByNotionPropertyType,
-    richTextToPlainText,
-    getNotionProperties,
     hasFieldConfigurationChanged,
+    isSupportedNotionProperty,
+    richTextToPlainText,
+    supportedCMSTypeByNotionPropertyType,
 } from "./notion"
-import { Fragment, useMemo, useState } from "react"
-import classNames from "classnames"
-import { IconChevron } from "./components/Icons"
-import { Button } from "./components/Button"
-import { isFullDatabase } from "@notionhq/client"
-import { CheckboxTextfield } from "./components/CheckboxTexfield"
+import { assert } from "./utils"
 
 function getSortedProperties(database: GetDatabaseResponse): NotionProperty[] {
     return getNotionProperties(database).sort((propertyA, propertyB) => {
@@ -108,6 +108,8 @@ const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
     image: "Image",
     link: "Link",
     string: "String",
+    collectionReference: "Reference",
+    multiCollectionReference: "Multi Reference",
 }
 
 export function MapDatabaseFields({
@@ -182,7 +184,7 @@ export function MapDatabaseFields({
             const fieldType = fieldTypeByFieldId[property.id]
             assert(fieldType)
 
-            const field = getCollectionFieldForProperty(property, fieldType)
+            const field = getCollectionFieldForProperty(property, fieldType, pluginContext.databaseIdMap)
             if (!field) continue
 
             const nameOverride = fieldNameOverrides[property.id]

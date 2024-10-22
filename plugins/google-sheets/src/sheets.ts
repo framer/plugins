@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
+import { ManagedCollection, ManagedCollectionField, User, framer } from "framer-plugin"
 import auth from "./auth"
 import { assert, columnToLetter, generateHashId, isDefined, parseStringToArray, slugify } from "./utils"
 import { logSyncResult } from "./debug.ts"
 import { queryClient } from "./main.tsx"
 
+const USER_INFO_API_URL = "https://www.googleapis.com/oauth2/v1"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
 const DRIVE_API_URL = "https://www.googleapis.com/drive/v3"
 
@@ -16,6 +17,10 @@ const PLUGIN_SLUG_INDEX_COLUMN_KEY = "sheetsPluginSlugIndexColumn"
 const PLUGIN_LAST_SYNCED_KEY = "sheetsPluginLastSynced"
 
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
+
+interface UserInfo {
+    displayName: string;
+}
 
 interface SpreadsheetInfoProperties {
     title: string
@@ -53,7 +58,7 @@ type QueryParams = Record<string, string | number | boolean>
 interface RequestOptions {
     path: string
     method?: "get" | "post" | "delete" | "patch"
-    service?: "drive" | "sheets"
+    service?: "drive" | "sheets" | "oauth"
     query?: QueryParams
     body?: Record<string, unknown>
 }
@@ -67,6 +72,9 @@ const request = async <T = unknown>({ path, service = "sheets", method = "get", 
 
     let serviceUrl
     switch (service) {
+        case "oauth":
+            serviceUrl = USER_INFO_API_URL
+            break
         case "drive":
             serviceUrl = DRIVE_API_URL
             break
@@ -117,6 +125,13 @@ const request = async <T = unknown>({ path, service = "sheets", method = "get", 
     return json as T
 }
 
+function fetchUserInfo() {
+    return request<UserInfo>({
+        service: "oauth",
+        path: `/userinfo`,
+    })
+}
+
 function fetchSpreadsheetInfo(spreadsheetId: string) {
     return request<SpreadsheetInfo>({
         path: `/spreadsheets/${spreadsheetId}`,
@@ -135,6 +150,13 @@ function fetchSheet(spreadsheetId: string, sheetTitle: string, range?: string) {
             valueRenderOption: "UNFORMATTED_VALUE",
             dateTimeRenderOption: "FORMATTED_STRING",
         },
+    })
+}
+
+export const useFetchUserInfo = () => {
+    return useQuery<UserInfo>({
+        queryKey: ["userInfo"],
+        queryFn: () => fetchUserInfo()
     })
 }
 

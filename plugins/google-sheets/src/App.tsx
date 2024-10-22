@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
-import { PluginContext, PluginContextUpdate, syncSheet, useSheetQuery, useSyncSheetMutation } from "./sheets"
+import { getPluginContext, PluginContext, PluginContextUpdate, syncSheet, useFetchUserInfo, useSheetQuery, useSyncSheetMutation } from "./sheets"
 import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
 
 import { Authenticate } from "./pages/Authenticate"
@@ -12,6 +12,10 @@ import { assert } from "./utils"
 
 interface AppProps {
     pluginContext: PluginContext
+}
+
+interface AuthenticatedAppProps extends AppProps {
+    setContext: (newContext: PluginContext) => void
 }
 
 const useLoggingToggle = () => {
@@ -39,13 +43,14 @@ const useLoggingToggle = () => {
     }, [])
 }
 
-export function AuthenticatedApp({ pluginContext }: AppProps) {
+export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedAppProps) {
     const [spreadsheetId, setSpreadsheetId] = useState<string | null>(
         pluginContext.type === "update" ? pluginContext.spreadsheetId : null
     )
     const [sheetTitle, setSheetTitle] = useState<string | null>(
         pluginContext.type === "update" ? pluginContext.sheetTitle : null
     )
+    const { isError: isUserInfoError } = useFetchUserInfo()
     const { data: sheet, isPending: isSheetPending } = useSheetQuery(spreadsheetId ?? "", sheetTitle ?? "")
 
     const syncMutation = useSyncSheetMutation({
@@ -59,6 +64,16 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
         },
         onError: e => framer.notify(e.message, { variant: "error" }),
     })
+
+    useEffect(() => {
+        if (isUserInfoError) {
+            setContext({
+                type: "no-sheet-access",
+                sheetName: "",
+                sheetUrl: ""
+            })
+        }
+    }, [isUserInfoError, setContext])
 
     useLayoutEffect(() => {
         framer.showUI({
@@ -154,7 +169,7 @@ export function App({ pluginContext }: AppProps) {
     }
 
     if (context.isAuthenticated) {
-        return <AuthenticatedApp pluginContext={context} />
+        return <AuthenticatedApp pluginContext={context} setContext={setContext}/>
     }
 
     return <Authenticate onAuthenticated={setContext} />

@@ -50,8 +50,16 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     const [sheetTitle, setSheetTitle] = useState<string | null>(
         pluginContext.type === "update" ? pluginContext.sheetTitle : null
     )
-    const { isError: isUserInfoError } = useFetchUserInfo()
-    const { data: sheet, isPending: isSheetPending } = useSheetQuery(spreadsheetId ?? "", sheetTitle ?? "")
+    const [isSelectSheetError, setIsSelectSheetError] = useState(false)
+
+    const {
+        isError: isUserInfoError
+    } = useFetchUserInfo()
+
+    const {
+        data: sheet,
+        isPending: isSheetPending,
+    } = useSheetQuery(spreadsheetId ?? "", sheetTitle ?? "")
 
     const syncMutation = useSyncSheetMutation({
         onSuccess: result => {
@@ -66,14 +74,14 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     })
 
     useEffect(() => {
-        if (isUserInfoError) {
+        if (isUserInfoError || isSelectSheetError) {
             setContext({
                 type: "no-sheet-access",
                 sheetName: "",
                 sheetUrl: ""
             })
         }
-    }, [isUserInfoError, setContext])
+    }, [isUserInfoError, isSelectSheetError, setContext])
 
     useLayoutEffect(() => {
         framer.showUI({
@@ -85,6 +93,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     if (!spreadsheetId || !sheetTitle) {
         return (
             <SelectSheetPage
+                onError={() => setIsSelectSheetError(true)}
                 onSheetSelected={(selectedSpreadsheetId, selectedSheetTitle) => {
                     setSpreadsheetId(selectedSpreadsheetId)
                     setSheetTitle(selectedSheetTitle)

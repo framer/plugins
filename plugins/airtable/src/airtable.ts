@@ -306,6 +306,14 @@ export interface SynchronizeResult extends SyncStatus {
     status: "success" | "completed_with_errors"
 }
 
+export interface SyncProgress {
+    totalCount: number
+    completedCount: number
+    completedPercent: number
+}
+
+type OnProgressHandler = (progress: SyncProgress) => void
+
 export interface SyncMutationOptions {
     baseId: string
     tableId: string
@@ -314,6 +322,7 @@ export interface SyncMutationOptions {
     slugFieldId: string
     tableSchema: AirtableTableSchema
     lastSyncedTime: string | null
+    onProgress: OnProgressHandler
 }
 
 export interface PluginContextNew {
@@ -399,26 +408,44 @@ function processRecord({ record, tableSchema, fieldsById, slugFieldId, status, u
 
 async function processTable(
     records: AirtableRecord[],
+    onProgress: OnProgressHandler,
     processRecordParams: Omit<ProcessRecordParams, "record" | "type" | "status">
 ) {
+    const seenItemIds = new Set<string>()
     const status: SyncStatus = {
         info: [],
         warnings: [],
         errors: [],
     }
+
+    const totalCount = records.length
+    let completedCount = 0
+
+    onProgress({ totalCount, completedCount, completedPercent: 0 })
+
     const collectionItems = records
-        .map(record =>
-            processRecord({
+        .map(record => {
+            const result = processRecord({
                 ...processRecordParams,
                 record,
                 status,
             })
-        )
+
+            completedCount++
+            onProgress({
+                totalCount,
+                completedCount,
+                completedPercent: Math.round((completedCount / totalCount) * 100),
+            })
+
+            return result
+        })
         .filter(isDefined)
 
     return {
         collectionItems,
         status,
+        seenItemIds,
     }
 }
 
@@ -429,6 +456,7 @@ export async function syncTable({
     ignoredFieldIds,
     slugFieldId,
     tableSchema,
+    onProgress,
 }: SyncMutationOptions): Promise<SynchronizeResult> {
     const collection = await framer.getManagedCollection()
     await collection.setFields(fields)
@@ -440,7 +468,7 @@ export async function syncTable({
 
     const unsyncedItemIds = new Set(await collection.getItemIds())
     const records = await fetchRecords({ baseId, tableId })
-    const { collectionItems, status } = await processTable(records, {
+    const { collectionItems, status } = await processTable(records, onProgress, {
         tableSchema,
         fieldsById,
         slugFieldId,

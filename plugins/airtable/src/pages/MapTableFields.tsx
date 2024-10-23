@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from "react"
-import { CollectionField } from "framer-plugin"
+import { ManagedCollectionField } from "framer-plugin"
 import { useInView } from "react-intersection-observer"
 import cx from "classnames"
 import { assert, isDefined } from "../utils"
@@ -10,29 +10,23 @@ import {
     hasFieldConfigurationChanged,
     PluginContext,
     SyncMutationOptions,
+    SyncProgress,
 } from "../airtable"
 
 import { Button } from "../components/Button"
 import { IconChevron } from "../components/Icons"
 import { CheckboxTextfield } from "@/components/CheckboxTextField"
 
-interface CollectionFieldConfig {
-    field: CollectionField | null
+interface ManagedCollectionFieldConfig {
+    field: ManagedCollectionField | null
     isNewField: boolean
     originalFieldName: string
 }
 
-const sortField = (fieldA: CollectionFieldConfig, fieldB: CollectionFieldConfig): number => {
-    // Sort unsupported fields to bottom
-    if (!fieldA.field && !fieldB.field) {
-        return 0
-    } else if (!fieldA.field) {
-        return 1
-    } else if (!fieldB.field) {
-        return -1
-    }
-
-    return -1
+const sortField = (fieldA: ManagedCollectionFieldConfig, fieldB: ManagedCollectionFieldConfig): number => {
+    if (fieldA.field && !fieldB.field) return -1
+    if (!fieldA.field && fieldB.field) return 1
+    return 0
 }
 
 const getInitialSlugFieldId = (context: PluginContext, primaryFieldId: string): string | null => {
@@ -64,8 +58,8 @@ const createFieldConfig = (
     primaryFieldId: string,
     fieldSchemas: AirtableFieldSchema[],
     pluginContext: PluginContext
-): CollectionFieldConfig[] => {
-    const result: CollectionFieldConfig[] = []
+): ManagedCollectionFieldConfig[] => {
+    const result: ManagedCollectionFieldConfig[] = []
     const existingFieldIds = new Set(
         pluginContext.type === "update" ? pluginContext.collectionFields.map(field => field.id) : []
     )
@@ -114,7 +108,7 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
     const [slugFieldId, setSlugFieldId] = useState<string | null>(() =>
         getInitialSlugFieldId(pluginContext, tableSchema.primaryFieldId)
     )
-    const [fieldConfig] = useState<CollectionFieldConfig[]>(() =>
+    const [fieldConfig] = useState<ManagedCollectionFieldConfig[]>(() =>
         createFieldConfig(tableSchema.primaryFieldId, tableSchema.fields, pluginContext)
     )
     const [disabledFieldIds, setDisabledFieldIds] = useState(
@@ -123,6 +117,10 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
     const [fieldNameOverrides, setFieldNameOverrides] = useState<Record<string, string>>(() =>
         getFieldNameOverrides(pluginContext)
     )
+
+    // TODO: Render progress in UI
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_, setProgress] = useState<SyncProgress | null>(null)
 
     const handleFieldToggle = (key: string) => {
         setDisabledFieldIds(current => {
@@ -161,8 +159,10 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
             })
 
         assert(slugFieldId)
+        setProgress(null)
 
         onSubmit({
+            onProgress: setProgress,
             lastSyncedTime: getLastSyncedTime(pluginContext, tableSchema, slugFieldId, disabledFieldIds),
             ignoredFieldIds: Array.from(disabledFieldIds),
             fields: allFields,

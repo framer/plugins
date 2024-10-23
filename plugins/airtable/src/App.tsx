@@ -128,6 +128,9 @@ export function App({ pluginContext }: AppProps) {
             slugFieldId,
             baseId,
             tableId,
+            onProgress: () => {
+                // TODO: Progress indicator.
+            },
         }).then(() => framer.closePlugin())
     }, [context, shouldSyncOnly])
 

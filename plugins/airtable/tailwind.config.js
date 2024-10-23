@@ -21,6 +21,7 @@ export default {
                 tertiary: "var(--framer-color-text-tertiary)",
                 inverted: "var(--framer-color-text-inverted)",
                 "framer-red": "#FF3366",
+                "airtable-blue": "#27B5F8",
             },
             borderColor: {
                 divider: "var(--framer-color-divider)",

@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
-import { useEffect, useState } from "react"
-import { PluginContext } from "./airtable"
+import { useEffect, useLayoutEffect, useState } from "react"
+import { PluginContext, PluginContextUpdate, syncTable } from "./airtable"
 import { useBaseSchemaQuery, useSyncTableMutation } from "./api"
 import { assert } from "./utils"
 import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
@@ -8,6 +8,7 @@ import { Authenticate } from "./pages/Authenticate"
 import { MapTableFieldsPage } from "./pages/MapTableFields"
 import { SelectTablePage } from "./pages/SelectTable"
 import { CenteredSpinner } from "./components/CenteredSpinner"
+import { NoTableAccess } from "./pages/NoTableAccess"
 
 interface AppProps {
     pluginContext: PluginContext
@@ -54,12 +55,10 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
                 return
             }
         },
-        onError: e => {
-            framer.notify(e.message, { variant: "error" })
-        },
+        onError: e => framer.notify(e.message, { variant: "error" }),
     })
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         framer.showUI({
             width: tableId ? 340 : 320,
             height: tableId ? 425 : 345,
@@ -77,10 +76,9 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
         )
     }
 
-    const tableSchema = baseSchema?.tables.find(table => table.id === tableId)
-
     if (isPending) return <CenteredSpinner />
 
+    const tableSchema = baseSchema?.tables.find(table => table.id === tableId)
     assert(tableSchema, `Expected to find table schema for table with id: ${tableId}`)
 
     return (
@@ -95,18 +93,57 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
     )
 }
 
+function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is PluginContextUpdate {
+    if (pluginContext.type !== "update") return false
+
+    if (!pluginContext.slugFieldId) return false
+    if (pluginContext.hasChangedFields) return false
+
+    return true
+}
+
 export function App({ pluginContext }: AppProps) {
     useLoggingToggle()
 
     const [context, setContext] = useState(pluginContext)
 
-    const handleAuthenticated = (authenticatedContext: PluginContext) => {
-        setContext(authenticatedContext)
+    const mode = framer.mode
+    const shouldSyncOnly = mode === "syncManagedCollection" && shouldSyncImmediately(context)
+
+    useLayoutEffect(() => {
+        if (!shouldSyncOnly) return
+
+        assert(context.type === "update")
+        assert(context.slugFieldId !== null, "Expected slug field")
+
+        framer.hideUI()
+
+        const { baseId, tableId, collectionFields, ignoredFieldIds, slugFieldId, tableSchema, lastSyncedTime } = context
+
+        syncTable({
+            fields: collectionFields,
+            ignoredFieldIds,
+            lastSyncedTime,
+            tableSchema,
+            slugFieldId,
+            baseId,
+            tableId,
+        })
+    }, [context, shouldSyncOnly])
+
+    if (shouldSyncOnly) return null
+
+    console.log(context)
+
+    if (context.type === "no-table-access") {
+        return <NoTableAccess context={context} setContext={setContext} />
     }
 
-    if (!context.isAuthenticated) {
-        return <Authenticate onAuthenticated={handleAuthenticated} />
+    console.log(context)
+
+    if (context.isAuthenticated) {
+        return <AuthenticatedApp pluginContext={context} />
     }
 
-    return <AuthenticatedApp pluginContext={context} />
+    return <Authenticate onAuthenticated={setContext} />
 }

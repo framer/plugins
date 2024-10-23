@@ -30,6 +30,10 @@ class Auth {
             : "https://framer-airtable-api.sakibulislam25800.workers.dev"
     }
 
+    logout() {
+        this.tokens.clear()
+    }
+
     async refreshTokens() {
         try {
             const tokens = this.tokens.get()

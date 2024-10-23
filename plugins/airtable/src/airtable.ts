@@ -549,8 +549,9 @@ export async function getPluginContext(): Promise<PluginContext> {
 
     const baseId = await collection.getPluginData(PLUGIN_BASE_ID_KEY)
     const tableId = await collection.getPluginData(PLUGIN_TABLE_ID_KEY)
+    const tableName = await collection.getPluginData(PLUGIN_TABLE_NAME_KEY)
 
-    if (!baseId || !tableId || !isAuthenticated) {
+    if (!baseId || !tableId || !tableName || !isAuthenticated) {
         return {
             type: "new",
             collection,
@@ -558,31 +559,39 @@ export async function getPluginContext(): Promise<PluginContext> {
         }
     }
 
-    const baseSchema = await fetchBaseSchema(baseId)
-    const tableSchema = baseSchema.tables.find(tableSchema => tableSchema.id === tableId)
+    try {
+        const baseSchema = await fetchBaseSchema(baseId)
+        const tableSchema = baseSchema.tables.find(tableSchema => tableSchema.id === tableId)
 
-    assert(tableSchema, `Expected to find table schema for table with id: ${tableId}`)
+        assert(tableSchema, `Expected to find table schema for table with id: ${tableId}`)
 
-    const [rawIgnoredFieldIds, lastSyncedTime, slugFieldId] = await Promise.all([
-        collection.getPluginData(PLUGIN_IGNORED_FIELD_IDS_KEY),
-        collection.getPluginData(PLUGIN_LAST_SYNCED_KEY),
-        collection.getPluginData(PLUGIN_SLUG_ID_KEY),
-    ])
-    const ignoredFieldIds = getIgnoredFieldIds(rawIgnoredFieldIds)
+        const [rawIgnoredFieldIds, lastSyncedTime, slugFieldId] = await Promise.all([
+            collection.getPluginData(PLUGIN_IGNORED_FIELD_IDS_KEY),
+            collection.getPluginData(PLUGIN_LAST_SYNCED_KEY),
+            collection.getPluginData(PLUGIN_SLUG_ID_KEY),
+        ])
+        const ignoredFieldIds = getIgnoredFieldIds(rawIgnoredFieldIds)
 
-    assert(lastSyncedTime, "Expected last synced time to be set")
+        assert(lastSyncedTime, "Expected last synced time to be set")
 
-    return {
-        type: "update",
-        hasChangedFields: hasFieldConfigurationChanged(collectionFields, tableSchema, ignoredFieldIds),
-        isAuthenticated,
-        baseId,
-        tableId,
-        tableSchema,
-        collection,
-        collectionFields,
-        ignoredFieldIds,
-        lastSyncedTime,
-        slugFieldId,
+        return {
+            type: "update",
+            hasChangedFields: hasFieldConfigurationChanged(collectionFields, tableSchema, ignoredFieldIds),
+            isAuthenticated,
+            baseId,
+            tableId,
+            tableSchema,
+            collection,
+            collectionFields,
+            ignoredFieldIds,
+            lastSyncedTime,
+            slugFieldId,
+        }
+    } catch (e) {
+        return {
+            type: "no-table-access",
+            tableName,
+            tableUrl: `https://airtable.com/${baseId}/${tableId}`,
+        }
     }
 }

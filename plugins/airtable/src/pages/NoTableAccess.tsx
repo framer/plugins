@@ -45,14 +45,14 @@ export function NoTableAccess({ context, setContext }: Props) {
                 <a href="#" className="text-airtable-blue" onClick={handleLogout}>
                     log out
                 </a>{" "}
-                of the Sheets Plugin.
+                of the Airtable Plugin.
             </p>
             <div className="inline-flex items-center gap-[10px]">
                 <Button variant="secondary" className="w-auto flex-1" onClick={handleRetryClick} isLoading={isRetrying}>
                     Retry
                 </Button>
-                <Button className="w-auto flex-1 !bg-[#15C43E] text-white hover:bg-[#15C43E]" onClick={handleViewClick}>
-                    View Sheet
+                <Button className="w-auto flex-1 !bg-[#1D9CE7] text-white hover:bg-[#1D9CE7]" onClick={handleViewClick}>
+                    View Table
                 </Button>
             </div>
         </div>

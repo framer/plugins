@@ -41,130 +41,40 @@ const ALLOWED_AIRTABLE_FILE_TYPES = [
 ]
 
 function richTextToHTML(cellValue: string): string {
-    const lines = cellValue.split("\n")
-    const htmlOutput: string[] = []
-    let inList = false
-    let listType: "ul" | "ol" | null = null
-    let consecutiveEmptyLines = 0
+    let html = cellValue
+        .replace(/^###### (.*)$/gim, "<h6>$1</h6>") // H6
+        .replace(/^##### (.*)$/gim, "<h5>$1</h5>") // H5
+        .replace(/^#### (.*)$/gim, "<h4>$1</h4>") // H4
+        .replace(/^### (.*)$/gim, "<h3>$1</h3>") // H3
+        .replace(/^## (.*)$/gim, "<h2>$1</h2>") // H2
+        .replace(/^# (.*)$/gim, "<h1>$1</h1>") // H1
+        .replace(/^> (.*)$/gim, "<blockquote>$1</blockquote>") // Blockquote
+        .replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>") // Bold
+        .replace(/\*(.*?)\*/gim, "<em>$1</em>") // Italic
+        .replace(/~~(.*?)~~/gim, "<del>$1</del>") // Strikethrough
+        .replace(/`([^`]+)`/gim, "<code>$1</code>") // Inline code
+        .replace(/```([\s\S]*?)```/gim, "<pre><code>$1</code></pre>") // Code block
+        .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2">$1</a>') // Links
 
-    function closeList() {
-        if (inList) {
-            htmlOutput.push(listType === "ul" ? "</ul>" : "</ol>")
-            inList = false
-            listType = null
-        }
-    }
+    // Handle unordered and ordered lists separately
+    html = html.replace(/^\s*[-*]\s+(.*)$/gim, "<ul><li>$1</li></ul>")
+    html = html.replace(/^\s*\d+\.\s+(.*)$/gim, "<ol><li>$1</li></ol>")
 
-    function handleEmptyLine() {
-        consecutiveEmptyLines++
-        if (consecutiveEmptyLines > 1) {
-            htmlOutput.push("<br>")
-        }
-    }
+    // Combine consecutive <ul> or <ol> items
+    html = html.replace(/<\/ul>\s*<ul>/gim, "").replace(/<\/ol>\s*<ol>/gim, "")
 
-    function escapeHtml(unsafe: string): string {
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;")
-    }
-
-    lines.forEach(line => {
-        const trimmedLine = line.trim()
-
-        if (trimmedLine === "") {
-            handleEmptyLine()
-            return
-        }
-
-        consecutiveEmptyLines = 0
-
-        try {
-            switch (true) {
-                case trimmedLine.startsWith("#"): {
-                    closeList()
-                    const level = Math.min(trimmedLine.split(" ")[0].length, 6)
-                    const headingText = escapeHtml(trimmedLine.substring(level + 1))
-                    htmlOutput.push(`<h${level}>${headingText}</h${level}>`)
-                    break
-                }
-
-                case trimmedLine.startsWith("`") && trimmedLine.endsWith("`"): {
-                    closeList()
-                    const code = escapeHtml(trimmedLine.slice(1, -1))
-                    htmlOutput.push(`<code>${code}</code>`)
-                    break
-                }
-
-                case trimmedLine.startsWith("[") && trimmedLine.includes("](") && trimmedLine.endsWith(")"): {
-                    closeList()
-                    const linkParts = trimmedLine.slice(1, -1).split("](")
-                    if (linkParts.length === 2) {
-                        const [linkText, url] = linkParts
-                        htmlOutput.push(`<a href="${escapeHtml(url)}">${escapeHtml(linkText)}</a>`)
-                    } else {
-                        htmlOutput.push(escapeHtml(trimmedLine))
-                    }
-                    break
-                }
-
-                case trimmedLine.startsWith(">"): {
-                    closeList()
-                    const quoteText = escapeHtml(trimmedLine.slice(1).trim())
-                    htmlOutput.push(`<blockquote>${quoteText}</blockquote>`)
-                    break
-                }
-
-                case trimmedLine.startsWith("[ ]") || trimmedLine.startsWith("[x]"): {
-                    closeList()
-                    const checked = trimmedLine.startsWith("[x]") ? "checked" : ""
-                    const checkboxText = escapeHtml(trimmedLine.slice(3).trim())
-                    htmlOutput.push(`<input type="checkbox" ${checked}> ${checkboxText}<br>`)
-                    break
-                }
-
-                case trimmedLine.startsWith("-"): {
-                    if (!inList || listType !== "ul") {
-                        closeList()
-                        htmlOutput.push("<ul>")
-                        inList = true
-                        listType = "ul"
-                    }
-                    const bulletText = escapeHtml(trimmedLine.slice(1).trim())
-                    htmlOutput.push(`<li>${bulletText}</li>`)
-                    break
-                }
-
-                case /^\d+\./.test(trimmedLine): {
-                    if (!inList || listType !== "ol") {
-                        closeList()
-                        htmlOutput.push("<ol>")
-                        inList = true
-                        listType = "ol"
-                    }
-                    const numberedText = escapeHtml(trimmedLine.replace(/^\d+\./, "").trim())
-                    htmlOutput.push(`<li>${numberedText}</li>`)
-                    break
-                }
-
-                default: {
-                    closeList()
-                    const leadingSpacesMatch = line.match(/^\s*/)
-                    const leadingSpaces = leadingSpacesMatch ? leadingSpacesMatch[0].length : 0
-                    const indentedText = "&nbsp;".repeat(leadingSpaces) + escapeHtml(line.trim())
-                    htmlOutput.push(`<p>${indentedText}</p>`)
-                }
+    // Ensure paragraphs are correctly wrapped
+    html = html
+        .split("\n\n") // Assume two newlines is a new paragraph
+        .map(paragraph => {
+            if (!/^<.*>.*<\/.*>$/.test(paragraph)) {
+                return `<p>${paragraph}</p>`
             }
-        } catch (error) {
-            htmlOutput.push(escapeHtml(line))
-        }
-    })
+            return paragraph
+        })
+        .join("")
 
-    closeList()
-
-    return htmlOutput.join("\n")
+    return html
 }
 
 /**

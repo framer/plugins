@@ -32,7 +32,7 @@ export function CheckboxTextfield({ value, disabled, checked: initialChecked, on
                 disabled={disabled}
                 checked={checked}
                 onChange={toggle}
-                className="checked:!bg-[#27B5F8] focus:ring-1 focus:ring-[#27B5F8]"
+                className="checked:!bg-airtable-blue focus:ring-1 focus:ring-airtable-blue"
             />
             <input
                 className="bg-transparent w-full shrink pointer-events-none select-none"

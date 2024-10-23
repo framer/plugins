@@ -336,13 +336,13 @@ export interface PluginContextUpdate {
     isAuthenticated: boolean
 }
 
-export interface PluginContextError {
-    type: "error"
-    message: string
-    isAuthenticated: false
+export interface PluginContextNoTableAccess {
+    type: "no-table-access"
+    tableUrl: string
+    tableName: string
 }
 
-export type PluginContext = PluginContextNew | PluginContextUpdate | PluginContextError
+export type PluginContext = PluginContextNew | PluginContextUpdate | PluginContextNoTableAccess
 
 function processRecord({ record, tableSchema, fieldsById, slugFieldId, status, unsyncedItemIds }: ProcessRecordParams) {
     let slugValue: string | null = null

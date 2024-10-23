@@ -1,4 +1,4 @@
-import { useRef, useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { framer } from "framer-plugin"
 import { getPluginContext, PluginContext } from "../airtable"
 import auth from "../auth"
@@ -13,6 +13,13 @@ interface AuthenticationProps {
 export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const [isLoading, setIsLoading] = useState(false)
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
+
+    useLayoutEffect(() => {
+        framer.showUI({
+            width: 320,
+            height: 345,
+        })
+    }, [])
 
     const pollForTokens = (readKey: string) => {
         if (pollInterval.current) {

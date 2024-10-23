@@ -377,7 +377,6 @@ function processRecord({ record, tableSchema, fieldsById, slugFieldId, status, u
                 fieldId,
                 message: `Value is missing for field ${field.name}`,
             })
-            continue
         }
 
         fieldData[fieldId] = fieldValue

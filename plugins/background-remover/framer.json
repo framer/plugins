@@ -1,0 +1,6 @@
+{
+    "id": "ot052l",
+    "name": "Background Remover",
+    "modes": ["editImage", "canvas"],
+    "icon": "/icon.svg"
+}

@@ -128,18 +128,14 @@ export function App({ pluginContext }: AppProps) {
             slugFieldId,
             baseId,
             tableId,
-        })
+        }).then(() => framer.closePlugin())
     }, [context, shouldSyncOnly])
 
     if (shouldSyncOnly) return null
 
-    console.log(context)
-
     if (context.type === "no-table-access") {
         return <NoTableAccess context={context} setContext={setContext} />
     }
-
-    console.log(context)
 
     if (context.isAuthenticated) {
         return <AuthenticatedApp pluginContext={context} />

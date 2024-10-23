@@ -1,4 +1,4 @@
-import { ManagedCollection, CollectionField, framer } from "framer-plugin"
+import { ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
 import { assert, isDefined, slugify } from "./utils"
 import auth from "./auth"
 import {
@@ -71,7 +71,7 @@ function richTextToHTML(cellValue: string): string {
             .replace(/'/g, "&#039;")
     }
 
-    lines.forEach((line, index) => {
+    lines.forEach(line => {
         const trimmedLine = line.trim()
 
         if (trimmedLine === "") {
@@ -225,10 +225,11 @@ function getFieldValue(fieldSchema: AirtableFieldSchema, cellValue: AirtableFiel
 /**
  * Get the collection field schema for an Airtable field.
  */
-export function getCollectionForAirtableField(fieldSchema: AirtableFieldSchema): CollectionField | null {
+export function getCollectionForAirtableField(fieldSchema: AirtableFieldSchema): ManagedCollectionField | null {
     const fieldMetadata = {
         id: fieldSchema.id,
         name: fieldSchema.name,
+        userEditable: false,
     }
 
     switch (fieldSchema.type) {
@@ -278,7 +279,7 @@ export function getCollectionForAirtableField(fieldSchema: AirtableFieldSchema):
     }
 }
 
-type FieldsById = Map<string, CollectionField>
+type FieldsById = Map<string, ManagedCollectionField>
 
 interface ItemResult {
     fieldId?: string
@@ -292,7 +293,7 @@ interface SyncStatus {
 }
 
 interface ProcessRecordParams {
-    fields: CollectionField[]
+    fields: ManagedCollectionField[]
     record: AirtableRecord
     tableSchema: AirtableTableSchema
     fieldsById: FieldsById
@@ -308,7 +309,7 @@ export interface SynchronizeResult extends SyncStatus {
 export interface SyncMutationOptions {
     baseId: string
     tableId: string
-    fields: CollectionField[]
+    fields: ManagedCollectionField[]
     ignoredFieldIds: string[]
     slugFieldId: string
     tableSchema: AirtableTableSchema
@@ -327,7 +328,7 @@ export interface PluginContextUpdate {
     tableId: string
     tableSchema: AirtableTableSchema
     collection: ManagedCollection
-    collectionFields: CollectionField[]
+    collectionFields: ManagedCollectionField[]
     lastSyncedTime: string
     hasChangedFields: boolean
     ignoredFieldIds: string[]
@@ -433,7 +434,7 @@ export async function syncTable({
     const collection = await framer.getManagedCollection()
     await collection.setFields(fields)
 
-    const fieldsById = new Map<string, CollectionField>()
+    const fieldsById = new Map<string, ManagedCollectionField>()
     for (const field of fields) {
         fieldsById.set(field.id, field)
     }
@@ -492,7 +493,7 @@ export function getPossibleSlugFields(fieldsSchema: AirtableFieldSchema[]) {
 }
 
 function getSuggestedFieldsForTable(tableSchema: AirtableTableSchema, ignoredFieldIds: string[]) {
-    const fields: CollectionField[] = []
+    const fields: ManagedCollectionField[] = []
 
     for (const fieldSchema of tableSchema.fields) {
         if (ignoredFieldIds.includes(fieldSchema.id)) continue
@@ -507,17 +508,17 @@ function getSuggestedFieldsForTable(tableSchema: AirtableTableSchema, ignoredFie
 }
 
 export function hasFieldConfigurationChanged(
-    currentCollectionFields: CollectionField[],
+    currentManagedCollectionFields: ManagedCollectionField[],
     tableSchema: AirtableTableSchema,
     ignoredFieldIds: string[]
 ) {
-    const currentFieldsById = new Map<string, CollectionField>()
-    for (const field of currentCollectionFields) {
+    const currentFieldsById = new Map<string, ManagedCollectionField>()
+    for (const field of currentManagedCollectionFields) {
         currentFieldsById.set(field.id, field)
     }
 
     const suggestedFields = getSuggestedFieldsForTable(tableSchema, ignoredFieldIds)
-    if (suggestedFields.length !== currentCollectionFields.length) return true
+    if (suggestedFields.length !== currentManagedCollectionFields.length) return true
 
     for (const field of suggestedFields) {
         const currentField = currentFieldsById.get(field.id)

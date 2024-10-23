@@ -77,10 +77,14 @@ class Auth {
         return this.tokens.get()
     }
 
-    async fetchTokens(readKey: string) {
+    async fetchTokens(readKey: string): Promise<Tokens | undefined> {
         const res = await fetch(`${this.AUTH_URI}/poll?readKey=${readKey}`, {
             method: "POST",
         })
+
+        if (res.status === 404) {
+            return
+        }
 
         if (res.status !== 200) {
             throw new Error("Failed to fetch tokens")

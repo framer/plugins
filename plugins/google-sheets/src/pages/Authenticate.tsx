@@ -29,13 +29,16 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
         }
 
         return new Promise(
-            resolve =>
+            (resolve, reject) =>
                 (pollInterval.current = setInterval(
                     () =>
                         auth.fetchTokens(readKey).then(tokens => {
+                            // Tokens have no been received yet.
+                            if (!tokens) return
+
                             clearInterval(pollInterval.current)
                             resolve(tokens)
-                        }),
+                        }).catch(reject),
                     10_000
                 ))
         )

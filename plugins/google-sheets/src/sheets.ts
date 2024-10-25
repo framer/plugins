@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { ManagedCollection, ManagedCollectionField, User, framer } from "framer-plugin"
+import { ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
 import auth from "./auth"
 import { assert, columnToLetter, generateHashId, isDefined, parseStringToArray, slugify } from "./utils"
 import { logSyncResult } from "./debug.ts"
@@ -19,7 +19,7 @@ const PLUGIN_LAST_SYNCED_KEY = "sheetsPluginLastSynced"
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
 
 interface UserInfo {
-    displayName: string;
+    displayName: string
 }
 
 interface SpreadsheetInfoProperties {
@@ -156,7 +156,7 @@ function fetchSheet(spreadsheetId: string, sheetTitle: string, range?: string) {
 export const useFetchUserInfo = () => {
     return useQuery<UserInfo>({
         queryKey: ["userInfo"],
-        queryFn: () => fetchUserInfo()
+        queryFn: () => fetchUserInfo(),
     })
 }
 
@@ -290,9 +290,24 @@ function processSheetRow({
     fieldTypes,
 }: ProcessSheetRowParams) {
     const fieldData: Record<string, unknown> = {}
-    let slugValue: string | null = null
-    let itemId: string | null = null
 
+    // Process the slug field first, independently of the mapping
+    const slugCell = row[slugFieldColumnIndex]
+    const slugValue = slugCell ? String(slugCell) : null
+    const itemId = slugValue ? generateHashId(slugValue) : null
+
+    if (!slugValue || !itemId) {
+        status.warnings.push({
+            rowIndex,
+            message: "Slug or title missing. Skipping item.",
+        })
+        return null
+    }
+
+    // Mark row as seen
+    unsyncedRowIds.delete(itemId)
+
+    // Process the rest of the fields according to mapping
     for (const [colIndex, cell] of row.entries()) {
         if (ignoredFieldColumnIndexes.includes(colIndex)) continue
 
@@ -309,33 +324,12 @@ function processSheetRow({
             continue
         }
 
-        if (colIndex === slugFieldColumnIndex) {
-            if (typeof fieldValue !== "string") {
-                continue
-            }
-
-            slugValue = slugify(fieldValue)
-            itemId = generateHashId(fieldValue)
-
-            // Mark row as seen
-            unsyncedRowIds.delete(itemId)
-        }
-
         fieldData[colIndex] = fieldValue
-    }
-
-    if (!slugValue || !itemId) {
-        status.warnings.push({
-            rowIndex,
-            message: "Slug or title missing. Skipping item.",
-        })
-
-        return null
     }
 
     return {
         id: itemId,
-        slug: slugValue,
+        slug: slugify(slugValue),
         fieldData,
     }
 }

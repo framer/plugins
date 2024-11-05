@@ -8,10 +8,11 @@ interface Tokens {
 
 interface StoredTokens {
     createdAt: number
+    /** Duration in seconds. */
     expiredIn: number
     accessToken: string
-    // When you have previously logged into the app with oAuth Google no longer gives a refresh token.
-    // https://stackoverflow.com/a/10857806
+    // After the initial login, Google does not provide new refresh tokens since
+    // the original does not expire. https://stackoverflow.com/a/8954103
     refreshToken: string | undefined
 }
 
@@ -48,7 +49,6 @@ class Auth {
             })
 
             const newTokens = (await res.json()) as Tokens
-
             this.tokens.save(newTokens)
 
             return newTokens
@@ -66,9 +66,8 @@ class Auth {
             if (tokens.refreshToken) {
                 await this.refreshTokens()
             } else {
-                // After an app has previously authenticated with oAuth Google no longer gives a refresh token.
-                // Unless we explicitly send users through the consent screens in every Login.
-                // Instead of doing that we let them log in again.
+                // If the refresh token has been lost somehow, get the user to
+                // authenticate with Google again.
                 this.tokens.clear()
                 return
             }
@@ -121,11 +120,17 @@ class Auth {
 
     private readonly tokens = {
         save: (tokens: Tokens) => {
+            const existingTokens = this.tokens.get()
+
             const storedTokens: StoredTokens = {
                 createdAt: Date.now(),
                 expiredIn: tokens.expires_in,
                 accessToken: tokens.access_token,
-                refreshToken: tokens.refresh_token,
+
+                // Google only provides one refresh token during the initial
+                // authentication. If a new one isn't provided, use the existing
+                // one that is stored.
+                refreshToken: tokens.refresh_token ?? existingTokens?.refreshToken,
             }
 
             this.storedTokens = storedTokens

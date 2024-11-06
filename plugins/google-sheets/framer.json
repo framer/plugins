@@ -1,6 +1,6 @@
 {
     "id": "fa488a",
-    "name": "Sheets",
+    "name": "Google Sheets",
     "modes": ["configureManagedCollection", "syncManagedCollection"],
     "icon": "/sheets.svg"
 }

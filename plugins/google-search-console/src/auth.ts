@@ -43,7 +43,7 @@ export function useGoogleToken() {
           clearInterval(pollInterval.current);
           resolve(tokens);
         }
-      }, 10_000);
+      }, 1500);
     });
   };
 

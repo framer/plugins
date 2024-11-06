@@ -39,7 +39,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                             clearInterval(pollInterval.current)
                             resolve(tokens)
                         }).catch(reject),
-                    10_000
+                    1500
                 ))
         )
     }

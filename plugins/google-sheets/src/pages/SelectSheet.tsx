@@ -15,7 +15,11 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
     const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState("")
     const [selectedSheetId, setSelectedSheetId] = useState("")
 
-    const { data: spreadsheetInfo, isFetching: isFetchingSheets, isError: isSpreadSheetInfoError } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
+    const {
+        data: spreadsheetInfo,
+        isFetching: isFetchingSheets,
+        isError: isSpreadSheetInfoError,
+    } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
 
     useEffect(() => {
         if (isSpreadSheetInfoError) {

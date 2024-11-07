@@ -121,7 +121,7 @@ const getPossibleSlugFields = (fieldConfig: CollectionFieldConfig[]): Collection
 
 interface Props {
     spreadsheetId: string
-    sheetId: string | null
+    sheetId: number | null
     sheetTitle: string
     headerRow: HeaderRow
     pluginContext: PluginContext

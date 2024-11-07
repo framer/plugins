@@ -47,7 +47,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     const [spreadsheetId, setSpreadsheetId] = useState<string | null>(
         pluginContext.type === "update" ? pluginContext.spreadsheetId : null
     )
-    const [sheetId, setSheetId] = useState<string | null>(
+    const [sheetId, setSheetId] = useState<number | null>(
         pluginContext.type === "update" ? pluginContext.sheetId : null
     )
     const [sheetTitle, setSheetTitle] = useState<string | null>(

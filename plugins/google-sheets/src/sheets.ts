@@ -200,7 +200,7 @@ export interface PluginContextUpdate {
      * Sheet ID may not exist because previous versions of the plugin did not
      * save the ID and instead used the sheet title.
      */
-    sheetId: string | null
+    sheetId: number | null
     sheetTitle: string
     collectionFields: ManagedCollectionField[]
     collection: ManagedCollection
@@ -248,7 +248,7 @@ interface ProcessSheetRowParams {
 
 export interface SyncMutationOptions {
     spreadsheetId: string
-    sheetId: string | null,
+    sheetId: number | null,
     sheetTitle: string
     fetchedSheet?: Sheet
     fields: ManagedCollectionField[]
@@ -389,8 +389,8 @@ export async function syncSheet({
     const unsyncedItemIds = new Set(await collection.getItemIds())
 
     const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
-    const sheetTitleFromId = spreadsheetInfo.sheets.find((sheet) => sheetId === sheet.properties.sheetId.toString())?.properties.title
-    const sheetIdFromTitle = spreadsheetInfo.sheets.find((sheet) => sheetTitle === sheet.properties.title)?.properties.sheetId.toString()
+    const sheetTitleFromId = spreadsheetInfo.sheets.find((sheet) => sheetId === sheet.properties.sheetId)?.properties.title
+    const sheetIdFromTitle = spreadsheetInfo.sheets.find((sheet) => sheetTitle === sheet.properties.title)?.properties.sheetId
 
     const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitleFromId ?? sheetTitle))
     const [headerRow, ...rows] = sheet.values
@@ -410,7 +410,7 @@ export async function syncSheet({
 
     await Promise.all([
         collection.setPluginData(PLUGIN_SPREADSHEET_ID_KEY, spreadsheetId),
-        collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId ?? sheetIdFromTitle ?? null),
+        collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId?.toString() ?? sheetIdFromTitle?.toString() ?? null),
         collection.setPluginData(PLUGIN_SHEET_TITLE_KEY, sheetTitle),
         collection.setPluginData(PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY, JSON.stringify(ignoredFieldColumnIndexes)),
         collection.setPluginData(PLUGIN_SLUG_INDEX_COLUMN_KEY, String(slugFieldColumnIndex)),
@@ -477,8 +477,8 @@ export async function getPluginContext(): Promise<PluginContext> {
 
     try {
         const spreadsheetInfo = await fetchSpreadsheetInfo(storedSpreadsheetId)
-        const sheetId = storedSheetId ?? null
-        const sheetTitle = spreadsheetInfo.sheets.find((sheet) => sheetId === sheet.properties.sheetId.toString())?.properties.title
+        const sheetId = storedSheetId ? parseInt(storedSheetId) : null
+        const sheetTitle = spreadsheetInfo.sheets.find((sheet) => sheetId === sheet.properties.sheetId)?.properties.title
 
         const sheet = await fetchSheetWithClient(storedSpreadsheetId, sheetTitle ?? storedSheetTitle)
         assert(lastSyncedTime, "Expected last synced time to be set")

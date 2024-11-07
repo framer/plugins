@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { ManagedCollection, ManagedCollectionField, User, framer } from "framer-plugin"
+import { ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
 import auth from "./auth"
 import { assert, columnToLetter, generateHashId, isDefined, parseStringToArray, slugify } from "./utils"
 import { logSyncResult } from "./debug.ts"
@@ -10,7 +10,8 @@ const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
 const DRIVE_API_URL = "https://www.googleapis.com/drive/v3"
 
 const PLUGIN_SPREADSHEET_ID_KEY = "sheetsPluginSpreadsheetId"
-const PLUGIN_SHEET_TITLE_KEY = "sheetsPluginSheetTitle"
+const PLUGIN_SHEET_ID_KEY = "sheetsPluginSheetId"
+const DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY = "sheetsPluginSheetTitle"
 const PLUGIN_SHEET_HEADER_ROW = "sheetsPluginSheetHeaderRow"
 const PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY = "sheetsPluginIgnoredFieldColumnIndexes"
 const PLUGIN_SLUG_INDEX_COLUMN_KEY = "sheetsPluginSlugIndexColumn"
@@ -27,6 +28,7 @@ interface SpreadsheetInfoProperties {
 }
 
 interface SheetProperties {
+    sheetId: number
     title: string
 }
 
@@ -137,7 +139,7 @@ function fetchSpreadsheetInfo(spreadsheetId: string) {
         path: `/spreadsheets/${spreadsheetId}`,
         query: {
             includeGridData: "true",
-            fields: "spreadsheetId,spreadsheetUrl,properties.title,sheets.properties.title",
+            fields: "spreadsheetId,spreadsheetUrl,properties.title,sheets.properties.title,sheets.properties.sheetId",
         },
     })
 }
@@ -209,7 +211,7 @@ export interface PluginContextUpdate {
 export interface PluginContextNoSheetAccess {
     type: "no-sheet-access"
     sheetUrl: string
-    sheetName: string
+    message?: string | undefined
 }
 
 export type PluginContext = PluginContextNew | PluginContextUpdate | PluginContextNoSheetAccess
@@ -395,9 +397,13 @@ export async function syncSheet({
     await collection.removeItems(itemsToDelete)
     await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
 
+    const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
+    const sheetId = spreadsheetInfo.sheets.find(x => x.properties.title === sheetTitle)?.properties.sheetId
+    assert(sheetId !== undefined, "Expected sheet ID to be defined")
+
     await Promise.all([
         collection.setPluginData(PLUGIN_SPREADSHEET_ID_KEY, spreadsheetId),
-        collection.setPluginData(PLUGIN_SHEET_TITLE_KEY, sheetTitle),
+        collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId.toString()),
         collection.setPluginData(PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY, JSON.stringify(ignoredFieldColumnIndexes)),
         collection.setPluginData(PLUGIN_SLUG_INDEX_COLUMN_KEY, String(slugFieldColumnIndex)),
         collection.setPluginData(PLUGIN_SHEET_HEADER_ROW, JSON.stringify(headerRow)),
@@ -428,6 +434,8 @@ export function hasFieldConfigurationChanged(storedHeaderRow: HeaderRow, headerR
     return !isColsUnchanged
 }
 
+class UserFacingError extends Error {}
+
 export async function getPluginContext(): Promise<PluginContext> {
     const collection = await framer.getManagedCollection()
     const collectionFields = await collection.getFields()
@@ -435,9 +443,10 @@ export async function getPluginContext(): Promise<PluginContext> {
     const isAuthenticated = !!tokens
 
     const spreadsheetId = await collection.getPluginData(PLUGIN_SPREADSHEET_ID_KEY)
-    const sheetTitle = await collection.getPluginData(PLUGIN_SHEET_TITLE_KEY)
+    const storedSheetId = await collection.getPluginData(PLUGIN_SHEET_ID_KEY)
+    const storedSheetTitle = await collection.getPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY)
 
-    if (!spreadsheetId || !sheetTitle || !isAuthenticated) {
+    if (!spreadsheetId || (storedSheetTitle === null && storedSheetId === null) || !isAuthenticated) {
         return {
             type: "new",
             collection,
@@ -458,8 +467,41 @@ export async function getPluginContext(): Promise<PluginContext> {
     const slugFieldColumnIndex = Number(rawSlugFieldColumnIndex)
 
     try {
+        const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
+
+        const sheetId =
+            storedSheetId === null
+                ? spreadsheetInfo.sheets.find(x => x.properties.title === storedSheetTitle)?.properties.sheetId
+                : parseInt(storedSheetId)
+
+        if (sheetId === undefined) {
+            throw new UserFacingError(
+                `If you recently renamed a sheet called "${storedSheetTitle}" to something else, then, please, change the name back to "${storedSheetTitle}", press Retry, and then return the new name.`
+            )
+        }
+
+        const sheetTitle = spreadsheetInfo.sheets.find(x => x.properties.sheetId === sheetId)?.properties.title
+        assert(sheetTitle !== undefined, "Expected sheet title to be defined")
+
         const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle)
         assert(lastSyncedTime, "Expected last synced time to be set")
+
+        if (storedSheetTitle !== null) {
+            // If we're here it means that we recovered sheet ID from its title.
+            // Now that we have the ID, get rid of the title, as to reduce the
+            // potential for confusion/bugs. Done sequantially as to ensure that
+            // we don't delete the title and then fail to save the ID.
+
+            await collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId.toString())
+            await collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY, null)
+        }
+
+        // Sheet ID never leaves here because Google offers slightly better API
+        // ergonomics when you refer to sheets by their titles, so that's what
+        // we do. This plugin doesn't remain open for long, so it's unlikely
+        // that somebody renames their sheet during that short window. If that
+        // assumption turns out to be false too often - switch to
+        // batchGetByDataFilter + GridRange and drop titles altogether.
 
         return {
             type: "update",
@@ -478,8 +520,8 @@ export async function getPluginContext(): Promise<PluginContext> {
     } catch (error) {
         return {
             type: "no-sheet-access",
-            sheetName: sheetTitle,
             sheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
+            message: error instanceof UserFacingError ? error.message : undefined,
         }
     }
 }

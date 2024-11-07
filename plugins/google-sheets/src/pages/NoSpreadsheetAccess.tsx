@@ -15,10 +15,10 @@ export function NoSpreadsheetAccess({ context, setContext }: Props) {
     useLayoutEffect(() => {
         framer.showUI({
             width: 240,
-            height: 114,
+            height: context.message === undefined ? 150 : 280,
             resizable: false,
         })
-    }, [])
+    }, [context.message])
 
     const handleViewClick = () => {
         window.open(context.sheetUrl, "_blank")
@@ -39,15 +39,17 @@ export function NoSpreadsheetAccess({ context, setContext }: Props) {
     }
 
     return (
-        <div className="flex flex-col gap-[15px]">
-            <p className="text-content">
+        <div className="flex flex-col h-full">
+            <p className="text-content mb-[15px]">
                 Your Google Account does not have access to the synced Google sheet. Retry or{" "}
                 <a href="#" className="text-sheets-green" onClick={handleLogout}>
                     log out
                 </a>{" "}
-                of the Sheets Plugin.
+                of the Sheets Plugin, and log back in again.
             </p>
-            <div className="inline-flex items-center gap-[10px]">
+            {context.message !== undefined && <p className="text-content mb-[15px]">{context.message}</p>}
+            <div className="grow"></div>
+            <div className="mb-4 inline-flex items-center gap-[10px]">
                 <Button variant="secondary" className="w-auto flex-1" onClick={handleRetryClick} isLoading={isRetrying}>
                     Retry
                 </Button>

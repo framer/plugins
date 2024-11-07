@@ -1,6 +1,14 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
-import { getPluginContext, PluginContext, PluginContextUpdate, syncSheet, useFetchUserInfo, useSheetQuery, useSyncSheetMutation } from "./sheets"
+import {
+    getPluginContext,
+    PluginContext,
+    PluginContextUpdate,
+    syncSheet,
+    useFetchUserInfo,
+    useSheetQuery,
+    useSyncSheetMutation,
+} from "./sheets"
 import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
 
 import { Authenticate } from "./pages/Authenticate"
@@ -52,14 +60,9 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     )
     const [isSelectSheetError, setIsSelectSheetError] = useState(false)
 
-    const {
-        isError: isUserInfoError
-    } = useFetchUserInfo()
+    const { isError: isUserInfoError } = useFetchUserInfo()
 
-    const {
-        data: sheet,
-        isPending: isSheetPending,
-    } = useSheetQuery(spreadsheetId ?? "", sheetTitle ?? "")
+    const { data: sheet, isPending: isSheetPending } = useSheetQuery(spreadsheetId ?? "", sheetTitle ?? "")
 
     const syncMutation = useSyncSheetMutation({
         onSuccess: result => {
@@ -78,7 +81,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
             setContext({
                 type: "no-sheet-access",
                 sheetName: "",
-                sheetUrl: ""
+                sheetUrl: "",
             })
         }
     }, [isUserInfoError, isSelectSheetError, setContext])
@@ -178,7 +181,7 @@ export function App({ pluginContext }: AppProps) {
     }
 
     if (context.isAuthenticated) {
-        return <AuthenticatedApp pluginContext={context} setContext={setContext}/>
+        return <AuthenticatedApp pluginContext={context} setContext={setContext} />
     }
 
     return <Authenticate onAuthenticated={setContext} />

@@ -19,7 +19,7 @@ const PLUGIN_LAST_SYNCED_KEY = "sheetsPluginLastSynced"
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
 
 interface UserInfo {
-    displayName: string;
+    displayName: string
 }
 
 interface SpreadsheetInfoProperties {
@@ -156,7 +156,7 @@ function fetchSheet(spreadsheetId: string, sheetTitle: string, range?: string) {
 export const useFetchUserInfo = () => {
     return useQuery<UserInfo>({
         queryKey: ["userInfo"],
-        queryFn: () => fetchUserInfo()
+        queryFn: () => fetchUserInfo(),
     })
 }
 

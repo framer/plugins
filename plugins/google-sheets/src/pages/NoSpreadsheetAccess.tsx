@@ -51,11 +51,14 @@ export function NoSpreadsheetAccess({ context, setContext }: Props) {
                 <Button variant="secondary" className="w-auto flex-1" onClick={handleRetryClick} isLoading={isRetrying}>
                     Retry
                 </Button>
-                {context.sheetUrl &&
-                    <Button className="w-auto flex-1 !bg-[#15C43E] text-white hover:bg-[#15C43E]" onClick={handleViewClick}>
+                {context.sheetUrl && (
+                    <Button
+                        className="w-auto flex-1 !bg-[#15C43E] text-white hover:bg-[#15C43E]"
+                        onClick={handleViewClick}
+                    >
                         View Sheet
                     </Button>
-                }
+                )}
             </div>
         </div>
     )

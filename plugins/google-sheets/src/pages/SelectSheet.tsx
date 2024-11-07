@@ -8,12 +8,12 @@ type SelectChangeEvent = React.ChangeEvent<HTMLSelectElement>
 
 interface Props {
     onError: () => void
-    onSheetSelected: (spreadsheetId: string, sheetId: number, sheetTitle: string) => void
+    onSheetSelected: (spreadsheetId: string, sheetId: string, sheetTitle: string) => void
 }
 
 export function SelectSheetPage({ onError, onSheetSelected }: Props) {
     const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState("")
-    const [selectedSheetId, setSelectedSheetId] = useState<number | null>(null)
+    const [selectedSheetId, setSelectedSheetId] = useState<string | null>(null)
     const [selectedSheetTitle, setSelectedSheetTitle] = useState("")
 
     const { data: spreadsheetInfo, isFetching: isFetchingSheets, isError: isSpreadSheetInfoError } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
@@ -25,8 +25,8 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
     }, [isSpreadSheetInfoError, onError])
 
     const handleSheetSelect = (event: SelectChangeEvent) => {
-        const id = parseInt(event.currentTarget.value)
-        const sheet = spreadsheetInfo?.sheets.find((sheet) => id === sheet.properties.sheetId)
+        const id = event.currentTarget.value
+        const sheet = spreadsheetInfo?.sheets.find((sheet) => id === sheet.properties.sheetId.toString())
         if (!sheet) return console.warn("Sheet does not exist in spreadsheet")
 
         setSelectedSheetId(id)
@@ -76,11 +76,20 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
                             {isFetchingSheets ? "Loading..." : "Choose..."}
                         </option>
 
-                        {spreadsheetInfo?.sheets.map(({ properties }, i) => (
-                            <option value={properties.sheetId.toString()} key={i} selected={selectedSheetId === properties.sheetId}>
-                                {properties.title}
-                            </option>
-                        ))}
+
+                        {spreadsheetInfo?.sheets.map(({ properties }, i) => {
+                            const id = properties.sheetId.toString()
+
+                            return (
+                                <option
+                                    value={id}
+                                    key={i}
+                                    selected={id === selectedSheetId}
+                                >
+                                    {properties.title}
+                                </option>
+                            )
+                        })}
                     </select>
                 </div>
             </div>

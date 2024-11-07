@@ -121,6 +121,7 @@ const getPossibleSlugFields = (fieldConfig: CollectionFieldConfig[]): Collection
 
 interface Props {
     spreadsheetId: string
+    sheetId: number | null
     sheetTitle: string
     headerRow: HeaderRow
     pluginContext: PluginContext
@@ -131,6 +132,7 @@ interface Props {
 
 export function MapSheetFieldsPage({
     spreadsheetId,
+    sheetId,
     sheetTitle,
     headerRow,
     pluginContext,
@@ -212,6 +214,7 @@ export function MapSheetFieldsPage({
         onSubmit({
             fields: allFields,
             spreadsheetId,
+            sheetId,
             sheetTitle,
             slugFieldColumnIndex,
             colFieldTypes: fieldConfig.map(fieldConfig => fieldConfig.field?.type ?? "string"),

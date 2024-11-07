@@ -8,12 +8,13 @@ type SelectChangeEvent = React.ChangeEvent<HTMLSelectElement>
 
 interface Props {
     onError: () => void
-    onSheetSelected: (spreadsheetId: string, sheetId: string) => void
+    onSheetSelected: (spreadsheetId: string, sheetId: number, sheetTitle: string) => void
 }
 
 export function SelectSheetPage({ onError, onSheetSelected }: Props) {
     const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState("")
-    const [selectedSheetId, setSelectedSheetId] = useState("")
+    const [selectedSheetId, setSelectedSheetId] = useState<number | null>(null)
+    const [selectedSheetTitle, setSelectedSheetTitle] = useState("")
 
     const { data: spreadsheetInfo, isFetching: isFetchingSheets, isError: isSpreadSheetInfoError } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
 
@@ -23,17 +24,22 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
         }
     }, [isSpreadSheetInfoError, onError])
 
-    const handleSheetSelect = (e: SelectChangeEvent) => {
-        setSelectedSheetId(e.target.value)
+    const handleSheetSelect = (event: SelectChangeEvent) => {
+        const id = parseInt(event.currentTarget.value)
+        const sheet = spreadsheetInfo?.sheets.find((sheet) => id === sheet.properties.sheetId)
+        if (!sheet) return console.warn("Sheet does not exist in spreadsheet")
+
+        setSelectedSheetId(id)
+        setSelectedSheetTitle(sheet.properties.title)
     }
 
     const handleSheetSelected = () => {
-        if (!selectedSpreadsheetId || !selectedSheetId) {
+        if (!selectedSpreadsheetId || selectedSheetId === null) {
             framer.notify("Please select a spreadsheet and sheet", { variant: "error" })
             return
         }
 
-        onSheetSelected(selectedSpreadsheetId, selectedSheetId)
+        onSheetSelected(selectedSpreadsheetId, selectedSheetId, selectedSheetTitle)
     }
 
     const handleSheetURLChange = (e: InputChangeEvent) => {
@@ -62,17 +68,17 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
 
                     <select
                         onChange={handleSheetSelect}
-                        value={selectedSheetId || ""}
+                        value={selectedSheetId?.toString() || ""}
                         disabled={!spreadsheetInfo?.sheets.length}
                         className="px[16px] py-0"
                     >
-                        <option value="" disabled>
+                        <option value="__choose" selected={selectedSheetId === null}>
                             {isFetchingSheets ? "Loading..." : "Choose..."}
                         </option>
 
-                        {spreadsheetInfo?.sheets.map(({ properties: { title } }, i) => (
-                            <option value={title} key={i}>
-                                {title}
+                        {spreadsheetInfo?.sheets.map(({ properties }, i) => (
+                            <option value={properties.sheetId.toString()} key={i} selected={selectedSheetId === properties.sheetId}>
+                                {properties.title}
                             </option>
                         ))}
                     </select>

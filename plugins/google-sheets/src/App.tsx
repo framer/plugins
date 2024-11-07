@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
-import { getPluginContext, PluginContext, PluginContextUpdate, syncSheet, useFetchUserInfo, useSheetQuery, useSyncSheetMutation } from "./sheets"
+import { PluginContext, PluginContextUpdate, syncSheet, useFetchUserInfo, useSheetQuery, useSyncSheetMutation } from "./sheets"
 import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
 
 import { Authenticate } from "./pages/Authenticate"
@@ -47,9 +47,13 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     const [spreadsheetId, setSpreadsheetId] = useState<string | null>(
         pluginContext.type === "update" ? pluginContext.spreadsheetId : null
     )
+    const [sheetId, setSheetId] = useState<number | null>(
+        pluginContext.type === "update" ? pluginContext.sheetId : null
+    )
     const [sheetTitle, setSheetTitle] = useState<string | null>(
         pluginContext.type === "update" ? pluginContext.sheetTitle : null
     )
+
     const [isSelectSheetError, setIsSelectSheetError] = useState(false)
 
     const {
@@ -85,17 +89,18 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
 
     useLayoutEffect(() => {
         framer.showUI({
-            width: sheetTitle ? 340 : 320,
-            height: sheetTitle ? 425 : 345,
+            width: sheetTitle !== null ? 340 : 320,
+            height: sheetTitle !== null ? 425 : 345,
         })
     }, [sheetTitle])
 
-    if (!spreadsheetId || !sheetTitle) {
+    if (!spreadsheetId || sheetTitle === null) {
         return (
             <SelectSheetPage
                 onError={() => setIsSelectSheetError(true)}
-                onSheetSelected={(selectedSpreadsheetId, selectedSheetTitle) => {
+                onSheetSelected={(selectedSpreadsheetId, selectedSheetId, selectedSheetTitle) => {
                     setSpreadsheetId(selectedSpreadsheetId)
+                    setSheetId(selectedSheetId)
                     setSheetTitle(selectedSheetTitle)
                 }}
             />
@@ -112,6 +117,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     return (
         <MapSheetFieldsPage
             spreadsheetId={spreadsheetId}
+            sheetId={sheetId}
             sheetTitle={sheetTitle}
             headerRow={headerRow}
             pluginContext={pluginContext}
@@ -146,6 +152,7 @@ export function App({ pluginContext }: AppProps) {
 
         const {
             spreadsheetId,
+            sheetId,
             sheetTitle,
             collectionFields: fields,
             ignoredFieldColumnIndexes,
@@ -161,6 +168,7 @@ export function App({ pluginContext }: AppProps) {
             fetchedSheet: sheet,
             lastSyncedTime,
             spreadsheetId,
+            sheetId,
             sheetTitle,
             fields,
             // Determine if the field type is already configured, otherwise default to "string"

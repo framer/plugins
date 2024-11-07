@@ -10,6 +10,7 @@ const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
 const DRIVE_API_URL = "https://www.googleapis.com/drive/v3"
 
 const PLUGIN_SPREADSHEET_ID_KEY = "sheetsPluginSpreadsheetId"
+const PLUGIN_SHEET_ID_KEY = "sheetsPluginSheetId"
 const PLUGIN_SHEET_TITLE_KEY = "sheetsPluginSheetTitle"
 const PLUGIN_SHEET_HEADER_ROW = "sheetsPluginSheetHeaderRow"
 const PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY = "sheetsPluginIgnoredFieldColumnIndexes"
@@ -27,6 +28,7 @@ interface SpreadsheetInfoProperties {
 }
 
 interface SheetProperties {
+    sheetId: number,
     title: string
 }
 
@@ -137,7 +139,7 @@ function fetchSpreadsheetInfo(spreadsheetId: string) {
         path: `/spreadsheets/${spreadsheetId}`,
         query: {
             includeGridData: "true",
-            fields: "spreadsheetId,spreadsheetUrl,properties.title,sheets.properties.title",
+            fields: "spreadsheetId,spreadsheetUrl,properties.title,sheets.properties.title,sheets.properties.sheetId",
         },
     })
 }
@@ -194,6 +196,11 @@ export interface PluginContextNew {
 export interface PluginContextUpdate {
     type: "update"
     spreadsheetId: string
+    /**
+     * Sheet ID may not exist because previous versions of the plugin did not
+     * save the ID and instead used the sheet title.
+     */
+    sheetId: number | null
     sheetTitle: string
     collectionFields: ManagedCollectionField[]
     collection: ManagedCollection
@@ -241,6 +248,7 @@ interface ProcessSheetRowParams {
 
 export interface SyncMutationOptions {
     spreadsheetId: string
+    sheetId: number | null,
     sheetTitle: string
     fetchedSheet?: Sheet
     fields: ManagedCollectionField[]
@@ -368,6 +376,7 @@ function processSheet(
 export async function syncSheet({
     fetchedSheet,
     spreadsheetId,
+    sheetId,
     sheetTitle,
     fields,
     ignoredFieldColumnIndexes,
@@ -379,7 +388,11 @@ export async function syncSheet({
 
     const unsyncedItemIds = new Set(await collection.getItemIds())
 
-    const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
+    const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
+    const sheetTitleFromId = spreadsheetInfo.sheets.find((sheet) => sheetId === sheet.properties.sheetId)?.properties.title
+    const sheetIdFromTitle = spreadsheetInfo.sheets.find((sheet) => sheetTitle === sheet.properties.title)?.properties.sheetId
+
+    const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitleFromId ?? sheetTitle))
     const [headerRow, ...rows] = sheet.values
 
     const { collectionItems, status } = processSheet(rows, {
@@ -397,6 +410,7 @@ export async function syncSheet({
 
     await Promise.all([
         collection.setPluginData(PLUGIN_SPREADSHEET_ID_KEY, spreadsheetId),
+        collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId?.toString() ?? sheetIdFromTitle?.toString() ?? null),
         collection.setPluginData(PLUGIN_SHEET_TITLE_KEY, sheetTitle),
         collection.setPluginData(PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY, JSON.stringify(ignoredFieldColumnIndexes)),
         collection.setPluginData(PLUGIN_SLUG_INDEX_COLUMN_KEY, String(slugFieldColumnIndex)),
@@ -434,10 +448,14 @@ export async function getPluginContext(): Promise<PluginContext> {
     const tokens = await auth.getTokens()
     const isAuthenticated = !!tokens
 
-    const spreadsheetId = await collection.getPluginData(PLUGIN_SPREADSHEET_ID_KEY)
-    const sheetTitle = await collection.getPluginData(PLUGIN_SHEET_TITLE_KEY)
+    const storedSpreadsheetId = await collection.getPluginData(PLUGIN_SPREADSHEET_ID_KEY)
+    const storedSheetId = await collection.getPluginData(PLUGIN_SHEET_ID_KEY)
+    const storedSheetTitle = await collection.getPluginData(PLUGIN_SHEET_TITLE_KEY)
 
-    if (!spreadsheetId || !sheetTitle || !isAuthenticated) {
+    // Sheet ID is not checked because there is a version of the plugin that
+    // only saved the title. We fallback for checking for title if the ID does
+    // not exist.
+    if (!storedSpreadsheetId || storedSheetTitle === null || !isAuthenticated) {
         return {
             type: "new",
             collection,
@@ -458,14 +476,19 @@ export async function getPluginContext(): Promise<PluginContext> {
     const slugFieldColumnIndex = Number(rawSlugFieldColumnIndex)
 
     try {
-        const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle)
+        const spreadsheetInfo = await fetchSpreadsheetInfo(storedSpreadsheetId)
+        const sheetId = storedSheetId ? parseInt(storedSheetId) : null
+        const sheetTitle = spreadsheetInfo.sheets.find((sheet) => sheetId === sheet.properties.sheetId)?.properties.title
+
+        const sheet = await fetchSheetWithClient(storedSpreadsheetId, sheetTitle ?? storedSheetTitle)
         assert(lastSyncedTime, "Expected last synced time to be set")
 
         return {
             type: "update",
             isAuthenticated,
-            spreadsheetId,
-            sheetTitle,
+            spreadsheetId: storedSpreadsheetId,
+            sheetId,
+            sheetTitle: storedSheetTitle,
             collection,
             slugFieldColumnIndex,
             ignoredFieldColumnIndexes,
@@ -478,8 +501,8 @@ export async function getPluginContext(): Promise<PluginContext> {
     } catch (error) {
         return {
             type: "no-sheet-access",
-            sheetName: sheetTitle,
-            sheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
+            sheetName: storedSheetTitle,
+            sheetUrl: `https://docs.google.com/spreadsheets/d/${storedSpreadsheetId}`,
         }
     }
 }

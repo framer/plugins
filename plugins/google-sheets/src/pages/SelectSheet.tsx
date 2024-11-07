@@ -12,14 +12,14 @@ interface Props {
 }
 
 export function SelectSheetPage({ onError, onSheetSelected }: Props) {
-    const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState("")
-    const [selectedSheetId, setSelectedSheetId] = useState("")
+    const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState<string>()
+    const [selectedSheetTitle, setSelectedSheetTitle] = useState<string>()
 
     const {
         data: spreadsheetInfo,
         isFetching: isFetchingSheets,
         isError: isSpreadSheetInfoError,
-    } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
+    } = useSpreadsheetInfoQuery(selectedSpreadsheetId ?? "")
 
     useEffect(() => {
         if (isSpreadSheetInfoError) {
@@ -28,16 +28,16 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
     }, [isSpreadSheetInfoError, onError])
 
     const handleSheetSelect = (e: SelectChangeEvent) => {
-        setSelectedSheetId(e.target.value)
+        setSelectedSheetTitle(e.target.value)
     }
 
     const handleSheetSelected = () => {
-        if (!selectedSpreadsheetId || !selectedSheetId) {
+        if (selectedSpreadsheetId === undefined || selectedSheetTitle === undefined) {
             framer.notify("Please select a spreadsheet and sheet", { variant: "error" })
             return
         }
 
-        onSheetSelected(selectedSpreadsheetId, selectedSheetId)
+        onSheetSelected(selectedSpreadsheetId, selectedSheetTitle)
     }
 
     const handleSheetURLChange = (e: InputChangeEvent) => {
@@ -49,7 +49,7 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
 
             setSelectedSpreadsheetId(id)
         } catch (err) {
-            setSelectedSpreadsheetId("")
+            setSelectedSpreadsheetId(undefined)
         }
     }
 
@@ -66,7 +66,7 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
 
                     <select
                         onChange={handleSheetSelect}
-                        value={selectedSheetId || ""}
+                        value={selectedSheetTitle ?? ""}
                         disabled={!spreadsheetInfo?.sheets.length}
                         className="px[16px] py-0"
                     >

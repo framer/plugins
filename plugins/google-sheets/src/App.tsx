@@ -1,7 +1,6 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
 import {
-    getPluginContext,
     PluginContext,
     PluginContextUpdate,
     syncSheet,
@@ -80,7 +79,6 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
         if (isUserInfoError || isSelectSheetError) {
             setContext({
                 type: "no-sheet-access",
-                sheetName: "",
                 sheetUrl: "",
             })
         }
@@ -88,12 +86,12 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
 
     useLayoutEffect(() => {
         framer.showUI({
-            width: sheetTitle ? 340 : 320,
-            height: sheetTitle ? 425 : 345,
+            width: sheetTitle !== null ? 340 : 320,
+            height: sheetTitle !== null ? 425 : 345,
         })
     }, [sheetTitle])
 
-    if (!spreadsheetId || !sheetTitle) {
+    if (!spreadsheetId || sheetTitle === null) {
         return (
             <SelectSheetPage
                 onError={() => setIsSelectSheetError(true)}

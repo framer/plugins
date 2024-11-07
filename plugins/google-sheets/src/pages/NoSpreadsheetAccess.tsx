@@ -14,8 +14,8 @@ export function NoSpreadsheetAccess({ context, setContext }: Props) {
 
     useLayoutEffect(() => {
         framer.showUI({
-            height: 110,
             width: 240,
+            height: 114,
             resizable: false,
         })
     }, [])

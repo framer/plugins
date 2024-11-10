@@ -1,6 +1,7 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
 import {
+    getPluginContext,
     PluginContext,
     PluginContextUpdate,
     syncSheet,
@@ -14,8 +15,9 @@ import { Authenticate } from "./pages/Authenticate"
 import { MapSheetFieldsPage } from "./pages/MapSheetFields"
 import { SelectSheetPage } from "./pages/SelectSheet"
 import { CenteredSpinner } from "./components/CenteredSpinner"
-import { NoSpreadsheetAccess } from "./pages/NoSpreadsheetAccess"
+import { Problem } from "./pages/Problem"
 import { assert } from "./utils"
+import auth from "./auth"
 
 interface AppProps {
     pluginContext: PluginContext
@@ -79,7 +81,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
         if (isUserInfoError || isSelectSheetError) {
             setContext({
                 type: "no-sheet-access",
-                sheetUrl: "",
+                spreadsheetId: "",
             })
         }
     }, [isUserInfoError, isSelectSheetError, setContext])
@@ -175,7 +177,47 @@ export function App({ pluginContext }: AppProps) {
     if (shouldSyncOnly) return null
 
     if (context.type === "no-sheet-access") {
-        return <NoSpreadsheetAccess context={context} setContext={setContext} />
+        return (
+            <Problem height={132} spreadsheetId={context.spreadsheetId} setContext={setContext}>
+                <p className="text-content">
+                    Your Google Account has no access to the synced Google spreadsheet. Check your access and try again
+                    or{" "}
+                    <a
+                        href="#"
+                        className="text-sheets-green"
+                        onClick={() => {
+                            auth.logout()
+                            getPluginContext().then(setContext)
+                        }}
+                    >
+                        log out
+                    </a>{" "}
+                    and try a different account.
+                </p>
+            </Problem>
+        )
+    }
+
+    if (context.type === "sheet-by-title-missing") {
+        return (
+            <Problem height={165} spreadsheetId={context.spreadsheetId} setContext={setContext}>
+                <p className="text-content">
+                    Unable to access the synced sheet:{" "}
+                    <div
+                        className="my-2 font-black truncate cursor-pointer"
+                        title="Click to copy"
+                        onClick={() => {
+                            navigator.clipboard.writeText(context.title)
+                            framer.notify("Sheet title copied")
+                        }}
+                    >
+                        {context.title}
+                    </div>{" "}
+                    If the sheet was recently renamed, temporarily revert to the previous name, retry, then update the
+                    name.
+                </p>
+            </Problem>
+        )
     }
 
     if (context.isAuthenticated) {

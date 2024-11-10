@@ -210,11 +210,20 @@ export interface PluginContextUpdate {
 
 export interface PluginContextNoSheetAccess {
     type: "no-sheet-access"
-    sheetUrl: string
-    message?: string | undefined
+    spreadsheetId: string
 }
 
-export type PluginContext = PluginContextNew | PluginContextUpdate | PluginContextNoSheetAccess
+export interface PluginContextSheetByTitleMissing {
+    type: "sheet-by-title-missing"
+    spreadsheetId: string
+    title: string
+}
+
+export type PluginContext =
+    | PluginContextNew
+    | PluginContextUpdate
+    | PluginContextNoSheetAccess
+    | PluginContextSheetByTitleMissing
 
 interface ItemResult {
     rowIndex?: number
@@ -434,8 +443,6 @@ export function hasFieldConfigurationChanged(storedHeaderRow: HeaderRow, headerR
     return !isColsUnchanged
 }
 
-class UserFacingError extends Error {}
-
 export async function getPluginContext(): Promise<PluginContext> {
     const collection = await framer.getManagedCollection()
     const collectionFields = await collection.getFields()
@@ -466,63 +473,61 @@ export async function getPluginContext(): Promise<PluginContext> {
     const sheetHeaderRow = parseStringToArray<string>(rawSheetHeaderRow, "string")
     const slugFieldColumnIndex = Number(rawSlugFieldColumnIndex)
 
+    let spreadsheetInfo
+
     try {
-        const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
-
-        const sheetId =
-            storedSheetId === null
-                ? spreadsheetInfo.sheets.find(x => x.properties.title === storedSheetTitle)?.properties.sheetId
-                : parseInt(storedSheetId)
-
-        if (sheetId === undefined) {
-            throw new UserFacingError(
-                `If you recently renamed a sheet called "${storedSheetTitle}" to something else, then, please, change the name back to "${storedSheetTitle}", press Retry, and then return the new name.`
-            )
-        }
-
-        const sheetTitle = spreadsheetInfo.sheets.find(x => x.properties.sheetId === sheetId)?.properties.title
-        assert(sheetTitle !== undefined, "Expected sheet title to be defined")
-
-        const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle)
-        assert(lastSyncedTime, "Expected last synced time to be set")
-
-        if (storedSheetTitle !== null) {
-            // If we're here it means that we recovered sheet ID from its title.
-            // Now that we have the ID, get rid of the title, as to reduce the
-            // potential for confusion/bugs. Done sequantially as to ensure that
-            // we don't delete the title and then fail to save the ID.
-
-            await collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId.toString())
-            await collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY, null)
-        }
-
-        // Sheet ID never leaves here because Google offers slightly better API
-        // ergonomics when you refer to sheets by their titles, so that's what
-        // we do. This plugin doesn't remain open for long, so it's unlikely
-        // that somebody renames their sheet during that short window. If that
-        // assumption turns out to be false too often - switch to
-        // batchGetByDataFilter + GridRange and drop titles altogether.
-
-        return {
-            type: "update",
-            isAuthenticated,
-            spreadsheetId,
-            sheetTitle,
-            collection,
-            slugFieldColumnIndex,
-            ignoredFieldColumnIndexes,
-            sheet,
-            lastSyncedTime,
-            collectionFields,
-            sheetHeaderRow,
-            hasChangedFields: hasFieldConfigurationChanged(sheetHeaderRow, sheet.values[0]),
-        }
+        spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
     } catch (error) {
-        return {
-            type: "no-sheet-access",
-            sheetUrl: `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
-            message: error instanceof UserFacingError ? error.message : undefined,
-        }
+        return { type: "no-sheet-access", spreadsheetId }
+    }
+
+    const sheetId =
+        storedSheetId === null
+            ? spreadsheetInfo.sheets.find(x => x.properties.title === storedSheetTitle)?.properties.sheetId
+            : parseInt(storedSheetId)
+
+    if (sheetId === undefined) {
+        // Shouldn't be able to get here if storedSheetId isn't null
+        assert(storedSheetTitle !== null, "Expected stored sheet title to be defined")
+        return { type: "sheet-by-title-missing", spreadsheetId, title: storedSheetTitle }
+    }
+
+    const sheetTitle = spreadsheetInfo.sheets.find(x => x.properties.sheetId === sheetId)?.properties.title
+    assert(sheetTitle !== undefined, "Expected sheet title to be defined")
+
+    const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle)
+    assert(lastSyncedTime, "Expected last synced time to be set")
+
+    if (storedSheetTitle !== null) {
+        // If we're here it means that we recovered sheet ID from its title. Now
+        // that we have the ID, get rid of the title, as to reduce the potential
+        // for confusion/bugs. Done sequantially as to ensure that we don't
+        // delete the title and then fail to save the ID.
+
+        await collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId.toString())
+        await collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY, null)
+    }
+
+    // Sheet ID never leaves here because Google offers slightly better API
+    // ergonomics when you refer to sheets by their titles, so that's what we
+    // do. This plugin doesn't remain open for long, so it's unlikely that
+    // somebody renames their sheet during that short window. If that assumption
+    // turns out to be false too often - switch to batchGetByDataFilter +
+    // GridRange and drop titles altogether.
+
+    return {
+        type: "update",
+        isAuthenticated,
+        spreadsheetId,
+        sheetTitle,
+        collection,
+        slugFieldColumnIndex,
+        ignoredFieldColumnIndexes,
+        sheet,
+        lastSyncedTime,
+        collectionFields,
+        sheetHeaderRow,
+        hasChangedFields: hasFieldConfigurationChanged(sheetHeaderRow, sheet.values[0]),
     }
 }
 

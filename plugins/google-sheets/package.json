@@ -1,13 +1,13 @@
 {
     "name": "google-sheets",
     "private": false,
-    "version": "0.0.0",
     "type": "module",
     "scripts": {
         "dev": "vite",
         "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "pack": "npx framer-plugin-tools@latest pack"
     },
     "dependencies": {
         "@tanstack/react-query": "^5.51.11",

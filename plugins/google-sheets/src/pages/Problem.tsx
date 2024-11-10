@@ -1,0 +1,53 @@
+import { PropsWithChildren, useLayoutEffect, useState } from "react"
+import { getPluginContext, PluginContext } from "../sheets"
+import { framer } from "framer-plugin"
+import { Button } from "../components/Button"
+
+interface Props extends PropsWithChildren {
+    height: number
+    spreadsheetId: string
+    setContext: (newContext: PluginContext) => void
+}
+
+export function Problem({ height, spreadsheetId, setContext, children }: Props) {
+    const [isRetrying, setIsRetrying] = useState(false)
+
+    useLayoutEffect(() => {
+        framer.showUI({
+            width: 240,
+            height,
+            resizable: false,
+        })
+    }, [height])
+
+    const handleViewClick = () => {
+        window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`, "_blank")
+    }
+
+    const handleRetryClick = () => {
+        setIsRetrying(true)
+
+        getPluginContext()
+            .then(setContext)
+            .finally(() => setIsRetrying(false))
+    }
+
+    return (
+        <div className="flex flex-col gap-[15px]">
+            {children}
+            <div className="inline-flex items-center gap-[10px]">
+                <Button variant="secondary" className="w-auto flex-1" onClick={handleRetryClick} isLoading={isRetrying}>
+                    Retry
+                </Button>
+                {spreadsheetId && (
+                    <Button
+                        className="w-auto !bg-[#15C43E] text-white hover:bg-[#15C43E] text-nowrap"
+                        onClick={handleViewClick}
+                    >
+                        View Spreadsheet
+                    </Button>
+                )}
+            </div>
+        </div>
+    )
+}

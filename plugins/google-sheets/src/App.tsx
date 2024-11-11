@@ -180,7 +180,7 @@ export function App({ pluginContext }: AppProps) {
         return (
             <Problem height={132} spreadsheetId={context.spreadsheetId} setContext={setContext}>
                 <p className="text-content">
-                    Your Google Account has no access to the synced Google spreadsheet. Check your access and try again
+                    Your Google Account does not have access to the synced spreadsheet. Check your access and try again
                     or{" "}
                     <a
                         href="#"
@@ -200,11 +200,11 @@ export function App({ pluginContext }: AppProps) {
 
     if (context.type === "sheet-by-title-missing") {
         return (
-            <Problem height={165} spreadsheetId={context.spreadsheetId} setContext={setContext}>
+            <Problem height={157} spreadsheetId={context.spreadsheetId} setContext={setContext}>
                 <p className="text-content">
                     Unable to access the synced sheet:{" "}
                     <div
-                        className="my-2 font-black truncate cursor-pointer"
+                        className="my-1 font-black truncate cursor-pointer"
                         title="Click to copy"
                         onClick={() => {
                             navigator.clipboard.writeText(context.title)

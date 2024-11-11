@@ -20,7 +20,7 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
         })
     }, [height])
 
-    const handleViewClick = () => {
+    const handleOpenClick = () => {
         window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`, "_blank")
     }
 
@@ -41,10 +41,10 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
                 </Button>
                 {spreadsheetId && (
                     <Button
-                        className="w-auto !bg-[#15C43E] text-white hover:bg-[#15C43E] text-nowrap"
-                        onClick={handleViewClick}
+                        className="w-auto flex-1 !bg-[#15C43E] text-white hover:bg-[#15C43E]"
+                        onClick={handleOpenClick}
                     >
-                        View Spreadsheet
+                        Open Sheet
                     </Button>
                 )}
             </div>

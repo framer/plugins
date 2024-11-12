@@ -68,16 +68,18 @@ const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
     if (typeof cellValue === "number") return "number"
 
     if (typeof cellValue === "string") {
-        if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(cellValue)) return "date"
+        const cellValueLowered = cellValue.toLowerCase()
 
-        if (/^#[0-9A-Fa-f]{6}$/.test(cellValue)) return "color"
+        if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(cellValueLowered)) return "date"
 
-        if (/<[a-z][\s\S]*>/i.test(cellValue)) return "formattedText"
+        if (/^#[0-9a-f]{6}$/.test(cellValueLowered)) return "color"
+
+        if (/<[a-z][\s\S]*>/i.test(cellValueLowered)) return "formattedText"
 
         try {
-            new URL(cellValue)
+            new URL(cellValueLowered)
 
-            if (/\.(jpeg|jpg|gif|png)$/.test(cellValue)) return "image"
+            if (/\.(gif|jpe?g|png|apng|svg|webp)$/i.test(cellValueLowered)) return "image"
 
             return "link"
         } catch (e) {

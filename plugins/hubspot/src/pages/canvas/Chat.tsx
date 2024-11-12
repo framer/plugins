@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react"
 import { framer } from "framer-plugin"
 import { Link } from "wouter"
-import { useAccountQuery, useInboxesQuery } from "../api"
-import { SegmentedControls } from "../components/SegmentedControls"
-import { CenteredSpinner } from "../components/CenteredSpinner"
+import { useAccountQuery, useInboxesQuery } from "@/api"
+import { SegmentedControls } from "@/components/SegmentedControls"
+import { CenteredSpinner } from "@/components/CenteredSpinner"
 
 interface Settings {
     enableWidgetCookieBanner: string
     disableAttachment: string
 }
 
-export function ChatPage() {
+export default function ChatPage() {
     const [hasSetExistingSettings, setHasSetExistingSettings] = useState(false)
     const [settings, setSettings] = useState<Settings>({
         enableWidgetCookieBanner: "false",
@@ -74,10 +74,10 @@ export function ChatPage() {
     if (isLoadingVisible) return <CenteredSpinner />
 
     return (
-        <div className="col-lg">
+        <div className="col-lg p-[15px]">
             <p>
                 Ensure
-                <Link to="/tracking"> tracking </Link>
+                <Link to="/canvas/tracking"> tracking </Link>
                 is enabled.
             </p>
             <h6>Inboxes</h6>

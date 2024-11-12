@@ -1,5 +1,150 @@
 import { useQuery } from "@tanstack/react-query"
 import auth from "./auth"
+import { queryClient } from "./main"
+
+export interface HSQueryResult<T> {
+    total: number
+    paging: {
+        next: {
+            link: string
+            after: string
+        }
+    }
+    results: T[]
+}
+
+export interface HSBlogPost {
+    publishDate: string
+    language: string
+    metaDescription: string
+    htmlTitle: string
+    id: string
+    state: string
+    slug: string
+    createdById: string
+    currentlyPublished: boolean
+    created: string
+    updated: string
+    authorName: string
+    domain: string
+    name: string
+    url: string
+    postSummary: string
+    rssSummary: string
+    postBody: string
+    featuredImage: string
+    featuredImageAltText: string
+    useFeaturedImage: boolean
+    linkRelCanonicalUrl: string
+}
+
+export type HubDBColumnType =
+    | "TEXT"
+    | "RICHTEXT"
+    | "NUMBER"
+    | "DATE"
+    | "IMAGE"
+    | "VIDEO"
+    | "SELECT"
+    | "MULTISELECT"
+    | "URL"
+    | "BOOLEAN"
+    | "EMAIL"
+    | "PHONE"
+    | "LOCATION"
+    | "USER"
+    | "FILE"
+    | "CURRENCY"
+
+export interface HubDBValueOption {
+    id: string
+    name: string
+    label: string
+    type: "option"
+    order: number
+    createdAt: string
+    updatedAt?: string
+}
+
+export interface HubDBFile {
+    id: number
+    url: string
+    type: "file"
+}
+
+export interface HubDBImage {
+    url: string
+    width: number
+    height: number
+    altText: string
+    fileId: number
+    type: "image"
+}
+
+export interface HubDBVideo {
+    url: string
+    thumbnailUrl: string
+    height: number
+    width: number
+    duration: number
+    embedUrl: string
+    fileId: number
+    type: "video"
+}
+
+export interface HubDBForeignID {
+    name: string
+    id: string
+    type: "FOREIGN_ID"
+}
+
+export interface HubDBColumn {
+    id: string
+    createdByUserId: number
+    updatedByUserId?: number
+    createdAt: string
+    updatedAt?: string
+    description: string
+    label: string
+    name: string
+    type: HubDBColumnType
+    optionCount: number
+    options?: HubDBValueOption[] // For select/multiselect columns
+    foreignTableId?: number // Reference to a foreign table
+    foreignIds?: HubDBForeignID[] // Foreign keys for reference columns
+    foreignIdsById?: Record<string, string> // Extra foreign key mappings
+    foreignIdsByName?: Record<string, string>
+}
+
+export interface HubDBTable {
+    id: string
+    name: string
+    label: string
+    allowPublicApiAccess: boolean
+    published: boolean
+    publishedAt: string
+    columnCount: number
+    rowCount: number
+    allowChildTables: boolean
+    columns: HubDBColumn[]
+}
+
+export type HubDBCellValue = string | number | boolean | Date | HubDBImage | HubDBVideo | HubDBValueOption | HubDBFile
+
+export interface HubDBRowValues {
+    [columnName: string]: HubDBCellValue
+}
+
+export interface HubDBTableRow {
+    id: string
+    name: string
+    path: string // Slug path for dynamic pages
+    createdAt: string
+    updatedAt: string
+    childTableId?: string
+    publishedAt: string
+    values: HubDBRowValues
+}
 
 export interface HSAccount {
     portalId: number
@@ -69,9 +214,6 @@ interface HSMeetingsResponse {
     results?: HSMeeting[]
 }
 
-const PROXY_URL = "https://framer-cors-proxy.framer-team.workers.dev/?"
-const API_URL = "https://api.hubapi.com"
-
 interface RequestOptions {
     path: string
     method?: string
@@ -79,6 +221,22 @@ interface RequestOptions {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     body?: any
 }
+
+const PROXY_URL = "https://framer-cors-proxy.framer-team.workers.dev/?"
+const API_URL = "https://api.hubapi.com"
+
+export const queryKeys = {
+    blogPosts: (limit: number, properties: string[]) => ["blog-posts", limit, properties] as const,
+    publishedTables: (limit: number) => ["hubdb-tables", limit] as const,
+    publishedTable: (tableId: string) => ["hubdb-table", tableId] as const,
+    tableRows: (tableId: string, properties: string[], limit: number) =>
+        ["hubdb-table-rows", tableId, properties, limit] as const,
+    user: () => ["user"] as const,
+    account: () => ["account"] as const,
+    inboxes: () => ["inboxes"] as const,
+    forms: () => ["forms"] as const,
+    meetings: () => ["meetings"] as const,
+} as const
 
 const request = async <T = unknown>({ path, method, query, body }: RequestOptions): Promise<T> => {
     try {
@@ -88,21 +246,22 @@ const request = async <T = unknown>({ path, method, query, body }: RequestOption
             tokens = await auth.refreshTokens()
         }
 
-        const url = new URL(`${PROXY_URL}${API_URL}${path}`)
+        let url = `${PROXY_URL}${API_URL}${path}`
 
+        // Append query params
         if (query) {
-            for (const [key, value] of Object.entries(query)) {
-                if (value !== undefined) {
-                    if (Array.isArray(value)) {
-                        value.forEach(val => url.searchParams.append(key, decodeURIComponent(val)))
-                    } else {
-                        url.searchParams.append(key, String(value))
-                    }
-                }
-            }
+            const queryString = Object.entries(query)
+                .map(([key, value]) =>
+                    Array.isArray(value)
+                        ? `${encodeURIComponent(key)}=${value.join(",")}` // Join arrays with commas without encoding them
+                        : `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
+                )
+                .join("&")
+
+            url += `?${queryString}`
         }
 
-        const res = await fetch(url.toString(), {
+        const res = await fetch(url, {
             method: method?.toUpperCase() ?? "GET",
             body: body ? JSON.stringify(body) : undefined,
             headers: {
@@ -122,15 +281,74 @@ const request = async <T = unknown>({ path, method, query, body }: RequestOption
 
         return json
     } catch (e) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line
         const message = (e as any)?.body?.message ?? (e as any).message
         throw new Error(message ?? "Something went wrong. That's all we know.")
     }
 }
 
+async function cachedFetch<T>(queryKey: readonly unknown[], fetcher: () => Promise<T>): Promise<T> {
+    const cached = queryClient.getQueryData<T>(queryKey)
+    if (cached) return cached
+
+    const data = await fetcher()
+    queryClient.setQueryData(queryKey, data)
+    return data
+}
+
+export const fetchAllBlogPosts = (limit: number, properties: string[]) => {
+    return cachedFetch(queryKeys.blogPosts(limit, properties), () =>
+        request<HSQueryResult<HSBlogPost>>({
+            path: "/cms/v3/blogs/posts",
+            query: { limit, properties },
+        })
+    )
+}
+
+export const fetchPublishedTables = (limit: number) => {
+    return cachedFetch(queryKeys.publishedTables(limit), () =>
+        request<HSQueryResult<HubDBTable>>({
+            path: "/cms/v3/hubdb/tables",
+            query: { limit },
+        })
+    )
+}
+
+export const fetchPublishedTable = (tableId: string) => {
+    return cachedFetch(queryKeys.publishedTable(tableId), () =>
+        request<HubDBTable>({
+            path: `/cms/v3/hubdb/tables/${tableId}`,
+        })
+    )
+}
+
+export const fetchTableRows = (tableId: string, properties: string[], limit: number) => {
+    return cachedFetch(queryKeys.tableRows(tableId, properties, limit), () =>
+        request<HSQueryResult<HubDBTableRow>>({
+            path: `/cms/v3/hubdb/tables/${tableId}/rows`,
+            query: { limit, properties },
+        })
+    )
+}
+
+export const usePublishedTables = (limit: number) => {
+    return useQuery({
+        queryKey: queryKeys.publishedTables(limit),
+        queryFn: () => fetchPublishedTables(limit),
+        select: data => data.results,
+    })
+}
+
+export const usePublishedTable = (tableId: string) => {
+    return useQuery({
+        queryKey: queryKeys.publishedTable(tableId),
+        queryFn: () => fetchPublishedTable(tableId),
+    })
+}
+
 export const useUserQuery = () => {
     return useQuery<HSUser>({
-        queryKey: ["user"],
+        queryKey: queryKeys.user(),
         queryFn: () => {
             const tokens = auth.tokens.getOrThrow()
 
@@ -144,45 +362,49 @@ export const useUserQuery = () => {
 
 export const useAccountQuery = () => {
     return useQuery<HSAccount>({
-        queryKey: ["account"],
-        queryFn: () =>
-            request({
+        queryKey: queryKeys.account(),
+        queryFn: () => {
+            return request({
                 method: "get",
                 path: "/account-info/v3/details",
-            }),
+            })
+        },
     })
 }
 
 export const useInboxesQuery = () => {
     return useQuery<HSInboxesResponse, Error, HSInbox[]>({
-        queryKey: ["inboxes"],
-        queryFn: () =>
-            request({
+        queryKey: queryKeys.inboxes(),
+        queryFn: () => {
+            return request({
                 method: "GET",
                 path: "/conversations/v3/conversations/inboxes/",
-            }),
+            })
+        },
         select: data => data.results,
     })
 }
 
 export const useFormsQuery = () => {
     return useQuery<HSFormsResponse>({
-        queryKey: ["forms"],
-        queryFn: () =>
-            request({
+        queryKey: queryKeys.forms(),
+        queryFn: () => {
+            return request({
                 method: "get",
                 path: "/marketing/v3/forms/",
-            }),
+            })
+        },
     })
 }
 
 export const useMeetingsQuery = () => {
     return useQuery<HSMeetingsResponse>({
-        queryKey: ["meetings"],
-        queryFn: () =>
-            request({
+        queryKey: queryKeys.meetings(),
+        queryFn: () => {
+            return request({
                 method: "get",
                 path: "/scheduler/v3/meetings/meeting-links",
-            }),
+            })
+        },
     })
 }

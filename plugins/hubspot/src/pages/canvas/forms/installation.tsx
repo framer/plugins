@@ -1,6 +1,6 @@
-export function FormsInstallationPage() {
+export default function FormsInstallationPage() {
     return (
-        <div className="col-lg">
+        <div className="col-lg p-[15px]">
             <span>There are two ways to use HubSpot forms with Framer:</span>
             <ol className="list-decimal list-inside space-y-2.5 *:text-tertiary marker:text-secondary">
                 <li className="font-medium text-secondary">Embed the form directly using the previous page.</li>

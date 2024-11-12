@@ -1,9 +1,8 @@
-import { useEffect } from "react"
-import { useAccountQuery, useMeetingsQuery } from "../api"
-import { CenteredSpinner } from "../components/CenteredSpinner"
-import { ComponentInsert } from "../components/ComponentInsert"
+import { useAccountQuery, useMeetingsQuery } from "@/api"
+import { CenteredSpinner } from "@/components/CenteredSpinner"
+import { ComponentInsert } from "@/components/ComponentInsert"
 
-export function MeetingsPage() {
+export default function MeetingsPage() {
     const { data: account, isLoading: isLoadingAccount } = useAccountQuery()
     const { data: meetingsData, isLoading: isLoadingMeetings } = useMeetingsQuery()
 
@@ -16,7 +15,7 @@ export function MeetingsPage() {
     const { uiDomain, portalId } = account
 
     return (
-        <div className="col-lg">
+        <div className="col-lg p-[15px]">
             {meetings.length > 0 ? (
                 meetings.map((meeting, i) => (
                     <ComponentInsert

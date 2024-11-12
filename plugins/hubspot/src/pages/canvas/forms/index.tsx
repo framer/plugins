@@ -1,9 +1,9 @@
 import { Link } from "wouter"
-import { useAccountQuery, useFormsQuery } from "../../api"
-import { CenteredSpinner } from "../../components/CenteredSpinner"
-import { ComponentInsert } from "../../components/ComponentInsert"
+import { useAccountQuery, useFormsQuery } from "@/api"
+import { CenteredSpinner } from "@/components/CenteredSpinner"
+import { ComponentInsert } from "@/components/ComponentInsert"
 
-export function FormsPage() {
+export default function FormsPage() {
     const { data: account, isLoading: isLoadingAccount } = useAccountQuery()
     const { data: formsData, isLoading: isLoadingForms } = useFormsQuery()
 
@@ -16,9 +16,9 @@ export function FormsPage() {
     const { portalId, uiDomain, dataHostingLocation } = account
 
     return (
-        <div className="col-lg">
+        <div className="col-lg p-[15px]">
             <p>
-                Need some help? View the <Link href="/forms/installation"> installation methods</Link>.
+                Need some help? View the <Link href="/canvas/forms/installation"> installation methods</Link>.
             </p>
             {forms.length > 0 ? (
                 forms.map((form, i) => (

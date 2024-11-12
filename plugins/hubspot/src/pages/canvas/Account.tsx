@@ -1,9 +1,9 @@
 import { framer } from "framer-plugin"
-import { useUserQuery } from "../api"
-import auth from "../auth"
-import { CenteredSpinner } from "../components/CenteredSpinner"
+import { useUserQuery } from "@/api"
+import auth from "@/auth"
+import { CenteredSpinner } from "@/components/CenteredSpinner"
 
-export function AccountPage() {
+export default function AccountPage() {
     const { data: user, isLoading: isLoadingUser } = useUserQuery()
 
     const handleLogout = () => {
@@ -14,7 +14,7 @@ export function AccountPage() {
     if (isLoadingUser) return <CenteredSpinner />
 
     return (
-        <div className="col-lg">
+        <div className="col-lg p-[15px]">
             <h6>Profile</h6>
             <div className="input-container">
                 <span>User</span>

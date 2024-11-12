@@ -1,10 +1,10 @@
 import { useEffect } from "react"
 import { framer } from "framer-plugin"
 import { useLocation } from "wouter"
-import cx from "classnames"
-import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "../api"
-import { Logo } from "../components/Logo"
-import { ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon, MeetingsIcon } from "../components/Icons"
+import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "@/api"
+import { Logo } from "@/components/Logo"
+import { ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon, MeetingsIcon } from "@/components/Icons"
+import { MenuOption } from "@/components/MenuOption"
 
 const queryHooks = {
     "/forms": { hook: useFormsQuery, shouldRefetch: true },
@@ -14,33 +14,7 @@ const queryHooks = {
     "/meetings": { hook: useMeetingsQuery, shouldRefetch: true },
 }
 
-const MenuOption = ({
-    icon,
-    title,
-    to,
-    className,
-    onClick,
-}: {
-    icon: React.ReactElement
-    title: string
-    to: string
-    className?: string
-    onClick?: () => void
-}) => {
-    const [, navigate] = useLocation()
-
-    return (
-        <button
-            className={cx("h-[110px] w-full tile col items-center justify-center rounded-md", className)}
-            onClick={() => (onClick ? onClick() : navigate(to))}
-        >
-            {icon}
-            <p className="font-semibold text-tertiary">{title}</p>
-        </button>
-    )
-}
-
-export function MenuPage() {
+export default function MenuPage() {
     const [location] = useLocation()
 
     const queries = Object.fromEntries(
@@ -55,7 +29,7 @@ export function MenuPage() {
     }, [location, queries])
 
     return (
-        <div className="col-lg">
+        <div className="col-lg p-[15px]">
             <div className="col-lg items-center pt-[30px] pb-15">
                 <Logo />
                 <div className="col items-center">
@@ -66,17 +40,17 @@ export function MenuPage() {
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
-                <MenuOption title="Forms" to="/forms" icon={<FormsIcon />} />
-                <MenuOption title="Tracking" to="/tracking" icon={<ChartIcon />} />
-                <MenuOption title="Meetings" to="/meetings" icon={<MeetingsIcon />} />
-                <MenuOption title="Chats" to="/chat" icon={<MessageIcon />} className="gap-[7px]" />
+                <MenuOption title="Forms" to="/canvas/forms" icon={<FormsIcon />} />
+                <MenuOption title="Tracking" to="/canvas/tracking" icon={<ChartIcon />} />
+                <MenuOption title="Meetings" to="/canvas/meetings" icon={<MeetingsIcon />} />
+                <MenuOption title="Chats" to="/canvas/chat" icon={<MessageIcon />} className="gap-[7px]" />
                 <MenuOption
                     title="Events"
-                    to="/events"
+                    to="/canvas/events"
                     icon={<LightningIcon />}
                     onClick={() => framer.notify("The events feature will be out soon", { variant: "info" })}
                 />
-                <MenuOption title="Account" to="/account" icon={<PersonIcon />} />
+                <MenuOption title="Account" to="/canvas/account" icon={<PersonIcon />} />
             </div>
         </div>
     )

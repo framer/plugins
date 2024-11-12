@@ -1,18 +1,14 @@
 import { useRef, useState } from "react"
 import { framer } from "framer-plugin"
-import { Redirect, useLocation } from "wouter"
-import auth from "../auth"
-import { Button } from "../components/Button"
-import { Logo } from "../components/Logo"
+import auth from "@/auth"
+import { Button } from "@/components/Button"
+import { Logo } from "@/components/Logo"
+import { useLocation } from "wouter"
 
-export function AuthenticatePage() {
+export default function AuthPage() {
     const [, navigate] = useLocation()
-    const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
     const [isLoading, setIsLoading] = useState(false)
-
-    if (auth.isAuthenticated()) {
-        return <Redirect to="/menu" />
-    }
+    const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     const pollForTokens = (readKey: string) => {
         if (pollInterval.current) {
@@ -27,7 +23,7 @@ export function AuthenticatePage() {
                             clearInterval(pollInterval.current)
                             resolve(tokens)
                         }),
-                    10_000
+                    1500
                 ))
         )
     }
@@ -45,7 +41,7 @@ export function AuthenticatePage() {
             // Poll the auth server and wait for tokens
             await pollForTokens(authorization.readKey)
 
-            navigate("/menu")
+            navigate(framer.mode === "canvas" ? "/canvas" : "/cms")
         } catch (e) {
             framer.notify(e instanceof Error ? e.message : "An unknown error occurred.", { variant: "error" })
         } finally {
@@ -54,7 +50,7 @@ export function AuthenticatePage() {
     }
 
     return (
-        <div className="col-lg h-[314px]">
+        <div className="col-lg h-[314px] p-[15px]">
             <div className="col-lg items-center my-auto">
                 <Logo />
                 <div className="col items-center">

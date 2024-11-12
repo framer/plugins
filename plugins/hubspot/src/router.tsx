@@ -1,79 +1,36 @@
-import React, { cloneElement, useEffect, useState } from "react"
-import { useLocation, useRoute, RouteComponentProps } from "wouter"
+import { cloneElement, useEffect, useState } from "react"
+import { RouteComponentProps, useLocation, useRoute } from "wouter"
 import { AnimatePresence, MotionProps, motion } from "framer-motion"
-import { AuthenticatePage } from "./pages"
-import { AccountPage } from "./pages/Account"
-import { ChatPage } from "./pages/Chat"
-import { FormsPage } from "./pages/forms"
-import { FormsInstallationPage } from "./pages/forms/installation"
-import { MenuPage } from "./pages/Menu"
-import { Tracking } from "./pages/tracking"
-import { LearnMoreTrackingPage } from "./pages/tracking/learn-more"
-import { MeetingsPage } from "./pages/Meetings"
-import { PluginPage } from "./components/PluginPage"
 import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
+import { Layout } from "./components/Layout"
+import { HubDBPluginContext } from "./hubdb"
+import { BlogPluginContext } from "./blog"
 
-interface PluginRoute {
+interface PluginContexts {
+    blogPluginContext: BlogPluginContext | null
+    hubDBPluginContext: HubDBPluginContext | null
+}
+
+export type PageProps = RouteComponentProps & PluginContexts
+
+export interface Route {
     path: string
-    component: React.ComponentType<RouteComponentProps>
-    title?: string
-    children?: PluginRoute[]
+    element: React.ComponentType<PageProps>
+    title?: string | (() => string)
+    children?: Route[]
+    showTopDivider?: boolean
 }
 
 interface Match {
     match: ReturnType<typeof useRoute>
-    route: PluginRoute
+    route: Route
 }
 
-const pluginRoutes: PluginRoute[] = [
-    {
-        path: "/",
-        component: AuthenticatePage,
-    },
-    {
-        path: "/menu",
-        component: MenuPage,
-    },
-    {
-        path: "/meetings",
-        component: MeetingsPage,
-        title: "Meetings",
-    },
-    {
-        path: "/account",
-        component: AccountPage,
-        title: "Account",
-    },
-    {
-        path: "/chat",
-        component: ChatPage,
-        title: "Chat",
-    },
-    {
-        path: "/forms",
-        component: FormsPage,
-        title: "Forms",
-        children: [
-            {
-                path: "/installation",
-                component: FormsInstallationPage,
-            },
-        ],
-    },
-    {
-        path: "/tracking",
-        component: Tracking,
-        title: "Tracking",
-        children: [
-            {
-                path: "/learn-more",
-                component: LearnMoreTrackingPage,
-            },
-        ],
-    },
-]
+interface UseRoutesProps extends PluginContexts {
+    routes: Route[]
+}
 
-function useRoutes(routes: PluginRoute[]) {
+function useRoutes({ routes, hubDBPluginContext, blogPluginContext }: UseRoutesProps) {
     const [location] = useLocation()
     const [animationDirection, setAnimationDirection] = useState(1)
     const [isFirstPage, setIsFirstPage] = useState(true)
@@ -108,7 +65,7 @@ function useRoutes(routes: PluginRoute[]) {
 
     const matches: Match[] = []
 
-    const addToMatch = (route: PluginRoute, parentPath = "") => {
+    const addToMatch = (route: Route, parentPath = "") => {
         const fullPath = parentPath + route.path
 
         // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -128,43 +85,68 @@ function useRoutes(routes: PluginRoute[]) {
 
     for (const { match, route } of matches) {
         const [isMatch, params] = match
-        const { title, component: Component } = route
+        const { title, showTopDivider, element: Element } = route
 
         if (!isMatch) continue
+
+        const pageTitle = title ? (typeof title === "function" ? title() : title) : undefined
 
         const animationProps = isFirstPage
             ? {}
             : {
-                  initial: { x: `${animationDirection * 100}vw`, opacity: 0, position: "absolute" },
-                  animate: { x: 0, opacity: 1, position: "relative" },
-                  exit: { x: `${animationDirection * -100}vw`, opacity: 0, position: "absolute" },
-                  transition: { ease: "easeInOut", duration: 0.28 },
+                  initial: {
+                      x: `${animationDirection * 50}vw`,
+                      opacity: 0,
+                      position: "absolute",
+                      zIndex: 2,
+                  },
+                  animate: {
+                      x: 0,
+                      opacity: 1,
+                      position: "relative",
+                      zIndex: 1,
+                  },
+                  exit: {
+                      x: `${animationDirection * -30}vw`,
+                      opacity: 0,
+                      position: "absolute",
+                      zIndex: 0,
+                  },
+                  transition: {
+                      x: {
+                          ease: [0.25, 0.1, 0.25, 1],
+                          duration: 0.3,
+                      },
+                      opacity: {
+                          duration: 0.2,
+                      },
+                  },
               }
 
         return (
             <motion.div {...(animationProps as MotionProps)}>
-                <PluginPage title={title} animateForward={animationDirection === 1}>
+                <Layout title={pageTitle} animateForward={animationDirection === 1} showTopDivider={showTopDivider}>
                     <PageErrorBoundaryFallback>
-                        <Component params={params} />
+                        <Element
+                            params={params}
+                            hubDBPluginContext={hubDBPluginContext}
+                            blogPluginContext={blogPluginContext}
+                        />
                     </PageErrorBoundaryFallback>
-                </PluginPage>
+                </Layout>
             </motion.div>
         )
     }
+
+    return <div>404. This should never happen.</div>
 }
 
-export function Router() {
-    const page = useRoutes(pluginRoutes)
+interface RouterProps extends UseRoutesProps {
+    routes: Route[]
+}
 
-    return (
-        <AnimatePresence>
-            {page ? (
-                cloneElement(page, { key: location.pathname })
-            ) : (
-                <PluginPage title="404">
-                    <p className="text-tertiary">Yikes! Looks like we lost that page.</p>
-                </PluginPage>
-            )}
-        </AnimatePresence>
-    )
+export function Router({ routes, hubDBPluginContext, blogPluginContext }: RouterProps) {
+    const page = useRoutes({ routes, hubDBPluginContext, blogPluginContext })
+
+    return <AnimatePresence>{page && cloneElement(page, { key: location.pathname })}</AnimatePresence>
 }

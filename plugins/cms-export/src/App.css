@@ -69,21 +69,14 @@
     height: 100%;
 }
 
-.preview-container-layer-a,
-.preview-container-layer-b {
+.preview-container-image,
+.preview-container-table {
     position: absolute;
     inset: 0;
+    opacity: 0;
+    transition: opacity 300ms;
 }
 
-.preview-container-layer-a--hidden {
-    animation: fade-in 300ms forwards reverse linear;
-}
-
-.preview-container-layer-b {
-    animation: fade-in 300ms forwards linear;
-}
-
-@keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+.visible {
+    opacity: 1;
 }

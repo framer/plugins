@@ -72,11 +72,17 @@ const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
 
         if (/^#[0-9A-Fa-f]{6}$/.test(cellValue)) return "color"
 
-        if (/\.(jpeg|jpg|gif|png)$/.test(cellValue)) return "image"
-
-        if (/^(https?:\/\/)?([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,6})([/\w .-]*)*\/?$/.test(cellValue)) return "link"
-
         if (/<[a-z][\s\S]*>/i.test(cellValue)) return "formattedText"
+
+        try {
+            new URL(cellValue)
+
+            if (/\.(jpeg|jpg|gif|png)$/.test(cellValue)) return "image"
+
+            return "link"
+        } catch (e) {
+            return "string"
+        }
     }
 
     return "string"

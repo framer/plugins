@@ -8,6 +8,7 @@ import { PreviewTable } from "./PreviewTable"
 import splashImageSrc from "./assets/splash.png"
 
 export function App() {
+    const [isLoading, setIsLoading] = useState(true)
     const [collections, setCollections] = useState<Collection[]>([])
     const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
 
@@ -18,7 +19,11 @@ export function App() {
             resizable: false,
         })
 
-        framer.getCollections().then(setCollections)
+        Promise.all([framer.getCollections(), framer.getActiveCollection()]).then(([collections, activeCollection]) => {
+            setIsLoading(false)
+            setCollections(collections)
+            setSelectedCollection(activeCollection)
+        })
     }, [])
 
     const exportCSV = async () => {
@@ -64,29 +69,32 @@ export function App() {
     return (
         <div className="export-collection">
             <div className="preview-container">
-                <div className={`preview-container-layer-a ${selectedCollection ? "preview-container-layer-a--hidden" : ""}`}>
+                <div className={`preview-container-image ${!selectedCollection && !isLoading ? "visible" : ""}`}>
                     <div className="empty-state">
                         <img className="empty-state-image" src={splashImageSrc} alt="" />
                         <p className="empty-state-message">Export all your CMS content to CSV files.</p>
                     </div>
                 </div>
 
-                {selectedCollection && (
-                    <div className="preview-container-layer-b">
-                        <PreviewTable collection={selectedCollection} />
-                    </div>
-                )}
+                <div className={`preview-container-table ${selectedCollection ? "visible" : ""}`}>
+                    {selectedCollection && <PreviewTable collection={selectedCollection} />}
+                </div>
             </div>
 
             <div className="footer">
-                <select onChange={selectCollection} className={!selectedCollection ? "footer-select footer-select--unselected" : "footer-select"}>
+                <select
+                    onChange={selectCollection}
+                    className={!selectedCollection ? "footer-select footer-select--unselected" : "footer-select"}
+                >
                     <option selected disabled>
                         Select Collection…
                     </option>
 
-                    {collections.map(collection => {
-                        return <option selected={collection.id === selectedCollection?.id}>{collection.name}</option>
-                    })}
+                    {collections.map(collection => (
+                        <option key={collection.id} selected={collection.id === selectedCollection?.id}>
+                            {collection.name}
+                        </option>
+                    ))}
                 </select>
 
                 <div className="footer-actions">

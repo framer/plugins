@@ -88,3 +88,17 @@ export function generateHashId(text: string): string {
     const unsignedHash = hash >>> 0
     return unsignedHash.toString(16).padStart(8, "0")
 }
+
+/**
+ * Generates unique names by appending a suffix if the name is already used.
+ */
+export function generateUniqueNames(names: string[]): string[] {
+    const nameCount = new Map<string, number>()
+
+    return names.map(name => {
+        const count = nameCount.get(name) || 0
+        nameCount.set(name, count + 1)
+
+        return count > 0 ? `${name} ${count + 1}` : name
+    })
+}

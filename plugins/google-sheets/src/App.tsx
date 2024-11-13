@@ -127,7 +127,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
 
 function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is PluginContextUpdate {
     if (pluginContext.type !== "update") return false
-    if (pluginContext.slugFieldColumnIndex === null) return false
+    if (pluginContext.slugColumn === null) return false
     if (pluginContext.hasChangedFields) return false
 
     return true
@@ -143,7 +143,7 @@ export function App({ pluginContext }: AppProps) {
     useLayoutEffect(() => {
         if (!shouldSyncOnly) return
         assert(context.type === "update")
-        assert(context.slugFieldColumnIndex !== null, "Expected slug field column index")
+        assert(context.slugColumn !== null, "Expected slug column")
 
         framer.hideUI()
 
@@ -151,16 +151,16 @@ export function App({ pluginContext }: AppProps) {
             spreadsheetId,
             sheetTitle,
             collectionFields: fields,
-            ignoredFieldColumnIndexes,
-            slugFieldColumnIndex,
+            ignoredColumns,
+            slugColumn,
             lastSyncedTime,
             sheet,
         } = context
         const [headerRow] = sheet.values
 
         syncSheet({
-            ignoredFieldColumnIndexes,
-            slugFieldColumnIndex,
+            ignoredColumns,
+            slugColumn,
             fetchedSheet: sheet,
             lastSyncedTime,
             spreadsheetId,

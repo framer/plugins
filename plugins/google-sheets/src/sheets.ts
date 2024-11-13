@@ -19,15 +19,18 @@ const DRIVE_API_URL = "https://www.googleapis.com/drive/v3"
 
 const PLUGIN_SPREADSHEET_ID_KEY = "sheetsPluginSpreadsheetId"
 const PLUGIN_SHEET_ID_KEY = "sheetsPluginSheetId"
-const DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY = "sheetsPluginSheetTitle"
-// const PLUGIN_SHEET_HEADER_ROW = "sheetsPluginSheetHeaderRow"
-// const PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY = "sheetsPluginIgnoredFieldColumnIndexes"
-// const PLUGIN_SLUG_INDEX_COLUMN_KEY = "sheetsPluginSlugIndexColumn"
 const PLUGIN_LAST_SYNCED_KEY = "sheetsPluginLastSynced"
-
 const PLUGIN_IGNORED_COLUMNS_KEY = "sheetsPluginIgnoredColumns"
 const PLUGIN_SHEET_HEADER_ROW_HASH_KEY = "sheetsPluginSheetHeaderRowHash"
 const PLUGIN_SLUG_COLUMN_KEY = "sheetsPluginSlugColumn"
+
+const DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY = "sheetsPluginSheetTitle"
+/** @deprecated - use PLUGIN_SHEET_HEADER_ROW_HASH_KEY instead  */
+const DO_NOT_USE_ME_PLUGIN_SHEET_HEADER_ROW_KEY = "sheetsPluginSheetHeaderRow"
+/** @deprecated - use PLUGIN_IGNORED_COLUMNS_KEY instead */
+const DO_NOT_USE_ME_PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY = "sheetsPluginIgnoredFieldColumnIndexes"
+/** @deprecated - use PLUGIN_SLUG_COLUMN_KEY instead */
+const DO_NOT_USE_ME_PLUGIN_SLUG_INDEX_COLUMN_KEY = "sheetsPluginSlugIndexColumn"
 
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
 
@@ -455,7 +458,8 @@ export async function syncSheet({
 
 export async function getPluginContext(): Promise<PluginContext> {
     const collection = await framer.getManagedCollection()
-    const collectionFields = await collection.getFields()
+    let collectionFields = await collection.getFields()
+
     const tokens = await auth.getTokens()
     const isAuthenticated = !!tokens
 
@@ -471,15 +475,22 @@ export async function getPluginContext(): Promise<PluginContext> {
         }
     }
 
-    const [rawIgnoredColumns, rawSheetHeaderRowHash, slugColumn, lastSyncedTime] = await Promise.all([
+    // Fetch both new and legacy data
+    const [
+        rawIgnoredColumns,
+        rawSheetHeaderRowHash,
+        storedSlugColumn,
+        lastSyncedTime,
+        legacyIgnoredIndexes,
+        legacySlugIndex,
+    ] = await Promise.all([
         collection.getPluginData(PLUGIN_IGNORED_COLUMNS_KEY),
         collection.getPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY),
         collection.getPluginData(PLUGIN_SLUG_COLUMN_KEY),
         collection.getPluginData(PLUGIN_LAST_SYNCED_KEY),
+        collection.getPluginData(DO_NOT_USE_ME_PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY),
+        collection.getPluginData(DO_NOT_USE_ME_PLUGIN_SLUG_INDEX_COLUMN_KEY),
     ])
-
-    const storedSheetHeaderRowHash = rawSheetHeaderRowHash ?? ""
-    const ignoredColumns = parseStringToArray<string>(rawIgnoredColumns, "string") ?? []
 
     let spreadsheetInfo
 
@@ -525,6 +536,40 @@ export async function getPluginContext(): Promise<PluginContext> {
 
     const sheetHeaderRow = sheet.values[0]
     const currentSheetHeaderRowHash = generateHashId(sheetHeaderRow.join(","))
+    const storedSheetHeaderRowHash = rawSheetHeaderRowHash ?? ""
+
+    let slugColumn: string | null = null
+    let ignoredColumns: string[] = []
+
+    // If we don't have ignored columns or slug column, we need to update the
+    // collection fields and plugin data.
+    if (!rawIgnoredColumns || !storedSlugColumn) {
+        const uniqueHeaderRowNames = generateUniqueNames(sheetHeaderRow)
+
+        ignoredColumns =
+            parseStringToArray<number>(legacyIgnoredIndexes, "number")?.map(idx => uniqueHeaderRowNames[idx]) ?? []
+        slugColumn = legacySlugIndex ? uniqueHeaderRowNames[parseInt(legacySlugIndex)] : null
+
+        collectionFields = collectionFields.map((field, index) => ({
+            ...field,
+            id: uniqueHeaderRowNames.find(name => name === field.name) ?? uniqueHeaderRowNames[index],
+        }))
+
+        await collection.setFields(collectionFields)
+
+        await Promise.all([
+            collection.setPluginData(PLUGIN_IGNORED_COLUMNS_KEY, JSON.stringify(ignoredColumns)),
+            collection.setPluginData(PLUGIN_SLUG_COLUMN_KEY, slugColumn),
+            collection.setPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY, currentSheetHeaderRowHash),
+
+            collection.setPluginData(DO_NOT_USE_ME_PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY, null),
+            collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SLUG_INDEX_COLUMN_KEY, null),
+            collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_HEADER_ROW_KEY, null),
+        ])
+    } else {
+        ignoredColumns = parseStringToArray<string>(rawIgnoredColumns, "string")
+        slugColumn = storedSlugColumn
+    }
 
     return {
         type: "update",

@@ -2,19 +2,12 @@ import { Fragment, useMemo, useState } from "react"
 import { CollectionField, ManagedCollectionField } from "framer-plugin"
 import { useInView } from "react-intersection-observer"
 import cx from "classnames"
-import {
-    CellValue,
-    CollectionFieldType,
-    hasFieldConfigurationChanged,
-    HeaderRow,
-    PluginContext,
-    Row,
-    SyncMutationOptions,
-} from "../sheets"
+import { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
 
 import { IconChevron } from "../components/Icons"
 import { Button } from "../components/Button"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
+import { generateUniqueNames } from "../utils"
 
 interface CollectionFieldConfig {
     field: ManagedCollectionField
@@ -37,26 +30,22 @@ const fieldTypeOptions: FieldTypeOption[] = [
     { type: "date", label: "Date" },
 ]
 
-const getInitialSlugFieldColumnIndex = (context: PluginContext, slugFields: CollectionField[]): number => {
-    if (context.type === "update" && context.slugFieldColumnIndex) {
-        return context.slugFieldColumnIndex
+const getInitialSlugColumn = (context: PluginContext, slugFields: CollectionField[]): string => {
+    if (context.type === "update" && context.slugColumn) {
+        return context.slugColumn
     }
 
-    return Number(slugFields[0]?.id ?? 0)
+    return slugFields[0]?.id ?? ""
 }
 
-const getLastSyncedTime = (
-    context: PluginContext,
-    slugFieldColumnIndex: number,
-    headerRow: string[]
-): string | null => {
+const getLastSyncedTime = (context: PluginContext, slugColumn: string): string | null => {
     if (context.type !== "update") return null
 
     // Always resync if the slug field changes
-    if (context.slugFieldColumnIndex !== slugFieldColumnIndex) return null
+    if (context.slugColumn !== slugColumn) return null
 
     // Always resync if field config changes
-    if (hasFieldConfigurationChanged(context.sheetHeaderRow, headerRow)) {
+    if (context.hasChangedFields) {
         return null
     }
 
@@ -90,10 +79,10 @@ const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
     return "string"
 }
 
-const getFieldType = (context: PluginContext, columnIndex: number, cellValue?: CellValue): CollectionFieldType => {
+const getFieldType = (context: PluginContext, columnId: string, cellValue?: CellValue): CollectionFieldType => {
     // Determine if the field type is already configured
     if ("collectionFields" in context) {
-        const field = context.collectionFields?.find(field => Number(field.id) === columnIndex)
+        const field = context.collectionFields?.find(field => field.id === columnId)
         return field?.type ?? "string"
     }
 
@@ -101,15 +90,24 @@ const getFieldType = (context: PluginContext, columnIndex: number, cellValue?: C
     return cellValue ? inferFieldType(cellValue) : "string"
 }
 
-const createFieldConfig = (headerRow: HeaderRow, context: PluginContext, row?: Row): CollectionFieldConfig[] => {
-    return headerRow.map((headerName, columnIndex) => ({
-        field: {
-            id: String(columnIndex),
-            name: headerName,
-            type: getFieldType(context, columnIndex, row?.[columnIndex]),
-        } as ManagedCollectionField,
-        originalFieldName: headerName,
-    }))
+const createFieldConfig = (
+    headerRow: HeaderRow,
+    uniqueColumnNames: string[],
+    context: PluginContext,
+    row?: Row
+): CollectionFieldConfig[] => {
+    return headerRow.map((headerName, columnIndex) => {
+        const sanitizedName = uniqueColumnNames[columnIndex]
+
+        return {
+            field: {
+                id: sanitizedName,
+                name: sanitizedName,
+                type: getFieldType(context, sanitizedName, row?.[columnIndex]),
+            } as ManagedCollectionField,
+            originalFieldName: headerName,
+        }
+    })
 }
 
 const getFieldNameOverrides = (context: PluginContext): Record<string, string> => {
@@ -148,28 +146,50 @@ export function MapSheetFieldsPage({
 }: Props) {
     const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
 
+    const uniqueColumnNames = useMemo(() => generateUniqueNames(headerRow), [headerRow])
     const [fieldConfig, setFieldConfig] = useState<CollectionFieldConfig[]>(() =>
-        createFieldConfig(headerRow, pluginContext, rows[0])
+        createFieldConfig(headerRow, uniqueColumnNames, pluginContext, rows[0])
     )
-    const slugFields = useMemo(() => getPossibleSlugFields(fieldConfig), [fieldConfig])
-    const [disabledFieldColumnIndexes, setDisabledFieldColumnIndexes] = useState(
-        () => new Set<number>(pluginContext.type === "update" ? pluginContext.ignoredFieldColumnIndexes : [])
+    const [disabledColumns, setDisabledColumns] = useState(
+        () => new Set<string>(pluginContext.type === "update" ? pluginContext.ignoredColumns : [])
     )
-    const [slugFieldColumnIndex, setSlugFieldColumnIndex] = useState<number>(() =>
-        getInitialSlugFieldColumnIndex(pluginContext, slugFields)
+    const slugFields = useMemo(
+        () => getPossibleSlugFields(fieldConfig).filter(fieldConfig => !disabledColumns.has(fieldConfig.id)),
+        [fieldConfig, disabledColumns]
     )
+    const [slugColumn, setSlugColumn] = useState<string>(() => getInitialSlugColumn(pluginContext, slugFields))
     const [fieldNameOverrides, setFieldNameOverrides] = useState<Record<string, string>>(() =>
         getFieldNameOverrides(pluginContext)
     )
 
-    const handleFieldToggle = (strKey: string) => {
-        const key = Number(strKey)
-        setDisabledFieldColumnIndexes(current => {
+    const handleFieldToggle = (id: string) => {
+        setDisabledColumns(current => {
             const nextSet = new Set(current)
-            if (nextSet.has(key)) {
-                nextSet.delete(key)
+            if (nextSet.has(id)) {
+                nextSet.delete(id)
+
+                // If we're re-enabling a string field and there's currently no valid slug column,
+                // set this field as the slug column
+                const field = fieldConfig.find(config => config.field.id === id)
+                if (field?.field.type === "string") {
+                    const currentSlugField = fieldConfig.find(config => config.field.id === slugColumn)
+                    if (!currentSlugField || nextSet.has(slugColumn)) {
+                        setSlugColumn(id)
+                    }
+                }
             } else {
-                nextSet.add(key)
+                nextSet.add(id)
+
+                // If the disabled column is the slug column, we need to update it to the next
+                // possible slug field
+                if (id === slugColumn) {
+                    const nextSlugField = getPossibleSlugFields(fieldConfig).find(
+                        field => field.id !== id && !nextSet.has(field.id)
+                    )
+                    if (nextSlugField) {
+                        setSlugColumn(nextSlugField.id)
+                    }
+                }
             }
             return nextSet
         })
@@ -182,10 +202,10 @@ export function MapSheetFieldsPage({
         }))
     }
 
-    const handleFieldTypeChange = (id: number, type: CollectionFieldType) => {
+    const handleFieldTypeChange = (id: string, type: CollectionFieldType) => {
         setFieldConfig(current =>
             current.map(config => {
-                if (config.field && Number(config.field.id) === id) {
+                if (config.field && config.field.id === id) {
                     return {
                         ...config,
                         field: {
@@ -207,7 +227,7 @@ export function MapSheetFieldsPage({
         if (isPending) return
 
         const allFields = fieldConfig
-            .filter(fieldConfig => fieldConfig.field && !disabledFieldColumnIndexes.has(Number(fieldConfig.field.id)))
+            .filter(fieldConfig => fieldConfig.field && !disabledColumns.has(fieldConfig.field.id))
             .map(fieldConfig => fieldConfig.field)
             .map(field => {
                 if (fieldNameOverrides[field.id]) {
@@ -221,10 +241,10 @@ export function MapSheetFieldsPage({
             fields: allFields,
             spreadsheetId,
             sheetTitle,
-            slugFieldColumnIndex,
             colFieldTypes: fieldConfig.map(fieldConfig => fieldConfig.field?.type ?? "string"),
-            ignoredFieldColumnIndexes: Array.from(disabledFieldColumnIndexes),
-            lastSyncedTime: getLastSyncedTime(pluginContext, slugFieldColumnIndex, headerRow),
+            ignoredColumns: Array.from(disabledColumns),
+            slugColumn,
+            lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),
         })
     }
 
@@ -236,8 +256,8 @@ export function MapSheetFieldsPage({
                     <label htmlFor="collectionName">Slug Field</label>
                     <select
                         className="w-full"
-                        value={slugFieldColumnIndex ?? ""}
-                        onChange={e => setSlugFieldColumnIndex(Number(e.target.value))}
+                        value={slugColumn}
+                        onChange={e => setSlugColumn(e.target.value)}
                         required
                     >
                         {slugFields.map(field => (
@@ -253,12 +273,12 @@ export function MapSheetFieldsPage({
                 <span>Field</span>
                 <span>Type</span>
                 {fieldConfig.map((fieldConfig, i) => {
-                    const isDisabled = disabledFieldColumnIndexes.has(Number(fieldConfig.field.id))
+                    const isDisabled = disabledColumns.has(fieldConfig.field.id)
 
                     return (
                         <Fragment key={i}>
                             <CheckboxTextfield
-                                value={fieldConfig.originalFieldName}
+                                value={fieldConfig.field.name}
                                 darken={isDisabled}
                                 checked={!isDisabled}
                                 onChange={() => handleFieldToggle(fieldConfig.field.id)}
@@ -272,7 +292,7 @@ export function MapSheetFieldsPage({
                                     "opacity-50": isDisabled,
                                 })}
                                 disabled={isDisabled}
-                                placeholder={fieldConfig.originalFieldName}
+                                placeholder={fieldConfig.field.name}
                                 value={fieldNameOverrides[fieldConfig.field.id] ?? ""}
                                 onChange={e => handleFieldNameChange(fieldConfig.field.id, e.target.value)}
                             />
@@ -281,10 +301,7 @@ export function MapSheetFieldsPage({
                                 disabled={isDisabled}
                                 value={fieldConfig.field?.type}
                                 onChange={e => {
-                                    handleFieldTypeChange(
-                                        Number(fieldConfig.field.id),
-                                        e.target.value as CollectionFieldType
-                                    )
+                                    handleFieldTypeChange(fieldConfig.field.id, e.target.value as CollectionFieldType)
                                 }}
                             >
                                 {fieldTypeOptions.map(({ type, label }) => (

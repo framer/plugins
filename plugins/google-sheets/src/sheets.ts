@@ -587,6 +587,11 @@ export async function getPluginContext(): Promise<PluginContext> {
         collectionFields = reorderedCollectionFields
     }
 
+    // If the stored slug column is not in the spreadsheet header row, we need to update it
+    if (slugColumn && !sheetHeaderRow.includes(slugColumn)) {
+        slugColumn = null
+    }
+
     return {
         type: "update",
         isAuthenticated,

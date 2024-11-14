@@ -1,5 +1,5 @@
 import { Fragment, useMemo, useState } from "react"
-import { CollectionField, ManagedCollectionField } from "framer-plugin"
+import { ManagedCollectionField } from "framer-plugin"
 import { useInView } from "react-intersection-observer"
 import cx from "classnames"
 import { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
@@ -8,11 +8,6 @@ import { IconChevron } from "../components/Icons"
 import { Button } from "../components/Button"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { generateUniqueNames } from "../utils"
-
-interface CollectionFieldConfig {
-    field: ManagedCollectionField
-    originalFieldName: string
-}
 
 interface FieldTypeOption {
     type: CollectionFieldType
@@ -30,7 +25,7 @@ const fieldTypeOptions: FieldTypeOption[] = [
     { type: "date", label: "Date" },
 ]
 
-const getInitialSlugColumn = (context: PluginContext, slugFields: CollectionField[]): string => {
+const getInitialSlugColumn = (context: PluginContext, slugFields: ManagedCollectionField[]): string => {
     if (context.type === "update" && context.slugColumn) {
         return context.slugColumn
     }
@@ -95,18 +90,15 @@ const createFieldConfig = (
     uniqueColumnNames: string[],
     context: PluginContext,
     row?: Row
-): CollectionFieldConfig[] => {
-    return headerRow.map((headerName, columnIndex) => {
+): ManagedCollectionField[] => {
+    return headerRow.map((_, columnIndex) => {
         const sanitizedName = uniqueColumnNames[columnIndex]
 
         return {
-            field: {
-                id: sanitizedName,
-                name: sanitizedName,
-                type: getFieldType(context, sanitizedName, row?.[columnIndex]),
-            } as ManagedCollectionField,
-            originalFieldName: headerName,
-        }
+            id: sanitizedName,
+            name: sanitizedName,
+            type: getFieldType(context, sanitizedName, row?.[columnIndex]),
+        } as ManagedCollectionField
     })
 }
 
@@ -121,8 +113,8 @@ const getFieldNameOverrides = (context: PluginContext): Record<string, string> =
     return result
 }
 
-const getPossibleSlugFields = (fieldConfig: CollectionFieldConfig[]): CollectionField[] => {
-    return fieldConfig.filter(fieldConfig => fieldConfig.field?.type === "string").map(fieldConfig => fieldConfig.field)
+const getPossibleSlugFields = (fieldConfig: ManagedCollectionField[]): ManagedCollectionField[] => {
+    return fieldConfig.filter(field => field.type === "string")
 }
 
 interface Props {
@@ -147,7 +139,7 @@ export function MapSheetFieldsPage({
     const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
 
     const uniqueColumnNames = useMemo(() => generateUniqueNames(headerRow), [headerRow])
-    const [fieldConfig, setFieldConfig] = useState<CollectionFieldConfig[]>(() =>
+    const [fieldConfig, setFieldConfig] = useState<ManagedCollectionField[]>(() =>
         createFieldConfig(headerRow, uniqueColumnNames, pluginContext, rows[0])
     )
     const [disabledColumns, setDisabledColumns] = useState(
@@ -170,9 +162,9 @@ export function MapSheetFieldsPage({
 
                 // If we're re-enabling a string field and there's currently no valid slug column,
                 // set this field as the slug column
-                const field = fieldConfig.find(config => config.field.id === id)
-                if (field?.field.type === "string") {
-                    const currentSlugField = fieldConfig.find(config => config.field.id === slugColumn)
+                const field = fieldConfig.find(config => config.id === id)
+                if (field?.type === "string") {
+                    const currentSlugField = fieldConfig.find(config => config.id === slugColumn)
                     if (!currentSlugField || nextSet.has(slugColumn)) {
                         setSlugColumn(id)
                     }
@@ -204,19 +196,14 @@ export function MapSheetFieldsPage({
 
     const handleFieldTypeChange = (id: string, type: CollectionFieldType) => {
         setFieldConfig(current =>
-            current.map(config => {
-                if (config.field && config.field.id === id) {
+            current.map(field => {
+                if (field.id === id) {
                     return {
-                        ...config,
-                        field: {
-                            ...config.field,
-                            type,
-                        } as ManagedCollectionField,
-                        cases: [],
-                    }
+                        ...field,
+                        type,
+                    } as ManagedCollectionField
                 }
-
-                return config
+                return field
             })
         )
     }
@@ -227,8 +214,7 @@ export function MapSheetFieldsPage({
         if (isPending) return
 
         const allFields = fieldConfig
-            .filter(fieldConfig => fieldConfig.field && !disabledColumns.has(fieldConfig.field.id))
-            .map(fieldConfig => fieldConfig.field)
+            .filter(field => !disabledColumns.has(field.id))
             .map(field => {
                 if (fieldNameOverrides[field.id]) {
                     field.name = fieldNameOverrides[field.id]
@@ -241,7 +227,7 @@ export function MapSheetFieldsPage({
             fields: allFields,
             spreadsheetId,
             sheetTitle,
-            colFieldTypes: fieldConfig.map(fieldConfig => fieldConfig.field?.type ?? "string"),
+            colFieldTypes: fieldConfig.map(field => field.type ?? "string"),
             ignoredColumns: Array.from(disabledColumns),
             slugColumn,
             lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),
@@ -272,16 +258,16 @@ export function MapSheetFieldsPage({
                 <span className="col-span-2">Column</span>
                 <span>Field</span>
                 <span>Type</span>
-                {fieldConfig.map((fieldConfig, i) => {
-                    const isDisabled = disabledColumns.has(fieldConfig.field.id)
+                {fieldConfig.map((field, i) => {
+                    const isDisabled = disabledColumns.has(field.id)
 
                     return (
                         <Fragment key={i}>
                             <CheckboxTextfield
-                                value={fieldConfig.field.name}
+                                value={field.name}
                                 darken={isDisabled}
                                 checked={!isDisabled}
-                                onChange={() => handleFieldToggle(fieldConfig.field.id)}
+                                onChange={() => handleFieldToggle(field.id)}
                             />
                             <div className="flex items-center justify-center">
                                 <IconChevron />
@@ -292,16 +278,16 @@ export function MapSheetFieldsPage({
                                     "opacity-50": isDisabled,
                                 })}
                                 disabled={isDisabled}
-                                placeholder={fieldConfig.field.name}
-                                value={fieldNameOverrides[fieldConfig.field.id] ?? ""}
-                                onChange={e => handleFieldNameChange(fieldConfig.field.id, e.target.value)}
+                                placeholder={field.name}
+                                value={fieldNameOverrides[field.id] ?? ""}
+                                onChange={e => handleFieldNameChange(field.id, e.target.value)}
                             />
                             <select
                                 className="w-full"
                                 disabled={isDisabled}
-                                value={fieldConfig.field?.type}
+                                value={field.type}
                                 onChange={e => {
-                                    handleFieldTypeChange(fieldConfig.field.id, e.target.value as CollectionFieldType)
+                                    handleFieldTypeChange(field.id, e.target.value as CollectionFieldType)
                                 }}
                             >
                                 {fieldTypeOptions.map(({ type, label }) => (

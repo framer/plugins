@@ -33,6 +33,7 @@ const DO_NOT_USE_ME_PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY = "sheetsPluginIgnor
 const DO_NOT_USE_ME_PLUGIN_SLUG_INDEX_COLUMN_KEY = "sheetsPluginSlugIndexColumn"
 
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
+const HEADER_ROW_DELIMITER = "OIhpKTpp"
 
 interface UserInfo {
     displayName: string
@@ -415,7 +416,7 @@ export async function syncSheet({
     const [headerRow, ...rows] = sheet.values
 
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
-    const headerRowHash = generateHashId(headerRow.join(","))
+    const headerRowHash = generateHashId([...headerRow].sort().join(HEADER_ROW_DELIMITER))
 
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
@@ -535,7 +536,7 @@ export async function getPluginContext(): Promise<PluginContext> {
     // GridRange and drop titles altogether.
 
     const sheetHeaderRow = sheet.values[0]
-    const currentSheetHeaderRowHash = generateHashId(sheetHeaderRow.join(","))
+    const currentSheetHeaderRowHash = generateHashId([...sheetHeaderRow].sort().join(HEADER_ROW_DELIMITER))
     const storedSheetHeaderRowHash = rawSheetHeaderRowHash ?? ""
 
     let slugColumn: string | null = null
@@ -569,6 +570,21 @@ export async function getPluginContext(): Promise<PluginContext> {
     } else {
         ignoredColumns = parseStringToArray<string>(rawIgnoredColumns, "string")
         slugColumn = storedSlugColumn
+    }
+
+    // If the order of the columns has changed, we need to reorder the collection fields
+    if (storedSheetHeaderRowHash && collectionFields.length > 0) {
+        const reorderedCollectionFields = []
+
+        for (let i = 0; i < sheetHeaderRow.length; i++) {
+            const field = collectionFields.find(field => field.id === sheetHeaderRow[i])
+
+            if (field) {
+                reorderedCollectionFields.push(field)
+            }
+        }
+
+        collectionFields = reorderedCollectionFields
     }
 
     return {

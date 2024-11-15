@@ -1,7 +1,7 @@
 import type { Collection, CollectionField, CollectionItem } from "framer-plugin"
 
-import { isFileAsset, isImageAsset, isColorStyle } from "framer-plugin"
-import { assertNever } from "./assert"
+import { isColorStyle, isFileAsset, isImageAsset } from "framer-plugin"
+import { shouldBeNever } from "./assert"
 
 function downloadFile(file: File) {
     const filename = file.name
@@ -110,7 +110,7 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
                 }
 
                 default: {
-                    assertNever(field)
+                    shouldBeNever(field)
                 }
             }
         }

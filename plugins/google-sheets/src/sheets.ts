@@ -24,6 +24,7 @@ const PLUGIN_IGNORED_COLUMNS_KEY = "sheetsPluginIgnoredColumns"
 const PLUGIN_SHEET_HEADER_ROW_HASH_KEY = "sheetsPluginSheetHeaderRowHash"
 const PLUGIN_SLUG_COLUMN_KEY = "sheetsPluginSlugColumn"
 
+/** @deprecated - use PLUGIN_SHEET_ID_KEY instead */
 const DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY = "sheetsPluginSheetTitle"
 /** @deprecated - use PLUGIN_SHEET_HEADER_ROW_HASH_KEY instead  */
 const DO_NOT_USE_ME_PLUGIN_SHEET_HEADER_ROW_KEY = "sheetsPluginSheetHeaderRow"
@@ -556,13 +557,7 @@ export async function getPluginContext(): Promise<PluginContext> {
             id: uniqueHeaderRowNames.find(name => name === field.name) ?? uniqueHeaderRowNames[index],
         }))
 
-        await collection.setFields(collectionFields)
-
         await Promise.all([
-            collection.setPluginData(PLUGIN_IGNORED_COLUMNS_KEY, JSON.stringify(ignoredColumns)),
-            collection.setPluginData(PLUGIN_SLUG_COLUMN_KEY, slugColumn),
-            collection.setPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY, currentSheetHeaderRowHash),
-
             collection.setPluginData(DO_NOT_USE_ME_PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY, null),
             collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SLUG_INDEX_COLUMN_KEY, null),
             collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_HEADER_ROW_KEY, null),

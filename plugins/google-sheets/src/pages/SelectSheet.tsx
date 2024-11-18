@@ -27,6 +27,14 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
         }
     }, [isSpreadSheetInfoError, onError])
 
+    useEffect(() => {
+        if (!spreadsheetInfo?.sheets.length) {
+            return
+        }
+
+        setSelectedSheetTitle(spreadsheetInfo.sheets[0].properties.title)
+    }, [spreadsheetInfo])
+
     const handleSheetSelect = (e: SelectChangeEvent) => {
         setSelectedSheetTitle(e.target.value)
     }

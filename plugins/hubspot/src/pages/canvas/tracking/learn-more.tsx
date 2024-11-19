@@ -1,8 +1,8 @@
 import { ToggleTrackingButton } from "./components/ToggleTrackingButton"
 
-export function LearnMoreTrackingPage() {
+export default function LearnMoreTrackingPage() {
     return (
-        <div className="col-lg">
+        <main>
             <p>
                 The HubSpot tracking code is unique to each HubSpot account and allows HubSpot to monitor your website
                 traffic, identify visitors, track events, CTAs and more. <br />
@@ -18,6 +18,6 @@ export function LearnMoreTrackingPage() {
                 </button>
                 <ToggleTrackingButton className="flex-1" />
             </div>
-        </div>
+        </main>
     )
 }

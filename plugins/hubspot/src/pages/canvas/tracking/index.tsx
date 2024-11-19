@@ -1,14 +1,14 @@
 import { Link } from "wouter"
 import { ToggleTrackingButton } from "./components/ToggleTrackingButton"
 
-export function Tracking() {
+export default function Tracking() {
     return (
-        <div className="col-lg">
+        <main>
             <p>
                 By enabling tracking, you can monitor your site traffic via HubSpot and show chatbots on your site.
-                <Link href="/tracking/learn-more"> Learn more</Link>.
+                <Link href="/canvas/tracking/learn-more"> Learn more</Link>.
             </p>
             <ToggleTrackingButton className="w-full" />
-        </div>
+        </main>
     )
 }

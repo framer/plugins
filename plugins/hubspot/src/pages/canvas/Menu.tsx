@@ -2,16 +2,17 @@ import { useEffect } from "react"
 import { framer } from "framer-plugin"
 import { useLocation } from "wouter"
 import cx from "classnames"
-import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "../api"
-import { Logo } from "../components/Logo"
-import { ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon, MeetingsIcon } from "../components/Icons"
+import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "@/api"
+import { Logo } from "@/components/Logo"
+import { ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon, MeetingsIcon } from "@/components/Icons"
+import { PluginError } from "@/PluginError"
 
 const queryHooks = {
-    "/forms": { hook: useFormsQuery, shouldRefetch: true },
-    "/account": { hook: useAccountQuery, shouldRefetch: false },
-    "/tracking": { hook: useUserQuery, shouldRefetch: true },
-    "/chat": { hook: useInboxesQuery, shouldRefetch: true },
-    "/meetings": { hook: useMeetingsQuery, shouldRefetch: true },
+    "/canvas/forms": { hook: useFormsQuery, shouldRefetch: true },
+    "/canvas/account": { hook: useAccountQuery, shouldRefetch: false },
+    "/canvas/tracking": { hook: useUserQuery, shouldRefetch: true },
+    "/canvas/chat": { hook: useInboxesQuery, shouldRefetch: true },
+    "/canvas/meetings": { hook: useMeetingsQuery, shouldRefetch: true },
 }
 
 const MenuOption = ({
@@ -40,7 +41,7 @@ const MenuOption = ({
     )
 }
 
-export function MenuPage() {
+export default function MenuPage() {
     const [location] = useLocation()
 
     const queries = Object.fromEntries(
@@ -55,7 +56,7 @@ export function MenuPage() {
     }, [location, queries])
 
     return (
-        <div className="col-lg">
+        <main>
             <div className="col-lg items-center pt-[30px] pb-15">
                 <Logo />
                 <div className="col items-center">
@@ -66,18 +67,18 @@ export function MenuPage() {
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
-                <MenuOption title="Forms" to="/forms" icon={<FormsIcon />} />
-                <MenuOption title="Tracking" to="/tracking" icon={<ChartIcon />} />
-                <MenuOption title="Meetings" to="/meetings" icon={<MeetingsIcon />} />
-                <MenuOption title="Chats" to="/chat" icon={<MessageIcon />} className="gap-[7px]" />
+                <MenuOption title="Forms" to="/canvas/forms" icon={<FormsIcon />} />
+                <MenuOption title="Tracking" to="/canvas/tracking" icon={<ChartIcon />} />
+                <MenuOption title="Meetings" to="/canvas/meetings" icon={<MeetingsIcon />} />
+                <MenuOption title="Chats" to="/canvas/chat" icon={<MessageIcon />} className="gap-[7px]" />
                 <MenuOption
                     title="Events"
-                    to="/events"
+                    to="/canvas/events"
                     icon={<LightningIcon />}
                     onClick={() => framer.notify("The events feature will be out soon", { variant: "info" })}
                 />
-                <MenuOption title="Account" to="/account" icon={<PersonIcon />} />
+                <MenuOption title="Account" to="/canvas/account" icon={<PersonIcon />} />
             </div>
-        </div>
+        </main>
     )
 }

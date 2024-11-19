@@ -1,3 +1,5 @@
+import { PluginError } from "./PluginError"
+
 export interface Tokens {
     access_token: string
     refresh_token: string
@@ -37,7 +39,8 @@ class Auth {
             })
 
             if (res.status !== 200) {
-                throw new Error("Failed to refresh tokens. Please sign in again.")
+                this.logout()
+                throw new PluginError("Refresh Failed", "Failed to refresh tokens.")
             }
 
             const json = await res.json()
@@ -97,6 +100,10 @@ class Auth {
         return true
     }
 
+    logout() {
+        this.tokens.clear()
+    }
+
     public readonly tokens = {
         save: (tokens: Tokens) => {
             const storedTokens: StoredTokens = {
@@ -124,7 +131,7 @@ class Auth {
         },
         getOrThrow: (): StoredTokens => {
             const tokens = this.tokens.get()
-            if (!tokens) throw new Error("HubSpot API token missing")
+            if (!tokens) throw new PluginError("Auth Error", "HubSpot API token missing")
 
             return tokens
         },

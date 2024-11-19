@@ -8,6 +8,18 @@
     }
 }
 
+@layer utilities {
+    /* Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+}
+
 @layer components {
     .row {
         display: flex;
@@ -51,7 +63,7 @@
     }
 
     .tile {
-        @apply bg-tertiaryDimmedLight dark:bg-tertiaryDimmedDark hover:bg-tertiary;
+        @apply bg-tertiaryDimmedLight dark:bg-tertiaryDimmedDark dark:hover:bg-tertiary hover:bg-tertiary;
     }
 
     .segment-control-shadow {
@@ -64,7 +76,16 @@
 body,
 html,
 #root {
-    height: fit-content;
-    width: fit-content;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
+}
+
+main {
+    padding: 15px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }

@@ -25,6 +25,7 @@ export default {
                 tertiary: "var(--framer-color-text-tertiary)",
                 inverted: "var(--framer-color-text-inverted)",
                 tint: "var(--framer-color-tint)",
+                "hs-orange": "#FF5C35",
                 "framer-red": "#FF3366",
             },
             borderColor: {
@@ -35,6 +36,9 @@ export default {
             },
             padding: {
                 15: "15px",
+            },
+            gridTemplateColumns: {
+                fieldPicker: "1fr 8px 1fr",
             },
         },
     },

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { CustomCode, framer } from "framer-plugin"
-import { useUserQuery } from "../../../api"
-import { Button } from "../../../components/Button"
+import { useUserQuery } from "@/api"
+import { Button } from "@/components/Button"
 
 const useCustomCode = () => {
     const [customCode, setCustomCode] = useState<CustomCode | null>(null)

@@ -1,3 +1,5 @@
+import cx from "classnames"
+
 export const FormsIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18">
         <path
@@ -67,5 +69,25 @@ export const CaretLeftIcon = () => (
             strokeMiterlimit={10}
             strokeDasharray=""
         ></path>
+    </svg>
+)
+
+export const DatabaseIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18">
+        <path
+            d="M 0 4 C 0 1.791 1.791 0 4 0 L 14 0 C 16.209 0 18 1.791 18 4 L 18 14 C 18 16.209 16.209 18 14 18 L 4 18 C 1.791 18 0 16.209 0 14 Z M 4.5 5.75 C 4.5 6.993 6.515 8 9 8 C 11.485 8 13.5 6.993 13.5 5.75 C 13.5 4.507 11.485 3.5 9 3.5 C 6.515 3.5 4.5 4.507 4.5 5.75 Z M 13.5 7.1 C 13.5 8.343 11.485 9.35 9 9.35 C 6.515 9.35 4.5 8.343 4.5 7.1 C 4.5 7.1 4.5 8.279 4.5 8.9 C 4.5 10.143 6.515 11.15 9 11.15 C 11.485 11.15 13.5 10.143 13.5 8.9 C 13.5 8.279 13.5 7.1 13.5 7.1 Z M 13.5 10.25 C 13.5 11.493 11.485 12.5 9 12.5 C 6.515 12.5 4.5 11.493 4.5 10.25 C 4.5 10.25 4.5 11.429 4.5 12.05 C 4.5 13.293 6.515 14.3 9 14.3 C 11.485 14.3 13.5 13.293 13.5 12.05 C 13.5 11.429 13.5 10.25 13.5 10.25 Z"
+            fill="#888888"
+        ></path>
+    </svg>
+)
+
+export const IconChevron = ({ className }: { className?: string }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="5"
+        height="8"
+        className={cx("fill-transparent stroke-[#999] stroke-[1.5] stroke-round stroke-linejoin-round", className)}
+    >
+        <path d="M 1 1 L 4 4 L 1 7"></path>
     </svg>
 )

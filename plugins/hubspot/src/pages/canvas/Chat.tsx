@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react"
 import { framer } from "framer-plugin"
 import { Link } from "wouter"
-import { useAccountQuery, useInboxesQuery } from "../api"
-import { SegmentedControls } from "../components/SegmentedControls"
-import { CenteredSpinner } from "../components/CenteredSpinner"
+import { useAccountQuery, useInboxesQuery } from "@/api"
+import { SegmentedControls } from "@/components/SegmentedControls"
+import { CenteredSpinner } from "@/components/CenteredSpinner"
 
 interface Settings {
     enableWidgetCookieBanner: string
     disableAttachment: string
 }
 
-export function ChatPage() {
+export default function ChatPage() {
     const [hasSetExistingSettings, setHasSetExistingSettings] = useState(false)
     const [settings, setSettings] = useState<Settings>({
         enableWidgetCookieBanner: "false",
@@ -18,8 +18,6 @@ export function ChatPage() {
     })
     const { data: account, isLoading: isLoadingAccount } = useAccountQuery()
     const { data: inboxes, isLoading: isLoadingInboxes } = useInboxesQuery()
-
-    const isLoadingVisible = isLoadingAccount || isLoadingInboxes
 
     useEffect(() => {
         async function checkExistingSettings() {
@@ -71,31 +69,35 @@ export function ChatPage() {
         applySettings()
     }, [settings, hasSetExistingSettings])
 
-    if (isLoadingVisible) return <CenteredSpinner />
+    if (isLoadingAccount || isLoadingInboxes) return <CenteredSpinner />
+
+    if (!account || !inboxes) return null
 
     return (
-        <div className="col-lg">
+        <main>
             <p>
                 Ensure
-                <Link to="/tracking"> tracking </Link>
+                <Link to="/canvas/tracking"> tracking </Link>
                 is enabled.
             </p>
             <h6>Inboxes</h6>
-            {(inboxes?.length ?? 0) > 0 ? (
-                inboxes?.map((inbox, i) => (
+            {inboxes.length > 0 ? (
+                inboxes.map((inbox, i) => (
                     <div className="input-container" key={i}>
                         <span>{inbox.name}</span>
                         <a
                             target="_blank"
                             title={inbox.name}
-                            href={`https://app.hubspot.com/live-messages-settings/${account?.portalId}/inboxes/${inbox.id}/edit/live-chat/primary/configure`}
+                            href={`https://app.hubspot.com/live-messages-settings/${account.portalId}/inboxes/${inbox.id}/edit/live-chat/primary/configure`}
                         >
                             Open
                         </a>
                     </div>
                 ))
             ) : (
-                <p className="text-tertiary text-center my-10">Create an inbox in HubSpot to view it here.</p>
+                <p className="text-tertiary text-center max-w-[200px] m-auto">
+                    Create an inbox in HubSpot to view it here
+                </p>
             )}
             <hr />
             <h6>Settings</h6>
@@ -128,11 +130,11 @@ export function ChatPage() {
             <button
                 className="framer-button-primary w-full"
                 onClick={() => {
-                    window.open(`https://app-eu1.hubspot.com/chatflows/${account?.portalId}/`, "_blank")
+                    window.open(`https://app-eu1.hubspot.com/chatflows/${account.portalId}/`, "_blank")
                 }}
             >
                 View Chatflows
             </button>
-        </div>
+        </main>
     )
 }

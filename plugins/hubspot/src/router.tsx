@@ -1,85 +1,52 @@
-import React, { cloneElement, useEffect, useState } from "react"
-import { useLocation, useRoute, RouteComponentProps } from "wouter"
+import { cloneElement, useEffect, useState } from "react"
+import { framer } from "framer-plugin"
+import { RouteComponentProps, useLocation, useRoute } from "wouter"
 import { AnimatePresence, MotionProps, motion } from "framer-motion"
-import { AuthenticatePage } from "./pages"
-import { AccountPage } from "./pages/Account"
-import { ChatPage } from "./pages/Chat"
-import { FormsPage } from "./pages/forms"
-import { FormsInstallationPage } from "./pages/forms/installation"
-import { MenuPage } from "./pages/Menu"
-import { Tracking } from "./pages/tracking"
-import { LearnMoreTrackingPage } from "./pages/tracking/learn-more"
-import { MeetingsPage } from "./pages/Meetings"
-import { PluginPage } from "./components/PluginPage"
 import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
+import { Layout } from "./components/Layout"
+import { HubDBPluginContext } from "./hubdb"
+import { BlogPluginContext } from "./blog"
 
-interface PluginRoute {
+interface PluginContexts {
+    blogPluginContext: BlogPluginContext | null
+    hubDbPluginContext: HubDBPluginContext | null
+}
+
+interface PluginSize {
+    width?: number
+    height?: number
+}
+
+export type PageProps = RouteComponentProps & PluginContexts
+
+export interface Route {
     path: string
-    component: React.ComponentType<RouteComponentProps>
-    title?: string
-    children?: PluginRoute[]
+    element: React.ComponentType<PageProps>
+    title?: string | (() => string)
+    children?: Route[]
+    showTopDivider?: boolean
+    size?: PluginSize
 }
 
 interface Match {
     match: ReturnType<typeof useRoute>
-    route: PluginRoute
+    route: Route
 }
 
-const pluginRoutes: PluginRoute[] = [
-    {
-        path: "/",
-        component: AuthenticatePage,
-    },
-    {
-        path: "/menu",
-        component: MenuPage,
-    },
-    {
-        path: "/meetings",
-        component: MeetingsPage,
-        title: "Meetings",
-    },
-    {
-        path: "/account",
-        component: AccountPage,
-        title: "Account",
-    },
-    {
-        path: "/chat",
-        component: ChatPage,
-        title: "Chat",
-    },
-    {
-        path: "/forms",
-        component: FormsPage,
-        title: "Forms",
-        children: [
-            {
-                path: "/installation",
-                component: FormsInstallationPage,
-            },
-        ],
-    },
-    {
-        path: "/tracking",
-        component: Tracking,
-        title: "Tracking",
-        children: [
-            {
-                path: "/learn-more",
-                component: LearnMoreTrackingPage,
-            },
-        ],
-    },
-]
+interface UseRoutesProps extends PluginContexts {
+    routes: Route[]
+}
 
-function useRoutes(routes: PluginRoute[]) {
+const DEFAULT_PLUGIN_WIDTH = 260
+const DEFAULT_PLUGIN_HEIGHT = 345
+
+function useRoutes({ routes, hubDbPluginContext, blogPluginContext }: UseRoutesProps) {
     const [location] = useLocation()
     const [animationDirection, setAnimationDirection] = useState(1)
     const [isFirstPage, setIsFirstPage] = useState(true)
+
     // Save the length of the `routes` array that we receive on the first render
     const [routesLen] = useState(() => routes.length)
-
     // because we call `useRoute` inside a loop the number of routes can't be changed
     if (routesLen !== routes.length) {
         throw new Error("The length of `routes` array provided to `useRoutes` must be constant")
@@ -108,7 +75,7 @@ function useRoutes(routes: PluginRoute[]) {
 
     const matches: Match[] = []
 
-    const addToMatch = (route: PluginRoute, parentPath = "") => {
+    const addToMatch = (route: Route, parentPath = "") => {
         const fullPath = parentPath + route.path
 
         // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -128,43 +95,105 @@ function useRoutes(routes: PluginRoute[]) {
 
     for (const { match, route } of matches) {
         const [isMatch, params] = match
-        const { title, component: Component } = route
+        const { title, showTopDivider, size, element: Element } = route
 
         if (!isMatch) continue
+
+        const pageTitle = title ? (typeof title === "function" ? title() : title) : undefined
 
         const animationProps = isFirstPage
             ? {}
             : {
-                  initial: { x: `${animationDirection * 100}vw`, opacity: 0, position: "absolute" },
-                  animate: { x: 0, opacity: 1, position: "relative" },
-                  exit: { x: `${animationDirection * -100}vw`, opacity: 0, position: "absolute" },
-                  transition: { ease: "easeInOut", duration: 0.28 },
+                  initial: {
+                      x: `${animationDirection * 50}vw`,
+                      opacity: 0,
+                      position: "absolute",
+                      zIndex: 2,
+                  },
+                  animate: {
+                      x: 0,
+                      opacity: 1,
+                      position: "relative",
+                      zIndex: 1,
+                  },
+                  exit: {
+                      x: `${animationDirection * -30}vw`,
+                      opacity: 0,
+                      position: "absolute",
+                      zIndex: 0,
+                  },
+                  transition: {
+                      x: {
+                          ease: [0.25, 0.1, 0.25, 1],
+                          duration: 0.3,
+                      },
+                      opacity: {
+                          duration: 0.2,
+                      },
+                  },
               }
 
-        return (
-            <motion.div {...(animationProps as MotionProps)}>
-                <PluginPage title={title} animateForward={animationDirection === 1}>
-                    <PageErrorBoundaryFallback>
-                        <Component params={params} />
-                    </PageErrorBoundaryFallback>
-                </PluginPage>
-            </motion.div>
-        )
+        return {
+            page: (
+                <motion.div {...(animationProps as MotionProps)} className="w-full h-full">
+                    <Layout title={pageTitle} animateForward={animationDirection === 1} showTopDivider={showTopDivider}>
+                        <PageErrorBoundaryFallback>
+                            <Element
+                                params={params}
+                                hubDbPluginContext={hubDbPluginContext}
+                                blogPluginContext={blogPluginContext}
+                            />
+                        </PageErrorBoundaryFallback>
+                    </Layout>
+                </motion.div>
+            ),
+            size,
+        }
     }
+
+    return { page: <div>404. This should never happen.</div> }
 }
 
-export function Router() {
-    const page = useRoutes(pluginRoutes)
+interface RouterProps extends UseRoutesProps {
+    routes: Route[]
+}
+
+/**
+ * Prevents layout shifts by preserving each page's size during transitions.
+ */
+const SizePreserver = ({ size, children }: { size?: PluginSize; children: React.ReactNode }) => {
+    return (
+        <div
+            style={{
+                width: size?.width ?? DEFAULT_PLUGIN_WIDTH,
+                height: size?.height ?? DEFAULT_PLUGIN_HEIGHT,
+            }}
+            className="absolute top-0 left-0 right-0 overflow-hidden"
+        >
+            {children}
+        </div>
+    )
+}
+
+export function Router({ routes, hubDbPluginContext, blogPluginContext }: RouterProps) {
+    const { page, size } = useRoutes({ routes, hubDbPluginContext, blogPluginContext })
+
+    useEffect(() => {
+        framer.showUI({
+            width: size?.width ?? 260,
+            height: size?.height ?? 345,
+        })
+    }, [size])
 
     return (
-        <AnimatePresence>
-            {page ? (
-                cloneElement(page, { key: location.pathname })
-            ) : (
-                <PluginPage title="404">
-                    <p className="text-tertiary">Yikes! Looks like we lost that page.</p>
-                </PluginPage>
-            )}
-        </AnimatePresence>
+        <div className="relative w-full h-full overflow-hidden">
+            <AnimatePresence>
+                {page && (
+                    <SizePreserver size={size} key={location.pathname}>
+                        {cloneElement(page, { key: location.pathname })}
+                    </SizePreserver>
+                )}
+            </AnimatePresence>
+        </div>
     )
 }

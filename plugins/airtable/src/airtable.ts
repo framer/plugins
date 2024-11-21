@@ -397,11 +397,7 @@ export async function syncTable({
     onProgress,
 }: SyncMutationOptions): Promise<SynchronizeResult> {
     const collection = await framer.getManagedCollection()
-    try {
-        await collection.setFields(fields)
-    } catch (e) {
-        console.error(e)
-    }
+    await collection.setFields(fields)
 
     const fieldsById = new Map<string, ManagedCollectionField>()
     for (const field of fields) {

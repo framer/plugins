@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 import { ManagedCollectionField } from "framer-plugin"
 import { useInView } from "react-intersection-observer"
 import cx from "classnames"
@@ -9,6 +9,8 @@ import {
     getPossibleSlugFields,
     hasFieldConfigurationChanged,
     PluginContext,
+    PluginContextNew,
+    PluginContextUpdate,
     SyncMutationOptions,
     SyncProgress,
 } from "../airtable"
@@ -19,7 +21,6 @@ import { CheckboxTextfield } from "@/components/CheckboxTextField"
 
 interface ManagedCollectionFieldConfig {
     field: ManagedCollectionField | null
-    isNewField: boolean
     originalFieldName: string
 }
 
@@ -36,7 +37,7 @@ const getInitialSlugFieldId = (context: PluginContext, primaryFieldId: string): 
 }
 
 const getLastSyncedTime = (
-    pluginContext: PluginContext,
+    pluginContext: PluginContextUpdate | PluginContextNew,
     tableSchema: AirtableTableSchema,
     slugFieldId: string,
     ignoredFieldIds: Set<string>
@@ -47,7 +48,14 @@ const getLastSyncedTime = (
     if (pluginContext.slugFieldId !== slugFieldId) return null
 
     // Always resync if field config changes.
-    if (hasFieldConfigurationChanged(pluginContext.collectionFields, tableSchema, Array.from(ignoredFieldIds))) {
+    if (
+        hasFieldConfigurationChanged(
+            pluginContext.collectionFields,
+            tableSchema,
+            pluginContext.tableMapId,
+            Array.from(ignoredFieldIds)
+        )
+    ) {
         return null
     }
 
@@ -57,18 +65,15 @@ const getLastSyncedTime = (
 const createFieldConfig = (
     primaryFieldId: string,
     fieldSchemas: AirtableFieldSchema[],
-    pluginContext: PluginContext
+    tableMapId: Map<string, string>
 ): ManagedCollectionFieldConfig[] => {
+    console.log({ tableMapId })
     const result: ManagedCollectionFieldConfig[] = []
-    const existingFieldIds = new Set(
-        pluginContext.type === "update" ? pluginContext.collectionFields.map(field => field.id) : []
-    )
 
     for (const fieldSchema of fieldSchemas) {
         result.push({
-            field: getCollectionForAirtableField(fieldSchema),
+            field: getCollectionForAirtableField(fieldSchema, tableMapId),
             originalFieldName: fieldSchema.name,
-            isNewField: existingFieldIds.size > 0 && !existingFieldIds.has(fieldSchema.id),
         })
     }
 
@@ -93,13 +98,30 @@ const getFieldNameOverrides = (pluginContext: PluginContext): Record<string, str
     return result
 }
 
+type CollectionFieldType = ManagedCollectionField["type"]
+const fieldTypeOptions: { type: CollectionFieldType; label: string }[] = [
+    { type: "boolean", label: "Boolean" },
+    { type: "color", label: "Color" },
+    { type: "number", label: "Number" },
+    { type: "string", label: "String" },
+    { type: "formattedText", label: "Formatted Text" },
+    { type: "image", label: "Image" },
+    { type: "link", label: "Link" },
+    { type: "date", label: "Date" },
+    { type: "enum", label: "Option" },
+    { type: "file", label: "File" },
+    { type: "collectionReference", label: "Reference" },
+    { type: "multiCollectionReference", label: "Multiple References" },
+]
+
 interface Props {
     baseId: string
     tableId: string
     tableSchema: AirtableTableSchema
-    pluginContext: PluginContext
+    pluginContext: PluginContextUpdate | PluginContextNew
     onSubmit: (opts: SyncMutationOptions) => void
     isPending: boolean
+    tableMapId: Map<string, string>
 }
 
 export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, isPending, tableSchema }: Props) {
@@ -108,8 +130,8 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
     const [slugFieldId, setSlugFieldId] = useState<string | null>(() =>
         getInitialSlugFieldId(pluginContext, tableSchema.primaryFieldId)
     )
-    const [fieldConfig] = useState<ManagedCollectionFieldConfig[]>(() =>
-        createFieldConfig(tableSchema.primaryFieldId, tableSchema.fields, pluginContext)
+    const [fieldConfig, setFieldConfig] = useState<ManagedCollectionFieldConfig[]>(() =>
+        createFieldConfig(tableSchema.primaryFieldId, tableSchema.fields, pluginContext.tableMapId)
     )
     const [disabledFieldIds, setDisabledFieldIds] = useState(
         () => new Set<string>(pluginContext.type === "update" ? pluginContext.ignoredFieldIds : [])
@@ -139,6 +161,17 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
             ...current,
             [id]: value,
         }))
+    }
+
+    const handleFieldTypeChange = (id: string, type: CollectionFieldType) => {
+        setFieldConfig(current =>
+            current.map(field => {
+                if (field.field?.id === id) {
+                    return { ...field, field: { ...field.field, type } as ManagedCollectionField }
+                }
+                return field
+            })
+        )
     }
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -173,6 +206,10 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
         })
     }
 
+    useEffect(() => {
+        setFieldConfig(createFieldConfig(tableSchema.primaryFieldId, tableSchema.fields, pluginContext.tableMapId))
+    }, [pluginContext.tableMapId, tableSchema.fields, tableSchema.primaryFieldId])
+
     return (
         <form onSubmit={handleSubmit} className="col gap-2 flex-1 text-tertiary">
             <div className="h-px border-b border-divider mb-2 sticky top-0" />
@@ -196,6 +233,7 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
             <div className="grid grid-cols items-center grid-cols-fieldPicker gap-2.5 mb-auto overflow-hidden">
                 <span className="col-span-2">Column</span>
                 <span>Field</span>
+                <span>Type</span>
                 {fieldConfig.map((fieldConfig, i) => {
                     const isUnsupported = !fieldConfig.field
 
@@ -207,20 +245,17 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                                 checked={!!fieldConfig.field && !disabledFieldIds.has(fieldConfig.field.id)}
                                 onChange={() => {
                                     assert(fieldConfig.field)
-
                                     handleFieldToggle(fieldConfig.field.id)
                                 }}
                             />
-                            <div
-                                className={cx("flex items-center justify-center", {
-                                    "opacity-50": isUnsupported,
-                                })}
-                            >
+                            <div className="flex items-center justify-center">
                                 <IconChevron />
                             </div>
                             <input
                                 type="text"
-                                className={cx("w-full", { "opacity-50": isUnsupported })}
+                                className={cx("w-full", {
+                                    "opacity-50": isUnsupported || disabledFieldIds.has(fieldConfig.field?.id ?? ""),
+                                })}
                                 disabled={!fieldConfig.field || disabledFieldIds.has(fieldConfig.field.id)}
                                 placeholder={fieldConfig.originalFieldName}
                                 value={
@@ -230,10 +265,26 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                                 }
                                 onChange={e => {
                                     assert(fieldConfig.field)
-
                                     handleFieldNameChange(fieldConfig.field.id, e.target.value)
                                 }}
                             />
+                            <select
+                                className={cx("w-full", {
+                                    "opacity-50": isUnsupported || disabledFieldIds.has(fieldConfig.field?.id ?? ""),
+                                })}
+                                disabled={!fieldConfig.field || disabledFieldIds.has(fieldConfig.field.id)}
+                                value={fieldConfig.field?.type ?? "string"}
+                                onChange={e => {
+                                    assert(fieldConfig.field)
+                                    handleFieldTypeChange(fieldConfig.field.id, e.target.value as CollectionFieldType)
+                                }}
+                            >
+                                {fieldTypeOptions.map(({ type, label }) => (
+                                    <option key={type} value={type}>
+                                        {label}
+                                    </option>
+                                ))}
+                            </select>
                         </Fragment>
                     )
                 })}

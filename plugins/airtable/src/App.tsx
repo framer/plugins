@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
-import { PluginContext, PluginContextUpdate, syncTable } from "./airtable"
+import { PluginContext, PluginContextNew, PluginContextUpdate, syncTable } from "./airtable"
 import { useBaseSchemaQuery, useSyncTableMutation } from "./api"
 import { assert } from "./utils"
 import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
@@ -12,6 +12,10 @@ import { NoTableAccess } from "./pages/NoTableAccess"
 
 interface AppProps {
     pluginContext: PluginContext
+}
+
+interface AuthenticatedAppProps {
+    pluginContext: PluginContextNew | PluginContextUpdate
 }
 
 const useLoggingToggle = () => {
@@ -39,7 +43,7 @@ const useLoggingToggle = () => {
     }, [])
 }
 
-export function AuthenticatedApp({ pluginContext }: AppProps) {
+export function AuthenticatedApp({ pluginContext }: AuthenticatedAppProps) {
     const [baseId, setBaseId] = useState<string | null>(pluginContext.type === "update" ? pluginContext.baseId : null)
     const [tableId, setTableId] = useState<string | null>(
         pluginContext.type === "update" ? pluginContext.tableId : null
@@ -63,6 +67,12 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
             width: tableId ? 340 : 320,
             height: tableId ? 425 : 345,
         })
+    }, [tableId])
+
+    useEffect(() => {
+        if (!tableId) return
+
+        pluginContext.tableMapId.set(tableId, pluginContext.collection.id)
     }, [tableId])
 
     if (!tableId || !baseId) {
@@ -89,6 +99,7 @@ export function AuthenticatedApp({ pluginContext }: AppProps) {
             onSubmit={syncMutation.mutate}
             isPending={syncMutation.isPending}
             tableSchema={tableSchema}
+            tableMapId={pluginContext.tableMapId}
         />
     )
 }

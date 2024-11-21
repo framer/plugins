@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useBaseSchemaQuery, useBasesQuery } from "../api"
 import { Hero } from "../components/Hero"
 
@@ -35,6 +35,20 @@ export function SelectTablePage({ onTableSelected }: Props) {
 
         onTableSelected(selectedBaseId, selectedTableId)
     }
+
+    useEffect(() => {
+        if (!bases) return
+        if (bases.length === 0) return
+
+        setSelectedBaseId(bases[0].id)
+    }, [bases])
+
+    useEffect(() => {
+        if (!baseSchema) return
+        if (baseSchema.tables.length === 0) return
+
+        setSelectedTableId(baseSchema.tables[0].id)
+    }, [baseSchema])
 
     return (
         <form className="col-lg" onSubmit={handleSubmit}>

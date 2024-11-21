@@ -125,6 +125,14 @@ function getFieldValue(fieldSchema: AirtableFieldSchema, cellValue: AirtableFiel
             return richTextToHTML(cellValue as string)
         }
 
+        case "multipleRecordLinks": {
+            if (fieldSchema.options.prefersSingleRecordLink) {
+                return (cellValue as AirtableFieldValues["multipleRecordLinks"])[0]
+            }
+
+            return cellValue
+        }
+
         // Add more field types as needed
         default: {
             return undefined
@@ -135,7 +143,10 @@ function getFieldValue(fieldSchema: AirtableFieldSchema, cellValue: AirtableFiel
 /**
  * Get the collection field schema for an Airtable field.
  */
-export function getCollectionForAirtableField(fieldSchema: AirtableFieldSchema): ManagedCollectionField | null {
+export function getCollectionForAirtableField(
+    fieldSchema: AirtableFieldSchema,
+    tableIdMap: Map<string, string>
+): ManagedCollectionField | null {
     const fieldMetadata = {
         id: fieldSchema.id,
         name: fieldSchema.name,
@@ -184,6 +195,21 @@ export function getCollectionForAirtableField(fieldSchema: AirtableFieldSchema):
         case "lastModifiedTime":
             return { ...fieldMetadata, type: "date" }
 
+        case "multipleRecordLinks": {
+            const tableId = tableIdMap.get(fieldSchema.options.linkedTableId)
+
+            if (!tableId) {
+                // Table includes a relation to a table that hasn't been synced to Framer.
+                // TODO: It would be better to surface this error to the user in
+                // the UI instead of just skipping the field.
+                return null
+            }
+
+            if (fieldSchema.options.prefersSingleRecordLink) {
+                return { ...fieldMetadata, collectionId: tableId, type: "collectionReference" }
+            }
+            return { ...fieldMetadata, collectionId: tableId, type: "multiCollectionReference" }
+        }
         default:
             return null
     }
@@ -239,6 +265,7 @@ export interface PluginContextNew {
     type: "new"
     collection: ManagedCollection
     isAuthenticated: boolean
+    tableMapId: Map<string, string>
 }
 
 export interface PluginContextUpdate {
@@ -253,6 +280,7 @@ export interface PluginContextUpdate {
     ignoredFieldIds: string[]
     slugFieldId: string | null
     isAuthenticated: boolean
+    tableMapId: Map<string, string>
 }
 
 export interface PluginContextNoTableAccess {
@@ -369,7 +397,11 @@ export async function syncTable({
     onProgress,
 }: SyncMutationOptions): Promise<SynchronizeResult> {
     const collection = await framer.getManagedCollection()
-    await collection.setFields(fields)
+    try {
+        await collection.setFields(fields)
+    } catch (e) {
+        console.error(e)
+    }
 
     const fieldsById = new Map<string, ManagedCollectionField>()
     for (const field of fields) {
@@ -429,13 +461,17 @@ export function getPossibleSlugFields(fieldsSchema: AirtableFieldSchema[]) {
     return options
 }
 
-function getSuggestedFieldsForTable(tableSchema: AirtableTableSchema, ignoredFieldIds: string[]) {
+function getSuggestedFieldsForTable(
+    tableSchema: AirtableTableSchema,
+    tableIdMap: Map<string, string>,
+    ignoredFieldIds: string[]
+) {
     const fields: ManagedCollectionField[] = []
 
     for (const fieldSchema of tableSchema.fields) {
         if (ignoredFieldIds.includes(fieldSchema.id)) continue
 
-        const field = getCollectionForAirtableField(fieldSchema)
+        const field = getCollectionForAirtableField(fieldSchema, tableIdMap)
         if (field) {
             fields.push(field)
         }
@@ -447,6 +483,7 @@ function getSuggestedFieldsForTable(tableSchema: AirtableTableSchema, ignoredFie
 export function hasFieldConfigurationChanged(
     currentManagedCollectionFields: ManagedCollectionField[],
     tableSchema: AirtableTableSchema,
+    tableIdMap: Map<string, string>,
     ignoredFieldIds: string[]
 ) {
     const currentFieldsById = new Map<string, ManagedCollectionField>()
@@ -454,7 +491,7 @@ export function hasFieldConfigurationChanged(
         currentFieldsById.set(field.id, field)
     }
 
-    const suggestedFields = getSuggestedFieldsForTable(tableSchema, ignoredFieldIds)
+    const suggestedFields = getSuggestedFieldsForTable(tableSchema, tableIdMap, ignoredFieldIds)
     if (suggestedFields.length !== currentManagedCollectionFields.length) return true
 
     for (const field of suggestedFields) {
@@ -489,11 +526,24 @@ export async function getPluginContext(): Promise<PluginContext> {
     const tableId = await collection.getPluginData(PLUGIN_TABLE_ID_KEY)
     const tableName = await collection.getPluginData(PLUGIN_TABLE_NAME_KEY)
 
+    const tableMapId = new Map<string, string>()
+    const collections = await framer.getCollections()
+    for (const collection of collections) {
+        const collectionBaseId = await collection.getPluginData(PLUGIN_BASE_ID_KEY)
+        if (collectionBaseId !== baseId) continue
+
+        const collectionTableId = await collection.getPluginData(PLUGIN_TABLE_ID_KEY)
+        if (!collectionTableId) continue
+
+        tableMapId.set(collectionTableId, collection.id)
+    }
+
     if (!baseId || !tableId || !tableName || !isAuthenticated) {
         return {
             type: "new",
             collection,
             isAuthenticated,
+            tableMapId,
         }
     }
 
@@ -514,7 +564,7 @@ export async function getPluginContext(): Promise<PluginContext> {
 
         return {
             type: "update",
-            hasChangedFields: hasFieldConfigurationChanged(collectionFields, tableSchema, ignoredFieldIds),
+            hasChangedFields: hasFieldConfigurationChanged(collectionFields, tableSchema, tableMapId, ignoredFieldIds),
             isAuthenticated,
             baseId,
             tableId,
@@ -524,6 +574,7 @@ export async function getPluginContext(): Promise<PluginContext> {
             ignoredFieldIds,
             lastSyncedTime,
             slugFieldId,
+            tableMapId,
         }
     } catch (e) {
         return {

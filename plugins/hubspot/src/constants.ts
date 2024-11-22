@@ -65,13 +65,13 @@ export const HUBSPOT_BLOG_FIELDS: ManagedCollectionField[] = [
     },
     {
         name: "Post Summary", // Summary or excerpt of the blog post
-        type: "string",
+        type: "formattedText",
         id: "postSummary",
         userEditable: false,
     },
     {
         name: "RSS Summary", // Summary specifically for RSS feeds
-        type: "string",
+        type: "formattedText",
         id: "rssSummary",
         userEditable: false,
     },

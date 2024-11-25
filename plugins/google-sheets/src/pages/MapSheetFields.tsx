@@ -52,13 +52,13 @@ const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
     if (typeof cellValue === "number") return "number"
 
     if (typeof cellValue === "string") {
-        const cellValueLowered = cellValue.toLowerCase()
+        const cellValueLowered = cellValue.trim().toLowerCase()
 
+        // If the cell value contains a newline, it's probably a formatted text field
+        if (/\n/.test(cellValueLowered)) return "formattedText"
         if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(cellValueLowered)) return "date"
-
         if (/^#[0-9a-f]{6}$/.test(cellValueLowered)) return "color"
-
-        if (/<[a-z][\s\S]*>/i.test(cellValueLowered)) return "formattedText"
+        if (/<[a-z][\s\S]*>/.test(cellValueLowered)) return "formattedText"
 
         try {
             new URL(cellValueLowered)

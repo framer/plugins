@@ -431,7 +431,7 @@ export async function syncTable({
     const itemsToDelete = Array.from(unsyncedItemIds)
     await collection.removeItems(itemsToDelete)
 
-    const fieldHash = generateFieldHash(tableSchema.fields)
+    const fieldHash = generateFieldHash(tableSchema.fields.filter(field => !ignoredFieldIds.includes(field.id)))
 
     await Promise.all([
         collection.setPluginData(PLUGIN_IGNORED_FIELD_IDS_KEY, JSON.stringify(ignoredFieldIds)),
@@ -529,7 +529,12 @@ export async function getPluginContext(): Promise<PluginContext> {
 
         let slugColumn = storedSlugFieldId
         const ignoredFieldIds = getIgnoredFieldIds(rawIgnoredFieldIds)
-        const currentFieldHash = generateFieldHash(tableSchema.fields)
+
+        // We should not hash ignored fields since they are not synced to Framer,
+        // and we don't want to trigger a re-sync of the table.
+        const currentFieldHash = generateFieldHash(
+            tableSchema.fields.filter(field => !ignoredFieldIds.includes(field.id))
+        )
 
         assert(lastSyncedTime, "Expected last synced time to be set")
 

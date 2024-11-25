@@ -6,7 +6,6 @@ import { assert, isDefined } from "../utils"
 import { AirtableFieldSchema, AirtableTableSchema } from "../api"
 import {
     getCollectionForAirtableField,
-    getPossibleSlugFields,
     hasFieldConfigurationChanged,
     PluginContext,
     PluginContextNew,
@@ -67,7 +66,6 @@ const createFieldConfig = (
     fieldSchemas: AirtableFieldSchema[],
     tableMapId: Map<string, string>
 ): ManagedCollectionFieldConfig[] => {
-    console.log({ tableMapId })
     const result: ManagedCollectionFieldConfig[] = []
 
     for (const fieldSchema of fieldSchemas) {
@@ -98,6 +96,13 @@ const getFieldNameOverrides = (pluginContext: PluginContext): Record<string, str
     return result
 }
 
+const getPossibleSlugFields = (fieldConfig: ManagedCollectionFieldConfig[]): ManagedCollectionField[] => {
+    return fieldConfig
+        .filter(field => field.field?.type === "string")
+        .map(field => field.field)
+        .filter(isDefined)
+}
+
 type CollectionFieldType = ManagedCollectionField["type"]
 const fieldTypeOptions: { type: CollectionFieldType; label: string }[] = [
     { type: "boolean", label: "Boolean" },
@@ -126,7 +131,6 @@ interface Props {
 
 export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, isPending, tableSchema }: Props) {
     const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
-    const slugFields = useMemo(() => getPossibleSlugFields(tableSchema.fields), [tableSchema])
     const [slugFieldId, setSlugFieldId] = useState<string | null>(() =>
         getInitialSlugFieldId(pluginContext, tableSchema.primaryFieldId)
     )
@@ -139,6 +143,10 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
     const [fieldNameOverrides, setFieldNameOverrides] = useState<Record<string, string>>(() =>
         getFieldNameOverrides(pluginContext)
     )
+    const slugFields = useMemo(
+        () => getPossibleSlugFields(fieldConfig).filter(field => !disabledFieldIds.has(field.id)),
+        [fieldConfig, disabledFieldIds]
+    )
 
     // TODO: Render progress in UI
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -149,8 +157,29 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
             const nextSet = new Set(current)
             if (nextSet.has(key)) {
                 nextSet.delete(key)
+
+                // If we're re-enabling a string field and there's no valid slug field,
+                // set this field as the slug field
+                const field = fieldConfig.find(config => config.field?.id === key)
+                if (field?.field?.type === "string") {
+                    const currentSlugField = fieldConfig.find(config => config.field?.id === slugFieldId)
+                    if (!currentSlugField || nextSet.has(slugFieldId ?? "")) {
+                        setSlugFieldId(key)
+                    }
+                }
             } else {
                 nextSet.add(key)
+
+                // If the disabled field is the slug field, update it to the next
+                // possible slug field
+                if (key === slugFieldId) {
+                    const nextSlugField = getPossibleSlugFields(fieldConfig).find(
+                        field => field.id !== key && !nextSet.has(field.id)
+                    )
+                    if (nextSlugField) {
+                        setSlugFieldId(nextSlugField.id)
+                    }
+                }
             }
             return nextSet
         })
@@ -236,13 +265,14 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                 <span>Type</span>
                 {fieldConfig.map((fieldConfig, i) => {
                     const isUnsupported = !fieldConfig.field
+                    const isDisabled = !!fieldConfig.field && disabledFieldIds.has(fieldConfig.field.id)
 
                     return (
                         <Fragment key={i}>
                             <CheckboxTextfield
                                 value={fieldConfig.originalFieldName}
                                 disabled={!fieldConfig.field}
-                                checked={!!fieldConfig.field && !disabledFieldIds.has(fieldConfig.field.id)}
+                                checked={!isDisabled}
                                 onChange={() => {
                                     assert(fieldConfig.field)
                                     handleFieldToggle(fieldConfig.field.id)
@@ -256,7 +286,7 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                                 className={cx("w-full", {
                                     "opacity-50": isUnsupported || disabledFieldIds.has(fieldConfig.field?.id ?? ""),
                                 })}
-                                disabled={!fieldConfig.field || disabledFieldIds.has(fieldConfig.field.id)}
+                                disabled={isDisabled}
                                 placeholder={fieldConfig.originalFieldName}
                                 value={
                                     !fieldConfig.field
@@ -270,9 +300,9 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                             />
                             <select
                                 className={cx("w-full", {
-                                    "opacity-50": isUnsupported || disabledFieldIds.has(fieldConfig.field?.id ?? ""),
+                                    "opacity-50": isUnsupported || isDisabled,
                                 })}
-                                disabled={!fieldConfig.field || disabledFieldIds.has(fieldConfig.field.id)}
+                                disabled={isDisabled}
                                 value={fieldConfig.field?.type ?? "string"}
                                 onChange={e => {
                                     assert(fieldConfig.field)

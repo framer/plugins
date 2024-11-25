@@ -35,7 +35,6 @@ const pluginLastSyncedKey = "notionPluginLastSynced"
 const ignoredFieldIdsKey = "notionPluginIgnoredFieldIds"
 const pluginSlugIdKey = "notionPluginSlugId"
 const databaseNameKey = "notionDatabaseName"
-const databaseIdKey = "notionDatabaseId"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -684,7 +683,6 @@ export async function synchronizeDatabase(
         collection.setPluginData(pluginLastSyncedKey, new Date().toISOString()),
         collection.setPluginData(pluginSlugIdKey, slugFieldId),
         collection.setPluginData(databaseNameKey, richTextToPlainText(database.title)),
-        collection.setPluginData(databaseIdKey, database.id),
     ])
 
     return {
@@ -771,18 +769,26 @@ function getIgnoredFieldIds(rawIgnoredFields: string | null) {
 
 export type DatabaseIdMap = Map<string, string>
 
+export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
+    const databaseIdMap: DatabaseIdMap = new Map()
+
+    for (const collection of await framer.getCollections()) {
+        const collectionDatabaseId = await collection.getPluginData(pluginDatabaseIdKey)
+        if (!collectionDatabaseId) continue
+
+        databaseIdMap.set(collectionDatabaseId, collection.id)
+    }
+
+    return databaseIdMap
+}
+
 export async function getPluginContext(): Promise<PluginContext> {
     const collection = await framer.getManagedCollection()
     const collectionFields = await collection.getFields()
     const databaseId = await collection.getPluginData(pluginDatabaseIdKey)
     const hasAuthToken = isAuthenticated()
 
-    const databaseIdMap: DatabaseIdMap = new Map()
-
-    for (const collection of await framer.getCollections()) {
-        const collectionDatabaseId = await collection.getPluginData(databaseIdKey)
-        if (collectionDatabaseId) databaseIdMap.set(collectionDatabaseId, collection.id)
-    }
+    const databaseIdMap = await getDatabaseIdMap()
 
     if (!databaseId || !hasAuthToken) {
         return {

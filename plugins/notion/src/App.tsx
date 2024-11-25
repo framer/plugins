@@ -1,7 +1,7 @@
 import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import "./App.css"
-import { PluginContext, useSynchronizeDatabaseMutation } from "./notion"
+import { PluginContext, PluginContextNew, PluginContextUpdate, useSynchronizeDatabaseMutation } from "./notion"
 
 import { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import { SelectDatabase } from "./SelectDatabase"
@@ -13,7 +13,11 @@ interface AppProps {
     context: PluginContext
 }
 
-export function AuthenticatedApp({ context }: AppProps) {
+interface AuthenticatedAppProps {
+    context: PluginContextNew | PluginContextUpdate
+}
+
+export function AuthenticatedApp({ context }: AuthenticatedAppProps) {
     const [databaseConfig, setDatabaseConfig] = useState<GetDatabaseResponse | null>(
         context.type === "update" ? context.database : null
     )
@@ -46,8 +50,13 @@ export function AuthenticatedApp({ context }: AppProps) {
         },
     })
 
+    const handleDatabaseSelected = (database: GetDatabaseResponse) => {
+        context.databaseIdMap.set(database.id, context.collection.id)
+        setDatabaseConfig(database)
+    }
+
     if (!databaseConfig) {
-        return <SelectDatabase onDatabaseSelected={setDatabaseConfig} />
+        return <SelectDatabase onDatabaseSelected={handleDatabaseSelected} />
     }
 
     return (

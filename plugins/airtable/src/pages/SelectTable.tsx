@@ -37,13 +37,6 @@ export function SelectTablePage({ onTableSelected }: Props) {
     }
 
     useEffect(() => {
-        if (!bases) return
-        if (bases.length === 0) return
-
-        setSelectedBaseId(bases[0].id)
-    }, [bases])
-
-    useEffect(() => {
         if (!baseSchema) return
         if (baseSchema.tables.length === 0) return
 
@@ -81,7 +74,7 @@ export function SelectTablePage({ onTableSelected }: Props) {
                     </select>
                 </div>
             </div>
-            <button>Next</button>
+            <button disabled={!selectedBaseId || !selectedTableId}>Next</button>
         </form>
     )
 }

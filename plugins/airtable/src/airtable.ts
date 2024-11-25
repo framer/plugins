@@ -1,5 +1,5 @@
 import { ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
-import { assert, isDefined, slugify } from "./utils"
+import { assert, generateHashId, isDefined, slugify } from "./utils"
 import auth from "./auth"
 import {
     AirtableFieldSchema,
@@ -18,6 +18,8 @@ const PLUGIN_TABLE_NAME_KEY = "airtablePluginTableName"
 const PLUGIN_IGNORED_FIELD_IDS_KEY = "airtablePluginIgnoredFieldIds"
 const PLUGIN_LAST_SYNCED_KEY = "airtablePluginLastSynced"
 const PLUGIN_SLUG_ID_KEY = "airtablePluginSlugId"
+const PLUGIN_FIELD_HASH_KEY = "airtablePluginFieldHash"
+const FIELD_HASH_DELIMITER = "xK9mNq3r"
 
 const ALLOWED_AIRTABLE_FILE_TYPES = [
     "jpg",
@@ -387,6 +389,15 @@ async function processTable(
     }
 }
 
+function generateFieldHash(fields: AirtableFieldSchema[]): string {
+    return generateHashId(
+        [...fields]
+            .map(f => f.id)
+            .sort()
+            .join(FIELD_HASH_DELIMITER)
+    )
+}
+
 export async function syncTable({
     baseId,
     tableId,
@@ -419,6 +430,8 @@ export async function syncTable({
     const itemsToDelete = Array.from(unsyncedItemIds)
     await collection.removeItems(itemsToDelete)
 
+    const fieldHash = generateFieldHash(tableSchema.fields)
+
     await Promise.all([
         collection.setPluginData(PLUGIN_IGNORED_FIELD_IDS_KEY, JSON.stringify(ignoredFieldIds)),
         collection.setPluginData(PLUGIN_BASE_ID_KEY, baseId),
@@ -426,6 +439,7 @@ export async function syncTable({
         collection.setPluginData(PLUGIN_TABLE_NAME_KEY, tableSchema.name),
         collection.setPluginData(PLUGIN_LAST_SYNCED_KEY, new Date().toISOString()),
         collection.setPluginData(PLUGIN_SLUG_ID_KEY, slugFieldId),
+        collection.setPluginData(PLUGIN_FIELD_HASH_KEY, fieldHash),
     ])
 
     const result: SynchronizeResult = {
@@ -548,18 +562,27 @@ export async function getPluginContext(): Promise<PluginContext> {
 
         assert(tableSchema, `Expected to find table schema for table with id: ${tableId}`)
 
-        const [rawIgnoredFieldIds, lastSyncedTime, slugFieldId] = await Promise.all([
+        const [rawIgnoredFieldIds, lastSyncedTime, storedSlugFieldId, storedFieldHash] = await Promise.all([
             collection.getPluginData(PLUGIN_IGNORED_FIELD_IDS_KEY),
             collection.getPluginData(PLUGIN_LAST_SYNCED_KEY),
             collection.getPluginData(PLUGIN_SLUG_ID_KEY),
+            collection.getPluginData(PLUGIN_FIELD_HASH_KEY),
         ])
+
+        let slugColumn = storedSlugFieldId
         const ignoredFieldIds = getIgnoredFieldIds(rawIgnoredFieldIds)
+        const currentFieldHash = generateFieldHash(tableSchema.fields)
 
         assert(lastSyncedTime, "Expected last synced time to be set")
 
+        // If the stored slug column is not in the table schema, we need to update it
+        if (slugColumn && !tableSchema.fields.map(f => f.id).includes(slugColumn)) {
+            slugColumn = null
+        }
+
         return {
             type: "update",
-            hasChangedFields: hasFieldConfigurationChanged(collectionFields, tableSchema, tableMapId, ignoredFieldIds),
+            hasChangedFields: storedFieldHash !== currentFieldHash,
             isAuthenticated,
             baseId,
             tableId,
@@ -568,7 +591,7 @@ export async function getPluginContext(): Promise<PluginContext> {
             collectionFields,
             ignoredFieldIds,
             lastSyncedTime,
-            slugFieldId,
+            slugFieldId: slugColumn,
             tableMapId,
         }
     } catch (e) {

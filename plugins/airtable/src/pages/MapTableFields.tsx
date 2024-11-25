@@ -6,7 +6,6 @@ import { assert, isDefined } from "../utils"
 import { AirtableFieldSchema, AirtableTableSchema } from "../api"
 import {
     getCollectionForAirtableField,
-    hasFieldConfigurationChanged,
     PluginContext,
     PluginContextNew,
     PluginContextUpdate,
@@ -37,9 +36,7 @@ const getInitialSlugFieldId = (context: PluginContext, primaryFieldId: string): 
 
 const getLastSyncedTime = (
     pluginContext: PluginContextUpdate | PluginContextNew,
-    tableSchema: AirtableTableSchema,
-    slugFieldId: string,
-    ignoredFieldIds: Set<string>
+    slugFieldId: string
 ): string | null => {
     if (pluginContext.type !== "update") return null
 
@@ -47,14 +44,7 @@ const getLastSyncedTime = (
     if (pluginContext.slugFieldId !== slugFieldId) return null
 
     // Always resync if field config changes.
-    if (
-        hasFieldConfigurationChanged(
-            pluginContext.collectionFields,
-            tableSchema,
-            pluginContext.tableMapId,
-            Array.from(ignoredFieldIds)
-        )
-    ) {
+    if (pluginContext.hasChangedFields) {
         return null
     }
 
@@ -225,7 +215,7 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
 
         onSubmit({
             onProgress: setProgress,
-            lastSyncedTime: getLastSyncedTime(pluginContext, tableSchema, slugFieldId, disabledFieldIds),
+            lastSyncedTime: getLastSyncedTime(pluginContext, slugFieldId),
             ignoredFieldIds: Array.from(disabledFieldIds),
             fields: allFields,
             slugFieldId,
@@ -265,13 +255,13 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                 <span>Type</span>
                 {fieldConfig.map((fieldConfig, i) => {
                     const isUnsupported = !fieldConfig.field
-                    const isDisabled = !!fieldConfig.field && disabledFieldIds.has(fieldConfig.field.id)
+                    const isDisabled = isUnsupported || disabledFieldIds.has(fieldConfig.field!.id)
 
                     return (
-                        <Fragment key={i}>
+                        <Fragment key={fieldConfig.field!.id || i}>
                             <CheckboxTextfield
                                 value={fieldConfig.originalFieldName}
-                                disabled={!fieldConfig.field}
+                                disabled={isUnsupported}
                                 checked={!isDisabled}
                                 onChange={() => {
                                     assert(fieldConfig.field)
@@ -284,14 +274,14 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                             <input
                                 type="text"
                                 className={cx("w-full", {
-                                    "opacity-50": isUnsupported || disabledFieldIds.has(fieldConfig.field?.id ?? ""),
+                                    "opacity-50": isDisabled,
                                 })}
                                 disabled={isDisabled}
                                 placeholder={fieldConfig.originalFieldName}
                                 value={
-                                    !fieldConfig.field
+                                    isUnsupported
                                         ? "Unsupported Field"
-                                        : (fieldNameOverrides[fieldConfig.field.id] ?? "")
+                                        : (fieldNameOverrides[fieldConfig.field!.id] ?? "")
                                 }
                                 onChange={e => {
                                     assert(fieldConfig.field)
@@ -300,10 +290,10 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                             />
                             <select
                                 className={cx("w-full", {
-                                    "opacity-50": isUnsupported || isDisabled,
+                                    "opacity-50": isDisabled,
                                 })}
                                 disabled={isDisabled}
-                                value={fieldConfig.field?.type ?? "string"}
+                                value={isUnsupported ? "Unsupported Field" : fieldConfig.field!.type}
                                 onChange={e => {
                                     assert(fieldConfig.field)
                                     handleFieldTypeChange(fieldConfig.field.id, e.target.value as CollectionFieldType)

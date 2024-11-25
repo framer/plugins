@@ -212,6 +212,7 @@ export function getCollectionForAirtableField(
             }
             return { ...fieldMetadata, collectionId: tableId, type: "multiCollectionReference" }
         }
+
         default:
             return null
     }
@@ -392,7 +393,7 @@ async function processTable(
 function generateFieldHash(fields: AirtableFieldSchema[]): string {
     return generateHashId(
         [...fields]
-            .map(f => f.id)
+            .map(f => `${f.id}:${f.type}`)
             .sort()
             .join(FIELD_HASH_DELIMITER)
     )
@@ -452,49 +453,6 @@ export async function syncTable({
     logSyncResult(result, collectionItems)
 
     return result
-}
-
-function getSuggestedFieldsForTable(
-    tableSchema: AirtableTableSchema,
-    tableIdMap: Map<string, string>,
-    ignoredFieldIds: string[]
-) {
-    const fields: ManagedCollectionField[] = []
-
-    for (const fieldSchema of tableSchema.fields) {
-        if (ignoredFieldIds.includes(fieldSchema.id)) continue
-
-        const field = getCollectionForAirtableField(fieldSchema, tableIdMap)
-        if (field) {
-            fields.push(field)
-        }
-    }
-
-    return fields
-}
-
-export function hasFieldConfigurationChanged(
-    currentManagedCollectionFields: ManagedCollectionField[],
-    tableSchema: AirtableTableSchema,
-    tableIdMap: Map<string, string>,
-    ignoredFieldIds: string[]
-) {
-    const currentFieldsById = new Map<string, ManagedCollectionField>()
-    for (const field of currentManagedCollectionFields) {
-        currentFieldsById.set(field.id, field)
-    }
-
-    const suggestedFields = getSuggestedFieldsForTable(tableSchema, tableIdMap, ignoredFieldIds)
-    if (suggestedFields.length !== currentManagedCollectionFields.length) return true
-
-    for (const field of suggestedFields) {
-        const currentField = currentFieldsById.get(field.id)
-
-        if (!currentField) return true
-        if (currentField.type !== field.type) return true
-    }
-
-    return false
 }
 
 function getIgnoredFieldIds(rawIgnoredFieldIds: string | null) {

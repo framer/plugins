@@ -37,3 +37,17 @@ export function slugify(value: string): string {
 export function isDefined<T>(value: T): value is NonNullable<T> {
     return value !== undefined && value !== null
 }
+
+/**
+ * Generates an 8-character unique ID from a text using the djb2 hash function.
+ * Converts the 32-bit hash to an unsigned integer and then to a hex string.
+ */
+export function generateHashId(text: string): string {
+    let hash = 5381
+    for (let i = 0, len = text.length; i < len; i++) {
+        hash = (hash * 33) ^ text.charCodeAt(i)
+    }
+    // Convert to unsigned 32-bit integer
+    const unsignedHash = hash >>> 0
+    return unsignedHash.toString(16).padStart(8, "0")
+}

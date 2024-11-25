@@ -440,23 +440,6 @@ export async function syncTable({
     return result
 }
 
-/*
- * Given a set of Airtable field schemas, returns a list of possible
- * fields that can be used as slugs.
- */
-export function getPossibleSlugFields(fieldsSchema: AirtableFieldSchema[]) {
-    const options: AirtableFieldSchema[] = []
-
-    for (const fieldSchema of fieldsSchema) {
-        switch (fieldSchema.type) {
-            case "singleLineText":
-                options.push(fieldSchema)
-        }
-    }
-
-    return options
-}
-
 function getSuggestedFieldsForTable(
     tableSchema: AirtableTableSchema,
     tableIdMap: Map<string, string>,
@@ -512,15 +495,12 @@ function getIgnoredFieldIds(rawIgnoredFieldIds: string | null) {
     return parsed
 }
 
-export async function getPluginContext(): Promise<PluginContext> {
-    const collection = await framer.getManagedCollection()
-    const collectionFields = await collection.getFields()
-    const tokens = await auth.getTokens()
-    const isAuthenticated = !!tokens
-
-    const baseId = await collection.getPluginData(PLUGIN_BASE_ID_KEY)
-    const tableId = await collection.getPluginData(PLUGIN_TABLE_ID_KEY)
-    const tableName = await collection.getPluginData(PLUGIN_TABLE_NAME_KEY)
+export async function getTableIdMapForBase(
+    currentCollectionId: string,
+    baseId: string | null,
+    tableId: string | null
+): Promise<Map<string, string>> {
+    if (!baseId) return new Map()
 
     const tableMapId = new Map<string, string>()
     const collections = await framer.getCollections()
@@ -533,6 +513,25 @@ export async function getPluginContext(): Promise<PluginContext> {
 
         tableMapId.set(collectionTableId, collection.id)
     }
+
+    if (tableId && !tableMapId.has(tableId)) {
+        tableMapId.set(tableId, currentCollectionId)
+    }
+
+    return tableMapId
+}
+
+export async function getPluginContext(): Promise<PluginContext> {
+    const collection = await framer.getManagedCollection()
+    const collectionFields = await collection.getFields()
+    const tokens = await auth.getTokens()
+    const isAuthenticated = !!tokens
+
+    const baseId = await collection.getPluginData(PLUGIN_BASE_ID_KEY)
+    const tableId = await collection.getPluginData(PLUGIN_TABLE_ID_KEY)
+    const tableName = await collection.getPluginData(PLUGIN_TABLE_NAME_KEY)
+
+    const tableMapId = await getTableIdMapForBase(collection.id, baseId, tableId)
 
     if (!baseId || !tableId || !tableName || !isAuthenticated) {
         return {

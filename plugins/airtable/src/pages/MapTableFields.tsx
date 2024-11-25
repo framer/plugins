@@ -258,7 +258,7 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                     const isDisabled = isUnsupported || disabledFieldIds.has(fieldConfig.field!.id)
 
                     return (
-                        <Fragment key={fieldConfig.field!.id || i}>
+                        <Fragment key={fieldConfig.field?.id || i}>
                             <CheckboxTextfield
                                 value={fieldConfig.originalFieldName}
                                 disabled={isUnsupported}

@@ -417,7 +417,12 @@ export async function syncSheet({
     const [headerRow, ...rows] = sheet.values
 
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
-    const headerRowHash = generateHashId([...headerRow].sort().join(HEADER_ROW_DELIMITER))
+    const headerRowHash = generateHashId(
+        [...headerRow]
+            .filter(field => !ignoredColumns.includes(field))
+            .sort()
+            .join(HEADER_ROW_DELIMITER)
+    )
 
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
@@ -537,7 +542,15 @@ export async function getPluginContext(): Promise<PluginContext> {
     // GridRange and drop titles altogether.
 
     const sheetHeaderRow = sheet.values[0]
-    const currentSheetHeaderRowHash = generateHashId([...sheetHeaderRow].sort().join(HEADER_ROW_DELIMITER))
+
+    // We should not hash ignored fields since they are not synced to Framer,
+    // and we don't want to trigger a re-sync of the sheet.
+    const currentSheetHeaderRowHash = generateHashId(
+        [...sheetHeaderRow]
+            .filter(field => !ignoredColumns.includes(field))
+            .sort()
+            .join(HEADER_ROW_DELIMITER)
+    )
     const storedSheetHeaderRowHash = rawSheetHeaderRowHash ?? ""
 
     let slugColumn: string | null = null

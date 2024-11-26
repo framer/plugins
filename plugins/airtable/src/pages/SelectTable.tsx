@@ -47,7 +47,7 @@ export function SelectTablePage({ onTableSelected }: Props) {
         <form className="col-lg" onSubmit={handleSubmit}>
             <Hero />
             <div className="col pl-[15px]">
-                <div className="row justify-between">
+                <div className="row justify-between items-center">
                     <p>Base</p>
                     <select onChange={handleBaseSelect} value={selectedBaseId || ""} className="w-[164px]">
                         <option value="" disabled>
@@ -60,9 +60,14 @@ export function SelectTablePage({ onTableSelected }: Props) {
                         ))}
                     </select>
                 </div>
-                <div className="row justify-between">
+                <div className="row justify-between items-center">
                     <p>Table</p>
-                    <select onChange={handleTableSelect} value={selectedTableId || ""} className="w-[164px]">
+                    <select
+                        onChange={handleTableSelect}
+                        value={selectedTableId || ""}
+                        disabled={!selectedBaseId}
+                        className="w-[164px]"
+                    >
                         <option value="" disabled>
                             {isFetchingSchemas ? "Loading..." : "Choose..."}
                         </option>

@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import { useEffect, useLayoutEffect, useMemo, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { getTableIdMapForBase, PluginContext, PluginContextNew, PluginContextUpdate, syncTable } from "./airtable"
 import { useBaseSchemaQuery, useSyncTableMutation } from "./api"
 import { assert } from "./utils"
@@ -44,7 +44,6 @@ const useLoggingToggle = () => {
 }
 
 export function AuthenticatedApp({ pluginContext }: AuthenticatedAppProps) {
-    const collectionId = useMemo(() => pluginContext.collection.id, [pluginContext])
     const [baseId, setBaseId] = useState<string | null>(pluginContext.type === "update" ? pluginContext.baseId : null)
     const [tableId, setTableId] = useState<string | null>(
         pluginContext.type === "update" ? pluginContext.tableId : null
@@ -63,6 +62,16 @@ export function AuthenticatedApp({ pluginContext }: AuthenticatedAppProps) {
         onError: e => framer.notify(e.message, { variant: "error" }),
     })
 
+    const handleTableSelected = async (selectedBaseId: string, selectedTableId: string) => {
+        const tableMapId = await getTableIdMapForBase(selectedBaseId)
+        tableMapId.set(selectedTableId, pluginContext.collection.id)
+
+        pluginContext.tableMapId = tableMapId
+
+        setBaseId(selectedBaseId)
+        setTableId(selectedTableId)
+    }
+
     useLayoutEffect(() => {
         framer.showUI({
             width: tableId ? 340 : 320,
@@ -70,21 +79,8 @@ export function AuthenticatedApp({ pluginContext }: AuthenticatedAppProps) {
         })
     }, [tableId])
 
-    useEffect(() => {
-        getTableIdMapForBase(collectionId, baseId, tableId).then(tableMapId => {
-            pluginContext.tableMapId = tableMapId
-        })
-    }, [pluginContext, collectionId, baseId, tableId])
-
     if (!tableId || !baseId) {
-        return (
-            <SelectTablePage
-                onTableSelected={(selectedBaseId, selectedTableId) => {
-                    setBaseId(selectedBaseId)
-                    setTableId(selectedTableId)
-                }}
-            />
-        )
+        return <SelectTablePage onTableSelected={handleTableSelected} />
     }
 
     if (isPending) return <CenteredSpinner />

@@ -467,15 +467,12 @@ function getIgnoredFieldIds(rawIgnoredFieldIds: string | null) {
     return parsed
 }
 
-export async function getTableIdMapForBase(
-    currentCollectionId: string,
-    baseId: string | null,
-    tableId: string | null
-): Promise<Map<string, string>> {
-    if (!baseId) return new Map()
-
+export async function getTableIdMapForBase(baseId: string | null): Promise<Map<string, string>> {
     const tableMapId = new Map<string, string>()
+    if (!baseId) return tableMapId
+
     const collections = await framer.getCollections()
+
     for (const collection of collections) {
         const collectionBaseId = await collection.getPluginData(PLUGIN_BASE_ID_KEY)
         if (collectionBaseId !== baseId) continue
@@ -484,10 +481,6 @@ export async function getTableIdMapForBase(
         if (!collectionTableId) continue
 
         tableMapId.set(collectionTableId, collection.id)
-    }
-
-    if (tableId && !tableMapId.has(tableId)) {
-        tableMapId.set(tableId, currentCollectionId)
     }
 
     return tableMapId
@@ -503,7 +496,7 @@ export async function getPluginContext(): Promise<PluginContext> {
     const tableId = await collection.getPluginData(PLUGIN_TABLE_ID_KEY)
     const tableName = await collection.getPluginData(PLUGIN_TABLE_NAME_KEY)
 
-    const tableMapId = await getTableIdMapForBase(collection.id, baseId, tableId)
+    const tableMapId = await getTableIdMapForBase(baseId)
 
     if (!baseId || !tableId || !tableName || !isAuthenticated) {
         return {

@@ -1,4 +1,4 @@
-import type { Collection, CollectionField, CollectionItem } from "framer-plugin"
+import type { Collection, CollectionField, CollectionItem, SupportedCollectionField } from "framer-plugin"
 
 import { isColorStyle, isFileAsset, isImageAsset } from "framer-plugin"
 import { shouldBeNever } from "./assert"
@@ -27,9 +27,34 @@ function escapeCell(value: string) {
     return value.replace(/"/gu, '""')
 }
 
+function isFieldSupported(field: CollectionField): field is SupportedCollectionField {
+    switch (field.type) {
+        case "image":
+        case "file":
+        case "collectionReference":
+        case "formattedText":
+        case "multiCollectionReference":
+        case "enum":
+        case "color":
+        case "string":
+        case "boolean":
+        case "date":
+        case "link":
+        case "number":
+            return true
+
+        case "unsupported":
+            return false
+
+        default:
+            shouldBeNever(field)
+            return false
+    }
+}
+
 export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]): Rows {
     const rows: Rows = []
-    const supportedFields = fields.filter(field => field.type !== "unsupported")
+    const supportedFields = fields.filter(isFieldSupported)
 
     // Add header row.
     rows.push(supportedFields.map(field => field.name))

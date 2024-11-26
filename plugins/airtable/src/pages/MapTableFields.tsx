@@ -68,7 +68,7 @@ const createFieldConfig = (
     const fields = result.sort(sortField)
     const primaryField = fields.find(fieldConfig => fieldConfig.field?.id === primaryFieldId)
 
-    assert(primaryField)
+    assert(primaryField, `Expected primary field \`${primaryFieldId}\` to be present in the fields`)
 
     const sortedFields = result.filter(fieldConfig => fieldConfig.field?.id !== primaryFieldId).sort(sortField)
 

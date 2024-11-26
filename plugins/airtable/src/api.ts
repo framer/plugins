@@ -191,7 +191,9 @@ interface CheckboxOption {
 interface FormulaOption {
     formula: string
     referencedFieldIds: string[] | null
-    result: AirtableFieldType | null
+    result: {
+        type: AirtableFieldType
+    } | null
 }
 
 interface RollupOption {

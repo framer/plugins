@@ -79,6 +79,27 @@ function richTextToHTML(cellValue: string): string {
     return html
 }
 
+const ALLOWED_AIRTABLE_FORMULA_RESULT_TYPES = [
+    "singleLineText",
+    "email",
+    "url",
+    "phoneNumber",
+    "checkbox",
+    "number",
+    "percent",
+    "currency",
+    "autoNumber",
+    "rating",
+    "duration",
+    "multipleAttachments",
+    "date",
+    "dateTime",
+    "createdTime",
+    "lastModifiedTime",
+    "richText",
+    "multilineText",
+]
+
 /**
  * Get the value of an Airtable field in a format compatible with a collection field.
  */
@@ -133,6 +154,17 @@ function getFieldValue(fieldSchema: AirtableFieldSchema, cellValue: AirtableFiel
             }
 
             return cellValue
+        }
+
+        case "formula": {
+            if (
+                fieldSchema.options.result &&
+                ALLOWED_AIRTABLE_FORMULA_RESULT_TYPES.includes(fieldSchema.options.result.type)
+            ) {
+                return cellValue
+            }
+
+            return undefined
         }
 
         // Add more field types as needed
@@ -211,6 +243,40 @@ export function getCollectionForAirtableField(
                 return { ...fieldMetadata, collectionId: tableId, type: "collectionReference" }
             }
             return { ...fieldMetadata, collectionId: tableId, type: "multiCollectionReference" }
+        }
+
+        case "formula": {
+            const result = fieldSchema.options.result
+            if (!result) return null
+
+            switch (result.type) {
+                case "singleLineText":
+                case "email":
+                case "url":
+                case "phoneNumber":
+                    return { ...fieldMetadata, type: "string" }
+                case "checkbox":
+                    return { ...fieldMetadata, type: "boolean" }
+                case "number":
+                case "percent":
+                case "currency":
+                case "autoNumber":
+                case "rating":
+                case "duration":
+                    return { ...fieldMetadata, type: "number" }
+                case "multipleAttachments":
+                    return { ...fieldMetadata, type: "file", allowedFileTypes: ALLOWED_AIRTABLE_FILE_TYPES }
+                case "date":
+                case "dateTime":
+                case "createdTime":
+                case "lastModifiedTime":
+                    return { ...fieldMetadata, type: "date" }
+                case "richText":
+                case "multilineText":
+                    return { ...fieldMetadata, type: "formattedText" }
+                default:
+                    return null
+            }
         }
 
         default:
@@ -478,6 +544,9 @@ export async function getTableIdMapForBase(baseId: string | null): Promise<Map<s
         if (collectionBaseId !== baseId) continue
 
         const collectionTableId = await collection.getPluginData(PLUGIN_TABLE_ID_KEY)
+        console.log(
+            `found for base id: ${baseId}, table (id): ${await collection.getPluginData(PLUGIN_TABLE_NAME_KEY)} (${collectionTableId}), collection id: ${collection.id}`
+        )
         if (!collectionTableId) continue
 
         tableMapId.set(collectionTableId, collection.id)

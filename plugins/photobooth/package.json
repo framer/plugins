@@ -8,13 +8,14 @@
         "dev": "vite",
         "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "pack": "npx framer-plugin-tools@latest pack",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "base64-arraybuffer": "^1.0.2",
         "framer-motion": "^11.0.8",
-        "framer-plugin": "^2.0.2",
+        "framer-plugin": "^2.0.4",
         "react": "^18",
         "react-dom": "^18",
         "react-webcam": "^7.2.0",
@@ -30,7 +31,7 @@
         "eslint-plugin-react-hooks": "^4",
         "eslint-plugin-react-refresh": "^0",
         "typescript": "^5.4.5",
-        "vite": "^5.2.9",
+        "vite": "^5",
         "vite-plugin-framer": "^1.0.1"
     }
 }

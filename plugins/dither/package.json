@@ -9,6 +9,7 @@
         "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
         "format": "prettier . --write",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "pack": "npx framer-plugin-tools@latest pack",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit"
     },
@@ -16,7 +17,7 @@
         "@radix-ui/react-slider": "^1.2.0",
         "clsx": "^2.1.1",
         "colorjs.io": "^0.5.2",
-        "framer-plugin": "^2.0.2",
+        "framer-plugin": "^2.0.4",
         "ogl": "^1.0.8",
         "react": "^18",
         "react-dom": "^18",
@@ -36,7 +37,7 @@
         "prettier": "^3.2.5",
         "prettier-plugin-organize-imports": "^3.2.4",
         "typescript": "^5.4.5",
-        "vite": "^5.2.9",
+        "vite": "^5",
         "vite-plugin-framer": "^1.0.1"
     },
     "optionalDependencies": {

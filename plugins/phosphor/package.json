@@ -8,13 +8,14 @@
         "dev": "vite",
         "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "pack": "npx framer-plugin-tools@latest pack",
         "preview": "vite preview",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "@phosphor-icons/core": "^2.0.8",
         "@phosphor-icons/react": "^2.0.15",
-        "framer-plugin": "^2.0.2",
+        "framer-plugin": "^2.0.4",
         "fuse.js": "^7.0.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
@@ -30,7 +31,7 @@
         "eslint-plugin-react-hooks": "^4.6.0",
         "eslint-plugin-react-refresh": "^0.4.5",
         "typescript": "^5.4.5",
-        "vite": "^5.2.9",
+        "vite": "^5",
         "vite-plugin-framer": "^1.0.1"
     }
 }

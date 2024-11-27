@@ -7,10 +7,11 @@
         "dev": "vite",
         "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "pack": "npx framer-plugin-tools@latest pack",
         "preview": "vite preview"
     },
     "dependencies": {
-        "framer-plugin": "^2.0.2",
+        "framer-plugin": "^2.0.4",
         "react": "^18",
         "react-dom": "^18",
         "vite-plugin-mkcert": "^1"

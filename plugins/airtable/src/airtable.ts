@@ -544,9 +544,6 @@ export async function getTableIdMapForBase(baseId: string | null): Promise<Map<s
         if (collectionBaseId !== baseId) continue
 
         const collectionTableId = await collection.getPluginData(PLUGIN_TABLE_ID_KEY)
-        console.log(
-            `found for base id: ${baseId}, table (id): ${await collection.getPluginData(PLUGIN_TABLE_NAME_KEY)} (${collectionTableId}), collection id: ${collection.id}`
-        )
         if (!collectionTableId) continue
 
         tableMapId.set(collectionTableId, collection.id)

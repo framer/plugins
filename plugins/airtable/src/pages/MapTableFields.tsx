@@ -52,6 +52,7 @@ const getLastSyncedTime = (
 }
 
 const createFieldConfig = (
+    pluginContext: PluginContext,
     primaryFieldId: string,
     fieldSchemas: AirtableFieldSchema[],
     tableMapId: Map<string, string>
@@ -59,8 +60,13 @@ const createFieldConfig = (
     const result: ManagedCollectionFieldConfig[] = []
 
     for (const fieldSchema of fieldSchemas) {
+        const existingField =
+            "collectionFields" in pluginContext
+                ? pluginContext.collectionFields.find(field => field.id === fieldSchema.id)
+                : null
+
         result.push({
-            field: getCollectionForAirtableField(fieldSchema, tableMapId),
+            field: existingField ?? getCollectionForAirtableField(fieldSchema, tableMapId),
             originalFieldName: fieldSchema.name,
         })
     }
@@ -125,7 +131,7 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
         getInitialSlugFieldId(pluginContext, tableSchema.primaryFieldId)
     )
     const [fieldConfig, setFieldConfig] = useState<ManagedCollectionFieldConfig[]>(() =>
-        createFieldConfig(tableSchema.primaryFieldId, tableSchema.fields, pluginContext.tableMapId)
+        createFieldConfig(pluginContext, tableSchema.primaryFieldId, tableSchema.fields, pluginContext.tableMapId)
     )
     const [disabledFieldIds, setDisabledFieldIds] = useState(
         () => new Set<string>(pluginContext.type === "update" ? pluginContext.ignoredFieldIds : [])
@@ -226,7 +232,9 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
     }
 
     useEffect(() => {
-        setFieldConfig(createFieldConfig(tableSchema.primaryFieldId, tableSchema.fields, pluginContext.tableMapId))
+        setFieldConfig(
+            createFieldConfig(pluginContext, tableSchema.primaryFieldId, tableSchema.fields, pluginContext.tableMapId)
+        )
     }, [pluginContext.tableMapId, tableSchema.fields, tableSchema.primaryFieldId])
 
     return (

@@ -49,7 +49,12 @@ export function SelectTablePage({ onTableSelected }: Props) {
             <div className="col pl-[15px]">
                 <div className="row justify-between items-center">
                     <p>Base</p>
-                    <select onChange={handleBaseSelect} value={selectedBaseId || ""} className="w-[164px]">
+                    <select
+                        onChange={handleBaseSelect}
+                        value={selectedBaseId || ""}
+                        className="w-[164px]"
+                        disabled={isFetchingBases}
+                    >
                         <option value="" disabled>
                             {isFetchingBases ? "Loading..." : "Choose..."}
                         </option>
@@ -65,7 +70,7 @@ export function SelectTablePage({ onTableSelected }: Props) {
                     <select
                         onChange={handleTableSelect}
                         value={selectedTableId || ""}
-                        disabled={!selectedBaseId}
+                        disabled={!selectedBaseId || isFetchingSchemas}
                         className="w-[164px]"
                     >
                         <option value="" disabled>

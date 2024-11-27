@@ -1,6 +1,6 @@
-# Framer Airtable Plugin
+# Airtable Plugin
 
-Framer Airtable Sync Plugin
+Plugin for syncing Airtable tables into the Framer CMS.
 
 **By:** @sakib25800, @triozer, and @benjamindenboer
 

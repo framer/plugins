@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    h6 {
+        @apply font-semibold text-primary leading-[1.2];
+    }
+}
+
+@layer components {
+    .row {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+    }
+
+    .col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .row-lg {
+        display: flex;
+        flex-direction: row;
+        gap: 15px;
+    }
+
+    .col-lg {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .segment-control-shadow {
+        box-shadow:
+            0px 2px 4px 0px rgba(0, 0, 0, 0.1),
+            0px 1px 0px 0px rgba(0, 0, 0, 0.05);
+    }
+
+    .framer-button-destructive {
+        @apply bg-framer-red text-white;
+    }
+
+    .framer-button-destructive:hover,
+    .framer-button-destructive:focus {
+        @apply bg-framer-red-dimmed;
+    }
+
+    .tile {
+        @apply bg-tertiaryDimmedLight dark:bg-tertiaryDimmedDark dark:hover:bg-tertiary hover:bg-tertiary;
+    }
+
+    .tile:disabled {
+        @apply bg-tertiaryDimmedLight dark:bg-tertiaryDimmedDark;
+    }
+
+    .panel-row {
+        @apply row items-center justify-between pl-[15px] h-[30px] text-tertiary;
+    }
+
+    .panel-row > p {
+        @apply max-w-[134px] truncate text-primary;
+    }
+
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .no-scrollbar {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+}
+
+body,
+html,
+#root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+main {
+    padding: 15px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}

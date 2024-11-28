@@ -36,3 +36,9 @@ p
 *.sw?
 
 plugin.zip
+
+# Ignore plugins lock files
+plugins/**/yarn.lock
+plugins/**/package-lock.json
+plugins/**/pnpm-lock.yaml
+plugins/**/bun.lockb

@@ -395,6 +395,15 @@ function processSheet(
     }
 }
 
+function generateHeaderRowHash(headerRow: HeaderRow, ignoredColumns: string[]) {
+    return generateHashId(
+        [...headerRow]
+            .filter(field => !ignoredColumns.includes(field))
+            .sort()
+            .join(HEADER_ROW_DELIMITER)
+    )
+}
+
 export async function syncSheet({
     fetchedSheet,
     spreadsheetId,
@@ -417,12 +426,7 @@ export async function syncSheet({
     const [headerRow, ...rows] = sheet.values
 
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
-    const headerRowHash = generateHashId(
-        [...headerRow]
-            .filter(field => !ignoredColumns.includes(field))
-            .sort()
-            .join(HEADER_ROW_DELIMITER)
-    )
+    const headerRowHash = generateHeaderRowHash(headerRow, ignoredColumns)
 
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
@@ -543,16 +547,6 @@ export async function getPluginContext(): Promise<PluginContext> {
 
     const sheetHeaderRow = sheet.values[0]
 
-    // We should not hash ignored fields since they are not synced to Framer,
-    // and we don't want to trigger a re-sync of the sheet.
-    const currentSheetHeaderRowHash = generateHashId(
-        [...sheetHeaderRow]
-            .filter(field => !ignoredColumns.includes(field))
-            .sort()
-            .join(HEADER_ROW_DELIMITER)
-    )
-    const storedSheetHeaderRowHash = rawSheetHeaderRowHash ?? ""
-
     let slugColumn: string | null = null
     let ignoredColumns: string[] = []
 
@@ -579,6 +573,11 @@ export async function getPluginContext(): Promise<PluginContext> {
         ignoredColumns = parseStringToArray<string>(rawIgnoredColumns, "string")
         slugColumn = storedSlugColumn
     }
+
+    // We should not hash ignored fields since they are not synced to Framer,
+    // and we don't want to trigger a re-sync of the sheet.
+    const currentSheetHeaderRowHash = generateHeaderRowHash(sheetHeaderRow, ignoredColumns)
+    const storedSheetHeaderRowHash = rawSheetHeaderRowHash ?? ""
 
     // If the order of the columns has changed, we need to reorder the collection fields
     if (storedSheetHeaderRowHash && collectionFields.length > 0) {

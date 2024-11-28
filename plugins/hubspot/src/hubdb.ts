@@ -10,6 +10,7 @@ import {
     HubDBValueOption,
     HubDBImage,
     HubDBFile,
+    HubDBForeignValues,
 } from "./api"
 import {
     slugify,
@@ -29,6 +30,8 @@ const PLUGIN_SLUG_FIELD_ID_KEY = "hubdbSlugFieldId"
 
 // Public HubSpot apps have a max of 100 requests / 10s
 const CONCURRENCY_LIMIT = 5
+
+export type TableIdMap = Map<string, string>
 
 export interface SyncMutationOptions {
     fields: ManagedCollectionField[]
@@ -50,6 +53,7 @@ export interface ProcessRowParams {
 export interface HubDBPluginContextNew {
     type: "new"
     collection: ManagedCollection
+    tableIdMap: TableIdMap
 }
 
 export interface HubDBPluginContextUpdate {
@@ -61,9 +65,23 @@ export interface HubDBPluginContextUpdate {
     slugFieldId: string
     columns: Column[]
     collectionFields: ManagedCollectionField[]
+    tableIdMap: TableIdMap
 }
 
 export type HubDBPluginContext = HubDBPluginContextNew | HubDBPluginContextUpdate
+
+export async function getTableIdMap(): Promise<TableIdMap> {
+    const tableIdMap: TableIdMap = new Map()
+
+    for (const collection of await framer.getCollections()) {
+        const collectionTableId = await collection.getPluginData(PLUGIN_TABLE_ID_KEY)
+        if (!collectionTableId) continue
+
+        tableIdMap.set(collectionTableId, collection.id)
+    }
+
+    return tableIdMap
+}
 
 /**
  * Get the value of a HubDB cell in a format compatible with a collection field.
@@ -97,6 +115,9 @@ async function getFieldValue(column: Column, cellValue: HubDBCellValue): Promise
         case "CURRENCY":
             return typeof cellValue === "number" ? cellValue : undefined
 
+        case "FOREIGN_ID":
+            return (cellValue as HubDBForeignValues).map(({ id }) => id)
+
         default:
             return undefined
     }
@@ -105,7 +126,10 @@ async function getFieldValue(column: Column, cellValue: HubDBCellValue): Promise
 /**
  * Get the collection field schema for a HubDB column.
  */
-export function getCollectionFieldForHubDBColumn(column: Column): ManagedCollectionField | null {
+export function getCollectionFieldForHubDBColumn(
+    column: Column,
+    tableIdMap: TableIdMap
+): ManagedCollectionField | null {
     assert(column.id)
 
     const fieldMetadata = {
@@ -155,8 +179,26 @@ export function getCollectionFieldForHubDBColumn(column: Column): ManagedCollect
             }
         }
 
-        // TODO: Implement collection references
-        case "FOREIGN_ID":
+        case "FOREIGN_ID": {
+            const foreignTableId = column.foreignTableId
+            assert(foreignTableId)
+
+            const collectionId = tableIdMap.get(String(foreignTableId))
+            if (!collectionId) {
+                // Table includes a relation to a table that hasn't been synced to Framer.
+                // TODO: It would be better to surface this error to the user in
+                // the UI instead of just skipping the field.
+                // - same as Notion
+                return null
+            }
+
+            return {
+                ...fieldMetadata,
+                type: "multiCollectionReference",
+                collectionId,
+            }
+        }
+
         default:
             return null
     }
@@ -196,7 +238,8 @@ export function shouldSyncHubDBImmediately(
 function hasFieldConfigurationChanged(
     currentManagedCollectionFields: ManagedCollectionField[],
     columns: Column[],
-    includedFieldIds: string[]
+    includedFieldIds: string[],
+    tableIdMap: TableIdMap
 ): boolean {
     const currentFieldsById = new Map(currentManagedCollectionFields.map(field => [field.id, field]))
 
@@ -210,7 +253,7 @@ function hasFieldConfigurationChanged(
     for (const column of includedColumns) {
         assert(column.id)
         const collectionField = currentFieldsById.get(column.id)
-        const expectedField = getCollectionFieldForHubDBColumn(column)
+        const expectedField = getCollectionFieldForHubDBColumn(column, tableIdMap)
 
         if (!collectionField) {
             return true
@@ -352,8 +395,10 @@ export async function getHubDBPluginContext(): Promise<HubDBPluginContext> {
         collection.getPluginData(PLUGIN_SLUG_FIELD_ID_KEY),
     ])
 
+    const tableIdMap = await getTableIdMap()
+
     if (!tableId || !slugFieldId || !rawIncludedFieldHash) {
-        return { type: "new", collection }
+        return { type: "new", collection, tableIdMap }
     }
 
     const { columns } = await fetchPublishedTable(tableId)
@@ -371,7 +416,7 @@ export async function getHubDBPluginContext(): Promise<HubDBPluginContext> {
         hasChangedFields = true
     } else {
         // Do full check
-        hasChangedFields = hasFieldConfigurationChanged(collectionFields, columns, includedFieldIds)
+        hasChangedFields = hasFieldConfigurationChanged(collectionFields, columns, includedFieldIds, tableIdMap)
     }
 
     return {
@@ -383,6 +428,7 @@ export async function getHubDBPluginContext(): Promise<HubDBPluginContext> {
         slugFieldId,
         collectionFields,
         collection,
+        tableIdMap,
     }
 }
 

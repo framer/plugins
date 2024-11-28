@@ -148,7 +148,7 @@ export function App() {
                 return syncBlogs({
                     includedFieldIds: blogContext.includedFieldIds,
                     fields: blogContext.collectionFields,
-                }).then(() => framer.closePlugin("Synchronization successful"))
+                }).then(() => framer.closePlugin())
             }
 
             if (shouldSyncHubDB) {
@@ -157,7 +157,7 @@ export function App() {
                     fields: hubContext.collectionFields,
                     slugFieldId: hubContext.slugFieldId,
                     includedFieldIds: hubContext.includedFieldIds,
-                }).then(() => framer.closePlugin("Synchronization successful"))
+                }).then(() => framer.closePlugin())
             }
 
             if (blogContext.type === "update") {

@@ -7,6 +7,7 @@ import {
     getCollectionFieldForHubDBColumn,
     getPossibleSlugFields,
     HubDBPluginContext,
+    TableIdMap,
     useSyncHubDBTableMutation,
 } from "@/hubdb"
 import { PageProps } from "@/router"
@@ -22,9 +23,9 @@ const getInitialSlugFieldId = (context: HubDBPluginContext, columns: Column[]): 
     return textColumns[0].id ?? null
 }
 
-const createFieldConfig = (columns: Column[]): ManagedCollectionFieldConfig[] => {
+const createFieldConfig = (columns: Column[], tableIdMap: TableIdMap): ManagedCollectionFieldConfig[] => {
     return columns.map(col => ({
-        field: getCollectionFieldForHubDBColumn(col),
+        field: getCollectionFieldForHubDBColumn(col, tableIdMap),
         originalFieldName: col.label,
     }))
 }
@@ -65,7 +66,7 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
         )
 
         setSlugFieldId(getInitialSlugFieldId(hubDbPluginContext, columns))
-        setCollectionFieldConfig(createFieldConfig(columns))
+        setCollectionFieldConfig(createFieldConfig(columns, hubDbPluginContext.tableIdMap))
         setIncludedFieldIds(newIncludedFieldIds)
         setFieldNameOverrides(getFieldNameOverrides(hubDbPluginContext))
     }, [hubDbPluginContext, table])

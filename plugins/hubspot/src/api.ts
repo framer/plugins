@@ -51,7 +51,21 @@ export interface HubDBFile {
     type: "file"
 }
 
-export type HubDBCellValue = string | number | boolean | Date | HubDBImage | HubDBValueOption | HubDBFile
+export type HubDBForeignValues = Array<{
+    id: string
+    name: string
+    type: "foreignid"
+}>
+
+export type HubDBCellValue =
+    | string
+    | number
+    | boolean
+    | Date
+    | HubDBImage
+    | HubDBValueOption
+    | HubDBFile
+    | HubDBForeignValues
 
 export interface HSAccount {
     portalId: number

@@ -125,6 +125,8 @@ async function getFieldValue(column: Column, cellValue: HubDBCellValue): Promise
 
 /**
  * Get the collection field schema for a HubDB column.
+ * Returns `null` for fields that are supported but can't be synced yet
+ * Returns `undefined` for fields that are not supported outright
  */
 export function getCollectionFieldForHubDBColumn(
     column: Column,
@@ -200,7 +202,7 @@ export function getCollectionFieldForHubDBColumn(
         }
 
         default:
-            return null
+            return undefined
     }
 }
 

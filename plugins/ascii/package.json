@@ -23,7 +23,7 @@
         "react": "^18",
         "react-dom": "^18",
         "react-dropzone": "^14.2.3",
-        "vite-plugin-mkcert": "^1.17.5"
+        "vite-plugin-mkcert": "^1"
     },
     "devDependencies": {
         "@swc/cli": "^0.4.0",

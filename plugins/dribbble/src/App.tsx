@@ -24,16 +24,20 @@ export function AuthenticatedApp({ context }: { context: PluginContext }) {
 export function App({ context }: { context: PluginContext }) {
     const [pluginContext, setPluginContext] = useState(context)
 
+    useEffect(() => {
+        if (!auth.isAuthenticated()) {
+            framer.showUI({
+                width: 260,
+                height: 345,
+            })
+        }
+    }, [])
+
     const handleAuthenticated = async () => {
         setPluginContext(await getPluginContext())
     }
 
     if (!auth.isAuthenticated()) {
-        framer.showUI({
-            width: 260,
-            height: 345,
-        })
-
         return <Authenticate onAuthenticated={handleAuthenticated} />
     }
 

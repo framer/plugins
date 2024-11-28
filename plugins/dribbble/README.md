@@ -1,8 +1,6 @@
 # Dribbble Plugin
 
-Dribbble Plugin
-- Sync shots
-- Drop shots
+Sync shots from Dribbble
 
 **By:** @sakib25800
 

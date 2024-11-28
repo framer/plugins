@@ -19,7 +19,7 @@
         "react": "^18",
         "react-dom": "^18",
         "react-webcam": "^7.2.0",
-        "vite-plugin-mkcert": "^1.17.5"
+        "vite-plugin-mkcert": "^1"
     },
     "devDependencies": {
         "@types/react": "^18",

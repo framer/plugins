@@ -92,7 +92,38 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
             }
             case "code":
-                htmlContent += `<pre><code class="language-${block.code.language.replace(" ", "-")}">${richTextToHTML(block.code.rich_text)}</code></pre>`
+                htmlContent += `<pre data-language="${
+                    CODE_LANGUAGE_MAPPING[block.code.language] || "JavaScript"
+                }"><code>${richTextToHTML(block.code.rich_text)}</code></pre>`
+                break
+            case "quote":
+                htmlContent += `<blockquote>${richTextToHTML(block.quote.rich_text)}</blockquote>`
+                break
+            case "video":
+                if (block.video.type === "external") {
+                    const url = block.video.external.url
+                    if (url && (url.includes("youtube.com") || url.includes("youtu.be"))) {
+                        try {
+                            const urlObj = new URL(url)
+                            let videoId = ""
+
+                            if (urlObj.hostname === "youtube.com" || urlObj.hostname === "www.youtube.com") {
+                                videoId = urlObj.searchParams.get("v") || ""
+                            } else if (urlObj.hostname === "youtu.be") {
+                                videoId = urlObj.pathname.slice(1)
+                            }
+
+                            if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+                                const embedUrl = `https://www.youtube.com/embed/${encodeURIComponent(
+                                    videoId
+                                )}?controls=0&autoplay=0&loop=0&mute=1`
+                                htmlContent += `<iframe src="${embedUrl}"></iframe>`
+                            }
+                        } catch (error) {
+                            console.warn("Invalid YouTube URL:", url)
+                        }
+                    }
+                }
                 break
             default:
                 // TODO: More block types can be added here!
@@ -101,4 +132,79 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
     }
 
     return htmlContent
+}
+
+const CODE_LANGUAGE_MAPPING = {
+    abap: null,
+    arduino: null,
+    bash: "Shell",
+    basic: null,
+    c: "C",
+    clojure: null,
+    coffeescript: null,
+    "c++": "C++",
+    "c#": "C#",
+    css: "CSS",
+    dart: null,
+    diff: null,
+    docker: null,
+    elixir: null,
+    elm: null,
+    erlang: null,
+    flow: null,
+    fortran: null,
+    "f#": null,
+    gherkin: null,
+    glsl: null,
+    go: "Go",
+    graphql: null,
+    groovy: null,
+    haskell: "Haskell",
+    html: "HTML",
+    java: "Java",
+    javascript: "JavaScript",
+    json: null,
+    julia: "Julia",
+    kotlin: "Kotlin",
+    latex: null,
+    less: "Less",
+    lisp: null,
+    livescript: null,
+    lua: "Lua",
+    makefile: null,
+    markdown: "Markdown",
+    markup: null,
+    matlab: "MATLAB",
+    mermaid: null,
+    nix: null,
+    "objective-c": "Objective-C",
+    ocaml: null,
+    pascal: null,
+    perl: "Perl",
+    php: "PHP",
+    "plain text": null,
+    powershell: null,
+    prolog: null,
+    protobuf: null,
+    python: "Python",
+    r: null,
+    reason: null,
+    ruby: "Ruby",
+    rust: "Rust",
+    sass: null,
+    scala: "Scala",
+    scheme: null,
+    scss: "SCSS",
+    shell: "Shell",
+    sql: "SQL",
+    swift: "Swift",
+    typescript: "TypeScript",
+    "vb.net": null,
+    verilog: null,
+    vhdl: null,
+    "visual basic": null,
+    webassembly: null,
+    xml: null,
+    yaml: "YAML",
+    "java/c/c++/c#": null,
 }

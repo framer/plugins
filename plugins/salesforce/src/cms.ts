@@ -1,6 +1,13 @@
 import { framer, ManagedCollection, ManagedCollectionField } from "framer-plugin"
 import { computeFieldSets, createFieldSetHash, isDefined, slugify } from "./utils"
-import { fetchObjectConfig, fetchObjectRecords, SFFieldConfig, SFRecord, SFRecordFieldValue } from "./api"
+import {
+    fetchObjectConfig,
+    fetchObjectRecords,
+    fetchObjectFieldId,
+    SFFieldConfig,
+    SFRecord,
+    SFRecordFieldValue,
+} from "./api"
 import { logSyncResult } from "./debug"
 import { useMutation } from "@tanstack/react-query"
 
@@ -157,6 +164,7 @@ interface ProcessAllRecordsParams {
     fieldsById: FieldsById
     slugFieldId: string
     unsyncedItemIds: Set<string>
+    objectName: string // Added this parameter
 }
 
 interface ProcessRecordParams extends ProcessAllRecordsParams {
@@ -172,16 +180,16 @@ export interface SyncProgress {
 
 type OnProgressHandler = (progress: SyncProgress) => void
 
-function processRecord({
+async function processRecord({
     record,
     fieldConfigs,
     slugFieldId,
     fieldsById,
     status,
     unsyncedItemIds,
+    objectName,
 }: ProcessRecordParams) {
     let slugValue: string | null = null
-
     const fieldData: Record<string, unknown> = {}
 
     if (typeof record.Id !== "string") {
@@ -199,12 +207,10 @@ function processRecord({
 
         if (fieldId === slugFieldId) {
             if (typeof fieldValue !== "string") continue
-
             slugValue = slugify(fieldValue)
         }
 
         // These fields are included in the request regardless of the requested properties
-        // in the params
         if (EXCLUDED_FIELD_IDS.includes(fieldId)) {
             continue
         }
@@ -221,14 +227,28 @@ function processRecord({
             })
         }
 
-        fieldData[fieldId] = collectionFieldValue
+        // If it's a custom field, we need to fetch its Id since custom fields have mutable names
+        if (fieldConfig.custom) {
+            try {
+                const fieldId = await fetchObjectFieldId(objectName, fieldConfig.name)
+                fieldData[fieldId] = collectionFieldValue
+            } catch (e) {
+                status.errors.push({
+                    fieldName: fieldConfig.name,
+                    message: `Failed to fetch ID for custom field: ${e instanceof Error ? e.message : String(e)}. Field will be excluded.`,
+                })
+
+                continue
+            }
+        } else {
+            fieldData[fieldConfig.name] = collectionFieldValue
+        }
     }
 
     if (!slugValue) {
         status.warnings.push({
             message: "Slug missing. Skipping item.",
         })
-
         return null
     }
 
@@ -239,7 +259,7 @@ function processRecord({
     }
 }
 
-function processAllRecords(
+async function processAllRecords(
     records: SFRecord[],
     onProgress: OnProgressHandler,
     processRecordParams: ProcessAllRecordsParams
@@ -256,27 +276,28 @@ function processAllRecords(
 
     onProgress({ totalCount, completedCount, completedPercent: 0 })
 
-    const collectionItems = records
-        .map(record => {
-            const result = processRecord({
-                ...processRecordParams,
-                record,
-                status,
-            })
-
-            completedCount++
-            onProgress({
-                totalCount,
-                completedCount,
-                completedPercent: Math.round((completedCount / totalCount) * 100),
-            })
-
-            return result
+    const processedRecords = []
+    for (const record of records) {
+        const result = await processRecord({
+            ...processRecordParams,
+            record,
+            status,
         })
-        .filter(isDefined)
+
+        completedCount++
+        onProgress({
+            totalCount,
+            completedCount,
+            completedPercent: Math.round((completedCount / totalCount) * 100),
+        })
+
+        if (result) {
+            processedRecords.push(result)
+        }
+    }
 
     return {
-        collectionItems,
+        collectionItems: processedRecords,
         status,
         seenItemIds,
     }
@@ -310,18 +331,21 @@ export async function syncAllRecords({
 
     const fieldsById = new Map(fields.map(field => [field.id, field]))
     const unsyncedItemIds = new Set(await collection.getItemIds())
+
     // Always include the slug field and Id
     const records = await fetchObjectRecords(
         objectId,
         Array.from(new Set([...includedFieldIds, slugFieldId, "Id"])),
         MAX_CMS_ITEMS
     )
-    const { collectionItems, status } = processAllRecords(records, onProgress, {
+
+    const { collectionItems, status } = await processAllRecords(records, onProgress, {
         fields,
         fieldConfigs,
         fieldsById,
         slugFieldId,
         unsyncedItemIds,
+        objectName: objectId,
     })
 
     await collection.addItems(collectionItems)
@@ -349,6 +373,8 @@ export async function syncAllRecords({
     return result
 }
 
+// Rest of the code remains the same...
+
 export async function getObjectIdMap(): Promise<ObjectIdMap> {
     const objectIdMap: ObjectIdMap = new Map()
 
@@ -362,10 +388,6 @@ export async function getObjectIdMap(): Promise<ObjectIdMap> {
     return objectIdMap
 }
 
-/*
- * Given a set of Salesforce object field configs, returns a list of possible
- * fields that can be used as slugs.
- */
 export function getPossibleSlugFields(fieldConfigs: SFFieldConfig[]) {
     const options: SFFieldConfig[] = []
 
@@ -379,10 +401,6 @@ export function getPossibleSlugFields(fieldConfigs: SFFieldConfig[]) {
     return options
 }
 
-/**
- * Determines whether the field configuration of the currently managed collection
- * fields differ from the Salesforce object field configuration
- */
 function hasFieldConfigurationChanged(
     currentManagedCollectionFields: ManagedCollectionField[],
     fields: SFFieldConfig[],

@@ -88,6 +88,7 @@ export interface SFFieldConfig {
         value: string
         label: string
     }>
+    custom: boolean
     referenceTo: string[] // e.g. ["User"]
     relationshipName: string // e.g. "Owner"
     type:
@@ -281,6 +282,25 @@ export const request = async <T = unknown>(
 
         throw new PluginError("Something went wrong", e instanceof Error ? e.message : JSON.stringify(e))
     }
+}
+
+/**
+ * Retrieve a specific field's ID from a Salesforce object
+ * @param objectName - The API name of the object (e.g., "Account", "Custom_Object__c")
+ * @param fieldName - The API name of the field (e.g., "Name", "Custom_Field__c")
+ */
+export const fetchObjectFieldId = (objectName: string, fieldName: string) => {
+    return request<SFQueryResult<{ Id: string }>>({
+        path: `/query`,
+        query: {
+            q: `SELECT Id FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName='${objectName}' AND QualifiedApiName='${fieldName}'`,
+        },
+    }).then(result => {
+        if (!result.records.length) {
+            throw new PluginError("Field Not Found", `Could not find field "${fieldName}" on object "${objectName}"`)
+        }
+        return result.records[0].Id
+    })
 }
 
 /**

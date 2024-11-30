@@ -1,6 +1,8 @@
 import { BlockObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
 import { assert } from "./utils"
 
+const YOUTUBE_ID_REGEX = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))(?<videoId>[^?&]+)/u
+
 export function richTextToHTML(texts: RichTextItemResponse[]) {
     return texts
         .map(({ plain_text, annotations, href }) => {
@@ -92,9 +94,15 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
             }
             case "code":
-                htmlContent += `<pre data-language="${
-                    CODE_LANGUAGE_MAPPING[block.code.language] || "JavaScript"
-                }"><code>${richTextToHTML(block.code.rich_text)}</code></pre>`
+                const language = CODE_LANGUAGE_MAPPING[block.code.language]
+
+                if (language) {
+                    htmlContent += `<pre data-language="${language}"><code>${richTextToHTML(
+                        block.code.rich_text
+                    )}</code></pre>`
+                } else {
+                    htmlContent += `<pre><code>${richTextToHTML(block.code.rich_text)}</code></pre>`
+                }
                 break
             case "quote":
                 htmlContent += `<blockquote>${richTextToHTML(block.quote.rich_text)}</blockquote>`
@@ -102,26 +110,10 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
             case "video":
                 if (block.video.type === "external") {
                     const url = block.video.external.url
-                    if (url && (url.includes("youtube.com") || url.includes("youtu.be"))) {
-                        try {
-                            const urlObj = new URL(url)
-                            let videoId = ""
-
-                            if (urlObj.hostname === "youtube.com" || urlObj.hostname === "www.youtube.com") {
-                                videoId = urlObj.searchParams.get("v") || ""
-                            } else if (urlObj.hostname === "youtu.be") {
-                                videoId = urlObj.pathname.slice(1)
-                            }
-
-                            if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-                                const embedUrl = `https://www.youtube.com/embed/${encodeURIComponent(
-                                    videoId
-                                )}?controls=0&autoplay=0&loop=0&mute=1`
-                                htmlContent += `<iframe src="${embedUrl}"></iframe>`
-                            }
-                        } catch (error) {
-                            console.warn("Invalid YouTube URL:", url)
-                        }
+                    const youtubeId = url.match(YOUTUBE_ID_REGEX)?.groups?.videoId
+                    if (youtubeId) {
+                        htmlContent += `<iframe src="https://www.youtube.com/embed/${youtubeId}"></iframe>`
+                        break
                     }
                 }
                 break
@@ -134,7 +126,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
     return htmlContent
 }
 
-const CODE_LANGUAGE_MAPPING = {
+const CODE_LANGUAGE_MAPPING: Record<string, string | null> = {
     abap: null,
     arduino: null,
     bash: "Shell",

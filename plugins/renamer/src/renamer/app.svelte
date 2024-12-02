@@ -1,20 +1,20 @@
 <script lang="ts">
-  import type { CanvasNode, IndexEntry, Result } from "./search/types";
-  import type { CategoryFilter, Filter, TextFilter } from "./search/filters";
+  import type { CanvasNode, IndexEntry, Result } from "../shared/search/types";
+  import type { CategoryFilter, Filter, TextFilter } from "../shared/search/filters";
 
   import { fade } from "svelte/transition";
-  import SearchReplace from "./components/search_replace.svelte";
-  import { executeFilters } from "./search/execute_filters";
+  import SearchReplace from "../shared/components/search_replace.svelte";
+  import { executeFilters } from "../shared/search/execute_filters";
   import { framer } from "framer-plugin";
-  import { Indexer } from "./search/indexer";
-  import starsLightImage from "./assets/stars_light.png";
-  import starsDarkImage from "./assets/stars_dark.png";
-  import Results from "./components/results.svelte";
-  import { BatchProcessResults } from "./search/batch_process_results";
-  import Tabs from "./components/tabs.svelte";
-  import { assertNever } from "./utils/assert";
-  import { renameResult } from "./search/result_processors/rename_result";
-  import { cleanUpResult } from "./search/result_processors/clean_up_result";
+  import { Indexer } from "../shared/search/indexer";
+  import starsLightImage from "../shared/assets/stars_light.png";
+  import starsDarkImage from "../shared/assets/stars_dark.png";
+  import Results from "../shared/components/results.svelte";
+  import { BatchProcessResults } from "../shared/search/batch_process_results";
+  import Tabs from "../shared/components/tabs.svelte";
+  import { assertNever } from "../shared/utils/assert";
+  import { renameResult } from "../shared/search/result_processors/rename_result";
+  import { cleanUpResult } from "../shared/search/result_processors/clean_up_result";
 
   let currentRootId: string | undefined = $state();
   let currentMode: "search" | "clean" = $state("search");

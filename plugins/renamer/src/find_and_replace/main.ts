@@ -1,5 +1,5 @@
 import "framer-plugin/framer.css";
-import "./reset.css";
+import "../shared/reset.css";
 
 import App from "./app.svelte";
 import { framer } from "framer-plugin";
@@ -20,5 +20,7 @@ void framer.showUI({
 const app = mount(App, {
   target: document.getElementById("app")!,
 });
+
+console.log("Find and replace!");
 
 export default app;

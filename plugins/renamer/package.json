@@ -4,10 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "dev:renamer": "vite ./src/renamer",
+    "dev:find_and_replace": "vite ./src/find_and_replace",
+    "build:renamer": "vite build ./src/renamer --outDir ../../dist/renamer --emptyOutDir",
+    "build:find_and_replace": "vite build ./src/find_and_replace --outDir ../../dist/find_and_replace --emptyOutDir",
     "check": "svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json",
-    "dev": "vite",
     "format": "prettier --check '**/*.{js,json,jsx,md,ts,svelte,css}' --write",
-    "build": "vite build",
     "pack": "npx framer-plugin-tools@latest pack",
     "preview": "vite preview"
   },

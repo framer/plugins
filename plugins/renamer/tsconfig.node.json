@@ -8,5 +8,5 @@
     "strict": true,
     "noEmit": true
   },
-  "include": ["vite.config.ts"]
+  "include": ["./src/renamer/vite.config.ts", "./src/find_and_replace/vite.config.ts"]
 }

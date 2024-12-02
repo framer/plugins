@@ -174,12 +174,18 @@ function getFieldValue(fieldSchema: AirtableFieldSchema, cellValue: AirtableFiel
     }
 }
 
+export interface DataSource {
+    collectionId: string
+    name: string
+}
+export type TableIdMap = Map<string, DataSource[]>
+
 /**
  * Get the collection field schema for an Airtable field.
  */
 export function getCollectionForAirtableField(
     fieldSchema: AirtableFieldSchema,
-    tableIdMap: Map<string, string>
+    tableIdMap: TableIdMap
 ): ManagedCollectionField | null {
     const fieldMetadata = {
         id: fieldSchema.id,
@@ -230,14 +236,16 @@ export function getCollectionForAirtableField(
             return { ...fieldMetadata, type: "date" }
 
         case "multipleRecordLinks": {
-            const tableId = tableIdMap.get(fieldSchema.options.linkedTableId)
+            const tableIds = tableIdMap.get(fieldSchema.options.linkedTableId)
 
-            if (!tableId) {
+            if (!tableIds || tableIds.length === 0) {
                 // Table includes a relation to a table that hasn't been synced to Framer.
                 // TODO: It would be better to surface this error to the user in
                 // the UI instead of just skipping the field.
                 return null
             }
+
+            const tableId = tableIds[0].collectionId
 
             if (fieldSchema.options.prefersSingleRecordLink) {
                 return { ...fieldMetadata, collectionId: tableId, type: "collectionReference" }
@@ -334,7 +342,7 @@ export interface PluginContextNew {
     type: "new"
     collection: ManagedCollection
     isAuthenticated: boolean
-    tableMapId: Map<string, string>
+    tableMapId: TableIdMap
 }
 
 export interface PluginContextUpdate {
@@ -349,7 +357,7 @@ export interface PluginContextUpdate {
     ignoredFieldIds: string[]
     slugFieldId: string | null
     isAuthenticated: boolean
-    tableMapId: Map<string, string>
+    tableMapId: TableIdMap
 }
 
 export interface PluginContextNoTableAccess {
@@ -533,8 +541,8 @@ function getIgnoredFieldIds(rawIgnoredFieldIds: string | null) {
     return parsed
 }
 
-export async function getTableIdMapForBase(baseId: string | null): Promise<Map<string, string>> {
-    const tableMapId = new Map<string, string>()
+export async function getTableIdMapForBase(baseId: string | null): Promise<TableIdMap> {
+    const tableMapId: TableIdMap = new Map()
     if (!baseId) return tableMapId
 
     const collections = await framer.getCollections()
@@ -546,7 +554,8 @@ export async function getTableIdMapForBase(baseId: string | null): Promise<Map<s
         const collectionTableId = await collection.getPluginData(PLUGIN_TABLE_ID_KEY)
         if (!collectionTableId) continue
 
-        tableMapId.set(collectionTableId, collection.id)
+        const existingTableIds = tableMapId.get(collectionTableId) ?? []
+        tableMapId.set(collectionTableId, [...existingTableIds, { collectionId: collection.id, name: collection.name }])
     }
 
     return tableMapId

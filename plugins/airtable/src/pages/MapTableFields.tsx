@@ -11,14 +11,22 @@ import {
     PluginContextUpdate,
     SyncMutationOptions,
     SyncProgress,
+    TableIdMap,
 } from "../airtable"
 
 import { Button } from "../components/Button"
 import { IconChevron } from "../components/Icons"
 import { CheckboxTextfield } from "@/components/CheckboxTextField"
 
+interface WithReference {
+    type: "collectionReference" | "multiCollectionReference"
+    source: string
+    destination: string | null
+}
+
 interface ManagedCollectionFieldConfig {
     field: ManagedCollectionField | null
+    reference: WithReference | null
     originalFieldName: string
 }
 
@@ -51,22 +59,40 @@ const getLastSyncedTime = (
     return pluginContext.lastSyncedTime
 }
 
+const getReference = (fieldSchema: AirtableFieldSchema, field: ManagedCollectionField | null): WithReference | null => {
+    if (fieldSchema.type !== "multipleRecordLinks") {
+        return null
+    }
+    if (!field || (field?.type !== "collectionReference" && field?.type !== "multiCollectionReference")) {
+        return null
+    }
+
+    return {
+        type: fieldSchema.options.prefersSingleRecordLink ? "collectionReference" : "multiCollectionReference",
+        source: fieldSchema.options.linkedTableId,
+        destination: field.collectionId,
+    }
+}
+
 const createFieldConfig = (
     pluginContext: PluginContext,
     primaryFieldId: string,
     fieldSchemas: AirtableFieldSchema[],
-    tableMapId: Map<string, string>
+    tableMapId: TableIdMap
 ): ManagedCollectionFieldConfig[] => {
     const result: ManagedCollectionFieldConfig[] = []
 
     for (const fieldSchema of fieldSchemas) {
         const existingField =
             "collectionFields" in pluginContext
-                ? pluginContext.collectionFields.find(field => field.id === fieldSchema.id)
+                ? (pluginContext.collectionFields.find(field => field.id === fieldSchema.id) ?? null)
                 : null
 
+        const field = existingField ?? getCollectionForAirtableField(fieldSchema, tableMapId)
+        const reference = getReference(fieldSchema, field)
         result.push({
-            field: existingField ?? getCollectionForAirtableField(fieldSchema, tableMapId),
+            field,
+            reference,
             originalFieldName: fieldSchema.name,
         })
     }
@@ -111,8 +137,6 @@ const fieldTypeOptions: { type: CollectionFieldType; label: string }[] = [
     { type: "date", label: "Date" },
     { type: "enum", label: "Option" },
     { type: "file", label: "File" },
-    { type: "collectionReference", label: "Reference" },
-    { type: "multiCollectionReference", label: "Multiple References" },
 ]
 
 interface Props {
@@ -122,7 +146,7 @@ interface Props {
     pluginContext: PluginContextUpdate | PluginContextNew
     onSubmit: (opts: SyncMutationOptions) => void
     isPending: boolean
-    tableMapId: Map<string, string>
+    tableMapId: TableIdMap
 }
 
 export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, isPending, tableSchema }: Props) {
@@ -192,6 +216,35 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
         setFieldConfig(current =>
             current.map(field => {
                 if (field.field?.id === id) {
+                    // If this is a reference field and we're changing to a string type,
+                    // preserve the reference information but clear the destination
+                    if (field.reference && type === "string") {
+                        return {
+                            ...field,
+                            reference: {
+                                ...field.reference,
+                                destination: null,
+                            },
+                            field: { ...field.field, type } as ManagedCollectionField,
+                        }
+                    }
+                    // If this is a reference field and we're changing to a collection reference,
+                    // use the original reference type and set the destination to the new type
+                    if (field.reference && type !== "string") {
+                        return {
+                            ...field,
+                            reference: {
+                                ...field.reference,
+                                destination: type,
+                            },
+                            field: {
+                                ...field.field,
+                                type: field.reference.type,
+                                collectionId: type,
+                            } as ManagedCollectionField,
+                        }
+                    }
+                    // Default case - just update the type
                     return { ...field, field: { ...field.field, type } as ManagedCollectionField }
                 }
                 return field
@@ -236,6 +289,14 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
             createFieldConfig(pluginContext, tableSchema.primaryFieldId, tableSchema.fields, pluginContext.tableMapId)
         )
     }, [pluginContext.tableMapId, tableSchema.fields, tableSchema.primaryFieldId])
+
+    const computeReferenceTableOptions = (referenceTableId: string) => {
+        return pluginContext.tableMapId.get(referenceTableId)?.map(({ collectionId, name }) => (
+            <option key={collectionId} value={collectionId}>
+                {collectionId === pluginContext.collection.id ? "This collection" : name}
+            </option>
+        ))
+    }
 
     return (
         <form onSubmit={handleSubmit} className="col gap-2 flex-1 text-tertiary">
@@ -301,17 +362,28 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                                     "opacity-50": isDisabled,
                                 })}
                                 disabled={isDisabled}
-                                value={isUnsupported ? "Unsupported Field" : fieldConfig.field!.type}
+                                value={
+                                    isUnsupported
+                                        ? "Unsupported Field"
+                                        : fieldConfig.reference?.destination || fieldConfig.field!.type
+                                }
                                 onChange={e => {
                                     assert(fieldConfig.field)
                                     handleFieldTypeChange(fieldConfig.field.id, e.target.value as CollectionFieldType)
                                 }}
                             >
-                                {fieldTypeOptions.map(({ type, label }) => (
-                                    <option key={type} value={type}>
-                                        {label}
-                                    </option>
-                                ))}
+                                {!fieldConfig.reference &&
+                                    fieldTypeOptions.map(({ type, label }) => (
+                                        <option key={type} value={type}>
+                                            {label}
+                                        </option>
+                                    ))}
+                                {fieldConfig.reference && (
+                                    <>
+                                        <option value="string">String</option>
+                                        {computeReferenceTableOptions(fieldConfig.reference.source)}
+                                    </>
+                                )}
                             </select>
                         </Fragment>
                     )

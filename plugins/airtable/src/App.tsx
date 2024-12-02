@@ -64,7 +64,12 @@ export function AuthenticatedApp({ pluginContext }: AuthenticatedAppProps) {
 
     const handleTableSelected = async (selectedBaseId: string, selectedTableId: string) => {
         const tableMapId = await getTableIdMapForBase(selectedBaseId)
-        tableMapId.set(selectedTableId, pluginContext.collection.id)
+
+        const existingTableIds = tableMapId.get(selectedTableId) ?? []
+        tableMapId.set(selectedTableId, [
+            ...existingTableIds,
+            { collectionId: pluginContext.collection.id, name: pluginContext.collection.name },
+        ])
 
         pluginContext.tableMapId = tableMapId
 

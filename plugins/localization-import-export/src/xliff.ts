@@ -65,14 +65,14 @@ export function createLocalizationsUpdateFromXliff(
     const update: Record<LocalizationSourceId, LocalizedValuesUpdate> = {}
 
     const units = xliffDocument.querySelectorAll("unit")
-    units.forEach(unit => {
+    for (const unit of units) {
         const id = unit.getAttribute("id")
         const target = unit.querySelector("target")?.textContent
         if (!id || !target) return
 
         const targetValue = target ? target : null
         update[id] = { [targetLocale.id]: targetValue }
-    })
+    }
 
     return update
 }

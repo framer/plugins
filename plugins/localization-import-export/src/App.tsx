@@ -53,12 +53,12 @@ export function App() {
 
     useEffect(() => {
         async function loadLocales() {
-            const allLocales = await framer.unstable_getLocales()
-            const defaultLocale = await framer.unstable_getDefaultLocale()
-            setLocales(allLocales)
-            setDefaultLocale(defaultLocale)
+            const initialLocales = await framer.unstable_getLocales()
+            const initialDefaultLocale = await framer.unstable_getDefaultLocale()
+            setLocales(initialLocales)
+            setDefaultLocale(initialDefaultLocale)
 
-            const firstLocale = allLocales[0]
+            const firstLocale = initialLocales[0]
             if (!firstLocale) return
             setSelectedLocaleId(firstLocale.id)
         }
@@ -70,7 +70,9 @@ export function App() {
         if (!selectedLocaleId || !defaultLocale) return
 
         const targetLocale = locales.find(locale => locale.id === selectedLocaleId)
-        if (!targetLocale) return
+        if (!targetLocale) {
+            throw new Error(`Could not find locale with id ${selectedLocaleId}`)
+        }
 
         exportXliff(defaultLocale, targetLocale)
     }

@@ -63,14 +63,18 @@ const getReference = (fieldSchema: AirtableFieldSchema, field: ManagedCollection
     if (fieldSchema.type !== "multipleRecordLinks") {
         return null
     }
-    if (!field || (field?.type !== "collectionReference" && field?.type !== "multiCollectionReference")) {
-        return null
+    if (field?.type === "collectionReference" || field?.type === "multiCollectionReference") {
+        return {
+            type: field.type,
+            source: fieldSchema.options.linkedTableId,
+            destination: field.collectionId,
+        }
     }
 
     return {
         type: fieldSchema.options.prefersSingleRecordLink ? "collectionReference" : "multiCollectionReference",
         source: fieldSchema.options.linkedTableId,
-        destination: field.collectionId,
+        destination: null,
     }
 }
 
@@ -327,6 +331,7 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                 <span>Type</span>
                 {fieldConfig.map((fieldConfig, i) => {
                     const isUnsupported = !fieldConfig.field
+                    const isMissingReference = isUnsupported && fieldConfig.reference?.destination === null
                     const isDisabled = isUnsupported || disabledFieldIds.has(fieldConfig.field!.id)
 
                     return (
@@ -351,9 +356,11 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                                 disabled={isDisabled}
                                 placeholder={fieldConfig.originalFieldName}
                                 value={
-                                    isUnsupported
-                                        ? "Unsupported Field"
-                                        : (fieldNameOverrides[fieldConfig.field!.id] ?? "")
+                                    isMissingReference
+                                        ? "Missing Reference"
+                                        : isUnsupported
+                                          ? "Unsupported Field"
+                                          : (fieldNameOverrides[fieldConfig.field!.id] ?? "")
                                 }
                                 onChange={e => {
                                     assert(fieldConfig.field)

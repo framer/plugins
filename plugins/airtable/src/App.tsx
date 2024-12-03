@@ -78,9 +78,17 @@ export function AuthenticatedApp({ pluginContext }: AuthenticatedAppProps) {
     }
 
     useLayoutEffect(() => {
+        const width = tableId ? 360 : 320
+        const height = tableId ? 425 : 345
+
         framer.showUI({
-            width: tableId ? 340 : 320,
-            height: tableId ? 425 : 345,
+            width,
+            height,
+            minWidth: width,
+            minHeight: height,
+            // Only allow resizing when mapping fields as the default size could not be enough.
+            // This will keep the given dimensions in the Select Table Screen.
+            resizable: !!tableId,
         })
     }, [tableId])
 

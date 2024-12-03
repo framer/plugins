@@ -291,9 +291,12 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
     }, [pluginContext.tableMapId, tableSchema.fields, tableSchema.primaryFieldId])
 
     const computeReferenceTableOptions = (referenceTableId: string) => {
-        return pluginContext.tableMapId.get(referenceTableId)?.map(({ collectionId, name }) => (
+        const tables = pluginContext.tableMapId.get(referenceTableId)
+        if (!tables) return []
+        tables.sort((a, b) => a.name.localeCompare(b.name))
+        return tables.map(({ collectionId, name }) => (
             <option key={collectionId} value={collectionId}>
-                {collectionId === pluginContext.collection.id ? "This collection" : name}
+                {collectionId === pluginContext.collection.id ? "This Collection" : name}
             </option>
         ))
     }
@@ -381,6 +384,7 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                                 {fieldConfig.reference && (
                                     <>
                                         <option value="string">String</option>
+                                        <hr />
                                         {computeReferenceTableOptions(fieldConfig.reference.source)}
                                     </>
                                 )}

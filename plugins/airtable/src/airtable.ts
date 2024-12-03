@@ -534,11 +534,15 @@ function getIgnoredFieldIds(rawIgnoredFieldIds: string | null) {
         return []
     }
 
-    const parsed = JSON.parse(rawIgnoredFieldIds)
-    if (!Array.isArray(parsed)) return []
-    if (!parsed.every(val => typeof val === "string")) return []
+    try {
+        const parsed = JSON.parse(rawIgnoredFieldIds)
+        if (!Array.isArray(parsed)) return []
+        if (!parsed.every(val => typeof val === "string")) return []
 
-    return parsed
+        return parsed
+    } catch {
+        return []
+    }
 }
 
 export async function getTableIdMapForBase(baseId: string | null): Promise<TableIdMap> {

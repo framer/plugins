@@ -123,10 +123,14 @@ class Auth {
             const serializedTokens = localStorage.getItem(this.PLUGIN_TOKENS_KEY)
             if (!serializedTokens) return null
 
-            const storedTokens = JSON.parse(serializedTokens) as StoredTokens
-            this.storedTokens = storedTokens
+            try {
+                const storedTokens = JSON.parse(serializedTokens) as StoredTokens
+                this.storedTokens = storedTokens
 
-            return storedTokens
+                return storedTokens
+            } catch {
+                return null
+            }
         },
         clear: () => {
             this.storedTokens = null

@@ -22,6 +22,7 @@ interface FieldMapperProps {
     className?: string
     height?: number
 }
+
 const getInitialSortedFields = (
     fields: ManagedCollectionFieldConfig[],
     isFieldSelected: (fieldId: string) => boolean
@@ -34,9 +35,17 @@ const getInitialSortedFields = (
         if (aIsSelected && !bIsSelected) return -1
         if (!aIsSelected && bIsSelected) return 1
 
-        // Then sort by whether they are supported fields
-        if (a.field && !b.field) return -1
-        if (!a.field && b.field) return 1
+        // Sort by whether they are supported fields
+        if (a.field !== null && a.field !== undefined && (b.field === null || b.field === undefined)) return -1
+        if ((a.field === null || a.field === undefined) && b.field !== null && b.field !== undefined) return 1
+
+        // Sort by whether they are null (missing reference)
+        if (a.field === null && b.field !== null) return -1
+        if (a.field !== null && b.field === null) return 1
+
+        // Sort by whether they are undefined (unsupported fields)
+        if (a.field === undefined && b.field !== undefined) return 1
+        if (a.field !== undefined && b.field === undefined) return -1
 
         return 0
     })
@@ -93,9 +102,11 @@ export const FieldMapper = ({
                                 disabled={!fieldConfig.field || !isSelected}
                                 placeholder={fieldConfig.originalFieldName}
                                 value={
-                                    !fieldConfig.field
+                                    fieldConfig.field === undefined
                                         ? "Unsupported Field"
-                                        : (fieldNameOverrides[fieldConfig.field.id] ?? "")
+                                        : fieldConfig.field === null
+                                          ? "Missing Reference"
+                                          : (fieldNameOverrides[fieldConfig.field.id] ?? "")
                                 }
                                 onChange={e => {
                                     assert(fieldConfig.field)

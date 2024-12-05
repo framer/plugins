@@ -23,6 +23,7 @@ const PLUGIN_LAST_SYNCED_KEY = "sheetsPluginLastSynced"
 const PLUGIN_IGNORED_COLUMNS_KEY = "sheetsPluginIgnoredColumns"
 const PLUGIN_SHEET_HEADER_ROW_HASH_KEY = "sheetsPluginSheetHeaderRowHash"
 const PLUGIN_SLUG_COLUMN_KEY = "sheetsPluginSlugColumn"
+const PLUGIN_ITEMS_HASH_KEY = "sheetsPluginItemsHash"
 
 /** @deprecated - use PLUGIN_SHEET_ID_KEY instead */
 const DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY = "sheetsPluginSheetTitle"
@@ -243,7 +244,7 @@ export type PluginContext =
     | PluginContextSheetByTitleMissing
 
 interface ItemResult {
-    rowIndex?: number
+    rowIndex?: number | string
     message: string
 }
 
@@ -258,6 +259,7 @@ export interface SyncResult extends SyncStatus {
 }
 
 interface ProcessSheetRowParams {
+    storedItemsHash: Record<string, string>
     fieldTypes: CollectionFieldType[]
     row: Row
     rowIndex: number
@@ -309,19 +311,22 @@ function getFieldValue(fieldType: CollectionFieldType, cellValue: CellValue) {
     }
 }
 
-function processSheetRow({
-    row,
-    rowIndex,
-    unsyncedRowIds,
-    uniqueHeaderRowNames,
-    ignoredFieldColumnIndexes,
-    slugFieldColumnIndex,
-    status,
-    fieldTypes,
-}: ProcessSheetRowParams) {
-    const fieldData: Record<string, unknown> = {}
+function processSheetRow(
+    itemId: string,
+    {
+        row,
+        rowIndex,
+        storedItemsHash,
+        unsyncedRowIds,
+        uniqueHeaderRowNames,
+        ignoredFieldColumnIndexes,
+        slugFieldColumnIndex,
+        status,
+        fieldTypes,
+    }: ProcessSheetRowParams
+) {
+    const fieldData = new Map<string, unknown>()
     let slugValue: string | null = null
-    let itemId: string | null = null
 
     for (const [colIndex, cell] of row.entries()) {
         if (ignoredFieldColumnIndexes.includes(colIndex)) continue
@@ -345,13 +350,17 @@ function processSheetRow({
             }
 
             slugValue = slugify(fieldValue)
-            itemId = generateHashId(fieldValue)
 
             // Mark row as seen
             unsyncedRowIds.delete(itemId)
         }
 
-        fieldData[uniqueHeaderRowNames[colIndex]] = fieldValue
+        const hashedField = generateHashId(uniqueHeaderRowNames[colIndex]) + generateHashId(String(cell))
+        if (storedItemsHash[itemId]?.includes(hashedField)) {
+            continue
+        }
+
+        fieldData.set(uniqueHeaderRowNames[colIndex], fieldValue)
     }
 
     if (!slugValue || !itemId) {
@@ -366,7 +375,7 @@ function processSheetRow({
     return {
         id: itemId,
         slug: slugValue,
-        fieldData,
+        fieldData: Object.fromEntries(fieldData),
     }
 }
 
@@ -379,18 +388,49 @@ function processSheet(
         warnings: [],
         errors: [],
     }
-    const result = rows.map((row, rowIndex) =>
-        processSheetRow({
-            row,
-            rowIndex,
-            status,
-            ...processRowParams,
-        })
-    )
+    const result: ({
+        id: string
+        slug: string
+        fieldData: Record<string, unknown>
+    } | null)[] = []
+
+    const itemsHash = new Map<string, string>()
+
+    for (const [rowIndex, row] of rows.entries()) {
+        const itemSlug = row[processRowParams.slugFieldColumnIndex]
+        if (!itemSlug || typeof itemSlug !== "string") {
+            status.warnings.push({
+                rowIndex,
+                message: "Slug or title missing. Skipping item.",
+            })
+            continue
+        }
+
+        const itemId = generateHashId(itemSlug)
+        const currentItemHash = Array.from(row.entries())
+            .sort()
+            .map(
+                ([colIndex, cell]) =>
+                    generateHashId(processRowParams.uniqueHeaderRowNames[colIndex]) + generateHashId(`${cell}`)
+            )
+            .join(HEADER_ROW_DELIMITER)
+        itemsHash.set(itemId, currentItemHash)
+
+        result.push(
+            processSheetRow(itemId, {
+                row,
+                rowIndex,
+                status,
+                ...processRowParams,
+            })
+        )
+    }
+
     const collectionItems = result.filter(isDefined)
 
     return {
         collectionItems,
+        itemsHash,
         status,
     }
 }
@@ -420,6 +460,8 @@ export async function syncSheet({
     const collection = await framer.getManagedCollection()
     await collection.setFields(fields)
 
+    const activeCollection = await framer.getCollection(collection.id)
+    assert(activeCollection, "Expected the collection to be defined")
     const unsyncedItemIds = new Set(await collection.getItemIds())
 
     const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
@@ -428,7 +470,11 @@ export async function syncSheet({
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
     const headerRowHash = generateHeaderRowHash(headerRow, ignoredColumns)
 
-    const { collectionItems, status } = processSheet(rows, {
+    const storedItemsHash: Record<string, string> = JSON.parse(
+        (await collection.getPluginData(PLUGIN_ITEMS_HASH_KEY)) || "{}"
+    )
+    const { collectionItems, itemsHash, status } = processSheet(rows, {
+        storedItemsHash,
         uniqueHeaderRowNames,
         unsyncedRowIds: unsyncedItemIds,
         fieldTypes: colFieldTypes,
@@ -453,6 +499,7 @@ export async function syncSheet({
         collection.setPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY, headerRowHash),
         collection.setPluginData(PLUGIN_SLUG_COLUMN_KEY, slugColumn),
         collection.setPluginData(PLUGIN_LAST_SYNCED_KEY, new Date().toISOString()),
+        collection.setPluginData(PLUGIN_ITEMS_HASH_KEY, JSON.stringify(Object.fromEntries(itemsHash.entries()))),
     ])
 
     const result: SyncResult = {

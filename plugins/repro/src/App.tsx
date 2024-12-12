@@ -7,13 +7,10 @@ import { simpleHash, slugify } from "./utils"
 const contentFieldId = "content"
 
 const html = `
-<html>
 <p>example md file</p>
 <pre><code>import { z } from &#39;zod&#39;
 
 </code></pre>
-
-</html>
 `
 export async function importData(collection: ManagedCollection) {
     try {

@@ -27,6 +27,9 @@ export async function importData(collection: ManagedCollection) {
 
         const unseenItemIds = new Set(await collection.getItemIds())
 
+        // Remove all the items that weren't in the new feed
+        const itemsToDelete = Array.from(unseenItemIds)
+        await collection.removeItems(itemsToDelete)
         await collection.addItems([
             {
                 id: simpleHash("x"),
@@ -37,10 +40,6 @@ export async function importData(collection: ManagedCollection) {
                 },
             },
         ])
-
-        // Remove all the items that weren't in the new feed
-        const itemsToDelete = Array.from(unseenItemIds)
-        await collection.removeItems(itemsToDelete)
         await framer.notify("Import successful!")
     } catch (error: any) {
         console.error("Error importing data:", error)

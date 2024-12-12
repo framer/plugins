@@ -9,15 +9,6 @@ async function runPlugin() {
     const mode = framer.mode
     const collection = await framer.getManagedCollection()
 
-    if (mode === "syncManagedCollection") {
-        try {
-            await importData(collection)
-            await framer.closePlugin()
-        } catch {
-            // Failed to synchronize - show configuration
-        }
-    }
-
     const root = document.getElementById("root")
     if (!root) {
         throw new Error("Root element not found")

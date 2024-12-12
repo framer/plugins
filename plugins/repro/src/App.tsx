@@ -16,32 +16,42 @@ const html = `
 
 </html>
 `
-
 export async function importData(collection: ManagedCollection) {
-    await collection.setFields([
-        {
-            type: "formattedText",
-            name: "Content",
-            id: contentFieldId,
-        },
-    ])
-
-    const unseenItemIds = new Set(await collection.getItemIds())
-
-    await collection.addItems([
-        {
-            id: simpleHash("x"),
-            slug: slugify("x"),
-
-            fieldData: {
-                [contentFieldId]: html,
+    try {
+        await collection.setFields([
+            {
+                type: "formattedText",
+                name: "Content",
+                id: contentFieldId,
             },
-        },
-    ])
+        ])
 
-    // Remove all the items that weren't in the new feed
-    const itemsToDelete = Array.from(unseenItemIds)
-    await collection.removeItems(itemsToDelete)
+        const unseenItemIds = new Set(await collection.getItemIds())
+
+        await collection.addItems([
+            {
+                id: simpleHash("x"),
+                slug: slugify("x"),
+
+                fieldData: {
+                    [contentFieldId]: html,
+                },
+            },
+        ])
+
+        // Remove all the items that weren't in the new feed
+        const itemsToDelete = Array.from(unseenItemIds)
+        await collection.removeItems(itemsToDelete)
+        await framer.notify("Import successful!")
+    } catch (error: any) {
+        console.error("Error importing data:", error)
+        await framer.notify(error.message, { variant: "error" })
+        return { error }
+    }
+}
+
+interface Props {
+    collection: ManagedCollection
 }
 
 interface Props {
@@ -50,30 +60,27 @@ interface Props {
 
 export function App({ collection }: Props) {
     const [isSyncing, setIsSyncing] = useState(false)
+    const [importError, setImportError] = useState<string | null>(null)
 
     const handleImport = async () => {
         setIsSyncing(true)
-
+        setImportError(null)
         try {
-            await importData(collection)
-            await framer.closePlugin()
+            const result = await importData(collection)
+            if (result && result.error) {
+                setImportError(result.error.message)
+            }
         } finally {
             setIsSyncing(false)
         }
     }
+    if (importError) {
+        return <div style={{ color: "red", fontFamily: "monospace", padding: "20px" }}>{importError}</div>
+    }
 
     return (
         <main>
-            <div className="illustration">
-                <RSSIcon />
-            </div>
-            <p>Import the most recent blog content from a public RSS feed such as ESPN or Wired.</p>
-
-            <div className="field">
-                <label className="label" htmlFor="selectSource">
-                    Feed
-                </label>
-            </div>
+            <p>Issue repro.</p>
 
             <button disabled={isSyncing} className="framer-button-primary" onClick={handleImport}>
                 Import

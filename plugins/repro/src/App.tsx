@@ -1,8 +1,7 @@
-import { Collection, CollectionField, framer, ManagedCollection } from "framer-plugin"
+import { framer, ManagedCollection } from "framer-plugin"
 
 import { useState } from "react"
 import "./App.css"
-import { RSSIcon } from "./icons"
 import { simpleHash, slugify } from "./utils"
 
 const contentFieldId = "content"

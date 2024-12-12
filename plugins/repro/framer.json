@@ -1,0 +1,6 @@
+{
+    "id": "xxd64a",
+    "name": "Repro",
+    "modes": ["syncManagedCollection", "configureManagedCollection"],
+    "icon": "/rss.png"
+}

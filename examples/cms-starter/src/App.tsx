@@ -112,7 +112,7 @@ function computeFieldConfig(existingFields: ManagedCollectionField[], dataSource
                 name,
                 type: field.multiple ? "multiCollectionReference" : "collectionReference",
                 collectionId: COLLECTIONS_SYNC_MAP.get(field.reference)?.[0].id ?? "",
-                userEditable: true,
+                userEditable: false,
             }
         } else {
             const fieldType = FIELD_MAPPING[field.type][0] ?? "string"
@@ -193,9 +193,11 @@ function getFieldValue(field: FieldConfig, value: unknown) {
         }
         case "reference": {
             if (field.field?.type === "multiCollectionReference") {
-                return String(value).split(",")
+                return String(value)
+                    .split(",")
+                    .map(id => generateHashId(id))
             } else if (field.field?.type === "string" || field.field?.type === "collectionReference") {
-                return Array.isArray(value) ? value[0] : value
+                return Array.isArray(value) ? generateHashId(value[0]) : generateHashId(String(value))
             }
             return null
         }
@@ -235,10 +237,6 @@ if (framer.mode === "syncManagedCollection" && savedFieldsConfig && syncDataSour
             .filter(field => !field.reference || field.reference.destination !== null),
         syncSlugFieldId
     )
-
-    framer.closePlugin("Synced items", {
-        variant: "success",
-    })
 }
 
 const allDataSources = await listDataSourcesIds()
@@ -754,14 +752,15 @@ async function syncCollection(collection: DataSource, fields: FieldConfig[], slu
     assert(slugField, "Slug field not found")
 
     for (const item of collection.items) {
-        const slug = item[slugField.source.name]
-        if (typeof slug !== "string") {
+        const slugValue = item[slugField.source.name]
+        if (typeof slugValue !== "string") {
             framer.notify(`Skipping item ${item.id} because it doesn't have a slug`, {
                 variant: "warning",
             })
             continue
         }
 
+        const slug = slugify(slugValue)
         const itemId = generateHashId(slug)
         unsyncedItems.delete(itemId)
 
@@ -769,7 +768,7 @@ async function syncCollection(collection: DataSource, fields: FieldConfig[], slu
         for (const [fieldName, value] of Object.entries(item)) {
             const field = fields.find(field => field.source.name === fieldName)
 
-            // Field is in the data but not in the to be synced fields
+            // Field is in the data but should not be synced
             if (!field?.field) {
                 console.warn(`Skipping field ${fieldName} because it may have been ignored`)
                 continue
@@ -780,7 +779,7 @@ async function syncCollection(collection: DataSource, fields: FieldConfig[], slu
 
         items.push({
             id: itemId,
-            slug: slugify(slug),
+            slug: slug,
             draft: false,
             fieldData,
         })

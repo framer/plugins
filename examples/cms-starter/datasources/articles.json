@@ -1,0 +1,94 @@
+{
+    "id": "articles",
+    "fields": {
+        "Title": {
+            "type": "string"
+        },
+        "Slug": {
+            "type": "string"
+        },
+        "Date": {
+            "type": "date"
+        },
+        "Image": {
+            "type": "image"
+        },
+        "Categories": {
+            "type": "reference",
+            "reference": "categories",
+            "multiple": true
+        },
+        "Content": {
+            "type": "richText"
+        },
+        "Reading time": {
+            "type": "number"
+        },
+        "Status": {
+            "type": "enum",
+            "options": ["draft", "published", "archived"]
+        },
+        "Related Articles": {
+            "type": "reference",
+            "reference": "articles",
+            "multiple": true
+        }
+    },
+    "items": [
+        {
+            "Slug": "getting-started",
+            "Title": "Getting Started",
+            "Date": "2024-11-27T23:00:00.000Z",
+            "Image": "https://framerusercontent.com/images/f9RiWoNpmlCMqVRIHz8l8wYfeI.jpg",
+            "Categories": "cms,basics",
+            "Reading time": 5,
+            "Status": "published",
+            "Content": "<h2>Editing Content</h2><blockquote><p>You can choose to set up different types of input fields depending on your content...</p></blockquote>...",
+            "Related Articles": ["getting-started"]
+        },
+        {
+            "Slug": "whats-new",
+            "Title": "What's New",
+            "Date": "2024-11-20T23:00:00.000Z",
+            "Image": "https://framerusercontent.com/images/2uTNEj5aTl2K3NJaEFWMbnrA.jpg",
+            "Categories": "updates",
+            "Reading time": 5,
+            "Status": "published",
+            "Content": "<h2>Reference Fields</h2>...",
+            "Related Articles": ["getting-started"]
+        },
+        {
+            "Slug": "styling-elements",
+            "Title": "Styling Elements",
+            "Date": "2024-10-23T22:00:00.000Z",
+            "Image": "https://framerusercontent.com/images/BYnxEV1zjYb9bhWh1IwBZ1ZoS60.jpg",
+            "Categories": "pro-tips",
+            "Reading time": 5,
+            "Status": "published",
+            "Content": "<h2>New This Month</h2><p>This quality update brings canvas and layer panel improvements...</p>",
+            "Related Articles": ["getting-started"]
+        },
+        {
+            "Slug": "importing-content",
+            "Title": "Importing Content",
+            "Date": "2024-10-13T22:00:00.000Z",
+            "Image": "https://framerusercontent.com/images/aNsAT3jCvt4zglbWCUoFe33Q.jpg",
+            "Categories": "cms,pro-tips",
+            "Reading time": 5,
+            "Status": "published",
+            "Content": "<h2>Prepare your CSV file</h2><p>Make sure your file is exported as a \"CSV\" file...</p>",
+            "Related Articles": ["getting-started"]
+        },
+        {
+            "Slug": "best-practices",
+            "Title": "Best Practices",
+            "Date": "2024-10-01T22:00:00.000Z",
+            "Image": "https://framerusercontent.com/images/GfGkADagM4KEibNcIiRUWlfrR0.jpg",
+            "Categories": "pro-tips",
+            "Reading time": 5,
+            "Status": "draft",
+            "Content": "<h3>Choose Compelling Topics</h3><p>Use analytics tools to understand demographic data and user behavior...</p>",
+            "Related Articles": ["getting-started"]
+        }
+    ]
+}

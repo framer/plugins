@@ -88,8 +88,8 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
 
     useLayoutEffect(() => {
         framer.showUI({
-            width: sheetTitle !== null ? 340 : 320,
-            height: sheetTitle !== null ? 425 : 345,
+            width: sheetTitle !== null ? 600 : 320,
+            height: sheetTitle !== null ? 600 : 345,
         })
     }, [sheetTitle])
 

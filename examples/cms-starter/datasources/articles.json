@@ -28,6 +28,9 @@
             "type": "enum",
             "options": ["draft", "published", "archived"]
         },
+        "Featured": {
+            "type": "boolean"
+        },
         "Related Articles": {
             "type": "reference",
             "reference": "articles",
@@ -44,7 +47,8 @@
             "Reading time": 5,
             "Status": "published",
             "Content": "<h2>Editing Content</h2><blockquote><p>You can choose to set up different types of input fields depending on your content...</p></blockquote>...",
-            "Related Articles": ["getting-started"]
+            "Related Articles": ["getting-started"],
+            "Featured": true
         },
         {
             "Slug": "whats-new",
@@ -55,7 +59,8 @@
             "Reading time": 5,
             "Status": "published",
             "Content": "<h2>Reference Fields</h2>...",
-            "Related Articles": ["getting-started"]
+            "Related Articles": ["getting-started"],
+            "Featured": false
         },
         {
             "Slug": "styling-elements",
@@ -66,7 +71,8 @@
             "Reading time": 5,
             "Status": "published",
             "Content": "<h2>New This Month</h2><p>This quality update brings canvas and layer panel improvements...</p>",
-            "Related Articles": ["getting-started"]
+            "Related Articles": ["getting-started"],
+            "Featured": false
         },
         {
             "Slug": "importing-content",
@@ -77,7 +83,8 @@
             "Reading time": 5,
             "Status": "published",
             "Content": "<h2>Prepare your CSV file</h2><p>Make sure your file is exported as a \"CSV\" file...</p>",
-            "Related Articles": ["getting-started"]
+            "Related Articles": ["getting-started"],
+            "Featured": false
         },
         {
             "Slug": "best-practices",
@@ -88,7 +95,8 @@
             "Reading time": 5,
             "Status": "draft",
             "Content": "<h3>Choose Compelling Topics</h3><p>Use analytics tools to understand demographic data and user behavior...</p>",
-            "Related Articles": ["getting-started"]
+            "Related Articles": ["getting-started"],
+            "Featured": true
         }
     ]
 }

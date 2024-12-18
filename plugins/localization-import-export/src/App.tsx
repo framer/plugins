@@ -1,4 +1,6 @@
-import { framer, Locale } from "framer-plugin"
+import type { Locale } from "framer-plugin"
+
+import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import "./App.css"
 import { downloadBlob, importFileAsText } from "./files"
@@ -79,7 +81,7 @@ export function App() {
 
     return (
         <main>
-            <button className="framer-button-primary" onClick={importXliff}>
+            <button type="button" className="framer-button-primary" onClick={importXliff}>
                 Import XLIFF
             </button>
 
@@ -97,7 +99,7 @@ export function App() {
                 ))}
             </select>
 
-            <button className="framer-button-primary" onClick={handleExport} disabled={!selectedLocaleId}>
+            <button type="button" className="framer-button-primary" onClick={handleExport} disabled={!selectedLocaleId}>
                 Export XLIFF
             </button>
         </main>

@@ -1,5 +1,6 @@
-import { Locale, LocalizationSource, LocalizationSourceId, LocalizedValuesUpdate } from "framer-plugin"
+import type { Locale, LocalizationSource, LocalizedValuesUpdate } from "framer-plugin"
 import "./App.css"
+import { shouldBeNever } from "./assert"
 
 function escapeXml(unsafe: string): string {
     return unsafe
@@ -10,21 +11,73 @@ function escapeXml(unsafe: string): string {
         .replace(/'/g, "&apos;")
 }
 
+/** See http://docs.oasis-open.org/xliff/xliff-core/v2.0/os/xliff-core-v2.0-os.html#state */
+type XliffState = "initial" | "translated" | "reviewed" | "final"
+type FramerStatus = LocalizationSource["locales"][Locale["id"]]["status"]
+
+function statusToXliffState(status: FramerStatus): XliffState | undefined {
+    switch (status) {
+        case "new":
+            return "initial"
+        case "needsReview":
+            return "translated"
+        case "warning":
+        case "done":
+            return "final"
+        default:
+            shouldBeNever(status)
+            return
+    }
+}
+
+function xliffStateToStatus(state: XliffState): FramerStatus | undefined {
+    switch (state) {
+        case "initial":
+            return "new"
+        case "translated":
+            return "needsReview"
+        case "reviewed":
+        case "final":
+            return "done"
+        default:
+            shouldBeNever(state)
+            return
+    }
+}
+
 function generateUnit(source: LocalizationSource, targetLocale: Locale) {
-    // TODO: expose localization's status to be able to set this correctly
-    // See http://docs.oasis-open.org/xliff/xliff-core/v2.0/os/xliff-core-v2.0-os.html#state
-    const state = source.valueLocalized[targetLocale.id]?.value ? "final" : `initial`
+    const localeData = source.locales[targetLocale.id]
+    if (!localeData) {
+        throw new Error(`No locale data found for locale: ${targetLocale.id}`)
+    }
+
+    const state = statusToXliffState(localeData.status)
 
     const sourceValue = escapeXml(source.value)
-    const targetValue = escapeXml(source.valueLocalized[targetLocale.id]?.value || "")
+    const targetValue = escapeXml(localeData.value ?? "")
+
+    const notes = [
+        `<note category="type">${source.type}</note>`,
+        `<note category="groupType">${source.group.type}</note>`,
+        `<note category="groupId">${source.group.id}</note>`,
+        `<note category="groupName">${source.group.name}</note>`,
+    ]
+
+    if (localeData.status === "warning") {
+        notes.push(`<note category="warning">${escapeXml(localeData.warning)}</note>`)
+    }
+
+    if (localeData.status !== "new") {
+        notes.push(`<note category="lastEdited">${localeData.lastEdited}</note>`)
+    }
 
     return `        <unit id="${source.id}">
             <notes>
-                <note category="type">${source.type}</note>
+                ${notes.join("\n                ")}
             </notes>
-            <segment>
+            <segment state="${state}"${localeData.status === "warning" ? ` subState="framer:warning"` : ""}>
                 <source>${sourceValue}</source>
-                <target state="${state}">${targetValue}</target>
+                <target>${targetValue}</target>
             </segment>
         </unit>`
 }
@@ -34,7 +87,7 @@ export function generateXliff(defaultLocale: Locale, targetLocale: Locale, sourc
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="${defaultLocale.code}" trgLang="${targetLocale.code}">
-    <file id="${targetLocale.id}" srcLang="${defaultLocale.code}" trgLang="${targetLocale.code}">
+    <file id="${targetLocale.id}">
 ${units}
     </file>
 </xliff>`
@@ -44,10 +97,10 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
     const parser = new DOMParser()
     const xliff = parser.parseFromString(xliffText, "text/xml")
 
-    const file = xliff.querySelector("file")
-    if (!file) throw new Error("No file element found in XLIFF")
+    const xliffElement = xliff.querySelector("xliff")
+    if (!xliffElement) throw new Error("No xliff element found in XLIFF")
 
-    const targetLanguage = file.getAttribute("trgLang")
+    const targetLanguage = xliffElement.getAttribute("trgLang")
     if (!targetLanguage) throw new Error("No target language found in XLIFF")
 
     const targetLocale = locales.find(locale => locale.code === targetLanguage)
@@ -61,17 +114,22 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
 export function createLocalizationsUpdateFromXliff(
     xliffDocument: Document,
     targetLocale: Locale
-): Record<LocalizationSourceId, LocalizedValuesUpdate> {
-    const update: Record<LocalizationSourceId, LocalizedValuesUpdate> = {}
+): LocalizedValuesUpdate {
+    const update: LocalizedValuesUpdate = {}
 
     const units = xliffDocument.querySelectorAll("unit")
     for (const unit of units) {
         const id = unit.getAttribute("id")
-        const target = unit.querySelector("target")?.textContent
-        if (!id || !target) return
+        const segment = unit.querySelector("segment")
+        const target = unit.querySelector("target")
+        if (!id || !target || !segment) continue
 
-        const targetValue = target ? target : null
-        update[id] = { [targetLocale.id]: targetValue }
+        const targetValue = target.textContent
+        const state = segment.getAttribute("state") as XliffState | null
+        const status = xliffStateToStatus(state ?? "final")
+        const needsReview = status === "needsReview"
+
+        update[id] = { [targetLocale.id]: { value: targetValue, needsReview: needsReview ? needsReview : undefined } }
     }
 
     return update

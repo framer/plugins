@@ -1,10 +1,6 @@
 # Framer Plugin Template
 
-This is a template for using the Framer Plugin API in a TypeScript project.
-
-## Quickstart
-
-First, run the development server:
+Run the development server:
 
 ```bash
 npm run dev
@@ -15,5 +11,7 @@ pnpm dev
 # or
 bun dev
 ```
+
+And [open in Framer](https://www.framer.com/developers/plugins/quick-start#opening-in-framer).
 
 Learn more: https://www.framer.com/developers/plugins/introduction

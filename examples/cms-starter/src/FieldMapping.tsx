@@ -1,84 +1,43 @@
 import { ManagedCollectionField, framer } from "framer-plugin"
 import { useState, useMemo, useLayoutEffect } from "react"
 import { Fragment } from "react/jsx-runtime"
-import {
-    SupportedCollectionFieldTypeWithoutReference,
-    DataSource,
-    FieldConfig,
-    computeFieldConfig,
-    DataSourceFieldType,
-    FIELD_MAPPING,
-    COLLECTIONS_SYNC_MAP,
-} from "./data"
-import { assert } from "./utils"
-
-const TYPE_NAMES: Record<SupportedCollectionFieldTypeWithoutReference, string> = {
-    string: "String",
-    date: "Date",
-    image: "Image",
-    link: "Link",
-    file: "File",
-    number: "Number",
-    boolean: "Boolean",
-    enum: "Option",
-    color: "Color",
-    formattedText: "Formatted Text",
-}
+import { DataSource, FieldConfig, computeFieldConfigs } from "./data"
+import { isNotNull } from "./utils"
 
 interface FieldMappingRowProps {
-    field: FieldConfig
+    fieldConfig: FieldConfig
     isIgnored: boolean
     onFieldToggle: (fieldId: string) => void
     onFieldNameChange: (fieldId: string, name: string) => void
-    onFieldTypeChange: (id: string, type: DataSourceFieldType) => void
 }
 
-function FieldMappingRow({
-    field,
-    isIgnored,
-    onFieldToggle,
-    onFieldNameChange,
-    onFieldTypeChange,
-}: FieldMappingRowProps) {
-    const { isUnsupported, isDisabled, placeholder, selectedType, fieldName } = useMemo(() => {
-        const isUnsupported = !field.field
-        const isMissingReference = !isUnsupported && field.reference?.destination === null
-        const isDisabled = isUnsupported || isMissingReference || isIgnored
+function FieldMappingRow({ fieldConfig, isIgnored, onFieldToggle, onFieldNameChange }: FieldMappingRowProps) {
+    const field = fieldConfig.field
 
-        let placeholder = field.source.name
-        if (isMissingReference) {
-            placeholder = "Missing Reference"
-        } else if (isUnsupported) {
-            placeholder = "Unsupported Field"
-        }
+    const isUnsupported = !field
+    const hasFieldNameChanged = field!.name !== fieldConfig.name
+    const fieldName = hasFieldNameChanged ? field!.name : ""
+    const placeholder = isUnsupported ? "Unsupported Field" : fieldConfig.name
 
-        const selectedType =
-            field.reference && field.field?.type === "string"
-                ? "string"
-                : field.reference?.destination || field.field!.type
-
-        const hasFieldNameChanged = field.field?.name !== field.source.name
-        const fieldName = hasFieldNameChanged ? field.field?.name : ""
-
-        return {
-            isUnsupported,
-            isDisabled,
-            placeholder,
-            selectedType,
-            fieldName,
-        }
-    }, [field, isIgnored])
+    const isDisabled = useMemo(() => isUnsupported || isIgnored, [isUnsupported, isIgnored])
 
     return (
         <Fragment>
             <div
-                className="column-row"
+                className="source-field"
                 aria-disabled={isDisabled}
-                onClick={() => onFieldToggle(field.field!.id)}
+                onClick={() => onFieldToggle(fieldConfig.field!.id)}
                 role="button"
             >
-                <input type="checkbox" disabled={isUnsupported} checked={!isDisabled} />
-                <span>{field.source.name}</span>
+                <input
+                    type="checkbox"
+                    disabled={isUnsupported}
+                    checked={!isDisabled}
+                    onChange={e => {
+                        e.stopPropagation()
+                    }}
+                />
+                <span>{fieldConfig.name}</span>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
                 <path
@@ -100,49 +59,14 @@ function FieldMappingRow({
                 placeholder={placeholder}
                 value={fieldName || ""}
                 onChange={e => {
-                    assert(field.field)
+                    if (!field) return
                     if (!e.target.value.trim()) {
-                        onFieldNameChange(field.field.id, field.source.name)
+                        onFieldNameChange(field.id, fieldConfig.name)
                     } else {
-                        onFieldNameChange(field.field.id, e.target.value)
+                        onFieldNameChange(field.id, e.target.value)
                     }
                 }}
             />
-            <select
-                style={{
-                    width: "100%",
-                    opacity: isDisabled ? 0.5 : 1,
-                    textTransform: "capitalize",
-                }}
-                disabled={isDisabled}
-                value={isUnsupported ? "Unsupported Field" : selectedType}
-                onChange={e => {
-                    assert(field.field)
-                    onFieldTypeChange(field.field.id, e.target.value as DataSourceFieldType)
-                }}
-            >
-                {field.field && (
-                    <>
-                        <option value="string">String</option>
-                        {field.reference ? (
-                            <>
-                                <hr />
-                                {COLLECTIONS_SYNC_MAP.get(field.reference.source)?.map(({ id, name }) => (
-                                    <option key={id} value={id}>
-                                        {name}
-                                    </option>
-                                ))}
-                            </>
-                        ) : (
-                            FIELD_MAPPING[field.source.type].map(type => (
-                                <option key={`${field.source.name}-${type}`} value={type}>
-                                    {TYPE_NAMES[type]}
-                                </option>
-                            ))
-                        )}
-                    </>
-                )}
-            </select>
         </Fragment>
     )
 }
@@ -161,20 +85,21 @@ export function FieldMapping({
     onSubmit: (dataSource: DataSource, fields: FieldConfig[], slugFieldId: string) => Promise<void>
 }) {
     const [fields, setFields] = useState<FieldConfig[]>(
-        savedFieldsConfig ?? computeFieldConfig(existingFields, dataSource)
+        savedFieldsConfig ?? computeFieldConfigs(existingFields, dataSource)
     )
     const [disabledFieldIds, setDisabledFieldIds] = useState<Set<string>>(
-        new Set(savedFieldsConfig?.filter(field => field.source.ignored).map(field => field.field!.id))
+        new Set(savedFieldsConfig?.filter(field => field.isNew).map(field => field.field!.id))
     )
 
-    const slugFields = useMemo(
+    const possibleSlugFields = useMemo(
         () =>
-            fields.filter(
-                field => field.field && !disabledFieldIds.has(field.field.id) && field.field.type === "string"
-            ),
+            fields
+                .map(field => field.field)
+                .filter(isNotNull)
+                .filter(field => !disabledFieldIds.has(field.id) && field.type === "string"),
         [fields, disabledFieldIds]
     )
-    const [slugFieldId, setSlugFieldId] = useState<string | null>(savedSlugFieldId ?? slugFields[0]?.field?.id ?? null)
+    const [slugFieldId, setSlugFieldId] = useState<string | null>(savedSlugFieldId ?? possibleSlugFields[0]?.id ?? null)
 
     const [isSyncing, setIsSyncing] = useState(false)
 
@@ -205,9 +130,9 @@ export function FieldMapping({
                 // If the disabled field is the slug field, update it to the next
                 // possible slug field
                 if (fieldId === slugFieldId) {
-                    const nextSlugField = slugFields.find(field => field.field?.id !== fieldId)
-                    if (nextSlugField?.field && !nextSet.has(nextSlugField.field.id)) {
-                        setSlugFieldId(nextSlugField.field.id)
+                    const nextSlugField = possibleSlugFields.find(field => field.id !== fieldId)
+                    if (nextSlugField) {
+                        setSlugFieldId(nextSlugField.id)
                     }
                 }
             }
@@ -215,69 +140,30 @@ export function FieldMapping({
         })
     }
 
-    const handleFieldTypeChange = (id: string, type: DataSourceFieldType) => {
-        setFields(current =>
-            current.map(field => {
-                if (field.field?.id !== id) {
-                    return field
-                }
-                // If this is a reference field and we're changing to a string type,
-                // preserve the reference information but clear the destination
-                if (field.reference && type === "string") {
-                    return {
-                        ...field,
-                        field: {
-                            id: field.field?.id,
-                            type: "string",
-                            name: field.field?.name,
-                            userEditable: false,
-                        } as ManagedCollectionField,
-                    }
-                }
-
-                // If this is a reference field and we're changing to a collection reference,
-                // use the original reference type and set the destination to the new type
-                if (field.reference && type !== "string") {
-                    return {
-                        ...field,
-                        reference: {
-                            ...field.reference,
-                            destination: type,
-                        },
-                        field: {
-                            id: field.field?.id,
-                            type: field.reference.type,
-                            name: field.field?.name,
-                            collectionId: type,
-                            userEditable: false,
-                        } as ManagedCollectionField,
-                    }
-                }
-
-                // Default case - just update the type
-                return { ...field, field: { ...field.field, type } as ManagedCollectionField }
-            })
-        )
-    }
-
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
-        assert(slugFieldId, "Slug field is required")
+        if (!slugFieldId) {
+            framer.notify("Slug field is required", {
+                variant: "error",
+            })
+            return
+        }
 
         try {
             setIsSyncing(true)
             await onSubmit(
                 dataSource,
-                fields
-                    .filter(field => field.field && !disabledFieldIds.has(field.field!.id))
-                    .filter(field => !field.reference || field.reference.destination !== null),
+                fields.filter(field => field.field && !disabledFieldIds.has(field.field!.id)),
                 slugFieldId
             )
+            await framer.closePlugin(`Synchronization successful`, {
+                variant: "success",
+            })
         } catch (error) {
+            console.error(error)
             framer.notify(`Failed to sync collection ${dataSource.id}`, {
                 variant: "error",
             })
-            console.error(error)
         } finally {
             setIsSyncing(false)
         }
@@ -294,10 +180,10 @@ export function FieldMapping({
     }, [])
 
     return (
-        <main className="field-mapping-container no-scrollbar">
-            <form className="field-mapping-form" onSubmit={handleSubmit}>
-                <hr className="divider sticky-top" />
-                <label className="field-slug-label" htmlFor="slugField">
+        <main className="mapping no-scrollbar">
+            <form onSubmit={handleSubmit}>
+                <hr className="sticky-top" />
+                <label className="slug-field" htmlFor="slugField">
                     Slug Field
                     <select
                         name="slugField"
@@ -306,38 +192,41 @@ export function FieldMapping({
                         onChange={e => setSlugFieldId(e.target.value)}
                         required
                     >
-                        {slugFields.map(field => {
-                            assert(field.field)
+                        {possibleSlugFields.map(field => {
+                            if (!field) return null
                             return (
-                                <option key={field.field.id} value={field.field.id}>
-                                    {field.field.name}
+                                <option key={field.id} value={field.id}>
+                                    {field.name}
                                 </option>
                             )
                         })}
                     </select>
                 </label>
-                <div className="field-grid">
+                <div className="mapping-fields">
                     <span className="column-span-2">Column</span>
                     <span>Field</span>
-                    <span>Type</span>
-
                     {fields.map((field, i) => (
                         <FieldMappingRow
                             key={field.field?.id || i}
-                            field={field}
+                            fieldConfig={field}
                             isIgnored={disabledFieldIds.has(field.field?.id ?? "")}
                             onFieldToggle={handleFieldToggle}
                             onFieldNameChange={handleFieldNameChange}
-                            onFieldTypeChange={handleFieldTypeChange}
                         />
                     ))}
                 </div>
-                <div className="sticky-footer">
-                    <hr className="divider" />
+                <footer>
+                    <hr className="sticky-top" />
                     <button className="framer-button-primary" disabled={isSyncing}>
-                        Import <span style={{ textTransform: "capitalize" }}>{dataSource.id}</span>
+                        {isSyncing ? (
+                            "Importing..."
+                        ) : (
+                            <span>
+                                Import <span style={{ textTransform: "capitalize" }}>{dataSource.id}</span>
+                            </span>
+                        )}
                     </button>
-                </div>
+                </footer>
             </form>
         </main>
     )

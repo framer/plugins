@@ -2,13 +2,11 @@ import { framer } from "framer-plugin"
 import "./App.css"
 import { useLayoutEffect, useState } from "react"
 import {
-    COLLECTIONS_SYNC_MAP,
-    computeFieldConfig,
+    computeFieldConfigs,
     DataSource,
     FieldConfig,
     getDataSources,
     listDataSourcesIds,
-    LOCAL_STORAGE_LAST_LAUNCH_KEY,
     PLUGIN_COLLECTION_SYNC_REFERENCE_KEY,
     PLUGIN_COLLECTION_SYNC_SLUG_KEY,
     syncCollection,
@@ -26,34 +24,36 @@ const syncDataSource = syncDataSourceId ? await getDataSources(syncDataSourceId)
 let savedFieldsConfig: FieldConfig[] | undefined
 
 if (syncDataSource) {
-    savedFieldsConfig = computeFieldConfig(existingFields, syncDataSource)
+    savedFieldsConfig = computeFieldConfigs(existingFields, syncDataSource)
 }
 
 if (framer.mode === "syncManagedCollection" && savedFieldsConfig && syncDataSource && syncSlugFieldId) {
-    await syncCollection(
-        syncDataSource,
-        savedFieldsConfig
-            .filter(field => field.field && !field.source.ignored)
-            .filter(field => !field.reference || field.reference.destination !== null),
-        syncSlugFieldId
-    )
+    try {
+        await syncCollection(
+            syncDataSource,
+            savedFieldsConfig.filter(field => field.field && !field.isNew),
+            syncSlugFieldId
+        )
+        await framer.closePlugin(`Synchronization successful`, {
+            variant: "success",
+        })
+    } catch (error) {
+        console.error(error)
+        framer.closePlugin(`Failed to sync collection`, {
+            variant: "error",
+        })
+    }
 }
 
 const allDataSources = await listDataSourcesIds()
 
 export function App() {
-    const [isFirstTime, setIsFirstTime] = useState(localStorage.getItem(LOCAL_STORAGE_LAST_LAUNCH_KEY) === null)
     const [isLoadingFields, setIsLoadingFields] = useState(false)
 
     const [selectedDataSourceId, setSelectedDataSourceId] = useState<string | null>(
         syncDataSourceId || allDataSources[0] || null
     )
     const [selectDataSource, setSelectDataSource] = useState<DataSource | null>(syncDataSource)
-
-    const showCollections = () => {
-        localStorage.setItem(LOCAL_STORAGE_LAST_LAUNCH_KEY, new Date().toISOString())
-        setIsFirstTime(false)
-    }
 
     const showFieldsMapping = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -72,17 +72,6 @@ export function App() {
             }
 
             setSelectDataSource(dataSource)
-
-            const collectionReferences = COLLECTIONS_SYNC_MAP.get(dataSource.id) ?? []
-            if (!collectionReferences.find(reference => reference.id === activeCollection.id)) {
-                COLLECTIONS_SYNC_MAP.set(dataSource.id, [
-                    ...collectionReferences,
-                    {
-                        id: activeCollection.id,
-                        name: "This Collection",
-                    },
-                ])
-            }
         } catch (error) {
             framer.notify(`Failed to load collection: ${error instanceof Error ? error.message : "Unknown error"}`, {
                 variant: "error",
@@ -95,34 +84,22 @@ export function App() {
     useLayoutEffect(() => {
         if (selectDataSource) return
         const width = 320
-        const height = isLoadingFields ? 95 : isFirstTime ? 127 : 113
+        const height = isLoadingFields ? 95 : 113
 
         framer.showUI({
             width,
             height,
             resizable: false,
         })
-    }, [selectDataSource, isFirstTime, isLoadingFields])
-
-    if (isFirstTime) {
-        return (
-            <main className="intro-container">
-                <p>
-                    This is a starter for the CMS plugin. Laboris duis dolore culpa culpa sint do. In commodo aliquip
-                    consequat qui sit laboris cillum veniam voluptate irure.
-                </p>
-                <button onClick={showCollections}>Start</button>
-            </main>
-        )
-    }
+    }, [selectDataSource, isLoadingFields])
 
     if (!selectDataSource) {
         return (
-            <main className="intro-container">
+            <main className="setup">
                 <p>Select a collection to sync with Framer.</p>
 
-                <form className="collection-form" onSubmit={showFieldsMapping}>
-                    <label htmlFor="collection" className="collection-label">
+                <form onSubmit={showFieldsMapping}>
+                    <label htmlFor="collection">
                         Collection
                         <select
                             id="collection"

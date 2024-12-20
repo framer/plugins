@@ -294,7 +294,9 @@ function getFieldValue(fieldType: CollectionFieldType, cellValue: CellValue) {
         }
         case "date": {
             if (typeof cellValue !== "string") return null
-            return new Date(cellValue).toUTCString()
+            const [month, day, year] = cellValue.split(/[-/]/).map(Number)
+            const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0))
+            return date.toISOString()
         }
         case "enum":
         case "image":

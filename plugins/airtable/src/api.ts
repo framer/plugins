@@ -438,17 +438,32 @@ export const fetchBases = (offset?: string): Promise<BasesResponse> => {
  */
 export const fetchRecords = async (args: FetchRecordsParams): Promise<AirtableRecord[]> => {
     const { baseId, tableId } = args
+    const records: AirtableRecord[] = []
+    let offset = ""
 
-    const data = await request({
-        path: `/${baseId}/${tableId}`,
-        method: "get",
-        query: {
-            returnFieldsByFieldId: "true",
-            maxRecords: MAX_CMS_ITEMS,
-        },
-    })
+    do {
+        const data = await request({
+            path: `/${baseId}/${tableId}`,
+            method: "get",
+            query: {
+                returnFieldsByFieldId: "true",
+                maxRecords: MAX_CMS_ITEMS,
+                offset,
+            },
+        })
 
-    return data.records
+        records.push(...data.records)
+        offset = data.offset
+    } while (offset && records.length < MAX_CMS_ITEMS)
+
+    if (offset) {
+        const lastRecord = records[records.length - 1]
+        console.warn(
+            `There are more than ${MAX_CMS_ITEMS} records in this table. Some records may not be fetched. The last item that will be fetched is: ${lastRecord.id}`
+        )
+    }
+
+    return records
 }
 
 export const useBasesQuery = () => {

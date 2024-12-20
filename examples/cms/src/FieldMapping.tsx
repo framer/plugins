@@ -1,5 +1,5 @@
 import { ManagedCollectionField, framer } from "framer-plugin"
-import { useState, useMemo, useLayoutEffect } from "react"
+import { useState, useMemo } from "react"
 import { Fragment } from "react/jsx-runtime"
 import { DataSource, FieldConfig, computeFieldConfigs } from "./data"
 import { isNotNull } from "./utils"
@@ -169,20 +169,10 @@ export function FieldMapping({
         }
     }
 
-    useLayoutEffect(() => {
-        framer.showUI({
-            width: 360,
-            height: 425,
-            minWidth: 360,
-            minHeight: 425,
-            resizable: true,
-        })
-    }, [])
-
     return (
-        <main className="mapping no-scrollbar">
+        <main className="mapping">
+            <hr className="sticky-top" />
             <form onSubmit={handleSubmit}>
-                <hr className="sticky-top" />
                 <label className="slug-field" htmlFor="slugField">
                     Slug Field
                     <select
@@ -202,7 +192,8 @@ export function FieldMapping({
                         })}
                     </select>
                 </label>
-                <div className="mapping-fields">
+
+                <div className="fields">
                     <span className="column-span-2">Column</span>
                     <span>Field</span>
                     {fields.map((field, i) => (
@@ -215,9 +206,10 @@ export function FieldMapping({
                         />
                     ))}
                 </div>
+
                 <footer>
                     <hr className="sticky-top" />
-                    <button className="framer-button-primary" disabled={isSyncing}>
+                    <button disabled={isSyncing}>
                         {isSyncing ? (
                             "Importing..."
                         ) : (

@@ -9,6 +9,14 @@ main {
     gap: 15px;
 }
 
+form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    gap: 15px;
+}
+
 /* Chrome, Safari and Opera */
 .no-scrollbar::-webkit-scrollbar {
     display: none;
@@ -17,18 +25,6 @@ main {
 .no-scrollbar {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
-}
-
-.scroll-fade {
-    flex-shrink: 0;
-    height: 45px;
-    width: 100%;
-    display: block;
-    overflow: visible;
-    z-index: 10;
-    position: absolute;
-    left: 0;
-    bottom: 61px;
 }
 
 [data-framer-theme="light"] .scroll-fade {
@@ -57,25 +53,58 @@ main {
     grid-column: span 2 / span 2;
 }
 
+.setup,
 .mapping {
-    padding: 0 15px;
+    composes: no-scrollbar;
 }
 
-.mapping form {
+.setup .logo {
     display: flex;
     flex-direction: column;
-    flex: 1;
-    gap: 10px;
+    align-items: center;
+    justify-content: center;
     width: 100%;
+    min-height: 200px;
+    background-color: var(--framer-color-bg-secondary);
+    border-radius: 10px;
 }
 
-.mapping-fields {
+.setup label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+    width: 100%;
+    justify-content: space-between;
+    padding-left: 15px;
+    color: var(--framer-color-text-tertiary);
+}
+
+.setup select {
+    width: 164px;
+    text-transform: capitalize;
+}
+
+.mapping {
+    padding-bottom: 0;
+}
+
+.mapping .fields {
     display: grid;
     grid-template-columns: 1fr 8px 1fr;
     gap: 10px;
     margin-bottom: auto;
+    padding-bottom: 10px;
     align-items: center;
-    overflow: hidden;
+    color: var(--framer-color-text-tertiary);
+}
+
+.mapping .slug-field {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
     color: var(--framer-color-text-tertiary);
 }
 
@@ -85,7 +114,7 @@ main {
     align-items: center;
     white-space: nowrap;
     height: 30px;
-    padding: 0px 10px;
+    padding: 0px 8px;
     font-size: 12px;
     color: var(--framer-color-text);
     background-color: var(--framer-color-bg-tertiary);
@@ -103,51 +132,26 @@ main {
     cursor: pointer;
 }
 
-.mapping .slug-field {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    justify-content: space-between;
-    gap: 4px;
-    color: var(--framer-color-text-tertiary);
-}
-
 .mapping footer {
     position: sticky;
     bottom: 0;
     left: 0;
     width: 100%;
     background-color: var(--framer-color-bg);
-    padding-bottom: 15px;
     margin-top: auto;
+    padding-bottom: 15px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
 }
 
-.mapping-footer hr {
-    margin-bottom: 5px;
-}
-
-.setup form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+.mapping footer::before {
+    content: "";
+    position: absolute;
+    top: -45px;
+    left: 0;
     width: 100%;
-}
-
-.setup label {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    height: 30px;
-    width: 100%;
-    justify-content: space-between;
-    padding-left: 15px;
-    color: var(--framer-color-text-tertiary);
-}
-
-.setup select {
-    width: 164px;
-    text-transform: capitalize;
+    height: 45px;
+    background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
+    pointer-events: none;
 }

@@ -53,7 +53,7 @@ export function App() {
     const [selectedDataSourceId, setSelectedDataSourceId] = useState<string | null>(
         syncDataSourceId || allDataSources[0] || null
     )
-    const [selectDataSource, setSelectDataSource] = useState<DataSource | null>(syncDataSource)
+    const [selectedDataSource, setSelectedDataSource] = useState<DataSource | null>(syncDataSource)
 
     const showFieldsMapping = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -71,7 +71,7 @@ export function App() {
                 throw new Error("Failed to load data source")
             }
 
-            setSelectDataSource(dataSource)
+            setSelectedDataSource(dataSource)
         } catch (error) {
             framer.notify(`Failed to load collection: ${error instanceof Error ? error.message : "Unknown error"}`, {
                 variant: "error",
@@ -82,22 +82,28 @@ export function App() {
     }
 
     useLayoutEffect(() => {
-        if (selectDataSource) return
-        const width = 320
-        const height = isLoadingFields ? 95 : 113
+        if (!selectedDataSource) {
+            framer.showUI({
+                width: 320,
+                height: 305,
+                resizable: false,
+            })
+            return
+        }
 
         framer.showUI({
-            width,
-            height,
-            resizable: false,
+            width: 360,
+            height: 425,
+            minWidth: 360,
+            minHeight: 425,
+            resizable: true,
         })
-    }, [selectDataSource, isLoadingFields])
+    }, [selectedDataSource])
 
-    if (!selectDataSource) {
+    if (!selectedDataSource) {
         return (
             <main className="setup">
-                <p>Select a collection to sync with Framer.</p>
-
+                <div className="logo"></div>
                 <form onSubmit={showFieldsMapping}>
                     <label htmlFor="collection">
                         Collection
@@ -105,7 +111,6 @@ export function App() {
                             id="collection"
                             onChange={e => setSelectedDataSourceId(e.target.value)}
                             value={selectedDataSourceId || ""}
-                            className="collection-select"
                         >
                             <option value="" disabled>
                                 Choose...
@@ -127,7 +132,7 @@ export function App() {
 
     return (
         <FieldMapping
-            dataSource={selectDataSource}
+            dataSource={selectedDataSource}
             savedFieldsConfig={savedFieldsConfig}
             existingFields={existingFields}
             savedSlugFieldId={syncSlugFieldId}

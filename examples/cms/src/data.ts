@@ -10,9 +10,13 @@ export const PLUGIN_COLLECTION_SYNC_SLUG_KEY = `collectionSyncSlug`
 
 export type ManagedCollectionFieldType = ManagedCollectionField["type"]
 
+type DataSourceField = {
+    type: ManagedCollectionFieldType
+}
+
 export interface DataSource {
     id: string
-    fields: Record<string, ManagedCollectionFieldType>
+    fields: Record<string, DataSourceField>
     items: Record<string, unknown>[]
 }
 
@@ -34,7 +38,7 @@ export function computeFieldConfigs(existingFields: ManagedCollectionField[], da
     const result: FieldConfig[] = []
     const fields = dataSource.fields
 
-    for (const [name, type] of Object.entries(fields)) {
+    for (const [name, fieldType] of Object.entries(fields)) {
         const fieldId = generateHash(name)
         let newField: ManagedCollectionField | null = null
 
@@ -45,7 +49,7 @@ export function computeFieldConfigs(existingFields: ManagedCollectionField[], da
             newField = {
                 id: fieldId,
                 name,
-                type,
+                type: fieldType.type,
                 userEditable: false,
             } as ManagedCollectionField
         }

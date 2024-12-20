@@ -313,6 +313,7 @@ interface ProcessRecordParams {
     slugFieldId: string
     status: SyncStatus
     unsyncedItemIds: Set<string>
+    ignoredFieldIds: string[]
 }
 
 export interface SynchronizeResult extends SyncStatus {
@@ -368,7 +369,15 @@ export interface PluginContextNoTableAccess {
 
 export type PluginContext = PluginContextNew | PluginContextUpdate | PluginContextNoTableAccess
 
-function processRecord({ record, tableSchema, fieldsById, slugFieldId, status, unsyncedItemIds }: ProcessRecordParams) {
+function processRecord({
+    record,
+    tableSchema,
+    fieldsById,
+    slugFieldId,
+    status,
+    unsyncedItemIds,
+    ignoredFieldIds,
+}: ProcessRecordParams) {
     let slugValue: string | null = null
 
     const fieldData: Record<string, unknown> = {}
@@ -376,7 +385,21 @@ function processRecord({ record, tableSchema, fieldsById, slugFieldId, status, u
     // Mark item as seen
     unsyncedItemIds.delete(record.id)
 
+    // Airtable doesn't return checkbox fields in the record when they are false, so we need to set them to false by default
+    for (const fieldSchema of tableSchema.fields) {
+        if (ignoredFieldIds.includes(fieldSchema.id)) continue
+
+        if (fieldSchema.type === "checkbox") {
+            const field = fieldsById.get(fieldSchema.id)
+            if (!field) continue
+
+            fieldData[fieldSchema.id] = false
+        }
+    }
+
     for (const [fieldId, cellValue] of Object.entries(record.fields)) {
+        if (ignoredFieldIds.includes(fieldId)) continue
+
         const fieldSchema = tableSchema.fields.find(fieldSchema => fieldSchema.id === fieldId)
 
         if (!fieldSchema) continue
@@ -498,6 +521,7 @@ export async function syncTable({
         slugFieldId,
         unsyncedItemIds,
         fields,
+        ignoredFieldIds,
     })
 
     await collection.addItems(collectionItems)

@@ -167,8 +167,8 @@ export function App({ pluginContext }: AppProps) {
             sheetTitle,
             fields,
             // Determine if the field type is already configured, otherwise default to "string"
-            colFieldTypes: headerRow.map((_, colIndex) => {
-                const field = fields.find(field => Number(field.id) === colIndex)
+            colFieldTypes: headerRow.map(colName => {
+                const field = fields.find(field => field?.name === colName)
                 return field?.type ?? "string"
             }),
         }).then(() => framer.closePlugin())

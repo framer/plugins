@@ -1,12 +1,6 @@
-import { CollectionItemData, ManagedCollectionField, framer } from "framer-plugin"
-import { generateHash, isNotNull, slugify } from "./utils"
-
-// Plugin keys
-export const PLUGIN_PREFIX = "cms_starter"
-export const LOCAL_STORAGE_LAST_LAUNCH_KEY = `${PLUGIN_PREFIX}.lastLaunched`
-
-export const PLUGIN_COLLECTION_SYNC_REFERENCE_KEY = `collectionSyncReference`
-export const PLUGIN_COLLECTION_SYNC_SLUG_KEY = `collectionSyncSlug`
+import { CollectionItemData, ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
+import { generateHash, isNotNull } from "./utils"
+import { PLUGIN_KEYS } from "./constants"
 
 export type ManagedCollectionFieldType = ManagedCollectionField["type"]
 
@@ -26,12 +20,12 @@ export interface FieldConfig {
     field: ManagedCollectionField | null
 }
 
-export async function listDataSourcesIds(): Promise<string[]> {
+export function listDataSourcesIds(): string[] {
     return ["articles", "categories"]
 }
 
 export async function getDataSources(collection: string): Promise<DataSource> {
-    return await fetch(`/datasources/${collection}.json`).then(res => res.json())
+    return await fetch(`/datasources/${collection}.json`).then(response => response.json())
 }
 
 export function computeFieldConfigs(existingFields: ManagedCollectionField[], dataSource: DataSource) {
@@ -91,8 +85,7 @@ export async function syncCollection(
             continue
         }
 
-        const slug = slugify(slugValue)
-        const itemId = generateHash(slug)
+        const itemId = generateHash(slugValue)
         unsyncedItems.delete(itemId)
 
         const fieldData: CollectionItemData["fieldData"] = {}
@@ -111,7 +104,7 @@ export async function syncCollection(
 
         items.push({
             id: itemId,
-            slug: slug,
+            slug: slugValue,
             draft: false,
             fieldData,
         })
@@ -121,6 +114,53 @@ export async function syncCollection(
     await activeCollection.removeItems(Array.from(unsyncedItems))
     await activeCollection.addItems(items)
 
-    await activeCollection.setPluginData(PLUGIN_COLLECTION_SYNC_REFERENCE_KEY, collection.id)
-    await activeCollection.setPluginData(PLUGIN_COLLECTION_SYNC_SLUG_KEY, slugFieldId)
+    await activeCollection.setPluginData(PLUGIN_KEYS.SYNC_REFERENCE, collection.id)
+    await activeCollection.setPluginData(PLUGIN_KEYS.SYNC_SLUG, slugFieldId)
+}
+
+type SyncResult =
+    | { status: "success" }
+    | { status: "needsSetup"; allDataSources: string[] }
+    | {
+          status: "needsConfiguration"
+          dataSource: DataSource
+          existingFields: ManagedCollectionField[]
+          savedFieldsConfig: FieldConfig[]
+      }
+
+export async function syncExistingCollection(
+    collection: ManagedCollection,
+    dataSourceId: string | null,
+    slugFieldId: string | null
+): Promise<SyncResult> {
+    if (!dataSourceId) {
+        return { status: "needsSetup", allDataSources: listDataSourcesIds() }
+    }
+
+    const syncDataSource = await getDataSources(dataSourceId)
+    if (!syncDataSource) {
+        return { status: "needsSetup", allDataSources: listDataSourcesIds() }
+    }
+
+    const existingFields = await collection.getFields()
+    const savedFieldsConfig = computeFieldConfigs(existingFields, syncDataSource)
+
+    if (!slugFieldId || framer.mode !== "syncManagedCollection") {
+        return { status: "needsConfiguration", dataSource: syncDataSource, existingFields, savedFieldsConfig }
+    }
+
+    try {
+        await syncCollection(
+            syncDataSource,
+            savedFieldsConfig.filter(field => field.field && !field.isNew),
+            slugFieldId
+        )
+        return { status: "success" }
+    } catch (error) {
+        console.error(error)
+        framer.notify(`Failed to sync collection`, {
+            variant: "error",
+        })
+        return { status: "needsConfiguration", dataSource: syncDataSource, existingFields, savedFieldsConfig }
+    }
 }

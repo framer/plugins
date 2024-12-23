@@ -87,9 +87,17 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     }, [isUserInfoError, isSelectSheetError, setContext])
 
     useLayoutEffect(() => {
+        const width = sheetTitle !== null ? 360 : 320
+        const height = sheetTitle !== null ? 425 : 345
+
         framer.showUI({
-            width: sheetTitle !== null ? 340 : 320,
-            height: sheetTitle !== null ? 425 : 345,
+            width,
+            height,
+            minWidth: width,
+            minHeight: height,
+            // Only allow resizing when mapping fields as the default size could not be enough.
+            // This will keep the given dimensions in the Select Sheet Screen.
+            resizable: sheetTitle !== null,
         })
     }, [sheetTitle])
 

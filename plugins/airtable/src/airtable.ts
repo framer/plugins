@@ -385,48 +385,36 @@ function processRecord({
     // Mark item as seen
     unsyncedItemIds.delete(record.id)
 
-    // Airtable doesn't return checkbox fields in the record when they are false, so we need to set them to false by default
     for (const fieldSchema of tableSchema.fields) {
         if (ignoredFieldIds.includes(fieldSchema.id)) continue
 
-        if (fieldSchema.type === "checkbox") {
-            const field = fieldsById.get(fieldSchema.id)
-            if (!field) continue
-
-            fieldData[fieldSchema.id] = false
-        }
-    }
-
-    for (const [fieldId, cellValue] of Object.entries(record.fields)) {
-        if (ignoredFieldIds.includes(fieldId)) continue
-
-        const fieldSchema = tableSchema.fields.find(fieldSchema => fieldSchema.id === fieldId)
-
-        if (!fieldSchema) continue
-
-        const fieldValue = getFieldValue(fieldSchema, cellValue)
-
-        if (fieldId === slugFieldId) {
-            if (typeof fieldValue !== "string") {
-                continue
-            }
-
-            slugValue = slugify(fieldValue)
-        }
-
-        const field = fieldsById.get(fieldId)
-
-        // We can continue since the Airtable field was not included in the field mapping
+        const field = fieldsById.get(fieldSchema.id)
         if (!field) continue
 
-        if (!fieldValue) {
-            status.warnings.push({
-                fieldId,
-                message: `Value is missing for field ${field.name}`,
-            })
+        // Airtable doesn't return checkbox fields in the record when they are set to false, so we need to set them to false by default
+        if (fieldSchema.type === "checkbox") {
+            fieldData[fieldSchema.id] = false
         }
 
-        fieldData[fieldId] = fieldValue
+        const cellValue = record.fields[fieldSchema.id]
+        if (cellValue !== undefined) {
+            const fieldValue = getFieldValue(fieldSchema, cellValue)
+
+            if (fieldSchema.id === slugFieldId) {
+                if (typeof fieldValue === "string") {
+                    slugValue = slugify(fieldValue)
+                }
+            }
+
+            if (!fieldValue) {
+                status.warnings.push({
+                    fieldId: fieldSchema.id,
+                    message: `Value is missing for field ${field.name}`,
+                })
+            }
+
+            fieldData[fieldSchema.id] = fieldValue
+        }
     }
 
     if (!slugValue) {

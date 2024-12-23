@@ -1,0 +1,6 @@
+{
+    "id": "357ab0",
+    "name": "Dribbble",
+    "modes": ["canvas", "configureManagedCollection", "syncManagedCollection"],
+    "icon": "/icon.svg"
+}

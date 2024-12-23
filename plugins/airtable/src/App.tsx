@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import { useEffect, useLayoutEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { getTableIdMapForBase, PluginContext, PluginContextNew, PluginContextUpdate, syncTable } from "./airtable"
 import { useBaseSchemaQuery, useSyncTableMutation } from "./api"
 import { assert } from "./utils"
@@ -131,12 +131,16 @@ export function App({ pluginContext }: AppProps) {
     const mode = framer.mode
     const shouldSyncOnly = mode === "syncManagedCollection" && shouldSyncImmediately(context)
 
+    const isSyncing = useRef(false)
+
     useLayoutEffect(() => {
+        if (isSyncing.current) return
         if (!shouldSyncOnly) return
 
         assert(context.type === "update")
         assert(context.slugFieldId !== null, "Expected slug field")
 
+        isSyncing.current = true
         framer.hideUI()
 
         const { baseId, tableId, collectionFields, ignoredFieldIds, slugFieldId, tableSchema, lastSyncedTime } = context

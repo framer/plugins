@@ -368,7 +368,19 @@ interface RequestOptions {
 
 const API_URL = "https://api.airtable.com/v0"
 
-const request = async ({ path, method, query, body }: RequestOptions) => {
+// https://github.com/Airtable/airtable.js/blob/master/src/exponential_backoff_with_jitter.ts
+const INITIAL_RETRY_DELAY = 5000 // 5 seconds, matching Airtable's config
+const MAX_RETRY_DELAY = 600000 // 10 minutes, matching Airtable's config
+const MAX_RETRY_ATTEMPTS = 10
+
+// Exponential backoff with "Full Jitter" algorithm
+const calculateBackoffDelay = (numAttempts: number): number => {
+    const rawBackoffTime = INITIAL_RETRY_DELAY * Math.pow(2, numAttempts)
+    const clippedBackoffTime = Math.min(MAX_RETRY_DELAY, rawBackoffTime)
+    return Math.random() * clippedBackoffTime
+}
+
+const request = async ({ path, method, query, body }: RequestOptions, numAttempts = 0) => {
     const tokens = await auth.getTokens()
 
     if (!tokens) {
@@ -399,11 +411,16 @@ const request = async ({ path, method, query, body }: RequestOptions) => {
 
     const json = await res.json()
 
+    if (res.status === 429 && numAttempts < MAX_RETRY_ATTEMPTS) {
+        const delay = calculateBackoffDelay(numAttempts)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        return request({ path, method, query, body }, numAttempts + 1)
+    }
+
     if (!res.ok) {
         const errors = (json.errors as { error: string; message: string }[]).map(
             ({ error, message }, index) => `${index + 1}. ${error}: ${message}`
         )
-        
         throw new Error(`Failed to fetch Airtable API:\n\n${errors.join("\n")}`)
     }
 

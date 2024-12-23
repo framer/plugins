@@ -60,9 +60,10 @@ export function App() {
             setLocales(initialLocales)
             setDefaultLocale(initialDefaultLocale)
 
-            const firstLocale = initialLocales[0]
-            if (!firstLocale) return
-            setSelectedLocaleId(firstLocale.id)
+            const activeLocale = await framer.unstable_getActiveLocale()
+            if (activeLocale) {
+                setSelectedLocaleId(activeLocale.id)
+            }
         }
 
         loadLocales()

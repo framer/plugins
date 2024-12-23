@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query"
-import { SynchronizeResult, SyncMutationOptions, syncTable } from "./airtable"
+import { type SynchronizeResult, type SyncMutationOptions, syncTable } from "./airtable"
 import auth from "./auth"
 
 interface AirtableBaseEntity {
@@ -357,7 +357,7 @@ interface FetchRecordsParams {
     tableId: string
 }
 
-type QueryParams = Record<string, string | number | string[]> | URLSearchParams
+type QueryParams = Record<string, string | number | string[] | undefined>
 
 interface RequestOptions {
     path: string
@@ -367,7 +367,6 @@ interface RequestOptions {
 }
 
 const API_URL = "https://api.airtable.com/v0"
-const MAX_CMS_ITEMS = 10000
 
 const request = async ({ path, method, query, body }: RequestOptions) => {
     const tokens = await auth.getTokens()
@@ -401,8 +400,11 @@ const request = async ({ path, method, query, body }: RequestOptions) => {
     const json = await res.json()
 
     if (!res.ok) {
-        const errorMessage = json.error.message
-        throw new Error("Failed to fetch Airtable API: " + errorMessage)
+        const errors = (json.errors as { error: string; message: string }[]).map(
+            ({ error, message }, index) => `${index + 1}. ${error}: ${message}`
+        )
+        
+        throw new Error(`Failed to fetch Airtable API:\n\n${errors.join("\n")}`)
     }
 
     return json
@@ -439,7 +441,7 @@ export const fetchBases = (offset?: string): Promise<BasesResponse> => {
 export const fetchRecords = async (args: FetchRecordsParams): Promise<AirtableRecord[]> => {
     const { baseId, tableId } = args
     const records: AirtableRecord[] = []
-    let offset = ""
+    let offset: string | undefined
 
     do {
         const data = await request({
@@ -447,21 +449,13 @@ export const fetchRecords = async (args: FetchRecordsParams): Promise<AirtableRe
             method: "get",
             query: {
                 returnFieldsByFieldId: "true",
-                maxRecords: MAX_CMS_ITEMS,
                 offset,
             },
         })
 
         records.push(...data.records)
         offset = data.offset
-    } while (offset && records.length < MAX_CMS_ITEMS)
-
-    if (offset) {
-        const lastRecord = records[records.length - 1]
-        console.warn(
-            `There are more than ${MAX_CMS_ITEMS} records in this table. Some records may not be fetched. The last item that will be fetched is: ${lastRecord.id}`
-        )
-    }
+    } while (offset !== undefined)
 
     return records
 }

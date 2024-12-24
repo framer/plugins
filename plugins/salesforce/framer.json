@@ -1,0 +1,6 @@
+{
+    "id": "0fb97d",
+    "name": "Salesforce",
+    "modes": ["canvas", "configureManagedCollection", "syncManagedCollection"],
+    "icon": "/salesforce.svg"
+}

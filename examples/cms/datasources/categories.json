@@ -1,0 +1,29 @@
+{
+    "id": "categories",
+    "fields": {
+        "Title": {
+            "type": "string"
+        },
+        "Color": {
+            "type": "color"
+        }
+    },
+    "items": [
+        {
+            "Title": "CMS",
+            "Color": "orange"
+        },
+        {
+            "Title": "Basics",
+            "Color": "red"
+        },
+        {
+            "Title": "Updates",
+            "Color": "blue"
+        },
+        {
+            "Title": "Pro Tips",
+            "Color": "green"
+        }
+    ]
+}

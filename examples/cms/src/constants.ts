@@ -1,6 +1,6 @@
 export const PLUGIN_KEYS = {
-    SYNC_REFERENCE: "collectionSyncReference",
-    SYNC_SLUG: "collectionSyncSlug",
+    COLLECTION_ID: "collectionId",
+    SLUG_FIELD_ID: "slugFieldId",
 } as const
 
 export const UI_DEFAULTS = {

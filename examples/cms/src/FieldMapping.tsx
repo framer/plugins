@@ -1,23 +1,24 @@
-import { ManagedCollectionField, framer } from "framer-plugin"
-import { useState, useMemo } from "react"
-import { DataSource, FieldConfig, computeFieldConfigs } from "./data"
-import { isNotNull } from "./utils"
+import type { DataSource, syncCollection } from "./data"
+
+import { ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
+import { useState, useMemo, useLayoutEffect } from "react"
+import { computeFieldsFromDataSource, mergeFieldsWithExistingFields } from "./data"
 import { Spinner } from "./components/Spinner"
+import { UI_DEFAULTS } from "./constants"
 
 interface FieldMappingRowProps {
-    fieldConfig: FieldConfig
+    originalField: ManagedCollectionField
+    field: ManagedCollectionField
     isIgnored: boolean
     onFieldToggle: (fieldId: string) => void
     onFieldNameChange: (fieldId: string, name: string) => void
 }
 
-function FieldMappingRow({ fieldConfig, isIgnored, onFieldToggle, onFieldNameChange }: FieldMappingRowProps) {
-    const field = fieldConfig.field
-
+function FieldMappingRow({ originalField, field, isIgnored, onFieldToggle, onFieldNameChange }: FieldMappingRowProps) {
     const isUnsupported = !field
-    const hasFieldNameChanged = field!.name !== fieldConfig.name
+    const hasFieldNameChanged = field!.name !== originalField.name
     const fieldName = hasFieldNameChanged ? field!.name : ""
-    const placeholder = isUnsupported ? "Unsupported Field" : fieldConfig.name
+    const placeholder = isUnsupported ? "Unsupported Field" : originalField.name
     const isDisabled = isUnsupported || isIgnored
 
     return (
@@ -25,7 +26,7 @@ function FieldMappingRow({ fieldConfig, isIgnored, onFieldToggle, onFieldNameCha
             <div
                 className="source-field"
                 aria-disabled={isDisabled}
-                onClick={() => onFieldToggle(fieldConfig.field!.id)}
+                onClick={() => onFieldToggle(field!.id)}
                 role="button"
             >
                 <input
@@ -36,7 +37,7 @@ function FieldMappingRow({ fieldConfig, isIgnored, onFieldToggle, onFieldNameCha
                         event.stopPropagation()
                     }}
                 />
-                <span>{fieldConfig.name}</span>
+                <span>{originalField.name}</span>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
                 <path
@@ -60,11 +61,11 @@ function FieldMappingRow({ fieldConfig, isIgnored, onFieldToggle, onFieldNameCha
                 onChange={event => {
                     if (!field) return
 
-                    const value = event.target.value.trim()
-                    if (!value) {
-                        onFieldNameChange(field.id, fieldConfig.name)
+                    const value = event.target.value
+                    if (!value.trim()) {
+                        onFieldNameChange(field.id, originalField.name)
                     } else {
-                        onFieldNameChange(field.id, value)
+                        onFieldNameChange(field.id, value.trimStart())
                     }
                 }}
             />
@@ -73,53 +74,46 @@ function FieldMappingRow({ fieldConfig, isIgnored, onFieldToggle, onFieldNameCha
 }
 
 interface FieldMappingProps {
-    savedFieldsConfig: FieldConfig[] | null
+    collection: ManagedCollection
     existingFields: ManagedCollectionField[]
     dataSource: DataSource
-    savedSlugFieldId: string | null
-    onSubmit: (dataSource: DataSource, fields: FieldConfig[], slugFieldId: string) => Promise<void>
+    slugFieldId: string | null
+    onImport: typeof syncCollection
 }
 
-export function FieldMapping({
-    savedFieldsConfig,
-    existingFields,
-    dataSource,
-    savedSlugFieldId,
-    onSubmit,
-}: FieldMappingProps) {
-    const [fieldsConfig, setFieldsConfig] = useState<FieldConfig[]>(
-        savedFieldsConfig ?? computeFieldConfigs(existingFields, dataSource)
-    )
-    const [disabledFieldIds, setDisabledFieldIds] = useState<Set<string>>(
-        new Set(savedFieldsConfig?.filter(field => field.isNew).map(field => field.field!.id))
-    )
+export function FieldMapping({ collection, existingFields, dataSource, slugFieldId, onImport }: FieldMappingProps) {
+    const originalFields = useMemo(() => computeFieldsFromDataSource(dataSource), [dataSource])
+    const [fields, setFields] = useState(mergeFieldsWithExistingFields(originalFields, existingFields))
+
+    const [disabledFieldIds, setDisabledFieldIds] = useState<Set<string>>(() => {
+        if (existingFields.length === 0) {
+            return new Set()
+        }
+
+        return new Set(
+            fields
+                .filter(field => !existingFields.find(existingField => existingField.id === field.id))
+                .map(field => field.id)
+        )
+    })
 
     const possibleSlugFields = useMemo(() => {
-        const extractedFields = fieldsConfig.map(fieldConfig => {
-            return fieldConfig.field
-        })
-        const nonNullFields = extractedFields.filter(isNotNull)
-
-        return nonNullFields.filter(field => {
+        return fields.filter(field => {
             const isStringType = field.type === "string"
             const isEnabled = !disabledFieldIds.has(field.id)
 
             return isStringType && isEnabled
         })
-    }, [fieldsConfig, disabledFieldIds])
+    }, [fields, disabledFieldIds])
 
-    const [slugFieldId, setSlugFieldId] = useState<string | null>(savedSlugFieldId ?? possibleSlugFields[0]?.id ?? null)
+    const [selectedSlugFieldId, setSelectedSlugFieldId] = useState<string | null>(
+        slugFieldId ?? possibleSlugFields[0]?.id ?? null
+    )
 
     const [isSyncing, setIsSyncing] = useState(false)
 
     const handleFieldNameChange = (fieldId: string, name: string) => {
-        setFieldsConfig(prev =>
-            prev.map(fieldConfig =>
-                fieldConfig.field?.id === fieldId
-                    ? { ...fieldConfig, field: { ...fieldConfig.field, name } }
-                    : fieldConfig
-            )
-        )
+        setFields(prev => prev.map(field => (field.id === fieldId ? { ...field, name } : field)))
     }
 
     const handleFieldToggle = (fieldId: string) => {
@@ -134,18 +128,18 @@ export function FieldMapping({
             }
 
             // Handle slug field updates
-            const fieldConfig = fieldsConfig.find(fieldConfig => fieldConfig.field?.id === fieldId)
-            if (fieldConfig?.field?.type !== "string") {
+            const field = fields.find(field => field.id === fieldId)
+            if (field?.type !== "string") {
                 return updatedDisabledFieldIds
             }
 
             if (isEnabling && (!slugFieldId || prev.has(slugFieldId))) {
                 // When enabling a string field and there is no valid slug field, make it the slug
-                setSlugFieldId(fieldId)
+                setSelectedSlugFieldId(fieldId)
             } else if (!isEnabling && fieldId === slugFieldId) {
                 // When disabling the current slug field, find next available one
                 const nextSlugField = possibleSlugFields.find(f => f.id !== fieldId)
-                setSlugFieldId(nextSlugField?.id ?? null)
+                setSelectedSlugFieldId(nextSlugField?.id ?? null)
             }
 
             return updatedDisabledFieldIds
@@ -154,7 +148,8 @@ export function FieldMapping({
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
-        if (!slugFieldId) {
+
+        if (!selectedSlugFieldId) {
             framer.notify("Slug field is required", {
                 variant: "error",
             })
@@ -163,12 +158,12 @@ export function FieldMapping({
 
         try {
             setIsSyncing(true)
-            await onSubmit(
+            await onImport(
+                collection,
                 dataSource,
-                fieldsConfig.filter(field => field.field && !disabledFieldIds.has(field.field!.id)),
-                slugFieldId
+                fields.filter(field => !disabledFieldIds.has(field.id)),
+                selectedSlugFieldId
             )
-            await new Promise(resolve => setTimeout(resolve, 5000))
             await framer.closePlugin(`Synchronization successful`, {
                 variant: "success",
             })
@@ -182,6 +177,16 @@ export function FieldMapping({
         }
     }
 
+    useLayoutEffect(() => {
+        framer.showUI({
+            width: UI_DEFAULTS.MAPPING_WIDTH,
+            height: UI_DEFAULTS.MAPPING_HEIGHT,
+            minWidth: UI_DEFAULTS.MAPPING_WIDTH,
+            minHeight: UI_DEFAULTS.MAPPING_HEIGHT,
+            resizable: true,
+        })
+    }, [])
+
     return (
         <main className="mapping">
             <hr className="sticky-top" />
@@ -191,8 +196,8 @@ export function FieldMapping({
                     <select
                         name="slugField"
                         className="field-input"
-                        value={slugFieldId ?? ""}
-                        onChange={event => setSlugFieldId(event.target.value)}
+                        value={selectedSlugFieldId ?? ""}
+                        onChange={event => setSelectedSlugFieldId(event.target.value)}
                         required
                     >
                         {possibleSlugFields.map(field => {
@@ -209,11 +214,12 @@ export function FieldMapping({
                 <div className="fields">
                     <span className="column-span-2">Column</span>
                     <span>Field</span>
-                    {fieldsConfig.map((fieldConfig, i) => (
+                    {fields.map((field, i) => (
                         <FieldMappingRow
-                            key={fieldConfig.field?.id || i}
-                            fieldConfig={fieldConfig}
-                            isIgnored={disabledFieldIds.has(fieldConfig.field?.id ?? "")}
+                            key={field.id || i}
+                            originalField={originalFields.find(originalField => originalField.id === field.id)!}
+                            field={field}
+                            isIgnored={disabledFieldIds.has(field.id)}
                             onFieldToggle={handleFieldToggle}
                             onFieldNameChange={handleFieldNameChange}
                         />

@@ -5,7 +5,7 @@
             "type": "string"
         },
         "Content": {
-            "type": "formattedText"
+            "type": "html"
         },
         "Reading time": {
             "type": "number"

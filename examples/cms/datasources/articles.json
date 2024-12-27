@@ -17,31 +17,31 @@
     "items": [
         {
             "Title": "Getting Started",
-            "Reading time": 5,
+            "Reading time": 3,
             "Featured": true,
             "Content": "<h2>Editing Content</h2><blockquote><p>You can choose to set up different types of input fields depending on your content...</p></blockquote>..."
         },
         {
             "Title": "What's New",
-            "Reading time": 5,
+            "Reading time": 2,
             "Featured": false,
             "Content": "<h2>Reference Fields</h2>..."
         },
         {
             "Title": "Styling Elements",
-            "Reading time": 5,
+            "Reading time": 4,
             "Featured": false,
             "Content": "<h2>Reference Fields</h2>..."
         },
         {
             "Title": "Importing Content",
-            "Reading time": 5,
+            "Reading time": 6,
             "Featured": false,
             "Content": "<h2>Prepare your CSV file</h2><p>Make sure your file is exported as a \"CSV\" file...</p>"
         },
         {
             "Title": "Best Practices",
-            "Reading time": 5,
+            "Reading time": 8,
             "Featured": true,
             "Content": "<h3>Choose Compelling Topics</h3><p>Use analytics tools to understand demographic data and user behavior...</p>"
         }

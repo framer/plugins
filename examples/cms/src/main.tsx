@@ -9,12 +9,12 @@ import { syncExistingCollection } from "./data"
 
 const activeCollection = await framer.getManagedCollection()
 
-const configuredCollectionId = await activeCollection.getPluginData(PLUGIN_KEYS.COLLECTION_ID)
-const configuredSlugFieldId = await activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID)
+const previousDataSourceId = await activeCollection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
+const previousSlugFieldId = await activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID)
 
-const result = await syncExistingCollection(activeCollection, configuredCollectionId, configuredSlugFieldId)
+const { didSync } = await syncExistingCollection(activeCollection, previousDataSourceId, previousSlugFieldId)
 
-if (result === "success") {
+if (didSync) {
     await framer.closePlugin(`Synchronization successful`, {
         variant: "success",
     })
@@ -26,8 +26,8 @@ if (result === "success") {
         <React.StrictMode>
             <App
                 collection={activeCollection}
-                dataSourceId={configuredCollectionId}
-                slugFieldId={configuredSlugFieldId}
+                previousDataSourceId={previousDataSourceId}
+                previousSlugFieldId={previousSlugFieldId}
             />
         </React.StrictMode>
     )

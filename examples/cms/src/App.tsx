@@ -1,64 +1,79 @@
 import "./App.css"
 
-import { framer, ManagedCollection, ManagedCollectionField } from "framer-plugin"
+import type { ManagedCollection } from "framer-plugin"
+
+import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
-import { DataSource, getDataSource, getDataSourcesIds, syncCollection } from "./data"
+import { DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { SelectDataSource } from "./SelectDataSource"
-import { UI_DEFAULTS } from "./constants"
+import { Spinner } from "./components/Spinner"
 
 interface AppProps {
     collection: ManagedCollection
-    dataSourceId: string | null
-    slugFieldId: string | null
+    previousDataSourceId: string | null
+    previousSlugFieldId: string | null
 }
 
-export function App({ collection, dataSourceId, slugFieldId }: AppProps) {
+export function App({ collection, previousDataSourceId, previousSlugFieldId }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
-    const [existingFields, setExistingFields] = useState<ManagedCollectionField[]>([])
+
+    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
+    const hasDataSourceSelected = Boolean(isLoadingDataSource || dataSource)
 
     useLayoutEffect(() => {
-        if (!dataSource) {
-            framer.showUI({
-                width: UI_DEFAULTS.SETUP_WIDTH,
-                height: UI_DEFAULTS.SETUP_HEIGHT,
-                resizable: false,
-            })
-            return
-        }
-
         framer.showUI({
-            width: UI_DEFAULTS.MAPPING_WIDTH,
-            height: UI_DEFAULTS.MAPPING_HEIGHT,
-            minWidth: UI_DEFAULTS.MAPPING_WIDTH,
-            minHeight: UI_DEFAULTS.MAPPING_HEIGHT,
-            resizable: true,
+            width: hasDataSourceSelected ? 360 : 320,
+            height: hasDataSourceSelected ? 425 : 305,
+            minWidth: hasDataSourceSelected ? 360 : undefined,
+            minHeight: hasDataSourceSelected ? 425 : undefined,
+            resizable: dataSource !== null,
         })
-    }, [dataSource])
+    }, [hasDataSourceSelected, dataSource])
 
     useEffect(() => {
-        collection.getFields().then(setExistingFields)
-    }, [collection])
-
-    useEffect(() => {
-        if (!dataSourceId) {
+        if (!previousDataSourceId) {
             return
         }
 
-        getDataSource(dataSourceId).then(setDataSource)
-    }, [dataSourceId])
+        const abortController = new AbortController()
+
+        setIsLoadingDataSource(true)
+        getDataSource(previousDataSourceId, abortController.signal)
+            .then(setDataSource)
+            .catch(error => {
+                if (abortController.signal.aborted) {
+                    return
+                }
+
+                console.error(error)
+                framer.notify(
+                    `Error loading previously configured data source "${previousDataSourceId}". Check the logs for more details.`,
+                    {
+                        variant: "error",
+                    }
+                )
+            })
+            .finally(() => {
+                if (abortController.signal.aborted) {
+                    return
+                }
+
+                setIsLoadingDataSource(false)
+            })
+
+        return () => {
+            abortController.abort()
+        }
+    }, [previousDataSourceId])
+
+    if (isLoadingDataSource) {
+        return <Spinner />
+    }
 
     if (!dataSource) {
-        return <SelectDataSource dataSources={getDataSourcesIds()} onSelectDataSource={setDataSource} />
-    } else {
-        return (
-            <FieldMapping
-                collection={collection}
-                dataSource={dataSource}
-                existingFields={existingFields}
-                slugFieldId={slugFieldId}
-                onImport={syncCollection}
-            />
-        )
+        return <SelectDataSource onSelectDataSource={setDataSource} />
     }
+
+    return <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
 }

@@ -7,6 +7,9 @@ main {
     padding: 0 15px 15px;
     height: 100%;
     gap: 15px;
+
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 form {
@@ -35,10 +38,6 @@ form {
     background: linear-gradient(180deg, rgba(18, 18, 18, 0) 0%, rgb(17, 17, 17) 97.8%);
 }
 
-[data-framer-theme="dark"] input[type="checkbox"]:checked {
-    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHBhdGggZD0iTSAzIDYgTCA1IDggTCA5IDQiIGZpbGw9InRyYW5zcGFyZW50IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlPSIjMmIyYjJiIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS1kYXNoYXJyYXk9IiI+PC9wYXRoPjwvc3ZnPg==");
-}
-
 .sticky-top {
     position: sticky;
     top: 0;
@@ -51,11 +50,6 @@ form {
 
 .column-span-2 {
     grid-column: span 2 / span 2;
-}
-
-.setup,
-.mapping {
-    composes: no-scrollbar;
 }
 
 .setup .logo {
@@ -113,23 +107,26 @@ form {
     flex-direction: row;
     align-items: center;
     white-space: nowrap;
-    height: 30px;
-    padding: 0px 8px;
-    font-size: 12px;
-    color: var(--framer-color-text);
+    font-weight: 500;
     background-color: var(--framer-color-bg-tertiary);
-    border-radius: 8px;
-    cursor: pointer;
     gap: 8px;
-    user-select: none;
 }
 
 .mapping .source-field[aria-disabled="true"] {
     opacity: 0.5;
 }
 
+.mapping .source-field:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--framer-color-tint);
+}
+
 .mapping .source-field input[type="checkbox"] {
     cursor: pointer;
+}
+
+.mapping .source-field input[type="checkbox"]:focus {
+    box-shadow: none;
 }
 
 .mapping footer {

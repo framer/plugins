@@ -1,4 +1,6 @@
-# Framer Plugin Template
+# CMS Starter
+
+This is a starter for building a CMS plugin for Framer.
 
 Run the development server:
 

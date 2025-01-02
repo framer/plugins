@@ -71,7 +71,7 @@ form {
     width: 100%;
     justify-content: space-between;
     padding-left: 15px;
-    color: var(--framer-color-text-tertiary);
+    color: var(--framer-color-text-secondary);
 }
 
 .setup select {

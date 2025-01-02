@@ -3,7 +3,7 @@ import "./App.css"
 import type { ManagedCollection } from "framer-plugin"
 
 import { framer } from "framer-plugin"
-import { useEffect, useLayoutEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { SelectDataSource } from "./SelectDataSource"
@@ -17,19 +17,19 @@ interface AppProps {
 
 export function App({ collection, previousDataSourceId, previousSlugFieldId }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
-
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
-    const hasDataSourceSelected = Boolean(isLoadingDataSource || dataSource)
 
-    useLayoutEffect(() => {
+    useEffect(() => {
+        const hasDataSourceSelected = Boolean(dataSource)
+
         framer.showUI({
             width: hasDataSourceSelected ? 360 : 320,
             height: hasDataSourceSelected ? 425 : 305,
             minWidth: hasDataSourceSelected ? 360 : undefined,
             minHeight: hasDataSourceSelected ? 425 : undefined,
-            resizable: dataSource !== null,
+            resizable: hasDataSourceSelected,
         })
-    }, [hasDataSourceSelected, dataSource])
+    }, [dataSource])
 
     useEffect(() => {
         if (!previousDataSourceId) {

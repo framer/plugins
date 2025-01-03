@@ -129,6 +129,9 @@ export function createLocalizationsUpdateFromXliff(
         const status = xliffStateToStatus(state ?? "final")
         const needsReview = status === "needsReview"
 
+        // Ignore missing or empty values
+        if (!targetValue) continue
+
         update[id] = { [targetLocale.id]: { value: targetValue, needsReview: needsReview ? needsReview : undefined } }
     }
 

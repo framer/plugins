@@ -15,7 +15,7 @@ const previousSlugFieldId = await activeCollection.getPluginData(PLUGIN_KEYS.SLU
 const { didSync } = await syncExistingCollection(activeCollection, previousDataSourceId, previousSlugFieldId)
 
 if (didSync) {
-    await framer.closePlugin(`Synchronization successful`, {
+    await framer.closePlugin("Synchronization successful", {
         variant: "success",
     })
 } else {

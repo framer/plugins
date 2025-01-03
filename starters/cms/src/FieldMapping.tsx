@@ -4,7 +4,6 @@ import type { DataSource, FieldIds, ManagedCollectionFields } from "./data"
 import { framer } from "framer-plugin"
 import { useState, useMemo, useEffect, memo } from "react"
 import { computeFieldsFromDataSource, mergeFieldsWithExistingFields, syncCollection } from "./data"
-import { Spinner } from "./components/Spinner"
 
 function ChevronIcon() {
     return (
@@ -72,7 +71,9 @@ interface FieldMappingProps {
 }
 
 export function FieldMapping({ collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
-    const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">("loading-fields")
+    const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
+        initialSlugFieldId ? "loading-fields" : "mapping-fields"
+    )
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
@@ -172,11 +173,15 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     }
 
     if (isLoadingFields) {
-        return <Spinner />
+        return (
+            <main className="loading">
+                <div className="framer-spinner" />
+            </main>
+        )
     }
 
     return (
-        <main className="mapping no-scrollbar">
+        <main className="framer-hide-scrollbar mapping">
             <hr className="sticky-top" />
             <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
@@ -219,9 +224,9 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
                 <footer>
                     <hr className="sticky-top" />
-                    <button style={{ position: "relative" }} disabled={isSyncing} tabIndex={0}>
+                    <button disabled={isSyncing} tabIndex={0}>
                         {isSyncing ? (
-                            <Spinner inheritColor />
+                            <div className="framer-spinner" />
                         ) : (
                             <span>
                                 Import <span style={{ textTransform: "capitalize" }}>{dataSource.id}</span>

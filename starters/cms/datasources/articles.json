@@ -1,19 +1,23 @@
 {
     "id": "articles",
-    "fields": {
-        "Title": {
+    "fields": [
+        {
+            "name": "Title",
             "type": "string"
         },
-        "Content": {
+        {
+            "name": "Content",
             "type": "html"
         },
-        "Reading time": {
+        {
+            "name": "Reading time",
             "type": "number"
         },
-        "Featured": {
+        {
+            "name": "Featured",
             "type": "boolean"
         }
-    },
+    ],
     "items": [
         {
             "Title": "Getting Started",

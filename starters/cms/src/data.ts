@@ -4,20 +4,10 @@ import { framer } from "framer-plugin"
 import { PLUGIN_KEYS } from "./constants"
 
 export type ManagedCollectionFieldType = ManagedCollectionField["type"]
-export type ManagedCollectionFields = readonly ManagedCollectionField[]
-export type FieldIds = ReadonlySet<ManagedCollectionField["id"]>
-
-type DataSourceField =
-    | {
-          type: ManagedCollectionFieldType
-      }
-    | {
-          type: "html"
-      }
 
 export interface DataSource {
     id: string
-    fields: Record<string, DataSourceField>
+    fields: readonly ManagedCollectionField[]
     items: Record<string, unknown>[]
 }
 
@@ -26,18 +16,22 @@ export function getDataSourceIds(): readonly string[] {
 }
 
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
-    return await fetch(`/datasources/${dataSourceId}.json`, { signal: abortSignal }).then(response => response.json())
-}
+    const dataSource: {
+        id: string
+        fields: {
+            name: string
+            type: string
+        }[]
+        items: Record<string, unknown>[]
+    } = await fetch(`/datasources/${dataSourceId}.json`, { signal: abortSignal }).then(response => response.json())
 
-export function computeFieldsFromDataSource(dataSource: DataSource): ManagedCollectionFields {
     const fields: ManagedCollectionField[] = []
-
-    for (const [fieldId, field] of Object.entries(dataSource.fields)) {
+    for (const field of dataSource.fields) {
         switch (field.type) {
             case "html":
                 fields.push({
-                    id: fieldId,
-                    name: fieldId,
+                    id: field.name,
+                    name: field.name,
                     type: "formattedText",
                     userEditable: false,
                 })
@@ -47,26 +41,41 @@ export function computeFieldsFromDataSource(dataSource: DataSource): ManagedColl
             case "boolean":
             case "color":
             case "formattedText":
+            case "date":
+            case "link":
                 fields.push({
-                    id: fieldId,
-                    name: fieldId,
+                    id: field.name,
+                    name: field.name,
                     type: field.type,
                     userEditable: false,
                 })
                 break
+            case "image":
+            case "file":
+            case "linkReference":
+            case "collectionReference":
+            case "multiCollectionReference":
+                console.warn(
+                    `Support for field type "${field.type}" is not implemented in this plugin. The field will be ignored.`
+                )
+                break
             default: {
-                throw new Error(`Field type ${field.type} is not supported`)
+                console.warn(`Unknown field type "${field.type}". The field will be ignored.`)
             }
         }
     }
 
-    return fields
+    return {
+        id: dataSource.id,
+        fields,
+        items: dataSource.items,
+    }
 }
 
 export function mergeFieldsWithExistingFields(
-    sourceFields: ManagedCollectionFields,
-    existingFields: ManagedCollectionFields
-): ManagedCollectionFields {
+    sourceFields:readonly  ManagedCollectionField[],
+    existingFields: readonly ManagedCollectionField[]
+): ManagedCollectionField[] {
     return sourceFields.map(sourceField => {
         const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
         if (existingField) {
@@ -79,7 +88,7 @@ export function mergeFieldsWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: ManagedCollectionFields,
+    fields: readonly ManagedCollectionField[],
     slugField: ManagedCollectionField
 ) {
     const sanitizedFields = fields.map(field => ({
@@ -148,10 +157,9 @@ export async function syncExistingCollection(
 
     try {
         const dataSource = await getDataSource(previousDataSourceId)
-        const sourceFields = computeFieldsFromDataSource(dataSource)
         const existingFields = await collection.getFields()
 
-        const slugField = sourceFields.find(field => field.id === previousSlugFieldId)
+        const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
             framer.notify(
                 `There is no field matching the slug field id “${previousSlugFieldId}” in the data source. Sync will not be performed.`,

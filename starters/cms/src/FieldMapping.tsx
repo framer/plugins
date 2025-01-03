@@ -159,12 +159,12 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
 
             await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField)
-            await framer.closePlugin(`Synchronization successful`, {
+            await framer.closePlugin("Synchronization successful", {
                 variant: "success",
             })
         } catch (error) {
             console.error(error)
-            framer.notify(`Failed to sync collection ${dataSource.id}. Check the logs for more details.`, {
+            framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
                 variant: "error",
             })
         } finally {

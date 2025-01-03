@@ -34,7 +34,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
             onSelectDataSource(dataSource)
         } catch (error) {
             console.error(error)
-            framer.notify(`Failed to load data source ${selectedDataSourceId}. Check the logs for more details.`, {
+            framer.notify(`Failed to load data source “${selectedDataSourceId}”. Check the logs for more details.`, {
                 variant: "error",
             })
         } finally {

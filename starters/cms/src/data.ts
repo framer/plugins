@@ -148,12 +148,13 @@ export async function syncExistingCollection(
 
     try {
         const dataSource = await getDataSource(previousDataSourceId)
+        const sourceFields = computeFieldsFromDataSource(dataSource)
         const existingFields = await collection.getFields()
 
-        const slugField = existingFields.find(field => field.id === previousSlugFieldId)
+        const slugField = sourceFields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
             framer.notify(
-                `There is no field matching the slug field id "${previousSlugFieldId}" in the collection. Sync will not be performed.`,
+                `There is no field matching the slug field id “${previousSlugFieldId}” in the data source. Sync will not be performed.`,
                 {
                     variant: "error",
                 }
@@ -165,7 +166,7 @@ export async function syncExistingCollection(
         return { didSync: true }
     } catch (error) {
         console.error(error)
-        framer.notify(`Failed to sync collection ${previousDataSourceId}. Check the logs for more details.`, {
+        framer.notify(`Failed to sync collection “${previousDataSourceId}”. Check the logs for more details.`, {
             variant: "error",
         })
         return { didSync: false }

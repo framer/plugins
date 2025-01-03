@@ -47,7 +47,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
 
                 console.error(error)
                 framer.notify(
-                    `Error loading previously configured data source "${previousDataSourceId}". Check the logs for more details.`,
+                    `Error loading previously configured data source “${previousDataSourceId}”. Check the logs for more details.`,
                     {
                         variant: "error",
                     }

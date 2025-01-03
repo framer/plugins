@@ -2,7 +2,6 @@ import type { DataSource } from "./data"
 
 import { framer } from "framer-plugin"
 import { useState } from "react"
-import { Spinner } from "./components/Spinner"
 import { getDataSource, getDataSourceIds } from "./data"
 
 function DatabaseIcon() {
@@ -44,7 +43,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
     }
 
     return (
-        <main className="setup no-scrollbar">
+        <main className="framer-hide-scrollbar setup">
             <div className="logo">
                 <DatabaseIcon />
             </div>
@@ -67,8 +66,8 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                         ))}
                     </select>
                 </label>
-                <button style={{ position: "relative" }} disabled={!selectedDataSourceId || isLoading}>
-                    {isLoading ? <Spinner inheritColor /> : "Next"}
+                <button disabled={!selectedDataSourceId || isLoading}>
+                    {isLoading ? <div className="framer-spinner" /> : "Next"}
                 </button>
             </form>
         </main>

@@ -1,16 +1,19 @@
 {
     "id": "categories",
-    "fields": {
-        "Title": {
+    "fields": [
+        {
+            "name": "Title",
             "type": "string"
         },
-        "Description": {
+        {
+            "name": "Description",
             "type": "string"
         },
-        "Color": {
+        {
+            "name": "Color",
             "type": "color"
         }
-    },
+    ],
     "items": [
         {
             "Title": "CMS",

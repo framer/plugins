@@ -1,9 +1,9 @@
 import type { ManagedCollection, ManagedCollectionField } from "framer-plugin"
-import type { DataSource, FieldIds, ManagedCollectionFields } from "./data"
+import type { DataSource } from "./data"
 
 import { framer } from "framer-plugin"
-import { useState, useMemo, useEffect, memo } from "react"
-import { computeFieldsFromDataSource, mergeFieldsWithExistingFields, syncCollection } from "./data"
+import { useState, useEffect, memo } from "react"
+import { mergeFieldsWithExistingFields, syncCollection } from "./data"
 
 function ChevronIcon() {
     return (
@@ -37,7 +37,7 @@ const FieldMappingRow = memo(({ field, disabled, onToggleDisabled, onNameChange 
                 onClick={() => onToggleDisabled(field.id)}
                 tabIndex={0}
             >
-                <input type="checkbox" checked={!disabled} tabIndex={-1} />
+                <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
                 <span>{field.id}</span>
             </button>
             <ChevronIcon />
@@ -61,8 +61,8 @@ const FieldMappingRow = memo(({ field, disabled, onToggleDisabled, onNameChange 
     )
 })
 
-const initialManagedCollectionFields: ManagedCollectionFields = []
-const initialFieldIds: FieldIds = new Set()
+const initialManagedCollectionFields: ManagedCollectionField[] = []
+const initialFieldIds: ReadonlySet<string> = new Set()
 
 interface FieldMappingProps {
     collection: ManagedCollection
@@ -77,8 +77,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const sourceFields = useMemo(() => computeFieldsFromDataSource(dataSource), [dataSource])
-    const possibleSlugFields = useMemo(() => sourceFields.filter(field => field.type === "string"), [sourceFields])
+    const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionField | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
@@ -95,10 +94,10 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             .then(collectionFields => {
                 if (abortController.signal.aborted) return
 
-                setFields(mergeFieldsWithExistingFields(sourceFields, collectionFields))
+                setFields(mergeFieldsWithExistingFields(dataSource.fields, collectionFields))
 
                 const existingFieldIds = new Set(collectionFields.map(field => field.id))
-                const ignoredFields = sourceFields.filter(sourceField => !existingFieldIds.has(sourceField.id))
+                const ignoredFields = dataSource.fields.filter(sourceField => !existingFieldIds.has(sourceField.id))
 
                 if (initialSlugFieldId) {
                     setIgnoredFieldIds(new Set(ignoredFields.map(field => field.id)))
@@ -116,7 +115,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         return () => {
             abortController.abort()
         }
-    }, [initialSlugFieldId, sourceFields, collection])
+    }, [initialSlugFieldId, dataSource, collection])
 
     const changeFieldName = (fieldId: string, name: string) => {
         setFields(prevFields => {

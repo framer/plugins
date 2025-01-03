@@ -20,7 +20,7 @@ interface SelectDataSourceProps {
 }
 
 export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
-    const [dataSourceIds] = useState(getDataSourceIds())
+    const [dataSourceIds] = useState(() => getDataSourceIds())
     const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(dataSourceIds[0] ?? "")
     const [isLoading, setIsLoading] = useState(false)
 

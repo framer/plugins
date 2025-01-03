@@ -20,24 +20,6 @@ form {
     gap: 15px;
 }
 
-/* Chrome, Safari and Opera */
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-
-.no-scrollbar {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
-}
-
-[data-framer-theme="light"] .scroll-fade {
-    background: linear-gradient(to bottom, transparent, white);
-}
-
-[data-framer-theme="dark"] .scroll-fade {
-    background: linear-gradient(180deg, rgba(18, 18, 18, 0) 0%, rgb(17, 17, 17) 97.8%);
-}
-
 .sticky-top {
     position: sticky;
     top: 0;
@@ -50,6 +32,14 @@ form {
 
 .column-span-2 {
     grid-column: span 2 / span 2;
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
 
 .setup .logo {

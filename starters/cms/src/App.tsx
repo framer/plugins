@@ -7,7 +7,6 @@ import { useEffect, useState } from "react"
 import { DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { SelectDataSource } from "./SelectDataSource"
-import { Spinner } from "./components/Spinner"
 
 interface AppProps {
     collection: ManagedCollection
@@ -68,7 +67,11 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
     }, [previousDataSourceId])
 
     if (isLoadingDataSource) {
-        return <Spinner />
+        return (
+            <main className="loading">
+                <div className="framer-spinner" />
+            </main>
+        )
     }
 
     if (!dataSource) {

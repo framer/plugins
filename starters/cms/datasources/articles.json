@@ -7,7 +7,7 @@
         },
         {
             "name": "Content",
-            "type": "html"
+            "type": "formattedText"
         },
         {
             "name": "Reading time",

@@ -2,7 +2,7 @@ import type { DataSource } from "./data"
 
 import { framer } from "framer-plugin"
 import { useState } from "react"
-import { getDataSource, getDataSourceIds } from "./data"
+import { getDataSource, getDataSources } from "./data"
 
 function DatabaseIcon() {
     return (
@@ -20,8 +20,8 @@ interface SelectDataSourceProps {
 }
 
 export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
-    const [dataSourceIds] = useState(() => getDataSourceIds())
-    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(dataSourceIds[0] ?? "")
+    const [dataSources] = useState(() => getDataSources())
+    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(dataSources[0]?.id ?? "")
     const [isLoading, setIsLoading] = useState(false)
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -59,9 +59,9 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                         <option value="" disabled>
                             Choose…
                         </option>
-                        {dataSourceIds.map(dataSourceId => (
-                            <option key={dataSourceId} value={dataSourceId}>
-                                {dataSourceId}
+                        {dataSources.map(({ id, name }) => (
+                            <option key={id} value={id}>
+                                {name}
                             </option>
                         ))}
                     </select>

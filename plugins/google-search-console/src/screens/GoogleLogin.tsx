@@ -1,4 +1,4 @@
-import bigG from '../images/BigG@2x.png';
+import bigSearch from '../images/BigSearch@2x.png';
 
 interface GoogleLoginProps {
   login: () => void;
@@ -16,7 +16,7 @@ export default function GoogleLogin({
   return (
     <div className="interstitial">
       <div className="interstitial-content interstitial-content--start">
-        <img className="big-g" src={bigG} alt="" />
+        <img className="big-g" src={bigSearch} alt="" />
         <div>
           <p className="interstitial-title">Connect to Google</p>
           <p>

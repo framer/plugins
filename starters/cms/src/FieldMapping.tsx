@@ -1,4 +1,4 @@
-import type { ManagedCollection, ManagedCollectionField } from "framer-plugin"
+import type { ManagedCollection, EditableManagedCollectionField } from "framer-plugin"
 import type { DataSource } from "./data"
 
 import { framer } from "framer-plugin"
@@ -21,7 +21,7 @@ function ChevronIcon() {
 }
 
 interface FieldMappingRowProps {
-    field: ManagedCollectionField
+    field: EditableManagedCollectionField
     disabled: boolean
     onToggleDisabled: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
@@ -61,7 +61,7 @@ const FieldMappingRow = memo(({ field, disabled, onToggleDisabled, onNameChange 
     )
 })
 
-const initialManagedCollectionFields: ManagedCollectionField[] = []
+const initialManagedCollectionFields: EditableManagedCollectionField[] = []
 const initialFieldIds: ReadonlySet<string> = new Set()
 
 interface FieldMappingProps {
@@ -79,7 +79,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
 
-    const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionField | null>(
+    const [selectedSlugField, setSelectedSlugField] = useState<EditableManagedCollectionField | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 

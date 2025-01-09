@@ -41,9 +41,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
         getDataSource(previousDataSourceId, abortController.signal)
             .then(setDataSource)
             .catch(error => {
-                if (abortController.signal.aborted) {
-                    return
-                }
+                if (abortController.signal.aborted) return
 
                 console.error(error)
                 framer.notify(
@@ -54,9 +52,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
                 )
             })
             .finally(() => {
-                if (abortController.signal.aborted) {
-                    return
-                }
+                if (abortController.signal.aborted) return
 
                 setIsLoadingDataSource(false)
             })

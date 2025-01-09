@@ -42,7 +42,7 @@ form {
     height: 100%;
 }
 
-.setup .logo {
+.logo {
     display: flex;
     flex-direction: column;
     align-items: center;

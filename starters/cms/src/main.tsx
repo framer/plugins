@@ -4,8 +4,7 @@ import React from "react"
 import ReactDOM from "react-dom/client"
 import { framer } from "framer-plugin"
 import { App } from "./App.tsx"
-import { PLUGIN_KEYS } from "./constants"
-import { syncExistingCollection } from "./data"
+import { syncExistingCollection, PLUGIN_KEYS } from "./data"
 
 const activeCollection = await framer.getManagedCollection()
 

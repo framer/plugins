@@ -1,6 +1,6 @@
 {
     "id": "fc871f",
-    "name": "Localization Import & Export",
+    "name": "Locale Import & Export",
     "modes": ["localization"],
     "icon": "/icon.svg"
 }

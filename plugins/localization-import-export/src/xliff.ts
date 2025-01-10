@@ -132,7 +132,13 @@ export function createLocalizationsUpdateFromXliff(
         // Ignore missing or empty values
         if (!targetValue) continue
 
-        update[id] = { [targetLocale.id]: { value: targetValue, needsReview: needsReview ? needsReview : undefined } }
+        update[id] = {
+            [targetLocale.id]: {
+                action: "set",
+                value: targetValue,
+                needsReview: needsReview ? needsReview : undefined,
+            },
+        }
     }
 
     return update

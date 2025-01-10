@@ -93,7 +93,7 @@ export function App() {
                     <path
                         d="M 6.937 34.688 L 6.938 34.688 C 26.719 39.253 47.281 39.253 67.063 34.688 L 67.063 34.688"
                         fill="transparent"
-                        stroke-width="6.92"
+                        strokeWidth="7"
                         stroke="#0099ff"
                         stroke-linecap="round"
                         stroke-linejoin="round"
@@ -104,19 +104,6 @@ export function App() {
                 Import and export your Localization strings with embedded metadata into an external TMS system with
                 standardized XLIFF files.
             </p>
-
-            {/* 
-            <select
-                value={selectedLocaleId}
-                onChange={e => setSelectedLocaleId(e.target.value)}
-                disabled={!selectedLocaleId}
-            >
-                {locales.map(locale => (
-                    <option key={locale.id} value={locale.id}>
-                        {locale.name} ({locale.code})
-                    </option>
-                ))}
-            </select> */}
 
             <div className="button-stack">
                 <button type="button" onClick={importXliff}>

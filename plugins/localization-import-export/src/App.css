@@ -10,3 +10,25 @@ main {
 select {
     width: 100%;
 }
+
+p {
+    color: var(--framer-color-text-tertiary);
+}
+
+.button-stack { 
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+}
+
+.asset {
+    background: rgba(0, 153, 255, 0.1);
+    border-radius: 8px;
+    flex: 1;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+

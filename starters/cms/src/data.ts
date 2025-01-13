@@ -30,7 +30,7 @@ type CustomDataSourceSchema = {
 }
 
 /**
- * Retrieve raw data and process it into a structured format.
+ * Retrieve data and process it into a structured format.
  *
  * @example
  * {
@@ -47,7 +47,7 @@ type CustomDataSourceSchema = {
  */
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     // Fetch from your data source
-    const dataSourceResponse = await fetch(`/datasources/${dataSourceId}.json`, { signal: abortSignal })
+    const dataSourceResponse = await fetch(`/data/${dataSourceId}.json`, { signal: abortSignal })
     const dataSource: CustomDataSourceSchema = await dataSourceResponse.json()
 
     // Map your source fields to supported field types in Framer

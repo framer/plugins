@@ -3,9 +3,10 @@ import { ManagedCollectionField } from "framer-plugin"
 import { useInView } from "react-intersection-observer"
 import cx from "classnames"
 import { assert, isDefined } from "../utils"
-import { AirtableFieldSchema, AirtableTableSchema } from "../api"
+import { AirtableTableSchema } from "../api"
 import {
-    getCollectionForAirtableField,
+    createFieldConfig,
+    ManagedCollectionFieldConfig,
     PluginContext,
     PluginContextNew,
     PluginContextUpdate,
@@ -17,24 +18,6 @@ import {
 import { Button } from "../components/Button"
 import { IconChevron } from "../components/Icons"
 import { CheckboxTextfield } from "@/components/CheckboxTextField"
-
-interface WithReference {
-    type: "collectionReference" | "multiCollectionReference"
-    source: string
-    destination: string | null
-}
-
-interface ManagedCollectionFieldConfig {
-    field: ManagedCollectionField | null
-    reference: WithReference | null
-    originalFieldName: string
-}
-
-const sortField = (fieldA: ManagedCollectionFieldConfig, fieldB: ManagedCollectionFieldConfig): number => {
-    if (fieldA.field && !fieldB.field) return -1
-    if (!fieldA.field && fieldB.field) return 1
-    return 0
-}
 
 const getInitialSlugFieldId = (context: PluginContext, primaryFieldId: string): string | null => {
     if (context.type === "update" && context.slugFieldId) return context.slugFieldId
@@ -57,58 +40,6 @@ const getLastSyncedTime = (
     }
 
     return pluginContext.lastSyncedTime
-}
-
-const getReference = (fieldSchema: AirtableFieldSchema, field: ManagedCollectionField | null): WithReference | null => {
-    if (fieldSchema.type !== "multipleRecordLinks") {
-        return null
-    }
-    if (field?.type === "collectionReference" || field?.type === "multiCollectionReference") {
-        return {
-            type: field.type,
-            source: fieldSchema.options.linkedTableId,
-            destination: field.collectionId,
-        }
-    }
-
-    return {
-        type: fieldSchema.options.prefersSingleRecordLink ? "collectionReference" : "multiCollectionReference",
-        source: fieldSchema.options.linkedTableId,
-        destination: null,
-    }
-}
-
-const createFieldConfig = (
-    pluginContext: PluginContext,
-    primaryFieldId: string,
-    fieldSchemas: AirtableFieldSchema[],
-    tableMapId: TableIdMap
-): ManagedCollectionFieldConfig[] => {
-    const result: ManagedCollectionFieldConfig[] = []
-
-    for (const fieldSchema of fieldSchemas) {
-        const existingField =
-            "collectionFields" in pluginContext
-                ? (pluginContext.collectionFields.find(field => field.id === fieldSchema.id) ?? null)
-                : null
-
-        const field = existingField ?? getCollectionForAirtableField(fieldSchema, tableMapId)
-        const reference = getReference(fieldSchema, field)
-        result.push({
-            field,
-            reference,
-            originalFieldName: fieldSchema.name,
-        })
-    }
-
-    const fields = result.sort(sortField)
-    const primaryField = fields.find(fieldConfig => fieldConfig.field?.id === primaryFieldId)
-
-    assert(primaryField, `Expected primary field \`${primaryFieldId}\` to be present in the fields`)
-
-    const sortedFields = result.filter(fieldConfig => fieldConfig.field?.id !== primaryFieldId).sort(sortField)
-
-    return [primaryField, ...sortedFields]
 }
 
 const getFieldNameOverrides = (pluginContext: PluginContext): Record<string, string> => {

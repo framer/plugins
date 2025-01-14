@@ -484,6 +484,87 @@ function generateFieldHash(fields: AirtableFieldSchema[]): string {
     )
 }
 
+interface WithReference {
+    type: "collectionReference" | "multiCollectionReference"
+    source: string
+    destination: string | null
+}
+
+export interface ManagedCollectionFieldConfig {
+    field: ManagedCollectionField | null
+    reference: WithReference | null
+    originalFieldName: string
+}
+
+function sortField(fieldA: ManagedCollectionFieldConfig, fieldB: ManagedCollectionFieldConfig): number {
+    if (fieldA.field && !fieldB.field) return -1
+    if (!fieldA.field && fieldB.field) return 1
+    return 0
+}
+
+function getReference(fieldSchema: AirtableFieldSchema, field: ManagedCollectionField | null): WithReference | null {
+    if (fieldSchema.type !== "multipleRecordLinks") {
+        return null
+    }
+    if (field?.type === "collectionReference" || field?.type === "multiCollectionReference") {
+        return {
+            type: field.type,
+            source: fieldSchema.options.linkedTableId,
+            destination: field.collectionId,
+        }
+    }
+
+    return {
+        type: fieldSchema.options.prefersSingleRecordLink ? "collectionReference" : "multiCollectionReference",
+        source: fieldSchema.options.linkedTableId,
+        destination: null,
+    }
+}
+
+function mergeField(existingField: ManagedCollectionField | null, field: ManagedCollectionField | null) {
+    if (!existingField) return field
+    if (!field) return null
+
+    return {
+        ...existingField,
+        ...field,
+        name: existingField.name,
+    }
+}
+
+export function createFieldConfig(
+    pluginContext: PluginContext,
+    primaryFieldId: string,
+    fieldSchemas: AirtableFieldSchema[],
+    tableMapId: TableIdMap
+): ManagedCollectionFieldConfig[] {
+    const result: ManagedCollectionFieldConfig[] = []
+
+    for (const fieldSchema of fieldSchemas) {
+        const existingField =
+            "collectionFields" in pluginContext
+                ? (pluginContext.collectionFields.find(field => field.id === fieldSchema.id) ?? null)
+                : null
+
+        const field = mergeField(existingField, getCollectionForAirtableField(fieldSchema, tableMapId))
+        const reference = getReference(fieldSchema, field)
+        result.push({
+            field,
+            reference,
+            originalFieldName: fieldSchema.name,
+        })
+    }
+
+    const fields = result.sort(sortField)
+    const primaryField = fields.find(fieldConfig => fieldConfig.field?.id === primaryFieldId)
+
+    assert(primaryField, `Expected primary field \`${primaryFieldId}\` to be present in the fields`)
+
+    const sortedFields = result.filter(fieldConfig => fieldConfig.field?.id !== primaryFieldId).sort(sortField)
+
+    return [primaryField, ...sortedFields]
+}
+
 export async function syncTable({
     baseId,
     tableId,

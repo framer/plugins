@@ -1,8 +1,15 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
-import { getTableIdMapForBase, PluginContext, PluginContextNew, PluginContextUpdate, syncTable } from "./airtable"
+import {
+    createFieldConfig,
+    getTableIdMapForBase,
+    PluginContext,
+    PluginContextNew,
+    PluginContextUpdate,
+    syncTable,
+} from "./airtable"
 import { useBaseSchemaQuery, useSyncTableMutation } from "./api"
-import { assert } from "./utils"
+import { assert, isDefined } from "./utils"
 import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
 import { Authenticate } from "./pages/Authenticate"
 import { MapTableFieldsPage } from "./pages/MapTableFields"
@@ -143,10 +150,26 @@ export function App({ pluginContext }: AppProps) {
         isSyncing.current = true
         framer.hideUI()
 
-        const { baseId, tableId, collectionFields, ignoredFieldIds, slugFieldId, tableSchema, lastSyncedTime } = context
+        const {
+            baseId,
+            tableId,
+            ignoredFieldIds,
+            slugFieldId,
+            tableSchema,
+            tableMapId,
+            lastSyncedTime,
+        } = context
+
+        const fieldConfigs = createFieldConfig(
+            context,
+            tableSchema.primaryFieldId,
+            tableSchema.fields,
+            tableMapId
+        )
+        const fields = fieldConfigs.map(field => field.field).filter(isDefined)
 
         syncTable({
-            fields: collectionFields,
+            fields,
             ignoredFieldIds,
             lastSyncedTime,
             tableSchema,

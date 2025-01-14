@@ -22,44 +22,47 @@ function ChevronIcon() {
 
 interface FieldMappingRowProps {
     field: EditableManagedCollectionField
+    originalFieldName: string | undefined
     disabled: boolean
     onToggleDisabled: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
 }
 
-const FieldMappingRow = memo(({ field, disabled, onToggleDisabled, onNameChange }: FieldMappingRowProps) => {
-    return (
-        <>
-            <button
-                type="button"
-                className="source-field"
-                aria-disabled={disabled}
-                onClick={() => onToggleDisabled(field.id)}
-                tabIndex={0}
-            >
-                <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
-                <span>{field.id}</span>
-            </button>
-            <ChevronIcon />
-            <input
-                type="text"
-                style={{
-                    width: "100%",
-                    opacity: disabled ? 0.5 : 1,
-                }}
-                disabled={disabled}
-                placeholder={field.id}
-                value={field.name}
-                onChange={event => onNameChange(field.id, event.target.value)}
-                onKeyDown={event => {
-                    if (event.key === "Enter") {
-                        event.preventDefault()
-                    }
-                }}
-            />
-        </>
-    )
-})
+const FieldMappingRow = memo(
+    ({ field, originalFieldName, disabled, onToggleDisabled, onNameChange }: FieldMappingRowProps) => {
+        return (
+            <>
+                <button
+                    type="button"
+                    className="source-field"
+                    aria-disabled={disabled}
+                    onClick={() => onToggleDisabled(field.id)}
+                    tabIndex={0}
+                >
+                    <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
+                    <span>{originalFieldName ?? field.id}</span>
+                </button>
+                <ChevronIcon />
+                <input
+                    type="text"
+                    style={{
+                        width: "100%",
+                        opacity: disabled ? 0.5 : 1,
+                    }}
+                    disabled={disabled}
+                    placeholder={field.id}
+                    value={field.name}
+                    onChange={event => onNameChange(field.id, event.target.value)}
+                    onKeyDown={event => {
+                        if (event.key === "Enter") {
+                            event.preventDefault()
+                        }
+                    }}
+                />
+            </>
+        )
+    }
+)
 
 const initialManagedCollectionFields: EditableManagedCollectionField[] = []
 const initialFieldIds: ReadonlySet<string> = new Set()
@@ -205,7 +208,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     >
                         {possibleSlugFields.map(possibleSlugField => {
                             return (
-                                <option key={possibleSlugField.id} value={possibleSlugField.id}>
+                                <option key={`slug-field-${possibleSlugField.id}`} value={possibleSlugField.id}>
                                     {possibleSlugField.name}
                                 </option>
                             )
@@ -218,8 +221,9 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     <span>Field</span>
                     {fields.map(field => (
                         <FieldMappingRow
-                            key={field.id}
+                            key={`field-${field.id}`}
                             field={field}
+                            originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
                             disabled={ignoredFieldIds.has(field.id)}
                             onToggleDisabled={toggleFieldDisabledState}
                             onNameChange={changeFieldName}

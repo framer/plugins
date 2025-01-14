@@ -3,7 +3,7 @@ import type { DataSource } from "./data"
 
 import { framer } from "framer-plugin"
 import { useState, useEffect, memo } from "react"
-import { mergeFieldsWithExistingFields, syncCollection } from "./data"
+import { getDataSources, mergeFieldsWithExistingFields, syncCollection } from "./data"
 
 function ChevronIcon() {
     return (
@@ -85,6 +85,12 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     const [fields, setFields] = useState(initialManagedCollectionFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
+
+    const [dataSourceName] = useState(
+        () =>
+            getDataSources().find(dataSourceIdentifier => dataSourceIdentifier.id === dataSource.id)?.name ||
+            dataSource.id
+    )
 
     useEffect(() => {
         const abortController = new AbortController()
@@ -228,7 +234,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             <div className="framer-spinner" />
                         ) : (
                             <span>
-                                Import <span style={{ textTransform: "capitalize" }}>{dataSource.id}</span>
+                                Import <span style={{ textTransform: "capitalize" }}>{dataSourceName}</span>
                             </span>
                         )}
                     </button>

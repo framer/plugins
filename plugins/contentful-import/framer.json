@@ -1,0 +1,6 @@
+{
+    "id": "000666",
+    "name": "Contentful Import",
+    "modes": ["configureManagedCollection", "syncManagedCollection"],
+    "icon": "/icon.png"
+}

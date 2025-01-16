@@ -85,13 +85,16 @@ export function App() {
             initContentful({ space: spaceId, accessToken })
 
             const entries = await getEntriesForContentType(contentTypeId)
-            const mappedCollection = await mapContentfulToFramerCollection(contentTypeId, entries, collection)
+            const mappedCollection = await mapContentfulToFramerCollection(contentTypeId, entries)
+
+            // empty the collection
+            const itemsIds = await collection.getItemIds()
+            await collection.removeItems(itemsIds)
 
             // Update fields
             await collection.setFields(mappedCollection.fields)
 
             // Add/update items
-            console.log("mappedCollection.items", JSON.stringify(mappedCollection.items, null, 2))
             await collection.addItems(mappedCollection.items)
 
             framer.notify("Collection synchronized successfully", { variant: "success" })

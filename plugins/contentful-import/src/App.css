@@ -112,8 +112,15 @@
     border: 1px solid #ddd;
     border-radius: 4px;
     cursor: pointer;
+
+    :is([data-framer-theme="dark"]) & {
+        background: #222;
+        border: 1px solid #333;
+        color: #fff;
+    }
 }
 
 .content-type-button:hover {
     background: #eee;
+    color: #222;
 }

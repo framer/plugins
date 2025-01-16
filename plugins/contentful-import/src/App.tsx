@@ -7,23 +7,32 @@ import {
     initContentful,
     getContentTypes,
     getEntriesForContentType,
-    mapContentfulToFramerCollection
+    mapContentfulToFramerCollection,
 } from "./contentful"
 
 export function App() {
     const [isLoading, setIsLoading] = useState(true)
     const [contentfulConfig, setContentfulConfig] = useState({
-        space: "",
-        accessToken: "",
+        space: "", // "v1sdaxrypttu",
+        accessToken: "", // "LNiCWA-oM2X5XeQXXTKa2uCQbHWy7tnUPMtoSioykEg",
     })
     const [contentfulContentTypes, setContentfulContentTypes] = useState<ContentType[]>([])
     const [isConfigured, setIsConfigured] = useState(false)
 
     useEffect(() => {
-        if (framer.mode === "syncManagedCollection") {
-            // When in sync mode, don't show UI
-            handleContentfulSync()
-        } else {
+        async function configure() {
+            const collection = await framer.getManagedCollection()
+            const contentTypeId = await collection.getPluginData("contentTypeId")
+
+            console.log("contentTypeId", contentTypeId)
+
+            if (contentTypeId) {
+                // edit mode
+                // retrieve content types from Contentful
+                // show UI
+                return
+            }
+
             framer.showUI({
                 width: 340,
                 height: 370,
@@ -31,14 +40,38 @@ export function App() {
             })
             setIsLoading(false)
         }
+
+        // console.log("useEffect", framer.mode)
+        if (framer.mode === "syncManagedCollection") {
+            // When in sync mode, don't show UI
+            handleContentfulSync()
+        } else {
+            if (framer.mode === "configureManagedCollection") {
+                console.log("configureManagedCollection")
+            }
+
+            configure()
+        }
+    }, [])
+
+    useEffect(() => {
+        async function prefill() {
+            const contentfulConfig = await framer.getPluginData("contentful")
+            if (contentfulConfig) {
+                setContentfulConfig(JSON.parse(contentfulConfig))
+            }
+        }
+
+        prefill()
     }, [])
 
     const handleContentfulSync = async () => {
+        console.log("handleContentfulSync")
         try {
             // In sync mode, we're already in a specific collection
             const collection = await framer.getManagedCollection()
             const contentTypeId = await collection.getPluginData("contentTypeId")
-            
+
             if (!contentTypeId) {
                 throw new Error("No content type configured")
             }
@@ -52,12 +85,13 @@ export function App() {
             initContentful({ space: spaceId, accessToken })
 
             const entries = await getEntriesForContentType(contentTypeId)
-            const mappedCollection = await mapContentfulToFramerCollection(contentTypeId, entries)
+            const mappedCollection = await mapContentfulToFramerCollection(contentTypeId, entries, collection)
 
             // Update fields
             await collection.setFields(mappedCollection.fields)
 
             // Add/update items
+            console.log("mappedCollection.items", JSON.stringify(mappedCollection.items, null, 2))
             await collection.addItems(mappedCollection.items)
 
             framer.notify("Collection synchronized successfully", { variant: "success" })
@@ -74,30 +108,37 @@ export function App() {
 
         try {
             initContentful(contentfulConfig)
+            framer.setPluginData("contentful", JSON.stringify(contentfulConfig))
             const contentTypes = await getContentTypes()
-            console.log("Available content types:", contentTypes.map(ct => ({
-                id: ct.sys.id,
-                name: ct.name,
-                fields: ct.fields.map(f => ({
-                    id: f.id,
-                    name: f.name,
-                    type: f.type
+            console.log(
+                "Available content types:",
+                contentTypes.map(ct => ({
+                    id: ct.sys.id,
+                    name: ct.name,
+                    fields: ct.fields.map(f => ({
+                        id: f.id,
+                        name: f.name,
+                        type: f.type,
+                    })),
                 }))
-            })))
-            
+            )
+
             // Filter out content types with no entries
             const contentTypesWithEntries = await Promise.all(
-                contentTypes.map(async (contentType) => {
+                contentTypes.map(async contentType => {
                     const entries = await getEntriesForContentType(contentType.sys.id)
-                    console.log(`Content type ${contentType.name} (${contentType.sys.id}) has ${entries.length} entries`)
+                    // console.log(
+                    //     `Content type ${contentType.name} (${contentType.sys.id}) has ${entries.length} entries`
+                    // )
                     return entries.length > 0 ? contentType : null
                 })
             )
-            
+
             setContentfulContentTypes(contentTypesWithEntries.filter((ct): ct is NonNullable<typeof ct> => ct !== null))
             setIsConfigured(true)
         } catch (error) {
             framer.notify("Failed to connect to Contentful", { variant: "error" })
+            console.error("Failed to connect to Contentful", error)
         } finally {
             setIsLoading(false)
         }
@@ -107,7 +148,7 @@ export function App() {
         setIsLoading(true)
         try {
             console.log("Importing contentful data for content type ID:", contentTypeId)
-            
+
             // Find the content type info
             const contentType = contentfulContentTypes.find(ct => ct.sys.id === contentTypeId)
             if (!contentType) {
@@ -117,10 +158,10 @@ export function App() {
             // Get a new managed collection for this content type
             const collection = await framer.getManagedCollection()
             console.log("Got collection for", contentType.name)
-            
+
             const entries = await getEntriesForContentType(contentTypeId)
             console.log("Got entries from Contentful:", entries.length)
-            
+
             const mappedCollection = await mapContentfulToFramerCollection(contentTypeId, entries)
             console.log("Mapped collection:", {
                 contentTypeId,
@@ -128,9 +169,9 @@ export function App() {
                 fields: mappedCollection.fields.map(f => ({
                     id: f.id,
                     name: f.name,
-                    type: f.type
+                    type: f.type,
                 })),
-                items: mappedCollection.items.length
+                items: mappedCollection.items.length,
             })
 
             // Store the content type ID and Contentful credentials for future syncs
@@ -138,14 +179,14 @@ export function App() {
             await collection.setPluginData("spaceId", contentfulConfig.space)
             await collection.setPluginData("accessToken", contentfulConfig.accessToken)
             console.log("Stored content type ID and credentials")
-            
+
             // Clear any existing fields and items
             const existingFields = await collection.getFields()
             if (existingFields.length > 0) {
                 await collection.setFields([])
                 await collection.addItems([])
             }
-            
+
             // Set up fields
             await collection.setFields(mappedCollection.fields)
             console.log("Set collection fields")
@@ -189,7 +230,7 @@ export function App() {
                         disabled={isLoading}
                     />
                     <button type="submit" disabled={isLoading}>
-                        {isLoading ? 'Connecting...' : 'Connect'}
+                        {isLoading ? "Connecting..." : "Connect"}
                     </button>
                 </form>
             ) : (
@@ -209,7 +250,7 @@ export function App() {
                                         className="content-type-button"
                                         disabled={isLoading}
                                     >
-                                        {isLoading ? 'Importing...' : `Import ${contentType.name}`}
+                                        {isLoading ? "Importing..." : `Import ${contentType.name}`}
                                     </button>
                                 ))
                             )}

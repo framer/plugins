@@ -1,5 +1,5 @@
 import { createClient, ContentfulClientApi } from 'contentful'
-import type { ManagedCollectionField } from "framer-plugin"
+import { CollectionItem, type ManagedCollectionField } from "framer-plugin"
 
 interface ContentfulConfig {
     space: string
@@ -40,13 +40,14 @@ export const getEntriesForContentType = async (contentTypeId: string) => {
         content_type: contentTypeId,
         include: 10 // Include linked entries
     })
-    console.log('Raw Contentful entries:', JSON.stringify(entries, null, 2))
+    // console.log('Raw Contentful entries:', JSON.stringify(entries, null, 2))
     return entries.items
 }
 
 export const mapContentfulToFramerCollection = async (
     contentTypeId: string, 
-    entries: ContentfulEntry[]
+    entries: ContentfulEntry[],
+    collection: ManagedCollection
 ) => {
     if (entries.length === 0) {
         throw new Error('No entries found for this content type')
@@ -55,21 +56,23 @@ export const mapContentfulToFramerCollection = async (
     // Get the content type to access field definitions
     if (!contentfulClient) throw new Error('Contentful client not initialized')
     const contentType = await contentfulClient.getContentType(contentTypeId)
-    console.log('Raw Contentful content type:', JSON.stringify(contentType, null, 2))
-    console.log('Content type:', {
-        id: contentType.sys.id,
-        name: contentType.name,
-        displayField: contentType.displayField,
-        fields: contentType.fields.map(f => ({
-            id: f.id,
-            name: f.name,
-            type: f.type,
-            linkType: f.linkType,
-            items: f.items,
-            required: f.required,
-            validations: f.validations
-        }))
-    })
+    // console.log('Raw Contentful content type:', JSON.stringify(contentType, null, 2))
+    // console.log('Content type:', {
+    //     id: contentType.sys.id,
+    //     name: contentType.name,
+    //     displayField: contentType.displayField,
+    //     fields: contentType.fields.map(f => ({
+    //         id: f.id,
+    //         name: f.name,
+    //         type: f.type,
+    //         linkType: f.linkType,
+    //         items: f.items,
+    //         required: f.required,
+    //         validations: f.validations
+    //     }))
+    // })
+
+    // console.log('entries', JSON.stringify(entries, null, 2))
 
     // Map Contentful fields to Framer schema using content type definition
     const fields: ManagedCollectionField[] = contentType.fields.map((field): ManagedCollectionField => {
@@ -170,8 +173,35 @@ export const mapContentfulToFramerCollection = async (
             return ''
         }
 
+        // console.log('value', value)
+
         return String(value)
     }
+
+    // const items: CollectionItem[] = []
+
+    // const collectionFields = await collection.getFields()
+    // console.log('fields', JSON.stringify(collectionFields, null, 2))
+
+
+    // for (const entry of entries) {
+    //     const fields = entry.fields as Record<string, unknown>
+        
+    //     // Get the slug from the display field if available, or fall back to ID
+    //     const displayField = contentType.displayField
+    //     const slug = displayField ? String(fields[displayField] || entry.sys.id) : entry.sys.id
+
+
+    //     console.log('add item',entry.sys.id, slug)
+    //     items.push({
+    //         id: String(entry.sys.id),
+    //         slug: slug,
+    //         fieldData: {
+    //             title: 'test',
+    //             publishedDate: new Date().toDateString(),
+    //         }
+    //     })
+    // }
 
     // Map entries to Framer collection items
     const items = entries.map(entry => {
@@ -181,14 +211,25 @@ export const mapContentfulToFramerCollection = async (
         const displayField = contentType.displayField
         const slug = displayField ? String(fields[displayField] || entry.sys.id) : entry.sys.id
 
+        // contentType.fields.forEach(field => {
+        //     console.log(JSON.stringify(field, null, 2))
+        // })
+
+        const fieldData = contentType.fields.reduce((acc, field) => {
+            const value = fields[field.id]
+            acc[field.id] = extractFieldValue(value, field.type, field.linkType)
+            return acc
+        }, {} as Record<string, string | string[]>)
+
+        console.log('fieldData', JSON.stringify(fieldData, null, 2))
+
         const item = {
             id: String(entry.sys.id),
-            slug,
-            fieldData: contentType.fields.reduce((acc, field) => {
-                const value = fields[field.id]
-                acc[field.id] = extractFieldValue(value, field.type, field.linkType)
-                return acc
-            }, {} as Record<string, string | string[]>)
+            slug: slug,
+            fieldData
+            // fieldData: {
+            //     title: 'yeysysy',
+            // }
         }
 
         console.log('Mapped item:', JSON.stringify(item, null, 2))

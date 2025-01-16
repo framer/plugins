@@ -4,7 +4,7 @@ import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import "./App.css"
 import { downloadBlob, importFileAsText } from "./files"
-import { createLocalizationsUpdateFromXliff, generateXliff, parseXliff } from "./xliff"
+import { createValuesBySourceFromXliff, generateXliff, parseXliff } from "./xliff"
 
 framer.showUI({
     width: 300,
@@ -17,12 +17,12 @@ async function importXliff() {
             const locales = await framer.unstable_getLocales()
 
             const { xliff, targetLocale } = parseXliff(xliffText, locales)
-            const update = createLocalizationsUpdateFromXliff(xliff, targetLocale)
+            const valuesBySource = createValuesBySourceFromXliff(xliff, targetLocale)
 
-            const result = await framer.unstable_setLocalizedValues(update)
+            const result = await framer.unstable_updateLocalization({ valuesBySource })
 
-            if (result.errors.length > 0) {
-                throw new Error(`Import errors: ${result.errors.map(error => error.error).join(", ")}`)
+            if (result.valuesBySource.errors.length > 0) {
+                throw new Error(`Import errors: ${result.valuesBySource.errors.map(error => error.error).join(", ")}`)
             }
 
             framer.notify(`Successfully imported localizations for ${targetLocale.name}`)
@@ -37,8 +37,8 @@ async function exportXliff(defaultLocale: Locale, targetLocale: Locale) {
     const filename = `locale_${targetLocale.code}.xlf`
 
     try {
-        const sources = await framer.unstable_getLocalizationSources()
-        const xliff = generateXliff(defaultLocale, targetLocale, sources)
+        const groups = await framer.unstable_getLocalizationGroups()
+        const xliff = generateXliff(defaultLocale, targetLocale, groups)
         downloadBlob(xliff, filename, "application/x-xliff+xml")
 
         framer.notify(`Successfully exported ${filename}`)

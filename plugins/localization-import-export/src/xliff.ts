@@ -1,4 +1,4 @@
-import type { Locale, LocalizationSource, LocalizedValuesUpdate } from "framer-plugin"
+import type { Locale, LocalizationGroup, LocalizationSource, LocalizedValuesUpdate } from "framer-plugin"
 import "./App.css"
 import { shouldBeNever } from "./assert"
 
@@ -56,12 +56,7 @@ function generateUnit(source: LocalizationSource, targetLocale: Locale) {
     const sourceValue = escapeXml(source.value)
     const targetValue = escapeXml(localeData.value ?? "")
 
-    const notes = [
-        `<note category="type">${source.type}</note>`,
-        `<note category="groupType">${source.group.type}</note>`,
-        `<note category="groupId">${source.group.id}</note>`,
-        `<note category="groupName">${source.group.name}</note>`,
-    ]
+    const notes = [`<note category="type">${source.type}</note>`]
 
     if (localeData.status === "warning") {
         notes.push(`<note category="warning">${escapeXml(localeData.warning)}</note>`)
@@ -71,24 +66,40 @@ function generateUnit(source: LocalizationSource, targetLocale: Locale) {
         notes.push(`<note category="lastEdited">${localeData.lastEdited}</note>`)
     }
 
-    return `        <unit id="${source.id}">
-            <notes>
-                ${notes.join("\n                ")}
-            </notes>
-            <segment state="${state}"${localeData.status === "warning" ? ` subState="framer:warning"` : ""}>
-                <source>${sourceValue}</source>
-                <target>${targetValue}</target>
-            </segment>
-        </unit>`
+    return `            <unit id="${source.id}">
+                <notes>
+                    ${notes.join("\n                    ")}
+                </notes>
+                <segment state="${state}"${localeData.status === "warning" ? ` subState="framer:warning"` : ""}>
+                    <source>${sourceValue}</source>
+                    <target>${targetValue}</target>
+                </segment>
+            </unit>`
 }
 
-export function generateXliff(defaultLocale: Locale, targetLocale: Locale, sources: readonly LocalizationSource[]) {
-    const units = sources.map(source => generateUnit(source, targetLocale)).join("\n")
+export function generateGroup(localizationGroup: LocalizationGroup, targetLocale: Locale) {
+    const units = localizationGroup.sources.map(source => generateUnit(source, targetLocale))
+
+    return `        <group id="${localizationGroup.id}">
+            <notes>
+                <note category="type">${localizationGroup.type}</note>
+                <note category="name">${localizationGroup.name}</note>
+            </notes>
+${units.join("\n")}
+        </group>`
+}
+
+export function generateXliff(
+    defaultLocale: Locale,
+    targetLocale: Locale,
+    localizationGroups: readonly LocalizationGroup[]
+) {
+    const groups = localizationGroups.map(localizationGroup => generateGroup(localizationGroup, targetLocale))
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="${defaultLocale.code}" trgLang="${targetLocale.code}">
     <file id="${targetLocale.id}">
-${units}
+${groups.join("\n")}
     </file>
 </xliff>`
 }
@@ -111,11 +122,8 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
     return { xliff: xliff, targetLocale }
 }
 
-export function createLocalizationsUpdateFromXliff(
-    xliffDocument: Document,
-    targetLocale: Locale
-): LocalizedValuesUpdate {
-    const update: LocalizedValuesUpdate = {}
+export function createValuesBySourceFromXliff(xliffDocument: Document, targetLocale: Locale): LocalizedValuesUpdate {
+    const valuesBySource: LocalizedValuesUpdate = {}
 
     const units = xliffDocument.querySelectorAll("unit")
     for (const unit of units) {
@@ -132,7 +140,7 @@ export function createLocalizationsUpdateFromXliff(
         // Ignore missing or empty values
         if (!targetValue) continue
 
-        update[id] = {
+        valuesBySource[id] = {
             [targetLocale.id]: {
                 action: "set",
                 value: targetValue,
@@ -141,5 +149,5 @@ export function createLocalizationsUpdateFromXliff(
         }
     }
 
-    return update
+    return valuesBySource
 }

@@ -72,6 +72,14 @@ export function App() {
             const collection = await framer.getManagedCollection()
             const contentTypeId = await collection.getPluginData("contentTypeId")
 
+            let collections = await framer.getPluginData("contentful:collections")
+            collections = collections ? JSON.parse(collections) : {}
+            collections[contentTypeId] = collection.id
+
+            console.log("collections", collections)
+
+            await framer.setPluginData("contentful:collections", JSON.stringify(collections))
+
             if (!contentTypeId) {
                 throw new Error("No content type configured")
             }
@@ -84,12 +92,14 @@ export function App() {
             }
             initContentful({ space: spaceId, accessToken })
 
+            console.log("contentTypeId", contentTypeId, collection.id)
+
             const entries = await getEntriesForContentType(contentTypeId)
             const mappedCollection = await mapContentfulToFramerCollection(contentTypeId, entries)
 
             // empty the collection
-            const itemsIds = await collection.getItemIds()
-            await collection.removeItems(itemsIds)
+            // const itemsIds = await collection.getItemIds()
+            // await collection.removeItems(itemsIds)
 
             // Update fields
             await collection.setFields(mappedCollection.fields)
@@ -137,6 +147,7 @@ export function App() {
                 })
             )
 
+            console.log("contentTypesWithEntries", JSON.stringify(contentTypesWithEntries, null, 2))
             setContentfulContentTypes(contentTypesWithEntries.filter((ct): ct is NonNullable<typeof ct> => ct !== null))
             setIsConfigured(true)
         } catch (error) {

@@ -53,6 +53,11 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
     // Get the content type to access field definitions
     if (!contentfulClient) throw new Error("Contentful client not initialized")
     const contentType = await contentfulClient.getContentType(contentTypeId)
+
+    let collections = await framer.getPluginData("contentful:collections")
+    collections = collections ? JSON.parse(collections) : {}
+    console.log("collections", collections)
+
     // console.log('Raw Contentful content type:', JSON.stringify(contentType, null, 2))
     // console.log('Content type:', {
     //     id: contentType.sys.id,
@@ -72,14 +77,14 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
     // console.log('entries', JSON.stringify(entries, null, 2))
 
     // Map Contentful fields to Framer schema using content type definition
-    const fields: ManagedCollectionField[] = contentType.fields.map((field): ManagedCollectionField => {
+    const framerFields: ManagedCollectionField[] = contentType.fields.map((field): ManagedCollectionField => {
         console.log("Mapping field:", {
             id: field.id,
             name: field.name,
             type: field.type,
             linkType: field.linkType,
             items: field.items,
-        })
+        }, JSON.stringify(field, null, 2))
 
         const baseField = {
             id: field.id,
@@ -108,7 +113,11 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                 }
                 if (field.linkType === "Entry") {
                     // For Entry references, we need to store the ID
-                    return { ...baseField, type: "string" }
+                    const collectionId = collections[field.validations[0].linkContentType[0]]
+                    // console.log("collectionId", collections, field.validations[0].linkContentType[0], collectionId)
+                    return { ...baseField, type: "collectionReference", collectionId }
+                    // console.log(field.validations[0].linkContentType[0])
+                    // return { ...baseField, type: "string" }
                 }
                 return { ...baseField, type: "string" }
             case "Array":
@@ -118,9 +127,11 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                         return { ...baseField, type: "string" }
                     }
                     if (field.items.linkType === "Entry") {
+                        // console.log("field.validations[0].linkContentType[0]", field.validations[0].linkContentType[0])
+                        const collectionId = collections[field.items.validations[0].linkContentType[0]]
                         // For arrays of references, store as comma-separated IDs
-                        return { ...baseField, type: "string" }
-                        // return { ...baseField, type: "multiCollectionReference" }
+                        // return { ...baseField, type: "string" }
+                        return { ...baseField, type: "multiCollectionReference", collectionId }
                     }
                 }
                 // For arrays of primitives
@@ -130,11 +141,16 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
         }
     })
 
-    console.log("Mapped Framer fields:", JSON.stringify(fields, null, 2))
+    console.log("Mapped Framer fields:", JSON.stringify(framerFields, null, 2))
 
     // Helper function to safely extract field values
-    const extractFieldValue = (value: unknown, fieldType: string, linkType?: string, field): string | string[] => {
-        if (value === null || value === undefined) return ""
+    const extractFieldValue = (value: unknown, fieldType: string, linkType?: string, framerField?: ManagedCollectionField): string | string[] => {
+        if (value === null || value === undefined) {
+            if (framerField?.type === "multiCollectionReference") {
+                return []
+            }
+            return ''
+        }
 
         if (fieldType === "Array" && Array.isArray(value)) {
             const returnValue = value
@@ -147,8 +163,6 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                                 url = "https:" + url
                             }
 
-                            console.log(url)
-
                             return url
                         }
                         if (item.sys.type === "Entry") {
@@ -159,11 +173,13 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                 })
                 .filter(Boolean)
 
-            if (returnValue.length > 0) {
-                return 'Entries: ' + returnValue.join(",") // TODO: https://www.framer.com/developers/plugins/cms#reference-fields
-            }
+            return returnValue
 
-            return ""
+            // if (returnValue.length > 0) {
+            // return 'Entries: ' + returnValue.join(",") // TODO: https://www.framer.com/developers/plugins/cms#reference-fields
+            // }
+
+            // return ""
         }
 
         if (fieldType === "Link" && typeof value === "object" && value !== null) {
@@ -185,8 +201,10 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
 
 
             if (item.sys?.type === "Entry" && linkType === "Entry" && item.sys.id) {
-                // console.log(value,item.sys.id)
-                return "Entry: " + item.sys.id // TODO: https://www.framer.com/developers/plugins/cms#reference-fields
+                // console.log(value, item.sys.id)
+                // return "Entry: " + item.sys.id // TODO: https://www.framer.com/developers/plugins/cms#reference-fields
+                return item.sys.id
+                // return '5pJhJPUcTzpAL9ZPeXL7hr'
             }
 
             // console.log(field,item.sys.id, linkType)
@@ -225,7 +243,7 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
         const fieldData = contentType.fields.reduce(
             (acc, field) => {
                 const value = fields[field.id]
-                acc[field.id] = extractFieldValue(value, field.type, field.linkType)
+                acc[field.id] = extractFieldValue(value, field.type, field.linkType, framerFields.find(f => f.id === field.id))
                 return acc
             },
             {} as Record<string, string | string[]>
@@ -242,7 +260,7 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
     })
 
     return {
-        fields,
+        fields: framerFields,
         items,
     }
 }

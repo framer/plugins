@@ -521,19 +521,33 @@ function getReference(fieldSchema: AirtableFieldSchema, field: ManagedCollection
     }
 }
 
-function mergeField(existingField: ManagedCollectionField | null, field: ManagedCollectionField | null) {
+export function mergeField(existingField: ManagedCollectionField | null, field: ManagedCollectionField | null) {
     if (!existingField) return field
     if (!field) return null
 
-    return {
+    const updatedField = {
         ...existingField,
-        ...field,
-        name: existingField.name,
     }
+
+    switch (updatedField.type) {
+        case "enum":
+            if (field.type !== "enum") {
+                console.warn(`Expected enum field to be merged with another enum field, but got ${field.type}`)
+                return field
+            }
+
+            updatedField.cases = field.cases
+            break
+        default:
+            // No other fields should be merged yet
+            break
+    }
+
+    return updatedField
 }
 
 export function createFieldConfig(
-    pluginContext: PluginContext,
+    pluginContext: PluginContext | null,
     primaryFieldId: string,
     fieldSchemas: AirtableFieldSchema[],
     tableMapId: TableIdMap
@@ -542,7 +556,7 @@ export function createFieldConfig(
 
     for (const fieldSchema of fieldSchemas) {
         const existingField =
-            "collectionFields" in pluginContext
+            pluginContext && "collectionFields" in pluginContext
                 ? (pluginContext.collectionFields.find(field => field.id === fieldSchema.id) ?? null)
                 : null
 

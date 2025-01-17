@@ -7,6 +7,7 @@ import { AirtableTableSchema } from "../api"
 import {
     createFieldConfig,
     ManagedCollectionFieldConfig,
+    mergeField,
     PluginContext,
     PluginContextNew,
     PluginContextUpdate,
@@ -88,6 +89,9 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
     const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
     const [slugFieldId, setSlugFieldId] = useState<string | null>(() =>
         getInitialSlugFieldId(pluginContext, tableSchema.primaryFieldId)
+    )
+    const [remoteFieldConfig] = useState<ManagedCollectionFieldConfig[]>(() =>
+        createFieldConfig(null, tableSchema.primaryFieldId, tableSchema.fields, pluginContext.tableMapId)
     )
     const [fieldConfig, setFieldConfig] = useState<ManagedCollectionFieldConfig[]>(() =>
         createFieldConfig(pluginContext, tableSchema.primaryFieldId, tableSchema.fields, pluginContext.tableMapId)
@@ -179,8 +183,30 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
                             } as ManagedCollectionField,
                         }
                     }
-                    // Default case - just update the type
-                    return { ...field, field: { ...field.field, type } as ManagedCollectionField }
+
+                    const remoteField = remoteFieldConfig.find(config => config.field?.id === id)
+                    if (!remoteField) {
+                        return {
+                            ...field,
+                            field: {
+                                ...field.field,
+                                type,
+                            } as ManagedCollectionField,
+                        }
+                    }
+
+                    // Merge the new type with existing remote field data
+                    // This preserves important metadata, formatting, and configuration from Airtable
+                    return {
+                        ...field,
+                        field: mergeField(
+                            {
+                                ...field.field,
+                                type,
+                            } as ManagedCollectionField,
+                            remoteField.field
+                        ),
+                    }
                 }
                 return field
             })

@@ -68,6 +68,8 @@ export function App() {
     const handleContentfulSync = async () => {
         console.log("handleContentfulSync")
         try {
+            // await framer.setPluginData("contentful:collections", "")
+
             // In sync mode, we're already in a specific collection
             const collection = await framer.getManagedCollection()
             const contentTypeId = await collection.getPluginData("contentTypeId")
@@ -111,7 +113,9 @@ export function App() {
             framer.closePlugin()
         } catch (error) {
             console.error("Failed to sync collection:", error)
-            framer.notify("Failed to sync collection", { variant: "error" })
+            framer.notify(`Failed to sync collection, ${error instanceof Error ? error.message : "Unknown error"}`, {
+                variant: "error",
+            })
         }
     }
 

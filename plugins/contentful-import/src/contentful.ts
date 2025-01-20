@@ -132,7 +132,12 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                 if (field.items?.type === "Link") {
                     if (field.items.linkType === "Asset") {
                         // For arrays of assets (e.g., multiple images)
-                        return { ...baseField, type: "string" }
+                        // console.log("field.items.linkType", field)
+                        if (field.items.validations[0].linkMimetypeGroup[0] === "image") {
+                            return { ...baseField, type: "image" }
+                        }
+
+                        // TODO: Add support for other mimetypes
                     }
                     if (field.items.linkType === "Entry") {
                         // console.log("field.validations[0].linkContentType[0]", field.validations[0].linkContentType[0])
@@ -181,6 +186,14 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                     return typeof item === "string" ? item : ""
                 })
                 .filter(Boolean)
+
+
+            // console.log("returnValue", returnValue, framerField)
+
+            if (framerField?.type === "image") {
+                // Framer doesn't support multiple images in a collection field, so we need to return the first image
+                return returnValue[0]
+            }
 
             return returnValue
 
@@ -281,7 +294,7 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
             fieldData,
         }
 
-        console.log("Mapped item:", JSON.stringify(fieldData, null, 2))
+        console.log("Mapped item:", String(entry.sys.id), JSON.stringify(fieldData, null, 2))
         return item
     })
 

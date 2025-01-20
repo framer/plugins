@@ -1,5 +1,7 @@
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 import { createClient, ContentfulClientApi } from "contentful"
 import { CollectionItem, framer, type ManagedCollectionField } from "framer-plugin"
+import { BLOCKS, MARKS } from '@contentful/rich-text-types';
 
 interface ContentfulConfig {
     space: string
@@ -38,6 +40,7 @@ export const getEntriesForContentType = async (contentTypeId: string) => {
     if (!contentfulClient) throw new Error("Contentful client not initialized")
     const entries = await contentfulClient.getEntries({
         content_type: contentTypeId,
+        // include: 10, // Include linked entries
         // include: 0, // Include linked entries
         // include: 10, // Include linked entries
     })
@@ -113,7 +116,12 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                 }
                 if (field.linkType === "Entry") {
                     // For Entry references, we need to store the ID
+                    // console.log("field.items.validations[0].linkContentType[0]", field.validations[0].linkContentType)
                     const collectionId = collections[field.validations[0].linkContentType[0]]
+
+                    // const contentTypes = field.items?.validations[0]?.linkContentType || []
+                    // const collectionIds = contentTypes.map(contentType => collections[contentType])
+                    // console.log("collectionIds", collectionIds)
                     // console.log("collectionId", collections, field.validations[0].linkContentType[0], collectionId)
                     return { ...baseField, type: "collectionReference", collectionId }
                     // console.log(field.validations[0].linkContentType[0])
@@ -128,6 +136,7 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                     }
                     if (field.items.linkType === "Entry") {
                         // console.log("field.validations[0].linkContentType[0]", field.validations[0].linkContentType[0])
+
                         const collectionId = collections[field.items.validations[0].linkContentType[0]]
                         // For arrays of references, store as comma-separated IDs
                         // return { ...baseField, type: "string" }
@@ -144,7 +153,7 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
     console.log("Mapped Framer fields:", JSON.stringify(framerFields, null, 2))
 
     // Helper function to safely extract field values
-    const extractFieldValue = (value: unknown, fieldType: string, linkType?: string, framerField?: ManagedCollectionField): string | string[] => {
+    const extractFieldValue = (value: unknown, fieldType: string, linkType?: string, framerField?: ManagedCollectionField): string | string[] | boolean => {
         if (value === null || value === undefined) {
             if (framerField?.type === "multiCollectionReference") {
                 return []
@@ -213,13 +222,30 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
         }
 
         if (fieldType === "RichText") {
-            if (typeof value === "object" && value !== null) {
-                const richText = value as { content?: Array<{ value?: string }> }
-                if (Array.isArray(richText.content)) {
-                    return richText.content.map(node => node.value || "").join("\n")
+            // if (typeof value === "object" && value !== null) {
+            //     const richText = value as { content?: Array<{ value?: string }> }
+            //     console.log("richText", JSON.stringify(richText.content, null, 2))
+            //     if (Array.isArray(richText.content)) {
+            //         return richText.content.map(node => node.value || "").join("\n")
+            //     }
+            // }
+            // return ""
+
+            return documentToHtmlString(value, {
+                renderNode: {
+                    [BLOCKS.EMBEDDED_ASSET]: (node, next) => {
+                        if (node?.nodeType === "embedded-asset-block") {
+                            let url = node.data.target.fields.file.url
+
+                            if (url.startsWith("//")) {
+                                url = "https:" + url
+                            }
+
+                            return `<img src="${url}" />`
+                        }
+                    }
                 }
-            }
-            return ""
+            })
         }
 
         if (fieldType === "Boolean") {

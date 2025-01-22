@@ -83,7 +83,7 @@ export function generateGroup(localizationGroup: LocalizationGroup, targetLocale
     return `        <group id="${localizationGroup.id}">
             <notes>
                 <note category="type">${localizationGroup.type}</note>
-                <note category="name">${localizationGroup.name}</note>
+                <note category="name">${escapeXml(localizationGroup.name)}</note>
             </notes>
 ${units.join("\n")}
         </group>`

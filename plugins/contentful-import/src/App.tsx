@@ -44,7 +44,7 @@ export function App() {
         // console.log("useEffect", framer.mode)
         if (framer.mode === "syncManagedCollection") {
             // When in sync mode, don't show UI
-            handleContentfulSync()
+            sync()
         } else {
             if (framer.mode === "configureManagedCollection") {
                 console.log("configureManagedCollection")
@@ -65,7 +65,7 @@ export function App() {
         prefill()
     }, [])
 
-    const handleContentfulSync = async () => {
+    const sync = async () => {
         console.log("handleContentfulSync")
         try {
             // await framer.setPluginData("contentful:collections", "")
@@ -119,13 +119,19 @@ export function App() {
         }
     }
 
-    const handleContentfulConfig = async (event: React.FormEvent<HTMLFormElement>) => {
+    const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         setIsLoading(true)
 
         try {
             initContentful(contentfulConfig)
+
+            // Store the content type ID and Contentful credentials for future syncs
+            const collection = await framer.getManagedCollection()
+            await collection.setPluginData("spaceId", contentfulConfig.space)
+            await collection.setPluginData("accessToken", contentfulConfig.accessToken)
             framer.setPluginData("contentful", JSON.stringify(contentfulConfig))
+
             const contentTypes = await getContentTypes()
             console.log(
                 "Available content types:",
@@ -162,58 +168,62 @@ export function App() {
         }
     }
 
-    const importContentfulData = async (contentTypeId: string) => {
+    const importContentType = async (contentTypeId: string) => {
         setIsLoading(true)
         try {
             console.log("Importing contentful data for content type ID:", contentTypeId)
 
-            // Find the content type info
             const contentType = contentfulContentTypes.find(ct => ct.sys.id === contentTypeId)
+
             if (!contentType) {
                 throw new Error("Content type not found")
             }
 
-            // Get a new managed collection for this content type
             const collection = await framer.getManagedCollection()
-            console.log("Got collection for", contentType.name)
-
-            const entries = await getEntriesForContentType(contentTypeId)
-            console.log("Got entries from Contentful:", entries.length)
-
-            const mappedCollection = await mapContentfulToFramerCollection(contentTypeId, entries)
-            console.log("Mapped collection:", {
-                contentTypeId,
-                contentTypeName: contentType.name,
-                fields: mappedCollection.fields.map(f => ({
-                    id: f.id,
-                    name: f.name,
-                    type: f.type,
-                })),
-                items: mappedCollection.items.length,
-            })
-
-            // Store the content type ID and Contentful credentials for future syncs
             await collection.setPluginData("contentTypeId", contentTypeId)
-            await collection.setPluginData("spaceId", contentfulConfig.space)
-            await collection.setPluginData("accessToken", contentfulConfig.accessToken)
-            console.log("Stored content type ID and credentials")
 
-            // Clear any existing fields and items
-            const existingFields = await collection.getFields()
-            if (existingFields.length > 0) {
-                await collection.setFields([])
-                await collection.addItems([])
-            }
+            await sync()
 
-            // Set up fields
-            await collection.setFields(mappedCollection.fields)
-            console.log("Set collection fields")
-
-            // Add items
-            await collection.addItems(mappedCollection.items)
-            console.log("Added collection items")
-
-            framer.notify(`Imported ${contentType.name} successfully`, { variant: "success" })
+            // console.log("Importing contentful data for content type ID:", contentTypeId)
+            // // Find the content type info
+            // const contentType = contentfulContentTypes.find(ct => ct.sys.id === contentTypeId)
+            // if (!contentType) {
+            //     throw new Error("Content type not found")
+            // }
+            // // Get a new managed collection for this content type
+            // const collection = await framer.getManagedCollection()
+            // console.log("Got collection for", contentType.name)
+            // const entries = await getEntriesForContentType(contentTypeId)
+            // console.log("Got entries from Contentful:", entries.length)
+            // const mappedCollection = await mapContentfulToFramerCollection(contentTypeId, entries)
+            // console.log("Mapped collection:", {
+            //     contentTypeId,
+            //     contentTypeName: contentType.name,
+            //     fields: mappedCollection.fields.map(f => ({
+            //         id: f.id,
+            //         name: f.name,
+            //         type: f.type,
+            //     })),
+            //     items: mappedCollection.items.length,
+            // })
+            // // Store the content type ID and Contentful credentials for future syncs
+            // await collection.setPluginData("contentTypeId", contentTypeId)
+            // await collection.setPluginData("spaceId", contentfulConfig.space)
+            // await collection.setPluginData("accessToken", contentfulConfig.accessToken)
+            // console.log("Stored content type ID and credentials")
+            // // Clear any existing fields and items
+            // const existingFields = await collection.getFields()
+            // if (existingFields.length > 0) {
+            //     await collection.setFields([])
+            //     await collection.addItems([])
+            // }
+            // // Set up fields
+            // await collection.setFields(mappedCollection.fields)
+            // console.log("Set collection fields")
+            // // Add items
+            // await collection.addItems(mappedCollection.items)
+            // console.log("Added collection items")
+            // framer.notify(`Imported ${contentType.name} successfully`, { variant: "success" })
         } catch (error) {
             console.error("Failed to import collection:", error)
             if (error instanceof Error) {
@@ -229,7 +239,7 @@ export function App() {
     return (
         <div className="export-collection">
             {!isConfigured ? (
-                <form onSubmit={handleContentfulConfig} className="contentful-config">
+                <form onSubmit={onSubmit} className="contentful-config">
                     <h2>Configure Contentful</h2>
                     <input
                         type="text"
@@ -264,7 +274,7 @@ export function App() {
                                 contentfulContentTypes.map(contentType => (
                                     <button
                                         key={contentType.sys.id}
-                                        onClick={() => importContentfulData(contentType.sys.id)}
+                                        onClick={() => importContentType(contentType.sys.id)}
                                         className="content-type-button"
                                         disabled={isLoading}
                                     >

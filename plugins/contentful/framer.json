@@ -1,0 +1,6 @@
+{
+    "id": "000666",
+    "name": "Contentful",
+    "modes": ["syncManagedCollection"],
+    "icon": "/icon.png"
+}

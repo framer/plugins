@@ -100,8 +100,8 @@ export function App() {
             const mappedCollection = await mapContentfulToFramerCollection(contentTypeId, entries)
 
             // empty the collection
-            // const itemsIds = await collection.getItemIds()
-            // await collection.removeItems(itemsIds)
+            const itemsIds = await collection.getItemIds()
+            await collection.removeItems(itemsIds)
 
             // Update fields
             await collection.setFields(mappedCollection.fields)

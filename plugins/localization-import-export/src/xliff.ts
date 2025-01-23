@@ -1,4 +1,4 @@
-import type { Locale, LocalizationGroup, LocalizationSource, LocalizedValuesUpdate } from "framer-plugin"
+import type { Locale, LocalizationData, LocalizationGroup, LocalizationSource } from "framer-plugin"
 import "./App.css"
 import { shouldBeNever } from "./assert"
 
@@ -122,8 +122,11 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
     return { xliff: xliff, targetLocale }
 }
 
-export function createValuesBySourceFromXliff(xliffDocument: Document, targetLocale: Locale): LocalizedValuesUpdate {
-    const valuesBySource: LocalizedValuesUpdate = {}
+export function createValuesBySourceFromXliff(
+    xliffDocument: Document,
+    targetLocale: Locale
+): LocalizationData["valuesBySource"] {
+    const valuesBySource: LocalizationData["valuesBySource"] = {}
 
     const units = xliffDocument.querySelectorAll("unit")
     for (const unit of units) {

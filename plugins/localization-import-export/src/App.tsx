@@ -19,7 +19,7 @@ async function importXliff() {
             const { xliff, targetLocale } = parseXliff(xliffText, locales)
             const valuesBySource = createValuesBySourceFromXliff(xliff, targetLocale)
 
-            const result = await framer.unstable_updateLocalization({ valuesBySource })
+            const result = await framer.unstable_setLocalizationData({ valuesBySource })
 
             if (result.valuesBySource.errors.length > 0) {
                 throw new Error(`Import errors: ${result.valuesBySource.errors.map(error => error.error).join(", ")}`)

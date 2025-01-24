@@ -2,7 +2,7 @@ import { ContentType } from "contentful"
 
 import "./App.css"
 import { framer } from "framer-plugin"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
     initContentful,
     getContentTypes,
@@ -18,6 +18,8 @@ export function App() {
     })
     const [contentfulContentTypes, setContentfulContentTypes] = useState<ContentType[]>([])
     const [isConfigured, setIsConfigured] = useState(false)
+
+    const hasTriggeredSyncRef = useRef(false)
 
     useEffect(() => {
         async function configure() {
@@ -44,7 +46,10 @@ export function App() {
         // console.log("useEffect", framer.mode)
         if (framer.mode === "syncManagedCollection") {
             // When in sync mode, don't show UI
-            sync()
+            if (!hasTriggeredSyncRef.current) {
+                sync()
+                hasTriggeredSyncRef.current = true
+            }
         } else {
             if (framer.mode === "configureManagedCollection") {
                 console.log("configureManagedCollection")
@@ -110,7 +115,11 @@ export function App() {
             await collection.addItems(mappedCollection.items)
 
             framer.notify("Collection synchronized successfully", { variant: "success" })
-            framer.closePlugin()
+
+            if (process.env.NODE_ENV !== "development") {
+                // keep the logs in development
+                framer.closePlugin()
+            }
         } catch (error) {
             console.error("Failed to sync collection:", error)
             framer.notify(`Failed to sync collection, ${error instanceof Error ? error.message : "Unknown error"}`, {

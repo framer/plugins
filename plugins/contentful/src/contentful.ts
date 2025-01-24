@@ -117,7 +117,17 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                 if (field.linkType === "Entry") {
                     // For Entry references, we need to store the ID
                     // console.log("field.items.validations[0].linkContentType[0]", field.validations[0].linkContentType)
-                    const collectionId = collections[field.validations[0].linkContentType[0]]
+                    const validationContentType = field?.validations?.[0]?.linkContentType?.[0]
+
+                    if (!validationContentType) { // TODO: This is a workaround for when the content type is not set so we can't find the collection
+                        console.warn(`Field ${field.id} has no validation content type`)
+                        framer.notify(`Field ${field.id} has no validation content type`, { variant: "warning" })
+                        return { ...baseField, type: "string" }
+                    }
+
+
+                    const collectionId = collections?.[validationContentType]
+
 
                     // const contentTypes = field.items?.validations[0]?.linkContentType || []
                     // const collectionIds = contentTypes.map(contentType => collections[contentType])
@@ -133,7 +143,7 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                     if (field.items.linkType === "Asset") {
                         // For arrays of assets (e.g., multiple images)
                         // console.log("field.items.linkType", field)
-                        if (field.items.validations[0].linkMimetypeGroup[0] === "image") {
+                        if (field.items?.validations[0]?.linkMimetypeGroup?.[0] === "image") {
                             return { ...baseField, type: "image" }
                         }
 
@@ -142,7 +152,18 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
                     if (field.items.linkType === "Entry") {
                         // console.log("field.validations[0].linkContentType[0]", field.validations[0].linkContentType[0])
 
-                        const collectionId = collections[field.items.validations[0].linkContentType[0]]
+                        const validationContentType = field?.items?.validations?.[0]?.linkContentType?.[0]
+
+                        if (!validationContentType) { // TODO: This is a workaround for when the content type is not set so we can't find the collection
+                            console.warn(`Field ${field.id} has no validation content type`)
+                            framer.notify(`Field ${field.id} has no validation content type`, { variant: "warning" })
+                            return { ...baseField, type: "string" }
+                        }
+
+                        const collectionId = collections?.[validationContentType]
+
+
+
                         // For arrays of references, store as comma-separated IDs
                         // return { ...baseField, type: "string" }
                         return { ...baseField, type: "multiCollectionReference", collectionId }
@@ -158,12 +179,16 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
     console.log("Mapped Framer fields:", JSON.stringify(framerFields, null, 2))
 
     // Helper function to safely extract field values
-    const extractFieldValue = (value: unknown, fieldType: string, linkType?: string, framerField?: ManagedCollectionField): string | string[] | boolean => {
+    const extractFieldValue = (value: unknown, fieldType: string, linkType?: string, framerField?: ManagedCollectionField): string | string[] | boolean | number => {
         if (value === null || value === undefined) {
             if (framerField?.type === "multiCollectionReference") {
                 return []
             }
             return ''
+        }
+
+        if (fieldType === "Integer" || fieldType === "Number") {
+            return Number(value)
         }
 
         if (fieldType === "Array" && Array.isArray(value)) {
@@ -264,9 +289,6 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
         if (fieldType === "Boolean") {
             return Boolean(value)
         }
-
-
-        // console.log('value', value)
 
         return String(value)
     }

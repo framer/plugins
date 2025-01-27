@@ -56,7 +56,8 @@ const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
 
         // If the cell value contains a newline, it's probably a formatted text field
         if (cellValueLowered.includes("\n")) return "formattedText"
-        if (/^\d{1,2}-\d{1,2}-\d{4}/.test(cellValueLowered)) return "date"
+        const maybeDate = new Date(cellValueLowered)
+        if (!Number.isNaN(maybeDate.getTime())) return "date"
         if (/^#[0-9a-f]{6}$/.test(cellValueLowered)) return "color"
         if (/<[a-z][\s\S]*>/.test(cellValueLowered)) return "formattedText"
 

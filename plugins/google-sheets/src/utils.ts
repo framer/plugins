@@ -33,14 +33,6 @@ export function slugify(value: string): string {
     return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
 }
 
-export function parseToUTCDate(date: string): string | null {
-    const parsedDate = new Date(date)
-    if (!isNaN(parsedDate.getTime())) {
-        return parsedDate.toISOString()
-    }
-    return null
-}
-
 export function isDefined<T>(value: T): value is NonNullable<T> {
     return value !== undefined && value !== null
 }

@@ -283,7 +283,7 @@ function getFieldValue(fieldType: CollectionFieldType, cellValue: CellValue) {
     switch (fieldType) {
         case "number": {
             const num = Number(cellValue)
-            if (isNaN(num)) {
+            if (Number.isNaN(num)) {
                 return null
             }
 
@@ -294,9 +294,12 @@ function getFieldValue(fieldType: CollectionFieldType, cellValue: CellValue) {
         }
         case "date": {
             if (typeof cellValue !== "string") return null
-            const [month, day, year] = cellValue.split(/[-/]/).map(Number)
-            const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0))
-            return date.toISOString()
+            try {
+                const date = new Date(Date.parse(cellValue))
+                return date.toISOString()
+            } catch {
+                return null
+            }
         }
         case "enum":
         case "image":

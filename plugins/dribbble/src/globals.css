@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    h6 {
+        @apply font-semibold text-primary leading-[1.2];
+    }
+}
+
+@layer utilities {
+    /* Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+}
+
+@layer components {
+    .row {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+    }
+
+    .col {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .row-lg {
+        display: flex;
+        flex-direction: row;
+        gap: 15px;
+    }
+
+    .col-lg {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+}
+
+body,
+html,
+#root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+main {
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}

@@ -1,0 +1,39 @@
+{
+    "id": "categories",
+    "fields": [
+        {
+            "name": "Title",
+            "type": "string"
+        },
+        {
+            "name": "Description",
+            "type": "string"
+        },
+        {
+            "name": "Color",
+            "type": "color"
+        }
+    ],
+    "items": [
+        {
+            "Title": "CMS",
+            "Description": "Content Management System",
+            "Color": "orange"
+        },
+        {
+            "Title": "Basics",
+            "Description": "Basic content management",
+            "Color": "red"
+        },
+        {
+            "Title": "Updates",
+            "Description": "Updates to the CMS",
+            "Color": "blue"
+        },
+        {
+            "Title": "Pro Tips",
+            "Description": "Tips for using the CMS",
+            "Color": "green"
+        }
+    ]
+}

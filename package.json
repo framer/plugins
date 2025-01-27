@@ -3,6 +3,7 @@
     "private": true,
     "license": "MIT",
     "workspaces": [
+        "starters/*",
         "plugins/*"
     ],
     "scripts": {

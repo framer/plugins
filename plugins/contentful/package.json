@@ -12,10 +12,12 @@
     },
     "dependencies": {
         "@contentful/rich-text-html-renderer": "^17.0.0",
+        "classnames": "^2.5.1",
         "contentful": "^11.4.3",
         "framer-plugin": "^2.0.4",
         "react": "^18",
         "react-dom": "^18",
+        "react-intersection-observer": "^9.15.1",
         "vite-plugin-mkcert": "^1"
     },
     "devDependencies": {

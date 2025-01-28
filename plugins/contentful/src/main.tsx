@@ -1,3 +1,4 @@
+import "./globals.css"
 import "framer-plugin/framer.css"
 
 import React from "react"

@@ -128,6 +128,12 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
 
                     const collectionId = collections?.[validationContentType]
 
+                    if (!collectionId) {
+                        console.warn(`Field ${field.id} has no collectionId for validation content type ${validationContentType}`)
+                        framer.notify(`Field ${field.id} has no collectionId for validation content type ${validationContentType}`, { variant: "warning" })
+                        return { ...baseField, type: "string" }
+                    }
+
 
                     // const contentTypes = field.items?.validations[0]?.linkContentType || []
                     // const collectionIds = contentTypes.map(contentType => collections[contentType])
@@ -162,6 +168,12 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
 
                         const collectionId = collections?.[validationContentType]
 
+                        if (!collectionId) {
+                            console.warn(`Field ${field.id} has no collectionId for validation content type ${validationContentType}`)
+                            framer.notify(`Field ${field.id} has no collectionId for validation content type ${validationContentType}`, { variant: "warning" })
+                            return { ...baseField, type: "string" }
+                        }
+
 
 
                         // For arrays of references, store as comma-separated IDs
@@ -181,11 +193,17 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
     // Helper function to safely extract field values
     const extractFieldValue = (value: unknown, fieldType: string, linkType?: string, framerField?: ManagedCollectionField): string | string[] | boolean | number => {
         if (value === null || value === undefined) {
+            if (framerField?.type === "number") {
+                return 0
+            }
+
             if (framerField?.type === "multiCollectionReference") {
                 return []
             }
             return ''
         }
+
+
 
         if (fieldType === "Integer" || fieldType === "Number") {
             return Number(value)
@@ -218,6 +236,10 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
             if (framerField?.type === "image") {
                 // Framer doesn't support multiple images in a collection field, so we need to return the first image
                 return returnValue[0]
+            }
+
+            if (framerField?.type === "string") {
+                return returnValue.join(",")
             }
 
             return returnValue

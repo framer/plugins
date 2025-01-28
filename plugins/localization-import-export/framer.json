@@ -1,6 +1,6 @@
 {
-    "id": "fc871f",
-    "name": "Locale Import & Export",
+    "id": "fc872a",
+    "name": "Locale Sync",
     "modes": ["localization"],
     "icon": "/icon.svg"
 }

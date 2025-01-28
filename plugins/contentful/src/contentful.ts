@@ -193,6 +193,10 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
     // Helper function to safely extract field values
     const extractFieldValue = (value: unknown, fieldType: string, linkType?: string, framerField?: ManagedCollectionField): string | string[] | boolean | number => {
         if (value === null || value === undefined) {
+            if (framerField?.type === "boolean") {
+                return false
+            }
+
             if (framerField?.type === "number") {
                 return 0
             }
@@ -200,6 +204,12 @@ export const mapContentfulToFramerCollection = async (contentTypeId: string, ent
             if (framerField?.type === "multiCollectionReference") {
                 return []
             }
+
+
+            if (framerField?.type === "collectionReference") {
+                return ""
+            }
+
             return ''
         }
 

@@ -133,6 +133,7 @@ export type ExtendedManagedCollectionField = ManagedCollectionField & {
     isDisabled?: boolean
     field?: ContentTypeField
     isMissingReference?: boolean
+    collectionId?: string
 }
 
 export function App() {
@@ -149,7 +150,7 @@ export function App() {
         async function cache() {
             const contentTypeId = contentType?.sys?.id
 
-            if (!contentType) return
+            if (!contentTypeId) return
 
             const collection = await framer.getManagedCollection()
 

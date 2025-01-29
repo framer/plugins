@@ -88,6 +88,12 @@ async function getFramerFieldFromContentfulField(field: ContentTypeField): Promi
     }
 }
 
+// Add interface for collection type
+interface Collection {
+    id: string
+    name: string
+}
+
 export const Fields = forwardRef<
     { reset: () => void },
     {
@@ -102,15 +108,13 @@ export const Fields = forwardRef<
         [mappedContentType]
     )
 
-    const [collections, setCollections] = useState<object>({})
-    console.log(collections)
+    // Update the collections state type
+    const [framerCollections, setFramerCollections] = useState<Collection[]>([])
 
     useEffect(() => {
         async function init() {
-            const collectionsList = await framer.getPluginData("contentful:collections")
-            const collections = collectionsList ? JSON.parse(collectionsList) : {}
-
-            setCollections(collections)
+            const framerCollections = await framer.getCollections()
+            setFramerCollections(framerCollections)
         }
 
         init()
@@ -259,7 +263,7 @@ export const Fields = forwardRef<
                                     <>
                                         <option value="string">String</option>
                                         <option value={type}>
-                                            {Object.values(collections).find(({ id }) => id === collectionId)?.name}
+                                            {framerCollections.find(({ id }) => id === collectionId)?.name}
                                         </option>
                                     </>
                                 ) : (

@@ -9,6 +9,7 @@ export type ExtendedManagedCollectionField = ManagedCollectionField & {
     field?: ContentTypeField
     isMissingReference?: boolean
     collectionId?: string
+    defaultType?: string
 }
 
 export async function getFramerFieldFromContentfulField(

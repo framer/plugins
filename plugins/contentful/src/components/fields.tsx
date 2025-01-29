@@ -86,10 +86,12 @@ export const Fields = forwardRef<
                         return {
                             ...framerField,
                             field,
+                            defaultType: framerField.type,
                         }
                     })
                 )
 
+                // this means it's not the first time the user is importing
                 if (existingMappedContentType.length > 0) {
                     mappedContentType.forEach(field => {
                         const existingField = existingMappedContentType.find(
@@ -166,89 +168,95 @@ export const Fields = forwardRef<
 
                 {mappedContentType
                     ?.sort((a, b) => (a.isMissingReference ? 1 : b.isMissingReference ? -1 : 0))
-                    .map(({ name, type, id, isDisabled, isMissingReference, field, collectionId }, index) => (
-                        <Fragment key={id}>
-                            <CheckboxTextfield
-                                disabled={Boolean(isMissingReference)} // if reference doesn't exist, disable the field
-                                value={field?.name ?? ""}
-                                checked={!isDisabled && !isMissingReference}
-                                onChange={() => {
-                                    setMappedContentType(prev => {
-                                        if (!prev) return prev
+                    .map(
+                        (
+                            { name, type, id, isDisabled, isMissingReference, field, collectionId, defaultType },
+                            index
+                        ) => (
+                            <Fragment key={id}>
+                                <CheckboxTextfield
+                                    disabled={Boolean(isMissingReference)} // if reference doesn't exist, disable the field
+                                    value={field?.name ?? ""}
+                                    checked={!isDisabled && !isMissingReference}
+                                    onChange={() => {
+                                        setMappedContentType(prev => {
+                                            if (!prev) return prev
 
-                                        const newMappedContentType = structuredClone(prev)
-                                        newMappedContentType[index].isDisabled = !newMappedContentType[index].isDisabled
+                                            const newMappedContentType = structuredClone(prev)
+                                            newMappedContentType[index].isDisabled =
+                                                !newMappedContentType[index].isDisabled
 
-                                        return newMappedContentType
-                                    })
-                                }}
-                            />
-                            <div className="flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
-                                    <path
-                                        d="M 3 11 L 6 8 L 3 5"
-                                        fill="transparent"
-                                        strokeWidth="1.5"
-                                        stroke="#999"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            </div>
-                            <input
-                                type="text"
-                                className={cx("w-full", {
-                                    "opacity-50": isDisabled || isMissingReference,
-                                })}
-                                placeholder={name}
-                                value={isMissingReference ? "Missing reference" : name}
-                                disabled={isDisabled || isMissingReference}
-                                onChange={e => {
-                                    setMappedContentType(prev => {
-                                        if (!prev) return prev
+                                            return newMappedContentType
+                                        })
+                                    }}
+                                />
+                                <div className="flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
+                                        <path
+                                            d="M 3 11 L 6 8 L 3 5"
+                                            fill="transparent"
+                                            strokeWidth="1.5"
+                                            stroke="#999"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    className={cx("w-full", {
+                                        "opacity-50": isDisabled || isMissingReference,
+                                    })}
+                                    placeholder={name}
+                                    value={isMissingReference ? "Missing reference" : name}
+                                    disabled={isDisabled || isMissingReference}
+                                    onChange={e => {
+                                        setMappedContentType(prev => {
+                                            if (!prev) return prev
 
-                                        const newMappedContentType = structuredClone(prev)
-                                        newMappedContentType[index].name = e.target.value
+                                            const newMappedContentType = structuredClone(prev)
+                                            newMappedContentType[index].name = e.target.value
 
-                                        return newMappedContentType
-                                    })
-                                }}
-                            />
-                            <select
-                                className={cx("w-full", {
-                                    "opacity-50": isDisabled || isMissingReference,
-                                })}
-                                value={type}
-                                disabled={isDisabled || isMissingReference}
-                                onChange={e => {
-                                    console.log("e", e.target.value)
-                                    setMappedContentType(prev => {
-                                        if (!prev) return prev
+                                            return newMappedContentType
+                                        })
+                                    }}
+                                />
+                                <select
+                                    className={cx("w-full", {
+                                        "opacity-50": isDisabled || isMissingReference,
+                                    })}
+                                    value={type}
+                                    disabled={isDisabled || isMissingReference}
+                                    onChange={e => {
+                                        console.log("e", e.target.value)
+                                        setMappedContentType(prev => {
+                                            if (!prev) return prev
 
-                                        const newMappedContentType = structuredClone(prev)
-                                        newMappedContentType[index].type = e.target.value as CollectionFieldType
+                                            const newMappedContentType = structuredClone(prev)
+                                            newMappedContentType[index].type = e.target.value as CollectionFieldType
 
-                                        return newMappedContentType
-                                    })
-                                }}
-                            >
-                                {collectionId ? (
-                                    <>
-                                        <option value="string">String</option>
-                                        <option value="collectionReference">
-                                            {framerCollections.find(({ id }) => id === collectionId)?.name}
-                                        </option>
-                                    </>
-                                ) : (
-                                    FIELD_TYPE_OPTIONS.map(({ type, label }) => (
-                                        <option value={type} key={label}>
-                                            {label}
-                                        </option>
-                                    ))
-                                )}
-                            </select>
-                        </Fragment>
-                    ))}
+                                            return newMappedContentType
+                                        })
+                                    }}
+                                >
+                                    {collectionId ? (
+                                        <>
+                                            <option value="string">String</option>
+                                            <option value={defaultType}>
+                                                {framerCollections.find(({ id }) => id === collectionId)?.name}
+                                            </option>
+                                        </>
+                                    ) : (
+                                        FIELD_TYPE_OPTIONS.map(({ type, label }) => (
+                                            <option value={type} key={label}>
+                                                {label}
+                                            </option>
+                                        ))
+                                    )}
+                                </select>
+                            </Fragment>
+                        )
+                    )}
                 {mappedContentType && mappedContentType?.length > 6 && !isAtBottom && (
                     <div className="scroll-fade"></div>
                 )}

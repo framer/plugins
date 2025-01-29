@@ -190,7 +190,7 @@ export function App() {
         //     })
         // }
 
-        framer.closePlugin()
+        // framer.closePlugin()
     }
 
     const onSubmitPickContentType = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -313,7 +313,7 @@ export function App() {
                             const collection = await framer.getManagedCollection()
                             const collections = await framer.getPluginData("contentful:collections")
                             const slugFieldId = await collection.getPluginData("slugFieldId")
-                            console.log(JSON.parse(collections))
+                            console.log(collections ? JSON.parse(collections) : "no collections")
                             console.log(slugFieldId)
                         }}
                     >

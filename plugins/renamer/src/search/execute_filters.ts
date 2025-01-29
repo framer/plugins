@@ -4,6 +4,15 @@ import type { IndexEntry, Result } from "./types";
 import { findRanges } from "../utils/text";
 import { assertNever } from "../utils/assert";
 
+/**
+ * Use `Result` to signify that the node should be included in the search
+ * results.
+ *
+ * Use `true` to ignore the node, letting another filter take action on it. If
+ * no filter returns `false`, the node will be included in the search results.
+ *
+ * Use `false` exclude it from the search results.
+ */
 type FilterResult = Result | boolean;
 
 function executeTextFilter(filter: TextFilter, entry: IndexEntry): FilterResult {

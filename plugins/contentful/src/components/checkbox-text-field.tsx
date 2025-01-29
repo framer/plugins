@@ -17,6 +17,7 @@ export function CheckboxTextfield({ value, disabled, checked, onChange }: Props)
         <div
             className={cx("flex bg-tertiary rounded-lg items-center pl-[10px] select-none", {
                 "opacity-50": disabled || !checked,
+                "pointer-events-none": disabled,
             })}
             onClick={toggle}
             role="button"

@@ -13,13 +13,7 @@ export function ContentTypePicker({
         <form onSubmit={onSubmit} className="flex flex-col gap-2.5 text-tertiary">
             <div className="grid grid-cols-3 items-center gap-2.5">
                 <label htmlFor="contentType">Content Type</label>
-                <select
-                    id="contentType"
-                    className="w-full col-span-2"
-                    onChange={e => {
-                        console.log("contentType", e.target.value)
-                    }}
-                >
+                <select id="contentType" className="w-full col-span-2">
                     <option disabled>Select a content type</option>
                     {contentTypes.map(contentType => (
                         <option key={contentType.sys.id} value={contentType.sys.id}>

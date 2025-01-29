@@ -1,10 +1,11 @@
-import { framer, ManagedCollection, ManagedCollectionField } from "framer-plugin"
+import { framer, ManagedCollectionField } from "framer-plugin"
 import { forwardRef, Fragment, useEffect, useImperativeHandle, useMemo, useState } from "react"
 import { CheckboxTextfield } from "./checkbox-text-field"
 import cx from "classnames"
 import { useInView } from "react-intersection-observer"
-import { ExtendedManagedCollectionField } from "../App"
-import { ContentType, ContentTypeField } from "contentful"
+import { ExtendedManagedCollectionField, getFramerFieldFromContentfulField } from "../utils"
+import { ContentType } from "contentful"
+import { getContentType } from "../contentful"
 
 type CollectionFieldType = ManagedCollectionField["type"]
 
@@ -21,73 +22,6 @@ const FIELD_TYPE_OPTIONS: { type: CollectionFieldType; label: string }[] = [
     // { type: "file", label: "File" }, // TODO: don't know how to handle this
 ]
 
-async function getFramerFieldFromContentfulField(field: ContentTypeField): Promise<ExtendedManagedCollectionField> {
-    const baseField = {
-        id: field.id ?? "",
-        name: field.name ?? "",
-        userEditable: false,
-    }
-
-    let collections = await framer.getPluginData("contentful:collections")
-    collections = collections ? JSON.parse(collections) : {}
-
-    switch (field.type) {
-        case "Integer":
-        case "Number":
-            return { ...baseField, type: "number" }
-        case "Boolean":
-            return { ...baseField, type: "boolean" }
-        case "Date":
-            return { ...baseField, type: "date" }
-        case "Text":
-        case "Symbol":
-            return { ...baseField, type: "string" }
-        case "RichText":
-            return { ...baseField, type: "formattedText" }
-        case "Link":
-            if (field.linkType === "Asset") {
-                return { ...baseField, type: "image" }
-            }
-            if (field.linkType === "Entry") {
-                const validationContentType = field?.validations?.[0]?.linkContentType?.[0]
-                const collectionId = collections?.[validationContentType]?.id
-
-                if (!validationContentType || !collectionId) {
-                    return { ...baseField, type: "string", isMissingReference: true }
-                }
-
-                return { ...baseField, type: "collectionReference", collectionId }
-            }
-
-            return { ...baseField, type: "string" }
-        case "Array":
-            if (field.items?.type === "Link") {
-                if (field.items.linkType === "Asset") {
-                    // For arrays of assets (e.g., multiple images)
-                    if (field.items?.validations[0]?.linkMimetypeGroup?.[0] === "image") {
-                        return { ...baseField, type: "image" }
-                    }
-
-                    // TODO: Add support for other mimetypes
-                }
-
-                if (field.items.linkType === "Entry") {
-                    const validationContentType = field?.items?.validations?.[0]?.linkContentType?.[0]
-                    const collectionId = collections?.[validationContentType]?.id
-
-                    if (!validationContentType || !collectionId) {
-                        return { ...baseField, type: "string", isMissingReference: true }
-                    }
-
-                    return { ...baseField, type: "multiCollectionReference", collectionId }
-                }
-            }
-            return { ...baseField, type: "string" }
-        default:
-            return { ...baseField, type: "string" }
-    }
-}
-
 // Add interface for collection type
 interface Collection {
     id: string
@@ -98,9 +32,13 @@ export const Fields = forwardRef<
     { reset: () => void },
     {
         contentType: ContentType
-        onSubmit: (slugFieldId: string | null, mappedContentType: ExtendedManagedCollectionField[] | undefined) => void
+        onSubmit: (
+            slugFieldId: string | null,
+            filteredMappedContentType: ExtendedManagedCollectionField[] | undefined
+        ) => void
+        isLoading: boolean
     }
->(({ contentType, onSubmit }, ref) => {
+>(({ contentType, onSubmit, isLoading }, ref) => {
     const [slugFieldId, setSlugFieldId] = useState<string | null>(null)
     const [mappedContentType, setMappedContentType] = useState<ExtendedManagedCollectionField[] | null>(null)
     const filteredMappedContentType = useMemo(
@@ -123,19 +61,54 @@ export const Fields = forwardRef<
     useEffect(() => {
         async function mapContentType() {
             if (contentType) {
+                const collection = await framer.getManagedCollection()
+                const fields = await collection.getFields()
+                const slugFieldId = await collection.getPluginData("slugFieldId")
+                const contentTypeId = await collection.getPluginData("contentTypeId")
+
+                if (!contentTypeId) {
+                    return
+                }
+
+                const contentType = await getContentType(contentTypeId)
+
+                const existingMappedContentType = fields.map(framerField => {
+                    return {
+                        ...framerField,
+                        field: contentType.fields.find(field => field.id === framerField.id),
+                    }
+                })
+
                 const mappedContentType = await Promise.all(
                     contentType.fields.map(async field => {
                         const framerField = await getFramerFieldFromContentfulField(field)
 
                         return {
                             ...framerField,
-                            isDisabled: false,
                             field,
                         }
                     })
                 )
+
+                if (existingMappedContentType.length > 0) {
+                    mappedContentType.forEach(field => {
+                        const existingField = existingMappedContentType.find(
+                            existingField => existingField.id === field.id
+                        )
+
+                        if (existingField) {
+                            field.type = existingField.type
+                            field.name = existingField.name
+                        }
+
+                        if (!existingField) {
+                            field.isDisabled = true
+                        }
+                    })
+                }
+
                 setMappedContentType(mappedContentType)
-                setSlugFieldId(mappedContentType.find(field => field.type === "string")?.id ?? null)
+                setSlugFieldId(slugFieldId ?? mappedContentType.find(field => field.type === "string")?.id ?? null)
             }
         }
 
@@ -147,7 +120,6 @@ export const Fields = forwardRef<
     useEffect(() => {
         console.log("contentType", contentType)
         console.log("filteredMappedContentType", filteredMappedContentType)
-        // console.log("slugFieldId", slugFieldId)
     }, [filteredMappedContentType, contentType])
 
     useImperativeHandle(ref, () => ({
@@ -249,6 +221,7 @@ export const Fields = forwardRef<
                                 value={type}
                                 disabled={isDisabled || isMissingReference}
                                 onChange={e => {
+                                    console.log("e", e.target.value)
                                     setMappedContentType(prev => {
                                         if (!prev) return prev
 
@@ -262,7 +235,7 @@ export const Fields = forwardRef<
                                 {collectionId ? (
                                     <>
                                         <option value="string">String</option>
-                                        <option value={type}>
+                                        <option value="collectionReference">
                                             {framerCollections.find(({ id }) => id === collectionId)?.name}
                                         </option>
                                     </>
@@ -282,7 +255,9 @@ export const Fields = forwardRef<
                 <div ref={scrollRef} className="h-0 w-0"></div>
             </div>
             <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full">
-                <button type="submit" className="w-full">{`Import from ${contentType?.name}`}</button>
+                <button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Importing..." : `Import from ${contentType?.name}`}
+                </button>
             </div>
         </form>
     )

@@ -79,7 +79,7 @@ export const Fields = forwardRef<
                     }
                 })
 
-                const mappedContentType = await Promise.all(
+                let mappedContentType = await Promise.all(
                     contentType.fields.map(async field => {
                         const framerField = await getFramerFieldFromContentfulField(field)
 
@@ -87,29 +87,32 @@ export const Fields = forwardRef<
                             ...framerField,
                             field,
                             defaultType: framerField.type,
+                            collectionId: framerField.collectionId,
                         }
                     })
                 )
 
                 // this means it's not the first time the user is importing
                 if (existingMappedContentType.length > 0) {
-                    mappedContentType.forEach(field => {
+                    mappedContentType = mappedContentType.map(field => {
                         const existingField = existingMappedContentType.find(
                             existingField => existingField.id === field.id
                         )
 
                         if (existingField) {
-                            field.type = existingField.type
-                            field.name = existingField.name
+                            field = { ...field, ...existingField }
                         }
 
                         if (!existingField) {
                             field.isDisabled = true
                         }
+
+                        return field
                     })
+                    // .filter(field => field.isDisabled !== true)
                 }
 
-                setMappedContentType(mappedContentType)
+                setMappedContentType(mappedContentType as ExtendedManagedCollectionField[])
                 setSlugFieldId(slugFieldId ?? mappedContentType.find(field => field.type === "string")?.id ?? null)
             }
         }

@@ -114,6 +114,10 @@ export function mapContentfulValueToFramerValue(value: ContentTypeField, framerF
         return String(value)
     }
 
+    if (framerField?.type === "string" && typeof value === "string") {
+        return value
+    }
+
     const fieldType = framerField?.field?.type
     const linkType = framerField?.field?.linkType
 
@@ -176,6 +180,7 @@ export function mapContentfulValueToFramerValue(value: ContentTypeField, framerF
     }
 
     if (fieldType === "RichText") {
+        // @ts-expect-error as to render it as string
         return documentToHtmlString(value, {
             renderNode: {
                 [BLOCKS.EMBEDDED_ASSET]: node => {

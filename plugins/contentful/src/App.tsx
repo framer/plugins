@@ -129,6 +129,8 @@ export function App() {
                 return {
                     ...framerField,
                     field,
+                    defaultType: framerField.type,
+                    collectionId: framerField.collectionId,
                 }
             })
         )
@@ -138,8 +140,7 @@ export function App() {
                 const existingField = existingMappedContentType.find(existingField => existingField.id === field.id)
 
                 if (existingField) {
-                    field.type = existingField.type
-                    field.name = existingField.name
+                    field = { ...field, ...existingField }
                 }
 
                 if (!existingField) {
@@ -175,12 +176,25 @@ export function App() {
             }
         })
 
-        console.log("mappedContentType", mappedContentType)
         console.log("Added entries:", mappedEntries)
 
-        // TODO: add only what is necessary
+        // if (hardRefresh) {
+        //     const ids = await collection.getItemIds()
+        //     await collection.removeItems(ids)
+        //     await collection.addItems(mappedEntries as CollectionItem[])
+        // } else {
+        const existingEntriesIds = await collection.getItemIds()
+
+        // const entriesToBeAdded = mappedEntries.filter(entry => !existingEntriesIds.includes(entry.id))
+        const entriesToBeRemoved = existingEntriesIds.filter(id => !mappedEntries.some(entry => entry.id === id))
+        const order = entries.map(entry => entry.sys.id)
+
+        // TODO: detect if fields has changed
 
         await collection.addItems(mappedEntries as CollectionItem[])
+        await collection.removeItems(entriesToBeRemoved)
+        await collection.setItemOrder(order)
+        // }
 
         // try {
         // } catch (error) {
@@ -273,7 +287,23 @@ export function App() {
 
         console.log("Added fields:", filteredMappedContentType)
 
-        await collection.setFields(filteredMappedContentType as ManagedCollectionField[])
+        const fields = await collection.getFields()
+
+        const newFields = filteredMappedContentType.map(field => {
+            return {
+                id: field.id,
+                name: field.name,
+                type: field.type,
+                userEditable: field.userEditable,
+                collectionId: field.collectionId,
+            }
+        })
+
+        await collection.setFields(newFields as ManagedCollectionField[])
+
+        // const hardRefresh =
+        //     newFields.length !== fields.length ||
+        //     newFields.some(field => field.type !== fields.find(f => f.id === field.id)?.type)
 
         await sync()
 
@@ -286,7 +316,7 @@ export function App() {
                 <>
                     <button
                         onClick={async () => {
-                            // framer.setPluginData("contentful", "")
+                            framer.setPluginData("contentful", "")
 
                             const collection = await framer.getManagedCollection()
                             await collection.setPluginData("contentTypeId", "")

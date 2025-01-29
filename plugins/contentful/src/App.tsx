@@ -1,100 +1,138 @@
 import { ContentType, ContentTypeField } from "contentful"
 
 // import "./App.css"
-import { framer, ManagedCollectionField } from "framer-plugin"
-import { Fragment, useEffect, useMemo, useRef, useState } from "react"
+import { CollectionItemData, framer, ManagedCollectionField } from "framer-plugin"
+import { useEffect, useRef, useState } from "react"
 import { initContentful, getContentTypes, getEntriesForContentType } from "./contentful"
 import { Auth } from "./components/auth"
 import { ContentTypePicker } from "./components/content-type-picker"
-import { CheckboxTextfield } from "./components/checkbox-text-field"
-import cx from "classnames"
-import { useInView } from "react-intersection-observer"
+// import { CheckboxTextfield } from "./components/checkbox-text-field"
+// import cx from "classnames"
+// import { useInView } from "react-intersection-observer"
+import { Fields } from "./components/fields"
+import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
+import { BLOCKS } from "@contentful/rich-text-types"
 
-type CollectionFieldType = ManagedCollectionField["type"]
-const FIELD_TYPE_OPTIONS: { type: CollectionFieldType; label: string }[] = [
-    { type: "boolean", label: "Boolean" },
-    { type: "color", label: "Color" },
-    { type: "number", label: "Number" },
-    { type: "string", label: "String" },
-    { type: "formattedText", label: "Formatted Text" },
-    { type: "image", label: "Image" },
-    { type: "link", label: "Link" },
-    { type: "date", label: "Date" },
-    { type: "enum", label: "Option" },
-    { type: "file", label: "File" },
-]
+function mapContentfulValueToFramerValue(value: ContentTypeField, framerField: ExtendedManagedCollectionField) {
+    if (value === null || value === undefined) {
+        if (framerField?.type === "boolean") {
+            return false
+        }
 
-type ExtendedManagedCollectionField = ManagedCollectionField & {
-    isDisabled?: boolean
-    field?: ContentType
-    isMissingReference?: boolean
+        if (framerField?.type === "number") {
+            return 0
+        }
+
+        if (framerField?.type === "multiCollectionReference") {
+            return []
+        }
+
+        if (framerField?.type === "collectionReference") {
+            return ""
+        }
+
+        return ""
+    }
+
+    const fieldType = framerField?.field?.type
+    const linkType = framerField?.field?.linkType
+
+    if (fieldType === "Integer" || fieldType === "Number") {
+        return Number(value)
+    }
+
+    if (fieldType === "Array" && Array.isArray(value)) {
+        const returnValue = value
+            .map(item => {
+                if (item && typeof item === "object" && "sys" in item && "fields" in item) {
+                    if (item.sys.type === "Asset" && "file" in item.fields) {
+                        let url = item.fields?.file?.url || ""
+
+                        if (url.startsWith("//")) {
+                            url = "https:" + url
+                        }
+
+                        return url
+                    }
+                    if (item.sys.type === "Entry") {
+                        return item.sys.id
+                    }
+                }
+                return typeof item === "string" ? item : ""
+            })
+            .filter(Boolean)
+
+        if (framerField?.type === "image") {
+            // Framer doesn't support multiple images in a collection field, so we need to return the first image
+            return returnValue[0]
+        }
+
+        if (framerField?.type === "string") {
+            return returnValue.join(",")
+        }
+
+        return returnValue
+    }
+
+    if (fieldType === "Link" && typeof value === "object" && value !== null) {
+        const item = value as {
+            sys?: { type?: string; id?: string }
+            fields?: { file?: { url?: string } }
+        }
+        // console.log(value,item.sys.id)
+
+        if (item.sys?.type === "Asset" && linkType === "Asset") {
+            // return item.fields?.file?.url || ""
+
+            let url = item.fields?.file?.url || ""
+
+            if (url.startsWith("//")) {
+                url = "https:" + url
+            }
+
+            return url
+        }
+
+        if (item.sys?.type === "Entry" && linkType === "Entry" && item.sys.id) {
+            // return "Entry: " + item.sys.id // TODO: https://www.framer.com/developers/plugins/cms#reference-fields
+            return item.sys.id
+            // return '5pJhJPUcTzpAL9ZPeXL7hr'
+        }
+
+        // console.log(field,item.sys.id, linkType)
+
+        return ""
+    }
+
+    if (fieldType === "RichText") {
+        return documentToHtmlString(value, {
+            renderNode: {
+                [BLOCKS.EMBEDDED_ASSET]: (node, next) => {
+                    if (node?.nodeType === "embedded-asset-block") {
+                        let url = node.data.target.fields.file.url
+
+                        if (url.startsWith("//")) {
+                            url = "https:" + url
+                        }
+
+                        return `<img src="${url}" />`
+                    }
+                },
+            },
+        })
+    }
+
+    if (fieldType === "Boolean") {
+        return Boolean(value)
+    }
+
+    return String(value)
 }
 
-async function getFramerFieldFromContentfulField(field: ContentTypeField): Promise<ExtendedManagedCollectionField> {
-    const baseField = {
-        id: field.id ?? "",
-        name: field.name ?? "",
-        userEditable: false,
-    }
-
-    let collections = await framer.getPluginData("contentful:collections")
-    collections = collections ? JSON.parse(collections) : {}
-
-    switch (field.type) {
-        case "Integer":
-        case "Number":
-            return { ...baseField, type: "number" }
-        case "Boolean":
-            return { ...baseField, type: "boolean" }
-        case "Date":
-            return { ...baseField, type: "date" }
-        case "Text":
-        case "Symbol":
-            return { ...baseField, type: "string" }
-        case "RichText":
-            return { ...baseField, type: "formattedText" }
-        case "Link":
-            if (field.linkType === "Asset") {
-                return { ...baseField, type: "image" }
-            }
-            if (field.linkType === "Entry") {
-                const validationContentType = field?.validations?.[0]?.linkContentType?.[0]
-                const collectionId = collections?.[validationContentType]
-
-                if (!validationContentType || !collectionId) {
-                    return { ...baseField, type: "string", isMissingReference: true }
-                }
-
-                return { ...baseField, type: "collectionReference", collectionId }
-            }
-
-            return { ...baseField, type: "string" }
-        case "Array":
-            if (field.items?.type === "Link") {
-                if (field.items.linkType === "Asset") {
-                    // For arrays of assets (e.g., multiple images)
-                    if (field.items?.validations[0]?.linkMimetypeGroup?.[0] === "image") {
-                        return { ...baseField, type: "image" }
-                    }
-
-                    // TODO: Add support for other mimetypes
-                }
-
-                if (field.items.linkType === "Entry") {
-                    const validationContentType = field?.items?.validations?.[0]?.linkContentType?.[0]
-                    const collectionId = collections?.[validationContentType]
-
-                    if (!validationContentType || !collectionId) {
-                        return { ...baseField, type: "string", isMissingReference: true }
-                    }
-
-                    return { ...baseField, type: "multiCollectionReference", collectionId }
-                }
-            }
-            return { ...baseField, type: "string" }
-        default:
-            return { ...baseField, type: "string" }
-    }
+export type ExtendedManagedCollectionField = ManagedCollectionField & {
+    isDisabled?: boolean
+    field?: ContentTypeField
+    isMissingReference?: boolean
 }
 
 export function App() {
@@ -106,36 +144,27 @@ export function App() {
     const [contentTypes, setContentTypes] = useState<ContentType[]>([])
     const [isAuthenticated, setIsAuthenticated] = useState(false) // contentful space and access token are set and valid
     const [contentType, setContentType] = useState<ContentType | null>(null)
-    const [slugFieldId, setSlugFieldId] = useState<string | null>(null)
-    const [mappedContentType, setMappedContentType] = useState<ExtendedManagedCollectionField[] | null>(null)
-    const filteredMappedContentType = useMemo(
-        () => mappedContentType?.filter(({ isDisabled, isMissingReference }) => !isDisabled && !isMissingReference),
-        [mappedContentType]
-    )
-
-    const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
 
     useEffect(() => {
-        async function mapContentType() {
-            if (contentType) {
-                const mappedContentType = await Promise.all(
-                    contentType.fields.map(async field => {
-                        const framerField = await getFramerFieldFromContentfulField(field)
+        async function cache() {
+            const contentTypeId = contentType?.sys?.id
 
-                        return {
-                            ...framerField,
-                            isDisabled: false,
-                            field,
-                        }
-                    })
-                )
-                setMappedContentType(mappedContentType)
-                setSlugFieldId(mappedContentType.find(field => field.type === "string")?.id ?? null)
-            }
+            if (!contentType) return
+
+            const collection = await framer.getManagedCollection()
+
+            const collectionsList = await framer.getPluginData("contentful:collections")
+            const collections = collectionsList ? JSON.parse(collectionsList) : {}
+            collections[contentTypeId] = collection
+            await framer.setPluginData("contentful:collections", JSON.stringify(collections))
         }
 
-        mapContentType()
+        if (contentType) {
+            cache()
+        }
     }, [contentType])
+
+    const fieldsRef = useRef<{ reset: () => void } | null>(null)
 
     const hasTriggeredSyncRef = useRef(false)
 
@@ -270,17 +299,9 @@ export function App() {
         const collection = await framer.getManagedCollection()
         await collection.setPluginData("contentTypeId", contentTypeId)
 
-        const collectionsList = await framer.getPluginData("contentful:collections")
-        const collections = collectionsList ? JSON.parse(collectionsList) : {}
-        collections[contentTypeId] = collection.id
-        await framer.setPluginData("contentful:collections", JSON.stringify(collections))
-
         setContentType(contentType)
 
         console.log("contentType", contentType)
-        // setContentType(contentTypeId)
-
-        // await importContentType(contentTypeId)
 
         setIsLoading(false)
     }
@@ -326,11 +347,59 @@ export function App() {
         }
     }
 
-    useEffect(() => {
-        console.log("contentType", contentType)
-        console.log("filteredMappedContentType", filteredMappedContentType)
-        // console.log("slugFieldId", slugFieldId)
-    }, [filteredMappedContentType, contentType])
+    const onSubmitFields = async (
+        slugFieldId: string | null,
+        mappedContentType: ExtendedManagedCollectionField[] | undefined
+    ) => {
+        console.log("onSubmitFields", slugFieldId, mappedContentType)
+
+        if (!mappedContentType) {
+            return
+        }
+
+        const collection = await framer.getManagedCollection()
+        await collection.setFields(mappedContentType as ManagedCollectionField[])
+
+        if (!contentType) {
+            return
+        }
+
+        // add entries
+        const entries = await getEntriesForContentType(contentType.sys.id)
+        console.log("entries", entries)
+
+        const mappedEntries = entries.map(entry => {
+            return {
+                id: entry.sys.id,
+                slug: entry.fields[slugFieldId ?? ""],
+                fieldData: Object.fromEntries(
+                    Object.entries(entry.fields)
+                        .filter(([id]) => mappedContentType.some(field => field.id === id))
+                        .map(([id, value]) => {
+                            const framerField = mappedContentType.find(field => field.id === id)
+
+                            if (!framerField) {
+                                console.log("framerField not found", id, value)
+                                return [id, value]
+                            }
+
+                            console.log(id, value, framerField)
+
+                            // @ts-expect-error Can't find the right type for the value
+                            const mappedValue = mapContentfulValueToFramerValue(value, framerField)
+
+                            return [id, mappedValue]
+                        })
+                ),
+            }
+        })
+
+        console.log("mappedEntries", mappedEntries)
+
+        // TODO: add only what is necessary
+
+        await collection.addItems(mappedEntries as CollectionItemData[])
+    }
 
     return (
         <div className="w-full px-[15px] flex flex-col flex-1 overflow-y-auto no-scrollbar">
@@ -343,18 +412,23 @@ export function App() {
                             const collection = await framer.getManagedCollection()
                             await collection.setPluginData("contentTypeId", "")
                             await collection.setPluginData("contentful", "")
-                            // await framer.setPluginData("contentful:collections", "")
+                            await framer.setPluginData("contentful:collections", "")
 
                             setContentfulConfig({ space: "", accessToken: "" })
                             setContentType(null)
-                            setMappedContentType(null)
+                            // setMappedContentType(null)
                             setContentTypes([])
                             setIsAuthenticated(false)
-                            setSlugFieldId(null)
+                            // setSlugFieldId(null)
+
+                            if (fieldsRef.current) {
+                                fieldsRef.current.reset()
+                            }
                         }}
                     >
                         reset
                     </button>
+
                     <button
                         onClick={async () => {
                             const collections = await framer.getPluginData("contentful:collections")
@@ -372,121 +446,14 @@ export function App() {
                     isLoading={isLoading}
                     onSubmit={onSubmitAuth}
                 />
-            ) : !mappedContentType ? (
+            ) : !contentType ? (
                 <ContentTypePicker
                     onSubmit={onSubmitPickContentType}
                     contentTypes={contentTypes}
                     isLoading={isLoading}
                 />
             ) : (
-                <form className="col gap-2 flex-1 text-tertiary">
-                    <div className="h-px border-b border-divider mb-2 sticky top-0" />
-                    <div className="flex flex-col gap-4 h-fit">
-                        <div className="flex flex-col gap-2 w-full">
-                            <label htmlFor="collectionName">Slug Field</label>
-                            <select
-                                className="w-full"
-                                value={slugFieldId ?? ""}
-                                onChange={e => setSlugFieldId(e.target.value)}
-                                required
-                            >
-                                {filteredMappedContentType
-                                    ?.filter(({ type }) => type === "string")
-                                    .map(({ id, name }) => (
-                                        <option key={id} value={id}>
-                                            {name}
-                                        </option>
-                                    ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols items-center grid-cols-fieldPicker gap-2.5 mb-auto overflow-hidden">
-                        <span className="col-span-2">Column</span>
-                        <span>Field</span>
-                        <span>Type</span>
-
-                        {mappedContentType
-                            .sort((a, b) => (a.isMissingReference ? 1 : b.isMissingReference ? -1 : 0))
-                            .map(({ name, type, id, isDisabled, isMissingReference, field }, index) => (
-                                <Fragment key={id}>
-                                    <CheckboxTextfield
-                                        disabled={Boolean(isMissingReference)} // if reference doesn't exist, disable the field
-                                        value={field?.name ?? ""}
-                                        checked={!isDisabled && !isMissingReference}
-                                        onChange={() => {
-                                            setMappedContentType(prev => {
-                                                if (!prev) return prev
-
-                                                const newMappedContentType = structuredClone(prev)
-                                                newMappedContentType[index].isDisabled =
-                                                    !newMappedContentType[index].isDisabled
-
-                                                return newMappedContentType
-                                            })
-                                        }}
-                                    />
-                                    <div className="flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
-                                            <path
-                                                d="M 3 11 L 6 8 L 3 5"
-                                                fill="transparent"
-                                                stroke-width="1.5"
-                                                stroke="#999"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                            />
-                                        </svg>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        className={cx("w-full", {
-                                            "opacity-50": isDisabled || isMissingReference,
-                                        })}
-                                        placeholder={name}
-                                        value={isMissingReference ? "Missing reference" : name}
-                                        disabled={isDisabled || isMissingReference}
-                                        onChange={e => {
-                                            setMappedContentType(prev => {
-                                                if (!prev) return prev
-
-                                                const newMappedContentType = structuredClone(prev)
-                                                newMappedContentType[index].name = e.target.value
-
-                                                return newMappedContentType
-                                            })
-                                        }}
-                                    />
-                                    <select
-                                        className={cx("w-full", {
-                                            "opacity-50": isDisabled || isMissingReference,
-                                        })}
-                                        value={type}
-                                        disabled={isDisabled || isMissingReference}
-                                        onChange={e => {
-                                            setMappedContentType(prev => {
-                                                if (!prev) return prev
-
-                                                const newMappedContentType = structuredClone(prev)
-                                                newMappedContentType[index].type = e.target.value as CollectionFieldType
-
-                                                return newMappedContentType
-                                            })
-                                        }}
-                                    >
-                                        {FIELD_TYPE_OPTIONS.map(({ type, label }) => (
-                                            <option value={type}>{label}</option>
-                                        ))}
-                                    </select>
-                                </Fragment>
-                            ))}
-                        {mappedContentType.length > 6 && !isAtBottom && <div className="scroll-fade"></div>}
-                        <div ref={scrollRef} className="h-0 w-0"></div>
-                    </div>
-                    <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full">
-                        <button type="submit" className="w-full">{`Import from ${contentType?.name}`}</button>
-                    </div>
-                </form>
+                <Fields ref={fieldsRef} contentType={contentType} onSubmit={onSubmitFields} />
             )}
         </div>
     )

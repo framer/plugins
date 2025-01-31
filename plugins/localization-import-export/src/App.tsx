@@ -8,7 +8,7 @@ import { IconGlobe } from "./IconGlobe"
 import { createValuesBySourceFromXliff, generateXliff, parseXliff } from "./xliff"
 
 framer.showUI({
-    width: 300,
+    width: 260,
     height: 350,
 })
 

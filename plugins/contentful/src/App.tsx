@@ -17,6 +17,7 @@ export function App() {
     const [contentTypes, setContentTypes] = useState<ContentType[]>([])
     const [isAuthenticated, setIsAuthenticated] = useState(false) // contentful space and access token are set and valid
     const [contentType, setContentType] = useState<ContentType | null>(null)
+    const [isMounted, setIsMounted] = useState(false)
 
     useEffect(() => {
         async function cache() {
@@ -24,12 +25,9 @@ export function App() {
             const collections = collectionsList ? JSON.parse(collectionsList) : {}
             const framerCollections = await framer.getCollections()
 
-            // console.log("collections", collections)
-            // console.log("framerCollections", framerCollections)
-
+            // delete collections that are not in framer
             Object.entries(collections).forEach(([key, value]) => {
                 if (!framerCollections.find(({ id }) => id === value?.id)) {
-                    console.log("delete collection", key)
                     delete collections[key]
                 }
             })
@@ -99,7 +97,12 @@ export function App() {
             }
         } else {
             try {
-                configure()
+                configure().then(() => {
+                    setTimeout(() => {
+                        setIsMounted(true)
+                    }, 0)
+                })
+
             } catch (error) {
                 console.error("Failed to configure Contentful plugin:", error)
                 framer.notify("Failed to configure Contentful plugin", { variant: "error" })
@@ -185,20 +188,11 @@ export function App() {
             }
         })
 
-        console.log("Added entries:", mappedEntries)
-
-        // if (hardRefresh) {
-        //     const ids = await collection.getItemIds()
-        //     await collection.removeItems(ids)
-        //     await collection.addItems(mappedEntries as CollectionItem[])
-        // } else {
         const existingEntriesIds = await collection.getItemIds()
 
         // const entriesToBeAdded = mappedEntries.filter(entry => !existingEntriesIds.includes(entry.id))
         const entriesToBeRemoved = existingEntriesIds.filter(id => !mappedEntries.some(entry => entry.id === id))
         const order = entries.map(entry => entry.sys.id)
-
-        // TODO: detect if fields has changed
 
         await collection.addItems(mappedEntries as CollectionItem[])
         await collection.removeItems(entriesToBeRemoved)
@@ -213,7 +207,7 @@ export function App() {
         //     })
         // }
 
-        // framer.closePlugin()
+        framer.closePlugin()
     }
 
     const onSubmitPickContentType = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -234,8 +228,6 @@ export function App() {
         await collection.setPluginData("contentTypeId", contentTypeId)
 
         setContentType(contentType)
-
-        // console.log("contentType", contentType)
 
         setIsLoading(false)
     }
@@ -270,7 +262,6 @@ export function App() {
 
             const contentTypesWithEntries = await fetchContentTypes()
 
-            // console.log("contentTypesWithEntries", JSON.stringify(contentTypesWithEntries, null, 2))
             setContentTypes(contentTypesWithEntries)
             setIsAuthenticated(true)
         } catch (error) {
@@ -294,8 +285,6 @@ export function App() {
         const collection = await framer.getManagedCollection()
         collection.setPluginData("slugFieldId", slugFieldId)
 
-        console.log("Added fields:", filteredMappedContentType)
-
         // const fields = await collection.getFields()
 
         const newFields = filteredMappedContentType.map(field => {
@@ -310,16 +299,16 @@ export function App() {
 
         await collection.setFields(newFields as ManagedCollectionField[])
 
-        // const hardRefresh =
-        //     newFields.length !== fields.length ||
-        //     newFields.some(field => field.type !== fields.find(f => f.id === field.id)?.type)
-
         await sync()
 
         setIsLoading(false)
     }
 
     if (framer.mode === "syncManagedCollection") {
+        return
+    }
+
+    if (!isMounted) {
         return
     }
 

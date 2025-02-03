@@ -122,11 +122,6 @@ export const Fields = forwardRef<
 
     const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
 
-    // useEffect(() => {
-    //     console.log("contentType", contentType)
-    //     console.log("filteredMappedContentType", filteredMappedContentType)
-    // }, [filteredMappedContentType, contentType])
-
     useImperativeHandle(ref, () => ({
         reset: () => {
             setMappedContentType(null)
@@ -141,30 +136,6 @@ export const Fields = forwardRef<
             resizable: false,
         })
     }, [mappedContentType])
-
-    // useEffect(() => {
-    //     async function check() {
-    //         // check plugin collections integrity
-    //         const collectionsList = await framer.getPluginData("contentful:collections")
-    //         const collections = collectionsList ? JSON.parse(collectionsList) : {}
-
-    //         console.log("collectionsList", collectionsList)
-    //         console.log("framerCollections", framerCollections)
-
-    //         Object.entries(collections).forEach(([key, value]) => {
-    //             if (!framerCollections.find(({ id }) => id === value?.id)) {
-    //                 console.log("delete collection", key)
-    //                 // delete collections[key]
-    //             }
-    //         })
-
-    //         await framer.setPluginData("contentful:collections", JSON.stringify(collections))
-    //     }
-
-
-
-    //     check()
-    // }, [mappedContentType, framerCollections])
 
     return (
         <form
@@ -263,7 +234,6 @@ export const Fields = forwardRef<
                                     value={type}
                                     disabled={isDisabled || isMissingReference}
                                     onChange={e => {
-                                        console.log("e", e.target.value)
                                         setMappedContentType(prev => {
                                             if (!prev) return prev
 

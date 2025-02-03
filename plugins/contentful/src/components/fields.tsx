@@ -1,5 +1,5 @@
 import { framer, ManagedCollectionField } from "framer-plugin"
-import { forwardRef, Fragment, useEffect, useImperativeHandle, useMemo, useState } from "react"
+import { forwardRef, Fragment, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useState } from "react"
 import { CheckboxTextfield } from "./checkbox-text-field"
 import cx from "classnames"
 import { useInView } from "react-intersection-observer"
@@ -122,10 +122,10 @@ export const Fields = forwardRef<
 
     const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
 
-    useEffect(() => {
-        console.log("contentType", contentType)
-        console.log("filteredMappedContentType", filteredMappedContentType)
-    }, [filteredMappedContentType, contentType])
+    // useEffect(() => {
+    //     console.log("contentType", contentType)
+    //     console.log("filteredMappedContentType", filteredMappedContentType)
+    // }, [filteredMappedContentType, contentType])
 
     useImperativeHandle(ref, () => ({
         reset: () => {
@@ -133,6 +133,38 @@ export const Fields = forwardRef<
             setSlugFieldId(null)
         },
     }))
+
+    useLayoutEffect(() => {
+        framer.showUI({
+            width: 320,
+            height:Math.max(345, Math.min(425, (mappedContentType?.length ?? 0) * 100)),
+            resizable: false,
+        })
+    }, [mappedContentType])
+
+    // useEffect(() => {
+    //     async function check() {
+    //         // check plugin collections integrity
+    //         const collectionsList = await framer.getPluginData("contentful:collections")
+    //         const collections = collectionsList ? JSON.parse(collectionsList) : {}
+
+    //         console.log("collectionsList", collectionsList)
+    //         console.log("framerCollections", framerCollections)
+
+    //         Object.entries(collections).forEach(([key, value]) => {
+    //             if (!framerCollections.find(({ id }) => id === value?.id)) {
+    //                 console.log("delete collection", key)
+    //                 // delete collections[key]
+    //             }
+    //         })
+
+    //         await framer.setPluginData("contentful:collections", JSON.stringify(collections))
+    //     }
+
+
+
+    //     check()
+    // }, [mappedContentType, framerCollections])
 
     return (
         <form
@@ -144,7 +176,7 @@ export const Fields = forwardRef<
             className="col gap-2 flex-1 text-tertiary"
         >
             <div className="h-px border-b border-divider mb-2 sticky top-0" />
-            <div className="flex flex-col gap-4 h-fit">
+            <div className="flex flex-col gap-4 h-fit pb-4">
                 <div className="flex flex-col gap-2 w-full">
                     <label htmlFor="collectionName">Slug Field</label>
                     <select

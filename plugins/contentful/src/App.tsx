@@ -1,6 +1,6 @@
 import { ContentType } from "contentful"
 import { CollectionItem, framer, ManagedCollectionField } from "framer-plugin"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { initContentful, getContentTypes, getEntriesForContentType, getContentType } from "./contentful"
 import { Auth } from "./components/auth"
 import { ContentTypePicker } from "./components/content-type-picker"
@@ -20,14 +20,28 @@ export function App() {
 
     useEffect(() => {
         async function cache() {
+            const collectionsList = await framer.getPluginData("contentful:collections")
+            const collections = collectionsList ? JSON.parse(collectionsList) : {}
+            const framerCollections = await framer.getCollections()
+
+            // console.log("collections", collections)
+            // console.log("framerCollections", framerCollections)
+
+            Object.entries(collections).forEach(([key, value]) => {
+                if (!framerCollections.find(({ id }) => id === value?.id)) {
+                    console.log("delete collection", key)
+                    delete collections[key]
+                }
+            })
+
+            await framer.setPluginData("contentful:collections", JSON.stringify(collections))
+
             const contentTypeId = contentType?.sys?.id
 
             if (!contentTypeId) return
 
             const collection = await framer.getManagedCollection()
 
-            const collectionsList = await framer.getPluginData("contentful:collections")
-            const collections = collectionsList ? JSON.parse(collectionsList) : {}
             collections[contentTypeId] = collection
             await framer.setPluginData("contentful:collections", JSON.stringify(collections))
         }
@@ -41,7 +55,18 @@ export function App() {
 
     const hasTriggeredSyncRef = useRef(false)
 
-    useEffect(() => {
+    useLayoutEffect(() => {
+        async function prefill() {
+            const contentfulConfig = await framer.getPluginData("contentful")
+            if (contentfulConfig) {
+                setContentfulConfig(JSON.parse(contentfulConfig))
+            }
+        }
+
+        prefill()
+    }, [])
+
+    useLayoutEffect(() => {
         async function configure() {
             setIsLoading(true)
 
@@ -63,11 +88,6 @@ export function App() {
                 }
             }
 
-            framer.showUI({
-                width: 340,
-                height: 370,
-                resizable: false,
-            })
             setIsLoading(false)
         }
 
@@ -85,17 +105,6 @@ export function App() {
                 framer.notify("Failed to configure Contentful plugin", { variant: "error" })
             }
         }
-    }, [])
-
-    useEffect(() => {
-        async function prefill() {
-            const contentfulConfig = await framer.getPluginData("contentful")
-            if (contentfulConfig) {
-                setContentfulConfig(JSON.parse(contentfulConfig))
-            }
-        }
-
-        prefill()
     }, [])
 
     const sync = async () => {
@@ -226,7 +235,7 @@ export function App() {
 
         setContentType(contentType)
 
-        console.log("contentType", contentType)
+        // console.log("contentType", contentType)
 
         setIsLoading(false)
     }
@@ -287,7 +296,7 @@ export function App() {
 
         console.log("Added fields:", filteredMappedContentType)
 
-        const fields = await collection.getFields()
+        // const fields = await collection.getFields()
 
         const newFields = filteredMappedContentType.map(field => {
             return {
@@ -310,47 +319,12 @@ export function App() {
         setIsLoading(false)
     }
 
+    if (framer.mode === "syncManagedCollection") {
+        return
+    }
+
     return (
         <div className="w-full px-[15px] flex flex-col flex-1 overflow-y-auto no-scrollbar">
-            {process.env.NODE_ENV === "development" && (
-                <>
-                    <button
-                        onClick={async () => {
-                            framer.setPluginData("contentful", "")
-
-                            const collection = await framer.getManagedCollection()
-                            await collection.setPluginData("contentTypeId", "")
-                            await collection.setPluginData("contentful", "")
-                            await framer.setPluginData("contentful:collections", "")
-
-                            setContentfulConfig({ space: "", accessToken: "" })
-                            setContentType(null)
-                            // setMappedContentType(null)
-                            setContentTypes([])
-                            setIsAuthenticated(false)
-                            // setSlugFieldId(null)
-
-                            if (fieldsRef.current) {
-                                fieldsRef.current.reset()
-                            }
-                        }}
-                    >
-                        reset
-                    </button>
-
-                    <button
-                        onClick={async () => {
-                            const collection = await framer.getManagedCollection()
-                            const collections = await framer.getPluginData("contentful:collections")
-                            const slugFieldId = await collection.getPluginData("slugFieldId")
-                            console.log(collections ? JSON.parse(collections) : "no collections")
-                            console.log(slugFieldId)
-                        }}
-                    >
-                        get collections
-                    </button>
-                </>
-            )}
             {!isAuthenticated ? (
                 <Auth
                     contentfulConfig={contentfulConfig}

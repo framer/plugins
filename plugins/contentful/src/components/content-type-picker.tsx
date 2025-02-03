@@ -1,4 +1,7 @@
 import { ContentType } from "contentful"
+import Logo from "../assets/splash.png"
+import { framer } from "framer-plugin"
+import { useLayoutEffect } from "react"
 
 export function ContentTypePicker({
     onSubmit,
@@ -9,8 +12,22 @@ export function ContentTypePicker({
     contentTypes: ContentType[]
     isLoading: boolean
 }) {
+
+    useLayoutEffect(() => {
+        framer.showUI({
+            width: 320,
+            height: 300,
+            resizable: false,
+        })
+    }, [])
+
     return (
         <form onSubmit={onSubmit} className="flex flex-col gap-2.5 text-tertiary">
+                        <img
+                src={Logo}
+                alt="Contentful Hero"
+                className="object-contain w-full mb-1 rounded-lg h-[200px] bg-contentful-orange bg-opacity-10"
+            />
             <div className="grid grid-cols-3 items-center gap-2.5">
                 <label htmlFor="contentType">Content Type</label>
                 <select id="contentType" className="w-full col-span-2">
@@ -22,7 +39,7 @@ export function ContentTypePicker({
                     ))}
                 </select>
             </div>
-            <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-4 mt-1.5 border-t border-divider border-opacity-20 items-center max-w-full">
+            <div className="sticky left-0 bottom-0 flex justify-between bg-primary mt-1 items-center max-w-full">
                 <button
                     type="submit"
                     disabled={isLoading}

@@ -8,5 +8,10 @@ export default defineConfig({
     plugins: [react(), mkcert(), framer()],
     build: {
         target: "ES2022",
+        rollupOptions: {
+            external: [
+              '@contentful/rich-text-types'
+            ]
+          }
     },
 })

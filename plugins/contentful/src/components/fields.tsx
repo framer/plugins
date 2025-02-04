@@ -16,13 +16,12 @@ const FIELD_TYPE_OPTIONS: { type: CollectionFieldType; label: string }[] = [
     { type: "string", label: "String" },
     { type: "formattedText", label: "Formatted Text" },
     { type: "image", label: "Image" },
-    // { type: "link", label: "Link" },
+    // { type: "link", label: "Link" }, // this is string
     { type: "date", label: "Date" },
-    // { type: "enum", label: "Option" }, // TODO: don't know how to handle this
-    // { type: "file", label: "File" }, // TODO: don't know how to handle this
+    // { type: "enum", label: "Option" }, // this doesn't make sense for the collection
+    // { type: "file", label: "File" }, // this cannot be handled by the plugin
 ]
 
-// Add interface for collection type
 interface Collection {
     id: string
     name: string
@@ -46,7 +45,6 @@ export const Fields = forwardRef<
         [mappedContentType]
     )
 
-    // Update the collections state type
     const [framerCollections, setFramerCollections] = useState<Collection[]>([])
 
     useEffect(() => {
@@ -109,7 +107,6 @@ export const Fields = forwardRef<
 
                         return field
                     })
-                    // .filter(field => field.isDisabled !== true)
                 }
 
                 setMappedContentType(mappedContentType as ExtendedManagedCollectionField[])

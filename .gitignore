@@ -42,3 +42,5 @@ plugins/**/yarn.lock
 plugins/**/package-lock.json
 plugins/**/pnpm-lock.yaml
 plugins/**/bun.lockb
+
+*.zip

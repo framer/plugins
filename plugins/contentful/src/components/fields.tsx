@@ -132,7 +132,7 @@ export const Fields = forwardRef<
     useLayoutEffect(() => {
         framer.showUI({
             width: 320,
-            height:Math.max(345, Math.min(425, (mappedContentType?.length ?? 0) * 100)),
+            height: Math.max(345, Math.min(425, (mappedContentType?.length ?? 0) * 100)),
             resizable: false,
         })
     }, [mappedContentType])
@@ -144,30 +144,28 @@ export const Fields = forwardRef<
 
                 onSubmit(slugFieldId, filteredMappedContentType)
             }}
-            className="col gap-2 flex-1 text-tertiary"
+            className="col gap-[10px] flex-1 text-tertiary"
         >
-            <div className="h-px border-b border-divider mb-2 sticky top-0" />
-            <div className="flex flex-col gap-4 h-fit pb-4">
-                <div className="flex flex-col gap-2 w-full">
-                    <label htmlFor="collectionName">Slug Field</label>
-                    <select
-                        className="w-full"
-                        value={slugFieldId ?? ""}
-                        onChange={e => setSlugFieldId(e.target.value)}
-                        required
-                    >
-                        {filteredMappedContentType
-                            ?.filter(({ type }) => type === "string")
-                            .map(({ id, name }) => (
-                                <option key={id} value={id}>
-                                    {name}
-                                </option>
-                            ))}
-                    </select>
-                </div>
+            <div className="h-px border-b border-divider mb-[5px] sticky top-0" />
+            <div className="flex flex-col gap-[10px] mb-[15px] w-full">
+                <label htmlFor="collectionName">Slug Field</label>
+                <select
+                    className="w-full"
+                    value={slugFieldId ?? ""}
+                    onChange={e => setSlugFieldId(e.target.value)}
+                    required
+                >
+                    {filteredMappedContentType
+                        ?.filter(({ type }) => type === "string")
+                        .map(({ id, name }) => (
+                            <option key={id} value={id}>
+                                {name}
+                            </option>
+                        ))}
+                </select>
             </div>
 
-            <div className="grid grid-cols items-center grid-cols-fieldPicker gap-2.5 mb-auto overflow-hidden">
+            <div className="grid grid-cols items-center grid-cols-fieldPicker gap-[10px] mb-auto overflow-hidden">
                 <span className="col-span-2">Column</span>
                 <span>Field</span>
                 <span>Type</span>
@@ -257,7 +255,7 @@ export const Fields = forwardRef<
                                                 {label}
                                             </option>
                                         ))
-                                    )}
+                                    )} 
                                 </select>
                             </Fragment>
                         )
@@ -267,7 +265,7 @@ export const Fields = forwardRef<
                 )}
                 <div ref={scrollRef} className="h-0 w-0"></div>
             </div>
-            <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full">
+            <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-[15px] border-t border-divider border-opacity-20 items-center max-w-full">
                 <button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Importing..." : `Import from ${contentType?.name}`}
                 </button>

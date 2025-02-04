@@ -48,7 +48,7 @@
         z-index: 10;
         position: absolute;
         left: 0;
-        bottom: 63px;
+        bottom: 61px;
     }
 
     [data-framer-theme="light"] .scroll-fade {

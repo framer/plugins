@@ -131,7 +131,7 @@ export const Fields = forwardRef<
 
     useLayoutEffect(() => {
         framer.showUI({
-            width: 320,
+            width: 340,
             height: Math.max(345, Math.min(425, (mappedContentType?.length ?? 0) * 100)),
             resizable: false,
         })

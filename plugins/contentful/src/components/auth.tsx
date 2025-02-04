@@ -32,7 +32,7 @@ export function Auth({
                 <img
                     src={Logo}
                     alt="Contentful Hero"
-                    className="object-contain w-full rounded-lg h-[200px] bg-contentful-orange bg-opacity-10"
+                    className="object-contain w-full rounded-[10px] h-[200px] bg-contentful-orange bg-opacity-10"
 
                 />
                 <div className="flex flex-col gap-[10px] text-secondary">

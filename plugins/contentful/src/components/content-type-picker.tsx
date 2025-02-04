@@ -25,7 +25,7 @@ export function ContentTypePicker({
             <img
                 src={Logo}
                 alt="Contentful Hero"
-                className="object-contain w-full rounded-lg h-[200px] bg-contentful-orange bg-opacity-10"
+                className="object-contain w-full rounded-[10px] h-[200px] bg-contentful-orange bg-opacity-10"
             />
             <div className="row justify-between items-center items-center">
                 <label htmlFor="contentType" className="ml-[15px]">Content Type</label>

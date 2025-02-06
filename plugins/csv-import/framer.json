@@ -1,0 +1,6 @@
+{
+    "id": "cbaf26",
+    "name": "CSV Import",
+    "modes": ["collection"],
+    "icon": "/icon.svg"
+}

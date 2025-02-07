@@ -1,0 +1,71 @@
+.import-collection,
+.manage-conflicts {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+    height: 100%;
+    padding: 0 15px 15px 15px;
+}
+
+.actions {
+    display: flex;
+    max-width: 100%;
+    gap: 10px;
+}
+
+.actions button {
+    flex: 1;
+}
+
+/* Main screen */
+
+.dropzone {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 45px 0 45px 0;
+    margin: 0;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    background-color: rgba(0, 153, 255, 0.1);
+    line-height: 1;
+    cursor: pointer;
+}
+
+.file-input {
+    opacity: 0;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.subtle {
+    line-height: 1.6;
+}
+
+.ordered-list {
+    padding: 0 25px 0 15px;
+    margin: 0;
+    list-style-position: inside;
+}
+.ordered-list li:not(:first-child) {
+    padding-top: 0.4em;
+}
+
+/* Manage conflicts screen */
+
+.apply-to-all {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
+}

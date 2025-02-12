@@ -392,6 +392,12 @@ function processSheetRow({
         return null
     }
 
+    for (const headerRowName of uniqueHeaderRowNames) {
+        if (!(headerRowName in fieldData)) {
+            fieldData[headerRowName] = null
+        }
+    }
+
     return {
         id: itemId,
         slug: slugValue,

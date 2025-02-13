@@ -36,6 +36,17 @@
     background-color: rgba(0, 153, 255, 0.1);
     line-height: 1;
     cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px dashed transparent;
+}
+
+.dropzone .dragging {
+    background-color: rgba(0, 153, 255, 0.2);
+    border-color: #09f;
+}
+
+.dropzone .dragging path {
+    fill: #007acc;
 }
 
 .file-input {

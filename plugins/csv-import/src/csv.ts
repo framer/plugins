@@ -33,7 +33,7 @@ export async function parseCSV(data: string): Promise<CSVRecord[]> {
     // Delimiters to try
     // ,  = pretty much the default
     // \t = more common when copy-pasting (e.g. Google Sheets)
-    // ;  = what spreadsheet apps (e.g. Numbers) use when you’re using a locale
+    // ;  = what spreadsheet apps (e.g. Numbers) use when you're using a locale
     //      that already uses , for decimal separation
     // Check of , and \t will be combined as this will cover most cases, falls back to ;
     const delimiters = [",", "\t", ";"]
@@ -78,10 +78,7 @@ class ImportError extends Error {
      * @param variant Notification variant to show the user
      * @param message Message to show the user
      */
-    constructor(
-        readonly variant?: "error" | "warning",
-        message?: string
-    ) {
+    constructor(readonly variant?: "error" | "warning", message?: string) {
         super(message)
     }
 }
@@ -147,7 +144,7 @@ function getRecordValueForField(
             const referencedSlug = value.trim()
             const referencedId = allItemIdBySlug.get(field.collectionId)?.get(referencedSlug)
             if (!referencedId) {
-                return new ConversionError(`Invalid collection reference “${value}”`)
+                return new ConversionError(`Invalid Collection reference “${value}”`)
             }
 
             return referencedId
@@ -161,7 +158,7 @@ function getRecordValueForField(
             for (const slug of referencedSlugs) {
                 const referencedId = allItemIdBySlug.get(field.collectionId)?.get(slug)
                 if (!referencedId) {
-                    return new ConversionError(`Invalid collection reference “${slug}”`)
+                    return new ConversionError(`Invalid Collection reference “${slug}”`)
                 }
                 referencedIds.push(referencedId)
             }
@@ -174,12 +171,12 @@ function getRecordValueForField(
     }
 }
 
-/** Importer for “records”: string based values with named keys */
+/** Importer for "records": string based values with named keys */
 export async function processRecords(collection: Collection, records: CSVRecord[]) {
     const existingItems = await collection.getItems()
 
     if (!collection.slugFieldName) {
-        throw new ImportError("error", "Import failed. Ensure your CMS collection only has one Slug field.")
+        throw new ImportError("error", "Import failed. Ensure your CMS Collection only has one Slug field.")
     }
 
     let slugFieldIndex: number | undefined
@@ -219,7 +216,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
             if (!collection) {
                 throw new ImportError(
                     "error",
-                    `Import failed. “${field.name}” references a collection that doesn’t exist.`
+                    `Import failed. “${field.name}” references a Collection that doesn’t exist.`
                 )
             }
 
@@ -349,7 +346,9 @@ export async function importCSV(collection: Collection, result: ImportResult) {
     const { skippedValueCount, skippedValueKeys } = result.warnings
     if (skippedValueCount > 0) {
         framer.notify(
-            `Skipped ${skippedValueCount} ${skippedValueCount === 1 ? "value" : "values"} for ${skippedValueKeys.size} ${skippedValueKeys.size === 1 ? "field" : "fields"} (${summary([...skippedValueKeys], 3)})`,
+            `Skipped ${skippedValueCount} ${skippedValueCount === 1 ? "value" : "values"} for ${
+                skippedValueKeys.size
+            } ${skippedValueKeys.size === 1 ? "field" : "fields"} (${summary([...skippedValueKeys], 3)})`,
             {
                 variant: "warning",
                 durationMs: TOAST_DURATION,
@@ -357,7 +356,7 @@ export async function importCSV(collection: Collection, result: ImportResult) {
         )
     }
 
-    await framer.closePlugin(text ?? "Successfully imported collection", {
+    await framer.closePlugin(text ?? "Successfully imported Collection", {
         variant: "success",
     })
 }
@@ -381,7 +380,7 @@ function summary(items: string[], max: number) {
     if (items.length === 0) {
         return "none"
     }
-    // Go one past the max, because we’ll add a sentinel anyway
+    // Go one past the max, because we'll add a sentinel anyway
     if (items.length > max + 1) {
         items = items.slice(0, max).concat([`${items.length - max} more`])
     }

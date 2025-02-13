@@ -99,9 +99,13 @@ const BOOLEAN_TRUTHY_VALUES = /1|y(?:es)?|true/iu
 
 function getRecordValueForField(
     field: CollectionField,
-    value: string,
+    value: string | null,
     allItemIdBySlug: Map<string, Map<string, string>>
 ) {
+    if (value === null) {
+        return undefined
+    }
+
     switch (field.type) {
         case "string":
         case "formattedText":
@@ -248,9 +252,6 @@ export async function processRecords(collection: Collection, records: CSVRecord[
         const fieldData: Record<string, unknown> = {}
         for (const field of fields) {
             const value = findRecordValue(record, field.name)
-            if (typeof value !== "string") {
-                throw new ConversionError(`Invalid value for field “${field.name}”`)
-            }
 
             const fieldValue = getRecordValueForField(field, value, allItemIdBySlug)
 
@@ -260,7 +261,9 @@ export async function processRecords(collection: Collection, records: CSVRecord[
                 continue
             }
 
-            fieldData[field.id] = fieldValue
+            if (fieldValue !== undefined) {
+                fieldData[field.id] = fieldValue
+            }
         }
 
         const item: ImportResultItem = {

@@ -3,15 +3,24 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 12px;
     text-align: left;
     height: 100%;
     padding: 0 15px 15px 15px;
+    color: #666;
+}
+
+.import-collection {
+    gap: 20px;
+}
+
+.manage-conflicts {
+    gap: 10px;
 }
 
 .actions {
     display: flex;
     max-width: 100%;
+    margin-top: 5px;
     gap: 10px;
 }
 
@@ -28,34 +37,31 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 45px 0 45px 0;
     margin: 0;
     width: 100%;
-    height: auto;
+    min-height: 170px;
     border-radius: 8px;
-    background-color: rgba(0, 153, 255, 0.1);
+    background-color: color-mix(in srgb, var(--framer-color-tint) 10%, transparent);
     line-height: 1;
-    cursor: pointer;
     transition: all 0.2s ease;
-    border: 2px dashed transparent;
+    border: 1px dashed transparent;
 }
 
-.dropzone .dragging {
-    background-color: rgba(0, 153, 255, 0.2);
-    border-color: #09f;
+.dropzone.dragging {
+    border-color: var(--framer-color-tint);
 }
 
-.dropzone .dragging path {
-    fill: #007acc;
+.dropzone p {
+    color: var(--framer-color-tint);
+    font-weight: 600;
 }
 
 .file-input {
-    opacity: 0;
+    visibility: hidden;
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
-    cursor: pointer;
     z-index: 1;
 }
 
@@ -64,19 +70,35 @@
 }
 
 .ordered-list {
-    padding: 0 25px 0 15px;
     margin: 0;
-    list-style-position: inside;
+    list-style-position: outside;
+    padding-left: 1.2em;
+    text-wrap: balance;
 }
+
 .ordered-list li:not(:first-child) {
     padding-top: 0.4em;
 }
 
 /* Manage conflicts screen */
 
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
 .apply-to-all {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 5px;
+    cursor: pointer;
+    width: fit-content;
 }

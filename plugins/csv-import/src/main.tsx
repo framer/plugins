@@ -11,12 +11,12 @@ if (!root) throw new Error("Root element not found")
 const collection = await framer.getActiveCollection()
 
 if (!collection) {
-    framer.closePlugin("Please select a collection to import into")
+    framer.closePlugin("Please select a Collection to import into")
     throw new Error()
 }
 
 if (collection.readonly) {
-    framer.closePlugin("CSV Import can only be used on writable collections")
+    framer.closePlugin("CSV Import can only be used on writable Collections")
     throw new Error()
 }
 

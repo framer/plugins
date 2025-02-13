@@ -118,6 +118,8 @@ export function App({ collection }: { collection: Collection }) {
 
     const itemsWithConflict = useMemo(() => result?.items.filter(item => item.action === "conflict") ?? [], [result])
 
+    const [isDragging, setIsDragging] = useState(false)
+
     useEffect(() => {
         framer.showUI({
             width: 340,
@@ -136,6 +138,31 @@ export function App({ collection }: { collection: Collection }) {
             resizable: false,
         })
     }, [itemsWithConflict])
+
+    useEffect(() => {
+        const handleDragOver = (e: DragEvent) => {
+            e.preventDefault()
+            setIsDragging(true)
+        }
+
+        const handleDragLeave = (e: DragEvent) => {
+            if (!e.relatedTarget || !(e.currentTarget as Node).contains(e.relatedTarget as Node)) {
+                setIsDragging(false)
+            }
+        }
+
+        const handleDrop = () => setIsDragging(false)
+
+        window.addEventListener("dragover", handleDragOver)
+        window.addEventListener("dragleave", handleDragLeave)
+        window.addEventListener("drop", handleDrop)
+
+        return () => {
+            window.removeEventListener("dragover", handleDragOver)
+            window.removeEventListener("dragleave", handleDragLeave)
+            window.removeEventListener("drop", handleDrop)
+        }
+    }, [])
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -198,7 +225,7 @@ export function App({ collection }: { collection: Collection }) {
 
     return (
         <form ref={form} className="import-collection" onSubmit={handleSubmit}>
-            <div className="dropzone">
+            <div className={`dropzone ${isDragging ? "dragging" : ""}`}>
                 <input
                     id="file-input"
                     type="file"
@@ -219,7 +246,7 @@ export function App({ collection }: { collection: Collection }) {
                     </a>{" "}
                     and prepare your data
                 </li>
-                <li>Set up your collection fields in Framer to match the names of your CSV fields</li>
+                <li>Set up your Collection fields in Framer to match the names of your CSV fields</li>
                 <li>Upload your CSV</li>
             </ol>
 

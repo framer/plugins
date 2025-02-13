@@ -83,10 +83,10 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
             className="manage-conflicts"
         >
             <div className="content">
-                <p>
-                    An item with the slug <span style={{ fontWeight: "bold" }}>{currentRecord.slug}</span> already
-                    exists
-                </p>
+                <div className="message">
+                    <span style={{ fontWeight: 600 }}>“{currentRecord.slug}”</span>
+                    <p>An item with this slug field value already exists in this Collection.</p>
+                </div>
 
                 <label className="apply-to-all">
                     <input
@@ -99,11 +99,15 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
                 </label>
             </div>
 
+            <hr />
+
             <div className="actions">
                 <button type="button" onClick={async () => applyAction("onConflictSkip")}>
                     Skip Item
                 </button>
-                <button type="submit">Update Item</button>
+                <button type="submit" className="framer-button-primary">
+                    Update Item
+                </button>
             </div>
         </form>
     )
@@ -113,7 +117,6 @@ export function App({ collection }: { collection: Collection }) {
     const form = useRef<HTMLFormElement>(null)
     const inputOpenedFromImportButton = useRef(false)
 
-    const [fileName, setFileName] = useState<string | null>(null)
     const [result, setResult] = useState<ImportResult | null>(null)
 
     const itemsWithConflict = useMemo(() => result?.items.filter(item => item.action === "conflict") ?? [], [result])
@@ -122,8 +125,8 @@ export function App({ collection }: { collection: Collection }) {
 
     useEffect(() => {
         framer.showUI({
-            width: 340,
-            height: 370,
+            width: 300,
+            height: 336,
             resizable: false,
         })
     }, [])
@@ -134,33 +137,48 @@ export function App({ collection }: { collection: Collection }) {
         }
 
         framer.showUI({
-            height: 150,
+            width: 260,
+            height: 165,
             resizable: false,
         })
     }, [itemsWithConflict])
 
     useEffect(() => {
+        if (!form.current) return
+
         const handleDragOver = (e: DragEvent) => {
             e.preventDefault()
             setIsDragging(true)
         }
 
         const handleDragLeave = (e: DragEvent) => {
-            if (!e.relatedTarget || !(e.currentTarget as Node).contains(e.relatedTarget as Node)) {
+            if (!e.relatedTarget) {
                 setIsDragging(false)
             }
         }
 
-        const handleDrop = () => setIsDragging(false)
+        const handleDrop = async (e: DragEvent) => {
+            e.preventDefault()
+            setIsDragging(false)
 
-        window.addEventListener("dragover", handleDragOver)
-        window.addEventListener("dragleave", handleDragLeave)
-        window.addEventListener("drop", handleDrop)
+            const file = e.dataTransfer?.files[0]
+            if (!file || !file.name.endsWith(".csv")) return
+
+            const input = document.getElementById("file-input") as HTMLInputElement
+            const dataTransfer = new DataTransfer()
+            dataTransfer.items.add(file)
+            input.files = dataTransfer.files
+            form.current?.requestSubmit()
+        }
+
+        form.current?.addEventListener("dragover", handleDragOver)
+        form.current?.addEventListener("dragleave", handleDragLeave)
+        form.current?.addEventListener("drop", handleDrop)
 
         return () => {
-            window.removeEventListener("dragover", handleDragOver)
-            window.removeEventListener("dragleave", handleDragLeave)
-            window.removeEventListener("drop", handleDrop)
+            form.current?.removeEventListener("dragover", handleDragOver)
+            form.current?.removeEventListener("dragleave", handleDragLeave)
+            form.current?.removeEventListener("drop", handleDrop)
         }
     }, [])
 
@@ -195,9 +213,7 @@ export function App({ collection }: { collection: Collection }) {
     }
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const file = event.currentTarget.files?.[0]
-        if (!file) return setFileName(null)
-        setFileName(file.name)
+        if (!event.currentTarget.files?.[0]) return
         if (inputOpenedFromImportButton.current) {
             form.current?.requestSubmit()
         }
@@ -225,44 +241,60 @@ export function App({ collection }: { collection: Collection }) {
 
     return (
         <form ref={form} className="import-collection" onSubmit={handleSubmit}>
-            <div className={`dropzone ${isDragging ? "dragging" : ""}`}>
-                <input
-                    id="file-input"
-                    type="file"
-                    name="file"
-                    className="file-input"
-                    accept=".csv"
-                    required
-                    onChange={handleFileChange}
-                />
-                <ImportIcon />
-                <p className="dropzone-text">{fileName ?? "Drag and drop a CSV file here"}</p>
-            </div>
-
-            <ol className="ordered-list">
-                <li>
-                    <a href={importGuideURL} target="_blank" rel="noopener noreferrer">
-                        Read the guide
-                    </a>{" "}
-                    and prepare your data
-                </li>
-                <li>Set up your Collection fields in Framer to match the names of your CSV fields</li>
-                <li>Upload your CSV</li>
-            </ol>
-
-            <button
-                onClick={event => {
-                    if (fileName) return
-
-                    event.preventDefault()
-                    inputOpenedFromImportButton.current = true
-
-                    const input = document.getElementById("file-input") as HTMLInputElement
-                    input.click()
+            <input
+                id="file-input"
+                type="file"
+                name="file"
+                className="file-input"
+                accept=".csv"
+                required
+                onChange={handleFileChange}
+                style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    opacity: 0,
+                    cursor: "pointer",
                 }}
-            >
-                Import
-            </button>
+            />
+
+            {isDragging && <div className="dropzone dragging">{isDragging && <p>Drop CSV file to import</p>}</div>}
+
+            {!isDragging && (
+                <>
+                    <div className="dropzone">
+                        <ImportIcon />
+                    </div>
+                    <ol className="ordered-list">
+                        <li>
+                            <a
+                                href={importGuideURL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ fontWeight: 600 }}
+                            >
+                                Read the guide
+                            </a>{" "}
+                            and prepare your data
+                        </li>
+                        <li>Set up your Collection fields in Framer to match the names of your CSV fields</li>
+                        <li>Upload your CSV</li>
+                    </ol>
+                    <button
+                        className="framer-button-primary"
+                        onClick={event => {
+                            event.preventDefault()
+                            inputOpenedFromImportButton.current = true
+
+                            const input = document.getElementById("file-input") as HTMLInputElement
+                            input.click()
+                        }}
+                    >
+                        Upload File
+                    </button>
+                </>
+            )}
         </form>
     )
 }

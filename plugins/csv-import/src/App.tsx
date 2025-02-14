@@ -84,7 +84,7 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
         >
             <div className="content">
                 <div className="message">
-                    <span style={{ fontWeight: 600 }}>“{currentRecord.slug}”</span>
+                    <span style={{ color: "var(--framer-color-text)", fontWeight: 600 }}>“{currentRecord.slug}”</span>
                     <p>An item with this slug field value already exists in this Collection.</p>
                 </div>
 

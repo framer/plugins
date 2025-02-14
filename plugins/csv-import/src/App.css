@@ -6,11 +6,11 @@
     text-align: left;
     height: 100%;
     padding: 0 15px 15px 15px;
-    color: #666;
 }
 
 .import-collection {
     gap: 20px;
+    color: #666;
 }
 
 .manage-conflicts {
@@ -101,4 +101,5 @@
     gap: 8px;
     cursor: pointer;
     width: fit-content;
+    color: #666;
 }

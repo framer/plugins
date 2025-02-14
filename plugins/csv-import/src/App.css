@@ -1,0 +1,105 @@
+.import-collection,
+.manage-conflicts {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: left;
+    height: 100%;
+    padding: 0 15px 15px 15px;
+}
+
+.import-collection {
+    gap: 20px;
+    color: #666;
+}
+
+.manage-conflicts {
+    gap: 10px;
+}
+
+.actions {
+    display: flex;
+    max-width: 100%;
+    margin-top: 5px;
+    gap: 10px;
+}
+
+.actions button {
+    flex: 1;
+}
+
+/* Main screen */
+
+.dropzone {
+    position: relative;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    width: 100%;
+    min-height: 170px;
+    border-radius: 8px;
+    background-color: color-mix(in srgb, var(--framer-color-tint) 10%, transparent);
+    line-height: 1;
+    transition: all 0.2s ease;
+    border: 1px dashed transparent;
+}
+
+.dropzone.dragging {
+    border-color: var(--framer-color-tint);
+}
+
+.dropzone p {
+    color: var(--framer-color-tint);
+    font-weight: 600;
+}
+
+.file-input {
+    visibility: hidden;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.subtle {
+    line-height: 1.6;
+}
+
+.ordered-list {
+    margin: 0;
+    list-style-position: outside;
+    padding-left: 1.2em;
+    text-wrap: balance;
+}
+
+.ordered-list li:not(:first-child) {
+    padding-top: 0.4em;
+}
+
+/* Manage conflicts screen */
+
+.content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 100%;
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.apply-to-all {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    width: fit-content;
+    color: #666;
+}

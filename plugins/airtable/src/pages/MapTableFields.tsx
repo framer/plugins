@@ -1,29 +1,35 @@
-import { Fragment, useEffect, useMemo, useState } from "react"
-import { ManagedCollectionField } from "framer-plugin"
-import { useInView } from "react-intersection-observer"
 import cx from "classnames"
-import { assert, isDefined } from "../utils"
-import { AirtableTableSchema } from "../api"
+import type { ManagedCollectionField } from "framer-plugin"
+import { Fragment, useEffect, useMemo, useState } from "react"
+import { useInView } from "react-intersection-observer"
 import {
     createFieldConfig,
-    ManagedCollectionFieldConfig,
+    type ManagedCollectionFieldConfig,
     mergeField,
-    PluginContext,
-    PluginContextNew,
-    PluginContextUpdate,
-    SyncMutationOptions,
-    SyncProgress,
-    TableIdMap,
+    type PluginContext,
+    type PluginContextNew,
+    type PluginContextUpdate,
+    type SyncMutationOptions,
+    type SyncProgress,
+    type TableIdMap,
 } from "../airtable"
+import type { AirtableTableSchema } from "../api"
+import { assert, isDefined } from "../utils"
 
+import { CheckboxTextfield } from "@/components/CheckboxTextField"
 import { Button } from "../components/Button"
 import { IconChevron } from "../components/Icons"
-import { CheckboxTextfield } from "@/components/CheckboxTextField"
 
-const getInitialSlugFieldId = (context: PluginContext, primaryFieldId: string): string | null => {
+const getInitialSlugFieldId = (context: PluginContext, slugFields: ManagedCollectionField[]): string | null => {
     if (context.type === "update" && context.slugFieldId) return context.slugFieldId
 
-    return primaryFieldId
+    const [firstSlugField] = slugFields
+
+    if (!firstSlugField) {
+        return null
+    }
+
+    return firstSlugField.id
 }
 
 const getLastSyncedTime = (
@@ -87,9 +93,6 @@ interface Props {
 
 export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, isPending, tableSchema }: Props) {
     const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
-    const [slugFieldId, setSlugFieldId] = useState<string | null>(() =>
-        getInitialSlugFieldId(pluginContext, tableSchema.primaryFieldId)
-    )
     const [remoteFieldConfig] = useState<ManagedCollectionFieldConfig[]>(() =>
         createFieldConfig(null, tableSchema.primaryFieldId, tableSchema.fields, pluginContext.tableMapId)
     )
@@ -99,12 +102,15 @@ export function MapTableFieldsPage({ baseId, tableId, pluginContext, onSubmit, i
     const [disabledFieldIds, setDisabledFieldIds] = useState(
         () => new Set<string>(pluginContext.type === "update" ? pluginContext.ignoredFieldIds : [])
     )
-    const [fieldNameOverrides, setFieldNameOverrides] = useState<Record<string, string>>(() =>
-        getFieldNameOverrides(pluginContext)
-    )
     const slugFields = useMemo(
         () => getPossibleSlugFields(fieldConfig).filter(field => !disabledFieldIds.has(field.id)),
         [fieldConfig, disabledFieldIds]
+    )
+    const [slugFieldId, setSlugFieldId] = useState<string | null>(() =>
+        getInitialSlugFieldId(pluginContext, slugFields)
+    )
+    const [fieldNameOverrides, setFieldNameOverrides] = useState<Record<string, string>>(() =>
+        getFieldNameOverrides(pluginContext)
     )
 
     // TODO: Render progress in UI

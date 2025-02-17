@@ -344,9 +344,9 @@ export async function importCSV(collection: Collection, result: ImportResult) {
     }
 
     const finalMessage = messages.join(". ")
-    await framer.closePlugin(finalMessage || "Successfully imported Collection", {
-        variant: messages.length > 1 ? "warning" : "success",
-    })
+    await framer.closePlugin(
+        messages.length > 1 ? finalMessage + "." : finalMessage || "Successfully imported Collection"
+    )
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

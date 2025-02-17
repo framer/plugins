@@ -206,7 +206,7 @@ export function App({ collection }: { collection: Collection }) {
             await importItems(result)
         } catch (error) {
             console.error(error)
-            framer.notify("An error occurred while processing the CSV file. Checkout the logs", {
+            framer.notify("Error processing CSV file. Check console for details.", {
                 variant: "error",
             })
         }

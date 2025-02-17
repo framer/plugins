@@ -283,8 +283,6 @@ export async function processRecords(collection: Collection, records: CSVRecord[
     return result
 }
 
-const TOAST_DURATION = 5000
-
 export async function importCSV(collection: Collection, result: ImportResult) {
     const totalItems = result.items.length
     const totalAdded = result.items.filter(item => item.action === "add").length
@@ -310,57 +308,44 @@ export async function importCSV(collection: Collection, result: ImportResult) {
             )
     )
 
-    const textMessages: string[] = []
+    const messages: string[] = []
     if (totalAdded > 0) {
-        textMessages.push(`Added ${totalAdded} ${totalAdded === 1 ? "item" : "items"}`)
+        messages.push(`Added ${totalAdded} ${totalAdded === 1 ? "item" : "items"}`)
     }
     if (totalUpdated > 0) {
-        textMessages.push(`Updated ${totalUpdated} ${totalUpdated === 1 ? "item" : "items"}`)
+        messages.push(`Updated ${totalUpdated} ${totalUpdated === 1 ? "item" : "items"}`)
     }
     if (totalSkipped > 0) {
-        textMessages.push(`Skipped ${totalSkipped} ${totalSkipped === 1 ? "item" : "items"}`)
+        messages.push(`Skipped ${totalSkipped} ${totalSkipped === 1 ? "item" : "items"}`)
     }
 
-    const text = textMessages.length > 1 ? `${textMessages.join(". ")}.` : textMessages[0]
-
     if (result.warnings.missingSlugCount > 0) {
-        framer.notify(
+        messages.push(
             `Skipped ${result.warnings.missingSlugCount} ${
                 result.warnings.missingSlugCount === 1 ? "item" : "items"
-            } because of missing slug field.`,
-            {
-                variant: "warning",
-                durationMs: TOAST_DURATION,
-            }
+            } because of missing slug field`
         )
     }
     if (result.warnings.doubleSlugCount > 0) {
-        framer.notify(
+        messages.push(
             `Skipped ${result.warnings.doubleSlugCount} ${
                 result.warnings.doubleSlugCount === 1 ? "item" : "items"
-            } because of duplicate slug.`,
-            {
-                variant: "warning",
-                durationMs: TOAST_DURATION,
-            }
+            } because of duplicate slugs`
         )
     }
 
     const { skippedValueCount, skippedValueKeys } = result.warnings
     if (skippedValueCount > 0) {
-        framer.notify(
+        messages.push(
             `Skipped ${skippedValueCount} ${skippedValueCount === 1 ? "value" : "values"} for ${
                 skippedValueKeys.size
-            } ${skippedValueKeys.size === 1 ? "field" : "fields"} (${summary([...skippedValueKeys], 3)})`,
-            {
-                variant: "warning",
-                durationMs: TOAST_DURATION,
-            }
+            } ${skippedValueKeys.size === 1 ? "field" : "fields"} (${summary([...skippedValueKeys], 3)})`
         )
     }
 
-    await framer.closePlugin(text ?? "Successfully imported Collection", {
-        variant: "success",
+    const finalMessage = messages.join(". ")
+    await framer.closePlugin(finalMessage || "Successfully imported Collection", {
+        variant: messages.length > 1 ? "warning" : "success",
     })
 }
 

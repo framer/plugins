@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@ataverascrespo/react18-ts-textfit": "^1.0.0",
-    "@triozer/framer-toolbox": "^0.1.14",
+    "@triozer/framer-toolbox": "^0",
     "aveta": "^1.4.1",
-    "framer-plugin": "^1.1.0",
+    "framer-plugin": "^2",
     "react": "^18",
     "react-dom": "^18",
     "react-error-boundary": "^4.0.13",

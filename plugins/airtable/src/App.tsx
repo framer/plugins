@@ -1,196 +1,83 @@
+import "./App.css"
+
+import type { ManagedCollection } from "framer-plugin"
+
 import { framer } from "framer-plugin"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
-import {
-    createFieldConfig,
-    getTableIdMapForBase,
-    PluginContext,
-    PluginContextNew,
-    PluginContextUpdate,
-    syncTable,
-} from "./airtable"
-import { useBaseSchemaQuery, useSyncTableMutation } from "./api"
-import { assert, isDefined } from "./utils"
-import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
-import { Authenticate } from "./pages/Authenticate"
-import { MapTableFieldsPage } from "./pages/MapTableFields"
-import { SelectTablePage } from "./pages/SelectTable"
-import { CenteredSpinner } from "./components/CenteredSpinner"
-import { NoTableAccess } from "./pages/NoTableAccess"
+import { useEffect, useLayoutEffect, useState } from "react"
+import { inferFields, type DataSource } from "./data"
+import { FieldMapping } from "./FieldMapping"
+import { SelectDataSource } from "./SelectDataSource"
+import { fetchTable } from "./api"
+import { NoTableAccess } from "./NoAccess"
 
 interface AppProps {
-    pluginContext: PluginContext
+    collection: ManagedCollection
+    previousBaseId: string | null
+    previousTableId: string | null
+    previousSlugFieldId: string | null
 }
 
-interface AuthenticatedAppProps {
-    pluginContext: PluginContextNew | PluginContextUpdate
-}
-
-const useLoggingToggle = () => {
-    useEffect(() => {
-        const isLoggingEnabled = () => localStorage.getItem(PLUGIN_LOG_SYNC_KEY) === "true"
-
-        const toggle = () => {
-            const newState = !isLoggingEnabled()
-            localStorage.setItem(PLUGIN_LOG_SYNC_KEY, newState ? "true" : "false")
-            framer.notify(`Logging ${newState ? "enabled" : "disabled"}`, { variant: "info" })
-        }
-
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.ctrlKey && e.shiftKey && e.key === "L") {
-                e.preventDefault()
-                toggle()
-            }
-        }
-
-        document.addEventListener("keydown", handleKeyDown)
-
-        return () => {
-            document.removeEventListener("keydown", handleKeyDown)
-        }
-    }, [])
-}
-
-export function AuthenticatedApp({ pluginContext }: AuthenticatedAppProps) {
-    const [baseId, setBaseId] = useState<string | null>(pluginContext.type === "update" ? pluginContext.baseId : null)
-    const [tableId, setTableId] = useState<string | null>(
-        pluginContext.type === "update" ? pluginContext.tableId : null
-    )
-    const { data: baseSchema, isPending } = useBaseSchemaQuery(baseId ?? "")
-
-    const syncMutation = useSyncTableMutation({
-        onSuccess: result => {
-            logSyncResult(result)
-
-            if (result.status === "success") {
-                framer.closePlugin("Synchronization successful")
-                return
-            }
-        },
-        onError: e => framer.notify(e.message, { variant: "error" }),
-    })
-
-    const handleTableSelected = async (selectedBaseId: string, selectedTableId: string) => {
-        const tableMapId = await getTableIdMapForBase(selectedBaseId)
-
-        const existingTableIds = tableMapId.get(selectedTableId) ?? []
-        tableMapId.set(selectedTableId, [
-            ...existingTableIds,
-            { collectionId: pluginContext.collection.id, name: pluginContext.collection.name },
-        ])
-
-        pluginContext.tableMapId = tableMapId
-
-        setBaseId(selectedBaseId)
-        setTableId(selectedTableId)
-    }
+export function App({ collection, previousBaseId, previousTableId, previousSlugFieldId }: AppProps) {
+    const [dataSource, setDataSource] = useState<DataSource | null>(null)
+    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousBaseId && previousTableId))
+    const [noTableAccess, setNoTableAccess] = useState(false)
 
     useLayoutEffect(() => {
-        const width = tableId ? 360 : 320
-        const height = tableId ? 425 : 345
+        const hasDataSourceSelected = Boolean(dataSource)
 
         framer.showUI({
-            width,
-            height,
-            minWidth: width,
-            minHeight: height,
-            // Only allow resizing when mapping fields as the default size could not be enough.
-            // This will keep the given dimensions in the Select Table Screen.
-            resizable: !!tableId,
+            width: hasDataSourceSelected ? 360 : 320,
+            height: hasDataSourceSelected ? 425 : 350,
+            minWidth: hasDataSourceSelected ? 360 : undefined,
+            minHeight: hasDataSourceSelected ? 425 : undefined,
+            resizable: hasDataSourceSelected,
         })
-    }, [tableId])
+    }, [dataSource])
 
-    if (!tableId || !baseId) {
-        return <SelectTablePage onTableSelected={handleTableSelected} />
-    }
+    useEffect(() => {
+        if (!previousBaseId || !previousTableId) {
+            return
+        }
 
-    if (isPending) return <CenteredSpinner />
+        setIsLoadingDataSource(true)
+        fetchTable(previousBaseId, previousTableId)
+            .then(async table => {
+                if (!table) {
+                    setNoTableAccess(true)
+                    return
+                }
 
-    const tableSchema = baseSchema?.tables.find(table => table.id === tableId)
-    assert(tableSchema, `Expected to find table schema for table with id: ${tableId}`)
+                const fields = await inferFields(collection, table)
+                setDataSource({
+                    baseId: previousBaseId,
+                    tableId: previousTableId,
+                    tableName: table.name,
+                    fields,
+                })
+            })
+            .catch(() => {
+                setNoTableAccess(true)
+            })
+            .finally(() => {
+                setIsLoadingDataSource(false)
+            })
+    }, [])
 
-    return (
-        <MapTableFieldsPage
-            baseId={baseId}
-            tableId={tableId}
-            pluginContext={pluginContext}
-            onSubmit={syncMutation.mutate}
-            isPending={syncMutation.isPending}
-            tableSchema={tableSchema}
-            tableMapId={pluginContext.tableMapId}
-        />
-    )
-}
-
-function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is PluginContextUpdate {
-    if (pluginContext.type !== "update") return false
-
-    if (!pluginContext.slugFieldId) return false
-    if (pluginContext.hasChangedFields) return false
-
-    return true
-}
-
-export function App({ pluginContext }: AppProps) {
-    useLoggingToggle()
-
-    const [context, setContext] = useState(pluginContext)
-
-    const mode = framer.mode
-    const shouldSyncOnly = mode === "syncManagedCollection" && shouldSyncImmediately(context)
-
-    const isSyncing = useRef(false)
-
-    useLayoutEffect(() => {
-        if (isSyncing.current) return
-        if (!shouldSyncOnly) return
-
-        assert(context.type === "update")
-        assert(context.slugFieldId !== null, "Expected slug field")
-
-        isSyncing.current = true
-        framer.hideUI()
-
-        const {
-            baseId,
-            tableId,
-            ignoredFieldIds,
-            slugFieldId,
-            tableSchema,
-            tableMapId,
-            lastSyncedTime,
-        } = context
-
-        const fieldConfigs = createFieldConfig(
-            context,
-            tableSchema.primaryFieldId,
-            tableSchema.fields,
-            tableMapId
+    if (isLoadingDataSource) {
+        return (
+            <main className="loading">
+                <div className="framer-spinner" />
+            </main>
         )
-        const fields = fieldConfigs.map(field => field.field).filter(isDefined)
-
-        syncTable({
-            fields,
-            ignoredFieldIds,
-            lastSyncedTime,
-            tableSchema,
-            slugFieldId,
-            baseId,
-            tableId,
-            onProgress: () => {
-                // TODO: Progress indicator.
-            },
-        }).then(() => framer.closePlugin())
-    }, [context, shouldSyncOnly])
-
-    if (shouldSyncOnly) return null
-
-    if (context.type === "no-table-access") {
-        return <NoTableAccess context={context} setContext={setContext} />
     }
 
-    if (context.isAuthenticated) {
-        return <AuthenticatedApp pluginContext={context} />
+    if (noTableAccess) {
+        return <NoTableAccess previousBaseId={previousBaseId} previousTableId={previousTableId} />
     }
 
-    return <Authenticate onAuthenticated={setContext} />
+    if (!dataSource) {
+        return <SelectDataSource collection={collection} onSelectDataSource={setDataSource} />
+    }
+
+    return <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
 }

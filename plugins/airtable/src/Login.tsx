@@ -1,23 +1,20 @@
-import { useLayoutEffect, useRef, useState } from "react"
-import { framer } from "framer-plugin"
-import { getPluginContext, PluginContext } from "../airtable"
-import auth from "../auth"
+import "./App.css"
 
-import { Button } from "../components/Button"
-import { Hero } from "../components/Hero"
+import { useLayoutEffect, useRef } from "react"
+import { framer } from "framer-plugin"
+import auth from "./auth"
 
 interface AuthenticationProps {
-    onAuthenticated: (context: PluginContext) => void
+    onAuthenticated: () => void
 }
 
 export function Authenticate({ onAuthenticated }: AuthenticationProps) {
-    const [isLoading, setIsLoading] = useState(false)
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     useLayoutEffect(() => {
         framer.showUI({
             width: 320,
-            height: 345,
+            height: 340,
         })
     }, [])
 
@@ -39,8 +36,8 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
         )
     }
 
-    const login = async () => {
-        setIsLoading(true)
+    const login = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
 
         try {
             // Retrieve the auth URL and a set of read and write keys
@@ -52,25 +49,27 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             // Poll the auth server and wait for tokens
             await pollForTokens(authorization.readKey)
 
-            onAuthenticated(await getPluginContext())
+            onAuthenticated()
         } catch (e) {
             framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
-        } finally {
-            setIsLoading(false)
         }
     }
 
     return (
-        <div className="col-lg pb-[15px]">
-            <Hero />
-            <ol className="list-decimal list-inside space-y-2.5 marker:text-secondary *:text-tertiary *:leading-none *:tracking-normal py-[7px]">
+        <form className="login" onSubmit={login}>
+            <div className="logo">
+                <img src="airtable.svg" alt="Airtable icon" style={{ width: 80, height: 80 }} />
+            </div>
+
+            <ol className="login-steps">
                 <li>Log in to your Airtable account</li>
                 <li>Pick the base you want to import</li>
                 <li>Map the table fields to the CMS</li>
             </ol>
-            <Button variant="secondary" className="w-full" onClick={login} isLoading={isLoading}>
+
+            <button className="action-button" type="submit">
                 Log In
-            </Button>
-        </div>
+            </button>
+        </form>
     )
 }

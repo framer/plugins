@@ -54,13 +54,13 @@ export function Stepper({ value = 0, min = 0, step: stepAmount = 1, onChange }: 
             />
 
             <div className="stepper-controls">
-                <button className="stepper-button" onClick={() => step(-1)}>
+                <button className="stepper-button" tabIndex={-1} onClick={() => step(-1)}>
                     <IconMinus />
                 </button>
 
                 <div className="stepper-divider" />
 
-                <button className="stepper-button" onClick={() => step(1)}>
+                <button className="stepper-button" tabIndex={-1} onClick={() => step(1)}>
                     <IconPlus />
                 </button>
             </div>

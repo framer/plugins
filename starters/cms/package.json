@@ -11,7 +11,7 @@
         "pack": "npx framer-plugin-tools@latest pack"
     },
     "dependencies": {
-        "framer-plugin": "^2",
+        "framer-plugin": "^3.0.0-beta.0",
         "react": "^18",
         "react-dom": "^18",
         "vite-plugin-mkcert": "^1"

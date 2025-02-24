@@ -42,12 +42,6 @@ form {
 }
 
 .logo {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 30px;
-    width: 30px;
     color: var(--framer-color-text-tertiary);
     background-color: var(--framer-color-bg-tertiary);
     border-radius: 8px;

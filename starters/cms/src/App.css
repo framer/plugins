@@ -16,8 +16,7 @@ form {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: 100%;
-    gap: 15px;
+    gap: 10px;
 }
 
 .sticky-top {
@@ -47,10 +46,37 @@ form {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    height: 30px;
+    width: 30px;
+    color: var(--framer-color-text-tertiary);
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+}
+
+.setup {
+    align-items: center;
+}
+
+.intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
     width: 100%;
-    min-height: 200px;
-    background-color: var(--framer-color-bg-secondary);
-    border-radius: 10px;
+    flex: 1;
+    text-align: center;
+    max-width: 160px;
+    gap: 15px;
+}
+
+.intro h2 {
+    font-size: 1em;
+    margin-bottom: 5px;
+}
+
+.intro p {
+    color: var(--framer-color-text-tertiary);
 }
 
 .setup label {
@@ -60,16 +86,19 @@ form {
     height: 30px;
     width: 100%;
     justify-content: space-between;
-    padding-left: 15px;
     color: var(--framer-color-text-secondary);
 }
 
 .setup select {
-    width: 164px;
+    width: 100%;
 }
 
 .mapping {
     padding-bottom: 0;
+}
+
+.mapping form {
+    height: 100%;
 }
 
 .mapping .fields {

@@ -71,8 +71,9 @@ form {
 }
 
 .intro h2 {
+    line-height: 1;
     font-size: 1em;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 }
 
 .intro p {

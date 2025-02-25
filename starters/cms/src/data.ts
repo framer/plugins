@@ -12,8 +12,6 @@ export const PLUGIN_KEYS = {
     SLUG_FIELD_ID: "slugFieldId",
 } as const
 
-export function shouldBeNever(_: never) {}
-
 export interface DataSource {
     id: string
     fields: readonly EditableManagedCollectionField[]

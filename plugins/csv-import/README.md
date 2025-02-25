@@ -1,6 +1,6 @@
 # Framer CSV Import Plugin
 
-Framer CSV Import Plugin
+Plugin for the CSV Import functionality in the CMS.
 
 <!-- **By:** -->
 

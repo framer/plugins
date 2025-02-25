@@ -1,6 +1,5 @@
 import type {
     EditableManagedCollectionField,
-    FieldDataEntryInput,
     FieldDataInput,
     ManagedCollection,
     ManagedCollectionItemInput,
@@ -26,113 +25,6 @@ export function getDataSources() {
         { id: "articles", name: "Articles" },
         { id: "categories", name: "Categories" },
     ]
-}
-
-function unknownToFieldDataEntryInput(
-    value: unknown,
-    field: EditableManagedCollectionField
-): FieldDataEntryInput | undefined {
-    switch (field.type) {
-        case "string": {
-            if (typeof value !== "string") {
-                console.error(`Expected a string value for field: ${field.name}`)
-                break
-            }
-            return { type: "string", value }
-        }
-
-        case "number": {
-            if (typeof value !== "number") {
-                console.error(`Expected a number value for field: ${field.name}`)
-                break
-            }
-            return { type: "number", value }
-        }
-
-        case "boolean": {
-            if (typeof value !== "boolean") {
-                console.error(`Expected a boolean value for field: ${field.name}`)
-                break
-            }
-            return { type: "boolean", value }
-        }
-
-        case "date": {
-            if (typeof value !== "string" && typeof value !== "number") {
-                console.error(`Expected a string or number value for date field: ${field.name}`)
-                break
-            }
-            return { type: "date", value }
-        }
-
-        case "enum": {
-            if (typeof value !== "string") {
-                console.error(`Expected a string value for enum field: ${field.name}`)
-                break
-            }
-            return { type: "enum", value }
-        }
-
-        case "color": {
-            if (typeof value !== "string") {
-                console.error(`Expected a string value for color field: ${field.name}`)
-                break
-            }
-            return { type: "color", value }
-        }
-
-        case "link": {
-            if (typeof value !== "string") {
-                console.error(`Expected a string or object value for link field: ${field.name}`)
-                break
-            }
-            return { type: "link", value }
-        }
-
-        case "image": {
-            if (typeof value !== "string") {
-                console.error(`Expected a string value for image field: ${field.name}`)
-                break
-            }
-            return { type: "image", value }
-        }
-
-        case "formattedText": {
-            if (typeof value !== "string") {
-                console.error(`Expected a string value for formattedText field: ${field.name}`)
-                break
-            }
-            return { type: "formattedText", value }
-        }
-
-        case "file": {
-            if (typeof value !== "string") {
-                console.error(`Expected a string value for file field: ${field.name}`)
-                break
-            }
-            return { type: "file", value }
-        }
-
-        case "collectionReference": {
-            if (typeof value !== "string") {
-                console.error(`Expected a string value for collectionReference field: ${field.name}`)
-                break
-            }
-            return { type: "collectionReference", value }
-        }
-
-        case "multiCollectionReference": {
-            if (!Array.isArray(value) || !value.every(item => typeof item === "string")) {
-                console.error(`Expected a value of an array of strings for field: ${field.name}`)
-                break
-            }
-            return { type: "multiCollectionReference", value }
-        }
-
-        default: {
-            shouldBeNever(field)
-        }
-    }
 }
 
 /**
@@ -186,21 +78,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
         }
     }
 
-    const items: FieldDataInput[] = dataSource.items.map((item: { [key: string]: unknown }) => {
-        const fieldData: FieldDataInput = {}
-
-        for (const [key, value] of Object.entries(item)) {
-            const field = fields.find(field => field.id === key)
-            if (!field) continue
-
-            const fieldDataEntryInput = unknownToFieldDataEntryInput(value, field)
-            if (!fieldDataEntryInput) continue
-
-            fieldData[key] = fieldDataEntryInput
-        }
-
-        return fieldData
-    })
+    const items = dataSource.items as FieldDataInput[]
 
     return {
         id: dataSource.id,

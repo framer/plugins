@@ -20,34 +20,43 @@
     ],
     "items": [
         {
-            "Title": "Getting Started",
-            "Reading time": 3,
-            "Featured": true,
-            "Content": "<h2>Editing Content</h2><blockquote><p>You can choose to set up different types of input fields depending on your content...</p></blockquote>..."
+            "Title": { "type": "string", "value": "Getting Started" },
+            "Reading time": { "type": "number", "value": 3 },
+            "Featured": { "type": "boolean", "value": true },
+            "Content": {
+                "type": "formattedText",
+                "value": "<h2>Editing Content</h2><blockquote><p>You can choose to set up different types of input fields depending on your content...</p></blockquote>..."
+            }
         },
         {
-            "Title": "What's New",
-            "Reading time": 2,
-            "Featured": false,
-            "Content": "<h2>Reference Fields</h2>..."
+            "Title": { "type": "string", "value": "What's New" },
+            "Reading time": { "type": "number", "value": 2 },
+            "Featured": { "type": "boolean", "value": false },
+            "Content": { "type": "formattedText", "value": "<h2>Reference Fields</h2>..." }
         },
         {
-            "Title": "Styling Elements",
-            "Reading time": 4,
-            "Featured": false,
-            "Content": "<h2>Reference Fields</h2>..."
+            "Title": { "type": "string", "value": "Styling Elements" },
+            "Reading time": { "type": "number", "value": 4 },
+            "Featured": { "type": "boolean", "value": false },
+            "Content": { "type": "formattedText", "value": "<h2>Reference Fields</h2>..." }
         },
         {
-            "Title": "Importing Content",
-            "Reading time": 6,
-            "Featured": false,
-            "Content": "<h2>Prepare your CSV file</h2><p>Make sure your file is exported as a \"CSV\" file...</p>"
+            "Title": { "type": "string", "value": "Importing Content" },
+            "Reading time": { "type": "number", "value": 6 },
+            "Featured": { "type": "boolean", "value": false },
+            "Content": {
+                "type": "formattedText",
+                "value": "<h2>Prepare your CSV file</h2><p>Make sure your file is exported as a \"CSV\" file...</p>"
+            }
         },
         {
-            "Title": "Best Practices",
-            "Reading time": 8,
-            "Featured": true,
-            "Content": "<h3>Choose Compelling Topics</h3><p>Use analytics tools to understand demographic data and user behavior...</p>"
+            "Title": { "type": "string", "value": "Best Practices" },
+            "Reading time": { "type": "number", "value": 8 },
+            "Featured": { "type": "boolean", "value": true },
+            "Content": {
+                "type": "formattedText",
+                "value": "<h3>Choose Compelling Topics</h3><p>Use analytics tools to understand demographic data and user behavior...</p>"
+            }
         }
     ]
 }

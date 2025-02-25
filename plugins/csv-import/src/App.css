@@ -70,6 +70,7 @@
 }
 
 .ordered-list {
+    color: var(--framer-color-text-secondary);
     margin: 0;
     list-style-position: outside;
     padding-left: 1.2em;
@@ -101,5 +102,5 @@
     gap: 8px;
     cursor: pointer;
     width: fit-content;
-    color: #666;
+    color: var(--framer-color-text-secondary);
 }

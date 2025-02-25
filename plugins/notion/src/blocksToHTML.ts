@@ -61,6 +61,9 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
             case "divider":
                 htmlContent += "<hr >"
                 break
+            case "quote":
+                htmlContent += `<blockquote>${richTextToHTML(block.quote.rich_text)}</blockquote>`
+                break
             case "image":
                 switch (block.image.type) {
                     case "external":

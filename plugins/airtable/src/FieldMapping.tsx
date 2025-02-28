@@ -4,7 +4,7 @@ import type { DataSource, PossibleField } from "./data"
 import { framer } from "framer-plugin"
 import { useState, useEffect, memo } from "react"
 import { mergeFieldsWithExistingFields, syncCollection } from "./data"
-import { ALLOWED_FILE_TYPES, assert, isCollectionReference } from "./utils"
+import { ALLOWED_FILE_TYPES, isCollectionReference } from "./utils"
 
 function ChevronIcon() {
     return (
@@ -81,16 +81,9 @@ const FieldMappingRow = memo(
                         opacity: disabled ? 0.5 : 1,
                     }}
                     disabled={disabled}
-                    value={
-                        isCollectionReference(field)
-                            ? field.type === "string"
-                                ? "string"
-                                : field.collectionId
-                            : field.type
-                    }
+                    value={isCollectionReference(field) ? field.collectionId : field.type}
                     onChange={event => onTypeChange?.(field.id, event.target.value)}
                 >
-                    <option value="string">String</option>
                     {isCollectionReference(field) && (
                         <>
                             {field.supportedCollections.length === 0 && (
@@ -187,34 +180,17 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 if (field.id !== fieldId) return field
 
                 if (field.airtableType === "multipleRecordLinks") {
-                    if (type === "string") {
-                        return {
-                            ...field,
-                            type: "string",
-                        } as PossibleField
-                    }
-
                     return {
                         ...field,
-                        type: field.single ? "collectionReference" : "multiCollectionReference",
+                        type: "multiCollectionReference",
                         collectionId: type,
                         supportedCollections: field.supportedCollections,
                     } as PossibleField
                 }
 
                 switch (type) {
-                    case "string":
-                        return { ...field, type: "string" } as PossibleField
-                    case "number":
-                        return { ...field, type: "number" } as PossibleField
-                    case "boolean":
-                        return { ...field, type: "boolean" } as PossibleField
                     case "link":
                         return { ...field, type: "link" } as PossibleField
-                    case "date":
-                        return { ...field, type: "date" } as PossibleField
-                    case "color":
-                        return { ...field, type: "color" } as PossibleField
                     case "file":
                         return {
                             ...field,
@@ -223,15 +199,6 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         } as PossibleField
                     case "image":
                         return { ...field, type: "image" } as PossibleField
-                    case "formattedText":
-                        return { ...field, type: "formattedText" } as PossibleField
-                    case "enum":
-                        assert(field.airtableType === "singleSelect")
-                        return {
-                            ...field,
-                            type: "enum",
-                            cases: field.airtableCases,
-                        } as PossibleField
                     default:
                         return field
                 }

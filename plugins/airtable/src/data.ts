@@ -7,7 +7,7 @@ import type {
 } from "framer-plugin"
 
 import { framer } from "framer-plugin"
-import { type AirtableFieldSchema, fetchAllBases, fetchRecords, fetchTables } from "./api"
+import { type AirtableFieldSchema, fetchAllBases, fetchRecords, fetchTable, fetchTables } from "./api"
 import { ALLOWED_FILE_TYPES, richTextToHTML } from "./utils"
 
 export const PLUGIN_KEYS = {
@@ -54,11 +54,11 @@ interface InferredField {
      * Only set when fields are inferred.
      */
     readonly airtableType?: Exclude<AirtableFieldSchema["type"], "multipleRecordLinks" | "singleSelect">
-    readonly allowedTypes?: CollectionField["type"][]
+    readonly allowedTypes?: [CollectionField["type"], ...CollectionField["type"][]]
 }
 
 interface InferredMultipleRecordLinksField {
-    type: "collectionReference" | "multiCollectionReference" | "string"
+    type: "collectionReference" | "multiCollectionReference"
     readonly airtableType: "multipleRecordLinks"
     readonly single: boolean
     readonly supportedCollections: { id: string; name: string }[]
@@ -132,7 +132,7 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
                     ...fieldMetadata,
                     airtableType: fieldSchema.type,
                     type: "string",
-                    allowedTypes: [],
+                    allowedTypes: ["string"],
                 })
                 break
 
@@ -305,8 +305,8 @@ function getItemValueForField(fieldSchema: PossibleField, value: unknown): unkno
             }
             return null
 
-        case "color":
         case "string":
+        case "color":
             return typeof value === "string" ? value : null
 
         case "formattedText":
@@ -360,7 +360,7 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                     type: "string",
                     id: slugFieldId,
                     name: "slug",
-                    allowedTypes: [],
+                    allowedTypes: ["string"],
                 },
                 slugValue
             )
@@ -386,6 +386,15 @@ export function mergeFieldsWithExistingFields(
     return sourceFields.map(sourceField => {
         const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
         if (existingField) {
+            if (existingField.type === "collectionReference" || existingField.type === "multiCollectionReference") {
+                return {
+                    ...sourceField,
+                    type: existingField.type,
+                    name: existingField.name,
+                    collectionId: existingField.collectionId,
+                } as PossibleField
+            }
+
             return { ...sourceField, type: existingField.type, name: existingField.name } as PossibleField
         }
         return sourceField
@@ -410,7 +419,13 @@ export async function syncCollection(
                 field.collectionId !== ""
         )
 
-    const dataSourceItems = await getItems(dataSource, slugFieldId)
+    const dataSourceItems = await getItems(
+        {
+            ...dataSource,
+            fields: sanitizedFields,
+        },
+        slugFieldId
+    )
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
 
@@ -476,13 +491,16 @@ export async function syncExistingCollection(
         await framer.hideUI()
 
         const existingFields = await collection.getFields()
+        const table = await fetchTable(previousBaseId, previousTableId)
+        if (!table) {
+            throw new Error(`Table "${previousTableName}" not found`)
+        }
         const dataSource: DataSource = {
             baseId: previousBaseId,
             tableId: previousTableId,
-            tableName: "",
+            tableName: table.name,
             fields: existingFields,
         }
-
         await syncCollection(collection, dataSource, existingFields, previousSlugFieldId)
         return { didSync: true }
     } catch (error) {

@@ -1,0 +1,194 @@
+
+.segmented-control-container {
+  background-color: var(--framer-color-bg-secondary);
+  display: flex;
+  width: 100%;
+  grid-column: 2 / -1;
+  padding: 2px;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  border-radius: 8px;
+  height: 30px;
+}
+
+.segmented-control-item {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  padding: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: transparent;
+  background: transparent;
+}
+
+.segmented-control-item-label {
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 1;
+  transition: color 0.2s cubic-bezier(.2,0,0,1);
+}
+
+.segmented-control-item[data-state='on'] .segmented-control-item-label {
+  color: var(--framer-color-text);
+  font-weight: 600;
+}
+
+[data-framer-theme="light"] .segmented-control-item[data-state='on'] .segmented-control-item-label {
+  color: var(--framer-color-tint);
+}
+
+.segmented-control-item[data-state='off'] .segmented-control-item-label {
+  color: var(--framer-color-text-tertiary);
+  font-weight: 500;
+}
+
+
+.segmented-control-item:hover, .segmented-control-item:active {
+  background-color:transparent;
+}
+
+/**
+https://github.com/radix-ui/themes/blob/main/packages/radix-ui-themes/src/components/segmented-control.tsx
+https://github.com/radix-ui/themes/blob/497295f884fe1b73b81fd259a2a767da658bc1f5/packages/radix-ui-themes/src/components/segmented-control.css#L159
+**/
+
+.segmented-control-divider {
+  /*
+   * Place the separator below the indicator.
+   * Be careful not to introduce a stacking context on ".rt-segmented-control-item":
+   * https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_positioned_layout/Understanding_z-index/Stacking_context
+   */
+  z-index: -1;
+
+  /* Hide the separator by default */
+  display: none;
+
+  margin-top: 3px;
+  margin-bottom: 3px;
+  margin-left: -0.5px;
+  margin-right: -0.5px;
+  width: 1px;
+  /* background-color: var(--framer-color-bg-tertiary); */
+  transition: opacity 0.2s cubic-bezier(.2,0,0,1);
+
+  /* Make separators slow to disappear and fast to appear, syncing it well with the indicator motion */
+  transition-timing-function: ease-out;
+
+  :where(.rt-segmented-control-item:first-child) &,
+  :where(.rt-segmented-control-item:where([data-state='on'], :focus-visible)) &,
+  :where(.rt-segmented-control-item:where([data-state='on'], :focus-visible)) + * & {
+    opacity: 0;
+    transition-timing-function: ease-in;
+  }
+  /* Don't transition when the separator is hidden because of the focus outline */
+  :where(.segmented-control-container:has(:focus-visible)) & {
+    transition-duration: 0ms;
+  }
+}
+
+.segmented-control-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 0;
+  height: 100%;
+  pointer-events: none;
+  transition-property: transform;
+  border-radius: 6px;
+  transition-timing-function: cubic-bezier(.2,0,0,1);;
+  transition-duration: 200ms;
+
+  &::before {
+    inset: 2px;
+    top: 2px;
+    left: 2px;
+    position: absolute;
+    border-radius: 6px;
+    background-color: #555;
+    content: '';
+    box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, .15);
+  }
+
+  [data-framer-theme="light"] &::before {
+    background-color: white;
+  }
+
+  :where(.segmented-control-item[data-state='on']) ~ & {
+    display: block;
+  }
+
+  :where(.segmented-control-item[disabled]) ~ & {
+    --segmented-control-indicator-background-color: var(--framer-color-bg-secondary);
+
+    &::before {
+      inset: 0px;
+      box-shadow: none;
+    }
+  }
+
+  &:where(:nth-child(2)) {
+    width: calc(100% / 1);
+  }
+  &:where(:nth-child(3)) {
+    width: calc(100% / 2);
+  }
+  &:where(:nth-child(4)) {
+    width: calc(100% / 3);
+  }
+  &:where(:nth-child(5)) {
+    width: calc(100% / 4);
+  }
+  &:where(:nth-child(6)) {
+    width: calc(100% / 5);
+  }
+  &:where(:nth-child(7)) {
+    width: calc(100% / 6);
+  }
+  &:where(:nth-child(8)) {
+    width: calc(100% / 7);
+  }
+  &:where(:nth-child(9)) {
+    width: calc(100% / 8);
+  }
+  &:where(:nth-child(10)) {
+    width: calc(100% / 9);
+  }
+  &:where(:nth-child(11)) {
+    width: calc(100% / 10);
+  }
+
+  :where(.segmented-control-item[data-state='on']:nth-child(1)) ~ & {
+    transform: translateX(0%);
+  }
+  :where(.segmented-control-item[data-state='on']:nth-child(2)) ~ & {
+    transform: translateX(100%);
+  }
+  :where(.segmented-control-item[data-state='on']:nth-child(3)) ~ & {
+    transform: translateX(200%);
+  }
+  :where(.segmented-control-item[data-state='on']:nth-child(4)) ~ & {
+    transform: translateX(300%);
+  }
+  :where(.segmented-control-item[data-state='on']:nth-child(5)) ~ & {
+    transform: translateX(400%);
+  }
+  :where(.segmented-control-item[data-state='on']:nth-child(6)) ~ & {
+    transform: translateX(500%);
+  }
+  :where(.segmented-control-item[data-state='on']:nth-child(7)) ~ & {
+    transform: translateX(600%);
+  }
+  :where(.segmented-control-item[data-state='on']:nth-child(8)) ~ & {
+    transform: translateX(700%);
+  }
+  :where(.segmented-control-item[data-state='on']:nth-child(9)) ~ & {
+    transform: translateX(800%);
+  }
+  :where(.segmented-control-item[data-state='on']:nth-child(10)) ~ & {
+    transform: translateX(900%);
+  }
+}

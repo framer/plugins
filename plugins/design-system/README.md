@@ -1,5 +1,5 @@
-# Layout Insert
+# Design System
 
-A collection of Layouts to insert into the Canvas.
+A collection of Layouts, Components and Colors to insert into Projects.
 
-**By**: @niekert
+**By**: @niekert and @huntercaron

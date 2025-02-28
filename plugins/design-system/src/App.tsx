@@ -1,31 +1,24 @@
 import { framer, Draggable } from "framer-plugin"
 
-import sectionContactImage from "./images/Contact.png"
-import sectionFAQImage from "./images/FAQ.png"
-import sectionFeatureCardsImage from "./images/FeatureCards.png"
-import sectionFeaturesImage from "./images/Features.png"
-import sectionFeaturesLargeImage from "./images/Features2.png"
-import sectionGrid1Image from "./images/Grid1.png"
-import sectionGrid2Image from "./images/Grid2.png"
-import sectionHeaderImage from "./images/Header.png"
-import sectionHeaderBackgroundImage from "./images/HeaderBackground.png"
-import sectionImageTextImage from "./images/ImageText.png"
-import sectionLogosImage from "./images/Logos.png"
-import sectionPivotImage from "./images/Pivot.png"
-import sectionPricingImage from "./images/Pricing.png"
-import sectionTemplatesImage from "./images/Templates.png"
-import sectionTestimonialsImage from "./images/Testimonials1.png"
-import sectionTestimonials2Image from "./images/Testimonials2.png"
-import sectionTestimonials3Image from "./images/Testimonials3.png"
-import sectionTextImageImage from "./images/TextImage.png"
-import { SearchIcon } from "./icons"
+import sectionFAQImage from "./assets/FAQ.png"
+import sectionFeaturesLargeImage from "./assets/Features.png"
+import sectionHeaderImage from "./assets/Header.png"
+import sectionImageTextImage from "./assets/ImageText.png"
+import sectionPivotImage from "./assets/Pivot.png"
+import sectionPricingImage from "./assets/Pricing.png"
+import sectionTextImageImage from "./assets/TextImage.png"
+import buttonImage from "./assets/Button.png"
+import tabsImage from "./assets/Tabs.png"
+import { SearchIcon } from "./assets/SearchIcon"
 import { useMemo, useState } from "react"
 
 import "./App.css"
+import { SegmentedControl } from "./components/SegmentedControl"
 
 framer.showUI({
     position: "top right",
-    width: 350,
+    width: 320,
+    height: 400,
 })
 
 interface SectionItem {
@@ -41,12 +34,6 @@ const layoutSectionItems: SectionItem[] = [
         title: "Header",
         image: sectionHeaderImage,
         url: "https://framer.com/m/framer/Section-Header.js",
-    },
-    {
-        key: "header background",
-        title: "Header With Background",
-        image: sectionHeaderBackgroundImage,
-        url: "https://framer.com/m/framer/Section-Header-Image.js",
     },
     {
         key: "text image",
@@ -67,60 +54,6 @@ const layoutSectionItems: SectionItem[] = [
         url: "https://framer.com/m/framer/section-features-large.js",
     },
     {
-        key: "feature section",
-        title: "Features Small",
-        image: sectionFeaturesImage,
-        url: "https://framer.com/m/framer/Section-Features.js",
-    },
-    {
-        key: "templates section",
-        title: "Templates",
-        image: sectionTemplatesImage,
-        url: "https://framer.com/m/framer/Section-Templates.js",
-    },
-    {
-        key: "grid 1 section",
-        title: "Grid 1",
-        image: sectionGrid1Image,
-        url: "https://framer.com/m/framer/Sections-Grid-1.js",
-    },
-    {
-        key: "grid 2 section",
-        title: "Grid 2",
-        image: sectionGrid2Image,
-        url: "https://framer.com/m/framer/Sections-Grid-2.js",
-    },
-    {
-        key: "feature cards section",
-        title: "Feature Cards",
-        image: sectionFeatureCardsImage,
-        url: "https://framer.com/m/framer/Section-Blog.js",
-    },
-    {
-        key: "testimonials section",
-        title: "Testimonials",
-        image: sectionTestimonialsImage,
-        url: "https://framer.com/m/framer/Section-Testimonials.js",
-    },
-    {
-        key: "testimonials 3 section",
-        title: "Testimonials 2",
-        image: sectionTestimonials3Image,
-        url: "https://framer.com/m/framer/Section-Testimonials-3.js",
-    },
-    {
-        key: "testimonials 2 section",
-        title: "Testimonials 3",
-        image: sectionTestimonials2Image,
-        url: "https://framer.com/m/framer/Section-Testimonials2.js",
-    },
-    {
-        key: "contact section",
-        title: "Contact",
-        image: sectionContactImage,
-        url: "https://framer.com/m/framer/Section-Contact.js",
-    },
-    {
         key: "pricing section",
         title: "Pricing",
         image: sectionPricingImage,
@@ -133,33 +66,92 @@ const layoutSectionItems: SectionItem[] = [
         url: "https://framer.com/m/framer/Section-FAQ.js",
     },
     {
-        key: "logos section",
-        title: "Logos",
-        image: sectionLogosImage,
-        url: "https://framer.com/m/framer/Section-Logos.js",
-    },
-    {
         key: "pivot section",
         title: "Pivot",
         image: sectionPivotImage,
         url: "https://framer.com/m/framer/Section-Pivot.js",
     },
 ]
+
+interface Color {
+    title: string
+    color: string
+}
+
+const componentItems = [
+    {
+        key: "button",
+        title: "Button",
+        image: buttonImage,
+        url: "https://framer.com/m/Button-vh3D.js",
+    },
+    {
+        key: "tabs",
+        title: "Tabs",
+        image: tabsImage,
+        url: "https://framer.com/m/Tabs-Afuw.js",
+    },
+]
+
+const colors: Color[] = [
+    //  {
+    //    title: "Backdrop",
+    //   color: "#111",
+    // },
+    {
+        title: "Text",
+        color: "#fff",
+    },
+    {
+        title: "Grape",
+        color: "#6655FF",
+    },
+    {
+        title: "Sea",
+        color: "#38E",
+    },
+    {
+        title: "Sky",
+        color: "#38AAFF",
+    },
+    {
+        title: "Mint",
+        color: "#56DEDD",
+    },
+    {
+        title: "Honey",
+        color: "#FBDD45",
+    },
+]
+
 export function App() {
     const [search, setSearch] = useState("")
+    const [activeTab, setActiveTab] = useState("components")
 
     const filteredSectionItems = useMemo(() => {
         return layoutSectionItems.filter(item => item.title.toLowerCase().includes(search.toLowerCase()))
     }, [search])
 
+    const handleAddColors = async (colors: Color[]) => {
+        const colorStyles = await framer.getColorStyles()
+
+        colors.forEach(color => {
+            const existingStyle = colorStyles.find(style => style.name === color.title)
+
+            if (existingStyle) {
+                existingStyle.setAttributes({
+                    light: color.color,
+                })
+            } else {
+                framer.createColorStyle({
+                    name: color.title,
+                    light: color.color,
+                })
+            }
+        })
+    }
     return (
-        <main
-            style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-                gap: "10px",
-            }}
-        >
+        <main>
             <div className="search-container">
                 <SearchIcon />
                 <input
@@ -170,40 +162,109 @@ export function App() {
                     onChange={e => setSearch(e.target.value)}
                     value={search}
                 />
+                <SegmentedControl
+                    value={activeTab}
+                    onChange={value => setActiveTab(value)}
+                    items={[
+                        { value: "components", label: "Components" },
+                        { value: "layouts", label: "Layouts" },
+                        { value: "styles", label: "Styles" },
+                    ]}
+                />
             </div>
 
-            {filteredSectionItems.length === 0 && (
-                <div className="no-results">
-                    <span>No results</span>
-                </div>
-            )}
-
-            {filteredSectionItems.map(section => (
-                <button
-                    key={section.key}
-                    onClick={() =>
-                        framer.addDetachedComponentLayers({
-                            url: section.url,
-                            layout: true,
-                        })
-                    }
-                >
-                    <Draggable
-                        data={{
-                            type: "detachedComponentLayers",
-                            url: section.url,
-                            previewImage: section.image,
-                            layout: true,
-                        }}
-                    >
-                        <div className="section-container">
-                            <div className="section-image">
-                                <img src={section.image} alt={section.title} />
+            <div className="contents-container">
+                {activeTab === "components" && (
+                    <>
+                        {filteredSectionItems.length === 0 && (
+                            <div className="no-results">
+                                <span>No results</span>
                             </div>
+                        )}
+                        <div className="contents-column">
+                            {componentItems.map(section => (
+                                <button
+                                    className="section-button"
+                                    key={section.key}
+                                    onClick={() =>
+                                        framer.addDetachedComponentLayers({
+                                            url: section.url,
+                                            layout: true,
+                                        })
+                                    }
+                                >
+                                    <Draggable
+                                        data={{
+                                            type: "detachedComponentLayers",
+                                            url: section.url,
+                                            previewImage: section.image,
+                                            layout: true,
+                                        }}
+                                    >
+                                        <div className="section-inner-container">
+                                            <div className="section-image">
+                                                <img src={section.image} alt={section.title} />
+                                            </div>
+                                        </div>
+                                    </Draggable>
+                                </button>
+                            ))}
                         </div>
-                    </Draggable>
-                </button>
-            ))}
+                    </>
+                )}
+
+                {activeTab === "layouts" && (
+                    <>
+                        {layoutSectionItems.map(section => (
+                            <button
+                                key={section.key}
+                                onClick={() =>
+                                    framer.addDetachedComponentLayers({
+                                        url: section.url,
+                                        layout: true,
+                                    })
+                                }
+                            >
+                                <Draggable
+                                    data={{
+                                        type: "detachedComponentLayers",
+                                        url: section.url,
+                                        previewImage: section.image,
+                                        layout: true,
+                                    }}
+                                >
+                                    <div className="section-container">
+                                        <div className="section-image">
+                                            <img src={section.image} alt={section.title} />
+                                        </div>
+                                    </div>
+                                </Draggable>
+                            </button>
+                        ))}
+                    </>
+                )}
+                {activeTab === "styles" && (
+                    <div className="contents-column">
+                        {colors.map((color, index) => (
+                            <div className="color-container" key={index}>
+                                <div
+                                    className="color-box"
+                                    style={{
+                                        backgroundColor: color.color,
+                                    }}
+                                />
+                                <div className="color-label">{color.title}</div>
+                                <button className="copy-button" onClick={() => handleAddColors([color])}>
+                                    Add
+                                </button>
+                            </div>
+                        ))}
+                        <button className="action-button" onClick={() => handleAddColors(colors)}>
+                            Add to Project
+                        </button>
+                    </div>
+                )}
+            </div>
         </main>
     )
 }

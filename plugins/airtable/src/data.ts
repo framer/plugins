@@ -171,7 +171,7 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
                 break
 
             case "multipleRecordLinks": {
-                let foundCollections: { id: string; name: string }[] = []
+                const foundCollections: { id: string; name: string }[] = []
 
                 if (table.id === fieldSchema.options.linkedTableId) {
                     foundCollections.push({ id: collection.id, name: "This Collection" })
@@ -312,10 +312,11 @@ function getItemValueForField(fieldSchema: PossibleField, value: unknown): unkno
         case "formattedText":
             return typeof value === "string" ? richTextToHTML(value) : null
 
-        case "enum":
+        case "enum": {
             if (typeof value !== "string") return null
             const choice = fieldSchema.cases.find(choice => choice.name === value)
             return choice?.id ?? null
+        }
 
         case "number":
             return typeof value === "number" ? value : null

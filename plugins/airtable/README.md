@@ -1,19 +1,7 @@
-# CMS Starter
+# Airtable Plugin
 
-This is a starter for building a CMS plugin for Framer.
+Plugin for syncing Airtable tables into the Framer CMS.
 
-Run the development server:
+**By:** @sakib25800, @triozer, and @benjamindenboer
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-And [open in Framer](https://www.framer.com/developers/plugins/quick-start#opening-in-framer).
-
-Learn more: https://www.framer.com/developers/plugins/introduction
+![Airtable Image](../../assets/airtable.png)

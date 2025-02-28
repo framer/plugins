@@ -114,6 +114,8 @@ export async function syncCollection(
 
     for (let i = 0; i < dataSource.items.length; i++) {
         const item = dataSource.items[i]
+        if (!item) throw new Error("Logic error")
+
         const slugValue = item[slugField.id]
         if (!slugValue || typeof slugValue.value !== "string") {
             console.warn(`Skipping item at index ${i} because it doesn't have a valid slug`)

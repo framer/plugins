@@ -7,6 +7,10 @@ main {
     padding: 0 15px 15px 15px;
     height: 100%;
     gap: 10px;
+    padding-top: 80px;
+    padding-bottom: 15px;
+    width: 100%;
+    height: 100%;
 }
 
 .framer-control-row {
@@ -14,13 +18,7 @@ main {
     height: 30px;
 }
 
-main {
-    padding-top: 40px;
-    width: 100%;
-}
-
 .section-inner-container {
-
     width: 100%;
     background: var(--framer-color-bg-secondary);
     border-radius: 8px;
@@ -71,12 +69,16 @@ main {
 }
 
 .search-container {
-    position: absolute;
+    position: fixed;
     z-index: 1;
     top: 0;
+    display: flex;
     gap: 10px;
+    align-items: center;
+    flex-direction: column;
     left: 15px;
     right: 15px;
+    background: var(--framer-color-bg);
     padding-bottom: 10px;
 
 }

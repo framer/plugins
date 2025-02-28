@@ -18,7 +18,7 @@ import { SegmentedControl } from "./components/SegmentedControl"
 framer.showUI({
     position: "top right",
     width: 320,
-    height: 400,
+    height: 500,
 })
 
 interface SectionItem {
@@ -94,10 +94,10 @@ const componentItems = [
 ]
 
 const colors: Color[] = [
-    //  {
-    //    title: "Backdrop",
-    //   color: "#111",
-    // },
+    {
+        title: "Backdrop",
+        color: "#111",
+    },
     {
         title: "Text",
         color: "#fff",
@@ -128,8 +128,16 @@ export function App() {
     const [search, setSearch] = useState("")
     const [activeTab, setActiveTab] = useState("components")
 
-    const filteredSectionItems = useMemo(() => {
+    const filteredLayoutItems = useMemo(() => {
         return layoutSectionItems.filter(item => item.title.toLowerCase().includes(search.toLowerCase()))
+    }, [search])
+
+    const filteredComponentItems = useMemo(() => {
+        return componentItems.filter(item => item.title.toLowerCase().includes(search.toLowerCase()))
+    }, [search])
+
+    const filteredColorItems = useMemo(() => {
+        return colors.filter(item => item.title.toLowerCase().includes(search.toLowerCase()))
     }, [search])
 
     const handleAddColors = async (colors: Color[]) => {
@@ -150,6 +158,14 @@ export function App() {
             }
         })
     }
+
+    const hasNoResults = () => {
+        if (activeTab === "components") return filteredComponentItems.length === 0
+        if (activeTab === "layouts") return filteredLayoutItems.length === 0
+        if (activeTab === "styles") return filteredColorItems.length === 0
+        return false
+    }
+
     return (
         <main>
             <div className="search-container">
@@ -173,16 +189,17 @@ export function App() {
                 />
             </div>
 
+            {hasNoResults() && (
+                <div className="no-results">
+                    <span>No results</span>
+                </div>
+            )}
+
             <div className="contents-container">
                 {activeTab === "components" && (
                     <>
-                        {filteredSectionItems.length === 0 && (
-                            <div className="no-results">
-                                <span>No results</span>
-                            </div>
-                        )}
                         <div className="contents-column">
-                            {componentItems.map(section => (
+                            {filteredComponentItems.map(section => (
                                 <button
                                     className="section-button"
                                     key={section.key}
@@ -215,9 +232,10 @@ export function App() {
 
                 {activeTab === "layouts" && (
                     <>
-                        {layoutSectionItems.map(section => (
+                        {filteredLayoutItems.map(section => (
                             <button
                                 key={section.key}
+                                className="section-button"
                                 onClick={() =>
                                     framer.addDetachedComponentLayers({
                                         url: section.url,
@@ -233,7 +251,7 @@ export function App() {
                                         layout: true,
                                     }}
                                 >
-                                    <div className="section-container">
+                                    <div className="section-container layout-section">
                                         <div className="section-image">
                                             <img src={section.image} alt={section.title} />
                                         </div>
@@ -245,7 +263,7 @@ export function App() {
                 )}
                 {activeTab === "styles" && (
                     <div className="contents-column">
-                        {colors.map((color, index) => (
+                        {filteredColorItems.map((color, index) => (
                             <div className="color-container" key={index}>
                                 <div
                                     className="color-box"
@@ -259,7 +277,7 @@ export function App() {
                                 </button>
                             </div>
                         ))}
-                        <button className="action-button" onClick={() => handleAddColors(colors)}>
+                        <button className="action-button" onClick={() => handleAddColors(filteredColorItems)}>
                             Add to Project
                         </button>
                     </div>

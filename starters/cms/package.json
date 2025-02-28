@@ -5,10 +5,12 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
+        "check": "npm run typecheck && npm run lint",
         "dev": "vite",
         "lint": "eslint . --max-warnings 0",
         "pack": "framer-plugin-tools pack",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "typecheck": "tsc"
     },
     "dependencies": {
         "framer-plugin": "^3.0.0",

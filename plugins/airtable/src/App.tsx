@@ -61,7 +61,7 @@ export function App({ collection, previousBaseId, previousTableId, previousSlugF
             .finally(() => {
                 setIsLoadingDataSource(false)
             })
-    }, [])
+    }, [collection, previousBaseId, previousTableId])
 
     if (isLoadingDataSource) {
         return (

@@ -26,6 +26,10 @@ main {
     cursor: pointer;
 }
 
+.section-container.layout-section {
+    padding: 10px;
+}
+
 .section-inner-container:hover .section-image {
     transform: scale(1.02);
 }

@@ -1,53 +1,83 @@
-export function assert(condition: unknown, ...msg: unknown[]): asserts condition {
-    if (condition) return
+import { PossibleField } from "./data"
 
-    const e = Error("Assertion Error" + (msg.length > 0 ? ": " + msg.join(" ") : ""))
-    // Hack the stack so the assert call itself disappears. Works in jest and in chrome.
-    if (e.stack) {
-        try {
-            const lines = e.stack.split("\n")
-            if (lines[1]?.includes("assert")) {
-                lines.splice(1, 1)
-                e.stack = lines.join("\n")
-            } else if (lines[0]?.includes("assert")) {
-                lines.splice(0, 1)
-                e.stack = lines.join("\n")
+/**
+ * Type guard to check if a value is defined (not null or undefined)
+ */
+export function isDefined<T>(value: T | null | undefined): value is T {
+    return value !== null && value !== undefined
+}
+
+/**
+ * Asserts that a condition is true, throwing an error if it's not
+ */
+export function assert(condition: boolean, message?: string): asserts condition {
+    if (!condition) {
+        throw new Error(message ?? "Assertion failed")
+    }
+}
+
+/**
+ * Converts markdown-style rich text to HTML
+ */
+export function richTextToHTML(cellValue: string): string {
+    let html = cellValue
+        .replace(/^###### (.*)$/gim, "<h6>$1</h6>") // H6
+        .replace(/^##### (.*)$/gim, "<h5>$1</h5>") // H5
+        .replace(/^#### (.*)$/gim, "<h4>$1</h4>") // H4
+        .replace(/^### (.*)$/gim, "<h3>$1</h3>") // H3
+        .replace(/^## (.*)$/gim, "<h2>$1</h2>") // H2
+        .replace(/^# (.*)$/gim, "<h1>$1</h1>") // H1
+        .replace(/^> (.*)$/gim, "<blockquote>$1</blockquote>") // Blockquote
+        .replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>") // Bold
+        .replace(/\*(.*?)\*/gim, "<em>$1</em>") // Italic
+        .replace(/~~(.*?)~~/gim, "<del>$1</del>") // Strikethrough
+        .replace(/`([^`]+)`/gim, "<code>$1</code>") // Inline code
+        .replace(/```([\s\S]*?)```/gim, "<pre><code>$1</code></pre>") // Code block
+        .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2">$1</a>') // Links
+
+    // Handle unordered and ordered lists separately
+    html = html.replace(/^\s*[-*]\s+(.*)$/gim, "<ul><li>$1</li></ul>")
+    html = html.replace(/^\s*\d+\.\s+(.*)$/gim, "<ol><li>$1</li></ol>")
+
+    // Combine consecutive <ul> or <ol> items
+    html = html.replace(/<\/ul>\s*<ul>/gim, "").replace(/<\/ol>\s*<ol>/gim, "")
+
+    // Ensure paragraphs are correctly wrapped
+    html = html
+        .split("\n\n") // Assume two newlines is a new paragraph
+        .map(paragraph => {
+            if (!/^<.*>.*<\/.*>$/.test(paragraph)) {
+                return `<p>${paragraph}</p>`
             }
-        } catch {
-            // nothing
-        }
-    }
-    throw e
+            return paragraph
+        })
+        .join("")
+
+    return html
 }
 
-// Match everything except for letters, numbers and parentheses.
-const nonSlugCharactersRegExp = /[^\p{Letter}\p{Number}()]+/gu
-// Match leading/trailing dashes, for trimming purposes.
-const trimSlugRegExp = /^-+|-+$/gu
+// Allowed file types for attachments
+export const ALLOWED_FILE_TYPES = [
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "tiff",
+    "webp",
+    "pdf",
+    "doc",
+    "docx",
+    "ppt",
+    "pptx",
+    "xls",
+    "xlsx",
+    "txt",
+    "mp3",
+    "aac",
+    "mp4",
+    "webm",
+]
 
-/**
- * Takes a freeform string and removes all characters except letters, numbers,
- * and parentheses. Also makes it lower case, and separates words by dashes.
- * This makes the value URL safe.
- */
-export function slugify(value: string): string {
-    return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
-}
-
-export function isDefined<T>(value: T): value is NonNullable<T> {
-    return value !== undefined && value !== null
-}
-
-/**
- * Generates an 8-character unique ID from a text using the djb2 hash function.
- * Converts the 32-bit hash to an unsigned integer and then to a hex string.
- */
-export function generateHashId(text: string): string {
-    let hash = 5381
-    for (let i = 0, len = text.length; i < len; i++) {
-        hash = (hash * 33) ^ text.charCodeAt(i)
-    }
-    // Convert to unsigned 32-bit integer
-    const unsignedHash = hash >>> 0
-    return unsignedHash.toString(16).padStart(8, "0")
+export function isCollectionReference(field: PossibleField) {
+    return field.airtableType === "multipleRecordLinks"
 }

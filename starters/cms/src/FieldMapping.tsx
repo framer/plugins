@@ -2,21 +2,6 @@ import { type EditableManagedCollectionField, framer, type ManagedCollection } f
 import { useEffect, useState } from "react"
 import { type DataSource, getDataSources, mergeFieldsWithExistingFields, syncCollection } from "./data"
 
-function ChevronIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
-            <path
-                d="M 3 11 L 6 8 L 3 5"
-                fill="transparent"
-                strokeWidth="1.5"
-                stroke="#999"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-        </svg>
-    )
-}
-
 interface FieldMappingRowProps {
     field: EditableManagedCollectionField
     originalFieldName: string | undefined
@@ -38,13 +23,19 @@ function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled,
                 <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
                 <span>{originalFieldName ?? field.id}</span>
             </button>
-            <ChevronIcon />
+            <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" fill="none">
+                <path
+                    fill="transparent"
+                    stroke="#999"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="m2.5 7 3-3-3-3"
+                />
+            </svg>
             <input
                 type="text"
-                style={{
-                    width: "100%",
-                    opacity: disabled ? 0.5 : 1,
-                }}
+                style={{ width: "100%", opacity: disabled ? 0.5 : 1 }}
                 disabled={disabled}
                 placeholder={field.id}
                 value={field.name}
@@ -162,9 +153,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
 
             await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField)
-            await framer.closePlugin("Synchronization successful", {
-                variant: "success",
-            })
+            await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)
             framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
@@ -185,7 +174,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     return (
         <main className="framer-hide-scrollbar mapping">
-            <hr className="sticky-top" />
+            <hr className="sticky-divider" />
             <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
                     Slug Field
@@ -212,7 +201,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 </label>
 
                 <div className="fields">
-                    <span className="column-span-2">Column</span>
+                    <span className="fields-column">Column</span>
                     <span>Field</span>
                     {fields.map(field => (
                         <FieldMappingRow

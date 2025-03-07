@@ -19,7 +19,7 @@ form {
     gap: 10px;
 }
 
-.sticky-top {
+.sticky-divider {
     position: sticky;
     top: 0;
 }
@@ -29,7 +29,7 @@ form {
     flex-shrink: 1;
 }
 
-.column-span-2 {
+.fields-column {
     grid-column: span 2 / span 2;
 }
 

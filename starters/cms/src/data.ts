@@ -1,11 +1,10 @@
-import type {
-    EditableManagedCollectionField,
-    FieldDataInput,
-    ManagedCollection,
-    ManagedCollectionItemInput,
+import {
+    type EditableManagedCollectionField,
+    type FieldDataInput,
+    framer,
+    type ManagedCollection,
+    type ManagedCollectionItemInput,
 } from "framer-plugin"
-
-import { framer } from "framer-plugin"
 
 export const PLUGIN_KEYS = {
     DATA_SOURCE_ID: "dataSourceId",

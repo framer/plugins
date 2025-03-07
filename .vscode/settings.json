@@ -1,3 +1,4 @@
 {
-    "editor.rulers": [120]
+    "editor.rulers": [120],
+    "eslint.workingDirectories": [{ "mode": "auto" }]
 }

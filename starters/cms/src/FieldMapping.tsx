@@ -1,6 +1,6 @@
 import { type EditableManagedCollectionField, framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
-import { type DataSource, getDataSources, mergeFieldsWithExistingFields, syncCollection } from "./data"
+import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "./data"
 
 interface FieldMappingRowProps {
     field: EditableManagedCollectionField
@@ -75,11 +75,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const [fields, setFields] = useState(initialManagedCollectionFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
-    const [dataSourceName] = useState(
-        () =>
-            getDataSources().find(dataSourceIdentifier => dataSourceIdentifier.id === dataSource.id)?.name ||
-            dataSource.id
-    )
+    const dataSourceName = dataSourceOptions.find(option => option.id === dataSource.id)?.name ?? dataSource.id
 
     useEffect(() => {
         const abortController = new AbortController()

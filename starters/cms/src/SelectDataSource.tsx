@@ -1,8 +1,6 @@
-import type { DataSource } from "./data"
-
 import { framer } from "framer-plugin"
 import { useState } from "react"
-import { getDataSource, getDataSources } from "./data"
+import { type DataSource, getDataSource, getDataSources } from "./data"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void

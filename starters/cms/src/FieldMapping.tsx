@@ -1,9 +1,6 @@
-import type { EditableManagedCollectionField, ManagedCollection } from "framer-plugin"
-import type { DataSource } from "./data"
-
-import { framer } from "framer-plugin"
+import { type EditableManagedCollectionField, framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
-import { getDataSources, mergeFieldsWithExistingFields, syncCollection } from "./data"
+import { type DataSource, getDataSources, mergeFieldsWithExistingFields, syncCollection } from "./data"
 
 function ChevronIcon() {
     return (

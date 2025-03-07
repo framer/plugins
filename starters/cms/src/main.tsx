@@ -1,10 +1,10 @@
 import "framer-plugin/framer.css"
 
-import React from "react"
-import ReactDOM from "react-dom/client"
 import { framer } from "framer-plugin"
+import { StrictMode } from "react"
+import { createRoot } from "react-dom/client"
 import { App } from "./App.tsx"
-import { syncExistingCollection, PLUGIN_KEYS } from "./data"
+import { PLUGIN_KEYS, syncExistingCollection } from "./data"
 
 const activeCollection = await framer.getActiveManagedCollection()
 
@@ -21,13 +21,13 @@ if (didSync) {
     const root = document.getElementById("root")
     if (!root) throw new Error("Root element not found")
 
-    ReactDOM.createRoot(root).render(
-        <React.StrictMode>
+    createRoot(root).render(
+        <StrictMode>
             <App
                 collection={activeCollection}
                 previousDataSourceId={previousDataSourceId}
                 previousSlugFieldId={previousSlugFieldId}
             />
-        </React.StrictMode>
+        </StrictMode>
     )
 }

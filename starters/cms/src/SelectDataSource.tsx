@@ -1,22 +1,29 @@
 import { framer } from "framer-plugin"
 import { useState } from "react"
-import { type DataSource, getDataSource, getDataSources } from "./data"
+import { type DataSource, type DataSourceHeader, getDataSource, useDataSourceHeaders } from "./data"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
 }
 
 export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
-    const [dataSources] = useState(() => getDataSources())
-    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(dataSources[0]?.id ?? "")
-    const [isLoading, setIsLoading] = useState(false)
+    const { dataSourceHeaders, araDataSourceHeadersLoading } = useDataSourceHeaders()
+    const [previousDataSourceHeaders, setPreviousDataSourceHeaders] = useState<DataSourceHeader[]>(dataSourceHeaders)
+    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(dataSourceHeaders[0]?.id ?? "")
+    const [isDataSourceLoading, setIsDataSourceLoading] = useState(false)
+
+    if (dataSourceHeaders !== previousDataSourceHeaders) {
+        setPreviousDataSourceHeaders(dataSourceHeaders)
+        if (selectedDataSourceId !== "" && !dataSourceHeaders.some(source => selectedDataSourceId === source.id)) {
+            setSelectedDataSourceId("")
+        }
+    }
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         try {
-            setIsLoading(true)
-
+            setIsDataSourceLoading(true)
             const dataSource = await getDataSource(selectedDataSourceId)
             onSelectDataSource(dataSource)
         } catch (error) {
@@ -25,9 +32,11 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 variant: "error",
             })
         } finally {
-            setIsLoading(false)
+            setIsDataSourceLoading(false)
         }
     }
+
+    const isLoading = araDataSourceHeadersLoading || isDataSourceLoading
 
     return (
         <main className="framer-hide-scrollbar setup">
@@ -56,7 +65,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                         <option value="" disabled>
                             Choose Source…
                         </option>
-                        {dataSources.map(({ id, name }) => (
+                        {dataSourceHeaders.map(({ id, name }) => (
                             <option key={id} value={id}>
                                 {name}
                             </option>

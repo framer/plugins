@@ -5,11 +5,17 @@ import {
     type ManagedCollection,
     type ManagedCollectionItemInput,
 } from "framer-plugin"
+import { useEffect, useState } from "react"
 
 export const PLUGIN_KEYS = {
     DATA_SOURCE_ID: "dataSourceId",
     SLUG_FIELD_ID: "slugFieldId",
 } as const
+
+export interface DataSourceHeader {
+    id: string
+    name: string
+}
 
 export interface DataSource {
     id: string
@@ -17,11 +23,34 @@ export interface DataSource {
     items: FieldDataInput[]
 }
 
-export function getDataSources() {
-    return [
+async function getDataSourceHeaders(): Promise<DataSourceHeader[]> {
+    return Promise.resolve([
         { id: "articles", name: "Articles" },
         { id: "categories", name: "Categories" },
-    ]
+    ])
+}
+
+export function useDataSourceHeaders() {
+    const [dataSourceHeaders, setDataSourceHeaders] = useState<DataSourceHeader[]>([])
+    const [araDataSourceHeadersLoading, setAreDataSourceHeadersLoading] = useState(true)
+
+    useEffect(() => {
+        ;(async () => {
+            try {
+                const newDataSources = await getDataSourceHeaders()
+                setDataSourceHeaders(newDataSources)
+            } catch (error) {
+                console.error(error)
+                framer.notify(`Failed to load data source headers. Check the logs for more details.`, {
+                    variant: "error",
+                })
+            } finally {
+                setAreDataSourceHeadersLoading(false)
+            }
+        })()
+    }, [])
+
+    return { dataSourceHeaders, araDataSourceHeadersLoading }
 }
 
 /**

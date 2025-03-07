@@ -1,0 +1,6 @@
+{
+    "id": "gr3h0s",
+    "name": "Greenhouse",
+    "modes": ["syncManagedCollection", "configureManagedCollection"],
+    "icon": "/greenhouseIcon.png"
+}

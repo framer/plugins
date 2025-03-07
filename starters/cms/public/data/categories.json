@@ -1,18 +1,9 @@
 {
     "id": "categories",
     "fields": [
-        {
-            "name": "Title",
-            "type": "string"
-        },
-        {
-            "name": "Description",
-            "type": "string"
-        },
-        {
-            "name": "Color",
-            "type": "color"
-        }
+        { "name": "Title", "type": "string" },
+        { "name": "Description", "type": "string" },
+        { "name": "Color", "type": "color" }
     ],
     "items": [
         {

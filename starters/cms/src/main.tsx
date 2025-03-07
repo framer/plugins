@@ -6,7 +6,7 @@ import { framer } from "framer-plugin"
 import { App } from "./App.tsx"
 import { syncExistingCollection, PLUGIN_KEYS } from "./data"
 
-const activeCollection = await framer.getManagedCollection()
+const activeCollection = await framer.getActiveManagedCollection()
 
 const previousDataSourceId = await activeCollection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
 const previousSlugFieldId = await activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID)

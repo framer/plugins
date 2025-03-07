@@ -51,6 +51,10 @@ form {
     align-items: center;
 }
 
+.setup select {
+    font-weight: 600;
+}
+
 .intro {
     display: flex;
     flex-direction: column;

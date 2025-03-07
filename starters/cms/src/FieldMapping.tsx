@@ -2,7 +2,7 @@ import type { EditableManagedCollectionField, ManagedCollection } from "framer-p
 import type { DataSource } from "./data"
 
 import { framer } from "framer-plugin"
-import { memo, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { getDataSources, mergeFieldsWithExistingFields, syncCollection } from "./data"
 
 function ChevronIcon() {
@@ -28,41 +28,39 @@ interface FieldMappingRowProps {
     onNameChange: (fieldId: string, name: string) => void
 }
 
-const FieldMappingRow = memo(
-    ({ field, originalFieldName, disabled, onToggleDisabled, onNameChange }: FieldMappingRowProps) => {
-        return (
-            <>
-                <button
-                    type="button"
-                    className="source-field"
-                    aria-disabled={disabled}
-                    onClick={() => onToggleDisabled(field.id)}
-                    tabIndex={0}
-                >
-                    <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
-                    <span>{originalFieldName ?? field.id}</span>
-                </button>
-                <ChevronIcon />
-                <input
-                    type="text"
-                    style={{
-                        width: "100%",
-                        opacity: disabled ? 0.5 : 1,
-                    }}
-                    disabled={disabled}
-                    placeholder={field.id}
-                    value={field.name}
-                    onChange={event => onNameChange(field.id, event.target.value)}
-                    onKeyDown={event => {
-                        if (event.key === "Enter") {
-                            event.preventDefault()
-                        }
-                    }}
-                />
-            </>
-        )
-    }
-)
+function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled, onNameChange }: FieldMappingRowProps) {
+    return (
+        <>
+            <button
+                type="button"
+                className="source-field"
+                aria-disabled={disabled}
+                onClick={() => onToggleDisabled(field.id)}
+                tabIndex={0}
+            >
+                <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
+                <span>{originalFieldName ?? field.id}</span>
+            </button>
+            <ChevronIcon />
+            <input
+                type="text"
+                style={{
+                    width: "100%",
+                    opacity: disabled ? 0.5 : 1,
+                }}
+                disabled={disabled}
+                placeholder={field.id}
+                value={field.name}
+                onChange={event => onNameChange(field.id, event.target.value)}
+                onKeyDown={event => {
+                    if (event.key === "Enter") {
+                        event.preventDefault()
+                    }
+                }}
+            />
+        </>
+    )
+}
 
 const initialManagedCollectionFields: EditableManagedCollectionField[] = []
 const initialFieldIds: ReadonlySet<string> = new Set()

@@ -1,14 +1,13 @@
 import { framer } from "framer-plugin"
 import { useState } from "react"
-import { type DataSource, getDataSource, getDataSources } from "./data"
+import { type DataSource, getDataSource, dataSourceOptions } from "./data"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
 }
 
 export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
-    const [dataSources] = useState(() => getDataSources())
-    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(dataSources[0]?.id ?? "")
+    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(dataSourceOptions[0].id)
     const [isLoading, setIsLoading] = useState(false)
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -56,7 +55,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                         <option value="" disabled>
                             Choose Source…
                         </option>
-                        {dataSources.map(({ id, name }) => (
+                        {dataSourceOptions.map(({ id, name }) => (
                             <option key={id} value={id}>
                                 {name}
                             </option>

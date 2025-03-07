@@ -17,12 +17,10 @@ export interface DataSource {
     items: FieldDataInput[]
 }
 
-export function getDataSources() {
-    return [
-        { id: "articles", name: "Articles" },
-        { id: "categories", name: "Categories" },
-    ]
-}
+export const dataSourceOptions = [
+    { id: "articles", name: "Articles" },
+    { id: "categories", name: "Categories" },
+] as const
 
 /**
  * Retrieve data and process it into a structured format.

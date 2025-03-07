@@ -147,6 +147,14 @@ form {
     box-shadow: none;
 }
 
+[data-framer-theme=light] .mapping .source-field input[type="checkbox"]:not(:checked) {
+    background: #ccc;
+}
+
+[data-framer-theme=dark] .mapping .source-field input[type="checkbox"]:not(:checked) {
+    background: #666;
+}
+
 .mapping footer {
     position: sticky;
     bottom: 0;

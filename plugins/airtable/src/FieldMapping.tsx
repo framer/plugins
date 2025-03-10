@@ -1,4 +1,4 @@
-import type { ManagedCollection, EditableManagedCollectionField, CollectionField } from "framer-plugin"
+import type { ManagedCollection, EditableManagedCollectionField, Field,  } from "framer-plugin"
 import type { DataSource, PossibleField } from "./data"
 
 import { framer } from "framer-plugin"
@@ -21,7 +21,7 @@ function ChevronIcon() {
     )
 }
 
-const fieldTypeOptions: { type: CollectionField["type"]; label: string }[] = [
+const fieldTypeOptions: { type: Field["type"]; label: string }[] = [
     { type: "boolean", label: "Boolean" },
     { type: "color", label: "Color" },
     { type: "number", label: "Number" },
@@ -293,7 +293,6 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 {fields
                     .filter(
                         field =>
-                            field.type !== "divider" &&
                             field.type !== "unsupported" &&
                             (!isCollectionReference(field) || field.supportedCollections.length > 0)
                     )

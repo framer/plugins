@@ -1,0 +1,175 @@
+/* Your Plugin CSS */
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 0 15px 15px;
+    height: 100%;
+    gap: 15px;
+
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+}
+
+.field-input {
+    width: 100%;
+    flex-shrink: 1;
+}
+
+.column-span-2 {
+    grid-column: span 2 / span 2;
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 200px;
+    background-color: var(--framer-color-bg-secondary);
+    border-radius: 10px;
+}
+
+.setup label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+    width: 100%;
+    justify-content: space-between;
+    padding-left: 15px;
+    color: var(--framer-color-text-secondary);
+}
+
+.setup select {
+    width: 164px;
+}
+
+.mapping {
+    padding-bottom: 0;
+}
+
+.mapping .fields {
+    display: grid;
+    grid-template-columns: 1fr 8px 1fr 8px 1fr;
+    gap: 10px;
+    margin-bottom: auto;
+    padding-bottom: 10px;
+    align-items: center;
+    width: 100%;
+    color: var(--framer-color-text-tertiary);
+}
+
+.mapping .slug-field {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--framer-color-text-tertiary);
+}
+
+.mapping .source-field {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+    white-space: nowrap;
+    font-weight: 500;
+    background-color: var(--framer-color-bg-tertiary);
+    gap: 8px;
+}
+
+.mapping .source-field[aria-disabled="true"] {
+    opacity: 0.5;
+}
+
+.mapping .source-field:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--framer-color-tint);
+}
+
+.mapping .source-field input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.mapping .source-field input[type="checkbox"]:focus {
+    box-shadow: none;
+}
+
+.mapping footer {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--framer-color-bg);
+    margin-top: auto;
+    padding-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.mapping footer::before {
+    content: "";
+    position: absolute;
+    top: -45px;
+    left: 0;
+    width: 100%;
+    height: 45px;
+    background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
+    pointer-events: none;
+}
+
+/* Login */
+
+.login-steps {
+    list-style-type: decimal;
+    list-style-position: inside;
+}
+
+.login-steps {
+    margin: 0;
+    list-style-position: outside;
+    padding-left: 1.2em;
+    text-wrap: balance;
+    color: var(--framer-color-text-tertiary);
+    letter-spacing: normal;
+}
+
+.login-steps li:not(:first-child) {
+    padding-top: 0.4em;
+}
+
+.login-steps li::marker {
+    color: var(--framer-color-text-secondary);
+}
+
+/* No Access */
+
+.actions {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    width: 100%;
+}
+
+.action-button {
+    flex: 1;
+    width: 100%;
+}

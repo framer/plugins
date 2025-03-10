@@ -1,3 +1,5 @@
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { type SynchronizeResult, type SyncMutationOptions, syncTable } from "./airtable"
 import auth from "./auth"
 
 interface AirtableBaseEntity {
@@ -280,7 +282,7 @@ type AirtableFieldOptions = {
     aiText: AiTextOption
 }
 
-export interface AirtableBase extends AirtableBaseEntity {
+interface AirtableBase extends AirtableBaseEntity {
     permissionLevel?: PermissionLevel
 }
 
@@ -350,6 +352,11 @@ interface BasesResponse {
     offset?: string
 }
 
+interface FetchRecordsParams {
+    baseId: string
+    tableId: string
+}
+
 type QueryParams = Record<string, string | number | string[] | undefined>
 
 interface RequestOptions {
@@ -357,7 +364,6 @@ interface RequestOptions {
     method?: "get" | "post" | "delete" | "patch"
     query?: QueryParams
     body?: Record<string, unknown>
-    signal?: AbortSignal
 }
 
 const API_URL = "https://api.airtable.com/v0"
@@ -374,7 +380,7 @@ const calculateBackoffDelay = (numAttempts: number): number => {
     return Math.random() * clippedBackoffTime
 }
 
-const request = async ({ path, method, query, body, signal }: RequestOptions, numAttempts = 0) => {
+const request = async ({ path, method, query, body }: RequestOptions, numAttempts = 0) => {
     const tokens = await auth.getTokens()
 
     if (!tokens) {
@@ -401,7 +407,6 @@ const request = async ({ path, method, query, body, signal }: RequestOptions, nu
         headers: {
             Authorization: `Bearer ${tokens.accessToken}`,
         },
-        signal,
     })
 
     const json = await res.json()
@@ -413,10 +418,10 @@ const request = async ({ path, method, query, body, signal }: RequestOptions, nu
     }
 
     if (!res.ok) {
-        const errors = (json.errors as { error: string; message: string }[])?.map(
+        const errors = (json.errors as { error: string; message: string }[]).map(
             ({ error, message }, index) => `${index + 1}. ${error}: ${message}`
         )
-        throw new Error(`Failed to fetch Airtable API:\n\n${errors?.join("\n")}`)
+        throw new Error(`Failed to fetch Airtable API:\n\n${errors.join("\n")}`)
     }
 
     return json
@@ -425,40 +430,16 @@ const request = async ({ path, method, query, body, signal }: RequestOptions, nu
 /**
  * Fetch the schema of a chosen base.
  */
-export const fetchTables = async (baseId: string, signal?: AbortSignal): Promise<BaseSchemaResponse> => {
+export const fetchBaseSchema = async (baseId: string): Promise<BaseSchemaResponse> => {
     return request({
         method: "get",
         path: `/meta/bases/${baseId}/tables`,
-        signal,
     })
 }
 
 /**
- * Fetches the schema of a table.
+ * Fetches all bases.
  */
-export const fetchTable = async (baseId: string, tableId: string) => {
-    const bases = await fetchTables(baseId).catch(error => {
-        if (error instanceof Error && error.name === "AbortError") {
-            return null
-        }
-
-        throw error
-    })
-
-    if (!bases) {
-        return null
-    }
-
-    const table = bases.tables.find(table => table.id === tableId)
-
-    if (!table) {
-        throw new Error(`Table with id ${tableId} not found`)
-    }
-
-    return table
-}
-/**
- * Fetches all bases. */
 export const fetchBases = (offset?: string): Promise<BasesResponse> => {
     const query: QueryParams = {}
     if (offset) {
@@ -474,7 +455,8 @@ export const fetchBases = (offset?: string): Promise<BasesResponse> => {
 /**
  * Fetches all records from a table in a base.
  */
-export const fetchRecords = async (baseId: string, tableId: string): Promise<AirtableRecord[]> => {
+export const fetchRecords = async (args: FetchRecordsParams): Promise<AirtableRecord[]> => {
+    const { baseId, tableId } = args
     const records: AirtableRecord[] = []
     let offset: string | undefined
 
@@ -495,15 +477,42 @@ export const fetchRecords = async (baseId: string, tableId: string): Promise<Air
     return records
 }
 
-export const fetchAllBases = async () => {
-    let allBases: AirtableBase[] = []
-    let currentOffset: string | undefined
+export const useBasesQuery = () => {
+    return useQuery({
+        queryKey: ["bases"],
+        queryFn: async () => {
+            let allBases: AirtableBase[] = []
+            let currentOffset: string | undefined
 
-    do {
-        const response = await fetchBases(currentOffset)
-        allBases = [...allBases, ...response.bases]
-        currentOffset = response.offset
-    } while (currentOffset)
+            do {
+                const response = await fetchBases(currentOffset)
+                allBases = [...allBases, ...response.bases]
+                currentOffset = response.offset
+            } while (currentOffset)
 
-    return allBases
+            return allBases
+        },
+    })
+}
+
+export const useBaseSchemaQuery = (baseId: string) => {
+    return useQuery({
+        queryKey: ["baseSchema", baseId],
+        queryFn: () => fetchBaseSchema(baseId),
+        enabled: !!baseId,
+    })
+}
+
+export const useSyncTableMutation = ({
+    onSuccess,
+    onError,
+}: {
+    onSuccess?: (result: SynchronizeResult) => void
+    onError?: (e: Error) => void
+}) => {
+    return useMutation({
+        mutationFn: (args: SyncMutationOptions) => syncTable(args),
+        onSuccess,
+        onError,
+    })
 }

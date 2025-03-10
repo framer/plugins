@@ -1,51 +1,59 @@
-import "./globals.css"
 import "framer-plugin/framer.css"
 
-import React, { ReactNode } from "react"
-import ReactDOM from "react-dom/client"
 import { framer } from "framer-plugin"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { getPluginContext } from "./airtable.ts"
+import React from "react"
+import ReactDOM from "react-dom/client"
 
 import { App } from "./App.tsx"
-import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback.tsx"
+import auth from "./auth"
+import { syncExistingCollection, PLUGIN_KEYS } from "./data"
+import { Authenticate } from "./Login.tsx"
 
-export const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            retry: false,
-            staleTime: 5 * 60 * 1000,
-        },
-    },
-})
+const activeCollection = await framer.getActiveManagedCollection()
 
-function renderPlugin(app: ReactNode) {
-    const root = document.getElementById("root")
-    if (!root) throw new Error("Root element not found")
+const tokens = await auth.getTokens()
 
+const root = document.getElementById("root")
+if (!root) throw new Error("Root element not found")
+
+if (!tokens) {
+    await new Promise<void>(resolve => {
+        ReactDOM.createRoot(root).render(
+            <React.StrictMode>
+                <Authenticate onAuthenticated={resolve} />
+            </React.StrictMode>
+        )
+    })
+}
+
+const [previousBaseId, previousTableId, previousTableName, previousSlugFieldId] = await Promise.all([
+    activeCollection.getPluginData(PLUGIN_KEYS.BASE_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.TABLE_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.TABLE_NAME),
+    activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
+])
+
+const { didSync } = await syncExistingCollection(
+    activeCollection,
+    previousBaseId,
+    previousTableId,
+    previousTableName,
+    previousSlugFieldId
+)
+
+if (didSync) {
+    await framer.closePlugin("Synchronization successful", {
+        variant: "success",
+    })
+} else {
     ReactDOM.createRoot(root).render(
         <React.StrictMode>
-            <QueryClientProvider client={queryClient}>
-                <div className="w-full px-[15px] flex flex-col flex-1 overflow-y-auto no-scrollbar">
-                    <PageErrorBoundaryFallback>{app}</PageErrorBoundaryFallback>
-                </div>
-            </QueryClientProvider>
+            <App
+                collection={activeCollection}
+                previousBaseId={previousBaseId}
+                previousTableId={previousTableId}
+                previousSlugFieldId={previousSlugFieldId}
+            />
         </React.StrictMode>
     )
 }
-
-async function runPlugin() {
-    try {
-        const pluginContext = await getPluginContext()
-
-        renderPlugin(<App pluginContext={pluginContext} />)
-    } catch (e) {
-        const message = e instanceof Error ? e.message : String(e)
-
-        framer.closePlugin(message, {
-            variant: "error",
-        })
-    }
-}
-
-runPlugin()

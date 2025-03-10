@@ -1,9 +1,11 @@
 import type {
     CollectionItemData,
     ManagedCollection,
-    CollectionField,
     ManagedCollectionItemInput,
     ManagedCollectionField,
+    UnsupportedField,
+    FieldDataEntryInput,
+    FieldDataInput,
 } from "framer-plugin"
 
 import { framer } from "framer-plugin"
@@ -47,6 +49,8 @@ export async function getTables(baseId: string, signal: AbortSignal): Promise<Ai
     )
 }
 
+type AllowedTypes = ManagedCollectionField["type"] | "unsupported"
+
 interface InferredField {
     /**
      * The type of the field as it appears in Airtable.
@@ -54,7 +58,7 @@ interface InferredField {
      * Only set when fields are inferred.
      */
     readonly airtableType?: Exclude<AirtableFieldSchema["type"], "multipleRecordLinks" | "singleSelect">
-    readonly allowedTypes?: [CollectionField["type"], ...CollectionField["type"][]]
+    readonly allowedTypes?: [AllowedTypes, ...AllowedTypes[]]
 }
 
 interface InferredMultipleRecordLinksField {
@@ -72,7 +76,16 @@ interface InferredEnumField {
     readonly allowedTypes: ["enum"]
 }
 
-export type PossibleField = CollectionField & (InferredField | InferredMultipleRecordLinksField | InferredEnumField)
+export type PossibleField = (
+    | ManagedCollectionField
+    | {
+          id: string
+          name: string
+          userEditable: boolean
+          type: "unsupported"
+      }
+) &
+    (InferredField | InferredMultipleRecordLinksField | InferredEnumField)
 
 export async function inferFields(collection: ManagedCollection, table: AirtableTable): Promise<PossibleField[]> {
     const fields: PossibleField[] = []
@@ -175,14 +188,16 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
 
                 if (table.id === fieldSchema.options.linkedTableId) {
                     foundCollections.push({ id: collection.id, name: "This Collection" })
-                } else {
-                    const existingCollections = await framer.getManagedCollections()
-                    for (const existingCollection of existingCollections) {
-                        const tableId = await existingCollection.getPluginData(PLUGIN_KEYS.TABLE_ID)
+                }
 
-                        if (tableId === fieldSchema.options.linkedTableId) {
-                            foundCollections.push({ id: existingCollection.id, name: existingCollection.name })
-                        }
+                const existingCollections = await framer.getManagedCollections()
+                for (const existingCollection of existingCollections.filter(
+                    existingCollection => existingCollection.id !== collection.id
+                )) {
+                    const tableId = await existingCollection.getPluginData(PLUGIN_KEYS.TABLE_ID)
+
+                    if (tableId === fieldSchema.options.linkedTableId) {
+                        foundCollections.push({ id: existingCollection.id, name: existingCollection.name })
                     }
                 }
 
@@ -216,7 +231,11 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
             case "formula": {
                 const result = fieldSchema.options.result
                 if (!result) {
-                    fields.push({ ...fieldMetadata, type: "unsupported", allowedTypes: ["unsupported"] })
+                    fields.push({
+                        ...fieldMetadata,
+                        type: "unsupported",
+                        allowedTypes: ["unsupported"],
+                    })
                     continue
                 }
 
@@ -272,72 +291,116 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
     return fields
 }
 
-function getItemValueForField(fieldSchema: PossibleField, value: unknown): unknown {
+function getItemValueForField(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
     switch (fieldSchema.type) {
         case "boolean":
-            return Boolean(value)
+            return {
+                value: Boolean(value),
+                type: "boolean",
+            }
 
         case "link":
         case "image":
         case "file":
             if (typeof value === "string") {
-                return value
+                return {
+                    value,
+                    type: "string",
+                }
             }
 
             if (!Array.isArray(value)) return null
             if (value.length === 0) return null
             // TODO: When we add support for gallery fields, we'll need to return an array of URLs.
-            return value[0].url
+            return {
+                value: value[0].url,
+                type: "string",
+            }
 
         case "collectionReference":
             if (!Array.isArray(value)) return null
             if (value.length === 0) return null
-            return value[0]
+            return {
+                value: value[0],
+                type: "collectionReference",
+            }
 
         case "multiCollectionReference":
             if (!Array.isArray(value)) return null
-            return value
+            return {
+                value,
+                type: "multiCollectionReference",
+            }
 
         case "date":
             if (typeof value === "string") {
                 const date = new Date(value)
-                return isNaN(date.getTime()) ? null : date.toISOString()
+                if (isNaN(date.getTime())) return null
+                return {
+                    value: date.toISOString(),
+                    type: "date",
+                }
             }
             return null
 
         case "string":
+            if (typeof value !== "string") return null
+            return {
+                value,
+                type: "string",
+            }
+
         case "color":
-            return typeof value === "string" ? value : null
+            if (typeof value !== "string") return null
+            return {
+                value,
+                type: "color",
+            }
 
         case "formattedText":
-            return typeof value === "string" ? richTextToHTML(value) : null
+            if (typeof value !== "string") return null
+            return {
+                value: richTextToHTML(value),
+                type: "formattedText",
+            }
 
         case "enum": {
             if (typeof value !== "string") return null
             const choice = fieldSchema.cases.find(choice => choice.name === value)
-            return choice?.id ?? null
+            if (!choice) return null
+            return {
+                value: choice.id,
+                type: "enum",
+            }
         }
 
         case "number":
-            return typeof value === "number" ? value : null
+            if (typeof value !== "number" || Number.isNaN(value)) return null
+            return {
+                value,
+                type: "number",
+            }
 
         default:
-            return value
+            return null
     }
 }
 
 export async function getItems(dataSource: DataSource, slugFieldId: string) {
     const items = await fetchRecords(dataSource.baseId, dataSource.tableId)
     const fieldsById = new Map(dataSource.fields.map(field => [field.id, field]))
-    const itemsData: ({ id: string } & Record<string, unknown>)[] = []
+    const itemsData: { id: string; slugValue: string; fieldData: FieldDataInput }[] = []
 
     for (const item of items) {
-        const itemData: Record<string, unknown> = {}
+        const itemData: FieldDataInput = {}
 
         for (const fieldSchema of dataSource.fields) {
             // Set default false for checkbox fields
             if (fieldSchema.type === "boolean") {
-                itemData[fieldSchema.id] = false
+                itemData[fieldSchema.id] = {
+                    value: false,
+                    type: "boolean",
+                }
             }
 
             const cellValue = item.fields[fieldSchema.id]
@@ -345,29 +408,34 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                 const field = fieldsById.get(fieldSchema.id)
                 if (!field) continue
 
-                itemData[fieldSchema.id] = getItemValueForField(fieldSchema, cellValue)
+                const fieldData = getItemValueForField(fieldSchema, cellValue)
+                if (!fieldData) continue
+
+                itemData[fieldSchema.id] = fieldData
             }
         }
 
-        if (!itemData[slugFieldId]) {
-            const slugValue = item.fields[slugFieldId]
-            if (slugValue === undefined) {
-                console.warn(`Skipping item "${item.id}" because slug field "${slugFieldId}" is not present.`)
-                continue
-            }
-
-            itemData[slugFieldId] = getItemValueForField(
+        let slugField = itemData[slugFieldId]
+        if (!slugField) {
+            const fieldData = getItemValueForField(
                 {
                     type: "string",
                     id: slugFieldId,
                     name: "slug",
-                    allowedTypes: ["string"],
+                    userEditable: false,
                 },
-                slugValue
+                item.fields[slugFieldId]
             )
+
+            if (!fieldData) {
+                console.warn(`Skipping item "${item.id}" because slug field "${slugFieldId}" is not present.`)
+                continue
+            }
+
+            slugField = fieldData
         }
 
-        itemsData.push({ id: item.id, ...itemData })
+        itemsData.push({ id: item.id, slugValue: slugField.value as string, fieldData: itemData })
     }
 
     return itemsData
@@ -413,7 +481,7 @@ export async function syncCollection(
             ...field,
             name: field.name.trim() || field.id,
         }))
-        .filter(field => field.type !== "divider" && field.type !== "unsupported")
+        .filter(field => field.type !== "unsupported")
         .filter(
             field =>
                 (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
@@ -432,30 +500,12 @@ export async function syncCollection(
 
     for (let i = 0; i < dataSourceItems.length; i++) {
         const item = dataSourceItems[i]
-        const slugValue = item[slugFieldId]
-
-        if (typeof slugValue !== "string" || !slugValue) {
-            console.warn(`Skipping item at index ${i} because it doesn't have a valid slug`)
-            continue
-        }
-
-        const fieldData: CollectionItemData["fieldData"] = {}
-        for (const [fieldName, value] of Object.entries(item)) {
-            const field = sanitizedFields.find(field => field.id === fieldName)
-
-            // Field is in the data but skipped based on selected fields.
-            if (!field) continue
-
-            // For details on expected field value, see:
-            // https://www.framer.com/developers/plugins/cms#collections
-            fieldData[field.id] = value
-        }
 
         items.push({
             id: item.id,
-            slug: slugValue,
+            slug: item.slugValue,
             draft: false,
-            fieldData,
+            fieldData: item.fieldData,
         })
 
         unsyncedItems.delete(item.id)

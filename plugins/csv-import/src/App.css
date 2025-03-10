@@ -9,8 +9,7 @@
 }
 
 .import-collection {
-    gap: 20px;
-    color: #666;
+    align-items: center;
 }
 
 .manage-conflicts {
@@ -65,38 +64,58 @@
     z-index: 1;
 }
 
-.subtle {
-    line-height: 1.6;
+.logo {
+    color: var(--framer-color-text-tertiary);
+    background-color: rgba(0, 153, 255, 0.1);
+    border-radius: 8px;
+    height: 30px;
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.ordered-list {
-    color: var(--framer-color-text-secondary);
-    margin: 0;
-    list-style-position: outside;
-    padding-left: 1.2em;
-    text-wrap: balance;
+.intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    flex: 1;
+    text-align: center;
+    max-width: 160px;
+    gap: 15px;
 }
 
-.ordered-list li:not(:first-child) {
-    padding-top: 0.4em;
+.intro h2 {
+    line-height: 1;
+    font-size: 1em;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--framer-color-text-primary);
+}
+
+.intro p {
+    color: var(--framer-color-text-tertiary);
 }
 
 /* Manage conflicts screen */
 
-.content {
+.manage-conflicts .content {
     display: flex;
     flex-direction: column;
     gap: 10px;
     height: 100%;
 }
 
-.message {
+.manage-conflicts .message {
     display: flex;
     flex-direction: column;
     gap: 5px;
 }
 
-.apply-to-all {
+.manage-conflicts .apply-to-all {
     display: flex;
     align-items: center;
     gap: 8px;

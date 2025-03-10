@@ -5,15 +5,13 @@ import { framer } from "framer-plugin"
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
 import { processRecords, parseCSV, importCSV, type ImportResult, type ImportResultItem } from "./csv"
 
-const importGuideURL = "https://www.framer.com/learn/cms-import/"
-
 function ImportIcon() {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none">
             <path
-                d="M 40 15.556 C 51.046 15.556 60 20.033 60 25.556 C 60 31.078 51.046 35.556 40 35.556 C 28.954 35.556 20 31.078 20 25.556 C 20 20.033 28.954 15.556 40 15.556 Z M 60 39.556 C 60 45.078 51.046 49.556 40 49.556 C 28.954 49.556 20 45.078 20 39.556 C 20 36.794 20 31.556 20 31.556 C 20 37.078 28.954 41.556 40 41.556 C 51.046 41.556 60 37.078 60 31.556 C 60 31.556 60 36.794 60 39.556 Z M 60 53.556 C 60 59.078 51.046 63.556 40 63.556 C 28.954 63.556 20 59.078 20 53.556 C 20 50.794 20 45.556 20 45.556 C 20 51.078 28.954 55.556 40 55.556 C 51.046 55.556 60 51.078 60 45.556 C 60 45.556 60 50.794 60 53.556 Z"
-                fill="#09f"
-            />
+                d="M 9 1.4 C 12.59 1.4 15.5 2.799 15.5 4.525 C 15.5 6.251 12.59 7.65 9 7.65 C 5.41 7.65 2.5 6.251 2.5 4.525 C 2.5 2.799 5.41 1.4 9 1.4 Z M 15.5 8.9 C 15.5 10.626 12.59 12.025 9 12.025 C 5.41 12.025 2.5 10.626 2.5 8.9 C 2.5 8.037 2.5 6.4 2.5 6.4 C 2.5 8.126 5.41 9.525 9 9.525 C 12.59 9.525 15.5 8.126 15.5 6.4 C 15.5 6.4 15.5 8.037 15.5 8.9 Z M 15.5 13.275 C 15.5 15.001 12.59 16.4 9 16.4 C 5.41 16.4 2.5 15.001 2.5 13.275 C 2.5 12.412 2.5 10.775 2.5 10.775 C 2.5 12.501 5.41 13.9 9 13.9 C 12.59 13.9 15.5 12.501 15.5 10.775 C 15.5 10.775 15.5 12.412 15.5 13.275 Z"
+                fill="rgb(0, 153, 255)"
+            ></path>
         </svg>
     )
 }
@@ -125,8 +123,8 @@ export function App({ collection }: { collection: Collection }) {
 
     useEffect(() => {
         framer.showUI({
-            width: 300,
-            height: 336,
+            width: 260,
+            height: 330,
             resizable: false,
         })
     }, [])
@@ -263,24 +261,16 @@ export function App({ collection }: { collection: Collection }) {
 
             {!isDragging && (
                 <>
-                    <div className="dropzone">
-                        <ImportIcon />
+                    <div className="intro">
+                        <div className="logo">
+                            <ImportIcon />
+                        </div>
+                        <div className="content">
+                            <h2>Upload CSV</h2>
+                            <p>Make sure your collection fields in Framer match the names of your CSV fields.</p>
+                        </div>
                     </div>
-                    <ol className="ordered-list">
-                        <li>
-                            <a
-                                href={importGuideURL}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ fontWeight: 600 }}
-                            >
-                                Read the guide
-                            </a>{" "}
-                            and prepare your data
-                        </li>
-                        <li>Set up your Collection fields in Framer to match the names of your CSV fields</li>
-                        <li>Upload your CSV</li>
-                    </ol>
+
                     <button
                         className="framer-button-primary"
                         onClick={event => {

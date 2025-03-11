@@ -222,11 +222,17 @@ export function MapSheetFieldsPage({
                 return field
             })
 
+        const colFieldTypes: Record<string, CollectionFieldType> = {}
+
+        for (const field of allFields) {
+            colFieldTypes[field.id] = field.type
+        }
+
         onSubmit({
             fields: allFields,
             spreadsheetId,
             sheetTitle,
-            colFieldTypes: fieldConfig.map(field => field.type ?? "string"),
+            colFieldTypes,
             ignoredColumns: Array.from(disabledColumns),
             slugColumn,
             lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),

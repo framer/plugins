@@ -258,7 +258,7 @@ export interface SyncResult extends SyncStatus {
 }
 
 interface ProcessSheetRowParams {
-    fieldTypes: CollectionFieldType[]
+    fieldTypes: Record<string, CollectionFieldType>
     row: Row
     rowIndex: number
     uniqueHeaderRowNames: string[]
@@ -275,7 +275,7 @@ export interface SyncMutationOptions {
     fields: ManagedCollectionField[]
     slugColumn: string | null
     ignoredColumns: string[]
-    colFieldTypes: CollectionFieldType[]
+    colFieldTypes: Record<string, CollectionFieldType>
     lastSyncedTime: string | null
 }
 
@@ -331,7 +331,11 @@ function getFieldValue(fieldType: CollectionFieldType, cellValue: CellValue) {
         case "formattedText":
         case "color":
         case "string": {
-            return String(cellValue)
+            if (typeof cellValue === "string") {
+                return cellValue
+            }
+
+            return ""
         }
         default:
             return null
@@ -355,18 +359,7 @@ function processSheetRow({
     for (const [colIndex, cell] of row.entries()) {
         if (ignoredFieldColumnIndexes.includes(colIndex)) continue
 
-        // +1 as zero-indexed, another +1 to account for header row
-        const location = columnToLetter(colIndex + 1) + (rowIndex + 2)
-
-        const fieldValue = getFieldValue(fieldTypes[colIndex], cell)
-
-        if (fieldValue === null) {
-            status.warnings.push({
-                rowIndex,
-                message: `Invalid cell value at ${location}.`,
-            })
-            continue
-        }
+        const fieldValue = getFieldValue(fieldTypes[uniqueHeaderRowNames[colIndex]], cell)
 
         if (colIndex === slugFieldColumnIndex) {
             if (typeof fieldValue !== "string") {
@@ -394,7 +387,11 @@ function processSheetRow({
 
     for (const headerRowName of uniqueHeaderRowNames) {
         if (!(headerRowName in fieldData)) {
-            fieldData[headerRowName] = null
+            if (["string", "formattedText"].includes(fieldTypes[headerRowName])) {
+                fieldData[headerRowName] = ""
+            } else {
+                fieldData[headerRowName] = null
+            }
         }
     }
 

@@ -310,11 +310,17 @@ function getItemValueForField(fieldSchema: PossibleField, value: unknown): Field
             }
 
             if (!Array.isArray(value)) return null
-            if (value.length === 0) return null
+            if (value.length === 0) {
+                return {
+                    value: "",
+                    type: fieldSchema.type,
+                }
+            }
+
             // TODO: When we add support for gallery fields, we'll need to return an array of URLs.
             return {
                 value: value[0].url,
-                type: "string",
+                type: fieldSchema.type,
             }
 
         case "collectionReference":
@@ -395,14 +401,6 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
         const itemData: FieldDataInput = {}
 
         for (const fieldSchema of dataSource.fields) {
-            // Set default false for checkbox fields
-            if (fieldSchema.type === "boolean") {
-                itemData[fieldSchema.id] = {
-                    value: false,
-                    type: "boolean",
-                }
-            }
-
             const cellValue = item.fields[fieldSchema.id]
             if (cellValue !== undefined) {
                 const field = fieldsById.get(fieldSchema.id)
@@ -433,6 +431,46 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
             }
 
             slugField = fieldData
+        }
+
+        // Check for missing fields and set default values.
+        // TODO: In Plugin 4.0, unset fields will be removed, this will no longer be needed.
+        for (const field of dataSource.fields) {
+            if (!itemData[field.id]) {
+                switch (field.type) {
+                    case "string":
+                    case "formattedText":
+                    case "enum":
+                        itemData[field.id] = {
+                            value: "",
+                            type: field.type,
+                        }
+                        break
+                    case "boolean":
+                        itemData[field.id] = {
+                            value: false,
+                            type: "boolean",
+                        }
+                        break
+                    case "image":
+                    case "file":
+                    case "link":
+                    case "color":
+                    case "date":
+                    case "collectionReference":
+                    case "multiCollectionReference":
+                        itemData[field.id] = {
+                            value: null,
+                            type: field.type,
+                        }
+                        break
+                    default:
+                        console.warn(
+                            `Missing value for field "${field.name}" on item "${item.id}", it will be set to the default value for its type.`
+                        )
+                        break
+                }
+            }
         }
 
         itemsData.push({ id: item.id, slugValue: slugField.value as string, fieldData: itemData })

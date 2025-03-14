@@ -97,10 +97,10 @@ class Auth {
 
     async isWorkerAlive(): Promise<boolean> {
         try {
-            const res = await fetch(`${this.AUTH_URI}/`, {
-                method: "GET",
+            const res = await fetch(`${this.AUTH_URI}/poll`, {
+                method: "POST",
             })
-            return res.status === 200
+            return res.status === 400
         } catch (error) {
             console.error("Failed to connect to OAuth worker:", error)
             return false

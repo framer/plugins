@@ -57,10 +57,7 @@ export function App() {
     }
 
     const selectCollection = (event: ChangeEvent<HTMLSelectElement>) => {
-        const index = event.currentTarget.selectedIndex
-        if (index === -1) return
-
-        const collection = collections[index - 1]
+        const collection = collections.find(collection => collection.id === event.currentTarget.value)
         if (!collection) return
 
         setSelectedCollection(collection)
@@ -85,13 +82,14 @@ export function App() {
                 <select
                     onChange={selectCollection}
                     className={!selectedCollection ? "footer-select footer-select--unselected" : "footer-select"}
+                    value={selectedCollection?.id ?? ""}
                 >
-                    <option selected disabled>
+                    <option value="" disabled>
                         Select Collection…
                     </option>
 
                     {collections.map(collection => (
-                        <option key={collection.id} selected={collection.id === selectedCollection?.id}>
+                        <option key={collection.id} value={collection.id}>
                             {collection.name}
                         </option>
                     ))}

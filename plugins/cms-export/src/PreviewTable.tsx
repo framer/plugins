@@ -35,7 +35,7 @@ export function PreviewTable({ collection }: Props) {
                 previewItems.push(items[index])
             }
 
-            setPreviewCSV(getDataForCSV(fields, previewItems))
+            setPreviewCSV(getDataForCSV(collection.slugFieldName, fields, previewItems))
         }
 
         const resize = () => {
@@ -77,7 +77,9 @@ export function PreviewTable({ collection }: Props) {
                             return (
                                 <tr key={`${rowIndex}`}>
                                     {row.map((cell, columnIndex) => (
-                                        <td key={`${rowIndex}-${columnIndex}`}>{cell}</td>
+                                        <td key={`${rowIndex}-${columnIndex}`} title={cell}>
+                                            {cell}
+                                        </td>
                                     ))}
                                 </tr>
                             )

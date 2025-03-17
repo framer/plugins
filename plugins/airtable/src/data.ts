@@ -49,7 +49,7 @@ export async function getTables(baseId: string, signal: AbortSignal): Promise<Ai
     )
 }
 
-type AllowedTypes = ManagedCollectionField["type"] | "unsupported"
+type AllowedType = ManagedCollectionField["type"] | "unsupported"
 
 interface InferredField {
     /**
@@ -58,7 +58,7 @@ interface InferredField {
      * Only set when fields are inferred.
      */
     readonly airtableType?: Exclude<AirtableFieldSchema["type"], "multipleRecordLinks" | "singleSelect">
-    readonly allowedTypes?: [AllowedTypes, ...AllowedTypes[]]
+    readonly allowedTypes?: [AllowedType, ...AllowedType[]]
 }
 
 interface InferredMultipleRecordLinksField {
@@ -291,7 +291,7 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
     return fields
 }
 
-function getItemValueForField(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
+function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
     switch (fieldSchema.type) {
         case "boolean":
             return {
@@ -398,7 +398,7 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
     const itemsData: { id: string; slugValue: string; fieldData: FieldDataInput }[] = []
 
     for (const item of items) {
-        const itemData: FieldDataInput = {}
+        const fieldData: FieldDataInput = {}
 
         for (const fieldSchema of dataSource.fields) {
             const cellValue = item.fields[fieldSchema.id]
@@ -406,16 +406,16 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                 const field = fieldsById.get(fieldSchema.id)
                 if (!field) continue
 
-                const fieldData = getItemValueForField(fieldSchema, cellValue)
-                if (!fieldData) continue
+                const fieldDataEntry = getFieldDataEntryForFieldSchema(fieldSchema, cellValue)
+                if (!fieldDataEntry) continue
 
-                itemData[fieldSchema.id] = fieldData
+                fieldData[fieldSchema.id] = fieldDataEntry
             }
         }
 
-        let slugField = itemData[slugFieldId]
+        let slugField = fieldData[slugFieldId]
         if (!slugField) {
-            const fieldData = getItemValueForField(
+            const fieldDataEntry = getFieldDataEntryForFieldSchema(
                 {
                     type: "string",
                     id: slugFieldId,
@@ -425,29 +425,29 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                 item.fields[slugFieldId]
             )
 
-            if (!fieldData) {
-                console.warn(`Skipping item "${item.id}" because slug field "${slugFieldId}" is not present.`)
+            if (!fieldDataEntry) {
+                console.warn(`Skipping item “${item.id}” because slug field “${slugFieldId}” is not present.`)
                 continue
             }
 
-            slugField = fieldData
+            slugField = fieldDataEntry
         }
 
         // Check for missing fields and set default values.
         // TODO: In Plugin 4.0, unset fields will be removed, this will no longer be needed.
         for (const field of dataSource.fields) {
-            if (!itemData[field.id]) {
+            if (!fieldData[field.id]) {
                 switch (field.type) {
                     case "string":
                     case "formattedText":
                     case "enum":
-                        itemData[field.id] = {
+                        fieldData[field.id] = {
                             value: "",
                             type: field.type,
                         }
                         break
                     case "boolean":
-                        itemData[field.id] = {
+                        fieldData[field.id] = {
                             value: false,
                             type: "boolean",
                         }
@@ -459,21 +459,21 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                     case "date":
                     case "collectionReference":
                     case "multiCollectionReference":
-                        itemData[field.id] = {
+                        fieldData[field.id] = {
                             value: null,
                             type: field.type,
                         }
                         break
                     default:
                         console.warn(
-                            `Missing value for field "${field.name}" on item "${item.id}", it will be set to the default value for its type.`
+                            `Missing value for field “${field.name}” on item “${item.id}”, it will be set to the default value for its type.`
                         )
                         break
                 }
             }
         }
 
-        itemsData.push({ id: item.id, slugValue: slugField.value as string, fieldData: itemData })
+        itemsData.push({ id: item.id, slugValue: slugField.value as string, fieldData })
     }
 
     return itemsData
@@ -582,7 +582,7 @@ export async function syncExistingCollection(
         const existingFields = await collection.getFields()
         const table = await fetchTable(previousBaseId, previousTableId)
         if (!table) {
-            throw new Error(`Table "${previousTableName}" not found`)
+            throw new Error(`Table “${previousTableName}” not found`)
         }
         const dataSource: DataSource = {
             baseId: previousBaseId,
@@ -594,7 +594,7 @@ export async function syncExistingCollection(
         return { didSync: true }
     } catch (error) {
         console.error(error)
-        framer.notify(`Failed to sync collection "${previousTableName}". Check browser console for more details.`, {
+        framer.notify(`Failed to sync collection “${previousTableName}”. Check browser console for more details.`, {
             variant: "error",
         })
         return { didSync: false }

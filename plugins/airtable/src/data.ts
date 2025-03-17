@@ -1,9 +1,7 @@
 import type {
-    CollectionItemData,
     ManagedCollection,
     ManagedCollectionItemInput,
     ManagedCollectionField,
-    UnsupportedField,
     FieldDataEntryInput,
     FieldDataInput,
 } from "framer-plugin"

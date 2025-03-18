@@ -202,28 +202,58 @@ function getFieldDataEntryInputForField(
     }
 }
 
+function getFirstMatchingIndex(values: string[], name: string) {
+    for (const [index, value] of values.entries()) {
+        if (collator.compare(value, name) === 0) {
+            return index
+        }
+    }
+    return -1
+}
+
+/**
+ * Find the index of the slug field in the CSV header
+ * Either matches the slug field directly or finds the field it's based on
+ */
+function findSlugFieldIndex(
+    csvHeader: string[],
+    slugField: { name: string; basedOn?: string | null },
+    fields: Field[]
+): number {
+    // Try direct match first
+    let index = getFirstMatchingIndex(csvHeader, slugField.name)
+    if (index !== -1) return index
+
+    // No direct match, check if it's based on another field
+    if (!slugField.basedOn) {
+        throw new ImportError("error", `Import failed. Ensure your CSV has a field named “${slugField.name}”`)
+    }
+
+    // Find the base field
+    const basedOnField = fields.find(field => field.id === slugField.basedOn)
+    if (!basedOnField || basedOnField.type !== "string") {
+        throw new ImportError(
+            "error",
+            `Import failed. Slug field “${slugField.name}” must be based on another string field.`
+        )
+    }
+
+    // Try to find the base field in CSV headers
+    index = getFirstMatchingIndex(csvHeader, basedOnField.name)
+    if (index === -1) {
+        throw new ImportError("error", `Import failed. Ensure your CSV has a field named “${basedOnField.name}”`)
+    }
+
+    return index
+}
+
 /** Importer for "records": string based values with named keys */
 export async function processRecords(collection: Collection, records: CSVRecord[]) {
-    const existingItems = await collection.getItems()
-
     if (!collection.slugFieldName) {
         throw new ImportError("error", "Import failed. Ensure your CMS Collection only has one Slug field.")
     }
 
-    let slugFieldIndex: number | undefined
-    for (const [index, key] of Object.keys(records[0]).entries()) {
-        if (collator.compare(key, collection.slugFieldName) === 0) {
-            slugFieldIndex = index
-            break
-        }
-    }
-
-    if (typeof slugFieldIndex !== "number") {
-        throw new ImportError(
-            "error",
-            `Import failed. Ensure your CSV has a Slug field named “${collection.slugFieldName}”`
-        )
-    }
+    const existingItems = await collection.getItems()
 
     const result: ImportResult = {
         warnings: {
@@ -236,8 +266,17 @@ export async function processRecords(collection: Collection, records: CSVRecord[
     }
 
     const fields = await collection.getFields()
-
     const allItemIdBySlug = new Map<string, Map<string, string>>()
+
+    const csvHeader = Object.keys(records[0])
+    const slugFieldIndex = findSlugFieldIndex(
+        csvHeader,
+        {
+            name: collection.slugFieldName,
+            basedOn: collection.slugFieldBasedOn,
+        },
+        fields
+    )
 
     for (const field of fields) {
         if (field.type === "collectionReference" || field.type === "multiCollectionReference") {
@@ -267,7 +306,11 @@ export async function processRecords(collection: Collection, records: CSVRecord[
     }
 
     for (const record of records) {
-        const slug = Object.values(record)[slugFieldIndex]
+        let slug: string | undefined
+        if (slugFieldIndex !== -1) {
+            slug = slugify(Object.values(record)[slugFieldIndex])
+        }
+
         if (!slug) {
             result.warnings.missingSlugCount++
             continue
@@ -399,4 +442,18 @@ function summary(items: string[], max: number) {
         items = items.slice(0, max).concat([`${items.length - max} more`])
     }
     return summaryFormatter.format(items)
+}
+
+// Match everything except for letters, numbers and parentheses.
+const nonSlugCharactersRegExp = /[^\p{Letter}\p{Number}()]+/gu
+// Match leading/trailing dashes, for trimming purposes.
+const trimSlugRegExp = /^-+|-+$/gu
+
+/**
+ * Takes a freeform string and removes all characters except letters, numbers,
+ * and parentheses. Also makes it lower case, and separates words by dashes.
+ * This makes the value URL safe.
+ */
+export function slugify(value: string): string {
+    return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
 }

@@ -1,5 +1,5 @@
 {
-    "name": "localization-import-export",
+    "name": "locale-sync",
     "private": true,
     "version": "0.0.0",
     "type": "module",

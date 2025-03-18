@@ -459,10 +459,18 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                 switch (field.type) {
                     case "string":
                     case "formattedText":
-                    case "enum":
                         fieldData[field.id] = {
                             value: "",
                             type: field.type,
+                        }
+                        break
+                    case "enum":
+                        console.warn(
+                            `Missing value for field “${field.name}” on item “${item.id}”, it will be set to the first case.`
+                        )
+                        fieldData[field.id] = {
+                            value: field.cases[0].id,
+                            type: "enum",
                         }
                         break
                     case "boolean":

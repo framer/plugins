@@ -137,13 +137,21 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
                 break
 
             case "singleLineText":
+                fields.push({
+                    ...fieldMetadata,
+                    airtableType: fieldSchema.type,
+                    type: "string",
+                    allowedTypes: ["string"],
+                })
+                break
+
             case "email":
             case "phoneNumber":
                 fields.push({
                     ...fieldMetadata,
                     airtableType: fieldSchema.type,
                     type: "string",
-                    allowedTypes: ["string"],
+                    allowedTypes: ["string", "link"],
                 })
                 break
 
@@ -301,6 +309,19 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
         case "image":
         case "file":
             if (typeof value === "string") {
+                if (fieldSchema.airtableType === "email") {
+                    return {
+                        value: `mailto:${value}`,
+                        type: "link",
+                    }
+                }
+                if (fieldSchema.airtableType === "phoneNumber") {
+                    return {
+                        value: `tel:${value}`,
+                        type: "link",
+                    }
+                }
+
                 return {
                     value,
                     type: "string",

@@ -324,7 +324,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
 
                 return {
                     value,
-                    type: "string",
+                    type: fieldSchema.type,
                 }
             }
 

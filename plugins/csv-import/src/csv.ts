@@ -1,4 +1,12 @@
-import { Collection, CollectionField, CollectionItem, CollectionItemInput, framer } from "framer-plugin"
+import {
+    Collection,
+    Field,
+    CollectionItem,
+    CollectionItemInput,
+    framer,
+    FieldDataInput,
+    FieldDataEntryInput,
+} from "framer-plugin"
 
 type CSVRecord = Record<string, string>
 
@@ -78,7 +86,10 @@ class ImportError extends Error {
      * @param variant Notification variant to show the user
      * @param message Message to show the user
      */
-    constructor(readonly variant?: "error" | "warning", message?: string) {
+    constructor(
+        readonly variant?: "error" | "warning",
+        message?: string
+    ) {
         super(message)
     }
 }
@@ -86,7 +97,7 @@ class ImportError extends Error {
 /** Used to indicated a value conversion failed, used by `RecordImporter` and `setValueForVariable` */
 class ConversionError extends Error {}
 
-const findRecordValue = (record: CSVRecord, key: string) => {
+function findRecordValue(record: CSVRecord, key: string) {
     const value = Object.entries(record).find(([k]) => collator.compare(k, key) === 0)?.[1]
     if (!value) {
         return null
@@ -97,66 +108,98 @@ const findRecordValue = (record: CSVRecord, key: string) => {
 const collator = new Intl.Collator("en", { sensitivity: "base" })
 const BOOLEAN_TRUTHY_VALUES = /1|y(?:es)?|true/iu
 
-function getRecordValueForField(
-    field: CollectionField,
+function getFieldInputForField(
+    field: Field,
     value: string | null,
     allItemIdBySlug: Map<string, Map<string, string>>
-) {
-    if (value === null) {
-        return undefined
-    }
-
+): FieldDataEntryInput | ConversionError {
     switch (field.type) {
         case "string":
+            if (value === null) {
+                return { type: "string", value: "" }
+            }
+            return { type: "string", value }
+
         case "formattedText":
-        case "link":
+            if (value === null) {
+                return { type: "formattedText", value: "" }
+            }
+            return { type: "formattedText", value }
+
         case "color":
+            return { type: "color", value }
+
+        case "link":
+            return { type: "link", value }
+
         case "file":
+            return { type: "file", value }
+
         case "image":
-            return value.trim()
+            return { type: "image", value }
 
         case "number": {
+            if (value === null) {
+                return { type: "number", value: 0 }
+            }
             const number = Number(value)
             if (Number.isNaN(number)) {
                 return new ConversionError(`Invalid value for field “${field.name}” expected a number`)
             }
-            return number
+            return { type: "number", value: number }
         }
 
-        case "boolean":
-            return BOOLEAN_TRUTHY_VALUES.test(value)
+        case "boolean": {
+            if (value === null) {
+                return { type: "boolean", value: false }
+            }
+            return { type: "boolean", value: BOOLEAN_TRUTHY_VALUES.test(value) }
+        }
 
         case "date": {
+            if (value === null) {
+                return { type: "date", value: null }
+            }
             const date = new Date(value)
-            if (!isValidDate(date))
+            if (!isValidDate(date)) {
                 return new ConversionError(`Invalid value for field “${field.name}” expected a valid date`)
+            }
             const isoDate = date.toISOString().split("T")[0]
-            return new Date(isoDate).toJSON()
+            return { type: "date", value: new Date(isoDate).toJSON() }
         }
 
         case "enum": {
+            if (value === null) {
+                return { type: "enum", value: field.cases[0].id }
+            }
             const matchingCase = field.cases.find(
                 caseOption => collator.compare(caseOption.name, value) === 0 || caseOption.id === value
             )
             if (matchingCase) {
-                return matchingCase.id
+                return { type: "enum", value }
             }
             return new ConversionError(`Invalid case “${value}” for enum “${field.name}”`)
         }
 
         case "collectionReference": {
+            if (value === null) {
+                return { type: "collectionReference", value: null }
+            }
+
             const referencedSlug = value.trim()
             const referencedId = allItemIdBySlug.get(field.collectionId)?.get(referencedSlug)
             if (!referencedId) {
                 return new ConversionError(`Invalid Collection reference “${value}”`)
             }
 
-            return referencedId
+            return { type: "collectionReference", value: referencedId }
         }
 
         case "multiCollectionReference": {
+            if (value === null) {
+                return { type: "multiCollectionReference", value: null }
+            }
             const referencedSlugs = value.split(",").map(slug => slug.trim())
-
             const referencedIds: string[] = []
 
             for (const slug of referencedSlugs) {
@@ -167,36 +210,67 @@ function getRecordValueForField(
                 referencedIds.push(referencedId)
             }
 
-            return referencedIds
+            return { type: "multiCollectionReference", value: referencedIds }
         }
 
+        case "divider":
         case "unsupported":
             return new ConversionError(`Unsupported field type “${field.type}”`)
     }
 }
 
+function getFirstMatchingIndex(values: string[], name: string) {
+    for (const [index, value] of values.entries()) {
+        if (collator.compare(value, name) === 0) {
+            return index
+        }
+    }
+    return -1
+}
+
+/**
+ * Find the index of the slug field in the CSV header
+ * Either matches the slug field directly or finds the field it's based on
+ */
+function findSlugFieldIndex(
+    csvHeader: string[],
+    slugField: { name: string; basedOn?: string | null },
+    fields: Field[]
+): number {
+    // Try direct match first
+    let index = getFirstMatchingIndex(csvHeader, slugField.name)
+    if (index !== -1) return index
+
+    // No direct match, check if it's based on another field
+    if (!slugField.basedOn) {
+        throw new ImportError("error", `Import failed. Ensure your CSV has a field named “${slugField.name}”`)
+    }
+
+    // Find the base field
+    const basedOnField = fields.find(field => field.id === slugField.basedOn)
+    if (!basedOnField || basedOnField.type !== "string") {
+        throw new ImportError(
+            "error",
+            `Import failed. Slug field “${slugField.name}” must be based on another string field.`
+        )
+    }
+
+    // Try to find the base field in CSV headers
+    index = getFirstMatchingIndex(csvHeader, basedOnField.name)
+    if (index === -1) {
+        throw new ImportError("error", `Import failed. Ensure your CSV has a field named “${basedOnField.name}”`)
+    }
+
+    return index
+}
+
 /** Importer for "records": string based values with named keys */
 export async function processRecords(collection: Collection, records: CSVRecord[]) {
-    const existingItems = await collection.getItems()
-
     if (!collection.slugFieldName) {
         throw new ImportError("error", "Import failed. Ensure your CMS Collection only has one Slug field.")
     }
 
-    let slugFieldIndex: number | undefined
-    for (const [index, key] of Object.keys(records[0]).entries()) {
-        if (collator.compare(key, collection.slugFieldName) === 0) {
-            slugFieldIndex = index
-            break
-        }
-    }
-
-    if (typeof slugFieldIndex !== "number") {
-        throw new ImportError(
-            "error",
-            `Import failed. Ensure your CSV has a Slug field named “${collection.slugFieldName}”`
-        )
-    }
+    const existingItems = await collection.getItems()
 
     const result: ImportResult = {
         warnings: {
@@ -209,8 +283,17 @@ export async function processRecords(collection: Collection, records: CSVRecord[
     }
 
     const fields = await collection.getFields()
-
     const allItemIdBySlug = new Map<string, Map<string, string>>()
+
+    const csvHeader = Object.keys(records[0])
+    const slugFieldIndex = findSlugFieldIndex(
+        csvHeader,
+        {
+            name: collection.slugFieldName,
+            basedOn: collection.slugFieldBasedOn,
+        },
+        fields
+    )
 
     for (const field of fields) {
         if (field.type === "collectionReference" || field.type === "multiCollectionReference") {
@@ -240,7 +323,11 @@ export async function processRecords(collection: Collection, records: CSVRecord[
     }
 
     for (const record of records) {
-        const slug = Object.values(record)[slugFieldIndex]
+        let slug: string | undefined
+        if (slugFieldIndex !== -1) {
+            slug = slugify(Object.values(record)[slugFieldIndex])
+        }
+
         if (!slug) {
             result.warnings.missingSlugCount++
             continue
@@ -249,20 +336,19 @@ export async function processRecords(collection: Collection, records: CSVRecord[
             continue
         }
 
-        const fieldData: Record<string, unknown> = {}
+        const fieldData: FieldDataInput = {}
         for (const field of fields) {
             const value = findRecordValue(record, field.name)
+            const fieldDataEntry = getFieldInputForField(field, value, allItemIdBySlug)
 
-            const fieldValue = getRecordValueForField(field, value, allItemIdBySlug)
-
-            if (fieldValue instanceof ConversionError) {
+            if (fieldDataEntry instanceof ConversionError) {
                 result.warnings.skippedValueCount++
                 result.warnings.skippedValueKeys.add(field.name)
                 continue
             }
 
-            if (fieldValue !== undefined) {
-                fieldData[field.id] = fieldValue
+            if (fieldDataEntry !== undefined) {
+                fieldData[field.id] = fieldDataEntry
             }
         }
 
@@ -373,4 +459,18 @@ function summary(items: string[], max: number) {
         items = items.slice(0, max).concat([`${items.length - max} more`])
     }
     return summaryFormatter.format(items)
+}
+
+// Match everything except for letters, numbers and parentheses.
+const nonSlugCharactersRegExp = /[^\p{Letter}\p{Number}()]+/gu
+// Match leading/trailing dashes, for trimming purposes.
+const trimSlugRegExp = /^-+|-+$/gu
+
+/**
+ * Takes a freeform string and removes all characters except letters, numbers,
+ * and parentheses. Also makes it lower case, and separates words by dashes.
+ * This makes the value URL safe.
+ */
+export function slugify(value: string): string {
+    return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
 }

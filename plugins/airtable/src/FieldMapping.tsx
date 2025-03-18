@@ -1,4 +1,4 @@
-import type { ManagedCollection, EditableManagedCollectionField, Field,  } from "framer-plugin"
+import type { ManagedCollection, EditableManagedCollectionField, Field } from "framer-plugin"
 import type { DataSource, PossibleField } from "./data"
 
 import { framer } from "framer-plugin"
@@ -199,6 +199,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         } as PossibleField
                     case "image":
                         return { ...field, type: "image" } as PossibleField
+                    case "string":
+                        return { ...field, type: "string" } as PossibleField
                     default:
                         return field
                 }

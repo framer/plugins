@@ -1,5 +1,6 @@
 import type { ManagedCollection, EditableManagedCollectionField, Field } from "framer-plugin"
-import type { DataSource, PossibleField } from "./data"
+import type { DataSource } from "./data"
+import type { PossibleField } from "./fields"
 
 import { framer } from "framer-plugin"
 import { useState, useEffect, memo } from "react"
@@ -97,11 +98,15 @@ const FieldMappingRow = memo(
                         </>
                     )}
                     {!isCollectionReference(field) &&
-                        field.allowedTypes?.map(type => (
-                            <option key={type} value={type}>
-                                {fieldTypeOptions.find(option => option.type === type)?.label}
-                            </option>
-                        ))}
+                        field.allowedTypes?.map(type => {
+                            const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1)
+
+                            return (
+                                <option key={type} value={type}>
+                                    {fieldTypeOptions.find(option => option.type === type)?.label ?? capitalizedType}
+                                </option>
+                            )
+                        })}
                 </select>
             </>
         )
@@ -179,7 +184,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             const updatedFields = prevFields.map(field => {
                 if (field.id !== fieldId) return field
 
-                if (field.airtableType === "multipleRecordLinks") {
+                if (isCollectionReference(field)) {
                     return {
                         ...field,
                         type: "multiCollectionReference",

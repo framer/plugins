@@ -1,4 +1,4 @@
-import { PossibleField } from "./data"
+import { PossibleField } from "./fields"
 
 /**
  * Type guard to check if a value is defined (not null or undefined)
@@ -79,5 +79,8 @@ export const ALLOWED_FILE_TYPES = [
 ]
 
 export function isCollectionReference(field: PossibleField) {
-    return field.airtableType === "multipleRecordLinks"
+    return (
+        (field.type === "collectionReference" || field.type === "multiCollectionReference") &&
+        field.airtableType === "multipleRecordLinks"
+    )
 }

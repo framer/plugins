@@ -166,14 +166,19 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
                 break
 
             case "url":
-            case "multipleAttachments":
-                // Make the file types all possible file types since validation is enforced on Airtable's side
                 fields.push({
                     ...fieldMetadata,
                     airtableType: fieldSchema.type,
-                    type: "file",
-                    allowedFileTypes: ALLOWED_FILE_TYPES,
-                    allowedTypes: ["file", "image", "link"],
+                    type: "link",
+                    allowedTypes: ["link", "image", "file"],
+                })
+                break
+            case "multipleAttachments":
+                fields.push({
+                    ...fieldMetadata,
+                    airtableType: fieldSchema.type,
+                    type: "image",
+                    allowedTypes: ["image", "file", "link"],
                 })
                 break
 
@@ -297,6 +302,9 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
     return fields
 }
 
+const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
+const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
+
 function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
     switch (fieldSchema.type) {
         case "boolean":
@@ -307,15 +315,16 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
 
         case "link":
         case "image":
-        case "file":
+        case "file": {
             if (typeof value === "string") {
-                if (fieldSchema.airtableType === "email") {
+                if (fieldSchema.airtableType === "email" || EMAIL_REGEX.test(value)) {
                     return {
                         value: `mailto:${value}`,
                         type: "link",
                     }
                 }
-                if (fieldSchema.airtableType === "phoneNumber") {
+
+                if (fieldSchema.airtableType === "phoneNumber" || PHONE_REGEX.test(value)) {
                     return {
                         value: `tel:${value}`,
                         type: "link",
@@ -328,12 +337,8 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 }
             }
 
-            if (!Array.isArray(value)) return null
-            if (value.length === 0) {
-                return {
-                    value: "",
-                    type: fieldSchema.type,
-                }
+            if (!Array.isArray(value) || value.length === 0) {
+                return null
             }
 
             // TODO: When we add support for gallery fields, we'll need to return an array of URLs.
@@ -341,6 +346,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 value: value[0].url,
                 type: fieldSchema.type,
             }
+        }
 
         case "collectionReference":
             if (!Array.isArray(value)) return null
@@ -465,9 +471,6 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                         }
                         break
                     case "enum":
-                        console.warn(
-                            `Missing value for field “${field.name}” on item “${item.id}”, it will be set to the first case.`
-                        )
                         fieldData[field.id] = {
                             value: field.cases[0].id,
                             type: "enum",

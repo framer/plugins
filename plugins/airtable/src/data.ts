@@ -141,7 +141,7 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
                     ...fieldMetadata,
                     airtableType: fieldSchema.type,
                     type: "string",
-                    allowedTypes: ["string"],
+                    allowedTypes: ["string", "formattedText"],
                 })
                 break
 
@@ -161,7 +161,7 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
                     ...fieldMetadata,
                     airtableType: fieldSchema.type,
                     type: "formattedText",
-                    allowedTypes: ["formattedText"],
+                    allowedTypes: ["formattedText", "string"],
                 })
                 break
 
@@ -284,7 +284,11 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
                         break
                     case "richText":
                     case "multilineText":
-                        fields.push({ ...fieldMetadata, type: "formattedText", allowedTypes: ["formattedText"] })
+                        fields.push({
+                            ...fieldMetadata,
+                            type: "formattedText",
+                            allowedTypes: ["formattedText", "string"],
+                        })
                         break
                     default:
                         fields.push({ ...fieldMetadata, type: "unsupported", allowedTypes: ["unsupported"] })

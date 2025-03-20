@@ -1,6 +1,7 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
 import {
+    CollectionFieldType,
     getPluginContext,
     PluginContext,
     PluginContextUpdate,
@@ -166,6 +167,14 @@ export function App({ pluginContext }: AppProps) {
         } = context
         const [headerRow] = sheet.values
 
+        const colFieldTypes: Record<string, CollectionFieldType> = {}
+
+        // Determine if the field type is already configured, otherwise default to "string"
+        for (const colName of headerRow) {
+            const field = fields.find(field => field?.name === colName)
+            colFieldTypes[colName] = field?.type ?? "string"
+        }
+
         syncSheet({
             ignoredColumns,
             slugColumn,
@@ -174,11 +183,7 @@ export function App({ pluginContext }: AppProps) {
             spreadsheetId,
             sheetTitle,
             fields,
-            // Determine if the field type is already configured, otherwise default to "string"
-            colFieldTypes: headerRow.map(colName => {
-                const field = fields.find(field => field?.name === colName)
-                return field?.type ?? "string"
-            }),
+            colFieldTypes,
         }).then(() => framer.closePlugin())
     }, [context, shouldSyncOnly])
 

@@ -163,15 +163,18 @@ function inferDateField(
 
 async function inferRecordLinksField(
     fieldSchema: AirtableFieldSchema & { type: "multipleRecordLinks" },
-    collection: ManagedCollection
+    collection: ManagedCollection,
+    tableIdBeingLinkedTo: string
 ): Promise<PossibleField> {
     const foundCollections: { id: string; name: string }[] = []
     const type = fieldSchema.options.prefersSingleRecordLink ? "collectionReference" : "multiCollectionReference"
 
     if (fieldSchema.options.linkedTableId) {
-        // Check if the linked table is the current collection
         const tableId = await collection.getPluginData(PLUGIN_KEYS.TABLE_ID)
-        if (tableId === fieldSchema.options.linkedTableId) {
+
+        if (tableIdBeingLinkedTo === fieldSchema.options.linkedTableId) {
+            foundCollections.push({ id: collection.id, name: "This Collection" })
+        } else if (tableId === fieldSchema.options.linkedTableId) {
             foundCollections.push({ id: collection.id, name: "This Collection" })
         }
 
@@ -222,6 +225,7 @@ async function inferRecordLinksField(
 async function inferFieldByType(
     fieldSchema: AirtableFieldSchema,
     collection: ManagedCollection,
+    tableIdBeingLinkedTo: string,
     depth = 0
 ): Promise<PossibleField> {
     // Prevent infinite recursion
@@ -268,10 +272,10 @@ async function inferFieldByType(
             return inferDateField(fieldSchema)
 
         case "multipleRecordLinks":
-            return await inferRecordLinksField(fieldSchema, collection)
+            return await inferRecordLinksField(fieldSchema, collection, tableIdBeingLinkedTo)
 
         case "formula":
-            return await inferFormulaField(fieldSchema, collection, depth)
+            return await inferFormulaField(fieldSchema, collection, tableIdBeingLinkedTo, depth)
 
         // Future support for Lookup/Rollup can be added here
         // case "lookup":
@@ -285,6 +289,7 @@ async function inferFieldByType(
 async function inferFormulaField(
     fieldSchema: AirtableFieldSchema & { type: "formula" },
     collection: ManagedCollection,
+    tableIdBeingLinkedTo: string,
     depth = 0
 ): Promise<PossibleField> {
     const result = fieldSchema.options.result
@@ -318,11 +323,16 @@ async function inferFormulaField(
     if (result.type === "formula") {
         return depth > 1
             ? createUnsupportedField(fieldSchema)
-            : await inferFormulaField(resultSchema as AirtableFieldSchema & { type: "formula" }, collection, depth + 1)
+            : await inferFormulaField(
+                  resultSchema as AirtableFieldSchema & { type: "formula" },
+                  collection,
+                  tableIdBeingLinkedTo,
+                  depth + 1
+              )
     }
 
     // For other types, use the helper functions directly
-    return await inferFieldByType(resultSchema, collection, depth + 1)
+    return await inferFieldByType(resultSchema, collection, tableIdBeingLinkedTo, depth + 1)
 }
 
 function createUnsupportedField(fieldSchema: AirtableFieldSchema): PossibleField {
@@ -339,7 +349,7 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
     const fields: PossibleField[] = []
 
     for (const fieldSchema of table.fields) {
-        const field = await inferFieldByType(fieldSchema, collection)
+        const field = await inferFieldByType(fieldSchema, collection, table.id)
         fields.push(field)
     }
 

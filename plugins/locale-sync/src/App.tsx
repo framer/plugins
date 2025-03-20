@@ -15,12 +15,12 @@ framer.showUI({
 async function importXliff() {
     importFileAsText(".xlf,.xliff", async (xliffText: string) => {
         try {
-            const locales = await framer.unstable_getLocales()
+            const locales = await framer.getLocales()
 
             const { xliff, targetLocale } = parseXliff(xliffText, locales)
             const valuesBySource = createValuesBySourceFromXliff(xliff, targetLocale)
 
-            const result = await framer.unstable_setLocalizationData({ valuesBySource })
+            const result = await framer.setLocalizationData({ valuesBySource })
 
             if (result.valuesBySource.errors.length > 0) {
                 throw new Error(`Import errors: ${result.valuesBySource.errors.map(error => error.error).join(", ")}`)
@@ -38,7 +38,7 @@ async function exportXliff(defaultLocale: Locale, targetLocale: Locale) {
     const filename = `locale_${targetLocale.code}.xlf`
 
     try {
-        const groups = await framer.unstable_getLocalizationGroups()
+        const groups = await framer.getLocalizationGroups()
         const xliff = generateXliff(defaultLocale, targetLocale, groups)
         downloadBlob(xliff, filename, "application/x-xliff+xml")
 
@@ -54,16 +54,14 @@ export function App() {
     const [locales, setLocales] = useState<readonly Locale[]>([])
     const [defaultLocale, setDefaultLocale] = useState<Locale | null>(null)
 
-    const selectedLocale = locales.find(locale => locale.id === selectedLocaleId)
-
     useEffect(() => {
         async function loadLocales() {
-            const initialLocales = await framer.unstable_getLocales()
-            const initialDefaultLocale = await framer.unstable_getDefaultLocale()
+            const initialLocales = await framer.getLocales()
+            const initialDefaultLocale = await framer.getDefaultLocale()
             setLocales(initialLocales)
             setDefaultLocale(initialDefaultLocale)
 
-            const activeLocale = await framer.unstable_getActiveLocale()
+            const activeLocale = await framer.getActiveLocale()
             if (activeLocale) {
                 setSelectedLocaleId(activeLocale.id)
             }

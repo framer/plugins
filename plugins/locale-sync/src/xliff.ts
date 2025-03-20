@@ -13,7 +13,7 @@ function escapeXml(unsafe: string): string {
 
 /** See http://docs.oasis-open.org/xliff/xliff-core/v2.0/os/xliff-core-v2.0-os.html#state */
 type XliffState = "initial" | "translated" | "reviewed" | "final"
-type FramerStatus = LocalizationSource["locales"][Locale["id"]]["status"]
+type FramerStatus = LocalizationSource["valueByLocale"][Locale["id"]]["status"]
 
 function statusToXliffState(status: FramerStatus): XliffState | undefined {
     switch (status) {
@@ -46,7 +46,7 @@ function xliffStateToStatus(state: XliffState): FramerStatus | undefined {
 }
 
 function generateUnit(source: LocalizationSource, targetLocale: Locale) {
-    const localeData = source.locales[targetLocale.id]
+    const localeData = source.valueByLocale[targetLocale.id]
     if (!localeData) {
         throw new Error(`No locale data found for locale: ${targetLocale.id}`)
     }
@@ -64,6 +64,7 @@ function generateUnit(source: LocalizationSource, targetLocale: Locale) {
 
     if (localeData.status !== "new") {
         notes.push(`<note category="lastEdited">${localeData.lastEdited}</note>`)
+        notes.push(`<note category="readonly">${localeData.readonly}</note>`)
     }
 
     return `            <unit id="${source.id}">
@@ -84,6 +85,7 @@ export function generateGroup(localizationGroup: LocalizationGroup, targetLocale
             <notes>
                 <note category="type">${localizationGroup.type}</note>
                 <note category="name">${escapeXml(localizationGroup.name)}</note>
+                <note category="supportsExcludedStatus">${localizationGroup.supportsExcludedStatus}</note>
             </notes>
 ${units.join("\n")}
         </group>`
@@ -134,6 +136,12 @@ export function createValuesBySourceFromXliff(
         const segment = unit.querySelector("segment")
         const target = unit.querySelector("target")
         if (!id || !target || !segment) continue
+
+        const notes = unit.querySelectorAll("note")
+        const readonlyNote = [...notes.values()].find(note => {
+            return note.getAttribute("category") === "readonly"
+        })
+        if (readonlyNote?.textContent === "true") continue
 
         const targetValue = target.textContent
         const state = segment.getAttribute("state") as XliffState | null

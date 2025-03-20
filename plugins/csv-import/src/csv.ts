@@ -219,12 +219,17 @@ function getFieldInputForField(
     }
 }
 
-function getFirstMatchingIndex(values: string[], name: string) {
+function getFirstMatchingIndex(values: string[], name: string | undefined) {
+    if (!name) {
+        return -1
+    }
+
     for (const [index, value] of values.entries()) {
         if (collator.compare(value, name) === 0) {
             return index
         }
     }
+
     return -1
 }
 
@@ -241,24 +246,18 @@ function findSlugFieldIndex(
     let index = getFirstMatchingIndex(csvHeader, slugField.name)
     if (index !== -1) return index
 
-    // No direct match, check if it's based on another field
-    if (!slugField.basedOn) {
-        throw new ImportError("error", `Import failed. Ensure your CSV has a field named “${slugField.name}”`)
-    }
-
-    // Find the base field
+    // Find the based on field
     const basedOnField = fields.find(field => field.id === slugField.basedOn)
-    if (!basedOnField || basedOnField.type !== "string") {
+
+    // Try to find the based on field in CSV headers
+    index = getFirstMatchingIndex(csvHeader, basedOnField?.name)
+    if (index === -1) {
         throw new ImportError(
             "error",
-            `Import failed. Slug field “${slugField.name}” must be based on another string field.`
+            `Import failed. Ensure your CSV has a column named “${slugField.name}”${
+                basedOnField ? ` or “${basedOnField.name}” to be derived from` : ""
+            }.`
         )
-    }
-
-    // Try to find the base field in CSV headers
-    index = getFirstMatchingIndex(csvHeader, basedOnField.name)
-    if (index === -1) {
-        throw new ImportError("error", `Import failed. Ensure your CSV has a field named “${basedOnField.name}”`)
     }
 
     return index

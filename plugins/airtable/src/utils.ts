@@ -78,6 +78,12 @@ export const ALLOWED_FILE_TYPES = [
     "webm",
 ]
 
+/**
+ * Checks if a field is a collection reference.
+ *
+ * We check both the field type and airtableType because TypeScript's structural typing
+ * allows for a theoretical mismatch between the two, even though they should always be in sync.
+ */
 export function isCollectionReference(field: PossibleField) {
     return (
         (field.type === "collectionReference" || field.type === "multiCollectionReference") &&

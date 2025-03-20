@@ -231,10 +231,10 @@ async function inferFieldByType(
 
     switch (fieldSchema.type) {
         case "checkbox":
-            return inferBooleanField(fieldSchema as AirtableFieldSchema & { type: "checkbox" })
+            return inferBooleanField(fieldSchema)
 
         case "singleSelect":
-            return inferEnumField(fieldSchema as AirtableFieldSchema & { type: "singleSelect" })
+            return inferEnumField(fieldSchema)
 
         case "number":
         case "percent":
@@ -242,47 +242,36 @@ async function inferFieldByType(
         case "autoNumber":
         case "rating":
         case "duration":
-            return inferNumberField(
-                fieldSchema as AirtableFieldSchema & {
-                    type: "number" | "percent" | "currency" | "autoNumber" | "rating" | "duration"
-                }
-            )
+            return inferNumberField(fieldSchema)
 
         case "singleLineText":
-            return inferStringField(fieldSchema as AirtableFieldSchema & { type: "singleLineText" })
+            return inferStringField(fieldSchema)
 
         case "email":
         case "phoneNumber":
-            return inferEmailOrPhoneField(fieldSchema as AirtableFieldSchema & { type: "email" | "phoneNumber" })
+            return inferEmailOrPhoneField(fieldSchema)
 
         case "multilineText":
         case "richText":
-            return inferTextField(fieldSchema as AirtableFieldSchema & { type: "multilineText" | "richText" })
+            return inferTextField(fieldSchema)
 
         case "url":
-            return inferUrlField(fieldSchema as AirtableFieldSchema & { type: "url" })
+            return inferUrlField(fieldSchema)
 
         case "multipleAttachments":
-            return inferAttachmentsField(fieldSchema as AirtableFieldSchema & { type: "multipleAttachments" })
+            return inferAttachmentsField(fieldSchema)
 
         case "date":
         case "dateTime":
         case "createdTime":
         case "lastModifiedTime":
-            return inferDateField(
-                fieldSchema as AirtableFieldSchema & {
-                    type: "date" | "dateTime" | "createdTime" | "lastModifiedTime"
-                }
-            )
+            return inferDateField(fieldSchema)
 
         case "multipleRecordLinks":
-            return await inferRecordLinksField(
-                fieldSchema as AirtableFieldSchema & { type: "multipleRecordLinks" },
-                collection
-            )
+            return await inferRecordLinksField(fieldSchema, collection)
 
         case "formula":
-            return await inferFormulaField(fieldSchema as AirtableFieldSchema & { type: "formula" }, collection, depth)
+            return await inferFormulaField(fieldSchema, collection, depth)
 
         // Future support for Lookup/Rollup can be added here
         // case "lookup":

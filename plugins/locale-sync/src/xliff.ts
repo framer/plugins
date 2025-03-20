@@ -1,4 +1,10 @@
-import type { Locale, LocalizationData, LocalizationGroup, LocalizationSource } from "framer-plugin"
+import type {
+    Locale,
+    LocalizationData,
+    LocalizationGroup,
+    LocalizationSource,
+    LocalizedValueStatus,
+} from "framer-plugin"
 import "./App.css"
 import { shouldBeNever } from "./assert"
 
@@ -13,9 +19,8 @@ function escapeXml(unsafe: string): string {
 
 /** See http://docs.oasis-open.org/xliff/xliff-core/v2.0/os/xliff-core-v2.0-os.html#state */
 type XliffState = "initial" | "translated" | "reviewed" | "final"
-type FramerStatus = LocalizationSource["valueByLocale"][Locale["id"]]["status"]
 
-function statusToXliffState(status: FramerStatus): XliffState | undefined {
+function statusToXliffState(status: LocalizedValueStatus): XliffState | undefined {
     switch (status) {
         case "new":
             return "initial"
@@ -30,7 +35,7 @@ function statusToXliffState(status: FramerStatus): XliffState | undefined {
     }
 }
 
-function xliffStateToStatus(state: XliffState): FramerStatus | undefined {
+function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined {
     switch (state) {
         case "initial":
             return "new"

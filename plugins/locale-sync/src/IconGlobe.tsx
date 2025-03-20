@@ -10,8 +10,8 @@ export function IconGlobe() {
                 fill="transparent"
                 strokeWidth="7"
                 stroke="currentColor"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeLinecap="round"
+                strokeLinejoin="round"
             ></path>
         </svg>
     )

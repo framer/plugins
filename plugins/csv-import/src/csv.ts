@@ -176,7 +176,7 @@ function getFieldInputForField(
                 caseOption => collator.compare(caseOption.name, value) === 0 || caseOption.id === value
             )
             if (matchingCase) {
-                return { type: "enum", value }
+                return { type: "enum", value: matchingCase.id }
             }
             return new ConversionError(`Invalid case “${value}” for enum “${field.name}”`)
         }

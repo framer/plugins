@@ -1,4 +1,12 @@
-import { Collection, CollectionField, CollectionItem, CollectionItemInput, framer } from "framer-plugin"
+import {
+    Collection,
+    Field,
+    CollectionItem,
+    CollectionItemInput,
+    framer,
+    FieldDataInput,
+    FieldDataEntryInput,
+} from "framer-plugin"
 
 type CSVRecord = Record<string, string>
 
@@ -78,7 +86,10 @@ class ImportError extends Error {
      * @param variant Notification variant to show the user
      * @param message Message to show the user
      */
-    constructor(readonly variant?: "error" | "warning", message?: string) {
+    constructor(
+        readonly variant?: "error" | "warning",
+        message?: string
+    ) {
         super(message)
     }
 }
@@ -86,7 +97,7 @@ class ImportError extends Error {
 /** Used to indicated a value conversion failed, used by `RecordImporter` and `setValueForVariable` */
 class ConversionError extends Error {}
 
-const findRecordValue = (record: CSVRecord, key: string) => {
+function findRecordValue(record: CSVRecord, key: string) {
     const value = Object.entries(record).find(([k]) => collator.compare(k, key) === 0)?.[1]
     if (!value) {
         return null
@@ -97,66 +108,98 @@ const findRecordValue = (record: CSVRecord, key: string) => {
 const collator = new Intl.Collator("en", { sensitivity: "base" })
 const BOOLEAN_TRUTHY_VALUES = /1|y(?:es)?|true/iu
 
-function getRecordValueForField(
-    field: CollectionField,
+function getFieldInputForField(
+    field: Field,
     value: string | null,
     allItemIdBySlug: Map<string, Map<string, string>>
-) {
-    if (value === null) {
-        return undefined
-    }
-
+): FieldDataEntryInput | ConversionError {
     switch (field.type) {
         case "string":
+            if (value === null) {
+                return { type: "string", value: "" }
+            }
+            return { type: "string", value }
+
         case "formattedText":
-        case "link":
+            if (value === null) {
+                return { type: "formattedText", value: "" }
+            }
+            return { type: "formattedText", value }
+
         case "color":
+            return { type: "color", value }
+
+        case "link":
+            return { type: "link", value }
+
         case "file":
+            return { type: "file", value }
+
         case "image":
-            return value.trim()
+            return { type: "image", value }
 
         case "number": {
+            if (value === null) {
+                return { type: "number", value: 0 }
+            }
             const number = Number(value)
             if (Number.isNaN(number)) {
                 return new ConversionError(`Invalid value for field “${field.name}” expected a number`)
             }
-            return number
+            return { type: "number", value: number }
         }
 
-        case "boolean":
-            return BOOLEAN_TRUTHY_VALUES.test(value)
+        case "boolean": {
+            if (value === null) {
+                return { type: "boolean", value: false }
+            }
+            return { type: "boolean", value: BOOLEAN_TRUTHY_VALUES.test(value) }
+        }
 
         case "date": {
+            if (value === null) {
+                return { type: "date", value: null }
+            }
             const date = new Date(value)
-            if (!isValidDate(date))
+            if (!isValidDate(date)) {
                 return new ConversionError(`Invalid value for field “${field.name}” expected a valid date`)
+            }
             const isoDate = date.toISOString().split("T")[0]
-            return new Date(isoDate).toJSON()
+            return { type: "date", value: new Date(isoDate).toJSON() }
         }
 
         case "enum": {
+            if (value === null) {
+                return { type: "enum", value: field.cases[0].id }
+            }
             const matchingCase = field.cases.find(
                 caseOption => collator.compare(caseOption.name, value) === 0 || caseOption.id === value
             )
             if (matchingCase) {
-                return matchingCase.id
+                return { type: "enum", value: matchingCase.id }
             }
             return new ConversionError(`Invalid case “${value}” for enum “${field.name}”`)
         }
 
         case "collectionReference": {
+            if (value === null) {
+                return { type: "collectionReference", value: null }
+            }
+
             const referencedSlug = value.trim()
             const referencedId = allItemIdBySlug.get(field.collectionId)?.get(referencedSlug)
             if (!referencedId) {
                 return new ConversionError(`Invalid Collection reference “${value}”`)
             }
 
-            return referencedId
+            return { type: "collectionReference", value: referencedId }
         }
 
         case "multiCollectionReference": {
+            if (value === null) {
+                return { type: "multiCollectionReference", value: null }
+            }
             const referencedSlugs = value.split(",").map(slug => slug.trim())
-
             const referencedIds: string[] = []
 
             for (const slug of referencedSlugs) {
@@ -167,9 +210,10 @@ function getRecordValueForField(
                 referencedIds.push(referencedId)
             }
 
-            return referencedIds
+            return { type: "multiCollectionReference", value: referencedIds }
         }
 
+        case "divider":
         case "unsupported":
             return new ConversionError(`Unsupported field type “${field.type}”`)
     }
@@ -249,20 +293,19 @@ export async function processRecords(collection: Collection, records: CSVRecord[
             continue
         }
 
-        const fieldData: Record<string, unknown> = {}
+        const fieldData: FieldDataInput = {}
         for (const field of fields) {
             const value = findRecordValue(record, field.name)
+            const fieldDataEntry = getFieldInputForField(field, value, allItemIdBySlug)
 
-            const fieldValue = getRecordValueForField(field, value, allItemIdBySlug)
-
-            if (fieldValue instanceof ConversionError) {
+            if (fieldDataEntry instanceof ConversionError) {
                 result.warnings.skippedValueCount++
                 result.warnings.skippedValueKeys.add(field.name)
                 continue
             }
 
-            if (fieldValue !== undefined) {
-                fieldData[field.id] = fieldValue
+            if (fieldDataEntry !== undefined) {
+                fieldData[field.id] = fieldDataEntry
             }
         }
 

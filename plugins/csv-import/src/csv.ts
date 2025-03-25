@@ -224,21 +224,20 @@ function findSlugFieldIndex(
     csvHeader: string[],
     slugField: { name: string; basedOn?: string | null },
     fields: Field[]
-): number {
+): { slugIndex: number; basedOnIndex: number } {
     // Try direct match first
-    let index = getFirstMatchingIndex(csvHeader, slugField.name)
-    if (index !== -1) return index
+    const slugIndex = getFirstMatchingIndex(csvHeader, slugField.name)
 
     // Find the based on field
     const basedOnField = fields.find(field => field.id === slugField.basedOn)
+    const basedOnIndex = getFirstMatchingIndex(csvHeader, basedOnField?.name)
 
-    // Try to find the based on field in CSV headers
-    index = getFirstMatchingIndex(csvHeader, basedOnField?.name)
-    if (index === -1) {
+    // If neither field is found, throw error
+    if (slugIndex === -1 && basedOnIndex === -1) {
         throw new ImportError("error", `Import failed. Ensure your CSV has a column named “${slugField.name}”.`)
     }
 
-    return index
+    return { slugIndex, basedOnIndex }
 }
 
 /** Importer for "records": string based values with named keys */
@@ -263,7 +262,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
     const allItemIdBySlug = new Map<string, Map<string, string>>()
 
     const csvHeader = Object.keys(records[0])
-    const slugFieldIndex = findSlugFieldIndex(
+    const { slugIndex, basedOnIndex } = findSlugFieldIndex(
         csvHeader,
         {
             name: collection.slugFieldName,
@@ -301,8 +300,16 @@ export async function processRecords(collection: Collection, records: CSVRecord[
 
     for (const record of records) {
         let slug: string | undefined
-        if (slugFieldIndex !== -1) {
-            slug = slugify(Object.values(record)[slugFieldIndex])
+        const values = Object.values(record)
+
+        // Try to get slug from the slug field first
+        if (slugIndex !== -1) {
+            slug = slugify(values[slugIndex])
+        }
+
+        // If no slug and we have a basedOn field, try to get slug from that
+        if (!slug && basedOnIndex !== -1) {
+            slug = slugify(values[basedOnIndex])
         }
 
         if (!slug) {

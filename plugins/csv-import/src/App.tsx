@@ -1,9 +1,10 @@
 import type { Collection } from "framer-plugin"
+import type { ImportResult, ImportResultItem } from "./csv"
 
 import "./App.css"
 import { framer } from "framer-plugin"
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
-import { processRecords, parseCSV, importCSV, type ImportResult, type ImportResultItem } from "./csv"
+import { processRecords, parseCSV, importCSV, ImportError } from "./csv"
 
 function ImportIcon() {
     return (
@@ -204,6 +205,14 @@ export function App({ collection }: { collection: Collection }) {
             await importItems(result)
         } catch (error) {
             console.error(error)
+
+            if (error instanceof ImportError) {
+                framer.notify(error.message, {
+                    variant: "error",
+                })
+                return
+            }
+
             framer.notify("Error processing CSV file. Check console for details.", {
                 variant: "error",
             })

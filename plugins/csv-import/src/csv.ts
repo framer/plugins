@@ -108,52 +108,32 @@ function findRecordValue(record: CSVRecord, key: string) {
 const collator = new Intl.Collator("en", { sensitivity: "base" })
 const BOOLEAN_TRUTHY_VALUES = /1|y(?:es)?|true/iu
 
-function getFieldInputForField(
+function getFieldDataEntryInputForField(
     field: Field,
     value: string | null,
     allItemIdBySlug: Map<string, Map<string, string>>
 ): FieldDataEntryInput | ConversionError {
     switch (field.type) {
         case "string":
-            if (value === null) {
-                return { type: "string", value: "" }
-            }
-            return { type: "string", value }
-
         case "formattedText":
-            if (value === null) {
-                return { type: "formattedText", value: "" }
-            }
-            return { type: "formattedText", value }
+            return { type: field.type, value: value ?? "" }
 
         case "color":
-            return { type: "color", value }
-
         case "link":
-            return { type: "link", value }
-
         case "file":
-            return { type: "file", value }
-
         case "image":
-            return { type: "image", value }
+            return { type: field.type, value: value ? value.trim() : null }
 
         case "number": {
-            if (value === null) {
-                return { type: "number", value: 0 }
-            }
             const number = Number(value)
             if (Number.isNaN(number)) {
                 return new ConversionError(`Invalid value for field “${field.name}” expected a number`)
             }
-            return { type: "number", value: number }
+            return { type: "number", value: number ?? 0 }
         }
 
         case "boolean": {
-            if (value === null) {
-                return { type: "boolean", value: false }
-            }
-            return { type: "boolean", value: BOOLEAN_TRUTHY_VALUES.test(value) }
+            return { type: "boolean", value: value ? BOOLEAN_TRUTHY_VALUES.test(value) : false }
         }
 
         case "date": {
@@ -170,15 +150,18 @@ function getFieldInputForField(
 
         case "enum": {
             if (value === null) {
+                if (field.cases.length === 0) {
+                    return new ConversionError(`Enum “${field.name}” has no cases`)
+                }
                 return { type: "enum", value: field.cases[0].id }
             }
             const matchingCase = field.cases.find(
-                caseOption => collator.compare(caseOption.name, value) === 0 || caseOption.id === value
+                enumCase => collator.compare(enumCase.name, value) === 0 || enumCase.id === value
             )
-            if (matchingCase) {
-                return { type: "enum", value: matchingCase.id }
+            if (!matchingCase) {
+                return new ConversionError(`Invalid case “${value}” for enum “${field.name}”`)
             }
-            return new ConversionError(`Invalid case “${value}” for enum “${field.name}”`)
+            return { type: "enum", value: matchingCase.id }
         }
 
         case "collectionReference": {
@@ -296,7 +279,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
         const fieldData: FieldDataInput = {}
         for (const field of fields) {
             const value = findRecordValue(record, field.name)
-            const fieldDataEntry = getFieldInputForField(field, value, allItemIdBySlug)
+            const fieldDataEntry = getFieldDataEntryInputForField(field, value, allItemIdBySlug)
 
             if (fieldDataEntry instanceof ConversionError) {
                 result.warnings.skippedValueCount++

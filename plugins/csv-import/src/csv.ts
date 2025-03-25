@@ -81,7 +81,7 @@ export async function parseCSV(data: string): Promise<CSVRecord[]> {
 }
 
 /** Error when importing fails, internal to `RecordImporter` */
-class ImportError extends Error {
+export class ImportError extends Error {
     /**
      * @param variant Notification variant to show the user
      * @param message Message to show the user
@@ -235,12 +235,7 @@ function findSlugFieldIndex(
     // Try to find the based on field in CSV headers
     index = getFirstMatchingIndex(csvHeader, basedOnField?.name)
     if (index === -1) {
-        throw new ImportError(
-            "error",
-            `Import failed. Ensure your CSV has a column named “${slugField.name}”${
-                basedOnField ? ` or “${basedOnField.name}” to be derived from` : ""
-            }.`
-        )
+        throw new ImportError("error", `Import failed. Ensure your CSV has a column named “${slugField.name}”.`)
     }
 
     return index

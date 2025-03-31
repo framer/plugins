@@ -15,7 +15,7 @@ async function importCsv() {
             const parsedRedirects = parseCSV(csv)
 
             if (parsedRedirects.length === 0) {
-                throw new Error("CSV was emtpy")
+                throw new Error("CSV was empty")
             }
 
             const redirectInputs = await normalizeRedirectInputs(parsedRedirects)

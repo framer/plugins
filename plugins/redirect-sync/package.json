@@ -1,5 +1,5 @@
 {
-    "name": "redirect",
+    "name": "redirect-sync",
     "private": true,
     "version": "0.0.0",
     "type": "module",
@@ -11,14 +11,15 @@
         "pack": "npx framer-plugin-tools@latest pack"
     },
     "dependencies": {
-        "csv-parse": "^5.6.0",
         "framer-plugin": "^3.1.0-beta.1",
+        "papaparse": "^5.5.2",
         "react": "^18",
         "react-dom": "^18",
         "vite-plugin-mkcert": "^1"
     },
     "devDependencies": {
         "@eslint/js": "^9",
+        "@types/papaparse": "^5.3.15",
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "@vitejs/plugin-react": "^4.3.1",

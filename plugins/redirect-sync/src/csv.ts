@@ -14,6 +14,11 @@ export function parseCSV(csv: string): ParsedRedirects[] {
 
     const firstRow = rows[0]
     const hasHeaders = firstRow[0] === "from" && firstRow[1] === "to"
+
+    if (firstRow.length > 3 || firstRow.length < 2) {
+        throw new Error("CSV had invalid fields. Expected to,from,expandToAllLocales.")
+    }
+
     const dataRows = hasHeaders ? rows.slice(1) : rows
 
     return dataRows.map(row => {

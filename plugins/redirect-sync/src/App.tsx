@@ -56,7 +56,16 @@ export function App() {
                 </div>
                 <div className="text">
                     <h4>Get Started</h4>
-                    <p>Import and export project redirects using CSV files.</p>
+                    <p>
+                        Import and export redirects using CSV files.{" "}
+                        <a
+                            href="https://www.framer.com/help/articles/bulk-importing-exporting-redirects/"
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            Learn more.
+                        </a>
+                    </p>
                 </div>
             </div>
 

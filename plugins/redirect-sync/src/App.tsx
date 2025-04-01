@@ -61,7 +61,7 @@ export function App() {
                     <p>
                         Import and export redirects using CSV files.{" "}
                         <a href={learnMoreLink} target="_blank" rel="noreferrer">
-                            Learn more.
+                            Learn more
                         </a>
                     </p>
                 </div>

@@ -4,6 +4,8 @@ import { downloadBlob, importFileAsText } from "./files"
 import { IconRedirects } from "./IconRedirects"
 import { generateCsv, normalizeRedirectInputs, parseCSV } from "./csv"
 
+const learnMoreLink = "https://www.framer.com/help/articles/bulk-importing-exporting-redirects/"
+
 framer.showUI({
     width: 260,
     height: 350,
@@ -58,11 +60,7 @@ export function App() {
                     <h4>Get Started</h4>
                     <p>
                         Import and export redirects using CSV files.{" "}
-                        <a
-                            href="https://www.framer.com/help/articles/bulk-importing-exporting-redirects/"
-                            target="_blank"
-                            rel="noreferrer"
-                        >
+                        <a href={learnMoreLink} target="_blank" rel="noreferrer">
                             Learn more.
                         </a>
                     </p>

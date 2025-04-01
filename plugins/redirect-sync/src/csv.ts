@@ -8,40 +8,21 @@ export interface ParsedRedirects {
 }
 
 export function parseCSV(csv: string): ParsedRedirects[] {
-    const result = Papa.parse(csv, {
-        header: true,
-        skipEmptyLines: true,
-    })
+    const parseResult = Papa.parse<string[]>(csv, { skipEmptyLines: true })
+    const rows = parseResult.data
+    if (rows.length === 0) return []
 
-    const parsedRedirects: ParsedRedirects[] = result.data.map(row => {
-        if (
-            !row ||
-            !(typeof row === "object") ||
-            !("from" in row) ||
-            !("to" in row) ||
-            !("expandToAllLocales" in row)
-        ) {
-            throw new Error("CSV had invalid fields. Expected to,from,expandToAllLocales.")
-        }
+    const firstRow = rows[0]
+    const hasHeaders = firstRow[0] === "from" && firstRow[1] === "to"
+    const dataRows = hasHeaders ? rows.slice(1) : rows
 
-        const { from, to, expandToAllLocales } = row
-
-        if (
-            typeof from !== "string" ||
-            typeof to !== "string" ||
-            (expandToAllLocales !== "true" && expandToAllLocales !== "false")
-        ) {
-            throw new Error("Invalid values for fields")
-        }
-
+    return dataRows.map(row => {
         return {
-            from,
-            to,
-            expandToAllLocales: expandToAllLocales === "true",
+            from: row[0],
+            to: row[1],
+            expandToAllLocales: row.length > 2 ? row[2] === "true" : true,
         }
     })
-
-    return parsedRedirects
 }
 
 export async function normalizeRedirectInputs(redirects: ParsedRedirects[]): Promise<RedirectInput[]> {

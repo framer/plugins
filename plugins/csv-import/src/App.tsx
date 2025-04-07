@@ -181,14 +181,24 @@ export function App({ collection }: { collection: Collection }) {
         }
     }, [])
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
+    useEffect(() => {
+        const handlePaste = async (event: ClipboardEvent) => {
+            if (!event.clipboardData) return
 
-        const formData = new FormData(form.current!)
-        const file = formData.get("file") as File
+            const csv = event.clipboardData.getData("text/plain")
+            if (!csv) return
 
-        const csv = await file.text()
+            await processAndImport(csv)
+        }
 
+        window.addEventListener("paste", handlePaste)
+
+        return () => {
+            window.removeEventListener("paste", handlePaste)
+        }
+    }, [])
+    
+    const processAndImport = async (csv: string) => {
         try {
             const csvRecords = await parseCSV(csv)
             if (csvRecords.length === 0) {
@@ -217,6 +227,17 @@ export function App({ collection }: { collection: Collection }) {
                 variant: "error",
             })
         }
+    }
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+
+        const formData = new FormData(form.current!)
+        const file = formData.get("file") as File
+
+        const csv = await file.text()
+
+        await processAndImport(csv)
     }
 
     const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {

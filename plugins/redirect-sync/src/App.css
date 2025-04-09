@@ -55,3 +55,7 @@ p {
     gap: 10px;
     width: 180px;
 }
+
+.text h4 {
+    font-weight: 600;
+}

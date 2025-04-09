@@ -1,5 +1,5 @@
 main {
-    --framer-color-tint: #00ccee;
+    --framer-color-tint: #6666ff;
     --framer-color-tint-dark: #00c6e6;
     --framer-color-tint-extra-dark: #00bbdd;
     display: flex;
@@ -38,8 +38,8 @@ p {
 }
 
 .asset {
-    color: var(--framer-color-tint, rgb(0, 204, 238));
-    background: rgba(0, 204, 238, 0.1);
+    color: var(--framer-color-tint);
+    background: color-mix(in srgb, var(--framer-color-tint), transparent 90%);
     border-radius: 8px;
     width: 30px;
     height: 30px;

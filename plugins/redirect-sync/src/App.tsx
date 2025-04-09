@@ -8,7 +8,7 @@ const learnMoreLink = "https://www.framer.com/help/articles/bulk-importing-expor
 
 framer.showUI({
     width: 260,
-    height: 350,
+    height: 370,
 })
 
 async function importCsv() {
@@ -52,12 +52,13 @@ async function exportCsv() {
 export function App() {
     return (
         <main>
+            <hr />
             <div className="intro">
                 <div className="asset">
                     <IconRedirects />
                 </div>
                 <div className="text">
-                    <h4>Get Started</h4>
+                    <h4>Manage Redirects</h4>
                     <p>
                         Import and export redirects using CSV files.{" "}
                         <a href={learnMoreLink} target="_blank" rel="noreferrer">

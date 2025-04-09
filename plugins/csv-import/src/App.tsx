@@ -3,7 +3,7 @@ import type { ImportResult, ImportResultItem } from "./csv"
 
 import "./App.css"
 import { framer } from "framer-plugin"
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
+import { ChangeEvent, useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { processRecords, parseCSV, importCSV, ImportError } from "./csv"
 
 function ImportIcon() {
@@ -30,16 +30,16 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
 
     const fixedRecords = useRef<ImportResultItem[]>(records)
 
-    const moveToNextRecord = () => {
+    const moveToNextRecord = useCallback(() => {
         const next = recordsIterator.next()
         if (next.done) {
             onAllConflictsResolved(fixedRecords.current)
         } else {
             setCurrentRecord(next.value)
         }
-    }
+    }, [recordsIterator, onAllConflictsResolved])
 
-    const setAction = (record: ImportResultItem, action: "onConflictUpdate" | "onConflictSkip") => {
+    const setAction = useCallback((record: ImportResultItem, action: "onConflictUpdate" | "onConflictSkip") => {
         if (!currentRecord) return
 
         fixedRecords.current = fixedRecords.current.map(existingRecord => {
@@ -48,9 +48,9 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
             }
             return existingRecord
         })
-    }
+    }, [currentRecord])
 
-    const applyAction = async (action: "onConflictUpdate" | "onConflictSkip") => {
+    const applyAction = useCallback(async (action: "onConflictUpdate" | "onConflictSkip") => {
         if (!currentRecord) return
 
         if (!applyToAll) {
@@ -69,7 +69,7 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
             }
             current = next.value
         } while (current)
-    }
+    }, [currentRecord, applyToAll, setAction, moveToNextRecord, recordsIterator, onAllConflictsResolved])
 
     if (!currentRecord) return null
 
@@ -142,63 +142,12 @@ export function App({ collection }: { collection: Collection }) {
         })
     }, [itemsWithConflict])
 
-    useEffect(() => {
-        if (!form.current) return
+    const importItems = useCallback(async (result: ImportResult) => {
+        await framer.hideUI()
+        await importCSV(collection, result)
+    }, [collection])
 
-        const handleDragOver = (e: DragEvent) => {
-            e.preventDefault()
-            setIsDragging(true)
-        }
-
-        const handleDragLeave = (e: DragEvent) => {
-            if (!e.relatedTarget) {
-                setIsDragging(false)
-            }
-        }
-
-        const handleDrop = async (e: DragEvent) => {
-            e.preventDefault()
-            setIsDragging(false)
-
-            const file = e.dataTransfer?.files[0]
-            if (!file || !file.name.endsWith(".csv")) return
-
-            const input = document.getElementById("file-input") as HTMLInputElement
-            const dataTransfer = new DataTransfer()
-            dataTransfer.items.add(file)
-            input.files = dataTransfer.files
-            form.current?.requestSubmit()
-        }
-
-        form.current?.addEventListener("dragover", handleDragOver)
-        form.current?.addEventListener("dragleave", handleDragLeave)
-        form.current?.addEventListener("drop", handleDrop)
-
-        return () => {
-            form.current?.removeEventListener("dragover", handleDragOver)
-            form.current?.removeEventListener("dragleave", handleDragLeave)
-            form.current?.removeEventListener("drop", handleDrop)
-        }
-    }, [])
-
-    useEffect(() => {
-        const handlePaste = async (event: ClipboardEvent) => {
-            if (!event.clipboardData) return
-
-            const csv = event.clipboardData.getData("text/plain")
-            if (!csv) return
-
-            await processAndImport(csv)
-        }
-
-        window.addEventListener("paste", handlePaste)
-
-        return () => {
-            window.removeEventListener("paste", handlePaste)
-        }
-    }, [])
-    
-    const processAndImport = async (csv: string) => {
+    const processAndImport = useCallback(async (csv: string) => {
         try {
             const csvRecords = await parseCSV(csv)
             if (csvRecords.length === 0) {
@@ -227,30 +176,92 @@ export function App({ collection }: { collection: Collection }) {
                 variant: "error",
             })
         }
-    }
+    }, [collection, importItems])
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    useEffect(() => {
+        if (!form.current) return
+
+        const handleDragOver = (event: DragEvent) => {
+            event.preventDefault()
+            setIsDragging(true)
+        }
+
+        const handleDragLeave = (event: DragEvent) => {
+            if (!event.relatedTarget) {
+                setIsDragging(false)
+            }
+        }
+
+        const handleDrop = async (event: DragEvent) => {
+            event.preventDefault()
+            setIsDragging(false)
+
+            const file = event.dataTransfer?.files[0]
+            if (!file || !file.name.endsWith(".csv")) return
+
+            const input = document.getElementById("file-input") as HTMLInputElement
+            const dataTransfer = new DataTransfer()
+            dataTransfer.items.add(file)
+            input.files = dataTransfer.files
+            form.current?.requestSubmit()
+        }
+
+        form.current?.addEventListener("dragover", handleDragOver)
+        form.current?.addEventListener("dragleave", handleDragLeave)
+        form.current?.addEventListener("drop", handleDrop)
+
+        return () => {
+            form.current?.removeEventListener("dragover", handleDragOver)
+            form.current?.removeEventListener("dragleave", handleDragLeave)
+            form.current?.removeEventListener("drop", handleDrop)
+        }
+    }, [])
+
+    useEffect(() => {
+        const handlePaste = async (event: ClipboardEvent) => {
+            if (!event.clipboardData) return
+
+            try {
+                const csv = event.clipboardData.getData("text/plain")
+                if (!csv) return
+
+                await processAndImport(csv)
+            } catch (error) {
+                console.error("Error accessing clipboard data:", error)
+                framer.notify("Unable to access clipboard content", {
+                    variant: "error",
+                })
+            }
+        }
+
+        window.addEventListener("paste", handlePaste)
+
+        return () => {
+            window.removeEventListener("paste", handlePaste)
+        }
+    }, [processAndImport])
+    
+    const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         const formData = new FormData(form.current!)
-        const file = formData.get("file") as File
+        const fileValue = formData.get("file")
+        
+        if (!fileValue || typeof fileValue === "string") return
+        
+        const file = fileValue
 
         const csv = await file.text()
 
         await processAndImport(csv)
-    }
+    }, [processAndImport])
 
-    const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
         if (!event.currentTarget.files?.[0]) return
         if (inputOpenedFromImportButton.current) {
             form.current?.requestSubmit()
         }
-    }
-
-    const importItems = async (result: ImportResult) => {
-        await framer.hideUI()
-        await importCSV(collection, result)
-    }
+    }, [])
 
     if (result && itemsWithConflict.length > 0) {
         return (

@@ -1,6 +1,6 @@
 {
     "id": "oD1a02",
     "name": "Redirect Sync",
-    "modes": ["redirects", "canvas"],
+    "modes": ["canvas"],
     "icon": "/icon.svg"
 }

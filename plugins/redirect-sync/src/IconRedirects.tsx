@@ -1,9 +1,37 @@
 export function IconRedirects() {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 12 12">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none">
             <path
-                d="M 0 3 C 0 1.343 1.343 0 3 0 L 9 0 C 10.657 0 12 1.343 12 3 L 12 9 C 12 10.657 10.657 12 9 12 L 3 12 C 1.343 12 0 10.657 0 9 Z M 3.5 3.75 C 3.5 4.164 3.836 4.5 4.25 4.5 L 6.436 4.5 L 3.275 7.661 C 2.982 7.954 2.982 8.428 3.275 8.721 C 3.568 9.014 4.043 9.014 4.336 8.721 L 7.5 5.557 L 7.5 7.75 C 7.5 8.164 7.836 8.5 8.25 8.5 C 8.664 8.5 9 8.164 9 7.75 L 9 3.75 C 9 3.336 8.664 3 8.25 3 L 4.25 3 C 3.836 3 3.5 3.336 3.5 3.75 Z"
-                fill="currentColor"
+                d="M 2 5 L 11 5"
+                fill="transparent"
+                stroke-width="2"
+                stroke="rgb(102, 102, 255)"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            ></path>
+            <path
+                d="M 4.5 8.5 L 1 5 L 4.5 1.5"
+                fill="transparent"
+                stroke-width="2"
+                stroke="rgb(102, 102, 255)"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            ></path>
+            <path
+                d="M 13.5 16.5 L 17 13 L 13.5 9.5"
+                fill="transparent"
+                stroke-width="2"
+                stroke="rgb(102, 102, 255)"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            ></path>
+            <path
+                d="M 7 13 L 15 13"
+                fill="transparent"
+                stroke-width="2"
+                stroke="rgb(102, 102, 255)"
+                stroke-linecap="round"
+                stroke-linejoin="round"
             ></path>
         </svg>
     )

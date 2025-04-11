@@ -1,6 +1,6 @@
-import { type ManagedCollectionFieldInput, framer, type ManagedCollection } from "framer-plugin"
+import { type ManagedCollectionFieldInput, framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useState } from "react"
-import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "./data"
+import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 
 interface FieldMappingRowProps {
     field: ManagedCollectionFieldInput
@@ -8,6 +8,7 @@ interface FieldMappingRowProps {
     isIgnored: boolean
     onToggleDisabled: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
+    disabled: boolean
 }
 
 function FieldMappingRow({
@@ -16,6 +17,7 @@ function FieldMappingRow({
     isIgnored,
     onToggleDisabled,
     onNameChange,
+    disabled,
 }: FieldMappingRowProps) {
     return (
         <>
@@ -23,6 +25,7 @@ function FieldMappingRow({
                 type="button"
                 className={`source-field ${isIgnored ? "ignored" : ""}`}
                 onClick={() => onToggleDisabled(field.id)}
+                disabled={disabled}
             >
                 <input type="checkbox" checked={!isIgnored} tabIndex={-1} readOnly />
                 <span>{originalFieldName ?? field.id}</span>
@@ -40,7 +43,7 @@ function FieldMappingRow({
             </svg>
             <input
                 type="text"
-                disabled={isIgnored}
+                disabled={isIgnored || disabled}
                 placeholder={field.id}
                 value={field.name}
                 onChange={event => onNameChange(field.id, event.target.value)}
@@ -136,6 +139,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         })
     }
 
+    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
@@ -150,8 +155,11 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         try {
             setStatus("syncing-collection")
 
-            const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
+            const fieldsToSync = fields
+                .filter(field => !ignoredFieldIds.has(field.id))
+                .map(field => ({ ...field, name: field.name.trim() || field.id }))
 
+            await collection.setFields(fieldsToSync)
             await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
@@ -189,6 +197,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             if (!selectedField) return
                             setSelectedSlugField(selectedField)
                         }}
+                        disabled={!isAllowedToManage}
                     >
                         {possibleSlugFields.map(possibleSlugField => {
                             return (
@@ -211,13 +220,18 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             isIgnored={ignoredFieldIds.has(field.id)}
                             onToggleDisabled={toggleFieldDisabledState}
                             onNameChange={changeFieldName}
+                            disabled={!isAllowedToManage}
                         />
                     ))}
                 </div>
 
                 <footer>
                     <hr />
-                    <button type="submit" disabled={isSyncing}>
+                    <button
+                        type="submit"
+                        disabled={isSyncing || !isAllowedToManage}
+                        title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                    >
                         {isSyncing ? <div className="framer-spinner" /> : `Import ${dataSourceName}`}
                     </button>
                 </footer>

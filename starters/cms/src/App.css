@@ -24,8 +24,17 @@ form {
     top: 0;
 }
 
-.field-input {
+select {
     width: 100%;
+}
+
+select:disabled,
+input[type="text"]:disabled,
+.ignored {
+    opacity: 0.5;
+}
+
+.mapping select {
     flex-shrink: 1;
 }
 
@@ -88,10 +97,6 @@ form {
     color: var(--framer-color-text-secondary);
 }
 
-.setup select {
-    width: 100%;
-}
-
 .mapping {
     padding-bottom: 0;
 }
@@ -130,10 +135,6 @@ form {
     gap: 8px;
 }
 
-.mapping .source-field[aria-disabled="true"] {
-    opacity: 0.5;
-}
-
 .mapping .source-field:focus-visible {
     outline: none;
     box-shadow: inset 0 0 0 1px var(--framer-color-tint);
@@ -147,12 +148,16 @@ form {
     box-shadow: none;
 }
 
-[data-framer-theme=light] .mapping .source-field input[type="checkbox"]:not(:checked) {
+[data-framer-theme="light"] .mapping .source-field input[type="checkbox"]:not(:checked) {
     background: #ccc;
 }
 
-[data-framer-theme=dark] .mapping .source-field input[type="checkbox"]:not(:checked) {
+[data-framer-theme="dark"] .mapping .source-field input[type="checkbox"]:not(:checked) {
     background: #666;
+}
+
+.mapping input[type="text"] {
+    width: 100%;
 }
 
 .mapping footer {
@@ -177,4 +182,8 @@ form {
     height: 45px;
     background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
     pointer-events: none;
+}
+
+.mapping footer > button {
+    text-transform: capitalize;
 }

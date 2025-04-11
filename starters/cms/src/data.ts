@@ -4,6 +4,7 @@ import {
     framer,
     type ManagedCollection,
     type ManagedCollectionItemInput,
+    type ProtectedMethod,
 } from "framer-plugin"
 
 export const PLUGIN_KEYS = {
@@ -101,11 +102,6 @@ export async function syncCollection(
     fields: readonly ManagedCollectionFieldInput[],
     slugField: ManagedCollectionFieldInput
 ) {
-    const sanitizedFields = fields.map(field => ({
-        ...field,
-        name: field.name.trim() || field.id,
-    }))
-
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
 
@@ -123,7 +119,7 @@ export async function syncCollection(
 
         const fieldData: FieldDataInput = {}
         for (const [fieldName, value] of Object.entries(item)) {
-            const field = sanitizedFields.find(field => field.id === fieldName)
+            const field = fields.find(field => field.id === fieldName)
 
             // Field is in the data but skipped based on selected fields.
             if (!field) continue
@@ -141,13 +137,18 @@ export async function syncCollection(
         })
     }
 
-    await collection.setFields(sanitizedFields)
     await collection.removeItems(Array.from(unsyncedItems))
     await collection.addItems(items)
 
     await collection.setPluginData(PLUGIN_KEYS.DATA_SOURCE_ID, dataSource.id)
     await collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id)
 }
+
+export const syncMethods = [
+    "ManagedCollection.removeItems",
+    "ManagedCollection.addItems",
+    "ManagedCollection.setPluginData",
+] as const satisfies ProtectedMethod[]
 
 export async function syncExistingCollection(
     collection: ManagedCollection,
@@ -159,6 +160,10 @@ export async function syncExistingCollection(
     }
 
     if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId) {
+        return { didSync: false }
+    }
+
+    if (!framer.isAllowedTo(...syncMethods)) {
         return { didSync: false }
     }
 

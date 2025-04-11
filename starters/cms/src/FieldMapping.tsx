@@ -1,26 +1,30 @@
-import { type EditableManagedCollectionField, framer, type ManagedCollection } from "framer-plugin"
+import { type ManagedCollectionFieldInput, framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "./data"
 
 interface FieldMappingRowProps {
-    field: EditableManagedCollectionField
+    field: ManagedCollectionFieldInput
     originalFieldName: string | undefined
-    disabled: boolean
+    isIgnored: boolean
     onToggleDisabled: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
 }
 
-function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled, onNameChange }: FieldMappingRowProps) {
+function FieldMappingRow({
+    field,
+    originalFieldName,
+    isIgnored,
+    onToggleDisabled,
+    onNameChange,
+}: FieldMappingRowProps) {
     return (
         <>
             <button
                 type="button"
-                className="source-field"
-                aria-disabled={disabled}
+                className={`source-field ${isIgnored ? "ignored" : ""}`}
                 onClick={() => onToggleDisabled(field.id)}
-                tabIndex={0}
             >
-                <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
+                <input type="checkbox" checked={!isIgnored} tabIndex={-1} readOnly />
                 <span>{originalFieldName ?? field.id}</span>
             </button>
             <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" fill="none">
@@ -35,8 +39,7 @@ function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled,
             </svg>
             <input
                 type="text"
-                style={{ width: "100%", opacity: disabled ? 0.5 : 1 }}
-                disabled={disabled}
+                disabled={isIgnored}
                 placeholder={field.id}
                 value={field.name}
                 onChange={event => onNameChange(field.id, event.target.value)}
@@ -50,7 +53,7 @@ function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled,
     )
 }
 
-const initialManagedCollectionFields: EditableManagedCollectionField[] = []
+const initialManagedCollectionFields: ManagedCollectionFieldInput[] = []
 const initialFieldIds: ReadonlySet<string> = new Set()
 
 interface FieldMappingProps {
@@ -68,7 +71,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
 
-    const [selectedSlugField, setSelectedSlugField] = useState<EditableManagedCollectionField | null>(
+    const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 
@@ -204,7 +207,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             key={`field-${field.id}`}
                             field={field}
                             originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
-                            disabled={ignoredFieldIds.has(field.id)}
+                            isIgnored={ignoredFieldIds.has(field.id)}
                             onToggleDisabled={toggleFieldDisabledState}
                             onNameChange={changeFieldName}
                         />
@@ -212,15 +215,9 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 </div>
 
                 <footer>
-                    <hr className="sticky-top" />
-                    <button disabled={isSyncing} tabIndex={0}>
-                        {isSyncing ? (
-                            <div className="framer-spinner" />
-                        ) : (
-                            <span>
-                                Import <span style={{ textTransform: "capitalize" }}>{dataSourceName}</span>
-                            </span>
-                        )}
+                    <hr />
+                    <button disabled={isSyncing}>
+                        {isSyncing ? <div className="framer-spinner" /> : `Import ${dataSourceName}`}
                     </button>
                 </footer>
             </form>

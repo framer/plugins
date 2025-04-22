@@ -1,0 +1,6 @@
+{
+    "id": "gr33nh",
+    "name": "Greenhouse",
+    "modes": ["syncManagedCollection", "configureManagedCollection"],
+    "icon": "/icon.svg"
+}

@@ -298,6 +298,10 @@ export async function processRecords(collection: Collection, records: CSVRecord[
         existingItemsBySlug.set(item.slug, item)
     }
 
+    const fieldsToImport = fields.filter(field =>
+        csvHeader.find(header => collator.compare(header, field.name) === 0)
+    )
+
     for (const record of records) {
         let slug: string | undefined
         const values = Object.values(record)
@@ -321,7 +325,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
         }
 
         const fieldData: FieldDataInput = {}
-        for (const field of fields) {
+        for (const field of fieldsToImport) {
             const value = findRecordValue(record, field.name)
             const fieldDataEntry = getFieldDataEntryInputForField(field, value, allItemIdBySlug)
 

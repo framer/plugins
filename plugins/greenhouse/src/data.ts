@@ -17,9 +17,170 @@ export interface DataSource {
     items: FieldDataInput[]
 }
 
+export interface GreenhouseDataSource extends DataSource {
+    apiEndpoint: string
+    itemsKey: string
+    fields: readonly EditableManagedCollectionField[]
+}
+
+const API_ENTRY_POINT = "https://boards-api.greenhouse.io/v1/boards/overjet/"
+
+function decodeHtml(html: string) {
+    const textarea = document.createElement("textarea")
+    textarea.innerHTML = html
+    return textarea.value
+}
+
 export const dataSourceOptions = [
-    { id: "articles", name: "Articles" },
-    { id: "categories", name: "Categories" },
+    {
+        id: "jobs",
+        name: "Jobs",
+        apiEndpoint: "jobs?content=true",
+        itemsKey: "jobs",
+        fields: [
+            {
+                id: "internal_job_id",
+                name: "Internal Job ID",
+                type: "string",
+            },
+            {
+                id: "id",
+                name: "id",
+                type: "string",
+            },
+            {
+                id: "title",
+                name: "Title",
+                type: "string",
+            },
+            {
+                id: "updated_at",
+                name: "Updated At",
+                type: "date",
+            },
+            {
+                id: "requisition_id",
+                name: "Requisition ID",
+                type: "string",
+            },
+            {
+                id: "location",
+                name: "Location",
+                type: "string",
+                map: (value: { name: string }) => value?.name,
+            },
+            {
+                id: "absolute_url",
+                name: "Absolute URL",
+                type: "link",
+            },
+            {
+                id: "company_name",
+                name: "Company Name",
+                type: "string",
+            },
+            {
+                id: "content",
+                name: "Content",
+                type: "formattedText",
+            },
+            {
+                id: "first_published",
+                name: "First Published",
+                type: "date",
+            },
+            // {
+            //     id: "departments",
+            //     name: "Departments",
+            //     type: "multiCollectionReference",
+            //     // collectionId: "departments",
+            // },
+            // {
+            //     id: "offices",
+            //     name: "Offices",
+            //     type: "multiCollectionReference",
+            //     // collectionId: "offices",
+            // },
+        ],
+    },
+    {
+        id: "departments",
+        name: "Departments",
+        apiEndpoint: "departments",
+        itemsKey: "departments",
+        fields: [
+            {
+                id: "id",
+                name: "id",
+                type: "string",
+            },
+        ],
+    },
+    {
+        id: "offices",
+        name: "Offices",
+        apiEndpoint: "offices",
+        itemsKey: "offices",
+        fields: [
+            {
+                id: "id",
+                name: "id",
+                type: "string",
+            },
+        ],
+    },
+    {
+        id: "degrees",
+        name: "Degrees",
+        apiEndpoint: "degrees",
+        itemsKey: "degrees",
+        fields: [
+            {
+                id: "id",
+                name: "id",
+                type: "string",
+            },
+        ],
+    },
+    {
+        id: "disciplines",
+        name: "Discipline",
+        apiEndpoint: "disciplines",
+        itemsKey: "disciplines",
+        fields: [
+            {
+                id: "id",
+                name: "id",
+                type: "string",
+            },
+        ],
+    },
+    {
+        id: "schools",
+        name: "Schools",
+        apiEndpoint: "schools",
+        itemsKey: "schools",
+        fields: [
+            {
+                id: "id",
+                name: "id",
+                type: "string",
+            },
+        ],
+    },
+    {
+        id: "sections",
+        name: "Sections",
+        apiEndpoint: "sections",
+        itemsKey: "sections",
+        fields: [
+            {
+                id: "id",
+                name: "id",
+                type: "string",
+            },
+        ],
+    },
 ] as const
 
 /**
@@ -40,43 +201,68 @@ export const dataSourceOptions = [
  */
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     // Fetch from your data source
-    const dataSourceResponse = await fetch(`/data/${dataSourceId}.json`, { signal: abortSignal })
-    const dataSource = await dataSourceResponse.json()
+    const dataSourceOption = dataSourceOptions.find(option => option.id === dataSourceId)
+    const apiEndpoint = dataSourceOption?.apiEndpoint
+    const fields = (dataSourceOption?.fields ?? []) as EditableManagedCollectionField[]
+    const itemsKey = dataSourceOption?.itemsKey ?? "items"
 
-    // Map your source fields to supported field types in Framer
-    const fields: EditableManagedCollectionField[] = []
-    for (const field of dataSource.fields) {
-        switch (field.type) {
-            case "string":
-            case "number":
-            case "boolean":
-            case "color":
-            case "formattedText":
-            case "date":
-            case "link":
-                fields.push({
-                    id: field.name,
-                    name: field.name,
-                    type: field.type,
-                })
-                break
-            case "image":
-            case "file":
-            case "enum":
-            case "collectionReference":
-            case "multiCollectionReference":
-                console.warn(`Support for field type "${field.type}" is not implemented in this Plugin.`)
-                break
-            default: {
-                console.warn(`Unknown field type "${field.type}".`)
-            }
-        }
+    if (!apiEndpoint) {
+        throw new Error(`No API endpoint found for data source “${dataSourceId}”.`)
     }
 
-    const items = dataSource.items as FieldDataInput[]
+    const dataSourceResponse = await fetch(`${API_ENTRY_POINT}${apiEndpoint}`, { signal: abortSignal })
+    const dataSource = await dataSourceResponse.json()
+
+    let items = dataSource[itemsKey] as FieldDataInput[]
+
+    items = items.map(item => {
+        return Object.fromEntries(
+            Object.entries(item)
+                .map(([key, value]) => {
+                    const field = fields.find(field => field.id === key)
+                    if (!field) {
+                        console.warn(`Unknown field "${key}".`)
+                        return undefined
+                    }
+
+                    // @ts-expect-error map is not typed
+                    value = field?.map ? field?.map(value) : value
+
+                    switch (field.type) {
+                        case "string":
+                            return [key, { value: String(value), type: field.type }]
+                        case "number":
+                            return [key, { value: Number(value), type: field.type }]
+                        case "boolean":
+                            return [key, { value: Boolean(value), type: field.type }]
+                        case "color":
+                            return [key, { value: String(value), type: field.type }]
+                        case "formattedText":
+                            return [key, { value: decodeHtml(String(value)), type: field.type }]
+                        case "date":
+                            return [key, { value: String(value), type: field.type }]
+                        case "link":
+                            return [key, { value: String(value), type: field.type }]
+                        case "image":
+                            return [key, { value: String(value), type: field.type }]
+                        case "file":
+                            return [key, { value: String(value), type: field.type }]
+                        case "enum":
+                        case "collectionReference":
+                        case "multiCollectionReference":
+                            console.warn(`Support for field type "${field.type}" is not implemented in this Plugin.`)
+                            break
+                        default:
+                    }
+                })
+                .filter(entry => entry !== undefined)
+        )
+    })
+
+    console.log(items)
 
     return {
-        id: dataSource.id,
+        id: dataSourceId,
         fields,
         items,
     }
@@ -101,10 +287,15 @@ export async function syncCollection(
     fields: readonly EditableManagedCollectionField[],
     slugField: EditableManagedCollectionField
 ) {
-    const sanitizedFields = fields.map(field => ({
-        ...field,
-        name: field.name.trim() || field.id,
-    }))
+    const sanitizedFields = fields.map(field => {
+        // @ts-expect-error map is not typed
+        delete field?.map
+
+        return {
+            ...field,
+            name: field.name.trim() || field.id,
+        }
+    })
 
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())

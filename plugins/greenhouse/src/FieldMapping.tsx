@@ -27,9 +27,9 @@ function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled,
                 <path
                     fill="transparent"
                     stroke="#999"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
                     d="m2.5 7 3-3-3-3"
                 />
             </svg>

@@ -28,7 +28,24 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
         })
     }, [dataSource])
 
+    // useEffect(async () => {
+    //     const managedCollections = await framer.getManagedCollections()
+    //     console.log(managedCollections)
+    //     console.log(framer)
+
+    //     // setInterval(() => {
+    //     managedCollections[Math.round(Math.random())].setAsActive()
+    //     // }, 1000)
+
+    //     //
+    // }, [])
+
     useEffect(() => {
+        console.log("mounted")
+    }, [])
+
+    useEffect(() => {
+        console.log("previousDataSourceId", previousDataSourceId)
         if (!previousDataSourceId) {
             return
         }

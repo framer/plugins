@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useState } from "react"
 import { type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { SelectDataSource } from "./SelectDataSource"
+import { Auth } from "./components/auth"
 
 interface AppProps {
     collection: ManagedCollection
@@ -15,16 +16,17 @@ interface AppProps {
 export function App({ collection, previousDataSourceId, previousSlugFieldId }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
+    const [spaceId, setSpaceId] = useState<string | null>(null)
 
     useLayoutEffect(() => {
-        const hasDataSourceSelected = Boolean(dataSource)
+        if (!dataSource) return
 
         framer.showUI({
-            width: hasDataSourceSelected ? 360 : 260,
-            height: hasDataSourceSelected ? 425 : 340,
-            minWidth: hasDataSourceSelected ? 360 : undefined,
-            minHeight: hasDataSourceSelected ? 425 : undefined,
-            resizable: hasDataSourceSelected,
+            width: 360,
+            height: 425,
+            minWidth: 360,
+            minHeight: 425,
+            resizable: true,
         })
     }, [dataSource])
 
@@ -41,12 +43,14 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
     // }, [])
 
     useEffect(() => {
-        console.log("mounted")
-    }, [])
+        setTimeout(() => {
+            console.log("setting spaceId to null")
+            framer.setPluginData("greenhouse:spaceId", null)
+        }, 1000)
+    }, [spaceId])
 
     useEffect(() => {
-        console.log("previousDataSourceId", previousDataSourceId)
-        if (!previousDataSourceId) {
+        if (!previousDataSourceId || !spaceId) {
             return
         }
 
@@ -75,7 +79,18 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
         return () => {
             abortController.abort()
         }
-    }, [previousDataSourceId])
+    }, [previousDataSourceId, spaceId])
+
+    if (!spaceId) {
+        return (
+            <Auth
+                onSubmit={spaceId => {
+                    setSpaceId(spaceId)
+                    console.log("onSubmit", spaceId)
+                }}
+            />
+        )
+    }
 
     if (isLoadingDataSource) {
         return (

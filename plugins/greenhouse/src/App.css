@@ -55,6 +55,14 @@ form {
     font-weight: 600;
 }
 
+.setup img {
+    height: 200px;
+    width: 100%;
+    border-radius: 10px;
+    background-color: rgba(255, 152, 61, 0.1);
+    object-fit: contain;
+}
+
 .intro {
     display: flex;
     flex-direction: column;
@@ -90,6 +98,10 @@ form {
 
 .setup select {
     width: 100%;
+}
+
+.setup input {
+    width: 134px;
 }
 
 .mapping {
@@ -147,11 +159,11 @@ form {
     box-shadow: none;
 }
 
-[data-framer-theme=light] .mapping .source-field input[type="checkbox"]:not(:checked) {
+[data-framer-theme="light"] .mapping .source-field input[type="checkbox"]:not(:checked) {
     background: #ccc;
 }
 
-[data-framer-theme=dark] .mapping .source-field input[type="checkbox"]:not(:checked) {
+[data-framer-theme="dark"] .mapping .source-field input[type="checkbox"]:not(:checked) {
     background: #666;
 }
 

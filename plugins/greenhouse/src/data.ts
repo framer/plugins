@@ -5,10 +5,11 @@ import {
     type ManagedCollection,
     type ManagedCollectionItemInput,
 } from "framer-plugin"
-
+import pkg from "../package.json"
 export const PLUGIN_KEYS = {
     DATA_SOURCE_ID: "dataSourceId",
     SLUG_FIELD_ID: "slugFieldId",
+    SPACE_ID: `${pkg.name}:spaceId`,
 } as const
 
 export interface DataSource {
@@ -23,7 +24,9 @@ export interface GreenhouseDataSource extends DataSource {
     fields: readonly EditableManagedCollectionField[]
 }
 
-const API_ENTRY_POINT = "https://boards-api.greenhouse.io/v1/boards/overjet/"
+function getApiEndpoint(spaceId: string, dataSourceId: string) {
+    return `https://boards-api.greenhouse.io/v1/boards/${spaceId}/${dataSourceId}`
+}
 
 function decodeHtml(html: string) {
     const textarea = document.createElement("textarea")
@@ -200,6 +203,15 @@ export const dataSourceOptions = [
  * }
  */
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
+    const spaceId = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
+
+    const keys = await framer.getPluginDataKeys()
+    console.log("keys", keys)
+
+    if (!spaceId) {
+        throw new Error("No space ID found. Please select a space.")
+    }
+
     // Fetch from your data source
     const dataSourceOption = dataSourceOptions.find(option => option.id === dataSourceId)
     const apiEndpoint = dataSourceOption?.apiEndpoint
@@ -210,10 +222,22 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
         throw new Error(`No API endpoint found for data source “${dataSourceId}”.`)
     }
 
-    const dataSourceResponse = await fetch(`${API_ENTRY_POINT}${apiEndpoint}`, { signal: abortSignal })
+    console.log("getApiEndpoint", spaceId, apiEndpoint, getApiEndpoint(spaceId, apiEndpoint))
+
+    const dataSourceResponse = await fetch(getApiEndpoint(spaceId, apiEndpoint), { signal: abortSignal })
     const dataSource = await dataSourceResponse.json()
+    console.log("dataSource", dataSource)
 
     let items = dataSource[itemsKey] as FieldDataInput[]
+
+    // items = await Promise.all(
+    //     items.map(async item => {
+
+    //         const questions =
+
+    //         return item
+    //     })
+    // )
 
     items = items.map(item => {
         return Object.fromEntries(

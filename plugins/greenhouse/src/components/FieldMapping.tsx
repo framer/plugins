@@ -1,6 +1,6 @@
 import { type EditableManagedCollectionField, framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
-import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "./data"
+import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "../data"
 
 interface FieldMappingRowProps {
     field: EditableManagedCollectionField

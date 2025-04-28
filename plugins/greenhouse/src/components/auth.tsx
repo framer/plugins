@@ -1,7 +1,7 @@
 import { framer } from "framer-plugin"
 import Logo from "../assets/splash.png"
 import { useLayoutEffect, useRef, useState } from "react"
-import { usePluginData } from "../use-plugin-data"
+import { usePluginData } from "../hooks/use-plugin-data"
 import { PLUGIN_KEYS } from "../data"
 
 export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {

@@ -1,7 +1,7 @@
 import { framer } from "framer-plugin"
 import { useState } from "react"
-import { type DataSource, getDataSource, dataSourceOptions } from "./data"
-import Logo from "./assets/splash.png"
+import { type DataSource, getDataSource, dataSourceOptions } from "../data"
+import Logo from "../assets/splash.png"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void

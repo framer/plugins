@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import Logo from "../assets/splash.png"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { usePluginData } from "../use-plugin-data"
 import { PLUGIN_KEYS } from "../data"
 
@@ -35,38 +35,24 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
         })
     }, [])
 
-    useEffect(() => {
-        if (spaceId) {
-            onSubmit(spaceId)
-        }
-    }, [spaceId])
-
     if (!isInitialized) return <div className="framer-spinner" />
 
     return (
-        <main
-            // className="flex flex-col gap-[15px]"
-            className="framer-hide-scrollbar setup"
-        >
-            <img
-                src={Logo}
-                alt="Contentful Hero"
-                // className="object-contain w-full rounded-[10px] h-[200px] bg-contentful-orange bg-opacity-10"
-            />
+        <main className="framer-hide-scrollbar setup">
+            <img src={Logo} alt="Greenhouse Hero" />
             <form
                 onSubmit={e => {
                     e.preventDefault()
                 }}
             >
-                <label
-                    htmlFor="spaceId"
-                    // className="ml-[15px]"
-                >
+                <label htmlFor="spaceId">
                     <p>
-                        Board Token
+                        Board Token{" "}
                         {error && (
                             <span
-                            // className="text-framer-red"
+                                style={{
+                                    color: "#FF3366",
+                                }}
                             >
                                 ({error})
                             </span>
@@ -76,7 +62,6 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                         ref={inputRef}
                         id="spaceId"
                         type="text"
-                        // className="w-[134px]"
                         placeholder="framer"
                         defaultValue={spaceId ?? ""}
                         onChange={() => {
@@ -88,7 +73,6 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                 <button
                     type="submit"
                     disabled={isLoading}
-                    // className="flex justify-center items-center relative py-2 framer-button-secondary w-full"
                     onClick={async () => {
                         const spaceId = inputRef.current?.value
 
@@ -115,15 +99,6 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                         } finally {
                             setIsLoading(false)
                         }
-
-                        // try {
-                        //     await initGreenhouse(spaceId)
-                        //     onSubmit(spaceId)
-                        // } catch (error) {
-                        //     setError("Invalid space ID")
-                        //     setIsLoading(false)
-                        //     throw new Error("Invalid space ID")
-                        // }
                     }}
                 >
                     {isLoading ? "Connecting..." : "Connect"}

@@ -42,12 +42,12 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
     //     //
     // }, [])
 
-    useEffect(() => {
-        setTimeout(() => {
-            console.log("setting spaceId to null")
-            framer.setPluginData("greenhouse:spaceId", null)
-        }, 1000)
-    }, [spaceId])
+    // useEffect(() => {
+    //     setTimeout(() => {
+    //         console.log("setting spaceId to null")
+    //         framer.setPluginData("greenhouse:spaceId", null)
+    //     }, 1000)
+    // }, [spaceId])
 
     useEffect(() => {
         if (!previousDataSourceId || !spaceId) {

@@ -30,7 +30,7 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
     useLayoutEffect(() => {
         framer.showUI({
             width: 320,
-            height: 300,
+            height: 305,
             resizable: false,
         })
     }, [])
@@ -45,7 +45,7 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                     e.preventDefault()
                 }}
             >
-                <label htmlFor="spaceId">
+                <label>
                     <p>
                         Board Token{" "}
                         {error && (
@@ -60,7 +60,6 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                     </p>
                     <input
                         ref={inputRef}
-                        id="spaceId"
                         type="text"
                         placeholder="framer"
                         defaultValue={spaceId ?? ""}

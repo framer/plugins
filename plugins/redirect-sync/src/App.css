@@ -1,7 +1,7 @@
 main {
     --framer-color-tint: #6666ff;
-    --framer-color-tint-dark: #00c6e6;
-    --framer-color-tint-extra-dark: #00bbdd;
+    --framer-color-tint-dark: #4747e7;
+    --framer-color-tint-extra-dark: #2929cf;
     display: flex;
     flex-direction: column;
     align-items: center;

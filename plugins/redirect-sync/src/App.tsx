@@ -1,8 +1,8 @@
 import { framer } from "framer-plugin"
 import "./App.css"
+import { generateCsv, normalizeRedirectInputs, parseCSV } from "./csv"
 import { downloadBlob, importFileAsText } from "./files"
 import { IconRedirects } from "./IconRedirects"
-import { generateCsv, normalizeRedirectInputs, parseCSV } from "./csv"
 
 const learnMoreLink = "https://www.framer.com/help/articles/bulk-importing-exporting-redirects/"
 
@@ -21,7 +21,7 @@ async function importCsv() {
             }
 
             const redirectInputs = await normalizeRedirectInputs(parsedRedirects)
-            await framer.unstable_addRedirects(redirectInputs)
+            await framer.alpha_addRedirects(redirectInputs)
 
             framer.notify(`Successfully imported ${redirectInputs.length} redirects`)
         } catch (error) {
@@ -38,7 +38,7 @@ async function exportCsv() {
     const filename = "redirects.csv"
 
     try {
-        const redirects = await framer.unstable_getRedirects()
+        const redirects = await framer.alpha_getRedirects()
         const csv = generateCsv(redirects)
         downloadBlob(csv, filename, "text/csv")
 

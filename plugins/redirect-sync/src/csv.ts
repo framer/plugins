@@ -31,7 +31,7 @@ export function parseCSV(csv: string): ParsedRedirects[] {
 }
 
 export async function normalizeRedirectInputs(redirects: ParsedRedirects[]): Promise<RedirectInput[]> {
-    const existingRedirects = await framer.unstable_getRedirects()
+    const existingRedirects = await framer.alpha_getRedirects()
     const existingRedirectsByFrom = new Map<string, Redirect>()
 
     for (const redirect of existingRedirects) {

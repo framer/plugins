@@ -69,7 +69,10 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
 
     const [selectedSlugField, setSelectedSlugField] = useState<EditableManagedCollectionField | null>(
-        possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
+        possibleSlugFields.find(field => field.id === initialSlugFieldId) ??
+            dataSource.slugField ??
+            possibleSlugFields[0] ??
+            null
     )
 
     const [fields, setFields] = useState(initialManagedCollectionFields)

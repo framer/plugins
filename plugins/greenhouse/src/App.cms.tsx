@@ -6,6 +6,7 @@ import { type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./components/FieldMapping"
 import { SelectDataSource } from "./components/SelectDataSource"
 import { Auth } from "./components/auth"
+import { useCollections } from "./hooks/use-collections"
 
 interface AppProps {
     collection: ManagedCollection
@@ -42,13 +43,6 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
     //     //
     // }, [])
 
-    // useEffect(() => {
-    //     setTimeout(() => {
-    //         console.log("setting spaceId to null")
-    //         framer.setPluginData("greenhouse:spaceId", null)
-    //     }, 1000)
-    // }, [spaceId])
-
     useEffect(() => {
         if (!previousDataSourceId || !spaceId) {
             return
@@ -80,6 +74,10 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
             abortController.abort()
         }
     }, [previousDataSourceId, spaceId])
+
+    const collections = useCollections()
+
+    console.log({ collections })
 
     if (!spaceId) {
         return (

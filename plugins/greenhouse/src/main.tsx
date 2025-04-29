@@ -7,7 +7,7 @@ import { App } from "./App.cms.tsx"
 import { PLUGIN_KEYS, syncExistingCollection } from "./data"
 import { AppCanvas } from "./App.canvas.tsx"
 
-console.log(framer.mode)
+// framer.setPluginData("greenhouse:spaceId", null)
 
 if (framer.mode === "canvas") {
     const root = document.getElementById("root")

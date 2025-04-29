@@ -108,6 +108,19 @@ form {
     width: 134px;
 }
 
+.canvas button {
+    height: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.canvas button p {
+    color: var(--framer-color-text-tertiary);
+}
+
 .mapping {
     padding-bottom: 0;
 }

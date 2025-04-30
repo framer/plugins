@@ -13,9 +13,15 @@ export const PLUGIN_KEYS = {
     SPACE_ID: `${pkg.name}:spaceId`,
 } as const
 
+export type ExtendedEditableManagedCollectionField = EditableManagedCollectionField & {
+    dataSourceId?: string
+    map?: (value: any) => any
+    isMissingReference?: boolean
+}
+
 export interface DataSource {
     id: string
-    fields: readonly EditableManagedCollectionField[]
+    fields: readonly ExtendedEditableManagedCollectionField[]
     items: FieldDataInput[]
     idField: EditableManagedCollectionField | null
     slugField: EditableManagedCollectionField | null
@@ -24,7 +30,7 @@ export interface DataSource {
 export interface GreenhouseDataSource extends DataSource {
     apiEndpoint: string
     itemsKey: string
-    fields: readonly EditableManagedCollectionField[]
+    fields: readonly ExtendedEditableManagedCollectionField[]
 }
 
 function getApiEndpoint(spaceId: string, dataSourceId: string) {
@@ -59,6 +65,16 @@ function slugify(text: string) {
         .replace(/-+/g, "-")
     return slug
 }
+
+const collections = await framer.getManagedCollections()
+const collectionsWithDataSourceId = await Promise.all(
+    collections.map(async collection => {
+        const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
+        return { ...collection, dataSourceId }
+    })
+)
+
+console.log("collectionsWithDataSourceId", collectionsWithDataSourceId)
 
 export const dataSourceOptions = [
     {
@@ -158,7 +174,8 @@ export const dataSourceOptions = [
                 id: "jobs",
                 name: "Jobs",
                 type: "multiCollectionReference",
-                collectionId: "jobs",
+                dataSourceId: "jobs",
+                map: (value: { id: string }) => value?.id,
             },
         ],
     },
@@ -185,13 +202,13 @@ export const dataSourceOptions = [
                 name: "Location",
                 type: "string",
             },
-
-            // {
-            //     id: "departments",
-            //     name: "Departments",
-            //     type: "multiCollectionReference",
-            //     // collectionId: "departments",
-            // },
+            {
+                id: "departments",
+                name: "Departments",
+                type: "multiCollectionReference",
+                dataSourceId: "departments",
+                map: (value: { id: string }) => value?.id,
+            },
         ],
     },
     {
@@ -200,7 +217,7 @@ export const dataSourceOptions = [
         idFieldId: "id",
         slugFieldId: "text",
         apiEndpoint: "education/degrees",
-        itemsKey: "degrees",
+        itemsKey: "items",
         fields: [
             {
                 id: "id",
@@ -216,11 +233,11 @@ export const dataSourceOptions = [
     },
     {
         id: "disciplines",
-        name: "Discipline",
+        name: "Disciplines",
         idFieldId: "id",
         slugFieldId: "text",
         apiEndpoint: "education/disciplines",
-        itemsKey: "disciplines",
+        itemsKey: "items",
         fields: [
             {
                 id: "id",
@@ -240,7 +257,7 @@ export const dataSourceOptions = [
         idFieldId: "id",
         slugFieldId: "text",
         apiEndpoint: "education/schools",
-        itemsKey: "schools",
+        itemsKey: "items",
         fields: [
             {
                 id: "id",
@@ -272,12 +289,13 @@ export const dataSourceOptions = [
                 name: "Name",
                 type: "string",
             },
-            // {
-            //     id: "jobs",
-            //     name: "Jobs",
-            //     type: "multiCollectionReference",
-            //     collectionId: "jobs",
-            // },
+            {
+                id: "jobs",
+                name: "Jobs",
+                type: "multiCollectionReference",
+                dataSourceId: "jobs",
+                map: (value: { id: string }) => value?.id,
+            },
         ],
     },
 ] as const
@@ -301,9 +319,6 @@ export const dataSourceOptions = [
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     const spaceId = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
 
-    const keys = await framer.getPluginDataKeys()
-    console.log("keys", keys)
-
     if (!spaceId) {
         throw new Error("No space ID found. Please select a space.")
     }
@@ -311,7 +326,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     // Fetch from your data source
     const dataSourceOption = dataSourceOptions.find(option => option.id === dataSourceId)
     const apiEndpoint = dataSourceOption?.apiEndpoint
-    const fields = (dataSourceOption?.fields ?? []) as EditableManagedCollectionField[]
+    const fields = (dataSourceOption?.fields ?? []) as ExtendedEditableManagedCollectionField[]
     const itemsKey = dataSourceOption?.itemsKey ?? "items"
 
     if (!apiEndpoint) {
@@ -346,16 +361,22 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
                     }
 
                     if (field.type === "multiCollectionReference") {
-                        console.log("multiCollectionReference", value)
+                        const collection = collectionsWithDataSourceId.find(
+                            collection => collection.dataSourceId === field.dataSourceId
+                        )
 
-                        if (field?.map) {
+                        if (!collection) {
+                            console.warn(`No collection found for data source "${field.dataSourceId}".`)
+                            field.isMissingReference = true
+                        }
+
+                        if (Array.isArray(value) && field?.map) {
                             value = value.map(field?.map).map(String)
                         }
 
                         return [key, { value: value, type: field.type }]
                     }
 
-                    // @ts-expect-error map is not typed
                     value = field?.map ? field?.map(value) : value
 
                     switch (field.type) {
@@ -392,7 +413,8 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
         )
     })
 
-    console.log(items)
+    console.log("fields", fields)
+    console.log("items", items)
 
     return {
         id: dataSourceId,
@@ -419,34 +441,31 @@ export function mergeFieldsWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: readonly EditableManagedCollectionField[], // add map and dataSourceId
+    fields: readonly ExtendedEditableManagedCollectionField[], // add map and dataSourceId
     slugField: EditableManagedCollectionField
 ) {
-    const collections = await framer.getManagedCollections()
-    const collectionsWithDataSourceId = await Promise.all(
-        collections.map(async collection => {
-            const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-            return { ...collection, dataSourceId }
-        })
-    )
+    const sanitizedFields = fields
+        .map(field => {
+            delete field?.map
 
-    const sanitizedFields = fields.map(field => {
-        delete field?.map
-
-        if (field.type === "multiCollectionReference" || field.type === "collectionReference") {
-            const collectionId = collectionsWithDataSourceId.find(
-                collection => collection.dataSourceId === field.dataSourceId
-            )?.id
-            if (collectionId) {
-                field.collectionId = collectionId
+            if (field.type === "multiCollectionReference" || field.type === "collectionReference") {
+                const collectionId = collectionsWithDataSourceId.find(
+                    collection => collection.dataSourceId === field.dataSourceId
+                )?.id
+                if (collectionId) {
+                    field.collectionId = collectionId
+                } else {
+                    console.warn(`No collection found for data source "${field.dataSourceId}".`)
+                    return null
+                }
             }
-        }
 
-        return {
-            ...field,
-            name: field.name.trim() || field.id,
-        }
-    })
+            return {
+                ...field,
+                name: field.name.trim() || field.id,
+            }
+        })
+        .filter(field => field)
 
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())

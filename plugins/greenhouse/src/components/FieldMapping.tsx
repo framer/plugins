@@ -1,6 +1,12 @@
 import { type EditableManagedCollectionField, framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
-import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "../data"
+import {
+    type DataSource,
+    dataSourceOptions,
+    ExtendedEditableManagedCollectionField,
+    mergeFieldsWithExistingFields,
+    syncCollection,
+} from "../data"
 
 interface FieldMappingRowProps {
     field: EditableManagedCollectionField
@@ -8,9 +14,17 @@ interface FieldMappingRowProps {
     disabled: boolean
     onToggleDisabled: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
+    style?: React.CSSProperties
 }
 
-function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled, onNameChange }: FieldMappingRowProps) {
+function FieldMappingRow({
+    field,
+    originalFieldName,
+    disabled,
+    onToggleDisabled,
+    onNameChange,
+    style,
+}: FieldMappingRowProps) {
     return (
         <>
             <button
@@ -19,6 +33,7 @@ function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled,
                 aria-disabled={disabled}
                 onClick={() => onToggleDisabled(field.id)}
                 tabIndex={0}
+                style={style}
             >
                 <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
                 <span>{originalFieldName ?? field.id}</span>
@@ -35,7 +50,7 @@ function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled,
             </svg>
             <input
                 type="text"
-                style={{ width: "100%", opacity: disabled ? 0.5 : 1 }}
+                style={{ width: "100%", opacity: disabled ? 0.5 : 1, ...style }}
                 disabled={disabled}
                 placeholder={field.id}
                 value={field.name}
@@ -50,7 +65,7 @@ function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled,
     )
 }
 
-const initialManagedCollectionFields: EditableManagedCollectionField[] = []
+const initialManagedCollectionFields: ExtendedEditableManagedCollectionField[] = []
 const initialFieldIds: ReadonlySet<string> = new Set()
 
 interface FieldMappingProps {
@@ -205,11 +220,15 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     {fields.map(field => (
                         <FieldMappingRow
                             key={`field-${field.id}`}
-                            field={field}
+                            field={{ ...field, name: field?.isMissingReference ? "Missing Collection" : field.name }}
                             originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
-                            disabled={ignoredFieldIds.has(field.id)}
-                            onToggleDisabled={toggleFieldDisabledState}
+                            disabled={ignoredFieldIds.has(field.id) || Boolean(field?.isMissingReference)}
+                            onToggleDisabled={() => {
+                                if (field?.isMissingReference) return
+                                toggleFieldDisabledState(field.id)
+                            }}
                             onNameChange={changeFieldName}
+                            style={{ cursor: field?.isMissingReference ? "not-allowed" : "auto" }}
                         />
                     ))}
                 </div>

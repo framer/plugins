@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import "./App.css"
-import { generateCsv, normalizeRedirectInputs, parseCSV } from "./csv"
+import { countAndRemoveMissingRedirects, generateCsv, normalizeRedirectInputs, parseCSV } from "./csv"
 import { downloadBlob, importFileAsText } from "./files"
 import { IconRedirects } from "./IconRedirects"
 
@@ -20,10 +20,19 @@ async function importCsv() {
                 throw new Error("CSV was empty")
             }
 
-            const redirectInputs = await normalizeRedirectInputs(parsedRedirects)
+            const nonMissingRedirects = countAndRemoveMissingRedirects(parsedRedirects)
+            const totalMissingRedirects = parsedRedirects.length - nonMissingRedirects.length
+
+            const redirectInputs = await normalizeRedirectInputs(nonMissingRedirects)
             await framer.alpha_addRedirects(redirectInputs)
 
-            framer.notify(`Successfully imported ${redirectInputs.length} redirects`)
+            framer.notify(
+                `Successfully imported ${redirectInputs.length} redirect${redirectInputs.length !== 1 ? "s" : ""}${
+                    totalMissingRedirects > 0
+                        ? `. Skipped ${totalMissingRedirects} missing redirect${totalMissingRedirects !== 1 ? "s" : ""}.`
+                        : ""
+                }`
+            )
         } catch (error) {
             console.error(error)
             framer.notify(error instanceof Error ? error.message : "Error importing CSV file", {

@@ -30,6 +30,10 @@ export function parseCSV(csv: string): ParsedRedirects[] {
     })
 }
 
+export function countAndRemoveMissingRedirects(redirects: ParsedRedirects[]): ParsedRedirects[] {
+    return redirects.filter(redirect => redirect.to !== "")
+}
+
 export async function normalizeRedirectInputs(redirects: ParsedRedirects[]): Promise<RedirectInput[]> {
     const existingRedirects = await framer.alpha_getRedirects()
     const existingRedirectsByFrom = new Map<string, Redirect>()
@@ -40,14 +44,16 @@ export async function normalizeRedirectInputs(redirects: ParsedRedirects[]): Pro
         }
     }
 
-    const redirectInputs: RedirectInput[] = redirects.map(redirect => {
-        const existingRedirect = existingRedirectsByFrom.get(redirect.from)
+    const redirectInputs: RedirectInput[] = redirects
+        .filter(redirect => redirect.to !== "")
+        .map(redirect => {
+            const existingRedirect = existingRedirectsByFrom.get(redirect.from)
 
-        return {
-            id: existingRedirect?.id,
-            ...redirect,
-        }
-    })
+            return {
+                id: existingRedirect?.id,
+                ...redirect,
+            }
+        })
 
     return redirectInputs
 }

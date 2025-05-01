@@ -66,15 +66,24 @@ function slugify(text: string) {
     return slug
 }
 
-const collections = await framer.getManagedCollections()
-const collectionsWithDataSourceId = await Promise.all(
-    collections.map(async collection => {
-        const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-        return { ...collection, dataSourceId }
-    })
-)
+const mode = framer.mode
 
-console.log("collectionsWithDataSourceId", collectionsWithDataSourceId)
+type ExtendedManagedCollection = ManagedCollection & {
+    dataSourceId: string | null
+}
+
+let collections: ManagedCollection[] = []
+let collectionsWithDataSourceId: ExtendedManagedCollection[] = []
+
+if (mode === "syncManagedCollection" || mode === "configureManagedCollection") {
+    collections = await framer.getManagedCollections()
+    collectionsWithDataSourceId = await Promise.all(
+        collections.map(async collection => {
+            const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
+            return Object.assign(collection, { dataSourceId }) as ExtendedManagedCollection
+        })
+    )
+}
 
 export const dataSourceOptions = [
     {
@@ -330,7 +339,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     const itemsKey = dataSourceOption?.itemsKey ?? "items"
 
     if (!apiEndpoint) {
-        throw new Error(`No API endpoint found for data source “${dataSourceId}”.`)
+        throw new Error(`No API endpoint found for data source "${dataSourceId}".`)
     }
 
     console.log("getApiEndpoint", spaceId, apiEndpoint, getApiEndpoint(spaceId, apiEndpoint))
@@ -465,7 +474,7 @@ export async function syncCollection(
                 name: field.name.trim() || field.id,
             }
         })
-        .filter(field => field)
+        .filter(field => field !== null)
 
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
@@ -539,7 +548,7 @@ export async function syncExistingCollection(
 
         const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
-            framer.notify(`No field matches the slug field id “${previousSlugFieldId}”. Sync will not be performed.`, {
+            framer.notify(`No field matches the slug field id "${previousSlugFieldId}". Sync will not be performed.`, {
                 variant: "error",
             })
             return { didSync: false }
@@ -549,7 +558,7 @@ export async function syncExistingCollection(
         return { didSync: true }
     } catch (error) {
         console.error(error)
-        framer.notify(`Failed to sync collection “${previousDataSourceId}”. Check browser console for more details.`, {
+        framer.notify(`Failed to sync collection "${previousDataSourceId}". Check browser console for more details.`, {
             variant: "error",
         })
         return { didSync: false }

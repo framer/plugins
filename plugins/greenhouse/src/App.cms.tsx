@@ -6,7 +6,6 @@ import { type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./components/FieldMapping"
 import { SelectDataSource } from "./components/SelectDataSource"
 import { Auth } from "./components/auth"
-import { useCollections } from "./hooks/use-collections"
 
 interface AppProps {
     collection: ManagedCollection
@@ -75,16 +74,11 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
         }
     }, [previousDataSourceId, spaceId])
 
-    const collections = useCollections()
-
-    console.log({ collections })
-
     if (!spaceId) {
         return (
             <Auth
                 onSubmit={spaceId => {
                     setSpaceId(spaceId)
-                    console.log("onSubmit", spaceId)
                 }}
             />
         )

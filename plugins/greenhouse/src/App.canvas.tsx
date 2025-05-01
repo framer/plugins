@@ -1,8 +1,11 @@
 import { framer } from "framer-plugin"
-import { useLayoutEffect } from "react"
+import { useLayoutEffect, useState } from "react"
 import { PLUGIN_KEYS } from "./data"
+import { Auth } from "./components/auth"
 
 export function AppCanvas() {
+    const [spaceId, setSpaceId] = useState<string | null>(null)
+
     useLayoutEffect(() => {
         framer.showUI({
             width: 260,
@@ -10,13 +13,23 @@ export function AppCanvas() {
         })
     }, [])
 
+    if (!spaceId) {
+        return (
+            <Auth
+                onSubmit={spaceId => {
+                    setSpaceId(spaceId)
+                }}
+            />
+        )
+    }
+
     return (
         <main className="setup canvas">
             <button
                 onClick={async () => {
                     const spaceId = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
 
-                    const instance = await framer.addComponentInstance({
+                    await framer.addComponentInstance({
                         url: "https://framer.com/m/GreenhouseApplicationForm-8rot.js",
                         attributes: {
                             controls: {
@@ -25,8 +38,6 @@ export function AppCanvas() {
                             },
                         },
                     })
-
-                    console.log(instance)
                 }}
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18">

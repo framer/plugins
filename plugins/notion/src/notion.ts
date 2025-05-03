@@ -197,6 +197,7 @@ export const supportedNotionPropertyTypes = [
     "files",
     "relation",
     "phone_number",
+    "unique_id",
 ] satisfies ReadonlyArray<NotionProperty["type"]>
 
 type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
@@ -221,6 +222,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     files: ["file", "image"],
     relation: ["multiCollectionReference"],
     phone_number: ["string"],
+    unique_id: ["string", "number"],
 } satisfies Record<SupportedPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
 
 function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
@@ -398,6 +400,16 @@ export function getCollectionFieldForProperty<
                 userEditable: false,
             }
         }
+        case "unique_id": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
+            return {
+                type: fieldType,
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
         default: {
             assertNever(property)
         }
@@ -484,14 +496,13 @@ export function getFieldDataEntryInput(
             }
         }
         case "unique_id": {
-            if (Number.isNaN(property.unique_id.number) || typeof property.unique_id.number !== "number") {
-                return undefined
+            if (fieldType === "string") {
+                return property.unique_id.prefix
+                    ? `${property.unique_id.prefix}-${property.unique_id.number}`
+                    : String(property.unique_id.number)
             }
 
-            return {
-                type: "number",
-                value: property.unique_id.number,
-            }
+            return property.unique_id.number
         }
         case "date": {
             return {

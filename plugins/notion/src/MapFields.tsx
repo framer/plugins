@@ -253,7 +253,7 @@ export function MapDatabaseFields({
                 </div>
 
                 <div className="flex flex-col gap-[10px] w-full items-center justify-center pb-[10px]">
-                    <div className="grid grid-cols-fieldPicker gap-3 w-full items-center justify-center text-tertiary mb-[-3px]">
+                    <div className="grid grid-cols-fieldPicker gap-2.5 w-full items-center justify-center text-tertiary mb-[-3px]">
                         <span>Notion Property</span>
                         <span className="col-start-3">Field Name</span>
                         <span>Field Type</span>

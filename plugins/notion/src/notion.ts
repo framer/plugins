@@ -62,6 +62,14 @@ export const pageContentProperty: SupportedNotionProperty = {
     rich_text: {},
 }
 
+const pageCoverImageId = "page-cover"
+export const pageCoverImageProperty: SupportedNotionProperty = {
+    type: "cover-image",
+    id: pageCoverImageId,
+    name: "Cover Image",
+    description: "Page Cover Image",
+}
+
 export const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "apng", "webp", "svg"]
 
 // Naive implementation to be authenticated, a token could be expired.
@@ -78,8 +86,8 @@ if (isAuthenticated()) {
 export function getNotionProperties(database: GetDatabaseResponse) {
     const result: NotionProperty[] = []
 
-    // This property is always there but not included in `"database.properties"
-    result.push(pageContentProperty)
+    // These properties are always there but not included in `"database.properties"
+    result.push(pageContentProperty, pageCoverImageProperty)
 
     for (const key in database.properties) {
         const property = database.properties[key]
@@ -201,9 +209,16 @@ export const supportedNotionPropertyTypes = [
 ] satisfies ReadonlyArray<NotionProperty["type"]>
 
 type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
-type SupportedNotionProperty = Extract<NotionProperty, { type: SupportedPropertyType }>
+type CustomPropertyType = "cover-image"
 
-export function isSupportedNotionProperty(property: NotionProperty): property is SupportedNotionProperty {
+type SupportedNotionProperty =
+    | Extract<NotionProperty, { type: SupportedPropertyType }>
+    | { type: CustomPropertyType; id: string; name: string; description: string }
+
+export function isSupportedNotionProperty(
+    property: NotionProperty | { type: CustomPropertyType }
+): property is SupportedNotionProperty {
+    if (property.type === "cover-image") return true
     return supportedNotionPropertyTypes.includes(property.type as SupportedPropertyType)
 }
 
@@ -223,7 +238,8 @@ export const supportedCMSTypeByNotionPropertyType = {
     relation: ["multiCollectionReference"],
     phone_number: ["string"],
     unique_id: ["string", "number"],
-} satisfies Record<SupportedPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
+    "cover-image": ["image"],
+} satisfies Record<SupportedPropertyType | CustomPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
 
 function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
     propertyType: T,
@@ -241,7 +257,7 @@ function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
  * That maps the Notion Property to the Framer CMS collection property type
  */
 export function getCollectionFieldForProperty<
-    TProperty extends Extract<NotionProperty, { type: SupportedPropertyType }>,
+    TProperty extends Extract<NotionProperty, { type: SupportedPropertyType | CustomPropertyType }>
 >(
     property: TProperty,
     fieldType: ManagedCollectionField["type"],
@@ -405,6 +421,16 @@ export function getCollectionFieldForProperty<
 
             return {
                 type: fieldType,
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
+        case "cover-image": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
+            return {
+                type: "image",
                 id: property.id,
                 name: property.name,
                 userEditable: false,
@@ -640,6 +666,14 @@ async function processItem(
         fieldData[pageContentProperty.id] = {
             type: "formattedText",
             value: contentHTML,
+        }
+    }
+
+    if (fieldsById.has(pageCoverImageProperty.id) && item.cover) {
+        if (item.cover.type === "external") {
+            fieldData[pageCoverImageProperty.id] = item.cover.external.url
+        } else if (item.cover.type === "file") {
+            fieldData[pageCoverImageProperty.id] = item.cover.file.url
         }
     }
 

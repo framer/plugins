@@ -94,6 +94,9 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
             case "code":
                 htmlContent += `<pre><code class="language-${block.code.language.replace(" ", "-")}">${richTextToHTML(block.code.rich_text)}</code></pre>`
                 break
+            case "quote":
+                htmlContent += `<blockquote>${richTextToHTML(block.quote.rich_text)}</blockquote>`
+                break
             default:
                 // TODO: More block types can be added here!
                 break

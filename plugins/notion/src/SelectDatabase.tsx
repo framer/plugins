@@ -67,8 +67,8 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
     const selectEnabled = !isLoadingOrFetching && Boolean(data && data.length > 0)
 
     return (
-        <form className="flex flex-col gap-[10px] w-full h-full" onSubmit={handleSubmit}>
-            <img src={notionConnectSrc} className="rounded-md" />
+        <form className="flex flex-col gap-[10px] w-full h-full select-none" onSubmit={handleSubmit}>
+            <img src={notionConnectSrc} draggable={false} className="rounded-md" />
 
             <p>
                 To manually connect a database, open it in Notion, click on the three dots icon in the top right corner,

@@ -60,8 +60,8 @@ export function Authentication({ onAuthenticated, context }: AuthenticationProps
             })
     }
     return (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-[20px] pb-4 overflo">
-            <img src={loginIllustration} className="max-w-100% rounded-md flex-shrink-0 select-none pointer-events-none" />
+        <div className="w-full h-full flex flex-col items-center justify-center gap-[20px] pb-4 select-none">
+            <img src={loginIllustration} draggable={false} className="max-w-100% rounded-md flex-shrink-0 pointer-events-none" />
 
             <div className="flex flex-col items-center gap-2 flex-1 justify-center w-full">
                 {isLoading ? (

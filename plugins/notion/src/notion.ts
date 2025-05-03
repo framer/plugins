@@ -489,7 +489,7 @@ export function getPropertyValue(
             return property.number
         }
         case "url": {
-            return property.url
+            return property.url ?? ""
         }
         case "unique_id": {
             if (fieldType === "string") {
@@ -508,7 +508,7 @@ export function getPropertyValue(
         }
         case "files": {
             for (const file of property.files) {
-                let url = null
+                let url = ""
 
                 if (file.type === "external") {
                     url = file.external.url
@@ -526,7 +526,7 @@ export function getPropertyValue(
 
                 return url
             }
-            return null
+            return ""
         }
         case "phone_number": {
             return property.phone_number ?? ""

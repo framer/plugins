@@ -54,6 +54,8 @@ export const pageContentProperty: SupportedNotionProperty = {
     rich_text: {},
 }
 
+export const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "apng", "webp", "svg"]
+
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.
 export function isAuthenticated() {
@@ -400,8 +402,10 @@ export function richTextToPlainText(richText: RichTextItemResponse[]) {
 
 export function getPropertyValue(
     property: PageObjectResponse["properties"][string],
-    { supportsHtml }: { supportsHtml: boolean }
+    { fieldType }: { fieldType: string }
 ): unknown | undefined {
+    const supportsHtml = fieldType === "formattedText"
+
     switch (property.type) {
         case "checkbox": {
             return property.checkbox
@@ -436,12 +440,13 @@ export function getPropertyValue(
 
             return property.status.id
         }
-        case "title":
+        case "title": {
             if (supportsHtml) {
                 return richTextToHTML(property.title)
             }
 
             return richTextToPlainText(property.title)
+        }
         case "number": {
             return property.number
         }
@@ -458,17 +463,25 @@ export function getPropertyValue(
             return property.relation.map(({ id }) => id)
         }
         case "files": {
-            const firstFile = property.files[0]
-            if (!firstFile) return null
+            for (const file of property.files) {
+                let url = null
 
-            if (firstFile.type === "external") {
-                return firstFile.external.url
+                if (file.type === "external") {
+                    url = file.external.url
+                } else if (file.type === "file") {
+                    url = file.file.url
+                }
+
+                if (!url) continue
+
+                if (fieldType === "image") {
+                    if (!imageFileExtensions.some(ext => url.toLowerCase().endsWith(ext))) {
+                        continue
+                    }
+                }
+
+                return url
             }
-
-            if (firstFile.type === "file") {
-                return firstFile.file.url
-            }
-
             return null
         }
         case "phone_number": {
@@ -544,7 +557,7 @@ async function processItem(
         assert(property)
 
         if (property.id === slugFieldId) {
-            const resolvedSlug = getPropertyValue(property, { supportsHtml: false })
+            const resolvedSlug = getPropertyValue(property, { fieldType: "string" })
             if (!resolvedSlug || typeof resolvedSlug !== "string") {
                 continue
             }
@@ -559,7 +572,7 @@ async function processItem(
             continue
         }
 
-        const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
+        const fieldValue = getPropertyValue(property, { fieldType: field.type })
         if (fieldValue === null || fieldValue === undefined) {
             status.warnings.push({
                 url: item.url,

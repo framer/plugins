@@ -47,11 +47,10 @@ export type NotionProperty = GetDatabaseResponse["properties"][string]
 // synced with the CMS
 const pageContentId = "page-content"
 export const pageContentProperty: SupportedNotionProperty = {
-    type: "rich_text",
+    type: "page-content",
     id: pageContentId,
     name: "Content",
     description: "Page Content",
-    rich_text: {},
 }
 
 const pageCoverImageId = "page-cover"
@@ -204,7 +203,7 @@ export const supportedNotionPropertyTypes = [
 ] satisfies ReadonlyArray<NotionProperty["type"]>
 
 type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
-type CustomPropertyType = "cover-image"
+type CustomPropertyType = "cover-image" | "page-content"
 
 type SupportedNotionProperty =
     | Extract<NotionProperty, { type: SupportedPropertyType }>
@@ -213,7 +212,7 @@ type SupportedNotionProperty =
 export function isSupportedNotionProperty(
     property: NotionProperty | { type: CustomPropertyType }
 ): property is SupportedNotionProperty {
-    if (property.type === "cover-image") return true
+    if (property.type === "cover-image" || property.type === "page-content") return true
     return supportedNotionPropertyTypes.includes(property.type as SupportedPropertyType)
 }
 
@@ -237,6 +236,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     created_by: ["string"],
     last_edited_by: ["string"],
     "cover-image": ["image"],
+    "page-content": ["formattedText"],
 } satisfies Record<SupportedPropertyType | CustomPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
 
 function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
@@ -425,10 +425,16 @@ export function getCollectionFieldForProperty<
             }
         }
         case "cover-image": {
-            assertFieldTypeMatchesPropertyType(property.type, fieldType)
-
             return {
                 type: "image",
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
+        case "page-content": {
+            return {
+                type: "formattedText",
                 id: property.id,
                 name: property.name,
                 userEditable: false,
@@ -732,7 +738,9 @@ async function processAllItems(
 
             if (isUnchangedSinceLastSync(item.last_edited_time, lastSyncedDate)) {
                 status.info.push({
-                    message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSyncedDate!)}`,
+                    message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(
+                        lastSyncedDate!
+                    )}`,
                     url: item.url,
                 })
                 return null

@@ -257,7 +257,7 @@ export function MapDatabaseFields({
                                     <CheckboxTextfield
                                         value={property.name}
                                         disabled={!isSupported}
-                                        checked={!disabledFieldIds.has(property.id)}
+                                        checked={isSupported ? !disabledFieldIds.has(property.id) : false}
                                         onChange={() => {
                                             handleFieldToggle(property.id)
                                         }}
@@ -272,36 +272,32 @@ export function MapDatabaseFields({
                                     </div>
                                     <input
                                         type="text"
-                                        className={classNames("w-full", !isSupported && "opacity-50")}
+                                        className={classNames("w-full", !isSupported && "opacity-50 col-span-2")}
                                         disabled={!isSupported || disabledFieldIds.has(property.id)}
                                         placeholder={property.name}
-                                        value={isSupported ? (fieldNameOverrides[property.id] ?? "") : "Unsupported"}
+                                        value={isSupported ? fieldNameOverrides[property.id] ?? "" : "Unsupported"}
                                         onChange={e => {
                                             handleFieldNameChange(property.id, e.target.value)
                                         }}
                                     ></input>
-                                    <select
-                                        className="w-full"
-                                        onChange={event =>
-                                            handleFieldTypeChange(
-                                                property.id,
-                                                event.target.value as ManagedCollectionField["type"]
-                                            )
-                                        }
-                                        disabled={!isSupported}
-                                        value={!isSupported ? "unsupported" : fieldTypeByFieldId[property.id]}
-                                    >
-                                        {!isSupported && (
-                                            <option value="unsupported" disabled>
-                                                Unsupported
-                                            </option>
-                                        )}
-                                        {fieldOptions?.map(fieldOption => (
-                                            <option key={fieldOption} value={fieldOption}>
-                                                {labelByFieldTypeOption[fieldOption]}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    {isSupported && (
+                                        <select
+                                            className="w-full"
+                                            onChange={event =>
+                                                handleFieldTypeChange(
+                                                    property.id,
+                                                    event.target.value as ManagedCollectionField["type"]
+                                                )
+                                            }
+                                            value={fieldTypeByFieldId[property.id]}
+                                        >
+                                            {fieldOptions?.map(fieldOption => (
+                                                <option key={fieldOption} value={fieldOption}>
+                                                    {labelByFieldTypeOption[fieldOption]}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </Fragment>
                             )
                         })}

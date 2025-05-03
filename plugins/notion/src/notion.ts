@@ -543,13 +543,13 @@ export function getFieldDataEntryInput(
             }
         }
         case "files": {
-            const firstFile = property.files[0]
-            if (!firstFile) return { type: "file", value: null }
+            for (const file of property.files) {
+                let url = ""
 
-            if (firstFile.type === "external" && firstFile.external.url) {
-                return {
-                    type: "link",
-                    value: firstFile.external.url,
+                if (file.type === "external") {
+                    url = file.external.url
+                } else if (file.type === "file") {
+                    url = file.file.url
                 }
             }
 
@@ -560,8 +560,7 @@ export function getFieldDataEntryInput(
                     value: firstFile.file.url,
                 }
             }
-
-            return null
+            return ""
         }
         case "phone_number": {
             return property.phone_number ?? ""

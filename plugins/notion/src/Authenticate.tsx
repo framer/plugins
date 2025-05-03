@@ -77,7 +77,7 @@ export function Authentication({ onAuthenticated, context }: AuthenticationProps
                 )}
             </div>
 
-            <Button onClick={handleAuth} isLoading={isLoading} disabled={isLoading}>
+            <Button onClick={handleAuth} isLoading={isLoading} disabled={isLoading} variant="primary">
                 Log In
             </Button>
         </div>

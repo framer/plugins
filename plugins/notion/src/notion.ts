@@ -669,19 +669,19 @@ async function processItem(
             })
         }
 
-        fieldData[field.id] = fieldValue
+        fieldData[field.id] = { type: field.type, value: fieldValue }
     }
 
     if (fieldsById.has(pageContentProperty.id) && item.id) {
         const contentHTML = await getPageBlocksAsRichText(item.id)
-        fieldData[pageContentProperty.id] = contentHTML
+        fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
     }
 
     if (fieldsById.has(pageCoverImageProperty.id) && item.cover) {
         if (item.cover.type === "external") {
-            fieldData[pageCoverImageProperty.id] = item.cover.external.url
+            fieldData[pageCoverImageProperty.id] = { type: "image", value: item.cover.external.url }
         } else if (item.cover.type === "file") {
-            fieldData[pageCoverImageProperty.id] = item.cover.file.url
+            fieldData[pageCoverImageProperty.id] = { type: "image", value: item.cover.file.url }
         }
     }
 

@@ -23,7 +23,13 @@ import {
 import { assert, syncMethods } from "./utils"
 
 function getSortedProperties(database: GetDatabaseResponse): NotionProperty[] {
-    return getNotionProperties(database).sort((propertyA, propertyB) => {
+    const properties = getNotionProperties(database)
+    return properties.sort((propertyA, propertyB) => {
+        // Put title field first
+        if (propertyA.type === "title") return -1
+        if (propertyB.type === "title") return 1
+        
+        // Then sort by supported status
         const a = isSupportedNotionProperty(propertyA) ? -1 : 0
         const b = isSupportedNotionProperty(propertyB) ? -1 : 0
         return a - b

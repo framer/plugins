@@ -12,11 +12,13 @@ main {
 [data-framer-theme="light"] #root {
     --framer-color-tint: #000;
     --framer-color-tint-dark: #262626;
+    --framer-color-tint-extra-dark: #333333;
 }
 
 [data-framer-theme="dark"] #root {
     --framer-color-tint: #fff;
     --framer-color-tint-dark: #e3e3e3;
+    --framer-color-tint-extra-dark: #c3c3c3;
     --framer-color-text-reversed: #000;
 }
 

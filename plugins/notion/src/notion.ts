@@ -714,9 +714,9 @@ async function processItem(
 
     if (fieldsById.has(pageCoverImageProperty.id) && item.cover) {
         if (item.cover.type === "external") {
-            fieldData[pageCoverImageProperty.id] = item.cover.external.url
+            fieldData[pageCoverImageProperty.id] = { type: "image", value: item.cover.external.url }
         } else if (item.cover.type === "file") {
-            fieldData[pageCoverImageProperty.id] = item.cover.file.url
+            fieldData[pageCoverImageProperty.id] = { type: "image", value: item.cover.file.url }
         }
     }
 

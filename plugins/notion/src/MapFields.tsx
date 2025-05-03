@@ -98,18 +98,18 @@ function getLastSynchronizedAtTimestamp(
 }
 
 const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
-    boolean: "Boolean",
+    boolean: "Toggle",
     date: "Date",
     number: "Number",
     formattedText: "Formatted Text",
     color: "Color",
-    enum: "Enum",
+    enum: "Option",
     file: "File",
     image: "Image",
     link: "Link",
     string: "String",
     collectionReference: "Reference",
-    multiCollectionReference: "Multi Reference",
+    multiCollectionReference: "Multi-Reference",
 }
 
 export function MapDatabaseFields({

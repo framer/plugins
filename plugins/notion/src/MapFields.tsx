@@ -303,28 +303,29 @@ export function MapDatabaseFields({
                                             handleFieldNameChange(property.id, e.target.value)
                                         }}
                                     ></input>
-                                    {isSupported && (
-                                        <select
-                                            className={classNames(
-                                                "w-full",
-                                                fieldOptions?.length === 1 ? "opacity-50" : "cursor-pointer"
-                                            )}
-                                            onChange={event =>
-                                                handleFieldTypeChange(
-                                                    property.id,
-                                                    event.target.value as ManagedCollectionField["type"]
-                                                )
-                                            }
-                                            value={fieldTypeByFieldId[property.id]}
-                                            disabled={fieldOptions?.length === 1}
-                                        >
-                                            {fieldOptions?.map(fieldOption => (
-                                                <option key={fieldOption} value={fieldOption}>
-                                                    {labelByFieldTypeOption[fieldOption]}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    )}
+                                    {isSupported &&
+                                        (fieldOptions?.length === 1 ? (
+                                            <div className="w-full self-stretch bg-tertiary text-primary flex flex-col justify-center rounded-lg px-2">
+                                                {labelByFieldTypeOption[fieldOptions[0]]}
+                                            </div>
+                                        ) : (
+                                            <select
+                                                className="w-full cursor-pointer"
+                                                onChange={event =>
+                                                    handleFieldTypeChange(
+                                                        property.id,
+                                                        event.target.value as ManagedCollectionField["type"]
+                                                    )
+                                                }
+                                                value={fieldTypeByFieldId[property.id]}
+                                            >
+                                                {fieldOptions?.map(fieldOption => (
+                                                    <option key={fieldOption} value={fieldOption}>
+                                                        {labelByFieldTypeOption[fieldOption]}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ))}
                                 </Fragment>
                             )
                         })}

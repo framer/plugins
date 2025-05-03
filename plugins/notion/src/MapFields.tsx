@@ -259,8 +259,8 @@ export function MapDatabaseFields({
                                 <Fragment key={property.id}>
                                     <CheckboxTextfield
                                         value={property.name}
-                                        disabled={!isSupported || !isAllowedToManage}
-                                        checked={!disabledFieldIds.has(property.id)}
+                                        disabled={!isSupported}
+                                        checked={isSupported ? !disabledFieldIds.has(property.id) : false}
                                         onChange={() => {
                                             handleFieldToggle(property.id)
                                         }}
@@ -283,36 +283,29 @@ export function MapDatabaseFields({
                                             !isSupported || !isAllowedToManage || disabledFieldIds.has(property.id)
                                         }
                                         placeholder={property.name}
-                                        value={isSupported ? (fieldNameOverrides[property.id] ?? "") : "Unsupported"}
+                                        value={isSupported ? fieldNameOverrides[property.id] ?? "" : "Unsupported"}
                                         onChange={e => {
                                             handleFieldNameChange(property.id, e.target.value)
                                         }}
                                     ></input>
-                                    <select
-                                        className={classNames(
-                                            "w-full",
-                                            (!isSupported || !isAllowedToManage) && "opacity-50"
-                                        )}
-                                        onChange={event =>
-                                            handleFieldTypeChange(
-                                                property.id,
-                                                event.target.value as ManagedCollectionField["type"]
-                                            )
-                                        }
-                                        disabled={!isSupported || !isAllowedToManage}
-                                        value={!isSupported ? "unsupported" : fieldTypeByFieldId[property.id]}
-                                    >
-                                        {!isSupported && (
-                                            <option value="unsupported" disabled>
-                                                Unsupported
-                                            </option>
-                                        )}
-                                        {fieldOptions?.map(fieldOption => (
-                                            <option key={fieldOption} value={fieldOption}>
-                                                {labelByFieldTypeOption[fieldOption]}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    {isSupported && (
+                                        <select
+                                            className="w-full"
+                                            onChange={event =>
+                                                handleFieldTypeChange(
+                                                    property.id,
+                                                    event.target.value as ManagedCollectionField["type"]
+                                                )
+                                            }
+                                            value={fieldTypeByFieldId[property.id]}
+                                        >
+                                            {fieldOptions?.map(fieldOption => (
+                                                <option key={fieldOption} value={fieldOption}>
+                                                    {labelByFieldTypeOption[fieldOption]}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </Fragment>
                             )
                         })}

@@ -206,6 +206,9 @@ export const supportedNotionPropertyTypes = [
     "relation",
     "phone_number",
     "unique_id",
+    "people",
+    "created_by",
+    "last_edited_by",
 ] satisfies ReadonlyArray<NotionProperty["type"]>
 
 type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
@@ -238,6 +241,9 @@ export const supportedCMSTypeByNotionPropertyType = {
     relation: ["multiCollectionReference"],
     phone_number: ["string"],
     unique_id: ["string", "number"],
+    people: ["string"],
+    created_by: ["string"],
+    last_edited_by: ["string"],
     "cover-image": ["image"],
 } satisfies Record<SupportedPropertyType | CustomPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
 
@@ -436,6 +442,33 @@ export function getCollectionFieldForProperty<
                 userEditable: false,
             }
         }
+        case "people": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+            return {
+                type: "string",
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
+        case "created_by": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+            return {
+                type: "string",
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
+        case "last_edited_by": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+            return {
+                type: "string",
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
         default: {
             assertNever(property)
         }
@@ -564,6 +597,17 @@ export function getFieldDataEntryInput(
         }
         case "phone_number": {
             return property.phone_number ?? ""
+        }
+        case "people": {
+            const firstUser = property.people[0]
+            if (!firstUser) return ""
+            return "name" in firstUser ? firstUser.name : ""
+        }
+        case "created_by": {
+            return "name" in property.created_by ? property.created_by.name : ""
+        }
+        case "last_edited_by": {
+            return "name" in property.last_edited_by ? property.last_edited_by.name : ""
         }
     }
 }

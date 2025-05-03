@@ -242,7 +242,7 @@ export function MapDatabaseFields({
                         Slug Field
                     </label>
                     <select
-                        className="w-full"
+                        className="w-full cursor-pointer"
                         value={slugFieldId ?? ""}
                         onChange={e => setSlugFieldId(e.target.value)}
                         required
@@ -297,7 +297,10 @@ export function MapDatabaseFields({
                                     ></input>
                                     {isSupported && (
                                         <select
-                                            className={classNames("w-full", fieldOptions?.length === 1 && "opacity-50")}
+                                            className={classNames(
+                                                "w-full",
+                                                fieldOptions?.length === 1 ? "opacity-50" : "cursor-pointer"
+                                            )}
                                             onChange={event =>
                                                 handleFieldTypeChange(
                                                     property.id,

@@ -80,7 +80,7 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
                     <select
                         value={selectedDatabase ?? ""}
                         onChange={event => setSelectedDatabase(event.target.value)}
-                        className="flex-1 shrink-1"
+                        className="flex-1 shrink-1 cursor-pointer"
                         disabled={!selectEnabled}
                     >
                         {isLoadingOrFetching && (

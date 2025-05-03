@@ -207,7 +207,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     select: ["enum"],
     status: ["enum"],
     url: ["link"],
-    email: ["formattedText", "string"],
+    email: ["string", "formattedText"],
     files: ["file", "image"],
     relation: ["multiCollectionReference"],
     phone_number: ["string"],
@@ -419,6 +419,13 @@ export function getPropertyValue(
 
             return richTextToPlainText(property.rich_text)
         }
+        case "email": {
+            if (supportsHtml) {
+                return `<p>${property.email ?? ""}</p>`
+            }
+
+            return property.email ?? ""
+        }
         case "select": {
             if (!property.select) return null
 
@@ -548,7 +555,7 @@ async function processItem(
         }
 
         const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
-        if (!fieldValue) {
+        if (fieldValue === null || fieldValue === undefined) {
             status.warnings.push({
                 url: item.url,
                 fieldId: field.id,

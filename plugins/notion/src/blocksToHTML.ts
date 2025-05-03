@@ -1,6 +1,8 @@
 import type { BlockObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
 import { assert } from "./utils"
 
+const youtubeIdRegex = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))(?<videoId>[^?&]+)/u
+
 export function richTextToHTML(texts: RichTextItemResponse[]) {
     return texts
         .map(({ plain_text, annotations, href }) => {
@@ -110,7 +112,16 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                     htmlContent += `<iframe src="https://www.youtube.com/embed/${videoId}"></iframe>`
                 }
                 break
-            }
+            case "video":
+                if (block.video.type === "external") {
+                    const url = block.video.external.url
+                    const youtubeId = url.match(youtubeIdRegex)?.groups?.videoId
+                    if (youtubeId) {
+                        htmlContent += `<iframe src="https://www.youtube.com/embed/${youtubeId}"></iframe>`
+                        break
+                    }
+                }
+                break
             default:
                 // TODO: More block types can be added here!
                 break

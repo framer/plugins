@@ -319,10 +319,10 @@ export function getCollectionFieldForProperty<
                 type: "enum",
                 id: property.id,
                 name: property.name,
-                cases: property.status.groups.map(group => {
+                cases: property.status.options.map(option => {
                     return {
-                        id: group.id,
-                        name: group.name,
+                        id: option.id,
+                        name: option.name,
                     }
                 }),
                 userEditable: false,
@@ -430,6 +430,11 @@ export function getPropertyValue(
             if (!property.select) return null
 
             return property.select.id
+        }
+        case "status": {
+            if (!property.status) return null
+
+            return property.status.id
         }
         case "title":
             if (supportsHtml) {

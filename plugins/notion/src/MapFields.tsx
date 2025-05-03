@@ -226,7 +226,7 @@ export function MapDatabaseFields({
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 flex-1 select-none">
-            <div className="tailwind-hell-escape-hatch-gradient-top" />
+            <div className="tailwind-hell-escape-hatch-gradient-top pointer-events-none" />
 
             <div className="h-[1px] border-b border-divider mb-2 sticky top-0" />
 
@@ -333,7 +333,7 @@ export function MapDatabaseFields({
             </div>
 
             <div className="left-0 bottom-0 pb-[15px] w-full flex justify-between sticky bg-primary pt-4 border-t border-divider border-opacity-20 items-center max-w-full">
-                <div className="tailwind-hell-escape-hatch-gradient-bottom" />
+                <div className="tailwind-hell-escape-hatch-gradient-bottom pointer-events-none" />
 
                 <Button
                     variant="primary"

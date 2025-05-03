@@ -215,7 +215,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     select: ["enum"],
     status: ["enum"],
     url: ["link"],
-    email: ["formattedText", "string"],
+    email: ["string", "formattedText"],
     files: ["file", "image"],
     relation: ["multiCollectionReference"],
     phone_number: ["string"],
@@ -430,17 +430,18 @@ export function getFieldDataEntryInput(
             }
         }
         case "rich_text": {
-            if (fieldType === "formattedText") {
-                return {
-                    type: "formattedText",
-                    value: richTextToHTML(property.rich_text),
-                }
+            if (supportsHtml) {
+                return richTextToHTML(property.rich_text)
             }
 
-            return {
-                type: "string",
-                value: richTextToPlainText(property.rich_text),
+            return richTextToPlainText(property.rich_text)
+        }
+        case "email": {
+            if (supportsHtml) {
+                return `<p>${property.email ?? ""}</p>`
             }
+
+            return property.email ?? ""
         }
         case "select": {
             if (!property.select) return undefined
@@ -603,8 +604,8 @@ async function processItem(
             continue
         }
 
-        const fieldDataEntry = getFieldDataEntryInput(property, field.type)
-        if (!fieldDataEntry) {
+        const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
+        if (fieldValue === null || fieldValue === undefined) {
             status.warnings.push({
                 url: item.url,
                 fieldId: field.id,

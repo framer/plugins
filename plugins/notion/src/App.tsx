@@ -27,8 +27,8 @@ export function AuthenticatedApp({ context }: AuthenticatedAppProps) {
     )
 
     useEffect(() => {
-        const width = databaseConfig ? 360 : 325
-        const height = databaseConfig ? 425 : 370
+        const width = databaseConfig ? 600 : 325
+        const height = databaseConfig ? 500 : 370
         framer.showUI({
             width,
             height,

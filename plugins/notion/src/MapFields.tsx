@@ -4,7 +4,7 @@ import classNames from "classnames"
 import { useIsAllowedTo, type ManagedCollectionField, type ManagedCollectionFieldInput } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { Button } from "./components/Button"
-import { CheckboxTextfield } from "./components/CheckboxTexfield"
+import { CheckboxTextfield } from "./components/CheckboxTextfield"
 import { IconChevron } from "./components/Icons"
 import {
     getCollectionFieldForProperty,

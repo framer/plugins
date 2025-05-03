@@ -28,7 +28,7 @@ function getSortedProperties(database: GetDatabaseResponse): NotionProperty[] {
         // Put title field first
         if (propertyA.type === "title") return -1
         if (propertyB.type === "title") return 1
-        
+
         // Then sort by supported status
         const a = isSupportedNotionProperty(propertyA) ? -1 : 0
         const b = isSupportedNotionProperty(propertyB) ? -1 : 0
@@ -305,7 +305,7 @@ export function MapDatabaseFields({
                                     ></input>
                                     {isSupported && (
                                         <select
-                                            className="w-full"
+                                            className={classNames("w-full", fieldOptions?.length === 1 && "opacity-50")}
                                             onChange={event =>
                                                 handleFieldTypeChange(
                                                     property.id,
@@ -313,6 +313,7 @@ export function MapDatabaseFields({
                                                 )
                                             }
                                             value={fieldTypeByFieldId[property.id]}
+                                            disabled={fieldOptions?.length === 1}
                                         >
                                             {fieldOptions?.map(fieldOption => (
                                                 <option key={fieldOption} value={fieldOption}>

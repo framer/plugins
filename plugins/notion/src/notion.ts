@@ -486,7 +486,7 @@ export function getPropertyValue(
             return richTextToPlainText(property.title)
         }
         case "number": {
-            return property.number
+            return property.number ?? 0
         }
         case "url": {
             return property.url ?? ""

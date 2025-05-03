@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react"
 import notionConnectSrc from "./assets/notion-connect.png"
 import { richTextToPlainText, useDatabasesQuery } from "./notion"
 import { assert } from "./utils"
+import { Button } from "./components/Button"
 
 interface SelectDatabaseProps {
     onDatabaseSelected: (database: GetDatabaseResponse) => void
@@ -106,9 +107,9 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
                     </select>
                 </div>
 
-                <button type="submit" disabled={!selectedDatabase}>
+                <Button type="submit" variant="primary" disabled={!selectedDatabase}>
                     Next
-                </button>
+                </Button>
             </div>
         </form>
     )

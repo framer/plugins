@@ -62,6 +62,8 @@ export const pageContentProperty: SupportedNotionProperty = {
     rich_text: {},
 }
 
+export const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "apng", "webp", "svg"]
+
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.
 export function isAuthenticated() {
@@ -609,7 +611,7 @@ async function processItem(
             continue
         }
 
-        const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
+        const fieldValue = getPropertyValue(property, { fieldType: field.type })
         if (fieldValue === null || fieldValue === undefined) {
             status.warnings.push({
                 url: item.url,

@@ -225,7 +225,7 @@ export function MapDatabaseFields({
     const title = plainTextTitle.trim() ? plainTextTitle : "Untitled"
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2 flex-1">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2 flex-1 select-none">
             <div className="tailwind-hell-escape-hatch-gradient-top" />
 
             <div className="h-[1px] border-b border-divider mb-2 sticky top-0" />

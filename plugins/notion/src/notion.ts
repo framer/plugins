@@ -271,7 +271,8 @@ export function getCollectionFieldForProperty<
 ): ManagedCollectionFieldInput | null {
     switch (property.type) {
         case "email":
-        case "rich_text": {
+        case "rich_text":
+        case "unique_id": {
             assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
             return {
@@ -282,7 +283,8 @@ export function getCollectionFieldForProperty<
             }
         }
         case "date":
-        case "last_edited_time": {
+        case "last_edited_time":
+        case "created_time": {
             assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
             return {
@@ -326,17 +328,11 @@ export function getCollectionFieldForProperty<
                 userEditable: false,
             }
         }
-        case "created_time": {
-            assertFieldTypeMatchesPropertyType(property.type, fieldType)
-
-            return {
-                type: "date",
-                id: property.id,
-                name: property.name,
-                userEditable: false,
-            }
-        }
-        case "title": {
+        case "title":
+        case "phone_number":
+        case "people":
+        case "created_by":
+        case "last_edited_by": {
             assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
             return {
@@ -412,26 +408,6 @@ export function getCollectionFieldForProperty<
                 userEditable: false,
             }
         }
-        case "phone_number": {
-            assertFieldTypeMatchesPropertyType(property.type, fieldType)
-
-            return {
-                type: "string",
-                id: property.id,
-                name: property.name,
-                userEditable: false,
-            }
-        }
-        case "unique_id": {
-            assertFieldTypeMatchesPropertyType(property.type, fieldType)
-
-            return {
-                type: fieldType,
-                id: property.id,
-                name: property.name,
-                userEditable: false,
-            }
-        }
         case "cover-image": {
             return {
                 type: "image",
@@ -443,33 +419,6 @@ export function getCollectionFieldForProperty<
         case "page-content": {
             return {
                 type: "formattedText",
-                id: property.id,
-                name: property.name,
-                userEditable: false,
-            }
-        }
-        case "people": {
-            assertFieldTypeMatchesPropertyType(property.type, fieldType)
-            return {
-                type: "string",
-                id: property.id,
-                name: property.name,
-                userEditable: false,
-            }
-        }
-        case "created_by": {
-            assertFieldTypeMatchesPropertyType(property.type, fieldType)
-            return {
-                type: "string",
-                id: property.id,
-                name: property.name,
-                userEditable: false,
-            }
-        }
-        case "last_edited_by": {
-            assertFieldTypeMatchesPropertyType(property.type, fieldType)
-            return {
-                type: "string",
                 id: property.id,
                 name: property.name,
                 userEditable: false,

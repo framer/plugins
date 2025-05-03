@@ -83,6 +83,8 @@ const defaultValueForFieldType: Record<ManagedCollectionField["type"], unknown> 
     enum: null,
 }
 
+const noneOptionId = "__NONE__"
+
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.
 export function isAuthenticated() {
@@ -334,10 +336,16 @@ export function getCollectionFieldForProperty<
 
             return {
                 type: "enum",
-                cases: property.select.options.map(option => ({
-                    id: option.id,
-                    name: option.name,
-                })),
+                cases: [
+                    {
+                        id: noneOptionId,
+                        name: "",
+                    },
+                    ...property.select.options.map(option => ({
+                        id: option.id,
+                        name: option.name,
+                    })),
+                ],
                 id: property.id,
                 name: property.name,
                 userEditable: false,
@@ -497,7 +505,7 @@ export function getFieldDataEntryInput(
             return property.email ?? ""
         }
         case "select": {
-            if (!property.select) return undefined
+            if (!property.select) return noneOptionId
 
             return {
                 type: "enum",

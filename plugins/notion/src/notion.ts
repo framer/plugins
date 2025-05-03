@@ -54,7 +54,7 @@ export type NotionProperty = GetDatabaseResponse["properties"][string]
 // property so it displays in the list where you can configure properties to be
 // synced with the CMS
 const pageContentId = "page-content"
-export const pageContentProperty: SupportedNotionProperty = {
+const pageContentProperty: SupportedNotionProperty = {
     type: "page-content",
     id: pageContentId,
     name: "Content",
@@ -62,14 +62,26 @@ export const pageContentProperty: SupportedNotionProperty = {
 }
 
 const pageCoverImageId = "page-cover"
-export const pageCoverImageProperty: SupportedNotionProperty = {
+const pageCoverImageProperty: SupportedNotionProperty = {
     type: "cover-image",
     id: pageCoverImageId,
     name: "Cover Image",
     description: "Page Cover Image",
 }
 
-export const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "apng", "webp", "svg"]
+const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "apng", "webp", "svg"]
+
+const defaultValueForFieldType: Record<ManagedCollectionField["type"], unknown> = {
+    string: "",
+    number: 0,
+    boolean: false,
+    date: null,
+    formattedText: "",
+    image: null,
+    link: "",
+    file: null,
+    enum: null,
+}
 
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.
@@ -131,7 +143,7 @@ export function initNotionClient() {
 }
 
 // The order in which we display slug fields
-const preferedSlugFieldOrder: NotionProperty["type"][] = ["title", "rich_text"]
+const preferedSlugFieldOrder: NotionProperty["type"][] = ["title", "rich_text", "unique_id", "formula", "rollup"]
 
 /**
  * Given a Notion Database returns a list of possible fields that can be used as
@@ -144,11 +156,8 @@ export function getPossibleSlugFields(database: GetDatabaseResponse) {
         const property = database.properties[key]
         assert(property)
 
-        switch (property.type) {
-            case "title":
-            case "rich_text":
-                options.push(property)
-                break
+        if (preferedSlugFieldOrder.includes(property.type)) {
+            options.push(property)
         }
     }
 
@@ -208,6 +217,8 @@ export const supportedNotionPropertyTypes = [
     "people",
     "created_by",
     "last_edited_by",
+    "formula",
+    "rollup",
 ] satisfies ReadonlyArray<NotionProperty["type"]>
 
 type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
@@ -234,7 +245,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     last_edited_time: ["date"],
     select: ["enum"],
     status: ["enum"],
-    url: ["link"],
+    url: ["link", "string"],
     email: ["string", "formattedText"],
     files: ["file", "image"],
     relation: ["multiCollectionReference"],
@@ -243,6 +254,8 @@ export const supportedCMSTypeByNotionPropertyType = {
     people: ["string"],
     created_by: ["string"],
     last_edited_by: ["string"],
+    formula: ["string", "number", "boolean", "date", "link", "image", "file"],
+    rollup: ["string", "number", "boolean", "date", "link", "image", "file"],
     "cover-image": ["image"],
     "page-content": ["formattedText"],
 } satisfies Record<SupportedPropertyType | CustomPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
@@ -272,8 +285,30 @@ export function getCollectionFieldForProperty<
     switch (property.type) {
         case "email":
         case "rich_text":
-        case "unique_id": {
+        case "unique_id":
+        case "url": {
             assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
+            return {
+                type: fieldType,
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
+        case "formula":
+        case "rollup": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
+            if (fieldType === "file") {
+                return {
+                    type: fieldType,
+                    id: property.id,
+                    name: property.name,
+                    userEditable: false,
+                    allowedFileTypes: [],
+                }
+            }
 
             return {
                 type: fieldType,
@@ -355,16 +390,6 @@ export function getCollectionFieldForProperty<
                         name: option.name,
                     }
                 }),
-                userEditable: false,
-            }
-        }
-        case "url": {
-            assertFieldTypeMatchesPropertyType(property.type, fieldType)
-
-            return {
-                type: "link",
-                id: property.id,
-                name: property.name,
                 userEditable: false,
             }
         }
@@ -564,7 +589,89 @@ export function getFieldDataEntryInput(
         case "last_edited_by": {
             return "name" in property.last_edited_by ? property.last_edited_by.name : ""
         }
+
+        case "formula": {
+            const value = property.formula
+
+            if (!value) {
+                return defaultValueForFieldType[fieldType] ?? null
+            }
+
+            switch (fieldType) {
+                case "string":
+                    return String(value[value.type] ?? "")
+                case "link":
+                case "image":
+                case "file":
+                    const url = String(value[value.type] ?? "")
+                    if (url && isValidUrl(url)) {
+                        return url
+                    }
+                    return ""
+                case "number":
+                    return Number(value[value.type] ?? 0)
+                case "date":
+                    return value.type == "date" ? formatDateString(value.date) : null
+                case "boolean":
+                    return value.type == "boolean" ? value.boolean : Boolean(value[value.type])
+                default:
+                    return defaultValueForFieldType[fieldType] ?? null
+            }
+        }
+        case "rollup": {
+            const value = property.rollup
+
+            let result = null
+
+            switch (value?.type) {
+                case "array":
+                    const item = value.array[0]
+                    result = item ? getPropertyValue(item, { fieldType }) : defaultValueForFieldType[fieldType] ?? null
+                    break
+                case "number":
+                    result = value.number ?? 0
+                    break
+                case "date":
+                    result = formatDateString(value.date)
+                    break
+                default:
+                    result = defaultValueForFieldType[fieldType] ?? null
+                    break
+            }
+
+            switch (fieldType) {
+                case "string":
+                case "date":
+                    if (typeof result !== "string") {
+                        result = ""
+                    }
+                    break
+                case "image":
+                case "link":
+                case "file":
+                    if (!result || !isValidUrl(result)) {
+                        result = ""
+                    }
+                    break
+                case "number":
+                    if (typeof result !== "number") {
+                        result = 0
+                    }
+                    break
+                case "boolean":
+                    if (typeof result !== "boolean") {
+                        result = false
+                    }
+                    break
+                default:
+                    break
+            }
+
+            return result
+        }
     }
+
+    return null
 }
 
 export interface SynchronizeProgress {
@@ -1070,4 +1177,25 @@ export async function* iteratePaginatedAPI<Args extends PaginatedArgs, Item>(
         seenCursors.add(response.next_cursor)
         nextCursor = response.next_cursor
     } while (nextCursor)
+}
+
+function formatDateString(value: string) {
+    if (!value) return null
+
+    // Remove time from ISO string to prevent time zone issues when importing to Framer.
+    const date = new Date(value)
+
+    // Set the time to midnight (00:00:00.000)
+    date.setHours(0, 0, 0, 0)
+
+    return date.toISOString()
+}
+
+function isValidUrl(url: string): boolean {
+    try {
+        new URL(url)
+        return true
+    } catch {
+        return false
+    }
 }

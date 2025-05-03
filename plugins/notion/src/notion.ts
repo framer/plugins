@@ -194,6 +194,7 @@ export const supportedNotionPropertyTypes = [
     "url",
     "files",
     "relation",
+    "phone_number",
 ] satisfies ReadonlyArray<NotionProperty["type"]>
 
 type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
@@ -217,6 +218,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     email: ["formattedText", "string"],
     files: ["file", "image"],
     relation: ["multiCollectionReference"],
+    phone_number: ["string"],
 } satisfies Record<SupportedPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
 
 function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
@@ -384,6 +386,16 @@ export function getCollectionFieldForProperty<
                 userEditable: false,
             }
         }
+        case "phone_number": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
+            return {
+                type: "string",
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
         default: {
             assertNever(property)
         }
@@ -503,6 +515,11 @@ export function getFieldDataEntryInput(
                     value: firstFile.file.url,
                 }
             }
+
+            return null
+        }
+        case "phone_number": {
+            return property.phone_number ?? ""
         }
     }
 }

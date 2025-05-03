@@ -215,7 +215,8 @@ export function MapDatabaseFields({
         })
     }
 
-    const title = richTextToPlainText(database.title)
+    const plainTextTitle = richTextToPlainText(database.title)
+    const title = plainTextTitle.trim() ? plainTextTitle : "Untitled"
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-2 flex-1">
@@ -224,6 +225,14 @@ export function MapDatabaseFields({
             <div className="h-[1px] border-b border-divider mb-2 sticky top-0" />
 
             <div className="flex-1 flex flex-col gap-6">
+                <a
+                    href={database.url}
+                    target="_blank"
+                    className="group w-fit max-w-full flex flex-row items-center gap-1.5"
+                >
+                    {database.icon && <DatabaseIcon icon={database.icon} size={24} />}
+                    <span className="group-hover:underline text-primary text-base font-bold">{title}</span>
+                </a>
                 <div className="flex flex-col gap-2 w-full">
                     <label className="text-tertiary" htmlFor="collectionName">
                         Slug Field
@@ -328,4 +337,28 @@ export function MapDatabaseFields({
             </div>
         </form>
     )
+}
+
+interface DatabaseIconProps {
+    icon: {
+        type: string
+        emoji?: string
+        external?: { url: string }
+        file?: { url: string }
+    }
+    size?: number
+}
+
+function DatabaseIcon({ icon, size = 20 }: DatabaseIconProps) {
+    if (!icon) return null
+
+    switch (icon.type) {
+        case "emoji":
+            return <span style={{ fontSize: `${size}px` }}>{icon.emoji}</span>
+        case "external":
+        case "file":
+            return <img src={icon[icon.type]?.url} style={{ width: size, height: size }} className="rounded-sm" />
+    }
+
+    return null
 }

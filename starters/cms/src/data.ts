@@ -1,5 +1,5 @@
 import {
-    type EditableManagedCollectionField,
+    type ManagedCollectionFieldInput,
     type FieldDataInput,
     framer,
     type ManagedCollection,
@@ -11,17 +11,12 @@ export const PLUGIN_KEYS = {
     SLUG_FIELD_ID: "slugFieldId",
 } as const
 
-export type ExtendedEditableManagedCollectionField = EditableManagedCollectionField & {
-    dataSourceId?: string
-    isMissingReference?: boolean // reference to a collection that doesn't exist
-}
-
 export interface DataSource {
     id: string
-    fields: readonly ExtendedEditableManagedCollectionField[]
+    fields: readonly ManagedCollectionFieldInput[]
     items: FieldDataInput[]
-    idField: EditableManagedCollectionField | null // to be used as id field
-    slugField: EditableManagedCollectionField | null // to be used as slug field
+    idField: ManagedCollectionFieldInput | null // to be used as id field
+    slugField: ManagedCollectionFieldInput | null // to be used as slug field
 }
 
 export const dataSourceOptions = [
@@ -93,12 +88,11 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     const dataSource = await dataSourceResponse.json()
 
     // Map your source fields to supported field types in Framer
-    const fields: ExtendedEditableManagedCollectionField[] = []
+    const fields: ManagedCollectionFieldInput[] = []
     for (const field of dataSource.fields) {
         if (field.type === "multiCollectionReference" || field.type === "collectionReference") {
             if (!field.dataSourceId) {
                 console.warn(`No data source id found for collection reference field"${field.name}".`)
-                field.isMissingReference = true
             } else {
                 const collection = collectionsWithDataSourceId.find(
                     collection => collection.dataSourceId === field.dataSourceId
@@ -106,7 +100,8 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
 
                 if (!collection) {
                     console.warn(`No collection found for data source "${field.dataSourceId}".`)
-                    field.isMissingReference = true
+                } else {
+                    field.collectionId = collection.id
                 }
             }
         }
@@ -125,8 +120,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
                     id: field.name,
                     name: field.name,
                     type: field.type,
-                    ...(field.dataSourceId && { dataSourceId: field.dataSourceId }),
-                    ...(field.isMissingReference && { isMissingReference: true }),
+                    ...(field.collectionId && { collectionId: field.collectionId }),
                 })
                 break
             case "image":
@@ -157,9 +151,9 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
 }
 
 export function mergeFieldsWithExistingFields(
-    sourceFields: readonly EditableManagedCollectionField[],
-    existingFields: readonly EditableManagedCollectionField[]
-): EditableManagedCollectionField[] {
+    sourceFields: readonly ManagedCollectionFieldInput[],
+    existingFields: readonly ManagedCollectionFieldInput[]
+): ManagedCollectionFieldInput[] {
     return sourceFields.map(sourceField => {
         const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
         if (existingField) {
@@ -172,32 +166,13 @@ export function mergeFieldsWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: readonly ExtendedEditableManagedCollectionField[],
-    slugField: EditableManagedCollectionField
+    fields: readonly ManagedCollectionFieldInput[],
+    slugField: ManagedCollectionFieldInput
 ) {
-    const sanitizedFields = fields
-        .map(field => {
-            if (
-                (field.type === "multiCollectionReference" || field.type === "collectionReference") &&
-                field.dataSourceId
-            ) {
-                const collectionId = collectionsWithDataSourceId.find(
-                    collection => collection.dataSourceId === field.dataSourceId
-                )?.id
-                if (collectionId) {
-                    field.collectionId = collectionId
-                } else {
-                    console.warn(`No collection found for data source "${field.dataSourceId}".`)
-                    return null
-                }
-            }
-
-            return {
-                ...field,
-                name: field.name.trim() || field.id,
-            }
-        })
-        .filter(field => field !== null)
+    const sanitizedFields = fields.map(field => ({
+        ...field,
+        name: field.name.trim() || field.id,
+    }))
 
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
@@ -273,7 +248,12 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        await syncCollection(collection, dataSource, existingFields, slugField)
+        await syncCollection(
+            collection,
+            dataSource,
+            existingFields as ManagedCollectionFieldInput[],
+            slugField as ManagedCollectionFieldInput
+        )
         return { didSync: true }
     } catch (error) {
         console.error(error)

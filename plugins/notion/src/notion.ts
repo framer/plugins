@@ -330,16 +330,10 @@ export function getCollectionFieldForProperty<
 
             return {
                 type: "enum",
-                cases: [
-                    {
-                        id: noneOptionId,
-                        name: "",
-                    },
-                    ...property.select.options.map(option => ({
-                        id: option.id,
-                        name: option.name,
-                    })),
-                ],
+                cases: property.select.options.map(option => ({
+                    id: option.id,
+                    name: option.name,
+                })),
                 id: property.id,
                 name: property.name,
                 userEditable: false,
@@ -463,7 +457,7 @@ export function richTextToPlainText(richText: RichTextItemResponse[]) {
 
 export function getPropertyValue(
     property: PageObjectResponse["properties"][string],
-    { fieldType }: { fieldType: string }
+    { fieldType, field }: { fieldType: string; field?: ManagedCollectionField }
 ): unknown | undefined {
     const supportsHtml = fieldType === "formattedText"
 
@@ -494,12 +488,16 @@ export function getPropertyValue(
             return property.email ?? ""
         }
         case "select": {
-            if (!property.select) return noneOptionId
+            if (!property.select) {
+                return field?.cases[0].id ?? null
+            }
 
             return property.select.id
         }
         case "status": {
-            if (!property.status) return null
+            if (!property.status) {
+                return field?.cases[0].id ?? null
+            }
 
             return property.status.id
         }
@@ -622,7 +620,7 @@ export function getPropertyValue(
                 case "array":
                     const item = value.array[0]
                     result = item
-                        ? getPropertyValue(item, { fieldType })
+                        ? getPropertyValue(item, { fieldType, field })
                         : (defaultValueForFieldType[fieldType] ?? null)
                     break
                 case "number":
@@ -738,7 +736,7 @@ async function processItem(
         assert(property)
 
         if (property.id === slugFieldId) {
-            const resolvedSlug = getPropertyValue(property, { fieldType: "string" })
+            const resolvedSlug = getPropertyValue(property, { fieldType: "string", field: fieldsById.get(property.id) })
             if (!resolvedSlug || typeof resolvedSlug !== "string") {
                 continue
             }
@@ -753,7 +751,7 @@ async function processItem(
             continue
         }
 
-        const fieldValue = getPropertyValue(property, { fieldType: field.type })
+        const fieldValue = getPropertyValue(property, { fieldType: field.type, field })
         if (fieldValue === null || fieldValue === undefined) {
             status.warnings.push({
                 url: item.url,

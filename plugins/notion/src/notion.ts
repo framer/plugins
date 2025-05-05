@@ -520,7 +520,7 @@ export function getPropertyValue(
                 case "file":
                     return isValidUrl(value) ? value : ""
                 case "image":
-                    return imageFileExtensions.some(ext => value.toLowerCase().endsWith(ext)) ? value : ""
+                    return isImageFileUrl(value) ? value : ""
                 default:
                     return value
             }
@@ -553,7 +553,7 @@ export function getPropertyValue(
                 if (!url) continue
 
                 if (fieldType === "image") {
-                    if (!imageFileExtensions.some(ext => url.toLowerCase().endsWith(ext))) {
+                    if (!isImageFileUrl(url)) {
                         continue
                     }
                 }
@@ -1181,10 +1181,20 @@ function formatDateString(value: string) {
 }
 
 function isValidUrl(url: string): boolean {
+    if (!url) return false
+
     try {
         new URL(url)
         return true
     } catch {
         return false
     }
+}
+
+function isImageFileUrl(url: string): boolean {
+    if (!isValidUrl(url)) return false
+
+    // Remove URL parameters by taking everything before '?'
+    const urlWithoutParams = url.split("?")[0].toLowerCase()
+    return imageFileExtensions.some(ext => urlWithoutParams.endsWith(ext))
 }

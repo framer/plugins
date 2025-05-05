@@ -62,6 +62,8 @@ const pageCoverImageProperty: SupportedNotionProperty = {
 }
 
 const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "apng", "webp", "svg"]
+const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
+const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
 
 const defaultValueForFieldType: Record<ManagedCollectionField["type"], unknown> = {
     string: "",
@@ -239,11 +241,11 @@ export const supportedCMSTypeByNotionPropertyType = {
     last_edited_time: ["date"],
     select: ["enum"],
     status: ["enum"],
-    url: ["link", "string"],
-    email: ["string", "formattedText"],
+    url: ["link", "image", "file", "string"],
+    email: ["string", "formattedText", "link"],
     files: ["file", "image"],
     relation: ["multiCollectionReference"],
-    phone_number: ["string"],
+    phone_number: ["string", "link"],
     unique_id: ["string", "number"],
     people: ["string"],
     created_by: ["string"],
@@ -270,7 +272,7 @@ function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
  * That maps the Notion Property to the Framer CMS collection property type
  */
 export function getCollectionFieldForProperty<
-    TProperty extends Extract<NotionProperty, { type: SupportedPropertyType | CustomPropertyType }>
+    TProperty extends Extract<NotionProperty, { type: SupportedPropertyType | CustomPropertyType }>,
 >(
     property: TProperty,
     fieldType: ManagedCollectionField["type"],
@@ -485,6 +487,8 @@ export function getPropertyValue(
         case "email": {
             if (supportsHtml) {
                 return `<p>${property.email ?? ""}</p>`
+            } else if (fieldType === "link" && EMAIL_REGEX.test(property.email ?? "")) {
+                return `mailto:${property.email}`
             }
 
             return property.email ?? ""
@@ -510,7 +514,16 @@ export function getPropertyValue(
             return property.number ?? 0
         }
         case "url": {
-            return property.url ?? ""
+            const value = property.url ?? ""
+            switch (fieldType) {
+                case "link":
+                case "file":
+                    return isValidUrl(value) ? value : ""
+                case "image":
+                    return imageFileExtensions.some(ext => value.toLowerCase().endsWith(ext)) ? value : ""
+                default:
+                    return value
+            }
         }
         case "unique_id": {
             if (fieldType === "string") {
@@ -550,6 +563,10 @@ export function getPropertyValue(
             return ""
         }
         case "phone_number": {
+            if (fieldType === "link" && PHONE_REGEX.test(property.phone_number ?? "")) {
+                return `tel:${property.phone_number}`
+            }
+
             return property.phone_number ?? ""
         }
         case "people": {
@@ -600,7 +617,9 @@ export function getPropertyValue(
             switch (value?.type) {
                 case "array":
                     const item = value.array[0]
-                    result = item ? getPropertyValue(item, { fieldType }) : defaultValueForFieldType[fieldType] ?? null
+                    result = item
+                        ? getPropertyValue(item, { fieldType })
+                        : (defaultValueForFieldType[fieldType] ?? null)
                     break
                 case "number":
                     result = value.number ?? 0

@@ -244,7 +244,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     url: ["link", "image", "file", "string"],
     email: ["string", "formattedText", "link"],
     files: ["file", "image"],
-    relation: ["multiCollectionReference"],
+    relation: ["multiCollectionReference", "collectionReference"],
     phone_number: ["string", "link"],
     unique_id: ["string", "number"],
     people: ["string"],
@@ -428,7 +428,7 @@ export function getCollectionFieldForProperty<
             }
 
             return {
-                type: "multiCollectionReference",
+                type: fieldType,
                 id: property.id,
                 name: property.name,
                 collectionId: collectionId,
@@ -538,6 +538,10 @@ export function getPropertyValue(
             return property.date?.start
         }
         case "relation": {
+            if (fieldType === "collectionReference") {
+                return property.relation[0]?.id ?? null
+            }
+
             return property.relation.map(({ id }) => id)
         }
         case "files": {

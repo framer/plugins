@@ -298,19 +298,19 @@ export function MapDatabaseFields({
                                             !isSupported || !isAllowedToManage || disabledFieldIds.has(property.id)
                                         }
                                         placeholder={property.name}
-                                        value={isSupported ? fieldNameOverrides[property.id] ?? "" : "Unsupported"}
+                                        value={isSupported ? (fieldNameOverrides[property.id] ?? "") : "Unsupported"}
                                         onChange={e => {
                                             handleFieldNameChange(property.id, e.target.value)
                                         }}
                                     ></input>
                                     {isSupported &&
                                         (fieldOptions?.length === 1 ? (
-                                            <div className="w-full self-stretch bg-tertiary text-primary flex flex-col justify-center rounded-lg px-2">
+                                            <div className="w-full self-stretch bg-tertiary text-primary flex flex-col justify-center rounded-lg px-2.5">
                                                 {labelByFieldTypeOption[fieldOptions[0]]}
                                             </div>
                                         ) : (
                                             <select
-                                                className="w-full cursor-pointer"
+                                                className="w-full cursor-pointer px-2.5"
                                                 onChange={event =>
                                                     handleFieldTypeChange(
                                                         property.id,

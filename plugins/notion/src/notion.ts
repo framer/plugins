@@ -496,8 +496,8 @@ export function getFieldDataEntryInput(
         case "email": {
             if (supportsHtml) {
                 return `<p>${property.email ?? ""}</p>`
-            } else if (fieldType === "link" && EMAIL_REGEX.test(property.email ?? "")) {
-                return `mailto:${property.email}`
+            } else if (fieldType === "link") {
+                return EMAIL_REGEX.test(property.email ?? "") ? `mailto:${property.email}` : ""
             }
 
             return property.email ?? ""
@@ -595,8 +595,8 @@ export function getFieldDataEntryInput(
             return ""
         }
         case "phone_number": {
-            if (fieldType === "link" && PHONE_REGEX.test(property.phone_number ?? "")) {
-                return `tel:${property.phone_number}`
+            if (fieldType === "link") {
+                return PHONE_REGEX.test(property.phone_number ?? "") ? `tel:${property.phone_number}` : ""
             }
 
             return property.phone_number ?? ""

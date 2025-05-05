@@ -1,56 +1,68 @@
 {
     "id": "articles",
     "fields": [
+        { "name": "Id", "type": "string" },
         { "name": "Title", "type": "string" },
         { "name": "Content", "type": "formattedText" },
         { "name": "Reading Time", "type": "number" },
-        { "name": "Featured", "type": "boolean" }
+        { "name": "Featured", "type": "boolean" },
+        { "name": "Categories", "type": "multiCollectionReference", "dataSourceId": "categories" }
     ],
     "items": [
         {
+            "Id": { "type": "string", "value": "1" },
             "Title": { "type": "string", "value": "Getting Started" },
             "Reading Time": { "type": "number", "value": 3 },
             "Featured": { "type": "boolean", "value": true },
             "Content": {
                 "type": "formattedText",
                 "value": "Learn how to set up content fields, add CMS content to your canvas, and create pages that automatically populate with your data. With the right setup, you can quickly build index and detail pages for your collection."
-            }
+            },
+            "Categories": { "type": "multiCollectionReference", "value": ["1", "2"] }
         },
         {
+            "Id": { "type": "string", "value": "2" },
             "Title": { "type": "string", "value": "Latest Updates" },
             "Reading Time": { "type": "number", "value": 2 },
             "Featured": { "type": "boolean", "value": false },
             "Content": {
                 "type": "formattedText",
                 "value": "We’ve added powerful new features including reference fields and filtering capabilities for your collections. These updates allow you to keep content in a single collection while customizing how it’s presented across different pages."
-            }
+            },
+            "Categories": { "type": "multiCollectionReference", "value": ["3"] }
         },
         {
+            "Id": { "type": "string", "value": "3" },
             "Title": { "type": "string", "value": "Styling Elements" },
             "Reading Time": { "type": "number", "value": 4 },
             "Featured": { "type": "boolean", "value": false },
             "Content": {
                 "type": "formattedText",
                 "value": "Latest improvements to the canvas and layer panel make styling and layout work easier than ever. New features include enhanced component controls and automatic tinting support."
-            }
+            },
+            "Categories": { "type": "multiCollectionReference", "value": ["3"] }
         },
         {
+            "Id": { "type": "string", "value": "4" },
             "Title": { "type": "string", "value": "Importing Content" },
             "Reading Time": { "type": "number", "value": 6 },
             "Featured": { "type": "boolean", "value": false },
             "Content": {
                 "type": "formattedText",
                 "value": "Learn how to prepare your CSV file for import, including formatting for rich text, images, dates, colors, and toggle fields. Ensure each field in your CSV has a matching field in your CMS collection with the same name and compatible data type."
-            }
+            },
+            "Categories": { "type": "multiCollectionReference", "value": ["3"] }
         },
         {
+            "Id": { "type": "string", "value": "5" },
             "Title": { "type": "string", "value": "Best Practices" },
             "Reading Time": { "type": "number", "value": 8 },
             "Featured": { "type": "boolean", "value": true },
             "Content": {
                 "type": "formattedText",
                 "value": "Choose compelling topics based on audience needs and industry trends, while organizing your content with clear structure using proper HTML tags. Consider adding pagination for extensive content lists to enhance performance and improve SEO by reducing load times."
-            }
+            },
+            "Categories": { "type": "multiCollectionReference", "value": ["3"] }
         }
     ]
 }

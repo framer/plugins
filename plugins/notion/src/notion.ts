@@ -547,7 +547,7 @@ export function getFieldDataEntryInput(
                 case "file":
                     return isValidUrl(value) ? value : ""
                 case "image":
-                    return imageFileExtensions.some(ext => value.toLowerCase().endsWith(ext)) ? value : ""
+                    return isImageFileUrl(value) ? value : ""
                 default:
                     return value
             }
@@ -582,14 +582,16 @@ export function getFieldDataEntryInput(
                 } else if (file.type === "file") {
                     url = file.file.url
                 }
-            }
 
-            const isFileOrImage = fieldType === "file" || fieldType === "image"
-            if (firstFile.type === "file" && isFileOrImage) {
-                return {
-                    type: fieldType,
-                    value: firstFile.file.url,
+                if (!url) continue
+
+                if (fieldType === "image") {
+                    if (!isImageFileUrl(url)) {
+                        continue
+                    }
                 }
+
+                return url
             }
             return ""
         }
@@ -1216,10 +1218,20 @@ function formatDateString(value: string) {
 }
 
 function isValidUrl(url: string): boolean {
+    if (!url) return false
+
     try {
         new URL(url)
         return true
     } catch {
         return false
     }
+}
+
+function isImageFileUrl(url: string): boolean {
+    if (!isValidUrl(url)) return false
+
+    // Remove URL parameters by taking everything before '?'
+    const urlWithoutParams = url.split("?")[0].toLowerCase()
+    return imageFileExtensions.some(ext => urlWithoutParams.endsWith(ext))
 }

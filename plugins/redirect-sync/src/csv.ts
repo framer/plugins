@@ -35,7 +35,7 @@ export function countAndRemoveMissingRedirects(redirects: ParsedRedirects[]): Pa
 }
 
 export async function normalizeRedirectInputs(redirects: ParsedRedirects[]): Promise<RedirectInput[]> {
-    const existingRedirects = await framer.alpha_getRedirects()
+    const existingRedirects = await framer.getRedirects()
     const existingRedirectsByFrom = new Map<string, Redirect>()
 
     for (const redirect of existingRedirects) {

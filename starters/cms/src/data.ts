@@ -41,23 +41,6 @@ export const dataSourceOptions = [
  * }
  */
 
-type ExtendedManagedCollection = ManagedCollection & {
-    dataSourceId: string | null
-}
-
-let collections: ManagedCollection[] = []
-let collectionsWithDataSourceId: ExtendedManagedCollection[] = []
-
-if (framer.mode === "syncManagedCollection" || framer.mode === "configureManagedCollection") {
-    collections = await framer.getManagedCollections()
-    collectionsWithDataSourceId = await Promise.all(
-        collections.map(async collection => {
-            const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-            return Object.assign(collection, { dataSourceId })
-        })
-    )
-}
-
 const slugs = new Map<string, number>()
 
 function slugify(text: string) {
@@ -83,6 +66,14 @@ function slugify(text: string) {
     return slug
 }
 
+// Find an item in an array using an async callback: https://stackoverflow.com/questions/55601062/using-an-async-function-in-array-find
+async function findAsync<T>(arr: T[], asyncCallback: (item: T) => Promise<boolean>) {
+    const promises = arr.map(asyncCallback)
+    const results = await Promise.all(promises)
+    const index = results.findIndex(result => result)
+    return arr[index]
+}
+
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     // Fetch from your data source
     const dataSourceResponse = await fetch(`/data/${dataSourceId}.json`, { signal: abortSignal })
@@ -95,9 +86,11 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
             if (!field.dataSourceId) {
                 console.warn(`No data source id found for collection reference field"${field.name}".`)
             } else {
-                const collection = collectionsWithDataSourceId.find(
-                    collection => collection.dataSourceId === field.dataSourceId
-                )
+                const collections = await framer.getManagedCollections()
+                const collection = await findAsync(collections, async collection => {
+                    const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
+                    return dataSourceId === field.dataSourceId
+                })
 
                 if (!collection) {
                     console.warn(`No collection found for data source "${field.dataSourceId}".`)

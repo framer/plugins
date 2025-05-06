@@ -3,6 +3,7 @@ import { richTextToPlainText, useDatabasesQuery } from "./notion"
 import { FormEvent, useEffect, useRef, useState } from "react"
 import notionConnectSrc from "./assets/notion-connect.png"
 import { assert } from "./utils"
+import { Button } from "./components/Button"
 
 interface SelectDatabaseProps {
     onDatabaseSelected: (database: GetDatabaseResponse) => void
@@ -66,8 +67,8 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
     const selectEnabled = !isLoadingOrFetching && Boolean(data && data.length > 0)
 
     return (
-        <form className="flex flex-col gap-[10px] w-full h-full" onSubmit={handleSubmit}>
-            <img src={notionConnectSrc} className="rounded-md" />
+        <form className="flex flex-col gap-[10px] w-full h-full select-none" onSubmit={handleSubmit}>
+            <img src={notionConnectSrc} draggable={false} className="rounded-md" />
 
             <p>
                 To manually connect a database, open it in Notion, click on the three dots icon in the top right corner,
@@ -79,7 +80,7 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
                     <select
                         value={selectedDatabase ?? ""}
                         onChange={event => setSelectedDatabase(event.target.value)}
-                        className="flex-1 shrink-1"
+                        className="flex-1 shrink-1 cursor-pointer"
                         disabled={!selectEnabled}
                     >
                         {isLoadingOrFetching && (
@@ -106,9 +107,9 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
                     </select>
                 </div>
 
-                <button type="submit" disabled={!selectedDatabase}>
+                <Button type="submit" variant="primary" disabled={!selectedDatabase}>
                     Next
-                </button>
+                </Button>
             </div>
         </form>
     )

@@ -24,7 +24,7 @@ async function importCsv() {
             const totalMissingRedirects = parsedRedirects.length - nonMissingRedirects.length
 
             const redirectInputs = await normalizeRedirectInputs(nonMissingRedirects)
-            await framer.alpha_addRedirects(redirectInputs)
+            await framer.addRedirects(redirectInputs)
 
             framer.notify(
                 `Successfully imported ${redirectInputs.length} redirect${redirectInputs.length !== 1 ? "s" : ""}${
@@ -47,7 +47,7 @@ async function exportCsv() {
     const filename = "redirects.csv"
 
     try {
-        const redirects = await framer.alpha_getRedirects()
+        const redirects = await framer.getRedirects()
         const csv = generateCsv(redirects)
         downloadBlob(csv, filename, "text/csv")
 

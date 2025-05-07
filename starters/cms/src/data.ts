@@ -5,6 +5,7 @@ import {
     type ManagedCollection,
     type ManagedCollectionItemInput,
 } from "framer-plugin"
+import { createUniqueSlug, findAsync } from "./utils"
 
 export const PLUGIN_KEYS = {
     DATA_SOURCE_ID: "dataSourceId",
@@ -40,39 +41,6 @@ export const dataSourceOptions = [
  *   ]
  * }
  */
-
-const slugs = new Map<string, number>()
-
-function slugify(text: string) {
-    let newText = text
-    newText = newText.trim()
-    newText = newText.slice(0, 60) // limit to 60 characters
-
-    if (slugs.has(newText)) {
-        const count = slugs.get(newText) ?? 0
-        slugs.set(newText, count + 1)
-        newText = `${newText} ${count + 1}`
-    } else {
-        slugs.set(newText, 0)
-    }
-
-    const slug = newText
-        .replace(/^\s+|\s+$/g, "")
-        .toLowerCase()
-        .replace(/[^a-z0-9 -]/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-")
-        .replace(/-+/g, "-")
-    return slug
-}
-
-// Find an item in an array using an async callback: https://stackoverflow.com/questions/55601062/using-an-async-function-in-array-find
-async function findAsync<T>(arr: T[], asyncCallback: (item: T) => Promise<boolean>) {
-    const promises = arr.map(asyncCallback)
-    const results = await Promise.all(promises)
-    const index = results.findIndex(result => result)
-    return arr[index]
-}
 
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     // Fetch from your data source
@@ -201,9 +169,11 @@ export async function syncCollection(
             fieldData[field.id] = value
         }
 
+        const existingSlugs = new Map<string, number>()
+
         items.push({
             id: idValue.value,
-            slug: slugify(slugValue.value),
+            slug: createUniqueSlug(slugValue.value, existingSlugs),
             draft: false,
             fieldData,
         })

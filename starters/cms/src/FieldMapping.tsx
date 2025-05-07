@@ -239,7 +239,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                                 toggleFieldDisabledState(field.id)
                             }}
                             onNameChange={changeFieldName}
-                            style={{ cursor: isMissingReferenceField(field) ? "not-allowed" : "auto" }}
+                            style={isMissingReferenceField(field) ? { cursor: "not-allowed" } : {}}
                         />
                     ))}
                 </div>

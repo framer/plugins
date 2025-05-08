@@ -1,32 +1,40 @@
-import type { FieldData } from "framer-plugin"
-
-export type FieldType =
-    | "string"
-    | "number"
-    | "boolean"
-    | "color"
-    | "formattedText"
-    | "image"
-    | "file"
-    | "link"
-    | "date"
-    | "enum"
-    | "collectionReference"
-    | "multiCollectionReference"
-
-type ConditionalField<T extends FieldData["type"]> = T extends "multiCollectionReference" | "collectionReference"
-    ? { collection: DataSource }
-    : { collection?: DataSource }
+import type { ManagedCollectionFieldInput } from "framer-plugin"
+import JobsDataSource from "./jobs"
+import DepartmentsDataSource from "./departments"
+import SectionsDataSource from "./sections"
+import SchoolsDataSource from "./schools"
+import DisciplinesDataSource from "./disciplines"
+import DegreesDataSource from "./degrees"
+import OfficesDataSource from "./offices"
 
 export type Field = {
     id: string
     name: string
-    type: FieldType
-} & ConditionalField<FieldData["type"]>
-
-export type DataSource = {
-    id: string
-    fields: Field[]
-    idField: Field
-    slugField: Field
+    type: ManagedCollectionFieldInput["type"]
+    map?: (value: any) => any
 }
+export type CollectionReferenceField = Field & {
+    type: "collectionReference" | "multiCollectionReference"
+    getCollection: () => GreenhouseDataSource // this to avoid circular dependencies
+    map?: (value: any) => string[]
+}
+
+export type GreenhouseDataSource = {
+    id: string
+    name: string
+    fields: Field[] | CollectionReferenceField[]
+    idField: Field
+    slugField?: Field
+    apiEndpoint: string
+    itemsKey: string
+}
+
+export const sources: GreenhouseDataSource[] = [
+    JobsDataSource,
+    DepartmentsDataSource,
+    OfficesDataSource,
+    SchoolsDataSource,
+    DisciplinesDataSource,
+    DegreesDataSource,
+    SectionsDataSource,
+]

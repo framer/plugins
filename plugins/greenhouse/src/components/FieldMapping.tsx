@@ -1,15 +1,9 @@
-import { type EditableManagedCollectionField, framer, type ManagedCollection } from "framer-plugin"
+import { type ManagedCollectionFieldInput, framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
-import {
-    type DataSource,
-    dataSourceOptions,
-    ExtendedEditableManagedCollectionField,
-    mergeFieldsWithExistingFields,
-    syncCollection,
-} from "../data"
+import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "../data"
 
 interface FieldMappingRowProps {
-    field: EditableManagedCollectionField
+    field: ManagedCollectionFieldInput
     originalFieldName: string | undefined
     disabled: boolean
     onToggleDisabled: (fieldId: string) => void
@@ -65,8 +59,10 @@ function FieldMappingRow({
     )
 }
 
-const initialManagedCollectionFields: ExtendedEditableManagedCollectionField[] = []
-const initialFieldIds: ReadonlySet<string> = new Set()
+const initialManagedCollectionFields: ManagedCollectionFieldInput[] = []
+
+const isMissingReferenceField = (field: ManagedCollectionFieldInput) =>
+    (field.type === "multiCollectionReference" || field.type === "collectionReference") && !field.collectionId
 
 interface FieldMappingProps {
     collection: ManagedCollection
@@ -83,7 +79,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
 
-    const [selectedSlugField, setSelectedSlugField] = useState<EditableManagedCollectionField | null>(
+    const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ??
             dataSource.slugField ??
             possibleSlugFields[0] ??
@@ -91,7 +87,17 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     )
 
     const [fields, setFields] = useState(initialManagedCollectionFields)
-    const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
+    const [ignoredFieldIds, setIgnoredFieldIds] = useState(() => {
+        const initialFieldIds = new Set()
+
+        for (const field of dataSource.fields) {
+            if (isMissingReferenceField(field)) {
+                initialFieldIds.add(field.id)
+            }
+        }
+
+        return initialFieldIds
+    })
 
     const dataSourceName = dataSourceOptions.find(option => option.id === dataSource.id)?.name ?? dataSource.id
 
@@ -103,7 +109,9 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             .then(collectionFields => {
                 if (abortController.signal.aborted) return
 
-                setFields(mergeFieldsWithExistingFields(dataSource.fields, collectionFields))
+                setFields(
+                    mergeFieldsWithExistingFields(dataSource.fields, collectionFields as ManagedCollectionFieldInput[])
+                )
 
                 const existingFieldIds = new Set(collectionFields.map(field => field.id))
                 const ignoredFields = dataSource.fields.filter(sourceField => !existingFieldIds.has(sourceField.id))
@@ -220,15 +228,18 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     {fields.map(field => (
                         <FieldMappingRow
                             key={`field-${field.id}`}
-                            field={{ ...field, name: field?.isMissingReference ? "Missing Collection" : field.name }}
+                            field={{
+                                ...field,
+                                name: isMissingReferenceField(field) ? "Missing Collection" : field.name,
+                            }}
                             originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
-                            disabled={ignoredFieldIds.has(field.id) || Boolean(field?.isMissingReference)}
+                            disabled={ignoredFieldIds.has(field.id)}
                             onToggleDisabled={() => {
-                                if (field?.isMissingReference) return
+                                if (isMissingReferenceField(field)) return
                                 toggleFieldDisabledState(field.id)
                             }}
                             onNameChange={changeFieldName}
-                            style={{ cursor: field?.isMissingReference ? "not-allowed" : "auto" }}
+                            style={isMissingReferenceField(field) ? { cursor: "not-allowed" } : {}}
                         />
                     ))}
                 </div>

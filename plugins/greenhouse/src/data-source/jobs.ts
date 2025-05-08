@@ -1,5 +1,7 @@
 // import CategoryDataSource from "./categories"
-import type { DataSource, Field } from "./types"
+import DepartmentsDataSource from "./departments"
+import OfficesDataSource from "./offices"
+import type { CollectionReferenceField, Field, GreenhouseDataSource } from "./types"
 
 const internalIdField: Field = { id: "internal_job_id", name: "Internal Job ID", type: "string" }
 const idField: Field = { id: "id", name: "id", type: "string" }
@@ -35,21 +37,44 @@ const firstPublishedField: Field = {
     type: "date",
 }
 
-// const officesField: Field = {
-//     id: "offices",
-//     name: "Offices",
-//     type: "multiCollectionReference",
-// }
+const officesField: CollectionReferenceField = {
+    id: "offices",
+    name: "Offices",
+    type: "multiCollectionReference",
+    getCollection: () => OfficesDataSource,
+    map: (offices: { id: number }[]) => offices.map(office => String(office.id)),
+}
 
-// const departmentsField: Field = {
-//     id: "departments",
-//     name: "Departments",
-//     type: "multiCollectionReference",
-// }
+const departmentsField: CollectionReferenceField = {
+    id: "departments",
+    name: "Departments",
+    type: "multiCollectionReference",
+    getCollection: () => DepartmentsDataSource,
+    map: (departments: { id: number }[]) => departments.map(department => String(department.id)),
+}
 
-const fields: Field[] = [idField, titleField, contentField, readingTimeField, featuredField, categoriesField]
+const contentField: Field = {
+    id: "content",
+    name: "Content",
+    type: "formattedText",
+}
 
-const JobsDataSource: DataSource = {
+const fields: Field[] = [
+    internalIdField,
+    idField,
+    titleField,
+    updatedAtField,
+    requisitionIdField,
+    locationField,
+    absoluteUrlField,
+    companyNameField,
+    firstPublishedField,
+    officesField,
+    departmentsField,
+    contentField,
+]
+
+const JobsDataSource: GreenhouseDataSource = {
     id: "jobs",
     name: "Jobs",
     apiEndpoint: "jobs?content=true",

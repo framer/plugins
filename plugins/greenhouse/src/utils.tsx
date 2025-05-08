@@ -1,5 +1,7 @@
 function slugify(text: string) {
     return text
+        .trim()
+        .slice(0, 60)
         .replace(/^\s+|\s+$/g, "")
         .toLowerCase()
         .replace(/[^a-z0-9 -]/g, "")
@@ -8,17 +10,22 @@ function slugify(text: string) {
 }
 
 export function createUniqueSlug(text: string, existingSlugs: Map<string, number>) {
-    text = text.trim().slice(0, 60)
+    const slug = slugify(text)
+    let count = 0
 
-    if (existingSlugs.has(text)) {
-        const count = existingSlugs.get(text) ?? 0
-        existingSlugs.set(text, count + 1)
-        text = `${text} ${count + 1}`
+    if (existingSlugs.has(slug)) {
+        count = existingSlugs.get(slug) ?? 1
+        count++
+        existingSlugs.set(slug, count)
     } else {
-        existingSlugs.set(text, 0)
+        existingSlugs.set(slug, 0)
     }
 
-    return slugify(text)
+    if (count === 0) {
+        return slug
+    }
+
+    return `${slug}-${count}`
 }
 
 // Find an item in an array using an async callback: https://stackoverflow.com/questions/55601062/using-an-async-function-in-array-find

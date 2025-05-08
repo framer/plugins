@@ -6,7 +6,4 @@ import framer from "vite-plugin-framer"
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [react(), mkcert(), framer()],
-    build: {
-        target: "ES2022",
-    },
 })

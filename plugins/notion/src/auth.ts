@@ -1,11 +1,7 @@
 import { generateRandomId } from "./utils"
+import { PLUGIN_KEYS, API_BASE_URL } from "./api"
 
-interface Tokens {
-    bearer_token: string
-}
-
-interface StoredTokens {
-    createdAt: number
+type Tokens = {
     bearer_token: string
 }
 
@@ -16,10 +12,8 @@ interface Authorize {
 }
 
 class Auth {
-    private readonly PLUGIN_TOKENS_KEY = "notionBearerToken"
-    private readonly AUTH_URI = "https://notion-plugin-api.framer-team.workers.dev"
     private readonly NOTION_CLIENT_ID = "3504c5a7-9f75-4f87-aa1b-b735f8480432"
-    storedTokens?: StoredTokens | null
+    storedTokens?: Tokens | null
 
     logout() {
         this.tokens.clear()
@@ -29,11 +23,11 @@ class Auth {
         const tokens = this.tokens.get()
         if (!tokens) return null
 
-        return this.tokens.get()
+        return tokens
     }
 
     async fetchTokens(readKey: string) {
-        const res = await fetch(`${this.AUTH_URI}/auth/authorize/${readKey}`, {
+        const res = await fetch(`${API_BASE_URL}/auth/authorize/${readKey}`, {
             method: "GET",
         })
 
@@ -42,18 +36,15 @@ class Auth {
         }
 
         const { token } = await res.json()
-        const tokens: Tokens = {
-            bearer_token: token,
-        }
-        this.tokens.save(tokens)
-        return tokens
+        this.tokens.save({ bearer_token: token })
+        return token
     }
 
     async authorize(): Promise<Authorize> {
         const writeKey = generateRandomId()
         const readKey = generateRandomId()
 
-        const res = await fetch(`${this.AUTH_URI}/auth/authorize`, {
+        const res = await fetch(`${API_BASE_URL}/auth/authorize`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -65,7 +56,7 @@ class Auth {
             throw new Error("Failed to generate OAuth URL")
         }
 
-        const oauthRedirectUrl = encodeURIComponent(`${this.AUTH_URI}/auth/authorize/callback`)
+        const oauthRedirectUrl = encodeURIComponent(`${API_BASE_URL}/auth/authorize/callback`)
 
         return {
             writeKey,
@@ -77,7 +68,7 @@ class Auth {
     async isWorkerAlive(): Promise<boolean> {
         return true
         // try {
-        //     const res = await fetch(`${this.AUTH_URI}/auth/authorize`, {
+        //     const res = await fetch(`${API_BASE_URL}/auth/authorize`, {
         //         method: "POST",
         //     })
         //     console.log("res", res)
@@ -90,32 +81,23 @@ class Auth {
 
     private readonly tokens = {
         save: (tokens: Tokens) => {
-            const storedTokens: StoredTokens = {
-                createdAt: Date.now(),
-                bearer_token: tokens.bearer_token,
-            }
-
-            this.storedTokens = storedTokens
-            localStorage.setItem(this.PLUGIN_TOKENS_KEY, JSON.stringify(storedTokens))
+            this.storedTokens = tokens
+            localStorage.setItem(PLUGIN_KEYS.BEARER_TOKEN, tokens.bearer_token)
         },
         get: () => {
             if (this.storedTokens) return this.storedTokens
 
-            const serializedTokens = localStorage.getItem(this.PLUGIN_TOKENS_KEY)
-            if (!serializedTokens) return null
+            const bearerToken = localStorage.getItem(PLUGIN_KEYS.BEARER_TOKEN)
+            if (!bearerToken) return null
 
-            try {
-                const storedTokens = JSON.parse(serializedTokens) as StoredTokens
-                this.storedTokens = storedTokens
+            const storedTokens = { bearer_token: bearerToken } as Tokens
+            this.storedTokens = storedTokens
 
-                return storedTokens
-            } catch {
-                return null
-            }
+            return storedTokens
         },
         clear: () => {
             this.storedTokens = null
-            localStorage.removeItem(this.PLUGIN_TOKENS_KEY)
+            localStorage.removeItem(PLUGIN_KEYS.BEARER_TOKEN)
         },
     }
 }

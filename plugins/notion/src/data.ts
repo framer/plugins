@@ -9,7 +9,7 @@ import {
     type ManagedCollectionItemInput,
 } from "framer-plugin"
 import { getNotionDatabases, getDatabase, richTextToPlainText } from "./api"
-import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import { PLUGIN_KEYS } from "./api"
 
 export interface DataSource {
@@ -17,15 +17,15 @@ export interface DataSource {
     name: string
     fields: readonly ManagedCollectionFieldInput[]
     items: FieldDataInput[]
-    database: DatabaseObjectResponse
+    database: GetDatabaseResponse
 }
 
 export async function getDataSources(): Promise<DataSource[]> {
     const databases = await getNotionDatabases()
 
-    return databases.map((database: DatabaseObjectResponse) => ({
+    return databases.map((database: GetDatabaseResponse) => ({
         id: database.id,
-        name: database.title[0]?.plain_text || "Untitled Database",
+        name: richTextToPlainText(database.title) || "Untitled Database",
         fields: [], // Fields will be populated when needed
         items: [], // Items will be populated when needed
         database,
@@ -57,6 +57,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
         name: richTextToPlainText(database.title) || "Untitled Database",
         fields: [],
         items: [],
+        database,
     }
 }
 

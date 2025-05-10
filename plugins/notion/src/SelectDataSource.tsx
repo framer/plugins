@@ -24,7 +24,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 setDataSources(dataSources)
                 setStatus(Status.Ready)
                 if (dataSources.length > 0) {
-                    setSelectedDataSourceId(dataSources[0].id)
+                    setSelectedDataSourceId(dataSources[0]?.id ?? null)
                 }
             } catch (error) {
                 console.error(error)

@@ -43,7 +43,6 @@ export interface FieldInfo {
     originalName: string
     type: ManagedCollectionField["type"] | null
     allowedTypes: ManagedCollectionField["type"][]
-    disabled: boolean
 }
 
 // Maximum number of concurrent requests to Notion API

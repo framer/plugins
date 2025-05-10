@@ -7,8 +7,11 @@ import {
 import { useEffect, useMemo, useState } from "react"
 import { type DataSource, getDataSourceFieldsInfo, mergeFieldsWithExistingFields, syncCollection } from "./data"
 import { getPossibleSlugFieldIds, type FieldId, type FieldInfo } from "./api"
+import classNames from "classnames"
 
-const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
+type FieldType = ManagedCollectionField["type"]
+
+const labelByFieldTypeOption: Record<FieldType, string> = {
     boolean: "Toggle",
     date: "Date",
     number: "Number",
@@ -25,22 +28,30 @@ const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
 
 interface FieldMappingRowProps {
     fieldInfo: FieldInfo
-    onToggleDisabled: (fieldId: string) => void
+    ignored: boolean
+    onToggleIgnored: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
+    onFieldTypeChange: (fieldId: string, type: FieldType) => void
 }
 
-function FieldMappingRow({ fieldInfo, onToggleDisabled, onNameChange }: FieldMappingRowProps) {
+function FieldMappingRow({
+    fieldInfo,
+    ignored,
+    onToggleIgnored,
+    onNameChange,
+    onFieldTypeChange,
+}: FieldMappingRowProps) {
     const { id, name, originalName, type, allowedTypes } = fieldInfo
     const isUnsupported = !Array.isArray(allowedTypes) || allowedTypes.length === 0
-    const disabled = isUnsupported || fieldInfo.disabled
+    const disabled = isUnsupported || ignored
 
     return (
         <>
             <button
                 type="button"
-                className={"source-field" + (disabled ? " unsupported" : "")}
+                className={classNames("source-field", isUnsupported && "unsupported")}
                 aria-disabled={disabled}
-                onClick={() => onToggleDisabled(id)}
+                onClick={() => onToggleIgnored(id)}
                 tabIndex={0}
             >
                 <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
@@ -58,7 +69,6 @@ function FieldMappingRow({ fieldInfo, onToggleDisabled, onNameChange }: FieldMap
             </svg>
             <input
                 type="text"
-                style={{ width: "100%", opacity: disabled ? 0.5 : 1 }}
                 disabled={disabled || isUnsupported}
                 placeholder={originalName ?? id}
                 value={isUnsupported ? "Unsupported" : name}
@@ -68,11 +78,16 @@ function FieldMappingRow({ fieldInfo, onToggleDisabled, onNameChange }: FieldMap
                         event.preventDefault()
                     }
                 }}
-                className={"field-input" + (isUnsupported ? " unsupported" : "")}
+                className={classNames("field-input", isUnsupported && "unsupported")}
             />
             {!isUnsupported &&
                 (Array.isArray(allowedTypes) && allowedTypes.length > 1 ? (
-                    <select className="field-type" disabled={disabled} value={type ?? ""}>
+                    <select
+                        className="field-type"
+                        disabled={disabled}
+                        value={type ?? ""}
+                        onChange={event => onFieldTypeChange(id, event.target.value as FieldType)}
+                    >
                         {allowedTypes.map(allowedType => (
                             <option key={allowedType} value={allowedType}>
                                 {labelByFieldTypeOption[allowedType]}
@@ -80,14 +95,15 @@ function FieldMappingRow({ fieldInfo, onToggleDisabled, onNameChange }: FieldMap
                         ))}
                     </select>
                 ) : (
-                    <div className="single-field-type">{labelByFieldTypeOption[allowedTypes[0]]}</div>
+                    <div className={classNames("single-field-type", disabled && "disabled")}>
+                        {allowedTypes[0] ? labelByFieldTypeOption[allowedTypes[0]] : ""}
+                    </div>
                 ))}
         </>
     )
 }
 
 const initialManagedCollectionFields: ManagedCollectionFieldInput[] = []
-const initialFieldIds: ReadonlySet<string> = new Set()
 
 interface FieldMappingProps {
     collection: ManagedCollection
@@ -102,15 +118,15 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const fieldsInfo = useMemo(() => getDataSourceFieldsInfo(dataSource.database), [dataSource.database])
+    const initialFieldsInfo = useMemo(() => getDataSourceFieldsInfo(dataSource.database), [dataSource.database])
     const possibleSlugFieldIds = useMemo(() => getPossibleSlugFieldIds(dataSource.database), [dataSource.database])
 
-    const [selectedSlugFieldId, setSelectedSlugFieldId]: FieldId | null = useState(
+    const [selectedSlugFieldId, setSelectedSlugFieldId] = useState<FieldId | null>(
         initialSlugFieldId ?? possibleSlugFieldIds[0] ?? null
     )
 
-    const [fields, setFields] = useState(initialManagedCollectionFields)
-    const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
+    const [fieldsInfo, setFieldsInfo] = useState(initialFieldsInfo)
+    const [ignoredFieldIds, setIgnoredFieldIds] = useState(new Set())
 
     const dataSourceName = dataSource.name
 
@@ -146,16 +162,27 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     }, [initialSlugFieldId, dataSource, collection])
 
     const changeFieldName = (fieldId: string, name: string) => {
-        setFields(prevFields => {
-            const updatedFields = prevFields.map(field => {
-                if (field.id !== fieldId) return field
-                return { ...field, name }
+        setFieldsInfo(prevFieldsInfo => {
+            const updatedFieldInfo = prevFieldsInfo.map(fieldInfo => {
+                if (fieldInfo.id !== fieldId) return fieldInfo
+                return { ...fieldInfo, name }
             })
-            return updatedFields
+            return updatedFieldInfo
         })
     }
 
-    const toggleFieldDisabledState = (fieldId: string) => {
+    const changeFieldType = (fieldId: string, type: FieldType) => {
+        setFieldsInfo(prevFieldsInfo => {
+            const updatedFieldInfo = prevFieldsInfo.map(fieldInfo => {
+                if (fieldInfo.id !== fieldId) return fieldInfo
+                if (!fieldInfo.allowedTypes.includes(type)) return fieldInfo
+                return { ...fieldInfo, type }
+            })
+            return updatedFieldInfo
+        })
+    }
+
+    const toggleFieldIgnoredState = (fieldId: string) => {
         setIgnoredFieldIds(previousIgnoredFieldIds => {
             const updatedIgnoredFieldIds = new Set(previousIgnoredFieldIds)
 
@@ -242,8 +269,10 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             <FieldMappingRow
                                 key={`field-${fieldInfo.id}`}
                                 fieldInfo={fieldInfo}
-                                onToggleDisabled={toggleFieldDisabledState}
+                                ignored={ignoredFieldIds.has(fieldInfo.id)}
+                                onToggleIgnored={toggleFieldIgnoredState}
                                 onNameChange={changeFieldName}
+                                onFieldTypeChange={changeFieldType}
                             />
                         )
                     })}

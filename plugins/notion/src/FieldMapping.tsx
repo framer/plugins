@@ -5,7 +5,13 @@ import {
     type ManagedCollection,
 } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
-import { type DataSource, getDataSourceFieldsInfo, mergeFieldsWithExistingFields, syncCollection } from "./data"
+import {
+    type DataSource,
+    getDataSourceFieldsInfo,
+    mergeFieldsInfoWithExistingFields,
+    syncCollection,
+    fieldsInfoToCollectionFields,
+} from "./data"
 import { getPossibleSlugFieldIds, type FieldId, type FieldInfo } from "./api"
 import classNames from "classnames"
 
@@ -138,10 +144,10 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             .then(collectionFields => {
                 if (abortController.signal.aborted) return
 
-                setFields(mergeFieldsWithExistingFields(dataSource.fields, collectionFields))
+                setFieldsInfo(mergeFieldsInfoWithExistingFields(initialFieldsInfo, collectionFields))
 
                 const existingFieldIds = new Set(collectionFields.map(field => field.id))
-                const ignoredFields = dataSource.fields.filter(sourceField => !existingFieldIds.has(sourceField.id))
+                const ignoredFields = initialFieldsInfo.filter(sourceField => !existingFieldIds.has(sourceField.id))
 
                 if (initialSlugFieldId) {
                     setIgnoredFieldIds(new Set(ignoredFields.map(field => field.id)))
@@ -210,9 +216,11 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         try {
             setStatus("syncing-collection")
 
+            const fields = await fieldsInfoToCollectionFields(fieldsInfo)
             const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
+            const slugField = fields.find(field => field.id === selectedSlugFieldId)
 
-            await syncCollection(collection, dataSource, fieldsToSync, selectedSlugFieldId)
+            await syncCollection(collection, dataSource, fieldsToSync, slugField)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)

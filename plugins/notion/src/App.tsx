@@ -1,84 +1,74 @@
-import { framer } from "framer-plugin"
-import { useEffect, useState } from "react"
 import "./App.css"
-import { PluginContext, PluginContextNew, PluginContextUpdate, useSynchronizeDatabaseMutation } from "./notion"
 
-import { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
-import { SelectDatabase } from "./SelectDatabase"
-import { MapDatabaseFields } from "./MapFields"
-import { logSyncResult } from "./debug"
-import { Authentication } from "./Authenticate"
+import { framer, type ManagedCollection } from "framer-plugin"
+import { useEffect, useLayoutEffect, useState } from "react"
+import { type DataSource, getDataSource } from "./data"
+import { FieldMapping } from "./FieldMapping"
+import { SelectDataSource } from "./SelectDataSource"
 
 interface AppProps {
-    context: PluginContext
+    collection: ManagedCollection
+    previousDataSourceId: string | null
+    previousSlugFieldId: string | null
 }
 
-interface AuthenticatedAppProps {
-    context: PluginContextNew | PluginContextUpdate
-}
+export function App({ collection, previousDataSourceId, previousSlugFieldId }: AppProps) {
+    const [dataSource, setDataSource] = useState<DataSource | null>(null)
+    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
 
-export function AuthenticatedApp({ context }: AuthenticatedAppProps) {
-    const [databaseConfig, setDatabaseConfig] = useState<GetDatabaseResponse | null>(
-        context.type === "update" ? context.database : null
-    )
+    useLayoutEffect(() => {
+        const hasDataSourceSelected = Boolean(dataSource)
+
+        framer.showUI({
+            width: hasDataSourceSelected ? 600 : 260,
+            height: hasDataSourceSelected ? 500 : 345,
+            minWidth: hasDataSourceSelected ? 360 : undefined,
+            minHeight: hasDataSourceSelected ? 425 : undefined,
+            resizable: hasDataSourceSelected,
+        })
+    }, [dataSource])
 
     useEffect(() => {
-        const width = databaseConfig ? 360 : 325
-        const height = databaseConfig ? 425 : 370
-        framer.showUI({
-            width,
-            height,
-            minWidth: width,
-            minHeight: height,
-            // Only allow resizing when mapping fields as the default size could not be enough.
-            // This will keep the given dimensions in the Splash Screen.
-            resizable: Boolean(databaseConfig),
-        })
-    }, [databaseConfig])
+        if (!previousDataSourceId) {
+            return
+        }
 
-    const synchronizeMutation = useSynchronizeDatabaseMutation(databaseConfig, {
-        onError(error) {
-            framer.notify(error.message, { variant: "error" })
-        },
-        onSuccess(result) {
-            logSyncResult(result)
+        const abortController = new AbortController()
 
-            if (result.status === "success") {
-                framer.closePlugin("Synchronization successful")
-                return
-            }
-        },
-    })
+        setIsLoadingDataSource(true)
+        getDataSource(previousDataSourceId, abortController.signal)
+            .then(setDataSource)
+            .catch(error => {
+                if (abortController.signal.aborted) return
 
-    const handleDatabaseSelected = (database: GetDatabaseResponse) => {
-        context.databaseIdMap.set(database.id, context.collection.id)
-        setDatabaseConfig(database)
+                console.error(error)
+                framer.notify(
+                    `Error loading previously configured data source “${previousDataSourceId}”. Check the logs for more details.`,
+                    { variant: "error" }
+                )
+            })
+            .finally(() => {
+                if (abortController.signal.aborted) return
+
+                setIsLoadingDataSource(false)
+            })
+
+        return () => {
+            abortController.abort()
+        }
+    }, [previousDataSourceId])
+
+    if (isLoadingDataSource) {
+        return (
+            <main className="loading">
+                <div className="framer-spinner" />
+            </main>
+        )
     }
 
-    if (!databaseConfig) {
-        return <SelectDatabase onDatabaseSelected={handleDatabaseSelected} />
+    if (!dataSource) {
+        return <SelectDataSource onSelectDataSource={setDataSource} />
     }
 
-    return (
-        <MapDatabaseFields
-            database={databaseConfig}
-            pluginContext={context}
-            onSubmit={synchronizeMutation.mutate}
-            isLoading={synchronizeMutation.isPending}
-        />
-    )
-}
-
-export function App({ context }: AppProps) {
-    const [pluginContext, setPluginContext] = useState(context)
-
-    const handleAuthenticated = (authenticatedContext: PluginContext) => {
-        setPluginContext(authenticatedContext)
-    }
-
-    if (!pluginContext.isAuthenticated) {
-        return <Authentication context={pluginContext} onAuthenticated={handleAuthenticated} />
-    }
-
-    return <AuthenticatedApp context={pluginContext} />
+    return <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
 }

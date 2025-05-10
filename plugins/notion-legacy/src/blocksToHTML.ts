@@ -1,4 +1,4 @@
-import type { BlockObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
+import { BlockObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
 import { assert } from "./utils"
 
 export function richTextToHTML(texts: RichTextItemResponse[]) {
@@ -38,7 +38,7 @@ export function richTextToHTML(texts: RichTextItemResponse[]) {
         .join("")
 }
 
-export function blocksToHTML(blocks: BlockObjectResponse[]) {
+export function blocksToHtml(blocks: BlockObjectResponse[]) {
     let htmlContent = ""
 
     for (let i = 0; i < blocks.length; i++) {

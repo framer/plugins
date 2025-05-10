@@ -1,6 +1,6 @@
 {
     "id": "e00c8d",
-    "name": "Notion (Legacy)",
+    "name": "Notion",
     "modes": ["configureManagedCollection", "syncManagedCollection"],
     "icon": "/icon.png"
 }

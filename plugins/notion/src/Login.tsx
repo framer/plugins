@@ -11,6 +11,7 @@ interface AuthenticationProps {
 export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const [isLoading, setIsLoading] = useState(false)
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
+    const pollTimeout = useRef<number | ReturnType<typeof setTimeout>>()
 
     useLayoutEffect(() => {
         framer.showUI({
@@ -24,19 +25,25 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             clearInterval(pollInterval.current)
         }
 
+        if (pollTimeout.current) {
+            clearTimeout(pollTimeout.current)
+        }
+
         return new Promise(resolve => {
             const fetchTokens = () => {
                 auth.fetchTokens(readKey).then(tokens => {
                     clearInterval(pollInterval.current)
+                    clearTimeout(pollTimeout.current)
                     resolve(tokens)
                 })
             }
 
             // Initial 10 second delay
-            setTimeout(fetchTokens, 10000)
-
-            // Set up subsequent polling every 2.5 seconds
-            pollInterval.current = setInterval(fetchTokens, 2500)
+            pollTimeout.current = setTimeout(() => {
+                fetchTokens()
+                // Start 2.5 second interval polling after initial delay
+                pollInterval.current = setInterval(fetchTokens, 2500)
+            }, 10000)
         })
     }
 

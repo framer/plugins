@@ -29,6 +29,10 @@ form {
     flex-shrink: 1;
 }
 
+.field-input.unsupported {
+    grid-column: span 2;
+}
+
 .fields-column {
     grid-column: span 2 / span 2;
 }
@@ -100,7 +104,7 @@ form {
 
 .mapping .fields {
     display: grid;
-    grid-template-columns: 1fr 8px 1fr;
+    grid-template-columns: 1fr 8px 1fr 1fr;
     gap: 10px;
     margin-bottom: auto;
     padding-bottom: 10px;
@@ -128,6 +132,10 @@ form {
     gap: 8px;
 }
 
+.mapping .source-field.unsupported {
+    pointer-events: none;
+}
+
 .mapping .source-field[aria-disabled="true"] {
     opacity: 0.5;
 }
@@ -151,6 +159,22 @@ form {
 
 [data-framer-theme="dark"] .mapping .source-field input[type="checkbox"]:not(:checked) {
     background: #666;
+}
+
+.mapping .field-type {
+    width: 100%;
+}
+
+.mapping .single-field-type {
+    width: 100%;
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    padding: 0px 10px;
+    height: 30px;
+    font-weight: 500;
+    color: var(--framer-color-text);
+    display: flex;
+    align-items: center;
 }
 
 .mapping footer {

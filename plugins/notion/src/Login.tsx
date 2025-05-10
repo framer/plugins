@@ -80,7 +80,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                 <li>Map the database fields to the CMS</li>
             </ol>
 
-            <button type="submit">Log In</button>
+            <button type="submit">{isLoading ? <div className="framer-spinner" /> : "Log In"}</button>
         </form>
     )
 }

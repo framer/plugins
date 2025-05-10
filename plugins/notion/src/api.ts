@@ -244,6 +244,38 @@ export function getPossibleSlugFieldIds(database: GetDatabaseResponse) {
     return options.map(property => property.id)
 }
 
+async function getPageBlocksAsRichText(pageId: string) {
+    assert(notion, "Notion client is not initialized")
+
+    const blocksIterator = iteratePaginatedAPI(notion.blocks.children.list, {
+        block_id: pageId,
+    })
+
+    const blocks: BlockObjectResponse[] = []
+    for await (const block of blocksIterator) {
+        if (!isFullBlock(block)) continue
+        blocks.push(block)
+    }
+
+    assert(blocks.every(isFullBlock), "Response is not a full block")
+
+    return blocksToHTML(blocks)
+}
+
+export type DatabaseIdMap = Map<string, string>
+export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
+    const databaseIdMap: DatabaseIdMap = new Map()
+
+    for (const collection of await framer.getCollections()) {
+        const collectionDatabaseId = await collection.getPluginData(PLUGIN_KEYS.DATABASE_ID)
+        if (!collectionDatabaseId) continue
+
+        databaseIdMap.set(collectionDatabaseId, collection.id)
+    }
+
+    return databaseIdMap
+}
+
 export function getPropertyValue(
     property: PageObjectResponse["properties"][string],
     { supportsHtml }: { supportsHtml: boolean }
@@ -306,34 +338,274 @@ export function getPropertyValue(
     }
 }
 
-async function getPageBlocksAsRichText(pageId: string) {
-    assert(notion, "Notion client is not initialized")
+async function processItem(
+    item: PageObjectResponse,
+    fieldsById: FieldsById,
+    slugFieldId: string,
+    status: SyncStatus
+): Promise<CollectionItemData | null> {
+    let slugValue: null | string = null
 
-    const blocksIterator = iteratePaginatedAPI(notion.blocks.children.list, {
-        block_id: pageId,
-    })
+    const fieldData: FieldData = {}
 
-    const blocks: BlockObjectResponse[] = []
-    for await (const block of blocksIterator) {
-        if (!isFullBlock(block)) continue
-        blocks.push(block)
+    assert(isFullPage(item))
+
+    for (const key in item.properties) {
+        const property = item.properties[key]
+        assert(property)
+
+        if (property.id === slugFieldId) {
+            const resolvedSlug = getPropertyValue(property, { supportsHtml: false })
+            if (!resolvedSlug || typeof resolvedSlug !== "string") {
+                continue
+            }
+
+            slugValue = slugify(resolvedSlug)
+        }
+
+        const field = fieldsById.get(property.id)
+
+        // We can continue if the property was not included in the field mapping
+        if (!field) {
+            continue
+        }
+
+        const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
+        if (!fieldValue) {
+            status.warnings.push({
+                url: item.url,
+                fieldId: field.id,
+                message: `Value is missing for field ${field.name}`,
+            })
+        }
+
+        fieldData[field.id] = { type: field.type, value: fieldValue }
     }
 
-    assert(blocks.every(isFullBlock), "Response is not a full block")
+    if (fieldsById.has(pageContentProperty.id) && item.id) {
+        const contentHTML = await getPageBlocksAsRichText(item.id)
+        fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
+    }
 
-    return blocksToHTML(blocks)
+    if (!slugValue) {
+        status.warnings.push({
+            url: item.url,
+            message: "Slug or Title is missing. Skipping item.",
+        })
+        return null
+    }
+
+    return {
+        id: item.id,
+        fieldData,
+        slug: slugValue,
+    }
 }
 
-export type DatabaseIdMap = Map<string, string>
-export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
-    const databaseIdMap: DatabaseIdMap = new Map()
+type FieldsById = Map<FieldId, ManagedCollectionField>
 
-    for (const collection of await framer.getCollections()) {
-        const collectionDatabaseId = await collection.getPluginData(PLUGIN_KEYS.DATABASE_ID)
-        if (!collectionDatabaseId) continue
+export interface ItemResult {
+    url: string
+    fieldId?: string
+    message: string
+}
 
-        databaseIdMap.set(collectionDatabaseId, collection.id)
+export interface SynchronizeProgress {
+    totalCount: number
+    completedCount: number
+    completedPercent: number
+}
+
+interface SyncStatus {
+    errors: ItemResult[]
+    warnings: ItemResult[]
+    info: ItemResult[]
+}
+type OnProgressHandler = (progress: SynchronizeProgress) => void
+
+async function processAllItems(
+    data: PageObjectResponse[],
+    fieldsByKey: FieldsById,
+    slugFieldId: string,
+    lastSyncedDate: string | null,
+    onProgress: OnProgressHandler
+) {
+    const seenItemIds = new Set<string>()
+    const limit = pLimit(CONCURRENCY_LIMIT)
+    const status: SyncStatus = {
+        errors: [],
+        info: [],
+        warnings: [],
     }
 
-    return databaseIdMap
+    const totalCount = data.length
+    let completedCount = 0
+
+    onProgress({
+        totalCount,
+        completedCount,
+        completedPercent: 0,
+    })
+
+    const promises = data.map(item =>
+        limit(async () => {
+            seenItemIds.add(item.id)
+
+            if (isUnchangedSinceLastSync(item.last_edited_time, lastSyncedDate)) {
+                status.info.push({
+                    message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSyncedDate!)}`,
+                    url: item.url,
+                })
+                return null
+            }
+
+            const result = await processItem(item, fieldsByKey, slugFieldId, status)
+
+            completedCount++
+            onProgress({
+                completedCount,
+                totalCount,
+                completedPercent: Math.round((completedCount / totalCount) * 100),
+            })
+
+            return result
+        })
+    )
+    const results = await Promise.all(promises)
+
+    const items = results.filter(isDefined)
+
+    return {
+        items,
+        status,
+        seenItemIds,
+    }
+}
+
+export interface SynchronizeMutationOptions {
+    fields: ManagedCollectionField[]
+    ignoredFieldIds: string[]
+    lastSyncedTime: string | null
+    slugFieldId: string
+    onProgress: OnProgressHandler
+}
+
+export interface SynchronizeResult extends SyncStatus {
+    status: "success" | "completed_with_errors"
+}
+
+export async function synchronizeDatabase(
+    database: GetDatabaseResponse,
+    { fields, ignoredFieldIds, lastSyncedTime, slugFieldId, onProgress }: SynchronizeMutationOptions
+): Promise<SynchronizeResult> {
+    assert(isFullDatabase(database))
+    assert(notion)
+
+    const collection = await framer.getActiveManagedCollection()
+    await collection.setFields(fields)
+
+    const fieldsById = new Map<string, ManagedCollectionField>()
+    for (const field of fields) {
+        fieldsById.set(field.id, field)
+    }
+
+    const data = await collectPaginatedAPI(notion.databases.query, {
+        database_id: database.id,
+    })
+    assert(data.every(isFullPage), "Response is not a full page")
+
+    const { collectionItems, status, seenItemIds } = await processAllItems(
+        data,
+        fieldsById,
+        slugFieldId,
+        lastSyncedTime,
+        onProgress
+    )
+
+    const itemIdsToDelete = new Set(await collection.getItemIds())
+    for (const itemId of seenItemIds) {
+        itemIdsToDelete.delete(itemId)
+    }
+
+    if (import.meta.env.DEV) {
+        console.table(collectionItems)
+    }
+
+    await collection.addItems(collectionItems)
+    await collection.removeItems(Array.from(itemIdsToDelete))
+
+    await Promise.all([
+        collection.setPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS, JSON.stringify(ignoredFieldIds)),
+        collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, database.id),
+        collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
+        collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugFieldId),
+        collection.setPluginData(PLUGIN_KEYS.DATABASE_NAME, richTextToPlainText(database.title)),
+    ])
+
+    return {
+        status: status.errors.length === 0 ? "success" : "completed_with_errors",
+        errors: status.errors,
+        info: status.info,
+        warnings: status.warnings,
+    }
+}
+
+export function isUnchangedSinceLastSync(lastEditedTime: string, lastSyncedTime: string | null): boolean {
+    if (!lastSyncedTime) return false
+
+    const lastEdited = new Date(lastEditedTime)
+    const lastSynced = new Date(lastSyncedTime)
+    // Last edited time is rounded to the nearest minute.
+    // So we should round lastSyncedTime to the nearest minute as well.
+    lastSynced.setSeconds(0, 0)
+
+    return lastSynced > lastEdited
+}
+
+interface PaginatedArgs {
+    start_cursor?: string
+}
+
+interface PaginatedList<T> {
+    object: "list"
+    results: T[]
+    next_cursor: string | null
+    has_more: boolean
+}
+
+/**
+ * Copied from:
+ * https://github.com/makenotion/notion-sdk-js/blob/7950edc034d3007b0612b80d3f424baef89746d9/src/helpers.ts#L47
+ * Notion has a bug where pagination returns the same page cursor when fetching
+ * another page in some rare cases. This results in the same pages being fetched
+ * over and over, resulting in infinite loop. This function is modified to keep
+ * track of which page cursors we've seen and bail out early in case the same
+ * cursor is seen twice
+ */
+export async function* iteratePaginatedAPI<Args extends PaginatedArgs, Item>(
+    listFn: (args: Args) => Promise<PaginatedList<Item>>,
+    firstPageArgs: Args
+): AsyncIterableIterator<Item> {
+    const seenCursors = new Set<string>()
+    let nextCursor: string | null | undefined = firstPageArgs.start_cursor
+
+    do {
+        const response: PaginatedList<Item> = await listFn({
+            ...firstPageArgs,
+            start_cursor: nextCursor,
+        })
+        yield* response.results
+
+        if (!response.next_cursor) return
+
+        if (seenCursors.has(response.next_cursor)) {
+            console.warn(
+                "Encountered an infinite loop while paginating. This is a bug on the Notion side. Proceeding with partial content."
+            )
+            return
+        }
+
+        seenCursors.add(response.next_cursor)
+        nextCursor = response.next_cursor
+    } while (nextCursor)
 }

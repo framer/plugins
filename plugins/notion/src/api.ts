@@ -22,7 +22,7 @@ import {
     type FieldData,
 } from "framer-plugin"
 import pLimit from "p-limit"
-import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
+import { blocksToHTML, richTextToHTML } from "./blocksToHTML"
 import { assert, assertNever, formatDate, isDefined, isString, slugify } from "./utils"
 
 export const API_BASE_URL = "https://notion-plugin-api.framer-team.workers.dev"
@@ -37,6 +37,15 @@ export const PLUGIN_KEYS = {
 
 export type FieldId = string
 
+export interface FieldInfo {
+    id: FieldId
+    name: string
+    originalName: string
+    type: ManagedCollectionField["type"] | null
+    allowedTypes: ManagedCollectionField["type"][]
+    disabled: boolean
+}
+
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
 const CONCURRENCY_LIMIT = 5
@@ -46,13 +55,13 @@ export type NotionProperty = GetDatabaseResponse["properties"][string]
 // Every page has content which can be fetched as blocks. We add it as a
 // property so it displays in the list where you can configure properties to be
 // synced with the CMS
-const pageContentId = "page-content"
-export const pageContentProperty: SupportedNotionProperty = {
-    type: "rich_text",
-    id: pageContentId,
+export const pageContentProperty: FieldInfo = {
+    id: "page-content",
+    type: "formattedText",
     name: "Content",
-    description: "Page Content",
-    rich_text: {},
+    originalName: "Content",
+    allowedTypes: ["formattedText"],
+    disabled: false,
 }
 
 // The order in which we display slug fields
@@ -181,8 +190,8 @@ export function richTextToPlainText(richText: RichTextItemResponse[] | undefined
     return Array.isArray(richText) ? richText.map(value => value.plain_text).join("") : ""
 }
 
-export function getNotionProperties(database: GetDatabaseResponse) {
-    const result: NotionProperty[] = []
+export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
+    const result: FieldInfo[] = []
 
     // This property is always there but not included in `"database.properties"
     result.push(pageContentProperty)
@@ -191,7 +200,16 @@ export function getNotionProperties(database: GetDatabaseResponse) {
         const property = database.properties[key]
         assert(property)
 
-        result.push(property)
+        const allowedTypes = supportedCMSTypeByNotionPropertyType[property.type] ?? []
+
+        result.push({
+            id: property.id,
+            name: property.name,
+            originalName: property.name,
+            type: allowedTypes[0] ?? null,
+            allowedTypes,
+            disabled: false,
+        })
     }
 
     return result
@@ -201,7 +219,7 @@ export function getNotionProperties(database: GetDatabaseResponse) {
  * Given a Notion Database returns a list of possible fields that can be used as
  * a slug. And a suggested field id to use as a slug.
  */
-export function getPossibleSlugFields(database: GetDatabaseResponse) {
+export function getPossibleSlugFieldIds(database: GetDatabaseResponse) {
     const options: NotionProperty[] = []
 
     for (const key in database.properties) {
@@ -223,7 +241,7 @@ export function getPossibleSlugFields(database: GetDatabaseResponse) {
 
     options.sort((a, b) => getOrderIndex(a.type) - getOrderIndex(b.type))
 
-    return options
+    return options.map(property => property.id)
 }
 
 export function getPropertyValue(
@@ -303,5 +321,5 @@ async function getPageBlocksAsRichText(pageId: string) {
 
     assert(blocks.every(isFullBlock), "Response is not a full block")
 
-    return blocksToHtml(blocks)
+    return blocksToHTML(blocks)
 }

@@ -6,6 +6,11 @@ import {
     type ManagedCollectionItemInput,
 } from "framer-plugin"
 
+export const dataSourceOptions = [
+    { id: "articles", name: "Articles" },
+    { id: "categories", name: "Categories" },
+] as const
+
 export const PLUGIN_KEYS = {
     DATABASE_ID: "notionPluginDatabaseId",
     LAST_SYNCED: "notionPluginLastSynced",

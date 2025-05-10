@@ -1,19 +1,7 @@
-# CMS Starter
+# Framer Notion Plugin
 
-This is a starter for building a CMS plugin for Framer.
+Framer Notion Sync Plugin
 
-Run the development server:
+**By:** @edoardomercati and @niekert
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-And [open in Framer](https://www.framer.com/developers/plugins/quick-start#opening-in-framer).
-
-Learn more: https://www.framer.com/developers/plugins/introduction
+![Notion Image](../../assets/notion.png)

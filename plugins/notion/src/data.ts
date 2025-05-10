@@ -1,5 +1,5 @@
 import {
-    type EditableManagedCollectionField,
+    type ManagedCollectionFieldInput,
     type FieldDataInput,
     framer,
     type ManagedCollection,
@@ -7,20 +7,18 @@ import {
 } from "framer-plugin"
 
 export const PLUGIN_KEYS = {
-    DATA_SOURCE_ID: "dataSourceId",
-    SLUG_FIELD_ID: "slugFieldId",
+    DATABASE_ID: "notionPluginDatabaseId",
+    LAST_SYNCED: "notionPluginLastSynced",
+    IGNORED_FIELD_IDS: "notionPluginIgnoredFieldIds",
+    SLUG_FIELD_ID: "notionPluginSlugId",
+    DATABASE_NAME: "notionDatabaseName",
 } as const
 
 export interface DataSource {
     id: string
-    fields: readonly EditableManagedCollectionField[]
+    fields: readonly ManagedCollectionFieldInput[]
     items: FieldDataInput[]
 }
-
-export const dataSourceOptions = [
-    { id: "articles", name: "Articles" },
-    { id: "categories", name: "Categories" },
-] as const
 
 /**
  * Retrieve data and process it into a structured format.
@@ -44,7 +42,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     const dataSource = await dataSourceResponse.json()
 
     // Map your source fields to supported field types in Framer
-    const fields: EditableManagedCollectionField[] = []
+    const fields: ManagedCollectionFieldInput[] = []
     for (const field of dataSource.fields) {
         switch (field.type) {
             case "string":
@@ -83,9 +81,9 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
 }
 
 export function mergeFieldsWithExistingFields(
-    sourceFields: readonly EditableManagedCollectionField[],
-    existingFields: readonly EditableManagedCollectionField[]
-): EditableManagedCollectionField[] {
+    sourceFields: readonly ManagedCollectionFieldInput[],
+    existingFields: readonly ManagedCollectionFieldInput[]
+): ManagedCollectionFieldInput[] {
     return sourceFields.map(sourceField => {
         const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
         if (existingField) {
@@ -98,8 +96,8 @@ export function mergeFieldsWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: readonly EditableManagedCollectionField[],
-    slugField: EditableManagedCollectionField
+    fields: readonly ManagedCollectionFieldInput[],
+    slugField: ManagedCollectionFieldInput
 ) {
     const sanitizedFields = fields.map(field => ({
         ...field,

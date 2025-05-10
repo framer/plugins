@@ -1,16 +1,12 @@
+import { generateRandomId } from "./utils"
+
 interface Tokens {
-    access_token: string
-    refresh_token: string
-    expires_in: number
-    scope: string
-    token_type: "Bearer"
+    bearer_token: string
 }
 
 interface StoredTokens {
     createdAt: number
-    expiredIn: number
-    accessToken: string
-    refreshToken: string
+    bearer_token: string
 }
 
 interface Authorize {
@@ -21,109 +17,82 @@ interface Authorize {
 
 class Auth {
     private readonly PLUGIN_TOKENS_KEY = "notionBearerToken"
-    private readonly AUTH_URI: string
+    private readonly AUTH_URI = "https://notion-plugin-api.framer-team.workers.dev"
+    private readonly NOTION_CLIENT_ID = "3504c5a7-9f75-4f87-aa1b-b735f8480432"
     storedTokens?: StoredTokens | null
-
-    constructor() {
-        this.AUTH_URI = location.hostname.includes("localhost")
-            ? "https://localhost:8787"
-            : "https://oauth.fetch.tools/airtable-plugin"
-    }
 
     logout() {
         this.tokens.clear()
-    }
-
-    async refreshTokens() {
-        try {
-            const tokens = this.tokens.get()
-            if (!tokens) {
-                throw new Error("Refresh attempted with no stored tokens.")
-            }
-
-            const res = await fetch(`${this.AUTH_URI}/refresh?code=${tokens.refreshToken}`, {
-                method: "POST",
-            })
-
-            const newTokens = (await res.json()) as Tokens
-
-            this.tokens.save(newTokens)
-
-            return newTokens
-        } catch (e) {
-            this.tokens.clear()
-            throw e
-        }
     }
 
     async getTokens() {
         const tokens = this.tokens.get()
         if (!tokens) return null
 
-        if (this.isTokensExpired()) {
-            await this.refreshTokens()
-        }
-
         return this.tokens.get()
     }
 
     async fetchTokens(readKey: string) {
-        const res = await fetch(`${this.AUTH_URI}/poll?readKey=${readKey}`, {
-            method: "POST",
+        const res = await fetch(`${this.AUTH_URI}/auth/authorize/${readKey}`, {
+            method: "GET",
         })
 
         if (res.status !== 200) {
             throw new Error("Failed to fetch tokens")
         }
 
-        const tokens = (await res.json()) as Tokens
+        const { token } = await res.json()
+        const tokens: Tokens = {
+            bearer_token: token,
+        }
         this.tokens.save(tokens)
         return tokens
     }
 
-    async authorize() {
-        const res = await fetch(`${this.AUTH_URI}/authorize`, {
+    async authorize(): Promise<Authorize> {
+        const writeKey = generateRandomId()
+        const readKey = generateRandomId()
+
+        const res = await fetch(`${this.AUTH_URI}/auth/authorize`, {
             method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ readKey, writeKey }),
         })
 
         if (res.status !== 200) {
             throw new Error("Failed to generate OAuth URL")
         }
 
-        const authorize = (await res.json()) as Authorize
+        const oauthRedirectUrl = encodeURIComponent(`${this.AUTH_URI}/auth/authorize/callback`)
 
-        return authorize
-    }
-
-    async isWorkerAlive(): Promise<boolean> {
-        try {
-            const res = await fetch(`${this.AUTH_URI}/poll`, {
-                method: "POST",
-            })
-            return res.status === 400
-        } catch (error) {
-            console.error("Failed to connect to OAuth worker:", error)
-            return false
+        return {
+            writeKey,
+            readKey,
+            url: `https://api.notion.com/v1/oauth/authorize?client_id=${this.NOTION_CLIENT_ID}&response_type=code&owner=user&redirect_uri=${oauthRedirectUrl}&state=${writeKey}`,
         }
     }
 
-    private isTokensExpired() {
-        const tokens = this.tokens.get()
-        if (!tokens) return true
-
-        const { createdAt, expiredIn } = tokens
-        const expirationTime = createdAt + expiredIn * 1000
-
-        return Date.now() >= expirationTime
+    async isWorkerAlive(): Promise<boolean> {
+        return true
+        // try {
+        //     const res = await fetch(`${this.AUTH_URI}/auth/authorize`, {
+        //         method: "POST",
+        //     })
+        //     console.log("res", res)
+        //     return res.status === 400
+        // } catch (error) {
+        //     console.error("Failed to connect to OAuth worker:", error)
+        //     return false
+        // }
     }
 
     private readonly tokens = {
         save: (tokens: Tokens) => {
             const storedTokens: StoredTokens = {
                 createdAt: Date.now(),
-                expiredIn: tokens.expires_in,
-                accessToken: tokens.access_token,
-                refreshToken: tokens.refresh_token,
+                bearer_token: tokens.bearer_token,
             }
 
             this.storedTokens = storedTokens

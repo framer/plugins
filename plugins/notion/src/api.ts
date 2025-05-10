@@ -174,6 +174,6 @@ export async function getDatabase(databaseId: string) {
     return database
 }
 
-export function richTextToPlainText(richText: RichTextItemResponse[]) {
-    return richText.map(value => value.plain_text).join("")
+export function richTextToPlainText(richText: RichTextItemResponse[] | undefined) {
+    return Array.isArray(richText) ? richText.map(value => value.plain_text).join("") : ""
 }

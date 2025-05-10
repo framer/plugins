@@ -43,6 +43,7 @@ export interface FieldInfo {
     originalName: string
     type: ManagedCollectionField["type"] | null
     allowedTypes: ManagedCollectionField["type"][]
+    notionProperty: NotionProperty | null
 }
 
 // Maximum number of concurrent requests to Notion API
@@ -60,7 +61,7 @@ export const pageContentProperty: FieldInfo = {
     name: "Content",
     originalName: "Content",
     allowedTypes: ["formattedText"],
-    disabled: false,
+    notionProperty: null,
 }
 
 // The order in which we display slug fields
@@ -163,7 +164,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     relation: ["multiCollectionReference"],
 } satisfies Record<SupportedPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
 
-function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
+export function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
     propertyType: T,
     fieldType: ManagedCollectionField["type"]
 ): asserts fieldType is (typeof supportedCMSTypeByNotionPropertyType)[T][number] {
@@ -207,7 +208,7 @@ export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
             originalName: property.name,
             type: allowedTypes[0] ?? null,
             allowedTypes,
-            disabled: false,
+            notionProperty: property,
         })
     }
 
@@ -321,4 +322,18 @@ async function getPageBlocksAsRichText(pageId: string) {
     assert(blocks.every(isFullBlock), "Response is not a full block")
 
     return blocksToHTML(blocks)
+}
+
+export type DatabaseIdMap = Map<string, string>
+export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
+    const databaseIdMap: DatabaseIdMap = new Map()
+
+    for (const collection of await framer.getCollections()) {
+        const collectionDatabaseId = await collection.getPluginData(PLUGIN_KEYS.DATABASE_ID)
+        if (!collectionDatabaseId) continue
+
+        databaseIdMap.set(collectionDatabaseId, collection.id)
+    }
+
+    return databaseIdMap
 }

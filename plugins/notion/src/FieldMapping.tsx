@@ -1,16 +1,37 @@
-import { type EditableManagedCollectionField, framer, type ManagedCollection } from "framer-plugin"
+import { type ManagedCollectionField, type ManagedCollectionFieldInput. framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { type DataSource, mergeFieldsWithExistingFields, syncCollection } from "./data"
 
+const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
+    boolean: "Toggle",
+    date: "Date",
+    number: "Number",
+    formattedText: "Formatted Text",
+    color: "Color",
+    enum: "Option",
+    file: "File",
+    image: "Image",
+    link: "Link",
+    string: "Plain Text",
+    collectionReference: "Reference",
+    multiCollectionReference: "Multi-Reference",
+}
+
 interface FieldMappingRowProps {
-    field: EditableManagedCollectionField
+    field: ManagedCollectionFieldInput
     originalFieldName: string | undefined
     disabled: boolean
     onToggleDisabled: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
 }
 
-function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled, onNameChange }: FieldMappingRowProps) {
+function FieldMappingRow({
+    field,
+    originalFieldName,
+    disabled,
+    onToggleDisabled,
+    onNameChange,
+}: FieldMappingRowProps) {
     return (
         <>
             <button
@@ -50,7 +71,7 @@ function FieldMappingRow({ field, originalFieldName, disabled, onToggleDisabled,
     )
 }
 
-const initialManagedCollectionFields: EditableManagedCollectionField[] = []
+const initialManagedCollectionFields: ManagedCollectionFieldInput[] = []
 const initialFieldIds: ReadonlySet<string> = new Set()
 
 interface FieldMappingProps {
@@ -68,7 +89,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
 
-    const [selectedSlugField, setSelectedSlugField] = useState<EditableManagedCollectionField | null>(
+    const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 

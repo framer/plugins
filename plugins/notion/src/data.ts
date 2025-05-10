@@ -1,28 +1,34 @@
 import {
-    type ManagedCollectionFieldInput,
-    type FieldDataInput,
     framer,
-    type ManagedCollection,
+    ManagedCollection,
+    type ManagedCollectionFieldInput,
+    type CollectionItemData,
+    type ManagedCollectionField,
+    type FieldData,
+    type FieldDataInput,
     type ManagedCollectionItemInput,
 } from "framer-plugin"
-
-export const dataSourceOptions = [
-    { id: "articles", name: "Articles" },
-    { id: "categories", name: "Categories" },
-] as const
-
-export const PLUGIN_KEYS = {
-    DATABASE_ID: "notionPluginDatabaseId",
-    LAST_SYNCED: "notionPluginLastSynced",
-    IGNORED_FIELD_IDS: "notionPluginIgnoredFieldIds",
-    SLUG_FIELD_ID: "notionPluginSlugId",
-    DATABASE_NAME: "notionDatabaseName",
-} as const
+import { Client, collectPaginatedAPI, isFullDatabase } from "@notionhq/client"
+import { initNotionClient, getNotionDatabases } from "./api"
+import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+import { PLUGIN_KEYS } from "./api"
 
 export interface DataSource {
     id: string
+    name: string
     fields: readonly ManagedCollectionFieldInput[]
     items: FieldDataInput[]
+}
+
+export async function getDataSources(): Promise<DataSource[]> {
+    const databases = await getNotionDatabases()
+
+    return databases.map((db: DatabaseObjectResponse) => ({
+        id: db.id,
+        name: db.title[0]?.plain_text || "Untitled Database",
+        fields: [], // Fields will be populated when needed
+        items: [], // Items will be populated when needed
+    }))
 }
 
 /**
@@ -80,6 +86,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
 
     return {
         id: dataSource.id,
+        name: dataSource.name,
         fields,
         items,
     }

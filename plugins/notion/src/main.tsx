@@ -6,7 +6,8 @@ import ReactDOM from "react-dom/client"
 
 import { App } from "./App.tsx"
 import auth from "./auth"
-import { syncExistingCollection, PLUGIN_KEYS } from "./data"
+import { syncExistingCollection } from "./data"
+import { PLUGIN_KEYS } from "./api"
 import { Authenticate } from "./Login.tsx"
 
 const activeCollection = await framer.getActiveManagedCollection()

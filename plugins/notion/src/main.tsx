@@ -33,19 +33,22 @@ if (!tokens) {
     })
 }
 
-const [previousBaseId, previousTableId, previousTableName, previousSlugFieldId] = await Promise.all([
-    activeCollection.getPluginData(PLUGIN_KEYS.BASE_ID),
-    activeCollection.getPluginData(PLUGIN_KEYS.TABLE_ID),
-    activeCollection.getPluginData(PLUGIN_KEYS.TABLE_NAME),
-    activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
-])
+const [previousDatabaseId, previousSlugFieldId, previousLastSynced, previousIgnoredFieldIds, previousDatabaseName] =
+    await Promise.all([
+        activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_ID),
+        activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
+        activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS),
+        activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
+        activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_NAME),
+    ])
 
 const { didSync } = await syncExistingCollection(
     activeCollection,
-    previousBaseId,
-    previousTableId,
-    previousTableName,
-    previousSlugFieldId
+    previousDatabaseId,
+    previousSlugFieldId,
+    previousLastSynced,
+    previousIgnoredFieldIds,
+    previousDatabaseName
 )
 
 if (didSync) {
@@ -57,9 +60,11 @@ if (didSync) {
         <React.StrictMode>
             <App
                 collection={activeCollection}
-                previousBaseId={previousBaseId}
-                previousTableId={previousTableId}
+                previousDatabaseId={previousDatabaseId}
                 previousSlugFieldId={previousSlugFieldId}
+                previousLastSynced={previousLastSynced}
+                previousIgnoredFieldIds={previousIgnoredFieldIds}
+                previousDatabaseName={previousDatabaseName}
             />
         </React.StrictMode>
     )

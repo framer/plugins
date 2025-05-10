@@ -1,6 +1,6 @@
 import "./App.css"
 
-import { useLayoutEffect, useRef } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { framer } from "framer-plugin"
 import auth from "./auth"
 
@@ -9,6 +9,7 @@ interface AuthenticationProps {
 }
 
 export function Authenticate({ onAuthenticated }: AuthenticationProps) {
+    const [isLoading, setIsLoading] = useState(false)
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     useLayoutEffect(() => {
@@ -23,21 +24,26 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             clearInterval(pollInterval.current)
         }
 
-        return new Promise(
-            resolve =>
-                (pollInterval.current = setInterval(
-                    () =>
-                        auth.fetchTokens(readKey).then(tokens => {
-                            clearInterval(pollInterval.current)
-                            resolve(tokens)
-                        }),
-                    2500
-                ))
-        )
+        return new Promise(resolve => {
+            const fetchTokens = () => {
+                auth.fetchTokens(readKey).then(tokens => {
+                    clearInterval(pollInterval.current)
+                    resolve(tokens)
+                })
+            }
+
+            // Initial 10 second delay
+            setTimeout(fetchTokens, 10000)
+
+            // Set up subsequent polling every 2.5 seconds
+            pollInterval.current = setInterval(fetchTokens, 2500)
+        })
     }
 
     const login = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
+
+        setIsLoading(true)
 
         try {
             // Retrieve the auth URL and a set of read and write keys
@@ -52,15 +58,14 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             onAuthenticated()
         } catch (e) {
             framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
+        } finally {
+            setIsLoading(false)
         }
     }
 
     return (
         <form className="login" onSubmit={login}>
-            <img
-                src="/notion-doodle.png"
-                className="max-w-100% rounded-md flex-shrink-0 select-none pointer-events-none"
-            />
+            <img src="/notion-doodle.png" className="login-image" />
 
             <ol className="login-steps">
                 <li>Log in to your Notion account</li>
@@ -68,9 +73,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                 <li>Map the database fields to the CMS</li>
             </ol>
 
-            <button className="action-button" type="submit">
-                Log In
-            </button>
+            <button type="submit">Log In</button>
         </form>
     )
 }

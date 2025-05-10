@@ -64,18 +64,16 @@ form {
     width: 100%;
     flex: 1;
     text-align: center;
-    max-width: 160px;
     gap: 15px;
-}
-
-.intro h2 {
-    line-height: 1;
-    font-size: 1em;
-    margin-bottom: 10px;
 }
 
 .intro p {
     color: var(--framer-color-text-tertiary);
+}
+
+.intro img {
+    width: 100%;
+    border-radius: 8px;
 }
 
 .setup label {
@@ -147,11 +145,11 @@ form {
     box-shadow: none;
 }
 
-[data-framer-theme=light] .mapping .source-field input[type="checkbox"]:not(:checked) {
+[data-framer-theme="light"] .mapping .source-field input[type="checkbox"]:not(:checked) {
     background: #ccc;
 }
 
-[data-framer-theme=dark] .mapping .source-field input[type="checkbox"]:not(:checked) {
+[data-framer-theme="dark"] .mapping .source-field input[type="checkbox"]:not(:checked) {
     background: #666;
 }
 

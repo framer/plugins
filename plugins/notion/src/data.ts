@@ -7,6 +7,7 @@ import {
     type FieldData,
     type FieldDataInput,
     type ManagedCollectionItemInput,
+    type EnumCase,
 } from "framer-plugin"
 import {
     getNotionDatabases,
@@ -15,6 +16,8 @@ import {
     pageContentProperty,
     getDatabaseFieldsInfo,
     PLUGIN_KEYS,
+    assertFieldTypeMatchesPropertyType,
+    getDatabaseIdMap,
     type FieldInfo,
 } from "./api"
 import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
@@ -70,16 +73,16 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     }
 }
 
-export function mergeFieldsWithExistingFields(
-    sourceFields: readonly ManagedCollectionFieldInput[],
+export function mergeFieldsInfoWithExistingFields(
+    sourceFieldsInfo: readonly FieldInfo[],
     existingFields: readonly ManagedCollectionFieldInput[]
-): ManagedCollectionFieldInput[] {
-    return sourceFields.map(sourceField => {
-        const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
-        if (existingField) {
-            return { ...sourceField, name: existingField.name }
+): FieldInfo[] {
+    return sourceFieldsInfo.map(sourceFieldInfo => {
+        const existingField = existingFields.find(existingField => existingField.id === sourceFieldInfo.id)
+        if (existingField && sourceFieldInfo.allowedTypes.includes(existingField.type)) {
+            return { ...sourceFieldInfo, name: existingField.name, type: existingField.type }
         }
-        return sourceField
+        return sourceFieldInfo
     })
 }
 
@@ -171,4 +174,98 @@ export async function syncExistingCollection(
         })
         return { didSync: false }
     }
+}
+
+export async function fieldsInfoToCollectionFields(fieldsInfo: FieldInfo[]): Promise<ManagedCollectionFieldInput[]> {
+    const fields = []
+
+    const databaseIdMap = fieldsInfo.some(fieldInfo => fieldInfo.type === "multiCollectionReference")
+        ? await getDatabaseIdMap()
+        : null
+
+    for (const fieldInfo of fieldsInfo) {
+        const property = fieldInfo.notionProperty
+        const fieldType = fieldInfo.type
+
+        if (!property) continue
+
+        switch (fieldInfo.type) {
+            case "boolean":
+            case "date":
+            case "number":
+            case "string":
+            case "formattedText":
+            case "link":
+            case "image":
+                assertFieldTypeMatchesPropertyType(property.type, fieldType)
+                fields.push({
+                    type: fieldType,
+                    id: fieldInfo.id,
+                    name: fieldInfo.name,
+                    userEditable: false,
+                })
+                break
+            case "enum":
+                assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
+                let cases: EnumCase[] | null = null
+                switch (property?.type) {
+                    case "select":
+                        cases = property.select.options.map(option => ({
+                            id: option.id,
+                            name: option.name,
+                        })) as EnumCase[]
+                        break
+                    case "status":
+                        cases = property.status.options.map(option => ({
+                            id: option.id,
+                            name: option.name,
+                        })) as EnumCase[]
+                        break
+                }
+
+                if (cases) {
+                    fields.push({
+                        type: "enum",
+                        id: fieldInfo.id,
+                        name: fieldInfo.name,
+                        cases,
+                        userEditable: false,
+                    })
+                }
+
+                break
+            case "file":
+                assertFieldTypeMatchesPropertyType(property.type, fieldType)
+                fields.push({
+                    type: "file",
+                    id: fieldInfo.id,
+                    name: fieldInfo.name,
+                    allowedFileTypes: [],
+                    userEditable: false,
+                })
+                break
+            case "multiCollectionReference":
+                assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
+                const databaseId = property.relation?.database_id
+                if (databaseId && databaseIdMap) {
+                    const collectionId = databaseIdMap.get(databaseId)
+                    if (collectionId) {
+                        fields.push({
+                            type: "multiCollectionReference",
+                            id: fieldInfo.id,
+                            name: fieldInfo.name,
+                            collectionId,
+                            userEditable: false,
+                        })
+                    }
+                }
+                break
+            default:
+                throw new Error(`Unsupported field type: ${fieldInfo.type}`)
+        }
+    }
+
+    return fields
 }

@@ -38,7 +38,7 @@ export function richTextToHTML(texts: RichTextItemResponse[]) {
         .join("")
 }
 
-export function blocksToHtml(blocks: BlockObjectResponse[]) {
+export function blocksToHTML(blocks: BlockObjectResponse[]) {
     let htmlContent = ""
 
     for (let i = 0; i < blocks.length; i++) {

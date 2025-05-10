@@ -1,33 +1,66 @@
 import "framer-plugin/framer.css"
 
 import { framer } from "framer-plugin"
-import { StrictMode } from "react"
-import { createRoot } from "react-dom/client"
+import React from "react"
+import ReactDOM from "react-dom/client"
+
 import { App } from "./App.tsx"
-import { PLUGIN_KEYS, syncExistingCollection } from "./data"
+import auth from "./auth"
+import { syncExistingCollection, PLUGIN_KEYS } from "./data"
+import { Authenticate } from "./Login.tsx"
 
 const activeCollection = await framer.getActiveManagedCollection()
 
-const previousDataSourceId = await activeCollection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-const previousSlugFieldId = await activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID)
+const isWorkerAlive = await auth.isWorkerAlive()
+if (!isWorkerAlive) {
+    framer.closePlugin("OAuth worker is not available, please try again.", {
+        variant: "error",
+    })
+}
 
-const { didSync } = await syncExistingCollection(activeCollection, previousDataSourceId, previousSlugFieldId)
+const tokens = await auth.getTokens()
+
+const root = document.getElementById("root")
+if (!root) throw new Error("Root element not found")
+
+if (!tokens) {
+    await new Promise<void>(resolve => {
+        ReactDOM.createRoot(root).render(
+            <React.StrictMode>
+                <Authenticate onAuthenticated={resolve} />
+            </React.StrictMode>
+        )
+    })
+}
+
+const [previousBaseId, previousTableId, previousTableName, previousSlugFieldId] = await Promise.all([
+    activeCollection.getPluginData(PLUGIN_KEYS.BASE_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.TABLE_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.TABLE_NAME),
+    activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
+])
+
+const { didSync } = await syncExistingCollection(
+    activeCollection,
+    previousBaseId,
+    previousTableId,
+    previousTableName,
+    previousSlugFieldId
+)
 
 if (didSync) {
     await framer.closePlugin("Synchronization successful", {
         variant: "success",
     })
 } else {
-    const root = document.getElementById("root")
-    if (!root) throw new Error("Root element not found")
-
-    createRoot(root).render(
-        <StrictMode>
+    ReactDOM.createRoot(root).render(
+        <React.StrictMode>
             <App
                 collection={activeCollection}
-                previousDataSourceId={previousDataSourceId}
+                previousBaseId={previousBaseId}
+                previousTableId={previousTableId}
                 previousSlugFieldId={previousSlugFieldId}
             />
-        </StrictMode>
+        </React.StrictMode>
     )
 }

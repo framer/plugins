@@ -29,6 +29,10 @@ form {
     flex-shrink: 1;
 }
 
+.field-input[disabled] {
+    opacity: 0.5;
+}
+
 .field-input.unsupported {
     grid-column: span 2;
 }
@@ -177,6 +181,10 @@ form {
     align-items: center;
 }
 
+.mapping .single-field-type.disabled {
+    opacity: 0.5;
+}
+
 .mapping footer {
     position: sticky;
     bottom: 0;
@@ -199,6 +207,10 @@ form {
     height: 45px;
     background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
     pointer-events: none;
+}
+
+select {
+    padding-left: 10px;
 }
 
 /* Login */

@@ -1,6 +1,12 @@
-import { type ManagedCollectionField, type ManagedCollectionFieldInput. framer, type ManagedCollection } from "framer-plugin"
-import { useEffect, useState } from "react"
-import { type DataSource, mergeFieldsWithExistingFields, syncCollection } from "./data"
+import {
+    framer,
+    type ManagedCollectionField,
+    type ManagedCollectionFieldInput,
+    type ManagedCollection,
+} from "framer-plugin"
+import { useEffect, useMemo, useState } from "react"
+import { type DataSource, getDataSourceFieldsInfo, mergeFieldsWithExistingFields, syncCollection } from "./data"
+import { getPossibleSlugFieldIds, type FieldId, type FieldInfo } from "./api"
 
 const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
     boolean: "Toggle",
@@ -18,31 +24,27 @@ const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
 }
 
 interface FieldMappingRowProps {
-    field: ManagedCollectionFieldInput
-    originalFieldName: string | undefined
-    disabled: boolean
+    fieldInfo: FieldInfo
     onToggleDisabled: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
 }
 
-function FieldMappingRow({
-    field,
-    originalFieldName,
-    disabled,
-    onToggleDisabled,
-    onNameChange,
-}: FieldMappingRowProps) {
+function FieldMappingRow({ fieldInfo, onToggleDisabled, onNameChange }: FieldMappingRowProps) {
+    const { id, name, originalName, type, allowedTypes } = fieldInfo
+    const isUnsupported = !Array.isArray(allowedTypes) || allowedTypes.length === 0
+    const disabled = isUnsupported || fieldInfo.disabled
+
     return (
         <>
             <button
                 type="button"
-                className="source-field"
+                className={"source-field" + (disabled ? " unsupported" : "")}
                 aria-disabled={disabled}
-                onClick={() => onToggleDisabled(field.id)}
+                onClick={() => onToggleDisabled(id)}
                 tabIndex={0}
             >
                 <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
-                <span>{originalFieldName ?? field.id}</span>
+                <span>{originalName ?? id}</span>
             </button>
             <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" fill="none">
                 <path
@@ -57,16 +59,29 @@ function FieldMappingRow({
             <input
                 type="text"
                 style={{ width: "100%", opacity: disabled ? 0.5 : 1 }}
-                disabled={disabled}
-                placeholder={field.id}
-                value={field.name}
-                onChange={event => onNameChange(field.id, event.target.value)}
+                disabled={disabled || isUnsupported}
+                placeholder={originalName ?? id}
+                value={isUnsupported ? "Unsupported" : name}
+                onChange={event => onNameChange(id, event.target.value)}
                 onKeyDown={event => {
                     if (event.key === "Enter") {
                         event.preventDefault()
                     }
                 }}
+                className={"field-input" + (isUnsupported ? " unsupported" : "")}
             />
+            {!isUnsupported &&
+                (Array.isArray(allowedTypes) && allowedTypes.length > 1 ? (
+                    <select className="field-type" disabled={disabled} value={type ?? ""}>
+                        {allowedTypes.map(allowedType => (
+                            <option key={allowedType} value={allowedType}>
+                                {labelByFieldTypeOption[allowedType]}
+                            </option>
+                        ))}
+                    </select>
+                ) : (
+                    <div className="single-field-type">{labelByFieldTypeOption[allowedTypes[0]]}</div>
+                ))}
         </>
     )
 }
@@ -87,16 +102,17 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
+    const fieldsInfo = useMemo(() => getDataSourceFieldsInfo(dataSource.database), [dataSource.database])
+    const possibleSlugFieldIds = useMemo(() => getPossibleSlugFieldIds(dataSource.database), [dataSource.database])
 
-    const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
-        possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
+    const [selectedSlugFieldId, setSelectedSlugFieldId]: FieldId | null = useState(
+        initialSlugFieldId ?? possibleSlugFieldIds[0] ?? null
     )
 
     const [fields, setFields] = useState(initialManagedCollectionFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
-    const dataSourceName = ""
+    const dataSourceName = dataSource.name
 
     useEffect(() => {
         const abortController = new AbortController()
@@ -156,7 +172,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
-        if (!selectedSlugField) {
+        if (!selectedSlugFieldId) {
             // This can't happen because the form will not submit if no slug field is selected
             // but TypeScript can't infer that.
             console.error("There is no slug field selected. Sync will not be performed")
@@ -169,7 +185,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
             const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
 
-            await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField)
+            await syncCollection(collection, dataSource, fieldsToSync, selectedSlugFieldId)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)
@@ -199,18 +215,18 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         required
                         name="slugField"
                         className="field-input"
-                        value={selectedSlugField ? selectedSlugField.id : ""}
+                        value={selectedSlugFieldId ?? ""}
                         onChange={event => {
-                            const selectedFieldId = event.target.value
-                            const selectedField = possibleSlugFields.find(field => field.id === selectedFieldId)
-                            if (!selectedField) return
-                            setSelectedSlugField(selectedField)
+                            setSelectedSlugFieldId(
+                                possibleSlugFieldIds.includes(event.target.value) ? event.target.value : null
+                            )
                         }}
                     >
-                        {possibleSlugFields.map(possibleSlugField => {
+                        {possibleSlugFieldIds.map(possibleSlugFieldId => {
                             return (
-                                <option key={`slug-field-${possibleSlugField.id}`} value={possibleSlugField.id}>
-                                    {possibleSlugField.name}
+                                <option key={`slug-field-${possibleSlugFieldId}`} value={possibleSlugFieldId}>
+                                    {fieldsInfo.find(field => field.id === possibleSlugFieldId)?.name ??
+                                        possibleSlugFieldId}
                                 </option>
                             )
                         })}
@@ -218,30 +234,25 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 </label>
 
                 <div className="fields">
-                    <span className="fields-column">Column</span>
-                    <span>Field</span>
-                    {fields.map(field => (
-                        <FieldMappingRow
-                            key={`field-${field.id}`}
-                            field={field}
-                            originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
-                            disabled={ignoredFieldIds.has(field.id)}
-                            onToggleDisabled={toggleFieldDisabledState}
-                            onNameChange={changeFieldName}
-                        />
-                    ))}
+                    <span className="fields-column">Notion Property</span>
+                    <span>Field Name</span>
+                    <span>Field Type</span>
+                    {fieldsInfo.map(fieldInfo => {
+                        return (
+                            <FieldMappingRow
+                                key={`field-${fieldInfo.id}`}
+                                fieldInfo={fieldInfo}
+                                onToggleDisabled={toggleFieldDisabledState}
+                                onNameChange={changeFieldName}
+                            />
+                        )
+                    })}
                 </div>
 
                 <footer>
                     <hr className="sticky-top" />
                     <button disabled={isSyncing} tabIndex={0}>
-                        {isSyncing ? (
-                            <div className="framer-spinner" />
-                        ) : (
-                            <span>
-                                Import <span style={{ textTransform: "capitalize" }}>{dataSourceName}</span>
-                            </span>
-                        )}
+                        {isSyncing ? <div className="framer-spinner" /> : <span>Import from {dataSourceName}</span>}
                     </button>
                 </footer>
             </form>

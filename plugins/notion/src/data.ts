@@ -8,8 +8,7 @@ import {
     type FieldDataInput,
     type ManagedCollectionItemInput,
 } from "framer-plugin"
-import { Client, collectPaginatedAPI, isFullDatabase } from "@notionhq/client"
-import { initNotionClient, getNotionDatabases } from "./api"
+import { getNotionDatabases, getDatabase, richTextToPlainText } from "./api"
 import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import { PLUGIN_KEYS } from "./api"
 
@@ -18,16 +17,18 @@ export interface DataSource {
     name: string
     fields: readonly ManagedCollectionFieldInput[]
     items: FieldDataInput[]
+    database: DatabaseObjectResponse
 }
 
 export async function getDataSources(): Promise<DataSource[]> {
     const databases = await getNotionDatabases()
 
-    return databases.map((db: DatabaseObjectResponse) => ({
-        id: db.id,
-        name: db.title[0]?.plain_text || "Untitled Database",
+    return databases.map((database: DatabaseObjectResponse) => ({
+        id: database.id,
+        name: database.title[0]?.plain_text || "Untitled Database",
         fields: [], // Fields will be populated when needed
         items: [], // Items will be populated when needed
+        database,
     }))
 }
 
@@ -49,46 +50,13 @@ export async function getDataSources(): Promise<DataSource[]> {
  */
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     // Fetch from your data source
-    const dataSourceResponse = await fetch(`/data/${dataSourceId}.json`, { signal: abortSignal })
-    const dataSource = await dataSourceResponse.json()
-
-    // Map your source fields to supported field types in Framer
-    const fields: ManagedCollectionFieldInput[] = []
-    for (const field of dataSource.fields) {
-        switch (field.type) {
-            case "string":
-            case "number":
-            case "boolean":
-            case "color":
-            case "formattedText":
-            case "date":
-            case "link":
-                fields.push({
-                    id: field.name,
-                    name: field.name,
-                    type: field.type,
-                })
-                break
-            case "image":
-            case "file":
-            case "enum":
-            case "collectionReference":
-            case "multiCollectionReference":
-                console.warn(`Support for field type "${field.type}" is not implemented in this Plugin.`)
-                break
-            default: {
-                console.warn(`Unknown field type "${field.type}".`)
-            }
-        }
-    }
-
-    const items = dataSource.items as FieldDataInput[]
+    const database = await getDatabase(dataSourceId)
 
     return {
-        id: dataSource.id,
-        name: dataSource.name,
-        fields,
-        items,
+        id: database.id,
+        name: richTextToPlainText(database.title) || "Untitled Database",
+        fields: [],
+        items: [],
     }
 }
 

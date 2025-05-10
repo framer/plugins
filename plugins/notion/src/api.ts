@@ -162,3 +162,18 @@ function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
         throw new Error(`Field type '${fieldType}' is not valid for property type '${propertyType}'.`)
     }
 }
+
+export async function getDatabase(databaseId: string) {
+    if (!notion) {
+        initNotionClient()
+    }
+
+    assert(notion, "Notion client is not initialized")
+    const database = await notion.databases.retrieve({ database_id: databaseId })
+
+    return database
+}
+
+export function richTextToPlainText(richText: RichTextItemResponse[]) {
+    return richText.map(value => value.plain_text).join("")
+}

@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
-import { type DataSource, getDataSource, getDataSources } from "./data"
+import { type DataSource, getDataSources } from "./data"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
@@ -43,7 +43,12 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
         try {
             setStatus(Status.Loading)
 
-            const dataSource = await getDataSource(selectedDataSourceId)
+            const dataSource = dataSources.find(dataSource => dataSource.id === selectedDataSourceId)
+            if (!dataSource) {
+                framer.notify("Database not found", { variant: "error" })
+                return
+            }
+
             onSelectDataSource(dataSource)
         } catch (error) {
             console.error(error)

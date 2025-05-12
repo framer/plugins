@@ -7,11 +7,13 @@ export function AppCanvas() {
     const [spaceId, setSpaceId] = useState<string | null>(null)
 
     useLayoutEffect(() => {
+        if (!spaceId) return
+
         framer.showUI({
             width: 260,
             height: 130,
         })
-    }, [])
+    }, [spaceId])
 
     if (!spaceId) {
         return (
@@ -30,7 +32,7 @@ export function AppCanvas() {
                     const spaceId = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
 
                     await framer.addComponentInstance({
-                        url: "https://framer.com/m/GreenhouseApplicationForm-8rot.js",
+                        url: "https://framer.com/m/GreenhouseIframe-99J5.js",
                         attributes: {
                             controls: {
                                 jobId: "",

@@ -369,8 +369,6 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
         }
     }
 
-    console.log("items", data[dataSource.itemsKey])
-
     const items: FieldDataInput[] = []
 
     const unknownFields = new Set<string>()
@@ -378,10 +376,12 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
 
     for (const item of data[dataSource.itemsKey]) {
         const itemData: FieldDataInput = {}
-        for (let [fieldName, value] of Object.entries(item)) {
+        for (const [fieldName, rawValue] of Object.entries(item)) {
             const field = dataSource.fields.find(field => field.id === fieldName)
 
             if (field) {
+                let value = rawValue
+
                 if (field.map) {
                     value = field.map(value)
                 }
@@ -442,6 +442,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
         }
     }
 
+    console.log("items", data[dataSource.itemsKey])
     console.log({
         id: dataSourceId,
         fields,
@@ -594,14 +595,17 @@ export async function syncExistingCollection(
                     id: field.id,
                     name: field.name,
                     type: field.type,
-                    cases: [],
+                    cases: field.cases.map(c => ({
+                        id: c.id,
+                        name: c.name,
+                    })),
                 })
-            } else if (field.type === "file" || field.type === "image") {
+            } else if (field.type === "file") {
                 fields.push({
                     id: field.id,
                     name: field.name,
                     type: field.type,
-                    allowedFileTypes: [],
+                    allowedFileTypes: field.allowedFileTypes,
                 })
             } else {
                 fields.push({

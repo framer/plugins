@@ -226,14 +226,17 @@ export async function syncExistingCollection(
                     id: field.id,
                     name: field.name,
                     type: field.type,
-                    cases: [],
+                    cases: field.cases.map(c => ({
+                        id: c.id,
+                        name: c.name,
+                    })),
                 })
-            } else if (field.type === "file" || field.type === "image") {
+            } else if (field.type === "file") {
                 fields.push({
                     id: field.id,
                     name: field.name,
                     type: field.type,
-                    allowedFileTypes: [],
+                    allowedFileTypes: field.allowedFileTypes,
                 })
             } else {
                 fields.push({

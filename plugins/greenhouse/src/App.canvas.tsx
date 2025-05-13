@@ -48,7 +48,7 @@ export function AppCanvas() {
                         fill="#999999"
                     ></path>
                 </svg>
-                <p>Job Application Form</p>
+                <p>Job Embed</p>
             </button>
         </main>
     )

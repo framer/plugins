@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import Logo from "../assets/splash.png"
+import Logo from "../assets/Asset.png"
 import { useLayoutEffect, useRef, useState } from "react"
 import { usePluginData } from "../hooks/use-plugin-data"
 import { PLUGIN_KEYS } from "../data"
@@ -30,7 +30,7 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
     useLayoutEffect(() => {
         framer.showUI({
             width: 320,
-            height: 305,
+            height: 285,
             resizable: false,
         })
     }, [])
@@ -61,7 +61,7 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                     <input
                         ref={inputRef}
                         type="text"
-                        placeholder="framer"
+                        placeholder="token"
                         defaultValue={spaceId ?? ""}
                         onChange={() => {
                             setError(null)
@@ -76,7 +76,7 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                         const spaceId = inputRef.current?.value
 
                         if (!spaceId) {
-                            setError("Invalid space ID")
+                            setError("Invalid")
                             return
                         }
 

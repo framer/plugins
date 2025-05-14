@@ -1,4 +1,9 @@
-import { type EditableManagedCollectionField, framer, type ManagedCollection } from "framer-plugin"
+import {
+    type EditableManagedCollectionField,
+    framer,
+    type ManagedCollection,
+    type ManagedCollectionFieldInput,
+} from "framer-plugin"
 import { useEffect, useState } from "react"
 import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "./data"
 
@@ -68,7 +73,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
 
-    const [selectedSlugField, setSelectedSlugField] = useState<EditableManagedCollectionField | null>(
+    const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 

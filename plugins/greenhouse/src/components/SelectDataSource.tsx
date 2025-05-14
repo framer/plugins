@@ -1,7 +1,7 @@
 import { framer } from "framer-plugin"
 import { useState } from "react"
 import { type DataSource, getDataSource, dataSourceOptions } from "../data"
-import Logo from "../assets/splash.png"
+import Logo from "../assets/Asset.png"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
@@ -34,7 +34,8 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
             <img src={Logo} alt="Greenhouse Hero" />
 
             <form onSubmit={handleSubmit}>
-                <label htmlFor="collection">
+                <label>
+                    <p>Collection</p>
                     <select
                         id="collection"
                         onChange={event => setSelectedDataSourceId(event.target.value)}

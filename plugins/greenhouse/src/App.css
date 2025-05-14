@@ -56,10 +56,10 @@ form {
 }
 
 .setup img {
-    height: 200px;
+    height: 180px;
     width: 100%;
     border-radius: 10px;
-    background-color: rgba(255, 152, 61, 0.1);
+    background-color: #15372c;
     object-fit: contain;
 }
 
@@ -104,7 +104,8 @@ form {
     width: 100%;
 }
 
-.setup input {
+.setup input,
+.setup select {
     width: 134px;
 }
 

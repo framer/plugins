@@ -295,7 +295,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     const spaceId = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
 
     if (!spaceId) {
-        throw new Error("No space ID found. Please select a space.")
+        throw new Error("No board ID found. Please select a board.")
     }
 
     console.log("getDataSource", dataSourceId)

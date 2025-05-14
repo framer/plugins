@@ -166,7 +166,7 @@ form {
 
 .mapping .source-field:focus-visible {
     outline: none;
-    box-shadow: inset 0 0 0 1px var(--framer-color-tint);
+    box-shadow: inset 0 0 0 1px #15372c;
 }
 
 .mapping .source-field input[type="checkbox"] {
@@ -207,4 +207,9 @@ form {
     height: 45px;
     background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
     pointer-events: none;
+}
+
+input[type="checkbox"]:checked {
+    background-color: #15372c;
+    border-color: #15372c;
 }

@@ -1,5 +1,5 @@
 import { type ManagedCollectionFieldInput, framer, type ManagedCollection } from "framer-plugin"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "../data"
 
 interface FieldMappingRowProps {
@@ -158,6 +158,30 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         })
     }
 
+    const triggerRef = useRef<HTMLDivElement>(null)
+    const [isScrolled, setIsScrolled] = useState(false)
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                setIsScrolled(entry.isIntersecting)
+            },
+            {
+                root: null,
+                rootMargin: "0px",
+                threshold: 0,
+            }
+        )
+
+        if (triggerRef.current) {
+            observer.observe(triggerRef.current)
+        }
+
+        return () => {
+            observer.disconnect()
+        }
+    }, [fields])
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
@@ -242,9 +266,10 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             style={isMissingReferenceField(field) ? { cursor: "not-allowed" } : {}}
                         />
                     ))}
+                    <div ref={triggerRef} style={{ position: "absolute", bottom: "-50px", left: 0, right: 0 }}></div>
                 </div>
 
-                <footer>
+                <footer className={isScrolled ? "scrolled" : ""}>
                     <hr className="sticky-top" />
                     <button disabled={isSyncing} tabIndex={0}>
                         {isSyncing ? (

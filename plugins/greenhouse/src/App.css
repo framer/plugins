@@ -131,6 +131,7 @@ form {
 }
 
 .mapping .fields {
+    position: relative;
     display: grid;
     grid-template-columns: 1fr 8px 1fr;
     gap: 10px;
@@ -198,7 +199,7 @@ form {
     gap: 15px;
 }
 
-.mapping footer::before {
+.mapping footer:not(.scrolled)::before {
     content: "";
     position: absolute;
     top: -45px;

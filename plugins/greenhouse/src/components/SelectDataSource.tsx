@@ -31,7 +31,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
 
     return (
         <main className="framer-hide-scrollbar setup">
-            <img src={Logo} alt="Greenhouse Hero" />
+            <img src={Logo} alt="Greenhouse Hero" onDragStart={e => e.preventDefault()} />
 
             <form onSubmit={handleSubmit}>
                 <label>

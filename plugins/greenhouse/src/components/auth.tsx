@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import Logo from "../assets/Asset.png"
-import { useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { usePluginData } from "../hooks/use-plugin-data"
 import { PLUGIN_KEYS } from "../data"
 
@@ -35,11 +35,16 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
         })
     }, [])
 
-    if (!isInitialized) return <div className="framer-spinner" />
+    if (!isInitialized)
+        return (
+            <main className="loading">
+                <div className="framer-spinner" />
+            </main>
+        )
 
     return (
         <main className="framer-hide-scrollbar setup">
-            <img src={Logo} alt="Greenhouse Hero" />
+            <img src={Logo} alt="Greenhouse Hero" onDragStart={e => e.preventDefault()} />
             <form
                 onSubmit={e => {
                     e.preventDefault()

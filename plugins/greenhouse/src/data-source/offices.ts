@@ -1,7 +1,7 @@
 import DepartmentsDataSource from "./departments"
 import type { CollectionReferenceField, Field, GreenhouseDataSource } from "./types"
 
-const idField: Field = { id: "id", name: "id", type: "string" }
+const idField: Field = { id: "id", name: "ID", type: "string" }
 const nameField: Field = { id: "name", name: "Name", type: "string" }
 const locationField: Field = {
     id: "location",

@@ -1,6 +1,6 @@
 import type { Field, GreenhouseDataSource } from "./types"
 
-const idField: Field = { id: "id", name: "id", type: "string" }
+const idField: Field = { id: "id", name: "ID", type: "string" }
 const textField: Field = { id: "text", name: "Text", type: "string" }
 
 const fields: Field[] = [idField, textField]

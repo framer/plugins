@@ -35,3 +35,9 @@ export async function findAsync<T>(arr: T[], asyncCallback: (item: T) => Promise
     const index = results.findIndex(result => result)
     return arr[index]
 }
+
+export async function filterAsync<T>(arr: T[], asyncCallback: (item: T) => Promise<boolean>) {
+    const promises = arr.map(asyncCallback)
+    const results = await Promise.all(promises)
+    return arr.filter((_, index) => results[index])
+}

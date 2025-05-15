@@ -29,7 +29,7 @@ export type GreenhouseDataSource = {
     itemsKey: string
 }
 
-export const sources: GreenhouseDataSource[] = [
+export const dataSources: GreenhouseDataSource[] = [
     JobsDataSource,
     DepartmentsDataSource,
     OfficesDataSource,

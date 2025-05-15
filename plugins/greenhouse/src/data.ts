@@ -6,8 +6,8 @@ import {
     type ManagedCollectionItemInput,
 } from "framer-plugin"
 import pkg from "../package.json"
-import { createUniqueSlug, findAsync } from "./utils"
-import { CollectionReferenceField, sources } from "./data-source/types"
+import { createUniqueSlug, filterAsync } from "./utils"
+import { CollectionReferenceField, dataSources } from "./data-source/types"
 
 export const PLUGIN_KEYS = {
     DATA_SOURCE_ID: "dataSourceId",
@@ -40,231 +40,7 @@ function decodeHtml(html: string) {
     return textarea.value
 }
 
-export const dataSourceOptions = sources
-
-// export const dataSourceOptions: GreenhouseDataSource[] = [
-//     {
-//         id: "jobs",
-//         name: "Jobs",
-//         idFieldId: "id", // to be used as the id of the collection item (required)
-//         slugFieldId: "title", // to be used as the default slug of the collection item
-//         apiEndpoint: "jobs?content=true",
-//         itemsKey: "jobs",
-//         fields: [
-//             {
-//                 id: "internal_job_id",
-//                 name: "Internal Job ID",
-//                 type: "string",
-//             },
-//             {
-//                 id: "id",
-//                 name: "ID",
-//                 type: "string",
-//             },
-//             {
-//                 id: "title",
-//                 name: "Title",
-//                 type: "string",
-//             },
-//             {
-//                 id: "updated_at",
-//                 name: "Updated At",
-//                 type: "date",
-//             },
-//             {
-//                 id: "requisition_id",
-//                 name: "Requisition ID",
-//                 type: "string",
-//             },
-//             {
-//                 id: "location",
-//                 name: "Location",
-//                 type: "string",
-//                 map: (value: { name: string }) => value?.name,
-//             },
-//             {
-//                 id: "absolute_url",
-//                 name: "Absolute URL",
-//                 type: "link",
-//             },
-//             {
-//                 id: "company_name",
-//                 name: "Company Name",
-//                 type: "string",
-//             },
-//             {
-//                 id: "first_published",
-//                 name: "First Published",
-//                 type: "date",
-//             },
-//             {
-//                 id: "offices",
-//                 name: "Offices",
-//                 type: "multiCollectionReference",
-//                 dataSourceId: "offices",
-//                 map: (value: { id: string }) => value?.id,
-//             },
-//             {
-//                 id: "departments",
-//                 name: "Departments",
-//                 type: "multiCollectionReference",
-//                 dataSourceId: "departments",
-//                 map: (value: { id: string }) => value?.id,
-//             },
-//             {
-//                 id: "content",
-//                 name: "Content",
-//                 type: "formattedText",
-//             },
-//         ],
-//     },
-//     {
-//         id: "departments",
-//         name: "Departments",
-//         idFieldId: "id",
-//         slugFieldId: "name",
-//         apiEndpoint: "departments",
-//         itemsKey: "departments",
-//         fields: [
-//             {
-//                 id: "id",
-//                 name: "ID",
-//                 type: "string",
-//             },
-//             {
-//                 id: "name",
-//                 name: "Name",
-//                 type: "string",
-//             },
-//             {
-//                 id: "jobs",
-//                 name: "Jobs",
-//                 type: "multiCollectionReference",
-//                 dataSourceId: "jobs",
-//                 map: (value: { id: string }) => value?.id,
-//             },
-//         ],
-//     },
-//     {
-//         id: "offices",
-//         name: "Offices",
-//         idFieldId: "id",
-//         slugFieldId: "name",
-//         apiEndpoint: "offices",
-//         itemsKey: "offices",
-//         fields: [
-//             {
-//                 id: "id",
-//                 name: "ID",
-//                 type: "string",
-//             },
-//             {
-//                 id: "name",
-//                 name: "Name",
-//                 type: "string",
-//             },
-//             {
-//                 id: "location",
-//                 name: "Location",
-//                 type: "string",
-//             },
-//             {
-//                 id: "departments",
-//                 name: "Departments",
-//                 type: "multiCollectionReference",
-//                 dataSourceId: "departments",
-//                 map: (value: { id: string }) => value?.id,
-//             },
-//         ],
-//     },
-//     {
-//         id: "degrees",
-//         name: "Degrees",
-//         idFieldId: "id",
-//         slugFieldId: "text",
-//         apiEndpoint: "education/degrees",
-//         itemsKey: "items",
-//         fields: [
-//             {
-//                 id: "id",
-//                 name: "ID",
-//                 type: "string",
-//             },
-//             {
-//                 id: "text",
-//                 name: "Text",
-//                 type: "string",
-//             },
-//         ],
-//     },
-//     {
-//         id: "disciplines",
-//         name: "Disciplines",
-//         idFieldId: "id",
-//         slugFieldId: "text",
-//         apiEndpoint: "education/disciplines",
-//         itemsKey: "items",
-//         fields: [
-//             {
-//                 id: "id",
-//                 name: "ID",
-//                 type: "string",
-//             },
-//             {
-//                 id: "text",
-//                 name: "Text",
-//                 type: "string",
-//             },
-//         ],
-//     },
-//     {
-//         id: "schools",
-//         name: "Schools",
-//         idFieldId: "id",
-//         slugFieldId: "text",
-//         apiEndpoint: "education/schools",
-//         itemsKey: "items",
-//         fields: [
-//             {
-//                 id: "id",
-//                 name: "ID",
-//                 type: "string",
-//             },
-//             {
-//                 id: "text",
-//                 name: "Text",
-//                 type: "string",
-//             },
-//         ],
-//     },
-//     {
-//         id: "sections",
-//         name: "Sections",
-//         idFieldId: "id",
-//         slugFieldId: "name",
-//         apiEndpoint: "sections",
-//         itemsKey: "sections",
-//         fields: [
-//             {
-//                 id: "id",
-//                 name: "ID",
-//                 type: "string",
-//             },
-//             {
-//                 id: "name",
-//                 name: "Name",
-//                 type: "string",
-//             },
-//             {
-//                 id: "jobs",
-//                 name: "Jobs",
-//                 type: "multiCollectionReference",
-//                 dataSourceId: "jobs",
-//                 map: (value: { id: string }) => value?.id,
-//             },
-//         ],
-//     },
-// ] as const
+export const dataSourceOptions = dataSources
 
 /**
  * Retrieve data and process it into a structured format.
@@ -283,9 +59,14 @@ export const dataSourceOptions = sources
  * }
  */
 
+// this is used in FieldMapping.tsx to display the collections options in the dropdown
+export type ExtendedManagedCollectionFieldInput = ManagedCollectionFieldInput & {
+    collectionsOptions?: ManagedCollection[]
+}
+
 export interface DataSource {
     id: string
-    fields: readonly ManagedCollectionFieldInput[]
+    fields: readonly ExtendedManagedCollectionFieldInput[]
     items: FieldDataInput[]
     idField: ManagedCollectionFieldInput
     slugField: ManagedCollectionFieldInput | null
@@ -312,25 +93,26 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     // const items = data[dataSource.itemsKey]
     // console.log("items", items)
 
-    const fields: ManagedCollectionFieldInput[] = []
+    const fields: ExtendedManagedCollectionFieldInput[] = []
 
     for (const field of dataSource.fields) {
         if (field.type === "multiCollectionReference" || field.type === "collectionReference") {
             let collectionId = ""
+            let matchingCollections: ManagedCollection[] = []
             // collection exists on the field if it's a multiCollectionReference or collectionReference
             const fieldWithCollection = field as CollectionReferenceField
 
             if (fieldWithCollection.getCollection()) {
                 const collections = await framer.getManagedCollections()
-                const collection = await findAsync(collections, async collection => {
+                matchingCollections = await filterAsync(collections, async collection => {
                     const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
                     return dataSourceId === fieldWithCollection.getCollection().id
                 })
 
-                if (!collection) {
+                if (matchingCollections.length === 0) {
                     console.warn(`No collection found for data source "${fieldWithCollection.getCollection().id}".`)
                 } else {
-                    collectionId = collection.id
+                    collectionId = matchingCollections[0].id
                 }
             } else {
                 console.warn(`No collection source found for collection reference field"${field.name}".`)
@@ -341,6 +123,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
                 name: field.name,
                 type: field.type,
                 collectionId,
+                collectionsOptions: matchingCollections,
             })
         } else {
             switch (field.type) {

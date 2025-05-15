@@ -1,15 +1,19 @@
 import { type ManagedCollectionFieldInput, framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useRef, useState } from "react"
 import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "../data"
+import { type ExtendedManagedCollectionFieldInput } from "../data"
 
 interface FieldMappingRowProps {
-    field: ManagedCollectionFieldInput
+    field: ExtendedManagedCollectionFieldInput
     originalFieldName: string | undefined
     disabled: boolean
     onToggleDisabled: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
-    style?: React.CSSProperties
+    onCollectionChange: (fieldId: string, collectionId: string) => void
 }
+
+const isMissingReferenceField = (field: ManagedCollectionFieldInput) =>
+    (field.type === "multiCollectionReference" || field.type === "collectionReference") && !field.collectionId
 
 function FieldMappingRow({
     field,
@@ -17,8 +21,10 @@ function FieldMappingRow({
     disabled,
     onToggleDisabled,
     onNameChange,
-    style,
+    onCollectionChange,
 }: FieldMappingRowProps) {
+    const isMissingReference = isMissingReferenceField(field)
+
     return (
         <>
             <button
@@ -27,7 +33,7 @@ function FieldMappingRow({
                 aria-disabled={disabled}
                 onClick={() => onToggleDisabled(field.id)}
                 tabIndex={0}
-                style={style}
+                style={isMissingReference ? { cursor: "not-allowed" } : {}}
             >
                 <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
                 <span>{originalFieldName ?? field.id}</span>
@@ -42,27 +48,39 @@ function FieldMappingRow({
                     d="m2.5 7 3-3-3-3"
                 />
             </svg>
-            <input
-                type="text"
-                style={{ width: "100%", opacity: disabled ? 0.5 : 1, ...style }}
-                disabled={disabled}
-                placeholder={field.id}
-                value={field.name}
-                onChange={event => onNameChange(field.id, event.target.value)}
-                onKeyDown={event => {
-                    if (event.key === "Enter") {
-                        event.preventDefault()
-                    }
-                }}
-            />
+            {(field.type === "multiCollectionReference" || field.type === "collectionReference") &&
+            field.collectionsOptions?.length ? (
+                <select
+                    style={{ width: "100%", opacity: disabled ? 0.5 : 1 }}
+                    disabled={disabled}
+                    value={field.collectionId}
+                    onChange={e => onCollectionChange(field.id, e.target.value)}
+                >
+                    {field.collectionsOptions?.map(collection => (
+                        <option key={collection.id} value={collection.id}>
+                            {collection.name}
+                        </option>
+                    ))}
+                </select>
+            ) : (
+                <input
+                    type="text"
+                    style={{
+                        width: "100%",
+                        opacity: disabled ? 0.5 : 1,
+                        ...(isMissingReference ? { cursor: "not-allowed" } : {}),
+                    }}
+                    disabled={disabled}
+                    placeholder={field.id}
+                    value={isMissingReference ? "Missing Collection" : field.name}
+                    onChange={event => onNameChange(field.id, event.target.value)}
+                />
+            )}
         </>
     )
 }
 
 const initialManagedCollectionFields: ManagedCollectionFieldInput[] = []
-
-const isMissingReferenceField = (field: ManagedCollectionFieldInput) =>
-    (field.type === "multiCollectionReference" || field.type === "collectionReference") && !field.collectionId
 
 interface FieldMappingProps {
     collection: ManagedCollection
@@ -139,6 +157,16 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             const updatedFields = prevFields.map(field => {
                 if (field.id !== fieldId) return field
                 return { ...field, name }
+            })
+            return updatedFields
+        })
+    }
+
+    const changeCollectionId = (fieldId: string, collectionId: string) => {
+        setFields(prevFields => {
+            const updatedFields = prevFields.map(field => {
+                if (field.id !== fieldId) return field
+                return { ...field, collectionId }
             })
             return updatedFields
         })
@@ -252,10 +280,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     {fields.map(field => (
                         <FieldMappingRow
                             key={`field-${field.id}`}
-                            field={{
-                                ...field,
-                                name: isMissingReferenceField(field) ? "Missing Collection" : field.name,
-                            }}
+                            field={field}
                             originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
                             disabled={ignoredFieldIds.has(field.id)}
                             onToggleDisabled={() => {
@@ -263,7 +288,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                                 toggleFieldDisabledState(field.id)
                             }}
                             onNameChange={changeFieldName}
-                            style={isMissingReferenceField(field) ? { cursor: "not-allowed" } : {}}
+                            onCollectionChange={changeCollectionId}
                         />
                     ))}
                     <div ref={triggerRef} style={{ position: "absolute", bottom: "-50px", left: 0, right: 0 }}></div>

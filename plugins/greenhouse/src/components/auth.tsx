@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import Logo from "../assets/Asset.png"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { usePluginData } from "../hooks/use-plugin-data"
 import { PLUGIN_KEYS } from "../data"
 

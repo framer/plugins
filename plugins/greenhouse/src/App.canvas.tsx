@@ -11,7 +11,7 @@ export function AppCanvas() {
 
         framer.showUI({
             width: 260,
-            height: 130,
+            height: 305,
         })
     }, [spaceId])
 
@@ -27,6 +27,14 @@ export function AppCanvas() {
 
     return (
         <main className="setup canvas">
+            <hr className="sticky-divider" />
+            <div className="intro">
+                <img src="/Icon.png" alt="Greenhouse" className="icon" />
+                <div>
+                    <h2>Welcome to Greenhouse</h2>
+                    <p>Seamlessly add and manage job application forms on your site.</p>
+                </div>
+            </div>
             <button
                 onClick={async () => {
                     const spaceId = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)

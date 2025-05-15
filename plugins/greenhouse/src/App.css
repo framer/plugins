@@ -71,13 +71,18 @@ form {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100%;
+    /* justify-content: center; */
+    height: 150px;
     width: 100%;
     flex: 1;
     text-align: center;
-    max-width: 160px;
     gap: 15px;
+    padding: 30px 15px 15px;
+}
+
+.intro img {
+    width: 30px;
+    height: 30px;
 }
 
 .intro h2 {

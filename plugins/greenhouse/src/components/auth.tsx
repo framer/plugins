@@ -1,50 +1,28 @@
-import { framer } from "framer-plugin"
-import Logo from "../assets/Asset.png"
-import { useLayoutEffect, useRef, useState } from "react"
-import { usePluginData } from "../hooks/use-plugin-data"
-import { PLUGIN_KEYS } from "../data"
+import { useRef, useState } from "react"
 
-export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
+export function Auth({ onAuth }: { onAuth: (boardToken: string) => void }) {
+    const [error, setError] = useState<string | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
+    const [boardToken, setBoardToken] = useState<string | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
 
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [isInitialized, setIsInitialized] = useState<boolean>(false)
-    const [spaceId, setSpaceId] = usePluginData(PLUGIN_KEYS.SPACE_ID, {
-        onLoad: async spaceId => {
-            if (!spaceId) return setIsInitialized(true)
-
-            try {
-                const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${spaceId}`)
-                if (response.status === 200) {
-                    onSubmit?.(spaceId)
-                }
-            } catch (error) {
-                console.error(error)
-            } finally {
-                setIsInitialized(true)
+    const onSubmit = async (boardToken: string) => {
+        try {
+            setIsLoading(true)
+            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}`)
+            if (response.status === 200) {
+                onAuth(boardToken)
             }
-        },
-    })
-
-    useLayoutEffect(() => {
-        framer.showUI({
-            width: 320,
-            height: 285,
-            resizable: false,
-        })
-    }, [])
-
-    if (!isInitialized)
-        return (
-            <main className="loading">
-                <div className="framer-spinner" />
-            </main>
-        )
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
     return (
-        <main className="framer-hide-scrollbar setup">
-            <img src={Logo} alt="Greenhouse Hero" onDragStart={e => e.preventDefault()} />
+        <div className="framer-hide-scrollbar setup">
+            <img src="/Asset.png" alt="Greenhouse Hero" onDragStart={e => e.preventDefault()} />
             <form
                 onSubmit={e => {
                     e.preventDefault()
@@ -67,7 +45,7 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                         ref={inputRef}
                         type="text"
                         placeholder="token"
-                        defaultValue={spaceId ?? ""}
+                        defaultValue={boardToken ?? ""}
                         onChange={() => {
                             setError(null)
                         }}
@@ -78,9 +56,9 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                     type="submit"
                     disabled={isLoading}
                     onClick={async () => {
-                        const spaceId = inputRef.current?.value
+                        const boardToken = inputRef.current?.value
 
-                        if (!spaceId) {
+                        if (!boardToken) {
                             setError("Invalid")
                             return
                         }
@@ -88,14 +66,14 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                         try {
                             setIsLoading(true)
 
-                            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${spaceId}`)
+                            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}`)
                             if (response.status === 404) {
                                 setError("Invalid")
                                 return
                             }
 
-                            setSpaceId(spaceId)
-                            onSubmit?.(spaceId)
+                            setBoardToken(boardToken)
+                            onSubmit?.(boardToken)
                             console.log("success")
                         } catch (error) {
                             setError("Invalid")
@@ -108,6 +86,6 @@ export function Auth({ onSubmit }: { onSubmit: (spaceId: string) => void }) {
                     {isLoading ? "Connecting..." : "Connect"}
                 </button>
             </form>
-        </main>
+        </div>
     )
 }

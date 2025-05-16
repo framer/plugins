@@ -4,7 +4,7 @@ main {
     display: flex;
     flex-direction: column;
     align-items: start;
-    padding: 0 15px 15px;
+    padding: 0 15px 0;
     height: 100%;
     gap: 15px;
 
@@ -218,4 +218,30 @@ form {
 input[type="checkbox"]:checked {
     background-color: #15372c;
     border-color: #15372c;
+}
+
+.setup,
+.mapping,
+.canvas {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 15px;
+    width: 100%;
+}
+
+.setup,
+.canvas {
+    padding-bottom: 15px;
+}
+
+a {
+    color: currentColor;
+}
+
+.previous-page {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }

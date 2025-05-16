@@ -247,8 +247,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     }
 
     return (
-        <main className="framer-hide-scrollbar mapping">
-            <hr className="sticky-divider" />
+        <div className="framer-hide-scrollbar mapping">
+            {/* <hr className="sticky-divider" /> */}
             <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
                     Slug Field
@@ -307,6 +307,6 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     </button>
                 </footer>
             </form>
-        </main>
+        </div>
     )
 }

@@ -1,78 +1,87 @@
 import "./App.css"
 
 import { framer, type ManagedCollection } from "framer-plugin"
-import { useEffect, useLayoutEffect, useState } from "react"
-import { type DataSource, getDataSource } from "./data"
+import { useEffect, useState } from "react"
+import { type DataSource, getDataSource, PLUGIN_KEYS } from "./data"
 import { FieldMapping } from "./components/FieldMapping"
 import { SelectDataSource } from "./components/SelectDataSource"
 import { Auth } from "./components/auth"
+import Page from "./page"
 
 interface AppProps {
     collection: ManagedCollection
     previousDataSourceId: string | null
     previousSlugFieldId: string | null
+    previousBoardToken: string | null
 }
 
-export function App({ collection, previousDataSourceId, previousSlugFieldId }: AppProps) {
+export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
-    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
-    const [spaceId, setSpaceId] = useState<string | null>(null)
+    const [isLoading, setIsLoading] = useState(Boolean(previousDataSourceId || previousBoardToken))
+    const [boardToken, setBoardToken] = useState<string | null>()
 
-    useLayoutEffect(() => {
-        if (!dataSource) return
+    useEffect(() => {
+        if (boardToken) {
+            framer.setPluginData(PLUGIN_KEYS.SPACE_ID, boardToken)
+        }
+    }, [boardToken])
 
+    useEffect(() => {
         framer.showUI({
             width: 360,
-            height: 425,
-            minWidth: 360,
-            minHeight: 425,
-            resizable: true,
+            height: 350,
         })
     }, [dataSource])
 
     useEffect(() => {
-        if (!previousDataSourceId || !spaceId) {
-            return
-        }
-
         const abortController = new AbortController()
 
-        setIsLoadingDataSource(true)
-        getDataSource(previousDataSourceId, abortController.signal)
-            .then(setDataSource)
-            .catch(error => {
-                if (abortController.signal.aborted) return
+        async function init() {
+            setIsLoading(true)
 
+            try {
+                if (!previousBoardToken) return
+                const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${previousBoardToken}`, {
+                    signal: abortController.signal,
+                })
+                if (response.status === 200) {
+                    setBoardToken(previousBoardToken)
+                } else {
+                    throw new Error(
+                        `Error loading previously configured board “${previousBoardToken}”. Check the logs for more details.`
+                    )
+                }
+
+                if (!previousDataSourceId) return
+                const dataSource = await getDataSource(previousDataSourceId, abortController.signal)
+                if (dataSource) {
+                    setDataSource(dataSource)
+                } else {
+                    throw new Error(
+                        `Error loading previously configured data source “${previousDataSourceId}”. Check the logs for more details.`
+                    )
+                }
+            } catch (error) {
+                if (abortController.signal.aborted) return
                 console.error(error)
-                framer.notify(
-                    `Error loading previously configured data source “${previousDataSourceId}”. Check the logs for more details.`,
-                    {
-                        variant: "error",
-                    }
-                )
-            })
-            .finally(() => {
-                if (abortController.signal.aborted) return
+                framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
+                    variant: "error",
+                })
+            } finally {
+                if (!abortController.signal.aborted) {
+                    setIsLoading(false)
+                }
+            }
+        }
 
-                setIsLoadingDataSource(false)
-            })
+        init()
 
         return () => {
             abortController.abort()
         }
-    }, [previousDataSourceId, spaceId])
+    }, [previousDataSourceId, previousBoardToken])
 
-    if (!spaceId) {
-        return (
-            <Auth
-                onSubmit={spaceId => {
-                    setSpaceId(spaceId)
-                }}
-            />
-        )
-    }
-
-    if (isLoadingDataSource) {
+    if (isLoading) {
         return (
             <main className="loading">
                 <div className="framer-spinner" />
@@ -80,9 +89,29 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
         )
     }
 
-    if (!dataSource) {
-        return <SelectDataSource onSelectDataSource={setDataSource} />
+    if (!boardToken) {
+        return (
+            <Page width={360}>
+                <Auth
+                    onAuth={boardToken => {
+                        setBoardToken(boardToken)
+                    }}
+                />
+            </Page>
+        )
     }
 
-    return <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
+    if (!dataSource) {
+        return (
+            <Page width={360} previousPage="Board Token" onPreviousPage={() => setBoardToken(null)}>
+                <SelectDataSource onSelectDataSource={setDataSource} />
+            </Page>
+        )
+    }
+
+    return (
+        <Page width={360} previousPage="Data Source" onPreviousPage={() => setDataSource(null)}>
+            <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
+        </Page>
+    )
 }

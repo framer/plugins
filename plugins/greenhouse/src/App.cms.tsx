@@ -15,16 +15,20 @@ interface AppProps {
     previousBoardToken: string | null
 }
 
-export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
+export function AppCms({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoading, setIsLoading] = useState(Boolean(previousDataSourceId || previousBoardToken))
     const [boardToken, setBoardToken] = useState<string | null>()
 
     useEffect(() => {
         if (boardToken) {
+            // this will be the default board token for the plugin
             framer.setPluginData(PLUGIN_KEYS.SPACE_ID, boardToken)
+
+            // this will be the board token for the collection
+            collection.setPluginData(PLUGIN_KEYS.SPACE_ID, boardToken)
         }
-    }, [boardToken])
+    }, [boardToken, collection])
 
     useEffect(() => {
         framer.showUI({

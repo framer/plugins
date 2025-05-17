@@ -49,7 +49,7 @@ function FieldMappingRow({
                 />
             </svg>
             {(field.type === "multiCollectionReference" || field.type === "collectionReference") &&
-            field.collectionsOptions?.length ? (
+            (field.collectionsOptions?.length ?? 0) > 1 ? (
                 <select
                     style={{ width: "100%", opacity: disabled ? 0.5 : 1 }}
                     disabled={disabled}

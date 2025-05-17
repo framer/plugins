@@ -3,7 +3,7 @@ import "framer-plugin/framer.css"
 import { framer } from "framer-plugin"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-import { App } from "./App.cms.tsx"
+import { AppCms } from "./App.cms.tsx"
 import { PLUGIN_KEYS, syncExistingCollection } from "./data"
 import { AppCanvas } from "./App.canvas.tsx"
 
@@ -23,6 +23,7 @@ if (framer.mode === "canvas") {
 
     const previousDataSourceId = await activeCollection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
     const previousSlugFieldId = await activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID)
+    const previousCollectionBoardToken = await activeCollection.getPluginData(PLUGIN_KEYS.SPACE_ID)
 
     const { didSync } = await syncExistingCollection(activeCollection, previousDataSourceId, previousSlugFieldId)
 
@@ -36,11 +37,11 @@ if (framer.mode === "canvas") {
 
         createRoot(root).render(
             <StrictMode>
-                <App
+                <AppCms
                     collection={activeCollection}
                     previousDataSourceId={previousDataSourceId}
                     previousSlugFieldId={previousSlugFieldId}
-                    previousBoardToken={previousBoardToken}
+                    previousBoardToken={previousCollectionBoardToken ?? previousBoardToken}
                 />
             </StrictMode>
         )

@@ -12,23 +12,8 @@ import { CollectionReferenceField, dataSources } from "./data-source/types"
 export const PLUGIN_KEYS = {
     DATA_SOURCE_ID: "dataSourceId",
     SLUG_FIELD_ID: "slugFieldId",
-    ID_FIELD_ID: "idFieldId",
     SPACE_ID: `${pkg.name}:spaceId`,
 } as const
-
-// export interface DataSource {
-//     id: string
-//     fields: readonly ManagedCollectionFieldInput[]
-//     items: FieldDataInput[]
-//     idField: ManagedCollectionFieldInput | null // to be used as id field
-//     slugField: ManagedCollectionFieldInput | null // to be used as slug field
-// }
-
-// export interface GreenhouseDataSource extends DataSource {
-//     apiEndpoint: string
-//     itemsKey: string
-//     name: string
-// }
 
 function getApiEndpoint(spaceId: string, dataSourceId: string) {
     return `https://boards-api.greenhouse.io/v1/boards/${spaceId}/${dataSourceId}`
@@ -41,23 +26,6 @@ function decodeHtml(html: string) {
 }
 
 export const dataSourceOptions = dataSources
-
-/**
- * Retrieve data and process it into a structured format.
- *
- * @example
- * {
- *   id: "articles",
- *   fields: [
- *     { id: "title", name: "Title", type: "string" },
- *     { id: "content", name: "Content", type: "formattedText" }
- *   ],
- *   items: [
- *     { title: "My First Article", content: "Hello world" },
- *     { title: "Another Article", content: "More content here" }
- *   ]
- * }
- */
 
 // this is used in FieldMapping.tsx to display the collections options in the dropdown
 export type ExtendedManagedCollectionFieldInput = ManagedCollectionFieldInput & {
@@ -73,13 +41,12 @@ export interface DataSource {
 }
 
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
-    const spaceId = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
+    const collection = await framer.getActiveManagedCollection()
+    const spaceId = await collection.getPluginData(PLUGIN_KEYS.SPACE_ID)
 
     if (!spaceId) {
         throw new Error("No board ID found. Please select a board.")
     }
-
-    console.log("getDataSource", dataSourceId)
 
     const dataSource = dataSourceOptions.find(option => option.id === dataSourceId)
     if (!dataSource) {
@@ -88,10 +55,6 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
 
     const response = await fetch(getApiEndpoint(spaceId, dataSource.apiEndpoint), { signal: abortSignal })
     const data = await response.json()
-    console.log("data", data)
-
-    // const items = data[dataSource.itemsKey]
-    // console.log("items", items)
 
     const fields: ExtendedManagedCollectionFieldInput[] = []
 
@@ -105,8 +68,9 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
             if (fieldWithCollection.getCollection()) {
                 const collections = await framer.getManagedCollections()
                 matchingCollections = await filterAsync(collections, async collection => {
+                    const collectionSpaceId = await collection.getPluginData(PLUGIN_KEYS.SPACE_ID)
                     const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-                    return dataSourceId === fieldWithCollection.getCollection().id
+                    return dataSourceId === fieldWithCollection.getCollection().id && collectionSpaceId === spaceId
                 })
 
                 if (matchingCollections.length === 0) {
@@ -224,15 +188,6 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
             console.warn(warning)
         }
     }
-
-    console.log("items", data[dataSource.itemsKey])
-    console.log({
-        id: dataSourceId,
-        fields,
-        items,
-        idField: dataSource.idField,
-        slugField: dataSource.slugField,
-    })
 
     let idField: ManagedCollectionFieldInput
     let slugField: ManagedCollectionFieldInput | null = null

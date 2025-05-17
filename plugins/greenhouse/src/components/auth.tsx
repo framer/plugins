@@ -1,19 +1,42 @@
-import { useRef, useState } from "react"
+import { framer } from "framer-plugin"
+import { useEffect, useRef, useState } from "react"
+import { PLUGIN_KEYS } from "../data"
 
 export function Auth({ onAuth }: { onAuth: (boardToken: string) => void }) {
     const [error, setError] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(false)
-    const [boardToken, setBoardToken] = useState<string | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+    const [defaultBoardToken, setDefaultBoardToken] = useState<string | null>(null)
 
-    const onSubmit = async (boardToken: string) => {
+    useEffect(() => {
+        async function getBoardToken() {
+            const defaultBoardToken = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
+            if (defaultBoardToken) {
+                setDefaultBoardToken(defaultBoardToken)
+            }
+        }
+        getBoardToken()
+    }, [])
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        const boardToken = inputRef.current?.value
+
+        if (!boardToken) {
+            setError("Invalid")
+            return
+        }
+
         try {
             setIsLoading(true)
+
             const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}`)
             if (response.status === 200) {
-                onAuth(boardToken)
+                onAuth?.(boardToken)
+                console.log("success")
             }
         } catch (error) {
+            setError("Invalid")
             console.error(error)
         } finally {
             setIsLoading(false)
@@ -23,11 +46,7 @@ export function Auth({ onAuth }: { onAuth: (boardToken: string) => void }) {
     return (
         <div className="framer-hide-scrollbar setup">
             <img src="/Asset.png" alt="Greenhouse Hero" onDragStart={e => e.preventDefault()} />
-            <form
-                onSubmit={e => {
-                    e.preventDefault()
-                }}
-            >
+            <form onSubmit={handleSubmit}>
                 <label>
                     <p>
                         Board Token{" "}
@@ -45,44 +64,14 @@ export function Auth({ onAuth }: { onAuth: (boardToken: string) => void }) {
                         ref={inputRef}
                         type="text"
                         placeholder="token"
-                        defaultValue={boardToken ?? ""}
+                        defaultValue={defaultBoardToken ?? ""}
                         onChange={() => {
                             setError(null)
                         }}
                     />
                 </label>
 
-                <button
-                    type="submit"
-                    disabled={isLoading}
-                    onClick={async () => {
-                        const boardToken = inputRef.current?.value
-
-                        if (!boardToken) {
-                            setError("Invalid")
-                            return
-                        }
-
-                        try {
-                            setIsLoading(true)
-
-                            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}`)
-                            if (response.status === 404) {
-                                setError("Invalid")
-                                return
-                            }
-
-                            setBoardToken(boardToken)
-                            onSubmit?.(boardToken)
-                            console.log("success")
-                        } catch (error) {
-                            setError("Invalid")
-                            console.error(error)
-                        } finally {
-                            setIsLoading(false)
-                        }
-                    }}
-                >
+                <button type="submit" disabled={isLoading}>
                     {isLoading ? "Connecting..." : "Connect"}
                 </button>
             </form>

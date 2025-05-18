@@ -114,7 +114,7 @@ export function AppCms({ collection, previousDataSourceId, previousSlugFieldId, 
     }
 
     return (
-        <Page width={360} previousPage="Data Source" onPreviousPage={() => setDataSource(null)}>
+        <Page width={360} previousPage="Collection" onPreviousPage={() => setDataSource(null)}>
             <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
         </Page>
     )

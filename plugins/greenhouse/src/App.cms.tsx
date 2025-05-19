@@ -108,7 +108,7 @@ export function AppCms({ collection, previousDataSourceId, previousSlugFieldId, 
     if (!dataSource) {
         return (
             <Page width={360} previousPage="Board Token" onPreviousPage={() => setBoardToken(null)}>
-                <SelectDataSource onSelectDataSource={setDataSource} />
+                <SelectDataSource onSelectDataSource={setDataSource} previousDataSourceId={previousDataSourceId} />
             </Page>
         )
     }

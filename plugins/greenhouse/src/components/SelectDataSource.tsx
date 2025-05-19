@@ -4,10 +4,13 @@ import { type DataSource, getDataSource, dataSourceOptions } from "../data"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
+    previousDataSourceId?: string | null
 }
 
-export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
-    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(dataSourceOptions[0].id)
+export function SelectDataSource({ onSelectDataSource, previousDataSourceId }: SelectDataSourceProps) {
+    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(
+        previousDataSourceId ?? dataSourceOptions[0].id
+    )
     const [isLoading, setIsLoading] = useState(false)
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {

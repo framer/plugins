@@ -1,4 +1,12 @@
-import { framer, CanvasRootNode, supportsPins, CanvasNode, isWebPageNode, isComponentNode } from "framer-plugin"
+import {
+    framer,
+    CanvasRootNode,
+    supportsPins,
+    CanvasNode,
+    isWebPageNode,
+    isComponentNode,
+    isVectorSetNode,
+} from "framer-plugin"
 import { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback, useReducer } from "react"
 import "./App.css"
 import { Stepper } from "./Stepper"
@@ -95,7 +103,7 @@ function useGroundNodeRects() {
                     const parent = await node.getParent()
                     if (!parent) continue
                     if (!active) return
-                    if (isWebPageNode(parent) || isComponentNode(parent)) {
+                    if (isWebPageNode(parent) || isComponentNode(parent) || isVectorSetNode(parent)) {
                         groundNodes.push(node)
                     }
                 }
@@ -345,7 +353,7 @@ export function App() {
 
     const sortedRects = useMemo(
         () => getSortedRects(rects, layout, sorting, columnCount, columnGap, rowGap),
-        [rects, layout, sorting, columnGap, columnCount, randomKey]
+        [rects, layout, sorting, columnCount, columnGap, rowGap, randomKey]
     )
     const boundingBox = getBoundingBox(sortedRects)
     const [previewScale, previewOffset] = getPreviewScaleAndOffset(boundingBox, previewSize)
@@ -508,11 +516,11 @@ export function App() {
                 onClick={async () => {
                     if (!isEnabled) return
 
+                    const rawBoundingBox = getBoundingBox(Object.values(rects).filter(isRect))
+
                     for (const rect of sortedRects) {
                         const node = await framer.getNode(rect.id)
                         if (!node || !supportsPins(node)) continue
-
-                        const rawBoundingBox = getBoundingBox(Object.values(rects).filter(isRect))
 
                         node.setAttributes({
                             left: `${rect.x + rawBoundingBox.x}px`,
@@ -593,7 +601,6 @@ function useLocaleStorageState<T>(
     const [value, setValue] = useState<T>(() => {
         try {
             const storedValue = localStorage.getItem(key)
-            console.log({ storedValue })
             if (!storedValue) return defaultValue
 
             const parsed = JSON.parse(storedValue)

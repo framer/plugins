@@ -185,9 +185,9 @@ export async function fieldsInfoToCollectionFields(fieldsInfo: FieldInfo[]): Pro
         const property = fieldInfo.notionProperty
         const fieldType = fieldInfo.type
 
-        if (!property) continue
+        if (!property || !fieldType) continue
 
-        switch (fieldInfo.type) {
+        switch (fieldType) {
             case "boolean":
             case "date":
             case "number":
@@ -261,7 +261,7 @@ export async function fieldsInfoToCollectionFields(fieldsInfo: FieldInfo[]): Pro
                 }
                 break
             default:
-                throw new Error(`Unsupported field type: ${fieldInfo.type}`)
+                throw new Error(`Unsupported field type: ${fieldType}`)
         }
     }
 

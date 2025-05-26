@@ -63,7 +63,13 @@ function FieldMappingRow({
                 <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
                 <span>{originalName ?? id}</span>
             </button>
-            <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" fill="none">
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="8"
+                height="8"
+                fill="none"
+                style={{ opacity: disabled ? 0.5 : 1 }}
+            >
                 <path
                     fill="transparent"
                     stroke="#999"

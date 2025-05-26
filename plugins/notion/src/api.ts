@@ -196,23 +196,33 @@ export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
     // This property is always there but not included in `"database.properties"
     result.push(pageContentProperty)
 
+    const supported: FieldInfo[] = []
+    const unsupported: FieldInfo[] = []
+
     for (const key in database.properties) {
         const property = database.properties[key]
         assert(property)
 
         const allowedTypes = supportedCMSTypeByNotionPropertyType[property.type] ?? []
-
-        result.push({
+        const fieldInfo: FieldInfo = {
             id: property.id,
             name: property.name,
             originalName: property.name,
             type: allowedTypes[0] ?? null,
             allowedTypes,
             notionProperty: property,
-        })
+        }
+
+        const isUnsupported = !Array.isArray(allowedTypes) || allowedTypes.length === 0
+        if (isUnsupported) {
+            unsupported.push(fieldInfo)
+        } else {
+            supported.push(fieldInfo)
+        }
     }
 
-    return result
+    // Maintain original order except unsupported fields go to the end
+    return result.concat(supported, unsupported)
 }
 
 /**

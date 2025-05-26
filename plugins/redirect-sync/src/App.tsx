@@ -1,4 +1,5 @@
 import { framer } from "framer-plugin"
+import { useEffect } from "react"
 import "./App.css"
 import { countAndRemoveMissingRedirects, generateCsv, normalizeRedirectInputs, parseCSV } from "./csv"
 import { downloadBlob, importFileAsText } from "./files"
@@ -11,36 +12,38 @@ framer.showUI({
     height: 370,
 })
 
-async function importCsv() {
-    importFileAsText(".csv", async (csv: string) => {
-        try {
-            const parsedRedirects = parseCSV(csv)
+async function handleImport(csv: string) {
+    try {
+        const parsedRedirects = parseCSV(csv)
 
-            if (parsedRedirects.length === 0) {
-                throw new Error("CSV was empty")
-            }
-
-            const nonMissingRedirects = countAndRemoveMissingRedirects(parsedRedirects)
-            const totalMissingRedirects = parsedRedirects.length - nonMissingRedirects.length
-
-            const redirectInputs = await normalizeRedirectInputs(nonMissingRedirects)
-            await framer.addRedirects(redirectInputs)
-
-            framer.notify(
-                `Successfully imported ${redirectInputs.length} redirect${redirectInputs.length !== 1 ? "s" : ""}${
-                    totalMissingRedirects > 0
-                        ? `. Skipped ${totalMissingRedirects} missing redirect${totalMissingRedirects !== 1 ? "s" : ""}.`
-                        : ""
-                }`
-            )
-        } catch (error) {
-            console.error(error)
-            framer.notify(error instanceof Error ? error.message : "Error importing CSV file", {
-                variant: "error",
-                durationMs: 10000,
-            })
+        if (parsedRedirects.length === 0) {
+            throw new Error("CSV was empty")
         }
-    })
+
+        const nonMissingRedirects = countAndRemoveMissingRedirects(parsedRedirects)
+        const totalMissingRedirects = parsedRedirects.length - nonMissingRedirects.length
+
+        const redirectInputs = await normalizeRedirectInputs(nonMissingRedirects)
+        await framer.addRedirects(redirectInputs)
+
+        framer.notify(
+            `Successfully imported ${redirectInputs.length} redirect${redirectInputs.length !== 1 ? "s" : ""}${
+                totalMissingRedirects > 0
+                    ? `. Skipped ${totalMissingRedirects} missing redirect${totalMissingRedirects !== 1 ? "s" : ""}.`
+                    : ""
+            }`
+        )
+    } catch (error) {
+        console.error(error)
+        framer.notify(error instanceof Error ? error.message : "Error importing CSV file", {
+            variant: "error",
+            durationMs: 10000,
+        })
+    }
+}
+
+async function importCsv() {
+    importFileAsText(".csv", handleImport)
 }
 
 async function exportCsv() {
@@ -65,6 +68,30 @@ async function exportCsv() {
 }
 
 export function App() {
+    useEffect(() => {
+        const handlePaste = async (event: ClipboardEvent) => {
+            if (!event.clipboardData) return
+
+            try {
+                const csv = event.clipboardData.getData("text/plain")
+                if (!csv) return
+
+                await handleImport(csv)
+            } catch (error) {
+                console.error("Error accessing clipboard data:", error)
+                framer.notify("Unable to access clipboard content", {
+                    variant: "error",
+                })
+            }
+        }
+
+        window.addEventListener("paste", handlePaste)
+
+        return () => {
+            window.removeEventListener("paste", handlePaste)
+        }
+    }, [])
+
     return (
         <main>
             <hr />

@@ -48,6 +48,12 @@ async function exportCsv() {
 
     try {
         const redirects = await framer.getRedirects()
+
+        if (redirects.length === 0) {
+            framer.notify("This project has no redirects", { variant: "error" })
+            return
+        }
+
         const csv = generateCsv(redirects)
         downloadBlob(csv, filename, "text/csv")
 

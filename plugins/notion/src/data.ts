@@ -67,8 +67,6 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     return {
         id: database.id,
         name: richTextToPlainText(database.title) || "Untitled Database",
-        fields: [],
-        items: [],
         database,
     }
 }
@@ -136,7 +134,7 @@ export async function syncCollection(
     await collection.removeItems(Array.from(unsyncedItems))
     await collection.addItems(items)
 
-    await collection.setPluginData(PLUGIN_KEYS.DATA_SOURCE_ID, dataSource.id)
+    await collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, dataSource.database.id)
     await collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id)
 }
 

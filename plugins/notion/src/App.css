@@ -123,6 +123,7 @@ form {
     justify-content: space-between;
     gap: 10px;
     color: var(--framer-color-text-tertiary);
+    padding-bottom: 10px;
 }
 
 .mapping .source-field {
@@ -211,6 +212,10 @@ form {
 
 select {
     padding-left: 10px;
+}
+
+select:not([disabled]) {
+    cursor: pointer;
 }
 
 /* Login */

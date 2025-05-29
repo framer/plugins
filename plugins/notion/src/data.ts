@@ -92,7 +92,8 @@ export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
     fields: readonly ManagedCollectionFieldInput[],
-    slugField: ManagedCollectionFieldInput
+    slugField: ManagedCollectionFieldInput,
+    ignoredFieldIds: Set<string>
 ) {
     const sanitizedFields = fields.map(field => ({
         ...field,
@@ -160,14 +161,23 @@ export async function syncCollection(
     await collection.removeItems(Array.from(unsyncedItems))
     await collection.addItems(items)
 
-    await collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, dataSource.database.id)
-    await collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id)
+    await Promise.all([
+        collection.setPluginData(
+            PLUGIN_KEYS.IGNORED_FIELD_IDS,
+            ignoredFieldIds.size > 0 ? JSON.stringify(Array.from(ignoredFieldIds)) : null
+        ),
+        collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, dataSource.database.id),
+        collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
+        collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id),
+        collection.setPluginData(PLUGIN_KEYS.DATABASE_NAME, richTextToPlainText(dataSource.database.title)),
+    ])
 }
 
 export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDataSourceId: string | null,
-    previousSlugFieldId: string | null
+    previousSlugFieldId: string | null,
+    previousIgnoredFieldIds: string | null
 ): Promise<{ didSync: boolean }> {
     if (!previousDataSourceId) {
         return { didSync: false }
@@ -180,8 +190,10 @@ export async function syncExistingCollection(
     try {
         const dataSource = await getDataSource(previousDataSourceId)
         const existingFields = await collection.getFields()
+        const fieldsInfo = getDataSourceFieldsInfo(dataSource.database)
+        const fields = await fieldsInfoToCollectionFields(fieldsInfo)
 
-        const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)
+        const slugField = fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
             framer.notify(`No field matches the slug field id “${previousSlugFieldId}”. Sync will not be performed.`, {
                 variant: "error",
@@ -189,7 +201,16 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        await syncCollection(collection, dataSource, existingFields, slugField)
+        const ignoredFieldIds = (
+            previousIgnoredFieldIds ? new Set(JSON.parse(previousIgnoredFieldIds)) : new Set()
+        ) as Set<string>
+
+        const fieldsToSync = fields.filter(
+            field =>
+                existingFields.some(existingField => existingField.id === field.id) && !ignoredFieldIds.has(field.id)
+        )
+
+        await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds)
         return { didSync: true }
     } catch (error) {
         console.error(error)

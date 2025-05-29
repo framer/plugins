@@ -153,7 +153,12 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 setFieldsInfo(mergeFieldsInfoWithExistingFields(initialFieldsInfo, collectionFields))
 
                 const existingFieldIds = new Set(collectionFields.map(field => field.id))
-                const ignoredFields = initialFieldsInfo.filter(sourceField => !existingFieldIds.has(sourceField.id))
+                const ignoredFields = initialFieldsInfo.filter(
+                    sourceField =>
+                        !existingFieldIds.has(sourceField.id) &&
+                        Array.isArray(sourceField.allowedTypes) &&
+                        sourceField.allowedTypes.length > 0
+                )
 
                 if (initialSlugFieldId) {
                     setIgnoredFieldIds(new Set(ignoredFields.map(field => field.id)))
@@ -226,7 +231,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
             const slugField = fields.find(field => field.id === selectedSlugFieldId)
 
-            await syncCollection(collection, dataSource, fieldsToSync, slugField)
+            await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)

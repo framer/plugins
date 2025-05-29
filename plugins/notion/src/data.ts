@@ -2,9 +2,6 @@ import {
     framer,
     ManagedCollection,
     type ManagedCollectionFieldInput,
-    type CollectionItemData,
-    type ManagedCollectionField,
-    type FieldData,
     type FieldDataInput,
     type ManagedCollectionItemInput,
     type EnumCase,
@@ -22,9 +19,15 @@ import {
     getDatabaseItems,
     getPropertyValue,
     getPageBlocksAsRichText,
+    isUnchangedSinceLastSync,
 } from "./api"
-import { slugify } from "./utils"
+import { slugify, formatDate } from "./utils"
+import pLimit from "p-limit"
 import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
+
+// Maximum number of concurrent requests to Notion API
+// This is to prevent rate limiting.
+const CONCURRENCY_LIMIT = 5
 
 export interface DataSource {
     id: string
@@ -49,24 +52,15 @@ export function getDataSourceFieldsInfo(database: GetDatabaseResponse): FieldInf
 }
 
 /**
- * Retrieve data and process it into a structured format.
- *
- * @example
- * {
- *   id: "articles",
- *   fields: [
- *     { id: "title", name: "Title", type: "string" },
- *     { id: "content", name: "Content", type: "formattedText" }
- *   ],
- *   items: [
- *     { title: "My First Article", content: "Hello world" },
- *     { title: "Another Article", content: "More content here" }
- *   ]
- * }
+ * Retrieve Notion database and get name and id.
  */
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     // Fetch from your data source
     const database = await getDatabase(dataSourceId)
+
+    if (abortSignal?.aborted) {
+        throw new Error("Database loading cancelled")
+    }
 
     return {
         id: database.id,
@@ -102,61 +96,73 @@ export async function syncCollection(
     }))
     const sanitizedFieldsById = new Map(sanitizedFields.map(field => [field.id, field]))
 
-    const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
 
     const databaseItems = await getDatabaseItems(dataSource.database)
+    const limit = pLimit(CONCURRENCY_LIMIT)
 
-    for (let i = 0; i < databaseItems.length; i++) {
-        const item = databaseItems[i]
-        if (!item) throw new Error("Logic error")
+    const promises = databaseItems.map((item, index) =>
+        limit(async () => {
+            if (!item) throw new Error("Logic error")
 
-        let slugValue: null | string = null
-        const fieldData: FieldDataInput = {}
+            if (isUnchangedSinceLastSync(item.last_edited_time, lastSynced)) {
+                console.warn({
+                    message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSynced!)}`,
+                    url: item.url,
+                })
+                return null
+            }
 
-        for (const property of Object.values(item.properties)) {
-            if (property.id === slugField.id) {
-                const resolvedSlug = getPropertyValue(property, { supportsHtml: false })
+            let slugValue: null | string = null
+            const fieldData: FieldDataInput = {}
 
-                if (!resolvedSlug || typeof resolvedSlug !== "string") {
-                    break
+            for (const property of Object.values(item.properties)) {
+                if (property.id === slugField.id) {
+                    const resolvedSlug = getPropertyValue(property, { supportsHtml: false })
+
+                    if (!resolvedSlug || typeof resolvedSlug !== "string") {
+                        break
+                    }
+
+                    slugValue = slugify(resolvedSlug)
                 }
 
-                slugValue = slugify(resolvedSlug)
+                const field = sanitizedFieldsById.get(property.id)
+                if (!field) continue
+
+                const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
+                if (fieldValue === null || fieldValue === undefined) {
+                    console.warn(
+                        `Skipping item at index ${index} because it doesn't have a valid value for field ${field.name}`
+                    )
+                }
+
+                fieldData[field.id] = { type: field.type, value: fieldValue }
             }
 
-            const field = sanitizedFieldsById.get(property.id)
-            if (!field) continue
-
-            const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
-            if (fieldValue === null || fieldValue === undefined) {
-                console.warn(
-                    `Skipping item at index ${i} because it doesn't have a valid value for field ${field.name}`
-                )
+            if (!slugValue || typeof slugValue !== "string") {
+                console.warn(`Skipping item at index ${index} because it doesn't have a valid slug`)
+                return null
             }
 
-            fieldData[field.id] = { type: field.type, value: fieldValue }
-        }
+            if (sanitizedFieldsById.has(pageContentProperty.id) && item.id) {
+                const contentHTML = await getPageBlocksAsRichText(item.id)
+                fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
+            }
 
-        if (!slugValue || typeof slugValue !== "string") {
-            console.warn(`Skipping item at index ${i} because it doesn't have a valid slug`)
-            continue
-        }
+            unsyncedItems.delete(item.id)
 
-        if (sanitizedFieldsById.has(pageContentProperty.id) && item.id) {
-            const contentHTML = await getPageBlocksAsRichText(item.id)
-            fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
-        }
-
-        unsyncedItems.delete(item.id)
-
-        items.push({
-            id: item.id,
-            slug: slugValue,
-            draft: false,
-            fieldData,
+            return {
+                id: item.id,
+                slug: slugValue,
+                draft: false,
+                fieldData,
+            }
         })
-    }
+    )
+
+    const result = await Promise.all(promises)
+    const items = result.filter(Boolean) as ManagedCollectionItemInput[]
 
     await collection.setFields(sanitizedFields)
     await collection.removeItems(Array.from(unsyncedItems))
@@ -178,7 +184,8 @@ export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDataSourceId: string | null,
     previousSlugFieldId: string | null,
-    previousIgnoredFieldIds: string | null
+    previousIgnoredFieldIds: string | null,
+    previousLastSynced: string | null
 ): Promise<{ didSync: boolean }> {
     if (!previousDataSourceId) {
         return { didSync: false }
@@ -211,7 +218,7 @@ export async function syncExistingCollection(
                 existingFields.some(existingField => existingField.id === field.id) && !ignoredFieldIds.has(field.id)
         )
 
-        await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds)
+        await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds, previousLastSynced)
         return { didSync: true }
     } catch (error) {
         console.error(error)
@@ -323,5 +330,5 @@ export async function fieldsInfoToCollectionFields(fieldsInfo: FieldInfo[]): Pro
         }
     }
 
-    return fields
+    return fields as ManagedCollectionFieldInput[]
 }

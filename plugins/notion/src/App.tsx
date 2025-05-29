@@ -25,16 +25,24 @@ export function App({
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
 
     useLayoutEffect(() => {
-        const hasDataSourceSelected = Boolean(dataSource)
-
-        framer.showUI({
-            width: hasDataSourceSelected ? 600 : 260,
-            height: hasDataSourceSelected ? 500 : 345,
-            minWidth: hasDataSourceSelected ? 360 : undefined,
-            minHeight: hasDataSourceSelected ? 425 : undefined,
-            resizable: hasDataSourceSelected,
-        })
-    }, [dataSource])
+        if (dataSource || isLoadingDataSource) {
+            framer.showUI({
+                width: 600,
+                height: 500,
+                minWidth: 360,
+                minHeight: 425,
+                resizable: true,
+            })
+        } else {
+            framer.showUI({
+                width: 260,
+                height: 345,
+                minWidth: 260,
+                minHeight: 345,
+                resizable: false,
+            })
+        }
+    }, [dataSource, isLoadingDataSource])
 
     useEffect(() => {
         if (!previousDataSourceId) {

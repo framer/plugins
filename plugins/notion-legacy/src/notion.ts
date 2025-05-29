@@ -14,12 +14,13 @@ import {
     RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { CollectionItemData, framer, ManagedCollection, ManagedCollectionField, FieldData } from "framer-plugin"
+import { CollectionItemData, framer, ManagedCollection, ManagedCollectionField } from "framer-plugin"
 import pLimit from "p-limit"
 import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
 import { assert, assertNever, formatDate, isDefined, isString, slugify } from "./utils"
 
 export type FieldId = string
+type FieldData = Record<string, unknown>
 
 const apiBaseUrl = "https://notion-plugin-api.framer-team.workers.dev"
 const oauthRedirectUrl = encodeURIComponent(`${apiBaseUrl}/auth/authorize/callback`)

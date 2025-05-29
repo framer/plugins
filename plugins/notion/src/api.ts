@@ -177,11 +177,10 @@ export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
         const property = database.properties[key]
         assert(property)
 
-        if (!isSupportedPropertyType(property.type)) {
-            continue
-        }
-
-        const allowedTypes = supportedCMSTypeByNotionPropertyType[property.type] ?? []
+        const allowedTypes =
+            property.type in supportedCMSTypeByNotionPropertyType
+                ? supportedCMSTypeByNotionPropertyType[property.type as SupportedPropertyType]
+                : []
         const fieldInfo: FieldInfo = {
             id: property.id,
             name: property.name,

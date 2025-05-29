@@ -60,7 +60,14 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
     const supportedFields = fields.filter(isFieldSupported)
 
     // Add header row.
-    rows.push(supportedFields.map(field => field.name))
+    rows.push([])
+    for (const field of supportedFields) {
+        if (field.type === "image") {
+            rows[0].push(field.name, `framer:${field.name}:alt`)
+        } else {
+            rows[0].push(field.name)
+        }
+    }
 
     // Add slug header to the start.
     rows[0].unshift(slugFieldName ?? "Slug")
@@ -76,7 +83,6 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
             const fieldData = item.fieldData[field.id]
 
             switch (fieldData.type) {
-                case "image":
                 case "file": {
                     if (!fieldData.value) {
                         columns.push("")
@@ -84,6 +90,16 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
                     }
 
                     columns.push(`${fieldData.value.url}`)
+                    continue
+                }
+
+                case "image": {
+                    if (!fieldData.value) {
+                        columns.push("", "")
+                        continue
+                    }
+
+                    columns.push(`${fieldData.value.url}`, fieldData.value.altText ? `${fieldData.value.altText}` : "")
                     continue
                 }
 

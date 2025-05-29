@@ -60,7 +60,8 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
     const supportedFields = fields.filter(isFieldSupported)
 
     // Add header row with slug field at the start.
-    rows.push([slugFieldName ?? "Slug"])
+    const header: Columns = [slugFieldName ?? "Slug"]
+    rows.push(header)
     for (const field of supportedFields) {
         if (field.type === "image") {
             rows[0].push(field.name, `framer:${field.name}:alt`)

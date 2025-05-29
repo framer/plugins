@@ -63,7 +63,7 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
     const header: Columns = [slugFieldName ?? "Slug"]
     for (const field of supportedFields) {
         if (field.type === "image") {
-            header.push(field.name, `framer:${field.name}:alt`)
+            header.push(field.name, `${field.name}:alt`)
         } else {
             header.push(field.name)
         }

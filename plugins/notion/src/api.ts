@@ -295,7 +295,7 @@ export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
 
 export function getPropertyValue(
     property: PageObjectResponse["properties"][string],
-    { supportsHtml }: { supportsHtml: boolean }
+    { supportsHtml, field }: { supportsHtml: boolean; field?: ManagedCollectionField }
 ): unknown | undefined {
     switch (property.type) {
         case "checkbox": {
@@ -315,16 +315,26 @@ export function getPropertyValue(
             return richTextToPlainText(property.rich_text)
         }
         case "select": {
-            if (!property.select) return null
+            if (!property.select) {
+                return field?.type === "enum" ? (field?.cases?.[0]?.id ?? null) : null
+            }
 
             return property.select.id
         }
-        case "title":
+        case "status": {
+            if (!property.status) {
+                return field?.type === "enum" ? (field?.cases?.[0]?.id ?? null) : null
+            }
+
+            return property.status.id
+        }
+        case "title": {
             if (supportsHtml) {
                 return richTextToHTML(property.title)
             }
 
             return richTextToPlainText(property.title)
+        }
         case "number": {
             return property.number
         }
@@ -351,6 +361,11 @@ export function getPropertyValue(
             if (firstFile.type === "file") {
                 return firstFile.file.url
             }
+
+            return null
+        }
+        case "email": {
+            return property.email ?? ""
         }
     }
 }
@@ -387,7 +402,7 @@ async function processItem(
             continue
         }
 
-        const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
+        const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText", field })
         if (!fieldValue) {
             status.warnings.push({
                 url: item.url,

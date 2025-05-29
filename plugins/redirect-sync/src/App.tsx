@@ -66,7 +66,7 @@ async function exportCsv() {
         const redirects = await framer.getRedirects()
 
         if (redirects.length === 0) {
-            framer.notify("This project has no redirects", { variant: "error" })
+            framer.notify("This project has no redirects", { variant: "warning" })
             return
         }
 

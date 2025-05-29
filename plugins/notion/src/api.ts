@@ -504,6 +504,17 @@ export interface SynchronizeResult extends SyncStatus {
     status: "success" | "completed_with_errors"
 }
 
+export async function getDatabaseItems(database: GetDatabaseResponse): Promise<PageObjectResponse[]> {
+    assert(notion)
+
+    const data = await collectPaginatedAPI(notion.databases.query, {
+        database_id: database.id,
+    })
+    assert(data.every(isFullPage), "Response is not a full page")
+
+    return data
+}
+
 export async function synchronizeDatabase(
     database: GetDatabaseResponse,
     { fields, ignoredFieldIds, lastSyncedTime, slugFieldId, onProgress }: SynchronizeMutationOptions

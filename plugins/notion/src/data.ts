@@ -19,7 +19,10 @@ import {
     assertFieldTypeMatchesPropertyType,
     getDatabaseIdMap,
     type FieldInfo,
+    getDatabaseItems,
+    getPropertyValue,
 } from "./api"
+import { slugify } from "./utils"
 import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 
 export interface DataSource {
@@ -98,33 +101,49 @@ export async function syncCollection(
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
 
-    for (let i = 0; i < dataSource.items.length; i++) {
-        const item = dataSource.items[i]
+    const databaseItems = await getDatabaseItems(dataSource.database)
+
+    for (let i = 0; i < databaseItems.length; i++) {
+        const item = databaseItems[i]
         if (!item) throw new Error("Logic error")
 
-        const slugValue = item[slugField.id]
-        if (!slugValue || typeof slugValue.value !== "string") {
+        console.log(item)
+
+        let slugValue: null | string = null
+        const fieldData: FieldDataInput = {}
+
+        for (const property of Object.values(item.properties)) {
+            if (property.id === slugField.id) {
+                const resolvedSlug = getPropertyValue(property, { supportsHtml: false })
+
+                if (!resolvedSlug || typeof resolvedSlug !== "string") {
+                    break
+                }
+
+                slugValue = slugify(resolvedSlug)
+            }
+
+            const field = sanitizedFields.find(field => field.id === property.id)
+            if (!field) continue
+
+            const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
+            if (!fieldValue) {
+                console.warn(
+                    `Skipping item at index ${i} because it doesn't have a valid value for field ${field.name}`
+                )
+            }
+        }
+
+        if (!slugValue || typeof slugValue !== "string") {
             console.warn(`Skipping item at index ${i} because it doesn't have a valid slug`)
             continue
         }
 
-        unsyncedItems.delete(slugValue.value)
-
-        const fieldData: FieldDataInput = {}
-        for (const [fieldName, value] of Object.entries(item)) {
-            const field = sanitizedFields.find(field => field.id === fieldName)
-
-            // Field is in the data but skipped based on selected fields.
-            if (!field) continue
-
-            // For details on expected field value, see:
-            // https://www.framer.com/developers/plugins/cms#collections
-            fieldData[field.id] = value
-        }
+        unsyncedItems.delete(item.id)
 
         items.push({
-            id: slugValue.value,
-            slug: slugValue.value,
+            id: item.id,
+            slug: slugValue,
             draft: false,
             fieldData,
         })

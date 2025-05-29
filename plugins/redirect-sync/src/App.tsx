@@ -1,4 +1,4 @@
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect } from "react"
 import "./App.css"
 import { countAndRemoveMissingRedirects, generateCsv, normalizeRedirectInputs, parseCSV } from "./csv"
@@ -11,6 +11,17 @@ framer.showUI({
     width: 260,
     height: 370,
 })
+
+function checkPermissions() {
+    const isAllowedToAddRedirects = framer.isAllowedTo("addRedirects")
+
+    if (!isAllowedToAddRedirects) {
+        framer.notify("You do not have permissions to add redirects", { variant: "error" })
+        return false
+    }
+
+    return true
+}
 
 async function handleImport(csv: string) {
     try {
@@ -43,6 +54,8 @@ async function handleImport(csv: string) {
 }
 
 async function importCsv() {
+    if (!checkPermissions()) return
+
     importFileAsText(".csv", handleImport)
 }
 
@@ -75,6 +88,8 @@ export function App() {
             try {
                 const csv = event.clipboardData.getData("text/plain")
                 if (!csv) return
+
+                if (!checkPermissions()) return
 
                 await handleImport(csv)
             } catch (error) {

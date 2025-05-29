@@ -61,14 +61,15 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
 
     // Add header row with slug field at the start.
     const header: Columns = [slugFieldName ?? "Slug"]
-    rows.push(header)
     for (const field of supportedFields) {
         if (field.type === "image") {
-            rows[0].push(field.name, `framer:${field.name}:alt`)
+            header.push(field.name, `framer:${field.name}:alt`)
         } else {
-            rows[0].push(field.name)
+            header.push(field.name)
         }
     }
+
+    rows.push(header)
 
     // Add all the data rows.
     for (const item of items) {

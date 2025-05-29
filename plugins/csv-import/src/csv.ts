@@ -125,7 +125,7 @@ function getFieldDataEntryInputForField(
             return { type: field.type, value: value ? value.trim() : null }
 
         case "image": {
-            const altText = findRecordValue(record, `framer:${field.name}:alt`)
+            const altText = findRecordValue(record, `${field.name}:alt`)
             return { type: field.type, value: value ? value.trim() : null, alt: altText ?? undefined }
         }
 

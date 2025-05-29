@@ -10,9 +10,17 @@ interface AppProps {
     collection: ManagedCollection
     previousDataSourceId: string | null
     previousSlugFieldId: string | null
+    previousLastSynced: string | null
+    previousIgnoredFieldIds: string | null
 }
 
-export function App({ collection, previousDataSourceId, previousSlugFieldId }: AppProps) {
+export function App({
+    collection,
+    previousDataSourceId,
+    previousSlugFieldId,
+    previousLastSynced,
+    previousIgnoredFieldIds,
+}: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
 
@@ -70,5 +78,13 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
         return <SelectDataSource onSelectDataSource={setDataSource} />
     }
 
-    return <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
+    return (
+        <FieldMapping
+            collection={collection}
+            dataSource={dataSource}
+            initialSlugFieldId={previousSlugFieldId}
+            previousLastSynced={previousLastSynced}
+            previousIgnoredFieldIds={previousIgnoredFieldIds}
+        />
+    )
 }

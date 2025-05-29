@@ -108,8 +108,6 @@ export async function syncCollection(
         const item = databaseItems[i]
         if (!item) throw new Error("Logic error")
 
-        console.log(item)
-
         let slugValue: null | string = null
         const fieldData: FieldDataInput = {}
 
@@ -133,6 +131,8 @@ export async function syncCollection(
                     `Skipping item at index ${i} because it doesn't have a valid value for field ${field.name}`
                 )
             }
+
+            fieldData[field.id] = { type: field.type, value: fieldValue }
         }
 
         if (!slugValue || typeof slugValue !== "string") {

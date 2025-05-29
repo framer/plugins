@@ -1,29 +1,14 @@
-import {
-    APIErrorCode,
-    Client,
-    collectPaginatedAPI,
-    isFullBlock,
-    isFullDatabase,
-    isFullPage,
-    isNotionClientError,
-} from "@notionhq/client"
+import { Client, collectPaginatedAPI, isFullBlock, isFullDatabase, isFullPage } from "@notionhq/client"
 import type {
     BlockObjectResponse,
     GetDatabaseResponse,
     PageObjectResponse,
     RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints"
-import { useMutation, useQuery } from "@tanstack/react-query"
-import {
-    framer,
-    type CollectionItemData,
-    type ManagedCollection,
-    type ManagedCollectionField,
-    type FieldData,
-} from "framer-plugin"
+import { framer, type ManagedCollectionField } from "framer-plugin"
 import pLimit from "p-limit"
 import { blocksToHTML, richTextToHTML } from "./blocksToHTML"
-import { assert, assertNever, formatDate, isDefined, isString, slugify } from "./utils"
+import { assert } from "./utils"
 
 export const API_BASE_URL = "https://notion-plugin-api.framer-team.workers.dev"
 export const PLUGIN_KEYS = {
@@ -45,10 +30,6 @@ export interface FieldInfo {
     allowedTypes: ManagedCollectionField["type"][]
     notionProperty: NotionProperty | null
 }
-
-// Maximum number of concurrent requests to Notion API
-// This is to prevent rate limiting.
-const CONCURRENCY_LIMIT = 5
 
 export type NotionProperty = GetDatabaseResponse["properties"][string]
 

@@ -47,7 +47,8 @@ const { didSync } = await syncExistingCollection(
     activeCollection,
     previousDatabaseId,
     previousSlugFieldId,
-    previousIgnoredFieldIds
+    previousIgnoredFieldIds,
+    previousLastSynced
 )
 
 if (didSync) {

@@ -1,4 +1,4 @@
-import { framer, useIsAllowedTo } from "framer-plugin"
+import { framer } from "framer-plugin"
 import { useEffect } from "react"
 import "./App.css"
 import { countAndRemoveMissingRedirects, generateCsv, normalizeRedirectInputs, parseCSV } from "./csv"

@@ -21,6 +21,7 @@ import {
     type FieldInfo,
     getDatabaseItems,
     getPropertyValue,
+    getPageBlocksAsRichText,
 } from "./api"
 import { slugify } from "./utils"
 import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
@@ -126,7 +127,7 @@ export async function syncCollection(
             if (!field) continue
 
             const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
-            if (!fieldValue) {
+            if (fieldValue === null || fieldValue === undefined) {
                 console.warn(
                     `Skipping item at index ${i} because it doesn't have a valid value for field ${field.name}`
                 )
@@ -138,6 +139,11 @@ export async function syncCollection(
         if (!slugValue || typeof slugValue !== "string") {
             console.warn(`Skipping item at index ${i} because it doesn't have a valid slug`)
             continue
+        }
+
+        if (sanitizedFieldsById.has(pageContentProperty.id) && item.id) {
+            const contentHTML = await getPageBlocksAsRichText(item.id)
+            fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
         }
 
         unsyncedItems.delete(item.id)
@@ -204,6 +210,16 @@ export async function fieldsInfoToCollectionFields(fieldsInfo: FieldInfo[]): Pro
     for (const fieldInfo of fieldsInfo) {
         const property = fieldInfo.notionProperty
         const fieldType = fieldInfo.type
+
+        if (fieldInfo.id === pageContentProperty.id) {
+            fields.push({
+                type: "formattedText",
+                id: fieldInfo.id,
+                name: fieldInfo.name,
+                userEditable: false,
+            })
+            continue
+        }
 
         if (!property || !fieldType) continue
 

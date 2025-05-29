@@ -20,6 +20,11 @@ export const PLUGIN_KEYS = {
     BEARER_TOKEN: "notionBearerToken",
 } as const
 
+// This is the most recent date when the page content formatted text importing was updated.
+// If the last synced date for an item is before this date, the content is updated regardless of last edited time.
+// The allows users to get the latest content formatting updates automatically.
+const LAST_CONTENT_IMPORTING_UPDATE_DATE = new Date("2025-05-29T12:00:00.000Z")
+
 export type FieldId = string
 
 export interface FieldInfo {
@@ -400,6 +405,10 @@ export function isUnchangedSinceLastSync(lastEditedTime: string, lastSyncedTime:
 
     const lastEdited = new Date(lastEditedTime)
     const lastSynced = new Date(lastSyncedTime)
+
+    // If last sync was before the most recent content importing update, we need to update
+    if (lastSynced < LAST_CONTENT_IMPORTING_UPDATE_DATE) return false
+
     // Last edited time is rounded to the nearest minute.
     // So we should round lastSyncedTime to the nearest minute as well.
     lastSynced.setSeconds(0, 0)

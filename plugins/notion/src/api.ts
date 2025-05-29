@@ -53,21 +53,25 @@ export const pageContentProperty: FieldInfo = {
 // The order in which we display slug fields
 const preferedSlugFieldOrder: NotionProperty["type"][] = ["title", "rich_text"]
 
-export const supportedNotionPropertyTypes = [
-    "email",
-    "rich_text",
-    "date",
-    "last_edited_time",
-    "select",
-    "number",
-    "checkbox",
-    "created_time",
-    "title",
-    "status",
-    "url",
-    "files",
-    "relation",
-] satisfies ReadonlyArray<NotionProperty["type"]>
+export const supportedCMSTypeByNotionPropertyType = {
+    checkbox: ["boolean"],
+    date: ["date"],
+    number: ["number"],
+    title: ["string"],
+    rich_text: ["formattedText", "string"],
+    created_time: ["date"],
+    last_edited_time: ["date"],
+    select: ["enum"],
+    status: ["enum"],
+    url: ["link"],
+    email: ["formattedText", "string"],
+    files: ["file", "image"],
+    relation: ["multiCollectionReference"],
+} satisfies Partial<Record<NotionProperty["type"], ReadonlyArray<ManagedCollectionField["type"]>>>
+
+export const supportedNotionPropertyTypes = Object.keys(supportedCMSTypeByNotionPropertyType) as ReadonlyArray<
+    NotionProperty["type"]
+>
 
 type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
 type SupportedNotionProperty = Extract<NotionProperty, { type: SupportedPropertyType }>
@@ -115,10 +119,6 @@ export function initNotionClient() {
     })
 }
 
-export function isSupportedNotionProperty(property: NotionProperty): property is SupportedNotionProperty {
-    return supportedNotionPropertyTypes.includes(property.type as SupportedPropertyType)
-}
-
 export async function getNotionDatabases() {
     if (!notion) {
         initNotionClient()
@@ -134,26 +134,10 @@ export async function getNotionDatabases() {
     return results.filter(isFullDatabase)
 }
 
-export const supportedCMSTypeByNotionPropertyType = {
-    checkbox: ["boolean"],
-    date: ["date"],
-    number: ["number"],
-    title: ["string"],
-    rich_text: ["formattedText", "string"],
-    created_time: ["date"],
-    last_edited_time: ["date"],
-    select: ["enum"],
-    status: ["enum"],
-    url: ["link"],
-    email: ["formattedText", "string"],
-    files: ["file", "image"],
-    relation: ["multiCollectionReference"],
-} satisfies Record<SupportedPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
-
-export function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
+export function assertFieldTypeMatchesPropertyType<T extends keyof typeof supportedCMSTypeByNotionPropertyType>(
     propertyType: T,
     fieldType: ManagedCollectionField["type"]
-): asserts fieldType is (typeof supportedCMSTypeByNotionPropertyType)[T][number] {
+): asserts fieldType is ManagedCollectionField["type"] {
     const allowedFieldTypes = supportedCMSTypeByNotionPropertyType[propertyType]
 
     if (!allowedFieldTypes.includes(fieldType as never)) {
@@ -176,6 +160,10 @@ export function richTextToPlainText(richText: RichTextItemResponse[] | undefined
     return Array.isArray(richText) ? richText.map(value => value.plain_text).join("") : ""
 }
 
+function isSupportedPropertyType(type: string): type is keyof typeof supportedCMSTypeByNotionPropertyType {
+    return type in supportedCMSTypeByNotionPropertyType
+}
+
 export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
     const result: FieldInfo[] = []
 
@@ -188,6 +176,10 @@ export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
     for (const key in database.properties) {
         const property = database.properties[key]
         assert(property)
+
+        if (!isSupportedPropertyType(property.type)) {
+            continue
+        }
 
         const allowedTypes = supportedCMSTypeByNotionPropertyType[property.type] ?? []
         const fieldInfo: FieldInfo = {
@@ -265,7 +257,7 @@ export async function getPageBlocksAsRichText(pageId: string) {
     return blocksToHTML(blocks)
 }
 
-export type DatabaseIdMap = Map<string, string>
+type DatabaseIdMap = Map<string, string>
 export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
     const databaseIdMap: DatabaseIdMap = new Map()
 
@@ -354,39 +346,6 @@ export function getPropertyValue(
             return property.email ?? ""
         }
     }
-}
-
-type FieldsById = Map<FieldId, ManagedCollectionField>
-
-export interface ItemResult {
-    url: string
-    fieldId?: string
-    message: string
-}
-
-export interface SynchronizeProgress {
-    totalCount: number
-    completedCount: number
-    completedPercent: number
-}
-
-interface SyncStatus {
-    errors: ItemResult[]
-    warnings: ItemResult[]
-    info: ItemResult[]
-}
-type OnProgressHandler = (progress: SynchronizeProgress) => void
-
-export interface SynchronizeMutationOptions {
-    fields: ManagedCollectionField[]
-    ignoredFieldIds: string[]
-    lastSyncedTime: string | null
-    slugFieldId: string
-    onProgress: OnProgressHandler
-}
-
-export interface SynchronizeResult extends SyncStatus {
-    status: "success" | "completed_with_errors"
 }
 
 export async function getDatabaseItems(database: GetDatabaseResponse): Promise<PageObjectResponse[]> {

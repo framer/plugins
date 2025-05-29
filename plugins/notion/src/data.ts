@@ -93,7 +93,8 @@ export async function syncCollection(
     dataSource: DataSource,
     fields: readonly ManagedCollectionFieldInput[],
     slugField: ManagedCollectionFieldInput,
-    ignoredFieldIds: Set<string>
+    ignoredFieldIds: Set<string>,
+    lastSynced: string | null
 ) {
     const sanitizedFields = fields.map(field => ({
         ...field,

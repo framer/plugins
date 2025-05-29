@@ -59,11 +59,10 @@ if (didSync) {
         <React.StrictMode>
             <App
                 collection={activeCollection}
-                previousDatabaseId={previousDatabaseId}
+                previousDataSourceId={previousDatabaseId}
                 previousSlugFieldId={previousSlugFieldId}
                 previousLastSynced={previousLastSynced}
                 previousIgnoredFieldIds={previousIgnoredFieldIds}
-                previousDatabaseName={previousDatabaseName}
             />
         </React.StrictMode>
     )

@@ -121,9 +121,17 @@ interface FieldMappingProps {
     collection: ManagedCollection
     dataSource: DataSource
     initialSlugFieldId: string | null
+    previousLastSynced: string | null
+    previousIgnoredFieldIds: string | null
 }
 
-export function FieldMapping({ collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
+export function FieldMapping({
+    collection,
+    dataSource,
+    initialSlugFieldId,
+    previousLastSynced,
+    previousIgnoredFieldIds,
+}: FieldMappingProps) {
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
     )
@@ -138,7 +146,9 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     )
 
     const [fieldsInfo, setFieldsInfo] = useState(initialFieldsInfo)
-    const [ignoredFieldIds, setIgnoredFieldIds] = useState(new Set())
+    const [ignoredFieldIds, setIgnoredFieldIds] = useState(
+        previousIgnoredFieldIds ? new Set(JSON.parse(previousIgnoredFieldIds)) : new Set()
+    )
 
     const dataSourceName = dataSource.name
 
@@ -151,19 +161,6 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 if (abortController.signal.aborted) return
 
                 setFieldsInfo(mergeFieldsInfoWithExistingFields(initialFieldsInfo, collectionFields))
-
-                const existingFieldIds = new Set(collectionFields.map(field => field.id))
-                const ignoredFields = initialFieldsInfo.filter(
-                    sourceField =>
-                        !existingFieldIds.has(sourceField.id) &&
-                        Array.isArray(sourceField.allowedTypes) &&
-                        sourceField.allowedTypes.length > 0
-                )
-
-                if (initialSlugFieldId) {
-                    setIgnoredFieldIds(new Set(ignoredFields.map(field => field.id)))
-                }
-
                 setStatus("mapping-fields")
             })
             .catch(error => {
@@ -231,7 +228,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
             const slugField = fields.find(field => field.id === selectedSlugFieldId)
 
-            await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds)
+            await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds, previousLastSynced)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)

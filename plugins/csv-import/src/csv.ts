@@ -111,7 +111,8 @@ const BOOLEAN_TRUTHY_VALUES = /1|y(?:es)?|true/iu
 function getFieldDataEntryInputForField(
     field: Field,
     value: string | null,
-    allItemIdBySlug: Map<string, Map<string, string>>
+    allItemIdBySlug: Map<string, Map<string, string>>,
+    record: CSVRecord
 ): FieldDataEntryInput | ConversionError {
     switch (field.type) {
         case "string":
@@ -121,8 +122,12 @@ function getFieldDataEntryInputForField(
         case "color":
         case "link":
         case "file":
-        case "image":
             return { type: field.type, value: value ? value.trim() : null }
+
+        case "image": {
+            const altText = findRecordValue(record, `framer:${field.name}:alt`)
+            return { type: field.type, value: value ? value.trim() : null, alt: altText ?? undefined }
+        }
 
         case "number": {
             const number = Number(value)
@@ -327,7 +332,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
         const fieldData: FieldDataInput = {}
         for (const field of fieldsToImport) {
             const value = findRecordValue(record, field.name)
-            const fieldDataEntry = getFieldDataEntryInputForField(field, value, allItemIdBySlug)
+            const fieldDataEntry = getFieldDataEntryInputForField(field, value, allItemIdBySlug, record)
 
             if (fieldDataEntry instanceof ConversionError) {
                 result.warnings.skippedValueCount++

@@ -96,7 +96,7 @@ export async function syncCollection(
     }))
     const sanitizedFieldsById = new Map(sanitizedFields.map(field => [field.id, field]))
 
-    const unsyncedItems = new Set(await collection.getItemIds())
+    const seenItemIds = new Set<string>()
 
     const databaseItems = await getDatabaseItems(dataSource.database)
     const limit = pLimit(CONCURRENCY_LIMIT)
@@ -104,6 +104,8 @@ export async function syncCollection(
     const promises = databaseItems.map((item, index) =>
         limit(async () => {
             if (!item) throw new Error("Logic error")
+
+            seenItemIds.add(item.id)
 
             if (isUnchangedSinceLastSync(item.last_edited_time, lastSynced)) {
                 console.warn({
@@ -150,8 +152,6 @@ export async function syncCollection(
                 fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
             }
 
-            unsyncedItems.delete(item.id)
-
             return {
                 id: item.id,
                 slug: slugValue,
@@ -164,8 +164,13 @@ export async function syncCollection(
     const result = await Promise.all(promises)
     const items = result.filter(Boolean) as ManagedCollectionItemInput[]
 
+    const itemIdsToDelete = new Set(await collection.getItemIds())
+    for (const itemId of seenItemIds) {
+        itemIdsToDelete.delete(itemId)
+    }
+
     await collection.setFields(sanitizedFields)
-    await collection.removeItems(Array.from(unsyncedItems))
+    await collection.removeItems(Array.from(itemIdsToDelete))
     await collection.addItems(items)
 
     await Promise.all([

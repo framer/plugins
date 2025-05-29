@@ -97,6 +97,7 @@ export async function syncCollection(
         ...field,
         name: field.name.trim() || field.id,
     }))
+    const sanitizedFieldsById = new Map(sanitizedFields.map(field => [field.id, field]))
 
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
@@ -123,7 +124,7 @@ export async function syncCollection(
                 slugValue = slugify(resolvedSlug)
             }
 
-            const field = sanitizedFields.find(field => field.id === property.id)
+            const field = sanitizedFieldsById.get(property.id)
             if (!field) continue
 
             const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })

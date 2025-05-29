@@ -222,7 +222,14 @@ export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
     }
 
     // Maintain original order except unsupported fields go to the end
-    return result.concat(supported, unsupported)
+    const allFields = result.concat(supported, unsupported)
+
+    // Sort title field to beginning of the list
+    return allFields.sort((a, b) => {
+        if (a.notionProperty?.type === "title") return -1
+        if (b.notionProperty?.type === "title") return 1
+        return 0
+    })
 }
 
 /**

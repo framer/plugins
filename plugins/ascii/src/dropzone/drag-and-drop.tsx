@@ -4,10 +4,10 @@ import { DroppedAsset } from "../App"
 
 export function Upload({
     setDroppedAsset,
-    disabled = false,
+    isAllowedToUploadImage,
 }: {
     setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
-    disabled: boolean
+    isAllowedToUploadImage: boolean
 }) {
     const [message, setMessage] = useState<string>("Upload")
 
@@ -43,7 +43,12 @@ export function Upload({
             {({ getRootProps, getInputProps }) => (
                 <div {...getRootProps()} className="upload">
                     <input {...getInputProps()} />
-                    <button type="button" className="upload-cta" disabled={disabled}>
+                    <button
+                        type="button"
+                        className="upload-cta"
+                        disabled={!isAllowedToUploadImage}
+                        title={isAllowedToUploadImage ? undefined : "Insufficient permissions"}
+                    >
                         {message}
                     </button>
                 </div>

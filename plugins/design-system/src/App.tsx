@@ -1,4 +1,4 @@
-import { framer, Draggable } from "framer-plugin"
+import { framer, Draggable, useIsAllowedTo } from "framer-plugin"
 
 import sectionFAQImage from "./assets/FAQ.png"
 import sectionFeaturesLargeImage from "./assets/Features.png"
@@ -128,6 +128,11 @@ export function App() {
     const [search, setSearch] = useState("")
     const [activeTab, setActiveTab] = useState("components")
 
+    const isAllowedToAddDetachedComponentLayers = useIsAllowedTo("addDetachedComponentLayers")
+    const isAllowedToCreateColorStyle = useIsAllowedTo("createColorStyle")
+    const isAllowedToSetColorStyleAttributes = useIsAllowedTo("ColorStyle.setAttributes")
+    const isAllowedToUpsertColor = isAllowedToCreateColorStyle || isAllowedToSetColorStyleAttributes
+
     const filteredLayoutItems = useMemo(() => {
         return layoutSectionItems.filter(item => item.title.toLowerCase().includes(search.toLowerCase()))
     }, [search])
@@ -147,10 +152,12 @@ export function App() {
             const existingStyle = colorStyles.find(style => style.name === color.title)
 
             if (existingStyle) {
+                if (!isAllowedToSetColorStyleAttributes) return
                 existingStyle.setAttributes({
                     light: color.color,
                 })
             } else {
+                if (!isAllowedToCreateColorStyle) return
                 framer.createColorStyle({
                     name: color.title,
                     light: color.color,
@@ -203,6 +210,10 @@ export function App() {
                                 <button
                                     className="section-button"
                                     key={section.key}
+                                    disabled={!isAllowedToAddDetachedComponentLayers}
+                                    title={
+                                        isAllowedToAddDetachedComponentLayers ? undefined : "Insufficient permissions"
+                                    }
                                     onClick={() =>
                                         framer.addDetachedComponentLayers({
                                             url: section.url,
@@ -236,6 +247,8 @@ export function App() {
                             <button
                                 key={section.key}
                                 className="section-button"
+                                disabled={!isAllowedToAddDetachedComponentLayers}
+                                title={isAllowedToAddDetachedComponentLayers ? undefined : "Insufficient permissions"}
                                 onClick={() =>
                                     framer.addDetachedComponentLayers({
                                         url: section.url,
@@ -272,12 +285,22 @@ export function App() {
                                     }}
                                 />
                                 <div className="color-label">{color.title}</div>
-                                <button className="copy-button" onClick={() => handleAddColors([color])}>
+                                <button
+                                    className="copy-button"
+                                    disabled={!isAllowedToCreateColorStyle}
+                                    title={isAllowedToCreateColorStyle ? undefined : "Insufficient permissions"}
+                                    onClick={() => handleAddColors([color])}
+                                >
                                     Add
                                 </button>
                             </div>
                         ))}
-                        <button className="action-button" onClick={() => handleAddColors(filteredColorItems)}>
+                        <button
+                            className="action-button"
+                            disabled={!isAllowedToUpsertColor}
+                            title={isAllowedToUpsertColor ? undefined : "Insufficient permissions"}
+                            onClick={() => handleAddColors(filteredColorItems)}
+                        >
                             Add to Project
                         </button>
                     </div>

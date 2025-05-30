@@ -1,10 +1,11 @@
 import {
-    type EditableManagedCollectionField,
+    type ManagedCollectionFieldInput,
     type FieldDataInput,
     framer,
     type ManagedCollection,
     type ManagedCollectionItemInput,
 } from "framer-plugin"
+import { createUniqueSlug, findAsync } from "./utils"
 
 export const PLUGIN_KEYS = {
     DATA_SOURCE_ID: "dataSourceId",
@@ -13,13 +14,15 @@ export const PLUGIN_KEYS = {
 
 export interface DataSource {
     id: string
-    fields: readonly EditableManagedCollectionField[]
+    fields: readonly ManagedCollectionFieldInput[]
     items: FieldDataInput[]
+    idField: ManagedCollectionFieldInput | null // to be used as id field
+    slugField: ManagedCollectionFieldInput | null // to be used as slug field
 }
 
 export const dataSourceOptions = [
-    { id: "articles", name: "Articles" },
-    { id: "categories", name: "Categories" },
+    { id: "articles", name: "Articles", idFieldId: "Id", slugFieldId: "Title" },
+    { id: "categories", name: "Categories", idFieldId: "Id", slugFieldId: "Title" },
 ] as const
 
 /**
@@ -38,14 +41,33 @@ export const dataSourceOptions = [
  *   ]
  * }
  */
+
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     // Fetch from your data source
     const dataSourceResponse = await fetch(`/data/${dataSourceId}.json`, { signal: abortSignal })
     const dataSource = await dataSourceResponse.json()
 
     // Map your source fields to supported field types in Framer
-    const fields: EditableManagedCollectionField[] = []
+    const fields: ManagedCollectionFieldInput[] = []
     for (const field of dataSource.fields) {
+        if (field.type === "multiCollectionReference" || field.type === "collectionReference") {
+            if (!field.dataSourceId) {
+                console.warn(`No data source id found for collection reference field"${field.name}".`)
+            } else {
+                const collections = await framer.getManagedCollections()
+                const collection = await findAsync(collections, async collection => {
+                    const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
+                    return dataSourceId === field.dataSourceId
+                })
+
+                if (!collection) {
+                    console.warn(`No collection found for data source "${field.dataSourceId}".`)
+                } else {
+                    field.collectionId = collection.id
+                }
+            }
+        }
+
         switch (field.type) {
             case "string":
             case "number":
@@ -54,17 +76,18 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
             case "formattedText":
             case "date":
             case "link":
+            case "collectionReference":
+            case "multiCollectionReference":
                 fields.push({
                     id: field.name,
                     name: field.name,
                     type: field.type,
+                    ...(field.collectionId && { collectionId: field.collectionId }),
                 })
                 break
             case "image":
             case "file":
             case "enum":
-            case "collectionReference":
-            case "multiCollectionReference":
                 console.warn(`Support for field type "${field.type}" is not implemented in this Plugin.`)
                 break
             default: {
@@ -75,17 +98,24 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
 
     const items = dataSource.items as FieldDataInput[]
 
+    const dataSourceOption = dataSourceOptions.find(option => option.id === dataSourceId)
+
+    const idField = fields.find(field => field.id === dataSourceOption?.idFieldId) ?? null
+    const slugField = fields.find(field => field.id === dataSourceOption?.slugFieldId) ?? null
+
     return {
         id: dataSource.id,
+        idField,
+        slugField,
         fields,
         items,
     }
 }
 
 export function mergeFieldsWithExistingFields(
-    sourceFields: readonly EditableManagedCollectionField[],
-    existingFields: readonly EditableManagedCollectionField[]
-): EditableManagedCollectionField[] {
+    sourceFields: readonly ManagedCollectionFieldInput[],
+    existingFields: readonly ManagedCollectionFieldInput[]
+): ManagedCollectionFieldInput[] {
     return sourceFields.map(sourceField => {
         const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
         if (existingField) {
@@ -98,8 +128,8 @@ export function mergeFieldsWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: readonly EditableManagedCollectionField[],
-    slugField: EditableManagedCollectionField
+    fields: readonly ManagedCollectionFieldInput[],
+    slugField: ManagedCollectionFieldInput
 ) {
     const sanitizedFields = fields.map(field => ({
         ...field,
@@ -119,6 +149,12 @@ export async function syncCollection(
             continue
         }
 
+        const idValue = item[dataSource.idField?.id ?? ""]
+        if (!idValue || typeof idValue.value !== "string") {
+            console.warn(`Skipping item at index ${i} because it doesn't have a valid id`)
+            continue
+        }
+
         unsyncedItems.delete(slugValue.value)
 
         const fieldData: FieldDataInput = {}
@@ -133,9 +169,11 @@ export async function syncCollection(
             fieldData[field.id] = value
         }
 
+        const existingSlugs = new Map<string, number>()
+
         items.push({
-            id: slugValue.value,
-            slug: slugValue.value,
+            id: idValue.value,
+            slug: createUniqueSlug(slugValue.value, existingSlugs),
             draft: false,
             fieldData,
         })
@@ -174,7 +212,42 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        await syncCollection(collection, dataSource, existingFields, slugField)
+        const fields: ManagedCollectionFieldInput[] = []
+        for (const field of existingFields) {
+            if (field.type === "multiCollectionReference" || field.type === "collectionReference") {
+                fields.push({
+                    id: field.id,
+                    name: field.name,
+                    type: field.type,
+                    collectionId: field.collectionId,
+                })
+            } else if (field.type === "enum") {
+                fields.push({
+                    id: field.id,
+                    name: field.name,
+                    type: field.type,
+                    cases: field.cases.map(c => ({
+                        id: c.id,
+                        name: c.name,
+                    })),
+                })
+            } else if (field.type === "file") {
+                fields.push({
+                    id: field.id,
+                    name: field.name,
+                    type: field.type,
+                    allowedFileTypes: field.allowedFileTypes,
+                })
+            } else {
+                fields.push({
+                    id: field.id,
+                    name: field.name,
+                    type: field.type,
+                })
+            }
+        }
+
+        await syncCollection(collection, dataSource, fields, slugField)
         return { didSync: true }
     } catch (error) {
         console.error(error)

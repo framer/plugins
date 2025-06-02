@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react"
 import { PLUGIN_KEYS } from "../data"
 
 export function Auth({ onAuth }: { onAuth: (boardToken: string) => void }) {
-    const [error, setError] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
     const [defaultBoardToken, setDefaultBoardToken] = useState<string | null>(null)
@@ -22,10 +21,7 @@ export function Auth({ onAuth }: { onAuth: (boardToken: string) => void }) {
         e.preventDefault()
         const boardToken = inputRef.current?.value
 
-        if (!boardToken) {
-            setError("Invalid")
-            return
-        }
+        if (!boardToken) return
 
         try {
             setIsLoading(true)
@@ -34,10 +30,12 @@ export function Auth({ onAuth }: { onAuth: (boardToken: string) => void }) {
             if (response.status === 200) {
                 onAuth?.(boardToken)
                 console.log("success")
+            } else {
+                throw new Error("Invalid board token")
             }
         } catch (error) {
-            setError("Invalid")
             console.error(error)
+            framer.notify(`Board ${boardToken} not found`, { variant: "error" })
         } finally {
             setIsLoading(false)
         }
@@ -48,26 +46,13 @@ export function Auth({ onAuth }: { onAuth: (boardToken: string) => void }) {
             <img src="/Asset.png" alt="Greenhouse Hero" onDragStart={e => e.preventDefault()} />
             <form onSubmit={handleSubmit}>
                 <label>
-                    <p>
-                        Board Token{" "}
-                        {error && (
-                            <span
-                                style={{
-                                    color: "#FF3366",
-                                }}
-                            >
-                                ({error})
-                            </span>
-                        )}
-                    </p>
+                    <p>Board Token</p>
                     <input
                         ref={inputRef}
                         type="text"
-                        placeholder="token"
+                        placeholder="Token"
+                        required
                         defaultValue={defaultBoardToken ?? ""}
-                        onChange={() => {
-                            setError(null)
-                        }}
                     />
                 </label>
 

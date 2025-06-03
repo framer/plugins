@@ -16,6 +16,8 @@
   import { renameResult } from "./search/result_processors/rename_result";
   import { cleanUpResult } from "./search/result_processors/clean_up_result";
 
+  const isAllowedToSetAttributes = framer.isAllowedTo("Node.setAttributes")
+
   let currentRootId: string | undefined = $state();
   let currentMode: "search" | "clean" = $state("search");
 
@@ -104,6 +106,8 @@
   });
 
   const renameResults = () => {
+    if (!isAllowedToSetAttributes) return
+
     resultsRenamer.start(results);
   };
 
@@ -203,6 +207,7 @@
     bind:replacement
     loading={replacing}
     disableAction={currentMode === "search" && !replacement}
+    isAllowed={isAllowedToSetAttributes}
     showReplacement={currentMode === "search"}
     actionLabel={currentMode === "search" ? "Rename" : "Clean Up"}
     onRenameClick={renameResults}

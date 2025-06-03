@@ -39,37 +39,43 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
         }
     }, [recordsIterator, onAllConflictsResolved])
 
-    const setAction = useCallback((record: ImportResultItem, action: "onConflictUpdate" | "onConflictSkip") => {
-        if (!currentRecord) return
+    const setAction = useCallback(
+        (record: ImportResultItem, action: "onConflictUpdate" | "onConflictSkip") => {
+            if (!currentRecord) return
 
-        fixedRecords.current = fixedRecords.current.map(existingRecord => {
-            if (existingRecord.slug === record.slug) {
-                return { ...existingRecord, action }
+            fixedRecords.current = fixedRecords.current.map(existingRecord => {
+                if (existingRecord.slug === record.slug) {
+                    return { ...existingRecord, action }
+                }
+                return existingRecord
+            })
+        },
+        [currentRecord]
+    )
+
+    const applyAction = useCallback(
+        async (action: "onConflictUpdate" | "onConflictSkip") => {
+            if (!currentRecord) return
+
+            if (!applyToAll) {
+                setAction(currentRecord, action)
+                moveToNextRecord()
+                return
             }
-            return existingRecord
-        })
-    }, [currentRecord])
 
-    const applyAction = useCallback(async (action: "onConflictUpdate" | "onConflictSkip") => {
-        if (!currentRecord) return
-
-        if (!applyToAll) {
-            setAction(currentRecord, action)
-            moveToNextRecord()
-            return
-        }
-
-        let current = currentRecord
-        do {
-            setAction(current, action)
-            const next = recordsIterator.next()
-            if (next.done) {
-                onAllConflictsResolved(fixedRecords.current)
-                break
-            }
-            current = next.value
-        } while (current)
-    }, [currentRecord, applyToAll, setAction, moveToNextRecord, recordsIterator, onAllConflictsResolved])
+            let current = currentRecord
+            do {
+                setAction(current, action)
+                const next = recordsIterator.next()
+                if (next.done) {
+                    onAllConflictsResolved(fixedRecords.current)
+                    break
+                }
+                current = next.value
+            } while (current)
+        },
+        [currentRecord, applyToAll, setAction, moveToNextRecord, recordsIterator, onAllConflictsResolved]
+    )
 
     if (!currentRecord) return null
 
@@ -113,6 +119,8 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
 }
 
 export function App({ collection }: { collection: Collection }) {
+    const isAllowedToAddItems = framer.isAllowedTo("Collection.addItems")
+
     const form = useRef<HTMLFormElement>(null)
     const inputOpenedFromImportButton = useRef(false)
 
@@ -142,43 +150,52 @@ export function App({ collection }: { collection: Collection }) {
         })
     }, [itemsWithConflict])
 
-    const importItems = useCallback(async (result: ImportResult) => {
-        await framer.hideUI()
-        await importCSV(collection, result)
-    }, [collection])
+    const importItems = useCallback(
+        async (result: ImportResult) => {
+            await framer.hideUI()
+            await importCSV(collection, result)
+        },
+        [collection]
+    )
 
-    const processAndImport = useCallback(async (csv: string) => {
-        try {
-            const csvRecords = await parseCSV(csv)
-            if (csvRecords.length === 0) {
-                throw new Error("No records found in CSV")
-            }
+    const processAndImport = useCallback(
+        async (csv: string) => {
+            if (!isAllowedToAddItems) return
 
-            const result = await processRecords(collection, csvRecords)
-            setResult(result)
+            try {
+                const csvRecords = await parseCSV(csv)
+                if (csvRecords.length === 0) {
+                    throw new Error("No records found in CSV")
+                }
 
-            if (result.items.some(item => item.action === "conflict")) {
-                return
-            }
+                const result = await processRecords(collection, csvRecords)
+                setResult(result)
 
-            await importItems(result)
-        } catch (error) {
-            console.error(error)
+                if (result.items.some(item => item.action === "conflict")) {
+                    return
+                }
 
-            if (error instanceof ImportError) {
-                framer.notify(error.message, {
+                await importItems(result)
+            } catch (error) {
+                console.error(error)
+
+                if (error instanceof ImportError) {
+                    framer.notify(error.message, {
+                        variant: "error",
+                    })
+                    return
+                }
+
+                framer.notify("Error processing CSV file. Check console for details.", {
                     variant: "error",
                 })
-                return
             }
-
-            framer.notify("Error processing CSV file. Check console for details.", {
-                variant: "error",
-            })
-        }
-    }, [collection, importItems])
+        },
+        [isAllowedToAddItems, collection, importItems]
+    )
 
     useEffect(() => {
+        if (!isAllowedToAddItems) return
         if (!form.current) return
 
         const handleDragOver = (event: DragEvent) => {
@@ -215,10 +232,11 @@ export function App({ collection }: { collection: Collection }) {
             form.current?.removeEventListener("dragleave", handleDragLeave)
             form.current?.removeEventListener("drop", handleDrop)
         }
-    }, [])
+    }, [isAllowedToAddItems])
 
     useEffect(() => {
         const handlePaste = async (event: ClipboardEvent) => {
+            if (!isAllowedToAddItems) return
             if (!event.clipboardData) return
 
             try {
@@ -239,22 +257,26 @@ export function App({ collection }: { collection: Collection }) {
         return () => {
             window.removeEventListener("paste", handlePaste)
         }
-    }, [processAndImport])
-    
-    const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
+    }, [isAllowedToAddItems, processAndImport])
 
-        const formData = new FormData(form.current!)
-        const fileValue = formData.get("file")
-        
-        if (!fileValue || typeof fileValue === "string") return
-        
-        const file = fileValue
+    const handleSubmit = useCallback(
+        async (event: React.FormEvent<HTMLFormElement>) => {
+            if (!isAllowedToAddItems) return
+            event.preventDefault()
 
-        const csv = await file.text()
+            const formData = new FormData(form.current!)
+            const fileValue = formData.get("file")
 
-        await processAndImport(csv)
-    }, [processAndImport])
+            if (!fileValue || typeof fileValue === "string") return
+
+            const file = fileValue
+
+            const csv = await file.text()
+
+            await processAndImport(csv)
+        },
+        [isAllowedToAddItems, processAndImport]
+    )
 
     const handleFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
         if (!event.currentTarget.files?.[0]) return
@@ -288,6 +310,7 @@ export function App({ collection }: { collection: Collection }) {
                 accept=".csv"
                 required
                 onChange={handleFileChange}
+                disabled={!isAllowedToAddItems}
                 style={{
                     position: "absolute",
                     inset: 0,
@@ -321,6 +344,8 @@ export function App({ collection }: { collection: Collection }) {
                             const input = document.getElementById("file-input") as HTMLInputElement
                             input.click()
                         }}
+                        disabled={!isAllowedToAddItems}
+                        title={isAllowedToAddItems ? undefined : "Insufficient permissions"}
                     >
                         Upload File
                     </button>

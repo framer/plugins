@@ -1,10 +1,10 @@
-import { ImageAsset, framer } from "framer-plugin"
+import { ImageAsset, framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
-import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
+import { Renderer, Camera, Transform, Plane, Program, Mesh } from "ogl"
 import { OrderedDither } from "./materials/ordered"
 import cn from "clsx"
-import { assert, bytesFromCanvas } from "./utils"
+import { assert, bytesFromCanvas, getPermissionTitle } from "./utils"
 import { Upload } from "./dropzone/drag-and-drop"
 import { useImageTexture } from "./use-image-texture"
 
@@ -39,6 +39,9 @@ export interface DroppedAsset {
 }
 
 function DitherImage({ image }: { image: ImageAsset | null }) {
+    const isAllowedToSetImage = useIsAllowedTo("setImage")
+    const isAllowedToUploadImage = useIsAllowedTo("addImage")
+
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>()
     const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
@@ -143,6 +146,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         setSavingInAction(true)
 
         if (droppedAsset) {
+            if (!isAllowedToUploadImage) return
             await framer.addImage({
                 image: {
                     type: "bytes",
@@ -151,6 +155,8 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                 },
             })
         } else {
+            if (!isAllowedToSetImage) return
+            if (!image) return
             const originalImage = await image.getData()
 
             await framer.setImage({
@@ -162,7 +168,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         }
 
         setSavingInAction(false)
-    }, [toBytes, image, droppedAsset])
+    }, [toBytes, image, droppedAsset, isAllowedToUploadImage, isAllowedToSetImage])
 
     const containerRef = useRef<HTMLDivElement>(null)
 
@@ -265,7 +271,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                         setProgram(node?.program)
                     }}
                     gl={gl}
-                    // texture={texture}
                 />
                 <div className="gui-row">
                     <label className="gui-label">Resolution</label>
@@ -290,10 +295,10 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             <div className="asset-buttons">
                 <Upload
                     ref={uploadRef}
+                    isAllowed={isAllowedToUploadImage}
                     setDroppedAsset={asset => {
                         setDroppedAsset(asset)
                     }}
-                    disabled={false}
                 />
                 {droppedAsset && (
                     <button className="clear" onClick={() => setDroppedAsset(null)}>
@@ -301,7 +306,12 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     </button>
                 )}
             </div>
-            <button onClick={saveEffect} disabled={disabled} className="submit">
+            <button
+                onClick={saveEffect}
+                className="submit"
+                disabled={disabled || !isAllowedToSetImage}
+                title={getPermissionTitle(isAllowedToSetImage)}
+            >
                 {savingInAction ? "Adding..." : "Insert Image"}
             </button>
         </div>

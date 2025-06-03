@@ -1,6 +1,6 @@
 import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react"
 import "./App.css"
-import { framer, Draggable } from "framer-plugin"
+import { framer, Draggable, useIsAllowedTo } from "framer-plugin"
 import Fuse from "fuse.js"
 
 import { IconContext, IconWeight } from "@phosphor-icons/react"
@@ -68,6 +68,8 @@ const fuse = new Fuse(icons, {
 function IconGrid(props: any) {
     const { searchQuery, weight } = props
 
+    const isAllowedToAddSVG = useIsAllowedTo("addSVG")
+
     const deferredQuery = useDeferredValue(searchQuery)
 
     const filteredIcons = useMemo(() => {
@@ -79,6 +81,8 @@ function IconGrid(props: any) {
 
     const handleIconClick = useCallback(
         async (entry: IconEntry) => {
+            if (!isAllowedToAddSVG) return
+
             const { Icon } = entry
 
             const svg = renderToStaticMarkup(<Icon size={32} color={"black"} weight={weight} />)
@@ -88,7 +92,7 @@ function IconGrid(props: any) {
                 name: "Icon",
             })
         },
-        [weight]
+        [isAllowedToAddSVG, weight]
     )
 
     if (filteredIcons.length === 0) {
@@ -104,6 +108,21 @@ function IconGrid(props: any) {
             {filteredIcons.map((entry: IconEntry) => {
                 const { Icon } = entry
 
+                const button = (
+                    <button
+                        className="icon-parent"
+                        onClick={() => handleIconClick(entry)}
+                        disabled={!isAllowedToAddSVG}
+                        title={isAllowedToAddSVG ? undefined : "Insufficient permissions"}
+                    >
+                        <Icon size={32} color={"var(--framer-color-text)"} weight={weight} />
+                    </button>
+                )
+
+                if (!isAllowedToAddSVG) {
+                    return button
+                }
+
                 return (
                     <Draggable
                         data={() => ({
@@ -113,9 +132,7 @@ function IconGrid(props: any) {
                         })}
                         key={entry.name}
                     >
-                        <button className="icon-parent" onClick={() => handleIconClick(entry)}>
-                            <Icon size={32} color={"var(--framer-color-text)"} weight={weight} />
-                        </button>
+                        {button}
                     </Draggable>
                 )
             })}

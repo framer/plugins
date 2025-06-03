@@ -170,6 +170,7 @@ form {
 
 .mapping .source-field[aria-disabled="true"] {
     opacity: 0.5;
+    background-color: var(--framer-color-bg-tertiary) !important;
 }
 
 .mapping .source-field:focus-visible {
@@ -246,4 +247,26 @@ a {
     display: flex;
     align-items: center;
     gap: 5px;
+}
+
+.missing-collection {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+    height: 30px;
+    width: 134px;
+    color: var(--framer-color-text);
+    font-size: 12px;
+    font-family: var(--framer-font-family);
+    caret-color: var(--framer-color-text);
+    background: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0px 10px;
+    outline: none;
+    border: none;
+    opacity: 0.5;
+    cursor: not-allowed;
+    display: flex;
+    align-items: center;
 }

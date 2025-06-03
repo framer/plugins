@@ -50,30 +50,37 @@ function FieldMappingRow({
             </svg>
             {(field.type === "multiCollectionReference" || field.type === "collectionReference") &&
             Array.isArray(field.collectionsOptions) ? (
-                <select
-                    style={{ width: "100%", opacity: disabled ? 0.5 : 1 }}
-                    disabled={disabled}
-                    value={field.collectionId}
-                    onChange={e => onCollectionChange(field.id, e.target.value)}
-                >
-                    {field.collectionsOptions.map(collection => (
-                        <option key={collection.id} value={collection.id}>
-                            {collection.name}
-                        </option>
-                    ))}
-                </select>
+                field.collectionsOptions.length === 0 ? (
+                    <div className="missing-collection">Missing Collection</div>
+                ) : (
+                    <select
+                        style={{
+                            width: "100%",
+                            opacity: disabled ? 0.5 : 1,
+                            ...(isMissingReference ? { cursor: "not-allowed" } : {}),
+                        }}
+                        disabled={disabled}
+                        value={field.collectionId}
+                        onChange={e => onCollectionChange(field.id, e.target.value)}
+                    >
+                        {field.collectionsOptions.map(collection => (
+                            <option key={collection.id} value={collection.id}>
+                                {collection.name}
+                            </option>
+                        ))}
+                    </select>
+                )
             ) : (
                 <input
                     type="text"
                     style={{
                         width: "100%",
                         opacity: disabled ? 0.5 : 1,
-                        ...(isMissingReference ? { cursor: "not-allowed" } : {}),
                     }}
                     disabled={disabled}
-                    placeholder={field.id}
-                    value={isMissingReference ? "Missing Collection" : field.name}
-                    onChange={event => onNameChange(field.id, event.target.value)}
+                    placeholder={originalFieldName}
+                    value={field.name !== originalFieldName ? field.name : ""}
+                    onChange={event => onNameChange(field.id, event.target.value || (originalFieldName ?? ""))}
                 />
             )}
         </>
@@ -97,9 +104,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const [possibleSlugFields] = useState(() =>
-        dataSource.fields.filter(field => field.type === "string" && field.slugifiable)
-    )
+    const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ??

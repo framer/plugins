@@ -104,7 +104,6 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
                         id: field.id,
                         name: field.name,
                         type: field.type,
-                        slugifiable: field.slugifiable,
                     })
                     break
                 case "image":

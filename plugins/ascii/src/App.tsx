@@ -53,8 +53,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     const asciiRef = useRef()
     const { gl, toBytes, program, setProgram, setResolution } = useOGLPipeline()
 
-    const isAllowedToSetImage = useIsAllowedTo("setImage")
-    const isAllowedToUploadImage = useIsAllowedTo("addImage")
+    const isAllowedToUpsertImage = useIsAllowedTo("addImage") && useIsAllowedTo("setImage")
 
     useEffect(() => {
         asciiRef.current?.setPixelSize(exportSize * 0.02)
@@ -113,12 +112,13 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     }, [exportSize, assetResolution])
 
     const saveEffect = useCallback(async () => {
+        if (!isAllowedToUpsertImage) return
+
         const bytes = await toBytes()
 
         setSavingInAction(true)
 
         if (droppedAsset || isPlaceholder) {
-            if (!isAllowedToUploadImage) return
             await framer.addImage({
                 image: {
                     type: "bytes",
@@ -127,7 +127,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                 },
             })
         } else {
-            if (!isAllowedToSetImage) return
             if (!framerCanvasImage) return
 
             const originalImage = await framerCanvasImage.getData()
@@ -141,7 +140,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         }
 
         setSavingInAction(false)
-    }, [toBytes, framerCanvasImage, droppedAsset, isPlaceholder, isAllowedToUploadImage, isAllowedToSetImage])
+    }, [toBytes, framerCanvasImage, droppedAsset, isPlaceholder, isAllowedToUpsertImage])
 
     // resize observer
     useEffect(() => {
@@ -240,7 +239,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
             </div>
             <div className="asset-buttons">
                 <Upload
-                    isAllowed={isAllowedToUploadImage}
+                    isAllowed={isAllowedToUpsertImage}
                     setDroppedAsset={asset => {
                         setDroppedAsset(asset)
                     }}
@@ -254,8 +253,8 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
             <button
                 onClick={saveEffect}
                 className="submit"
-                disabled={!isAllowedToSetImage}
-                title={getPermissionTitle(isAllowedToSetImage)}
+                disabled={!isAllowedToUpsertImage}
+                title={getPermissionTitle(isAllowedToUpsertImage)}
             >
                 {savingInAction ? "Adding..." : "Insert"}
             </button>

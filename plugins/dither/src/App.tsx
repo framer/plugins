@@ -39,8 +39,7 @@ export interface DroppedAsset {
 }
 
 function DitherImage({ image }: { image: ImageAsset | null }) {
-    const isAllowedToSetImage = useIsAllowedTo("setImage")
-    const isAllowedToUploadImage = useIsAllowedTo("addImage")
+    const isAllowedToUpsertImage = useIsAllowedTo("addImage") && useIsAllowedTo("setImage")
 
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>()
@@ -141,12 +140,13 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     }, [renderer, scene, camera, gl, resolution])
 
     const saveEffect = useCallback(async () => {
+        if (!isAllowedToUpsertImage) return
+
         const bytes = await toBytes()
 
         setSavingInAction(true)
 
         if (droppedAsset) {
-            if (!isAllowedToUploadImage) return
             await framer.addImage({
                 image: {
                     type: "bytes",
@@ -155,7 +155,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                 },
             })
         } else {
-            if (!isAllowedToSetImage) return
             if (!image) return
             const originalImage = await image.getData()
 
@@ -168,7 +167,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         }
 
         setSavingInAction(false)
-    }, [toBytes, image, droppedAsset, isAllowedToUploadImage, isAllowedToSetImage])
+    }, [toBytes, image, droppedAsset, isAllowedToUpsertImage])
 
     const containerRef = useRef<HTMLDivElement>(null)
 
@@ -295,7 +294,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             <div className="asset-buttons">
                 <Upload
                     ref={uploadRef}
-                    isAllowed={isAllowedToUploadImage}
+                    isAllowed={isAllowedToUpsertImage}
                     setDroppedAsset={asset => {
                         setDroppedAsset(asset)
                     }}
@@ -309,8 +308,8 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             <button
                 onClick={saveEffect}
                 className="submit"
-                disabled={disabled || !isAllowedToSetImage}
-                title={getPermissionTitle(isAllowedToSetImage)}
+                disabled={disabled || !isAllowedToUpsertImage}
+                title={getPermissionTitle(isAllowedToUpsertImage)}
             >
                 {savingInAction ? "Adding..." : "Insert Image"}
             </button>

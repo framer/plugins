@@ -1,13 +1,14 @@
 import Dropzone from "react-dropzone"
 import { useState } from "react"
 import { DroppedAsset } from "../App"
+import { getPermissionTitle } from "../utils"
 
 export function Upload({
     setDroppedAsset,
-    isAllowedToUploadImage,
+    isAllowed,
 }: {
     setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
-    isAllowedToUploadImage: boolean
+    isAllowed: boolean
 }) {
     const [message, setMessage] = useState<string>("Upload")
 
@@ -46,8 +47,8 @@ export function Upload({
                     <button
                         type="button"
                         className="upload-cta"
-                        disabled={!isAllowedToUploadImage}
-                        title={isAllowedToUploadImage ? undefined : "Insufficient permissions"}
+                        disabled={!isAllowed}
+                        title={getPermissionTitle(isAllowed)}
                     >
                         {message}
                     </button>

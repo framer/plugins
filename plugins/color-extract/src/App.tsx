@@ -112,7 +112,9 @@ export function App() {
                     <button
                         disabled={!supportsGradient || !isAllowedToSetAttributes}
                         style={{ opacity: supportsGradient ? 1 : 0.5 }}
-                        onClick={() => setAsGradient(currentSelection, colors)}
+                        onClick={() => {
+                            setAsGradient(currentSelection, colors)
+                        }}
                         title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}
                     >
                         Set Gradient

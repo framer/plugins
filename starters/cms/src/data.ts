@@ -1,5 +1,5 @@
 import {
-    type EditableManagedCollectionField,
+    type ManagedCollectionFieldSetInput,
     type FieldDataInput,
     framer,
     type ManagedCollection,
@@ -13,7 +13,7 @@ export const PLUGIN_KEYS = {
 
 export interface DataSource {
     id: string
-    fields: readonly EditableManagedCollectionField[]
+    fields: readonly ManagedCollectionFieldSetInput[]
     items: FieldDataInput[]
 }
 
@@ -44,7 +44,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     const dataSource = await dataSourceResponse.json()
 
     // Map your source fields to supported field types in Framer
-    const fields: EditableManagedCollectionField[] = []
+    const fields: ManagedCollectionFieldSetInput[] = []
     for (const field of dataSource.fields) {
         switch (field.type) {
             case "string":
@@ -83,9 +83,9 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
 }
 
 export function mergeFieldsWithExistingFields(
-    sourceFields: readonly EditableManagedCollectionField[],
-    existingFields: readonly EditableManagedCollectionField[]
-): EditableManagedCollectionField[] {
+    sourceFields: readonly ManagedCollectionFieldSetInput[],
+    existingFields: readonly ManagedCollectionFieldSetInput[]
+): ManagedCollectionFieldSetInput[] {
     return sourceFields.map(sourceField => {
         const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
         if (existingField) {
@@ -98,8 +98,8 @@ export function mergeFieldsWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: readonly EditableManagedCollectionField[],
-    slugField: EditableManagedCollectionField
+    fields: readonly ManagedCollectionFieldSetInput[],
+    slugField: ManagedCollectionFieldSetInput
 ) {
     const sanitizedFields = fields.map(field => ({
         ...field,

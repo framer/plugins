@@ -1,6 +1,6 @@
 import { PropsWithChildren, memo, useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
 import { UnsplashPhoto, getRandomPhoto, useListPhotosInfinite } from "./api"
-import { framer, Draggable } from "framer-plugin"
+import { framer, Draggable, useIsAllowedTo } from "framer-plugin"
 import { ErrorBoundary } from "react-error-boundary"
 import { QueryErrorResetBoundary, useMutation } from "@tanstack/react-query"
 import { Spinner } from "./Spinner"
@@ -24,12 +24,16 @@ void framer.showUI({
 })
 
 export function App() {
+    const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
+
     const [query, setQuery] = useState("")
 
     const debouncedQuery = useDebounce(query, 200)
 
     const addRandomMutation = useMutation({
         mutationFn: async (query: string) => {
+            if (!isAllowedToUpsertImage) return
+
             const mode = framer.mode
             const randomPhoto = await getRandomPhoto(query)
 
@@ -73,6 +77,8 @@ export function App() {
                 <button
                     className="items-center flex justify-center relative"
                     onClick={() => addRandomMutation.mutate(query)}
+                    disabled={!isAllowedToUpsertImage}
+                    title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
                 >
                     {addRandomMutation.isPending ? <Spinner size="normal" inheritColor /> : "Random Image"}
                 </button>
@@ -84,6 +90,8 @@ export function App() {
 type PhotoId = string
 
 const PhotosList = memo(function PhotosList({ query }: { query: string }) {
+    const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
+
     const { data, fetchNextPage, isFetchingNextPage, isLoading, hasNextPage } = useListPhotosInfinite(query)
     const scrollRef = useRef<HTMLDivElement>(null)
     const [windowSize, setWindowSize] = useState(window.innerWidth)
@@ -101,6 +109,8 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
     const addPhotoMutation = useMutation({
         mutationFn: async (photo: UnsplashPhoto) => {
+            if (!isAllowedToUpsertImage) return
+
             const mode = framer.mode
 
             if (mode === "canvas") {
@@ -209,6 +219,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
                                     width={columnWidth}
                                     loading={addPhotoMutation.isPending && addPhotoMutation.variables?.id === photo.id}
                                     onSelect={addPhotoMutation.mutate}
+                                    isAllowedToUpsertImage={isAllowedToUpsertImage}
                                 />
                             ))}
                             {isLoadingVisible && <Placeholders index={i} />}
@@ -226,9 +237,17 @@ interface GridItemProps {
     width: number
     loading: boolean
     onSelect: (photo: UnsplashPhoto) => void
+    isAllowedToUpsertImage: boolean
 }
 
-const GridItem = memo(function GridItem({ photo, loading, height, width, onSelect }: GridItemProps) {
+const GridItem = memo(function GridItem({
+    photo,
+    loading,
+    height,
+    width,
+    onSelect,
+    isAllowedToUpsertImage,
+}: GridItemProps) {
     const handleClick = () => onSelect(photo)
     const [imageLoaded, setImageLoaded] = useState(false)
 
@@ -237,6 +256,38 @@ const GridItem = memo(function GridItem({ photo, loading, height, width, onSelec
         img.src = photo.urls.thumb
         img.onload = () => setImageLoaded(true)
     }, [photo.urls.thumb])
+
+    const button = (
+        <button
+            onClick={handleClick}
+            className="cursor-pointer bg-cover relative rounded-lg"
+            style={{
+                height,
+                backgroundImage: `url(${photo.urls.thumb})`,
+                backgroundColor: photo.color,
+            }}
+            disabled={!isAllowedToUpsertImage}
+            title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
+        >
+            <div
+                className={cx(
+                    "absolute top-0 right-0 left-0 bottom-0 rounded-lg flex items-center justify-center transition-all pointer-events-none",
+                    loading && "bg-blackDimmed"
+                )}
+            >
+                {loading && <Spinner size="medium" />}
+            </div>
+            {!imageLoaded && photo.blur_hash && (
+                <div className="absolute top-0 left-0">
+                    <Blurhash hash={photo.blur_hash} width={width} height={height} />
+                </div>
+            )}
+        </button>
+    )
+
+    if (!isAllowedToUpsertImage) {
+        return button
+    }
 
     return (
         <div key={photo.id} className="flex flex-col gap-[5px]">
@@ -247,29 +298,7 @@ const GridItem = memo(function GridItem({ photo, loading, height, width, onSelec
                     previewImage: photo.urls.thumb,
                 }}
             >
-                <button
-                    onClick={handleClick}
-                    className="cursor-pointer bg-cover relative rounded-lg"
-                    style={{
-                        height,
-                        backgroundImage: `url(${photo.urls.thumb})`,
-                        backgroundColor: photo.color,
-                    }}
-                >
-                    <div
-                        className={cx(
-                            "absolute top-0 right-0 left-0 bottom-0 rounded-lg flex items-center justify-center transition-all pointer-events-none",
-                            loading && "bg-blackDimmed"
-                        )}
-                    >
-                        {loading && <Spinner size="medium" />}
-                    </div>
-                    {!imageLoaded && photo.blur_hash && (
-                        <div className="absolute top-0 left-0">
-                            <Blurhash hash={photo.blur_hash} width={width} height={height} />
-                        </div>
-                    )}
-                </button>
+                {button}
             </Draggable>
             <a
                 target="_blank"

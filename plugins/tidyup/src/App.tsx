@@ -6,6 +6,7 @@ import {
     isWebPageNode,
     isComponentNode,
     isVectorSetNode,
+    useIsAllowedTo,
 } from "framer-plugin"
 import { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback, useReducer } from "react"
 import "./App.css"
@@ -326,6 +327,7 @@ type Layout = "horizontal" | "grid" | "random"
 type Sorting = "position" | "width" | "height" | "area"
 
 export function App() {
+    const isAllowedToSetAttributes = useIsAllowedTo("setAttributes")
     const rects = useGroundNodeRects()
 
     const isEnabled = Object.keys(rects).length > 1
@@ -512,9 +514,9 @@ export function App() {
                 </Row>
             )}
             <button
-                disabled={!isEnabled}
+                disabled={!isAllowedToSetAttributes || !isEnabled}
                 onClick={async () => {
-                    if (!isEnabled) return
+                    if (!isAllowedToSetAttributes || !isEnabled) return
 
                     const rawBoundingBox = getBoundingBox(Object.values(rects).filter(isRect))
 
@@ -528,6 +530,7 @@ export function App() {
                         })
                     }
                 }}
+                title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}
             >
                 {layout === "random" ? "Mess Up" : "Tidy Up"}
             </button>

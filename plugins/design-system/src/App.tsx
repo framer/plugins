@@ -124,6 +124,10 @@ const colors: Color[] = [
     },
 ]
 
+function getPermissionTitle(isAllowed: boolean) {
+    return isAllowed ? undefined : "Insufficient permissions"
+}
+
 export function App() {
     const [search, setSearch] = useState("")
     const [activeTab, setActiveTab] = useState("components")
@@ -288,7 +292,7 @@ export function App() {
                                 <button
                                     className="copy-button"
                                     disabled={!isAllowedToCreateColorStyle}
-                                    title={isAllowedToCreateColorStyle ? undefined : "Insufficient permissions"}
+                                    title={getPermissionTitle(isAllowedToCreateColorStyle)}
                                     onClick={() => handleAddColors([color])}
                                 >
                                     Add
@@ -298,7 +302,7 @@ export function App() {
                         <button
                             className="action-button"
                             disabled={!isAllowedToUpsertColor}
-                            title={isAllowedToUpsertColor ? undefined : "Insufficient permissions"}
+                            title={getPermissionTitle(isAllowedToUpsertColor)}
                             onClick={() => handleAddColors(filteredColorItems)}
                         >
                             Add to Project

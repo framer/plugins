@@ -9,7 +9,7 @@ import { useOGLPipeline } from "./ogl/pipeline"
 import { useImageTexture } from "./hooks/use-image-texture"
 import { useVideoTexture } from "./hooks/use-video-texture"
 import { useGLBTexture } from "./hooks/use-glb-texture"
-import { BASE_PATH } from "./utils"
+import { BASE_PATH, getPermissionTitle } from "./utils"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()
@@ -240,7 +240,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
             </div>
             <div className="asset-buttons">
                 <Upload
-                    isAllowedToUploadImage={isAllowedToUploadImage}
+                    isAllowed={isAllowedToUploadImage}
                     setDroppedAsset={asset => {
                         setDroppedAsset(asset)
                     }}
@@ -255,7 +255,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                 onClick={saveEffect}
                 className="submit"
                 disabled={!isAllowedToSetImage}
-                title={isAllowedToSetImage ? undefined : "Insufficient permissions"}
+                title={getPermissionTitle(isAllowedToSetImage)}
             >
                 {savingInAction ? "Adding..." : "Insert"}
             </button>

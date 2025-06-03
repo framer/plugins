@@ -30,12 +30,19 @@ export function AppCms({ collection, previousDataSourceId, previousSlugFieldId, 
     }, [boardToken, collection])
 
     useEffect(() => {
-        framer.showUI({
-            width: 320,
-            minHeight: dataSource ? 427 : 325,
-            // minHeight: 325,
-            resizable: true,
-        })
+        if (dataSource) {
+            framer.showUI({
+                width: 320,
+                height: 427,
+                minHeight: 427,
+                resizable: true,
+            })
+        } else {
+            framer.showUI({
+                width: 320,
+                height: 325,
+            })
+        }
     }, [dataSource])
 
     useEffect(() => {

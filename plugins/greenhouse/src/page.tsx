@@ -21,8 +21,10 @@ export default function Page({
             const { height } = entries[0].contentRect
 
             framer.showUI({
-                height: Math.min(height, 450),
+                maxHeight: 477,
+                height,
                 width,
+                resizable: true,
             })
         })
 

@@ -49,14 +49,14 @@ function FieldMappingRow({
                 />
             </svg>
             {(field.type === "multiCollectionReference" || field.type === "collectionReference") &&
-            (field.collectionsOptions?.length ?? 0) > 1 ? (
+            Array.isArray(field.collectionsOptions) ? (
                 <select
                     style={{ width: "100%", opacity: disabled ? 0.5 : 1 }}
                     disabled={disabled}
                     value={field.collectionId}
                     onChange={e => onCollectionChange(field.id, e.target.value)}
                 >
-                    {field.collectionsOptions?.map(collection => (
+                    {field.collectionsOptions.map(collection => (
                         <option key={collection.id} value={collection.id}>
                             {collection.name}
                         </option>
@@ -89,13 +89,17 @@ interface FieldMappingProps {
 }
 
 export function FieldMapping({ collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
+    console.log(dataSource)
+
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
     )
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
+    const [possibleSlugFields] = useState(() =>
+        dataSource.fields.filter(field => field.type === "string" && field.slugifiable)
+    )
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ??
@@ -247,7 +251,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     }
 
     return (
-        <div className="framer-hide-scrollbar mapping">
+        <main className="framer-hide-scrollbar mapping">
             {/* <hr className="sticky-divider" /> */}
             <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
@@ -307,6 +311,6 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     </button>
                 </footer>
             </form>
-        </div>
+        </main>
     )
 }

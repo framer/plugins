@@ -1,8 +1,8 @@
 import JobsDataSource from "./jobs"
 import type { CollectionReferenceField, Field, GreenhouseDataSource } from "./types"
 
-const idField: Field = { id: "id", name: "ID", type: "string" }
-const nameField: Field = { id: "name", name: "Name", type: "string" }
+const idField: Field = { id: "id", name: "ID", type: "string", slugifiable: true }
+const nameField: Field = { id: "name", name: "Name", type: "string", slugifiable: true }
 const jobsField: CollectionReferenceField = {
     id: "jobs",
     name: "Jobs",

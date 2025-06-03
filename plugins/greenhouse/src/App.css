@@ -103,6 +103,7 @@ form {
     width: 100%;
     justify-content: space-between;
     color: var(--framer-color-text-secondary);
+    padding-left: 15px;
 }
 
 .setup select {
@@ -144,6 +145,7 @@ form {
     padding-bottom: 10px;
     align-items: center;
     color: var(--framer-color-text-tertiary);
+    padding-top: 15px;
 }
 
 .mapping .slug-field {

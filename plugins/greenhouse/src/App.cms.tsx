@@ -5,7 +5,6 @@ import { useEffect, useState } from "react"
 import { type DataSource, getDataSource, PLUGIN_KEYS } from "./data"
 import { FieldMapping } from "./components/FieldMapping"
 import { SelectDataSource } from "./components/SelectDataSource"
-import { Auth } from "./components/auth"
 import Page from "./page"
 
 interface AppProps {
@@ -18,7 +17,7 @@ interface AppProps {
 export function AppCms({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoading, setIsLoading] = useState(Boolean(previousDataSourceId || previousBoardToken))
-    const [boardToken, setBoardToken] = useState<string | null>()
+    const [boardToken, setBoardToken] = useState<string | null>(previousBoardToken)
 
     useEffect(() => {
         if (boardToken) {
@@ -32,8 +31,10 @@ export function AppCms({ collection, previousDataSourceId, previousSlugFieldId, 
 
     useEffect(() => {
         framer.showUI({
-            width: 360,
-            height: 350,
+            width: 320,
+            minHeight: dataSource ? 427 : 325,
+            // minHeight: 325,
+            resizable: true,
         })
     }, [dataSource])
 
@@ -93,29 +94,22 @@ export function AppCms({ collection, previousDataSourceId, previousSlugFieldId, 
         )
     }
 
-    if (!boardToken) {
-        return (
-            <Page width={360}>
-                <Auth
-                    onAuth={boardToken => {
-                        setBoardToken(boardToken)
-                    }}
-                />
-            </Page>
-        )
-    }
-
     if (!dataSource) {
         return (
-            <Page width={360} previousPage="Board" onPreviousPage={() => setBoardToken(null)}>
-                <SelectDataSource onSelectDataSource={setDataSource} previousDataSourceId={previousDataSourceId} />
-            </Page>
+            // <Page width={360} previousPage="Board" onPreviousPage={() => setBoardToken(null)}>
+            <SelectDataSource
+                onSelectBoardToken={setBoardToken}
+                onSelectDataSource={setDataSource}
+                previousDataSourceId={previousDataSourceId}
+                previousBoardToken={previousBoardToken}
+            />
+            // </Page>
         )
     }
 
     return (
-        <Page width={360} previousPage="Collection" onPreviousPage={() => setDataSource(null)}>
-            <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
-        </Page>
+        // <Page width={360} previousPage="Collection" onPreviousPage={() => setDataSource(null)}>
+        <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
+        // </Page>
     )
 }

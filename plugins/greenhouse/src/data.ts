@@ -30,6 +30,7 @@ export const dataSourceOptions = dataSources
 // this is used in FieldMapping.tsx to display the collections options in the dropdown
 export type ExtendedManagedCollectionFieldInput = ManagedCollectionFieldInput & {
     collectionsOptions?: ManagedCollection[]
+    slugifiable?: boolean
 }
 
 export interface DataSource {
@@ -88,6 +89,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
                 type: field.type,
                 collectionId,
                 collectionsOptions: matchingCollections,
+                slugifiable: field.slugifiable,
             })
         } else {
             switch (field.type) {
@@ -102,6 +104,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
                         id: field.id,
                         name: field.name,
                         type: field.type,
+                        slugifiable: field.slugifiable,
                     })
                     break
                 case "image":

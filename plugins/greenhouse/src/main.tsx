@@ -5,20 +5,21 @@ import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { AppCms } from "./App.cms.tsx"
 import { PLUGIN_KEYS, syncExistingCollection } from "./data"
-import { AppCanvas } from "./App.canvas.tsx"
+// import { AppCanvas } from "./App.canvas.tsx"
 
 const previousBoardToken = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
 
-if (framer.mode === "canvas") {
-    const root = document.getElementById("root")
-    if (!root) throw new Error("Root element not found")
+// if (framer.mode === "canvas") {
+// const root = document.getElementById("root")
+// if (!root) throw new Error("Root element not found")
+// createRoot(root).render(
+//     <StrictMode>
+//         <AppCanvas previousBoardToken={previousBoardToken} />
+//     </StrictMode>
+// )
+// } else {
 
-    createRoot(root).render(
-        <StrictMode>
-            <AppCanvas previousBoardToken={previousBoardToken} />
-        </StrictMode>
-    )
-} else {
+if (framer.mode === "syncManagedCollection" || framer.mode === "configureManagedCollection") {
     const activeCollection = await framer.getActiveManagedCollection()
 
     const previousDataSourceId = await activeCollection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)

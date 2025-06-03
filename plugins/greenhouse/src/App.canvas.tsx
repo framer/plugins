@@ -63,7 +63,9 @@ export function AppCanvas({ previousBoardToken }: { previousBoardToken: string |
 
     if (!boardToken) {
         return (
-            <Page width={360}>
+            <Page
+            // width={360}
+            >
                 <Auth
                     onAuth={boardToken => {
                         setBoardToken(boardToken)
@@ -74,7 +76,11 @@ export function AppCanvas({ previousBoardToken }: { previousBoardToken: string |
     }
 
     return (
-        <Page width={260} previousPage="Board Token" onPreviousPage={() => setBoardToken(null)}>
+        <Page
+            // width={260}
+            previousPage="Board Token"
+            onPreviousPage={() => setBoardToken(null)}
+        >
             <div className="setup canvas">
                 <div className="intro">
                     <img src="/Icon.png" alt="Greenhouse" className="icon" />

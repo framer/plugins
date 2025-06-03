@@ -35,6 +35,6 @@
     "prettier": "^3.2.5",
     "typescript": "^5.3.3",
     "vite": "^6",
-    "vite-plugin-framer": "^1.0.1"
+    "vite-plugin-framer": "^1.0.7"
   }
 }

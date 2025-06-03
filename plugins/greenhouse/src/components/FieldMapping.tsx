@@ -96,15 +96,15 @@ interface FieldMappingProps {
 }
 
 export function FieldMapping({ collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
-    console.log(dataSource)
-
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
     )
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
+    const [possibleSlugFields] = useState(() =>
+        dataSource.fields.filter(field => field.type === "string" && field.slugifiable)
+    )
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ??
@@ -257,7 +257,6 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     return (
         <main className="framer-hide-scrollbar mapping">
-            {/* <hr className="sticky-divider" /> */}
             <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
                     Slug Field

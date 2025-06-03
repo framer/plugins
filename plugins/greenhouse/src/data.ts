@@ -104,6 +104,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
                         id: field.id,
                         name: field.name,
                         type: field.type,
+                        slugifiable: field.slugifiable,
                     })
                     break
                 case "image":
@@ -111,9 +112,9 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
                 case "enum":
                     console.warn(`Support for field type "${field.type}" is not implemented in this Plugin.`)
                     break
-                // default: {
-                //     console.warn(`Unknown field type "${field.type}".`)
-                // }
+                default: {
+                    console.warn(`Unknown field type "${field.type}".`)
+                }
             }
         }
     }

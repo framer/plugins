@@ -103,20 +103,14 @@ export function AppCms({ collection, previousDataSourceId, previousSlugFieldId, 
 
     if (!dataSource) {
         return (
-            // <Page width={360} previousPage="Board" onPreviousPage={() => setBoardToken(null)}>
             <SelectDataSource
                 onSelectBoardToken={setBoardToken}
                 onSelectDataSource={setDataSource}
                 previousDataSourceId={previousDataSourceId}
                 previousBoardToken={previousBoardToken}
             />
-            // </Page>
         )
     }
 
-    return (
-        // <Page width={360} previousPage="Collection" onPreviousPage={() => setDataSource(null)}>
-        <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
-        // </Page>
-    )
+    return <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
 }

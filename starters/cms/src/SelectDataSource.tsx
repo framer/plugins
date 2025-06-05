@@ -29,7 +29,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
     }
 
     return (
-        <div className="framer-hide-scrollbar setup">
+        <main className="framer-hide-scrollbar setup">
             <div className="intro">
                 <div className="logo">
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none">
@@ -66,6 +66,6 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                     {isLoading ? <div className="framer-spinner" /> : "Next"}
                 </button>
             </form>
-        </div>
+        </main>
     )
 }

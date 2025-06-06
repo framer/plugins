@@ -28,12 +28,13 @@ function FieldMappingRow({
                 <span>{originalFieldName ?? field.id}</span>
             </button>
             <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" fill="none">
+                <title>maps to</title>
                 <path
                     fill="transparent"
                     stroke="#999"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
                     d="m2.5 7 3-3-3-3"
                 />
             </svg>
@@ -216,7 +217,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
                 <footer>
                     <hr />
-                    <button disabled={isSyncing}>
+                    <button type="submit" disabled={isSyncing}>
                         {isSyncing ? <div className="framer-spinner" /> : `Import ${dataSourceName}`}
                     </button>
                 </footer>

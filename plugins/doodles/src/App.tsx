@@ -36,20 +36,16 @@ export async function getAssetDataFromSVG(svgString: string): Promise<string> {
 export function App() {
     const isAllowedToAddImage = useIsAllowedTo("addImage")
 
-    const handleAddSvg = useCallback(
-        async (drawing: string) => {
-            if (!isAllowedToAddImage) return
-            await framer.addImage({
-                image: {
-                    type: "bytes",
-                    bytes: await svgToBytes(drawing),
-                    mimeType: "image/svg+xml",
-                },
-                name: "Doodle",
-            })
-        },
-        [isAllowedToAddImage]
-    )
+    const handleAddSvg = useCallback(async (drawing: string) => {
+        await framer.addImage({
+            image: {
+                type: "bytes",
+                bytes: await svgToBytes(drawing),
+                mimeType: "image/svg+xml",
+            },
+            name: "Doodle",
+        })
+    }, [])
 
     const canvasRef = useRef<ReactSketchCanvasRef>(null)
     const strokeInputRef = useRef<HTMLInputElement>(null)
@@ -338,6 +334,7 @@ export function App() {
                     disabled={!isAllowedToAddImage}
                     title={isAllowedToAddImage ? undefined : "Insufficient permissions"}
                     onClick={() => {
+                        if (!isAllowedToAddImage) return
                         if (!canvasRef.current) return
                         canvasRef.current
                             .exportSvg()

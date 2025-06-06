@@ -156,7 +156,10 @@ export function App() {
             ) : (
                 <button
                     className="framer-button-primary"
-                    onClick={setupFromSelection}
+                    onClick={() => {
+                        if (!isAllowedToSetAttributes) return
+                        setupFromSelection()
+                    }}
                     disabled={!isAllowedToSetAttributes}
                     title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}
                 >

@@ -81,8 +81,6 @@ function IconGrid(props: any) {
 
     const handleIconClick = useCallback(
         async (entry: IconEntry) => {
-            if (!isAllowedToAddSVG) return
-
             const { Icon } = entry
 
             const svg = renderToStaticMarkup(<Icon size={32} color={"black"} weight={weight} />)
@@ -92,7 +90,7 @@ function IconGrid(props: any) {
                 name: "Icon",
             })
         },
-        [isAllowedToAddSVG, weight]
+        [weight]
     )
 
     if (filteredIcons.length === 0) {
@@ -108,32 +106,27 @@ function IconGrid(props: any) {
             {filteredIcons.map((entry: IconEntry) => {
                 const { Icon } = entry
 
-                const button = (
+                return (
                     <button
                         className="icon-parent"
-                        onClick={() => handleIconClick(entry)}
+                        onClick={() => {
+                            if (!isAllowedToAddSVG) return
+                            handleIconClick(entry)
+                        }}
                         disabled={!isAllowedToAddSVG}
                         title={isAllowedToAddSVG ? undefined : "Insufficient permissions"}
                     >
-                        <Icon size={32} color={"var(--framer-color-text)"} weight={weight} />
+                        <Draggable
+                            data={() => ({
+                                type: "svg",
+                                name: "Icon",
+                                svg: renderToStaticMarkup(<Icon size={32} color={"black"} weight={weight} />),
+                            })}
+                            key={entry.name}
+                        >
+                            <Icon size={32} color={"var(--framer-color-text)"} weight={weight} />
+                        </Draggable>
                     </button>
-                )
-
-                if (!isAllowedToAddSVG) {
-                    return button
-                }
-
-                return (
-                    <Draggable
-                        data={() => ({
-                            type: "svg",
-                            name: "Icon",
-                            svg: renderToStaticMarkup(<Icon size={32} color={"black"} weight={weight} />),
-                        })}
-                        key={entry.name}
-                    >
-                        {button}
-                    </Draggable>
                 )
             })}
         </div>

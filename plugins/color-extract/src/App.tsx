@@ -59,22 +59,26 @@ export function App() {
         })
     }, [])
 
-    const setAsGradient = useCallback(async (node: CanvasNode, colors: FinalColor[]) => {
-        if (!node || !colors) return
-        if (!supportsBackgroundGradient(node)) return
+    const setAsGradient = useCallback(
+        async (node: CanvasNode, colors: FinalColor[]) => {
+            if (!isAllowedToSetAttributes) return
+            if (!node || !colors) return
+            if (!supportsBackgroundGradient(node)) return
 
-        const colorStops: ColorStop[] = colors.map((color: FinalColor, index: number) => {
-            return { color: color.hex, position: index / (colors.length - 1) }
-        })
+            const colorStops: ColorStop[] = colors.map((color: FinalColor, index: number) => {
+                return { color: color.hex, position: index / (colors.length - 1) }
+            })
 
-        const gradient = node.backgroundGradient
-            ? node.backgroundGradient.cloneWithAttributes({ stops: colorStops })
-            : new LinearGradient({ angle: 90, stops: colorStops })
+            const gradient = node.backgroundGradient
+                ? node.backgroundGradient.cloneWithAttributes({ stops: colorStops })
+                : new LinearGradient({ angle: 90, stops: colorStops })
 
-        await framer.setAttributes(node.id, {
-            backgroundGradient: gradient,
-        })
-    }, [])
+            await framer.setAttributes(node.id, {
+                backgroundGradient: gradient,
+            })
+        },
+        [isAllowedToSetAttributes]
+    )
 
     const colorList = colors.map((color: FinalColor) => {
         return (

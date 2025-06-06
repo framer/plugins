@@ -235,8 +235,9 @@ export function App({ collection }: { collection: Collection }) {
     }, [isAllowedToAddItems])
 
     useEffect(() => {
+        if (!isAllowedToAddItems) return
+
         const handlePaste = async (event: ClipboardEvent) => {
-            if (!isAllowedToAddItems) return
             if (!event.clipboardData) return
 
             try {

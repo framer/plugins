@@ -6,23 +6,23 @@ import ReactDOM from "react-dom/client"
 import { App, importData } from "./App.tsx"
 
 async function runPlugin() {
-    const isAllowedToImportData = framer.isAllowedTo(
-        "ManagedCollection.addItems",
-        "ManagedCollection.removeItems",
-        "ManagedCollection.setFields",
-        "ManagedCollection.setPluginData"
-    )
-
-    if (!isAllowedToImportData) {
-        framer.closePlugin("You don't have permission to import data.", { variant: "error" })
-        return
-    }
-
     const mode = framer.mode
     const collection = await framer.getActiveManagedCollection()
 
     const rssSourceId = await collection.getPluginData("rssSourceId")
     if (mode === "syncManagedCollection" && rssSourceId) {
+        const isAllowedToImportData = framer.isAllowedTo(
+            "ManagedCollection.addItems",
+            "ManagedCollection.removeItems",
+            "ManagedCollection.setFields",
+            "ManagedCollection.setPluginData"
+        )
+
+        if (!isAllowedToImportData) {
+            framer.closePlugin("You don't have permission to import data.", { variant: "error" })
+            return
+        }
+
         try {
             await importData(collection, rssSourceId)
             await framer.closePlugin()

@@ -1,4 +1,4 @@
-import { PropsWithChildren, memo, useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
+import { PropsWithChildren, memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
 import { UnsplashPhoto, getRandomPhoto, useListPhotosInfinite } from "./api"
 import { framer, Draggable, useIsAllowedTo } from "framer-plugin"
 import { ErrorBoundary } from "react-error-boundary"
@@ -32,8 +32,6 @@ export function App() {
 
     const addRandomMutation = useMutation({
         mutationFn: async (query: string) => {
-            if (!isAllowedToUpsertImage) return
-
             const mode = framer.mode
             const randomPhoto = await getRandomPhoto(query)
 
@@ -76,7 +74,10 @@ export function App() {
             <div className="mt-[15px] px-[15px]">
                 <button
                     className="items-center flex justify-center relative"
-                    onClick={() => addRandomMutation.mutate(query)}
+                    onClick={() => {
+                        if (!isAllowedToUpsertImage) return
+                        addRandomMutation.mutate(query)
+                    }}
                     disabled={!isAllowedToUpsertImage}
                     title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
                 >
@@ -109,8 +110,6 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
     const addPhotoMutation = useMutation({
         mutationFn: async (photo: UnsplashPhoto) => {
-            if (!isAllowedToUpsertImage) return
-
             const mode = framer.mode
 
             if (mode === "canvas") {
@@ -248,7 +247,7 @@ const GridItem = memo(function GridItem({
     onSelect,
     isAllowedToUpsertImage,
 }: GridItemProps) {
-    const handleClick = () => onSelect(photo)
+    const handleClick = useCallback(() => onSelect(photo), [onSelect, photo])
     const [imageLoaded, setImageLoaded] = useState(false)
 
     useEffect(() => {
@@ -257,49 +256,46 @@ const GridItem = memo(function GridItem({
         img.onload = () => setImageLoaded(true)
     }, [photo.urls.thumb])
 
-    const button = (
-        <button
-            onClick={handleClick}
-            className="cursor-pointer bg-cover relative rounded-lg"
-            style={{
-                height,
-                backgroundImage: `url(${photo.urls.thumb})`,
-                backgroundColor: photo.color,
-            }}
-            disabled={!isAllowedToUpsertImage}
-            title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
-        >
-            <div
-                className={cx(
-                    "absolute top-0 right-0 left-0 bottom-0 rounded-lg flex items-center justify-center transition-all pointer-events-none",
-                    loading && "bg-blackDimmed"
-                )}
-            >
-                {loading && <Spinner size="medium" />}
-            </div>
-            {!imageLoaded && photo.blur_hash && (
-                <div className="absolute top-0 left-0">
-                    <Blurhash hash={photo.blur_hash} width={width} height={height} />
-                </div>
-            )}
-        </button>
-    )
-
-    if (!isAllowedToUpsertImage) {
-        return button
-    }
-
     return (
         <div key={photo.id} className="flex flex-col gap-[5px]">
-            <Draggable
-                data={{
-                    type: "image",
-                    image: photo.urls.full,
-                    previewImage: photo.urls.thumb,
+            <button
+                onClick={() => {
+                    if (!isAllowedToUpsertImage) return
+                    handleClick()
                 }}
+                className="cursor-pointer bg-cover relative rounded-lg"
+                style={{
+                    height,
+                    backgroundImage: `url(${photo.urls.thumb})`,
+                    backgroundColor: photo.color,
+                }}
+                disabled={!isAllowedToUpsertImage}
+                title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
             >
-                {button}
-            </Draggable>
+                <Draggable
+                    data={{
+                        type: "image",
+                        image: photo.urls.full,
+                        previewImage: photo.urls.thumb,
+                    }}
+                >
+                    <>
+                        <div
+                            className={cx(
+                                "absolute top-0 right-0 left-0 bottom-0 rounded-lg flex items-center justify-center transition-all pointer-events-none",
+                                loading && "bg-blackDimmed"
+                            )}
+                        >
+                            {loading && <Spinner size="medium" />}
+                        </div>
+                        {!imageLoaded && photo.blur_hash && (
+                            <div className="absolute top-0 left-0">
+                                <Blurhash hash={photo.blur_hash} width={width} height={height} />
+                            </div>
+                        )}
+                    </>
+                </Draggable>
+            </button>
             <a
                 target="_blank"
                 href={photo.user.links.html}

@@ -20,6 +20,7 @@ import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
 import { assert, assertNever, formatDate, isDefined, isString, slugify } from "./utils"
 
 export type FieldId = string
+type FieldData = Record<string, unknown>
 
 const apiBaseUrl = "https://notion-plugin-api.framer-team.workers.dev"
 const oauthRedirectUrl = encodeURIComponent(`${apiBaseUrl}/auth/authorize/callback`)
@@ -506,7 +507,7 @@ async function processItem(
 ): Promise<CollectionItemData | null> {
     let slugValue: null | string = null
 
-    const fieldData: Record<string, unknown> = {}
+    const fieldData: FieldData = {}
 
     assert(isFullPage(item))
 
@@ -539,12 +540,12 @@ async function processItem(
             })
         }
 
-        fieldData[field.id] = fieldValue
+        fieldData[field.id] = { type: field.type, value: fieldValue }
     }
 
     if (fieldsById.has(pageContentProperty.id) && item.id) {
         const contentHTML = await getPageBlocksAsRichText(item.id)
-        fieldData[pageContentProperty.id] = contentHTML
+        fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
     }
 
     if (!slugValue) {

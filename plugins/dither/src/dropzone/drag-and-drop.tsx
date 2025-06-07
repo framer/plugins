@@ -1,14 +1,15 @@
 import Dropzone from "react-dropzone"
 import { forwardRef, useImperativeHandle, useRef, useState } from "react"
 import { DroppedAsset } from "../App"
+import { getPermissionTitle } from "../utils"
 
 export const Upload = forwardRef(function Upload(
     {
         setDroppedAsset,
-        disabled = false,
+        isAllowed,
     }: {
         setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
-        disabled: boolean
+        isAllowed: boolean
     },
     ref
 ) {
@@ -44,7 +45,13 @@ export const Upload = forwardRef(function Upload(
             {({ getRootProps, getInputProps }) => (
                 <div {...getRootProps()} className="upload">
                     <input {...getInputProps()} />
-                    <button ref={buttonRef} type="button" className="upload-cta" disabled={disabled}>
+                    <button
+                        ref={buttonRef}
+                        type="button"
+                        className="upload-cta"
+                        disabled={!isAllowed}
+                        title={getPermissionTitle(isAllowed)}
+                    >
                         {message}
                     </button>
                 </div>

@@ -45,3 +45,7 @@ export function assert(condition: unknown, ...msg: unknown[]): asserts condition
     }
     throw e
 }
+
+export function getPermissionTitle(isAllowed: boolean) {
+    return isAllowed ? undefined : "Insufficient permissions"
+}

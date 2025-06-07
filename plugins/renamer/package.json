@@ -21,10 +21,10 @@
     "tslib": "^2.6.3",
     "typescript": "^5.2.2",
     "vite": "^6",
-    "vite-plugin-framer": "^1.0.1",
+    "vite-plugin-framer": "^1.0.7",
     "vite-plugin-mkcert": "^1"
   },
   "dependencies": {
-    "framer-plugin": "^2.0.4"
+    "framer-plugin": "^3.2.0"
   }
 }

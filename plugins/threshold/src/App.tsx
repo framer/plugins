@@ -1,5 +1,5 @@
 import * as comlink from "comlink"
-import { ImageAsset, framer } from "framer-plugin"
+import { ImageAsset, framer, useIsAllowedTo } from "framer-plugin"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "./App.css"
 import { Spinner } from "./Spinner"
@@ -44,11 +44,15 @@ const debounce = (fn: Function, ms = 300) => {
 }
 
 function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; maxWidth: number; maxHeight: number }) {
+    const isAllowedToUpsertImage = useIsAllowedTo("setImage")
+
     const [threshold, setThreshold] = useState(127)
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [hasPainted, setHasPainted] = useState(false)
 
-    const handleSaveImage = async () => {
+    const handleSaveImage = useCallback(async () => {
+        if (!isAllowedToUpsertImage) return
+
         const ctx = canvasRef.current?.getContext("2d")
         assert(ctx)
 
@@ -71,7 +75,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
         void framer.closePlugin("Image saved...")
 
         console.log("total duration", performance.now() - start)
-    }
+    }, [isAllowedToUpsertImage, image])
 
     const updateCanvas = useMemo(
         () =>
@@ -153,7 +157,13 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
                 onChange={event => handleThresholdChange(Number(event.target.value))}
             />
 
-            <button onClick={handleSaveImage}>Save Image</button>
+            <button
+                onClick={handleSaveImage}
+                disabled={!isAllowedToUpsertImage}
+                title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
+            >
+                Save Image
+            </button>
         </div>
     )
 }

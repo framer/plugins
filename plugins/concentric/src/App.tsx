@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { CanvasNode, framer, supportsBorderRadius } from "framer-plugin"
+import { CanvasNode, framer, supportsBorderRadius, useIsAllowedTo } from "framer-plugin"
 import * as Slider from "@radix-ui/react-slider"
 
 import "./App.css"
@@ -57,6 +57,8 @@ export function App() {
         parentRect: Rect
         childRect: Rect
     } | null>(null)
+
+    const isAllowedToSetAttributes = useIsAllowedTo("setAttributes")
 
     useEffect(() => {
         const parentNode = selection[0]
@@ -118,6 +120,8 @@ export function App() {
     }, [selection])
 
     useEffect(() => {
+        if (!isAllowedToSetAttributes) return
+
         if (state) {
             framer.setAttributes(state.parentNode.id, {
                 borderRadius: `${outerValue}px`,
@@ -211,7 +215,7 @@ export function App() {
     return (
         <main>
             <div className="flex">
-                <div className={`row ${!state && "disable"}`}>
+                <div className={`row ${(!state || !isAllowedToSetAttributes) && "disable"}`}>
                     <p>Outer</p>
                     <input
                         type="number"
@@ -239,7 +243,7 @@ export function App() {
                         <Slider.Thumb className="SliderThumb" />
                     </Slider.Root>
                 </div>
-                <div className={`row ${!state && "disable"}`}>
+                <div className={`row ${(!state || !isAllowedToSetAttributes) && "disable"}`}>
                     <p>Inner</p>
 
                     <input

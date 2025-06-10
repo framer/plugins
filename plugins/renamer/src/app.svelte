@@ -16,7 +16,15 @@
   import { renameResult } from "./search/result_processors/rename_result";
   import { cleanUpResult } from "./search/result_processors/clean_up_result";
 
-  const isAllowedToSetAttributes = framer.isAllowedTo("Node.setAttributes")
+  let isAllowedToSetAttributes = $state(framer.isAllowedTo("Node.setAttributes"));
+
+  $effect(() => {
+    const unsubscribe = framer.subscribeToIsAllowedTo("Node.setAttributes", (newIsAllowed) => {
+      isAllowedToSetAttributes = newIsAllowed;
+    });
+
+    return unsubscribe;
+  });
 
   let currentRootId: string | undefined = $state();
   let currentMode: "search" | "clean" = $state("search");

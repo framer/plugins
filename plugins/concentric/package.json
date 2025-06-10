@@ -15,7 +15,7 @@
     "dependencies": {
         "@radix-ui/react-slider": "^1.1.2",
         "framer-motion": "^11.0.8",
-        "framer-plugin": "^2.0.4",
+        "framer-plugin": "^3.3.2",
         "react": "^18",
         "react-dom": "^18",
         "react-slider": "^2.0.6",
@@ -32,7 +32,7 @@
         "eslint-plugin-react-refresh": "^0",
         "lightningcss": "^1.24.0",
         "typescript": "^5.3.3",
-        "vite": "^6",
-        "vite-plugin-framer": "^1.0.1"
+        "vite": "^6.3.5",
+        "vite-plugin-framer": "^1.0.7"
     }
 }

@@ -1,4 +1,4 @@
-import { ImageAsset, framer } from "framer-plugin"
+import { type ImageAsset, framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "@radix-ui/themes/styles.css"
 import "./App.css"
@@ -9,7 +9,7 @@ import { useOGLPipeline } from "./ogl/pipeline"
 import { useImageTexture } from "./hooks/use-image-texture"
 import { useVideoTexture } from "./hooks/use-video-texture"
 import { useGLBTexture } from "./hooks/use-glb-texture"
-import { BASE_PATH } from "./utils"
+import { BASE_PATH, getPermissionTitle } from "./utils"
 
 import.meta.hot?.accept(() => {
     import.meta.hot?.invalidate()
@@ -52,6 +52,8 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
     const asciiRef = useRef()
     const { gl, toBytes, program, setProgram, setResolution } = useOGLPipeline()
+
+    const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
 
     useEffect(() => {
         asciiRef.current?.setPixelSize(exportSize * 0.02)
@@ -110,6 +112,8 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     }, [exportSize, assetResolution])
 
     const saveEffect = useCallback(async () => {
+        if (!isAllowedToUpsertImage) return
+
         const bytes = await toBytes()
 
         setSavingInAction(true)
@@ -123,6 +127,8 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                 },
             })
         } else {
+            if (!framerCanvasImage) return
+
             const originalImage = await framerCanvasImage.getData()
 
             await framer.setImage({
@@ -134,7 +140,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         }
 
         setSavingInAction(false)
-    }, [toBytes, framerCanvasImage, droppedAsset, isPlaceholder])
+    }, [toBytes, framerCanvasImage, droppedAsset, isPlaceholder, isAllowedToUpsertImage])
 
     // resize observer
     useEffect(() => {
@@ -233,10 +239,10 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
             </div>
             <div className="asset-buttons">
                 <Upload
+                    isAllowed={isAllowedToUpsertImage}
                     setDroppedAsset={asset => {
                         setDroppedAsset(asset)
                     }}
-                    disabled={false}
                 />
                 {droppedAsset && (
                     <button className="clear" onClick={() => setDroppedAsset(null)}>
@@ -244,7 +250,12 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     </button>
                 )}
             </div>
-            <button onClick={saveEffect} className="submit">
+            <button
+                onClick={saveEffect}
+                className="submit"
+                disabled={!isAllowedToUpsertImage}
+                title={getPermissionTitle(isAllowedToUpsertImage)}
+            >
                 {savingInAction ? "Adding..." : "Insert"}
             </button>
         </div>

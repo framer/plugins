@@ -1,6 +1,6 @@
-import { PropsWithChildren, memo, useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
+import { PropsWithChildren, memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
 import { UnsplashPhoto, getRandomPhoto, useListPhotosInfinite } from "./api"
-import { framer, Draggable } from "framer-plugin"
+import { framer, Draggable, useIsAllowedTo } from "framer-plugin"
 import { ErrorBoundary } from "react-error-boundary"
 import { QueryErrorResetBoundary, useMutation } from "@tanstack/react-query"
 import { Spinner } from "./Spinner"
@@ -24,6 +24,8 @@ void framer.showUI({
 })
 
 export function App() {
+    const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
+
     const [query, setQuery] = useState("")
 
     const debouncedQuery = useDebounce(query, 200)
@@ -72,7 +74,12 @@ export function App() {
             <div className="mt-[15px] px-[15px]">
                 <button
                     className="items-center flex justify-center relative"
-                    onClick={() => addRandomMutation.mutate(query)}
+                    onClick={() => {
+                        if (!isAllowedToUpsertImage) return
+                        addRandomMutation.mutate(query)
+                    }}
+                    disabled={!isAllowedToUpsertImage}
+                    title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
                 >
                     {addRandomMutation.isPending ? <Spinner size="normal" inheritColor /> : "Random Image"}
                 </button>
@@ -84,6 +91,8 @@ export function App() {
 type PhotoId = string
 
 const PhotosList = memo(function PhotosList({ query }: { query: string }) {
+    const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
+
     const { data, fetchNextPage, isFetchingNextPage, isLoading, hasNextPage } = useListPhotosInfinite(query)
     const scrollRef = useRef<HTMLDivElement>(null)
     const [windowSize, setWindowSize] = useState(window.innerWidth)
@@ -209,6 +218,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
                                     width={columnWidth}
                                     loading={addPhotoMutation.isPending && addPhotoMutation.variables?.id === photo.id}
                                     onSelect={addPhotoMutation.mutate}
+                                    isAllowedToUpsertImage={isAllowedToUpsertImage}
                                 />
                             ))}
                             {isLoadingVisible && <Placeholders index={i} />}
@@ -226,10 +236,18 @@ interface GridItemProps {
     width: number
     loading: boolean
     onSelect: (photo: UnsplashPhoto) => void
+    isAllowedToUpsertImage: boolean
 }
 
-const GridItem = memo(function GridItem({ photo, loading, height, width, onSelect }: GridItemProps) {
-    const handleClick = () => onSelect(photo)
+const GridItem = memo(function GridItem({
+    photo,
+    loading,
+    height,
+    width,
+    onSelect,
+    isAllowedToUpsertImage,
+}: GridItemProps) {
+    const handleClick = useCallback(() => onSelect(photo), [onSelect, photo])
     const [imageLoaded, setImageLoaded] = useState(false)
 
     useEffect(() => {
@@ -240,37 +258,44 @@ const GridItem = memo(function GridItem({ photo, loading, height, width, onSelec
 
     return (
         <div key={photo.id} className="flex flex-col gap-[5px]">
-            <Draggable
-                data={{
-                    type: "image",
-                    image: photo.urls.full,
-                    previewImage: photo.urls.thumb,
+            <button
+                onClick={() => {
+                    if (!isAllowedToUpsertImage) return
+                    handleClick()
                 }}
+                className="cursor-pointer bg-cover relative rounded-lg"
+                style={{
+                    height,
+                    backgroundImage: `url(${photo.urls.thumb})`,
+                    backgroundColor: photo.color,
+                }}
+                disabled={!isAllowedToUpsertImage}
+                title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
             >
-                <button
-                    onClick={handleClick}
-                    className="cursor-pointer bg-cover relative rounded-lg"
-                    style={{
-                        height,
-                        backgroundImage: `url(${photo.urls.thumb})`,
-                        backgroundColor: photo.color,
+                <Draggable
+                    data={{
+                        type: "image",
+                        image: photo.urls.full,
+                        previewImage: photo.urls.thumb,
                     }}
                 >
-                    <div
-                        className={cx(
-                            "absolute top-0 right-0 left-0 bottom-0 rounded-lg flex items-center justify-center transition-all pointer-events-none",
-                            loading && "bg-blackDimmed"
-                        )}
-                    >
-                        {loading && <Spinner size="medium" />}
-                    </div>
-                    {!imageLoaded && photo.blur_hash && (
-                        <div className="absolute top-0 left-0">
-                            <Blurhash hash={photo.blur_hash} width={width} height={height} />
+                    <>
+                        <div
+                            className={cx(
+                                "absolute top-0 right-0 left-0 bottom-0 rounded-lg flex items-center justify-center transition-all pointer-events-none",
+                                loading && "bg-blackDimmed"
+                            )}
+                        >
+                            {loading && <Spinner size="medium" />}
                         </div>
-                    )}
-                </button>
-            </Draggable>
+                        {!imageLoaded && photo.blur_hash && (
+                            <div className="absolute top-0 left-0">
+                                <Blurhash hash={photo.blur_hash} width={width} height={height} />
+                            </div>
+                        )}
+                    </>
+                </Draggable>
+            </button>
             <a
                 target="_blank"
                 href={photo.user.links.html}

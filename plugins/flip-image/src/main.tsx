@@ -2,6 +2,13 @@ import { framer } from "framer-plugin"
 import { bytesFromCanvas } from "./utils"
 
 async function flipHorizontally() {
+    const isAllowedToUpsertImage = framer.isAllowedTo("setImage")
+
+    if (!isAllowedToUpsertImage) {
+        framer.closePlugin("You don't have permission to edit images.", { variant: "error" })
+        return
+    }
+
     const image = await framer.getImage()
 
     if (!image) {
@@ -35,7 +42,7 @@ async function flipHorizontally() {
         image: { bytes: result, mimeType },
     })
 
-    await framer.closePlugin("Saved")
+    await framer.closePlugin("Image flipped successfully")
 }
 
 ;(async () => {

@@ -1,6 +1,6 @@
 import type { Locale } from "framer-plugin"
 
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useState } from "react"
 import "./App.css"
 import { downloadBlob, importFileAsText } from "./files"
@@ -50,6 +50,8 @@ async function exportXliff(defaultLocale: Locale, targetLocale: Locale) {
 }
 
 export function App() {
+    const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
+
     const [selectedLocaleId, setSelectedLocaleId] = useState<string>("")
     const [locales, setLocales] = useState<readonly Locale[]>([])
     const [defaultLocale, setDefaultLocale] = useState<Locale | null>(null)
@@ -94,7 +96,15 @@ export function App() {
             </div>
 
             <div className="button-stack">
-                <button type="button" onClick={importXliff}>
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (!isAllowedToSetLocalizationData) return
+                        importXliff()
+                    }}
+                    disabled={!isAllowedToSetLocalizationData}
+                    title={isAllowedToSetLocalizationData ? undefined : "Insufficient permissions"}
+                >
                     Import
                 </button>
 

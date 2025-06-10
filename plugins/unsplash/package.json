@@ -15,7 +15,7 @@
         "@tanstack/react-query": "^5.28.6",
         "blurhash": "^2.0.5",
         "classnames": "^2.5.1",
-        "framer-plugin": "^2.0.4",
+        "framer-plugin": "^3.3.2",
         "react": "^18",
         "react-blurhash": "^0.3.0",
         "react-dom": "^18",
@@ -37,7 +37,7 @@
         "postcss": "^8.4.37",
         "tailwindcss": "^3.4.1",
         "typescript": "^5.4.5",
-        "vite": "^6",
-        "vite-plugin-framer": "^1.0.1"
+        "vite": "^6.3.5",
+        "vite-plugin-framer": "^1.0.7"
     }
 }

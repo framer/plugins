@@ -10,6 +10,7 @@
     disableAction: boolean;
     actionLabel: string;
     showReplacement: boolean;
+    isAllowed: boolean
     onRenameClick?: () => void;
   }
 
@@ -20,6 +21,7 @@
     disableAction,
     actionLabel,
     showReplacement,
+    isAllowed,
     onRenameClick = () => {},
   }: Props = $props();
 
@@ -46,7 +48,12 @@
     />
   {/if}
 
-  <button class="rename-button" onclick={onRenameClick} disabled={!query || disableAction}>
+  <button
+    class="rename-button"
+    onclick={onRenameClick}
+    disabled={!query || disableAction || !isAllowed}
+    title={isAllowed ? undefined : "Insufficient permissions"}
+  >
     {#if loading}
       <Spinner type="solid" />
     {:else}
@@ -74,9 +81,5 @@
   :global([data-framer-theme="dark"]) .rename-button {
     background: white;
     color: #111111;
-  }
-
-  .rename-button:disabled {
-    opacity: 1;
   }
 </style>

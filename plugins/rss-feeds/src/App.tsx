@@ -1,7 +1,13 @@
-import { CollectionField, CollectionItemData, framer, ManagedCollection } from "framer-plugin"
+import {
+    type ManagedCollectionFieldInput,
+    type ManagedCollectionItemInput,
+    type ManagedCollection,
+    framer,
+    useIsAllowedTo,
+} from "framer-plugin"
 
 import "./App.css"
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import { simpleHash, slugify } from "./utils"
 import { RSSIcon } from "./icons"
 
@@ -23,7 +29,7 @@ export const rssSourceStorageKey = "rssSourceId"
 interface RSSEntry {
     title: string
     [linkFieldId]: string
-    [dateFieldId]: string | undefined
+    [dateFieldId]: Date | null
     [contentFieldId]: string
 }
 
@@ -68,14 +74,14 @@ function parseRSS(xmlDoc: Document) {
 
         const date = item.querySelector("pubDate")?.textContent?.trim()
 
-        items.push({ title, link, date, content: description })
+        items.push({ title, link, date: date ? new Date(date) : null, content: description })
     }
 
     return items
 }
 
 // Creates fields in the CMS collection for every key in the "RSSEntry" type.
-function getCollectionFields(): CollectionField[] {
+function getCollectionFields(): ManagedCollectionFieldInput[] {
     return [
         {
             type: "string",
@@ -115,7 +121,7 @@ export async function importData(collection: ManagedCollection, sourceId: string
 
     const unseenItemIds = new Set(await collection.getItemIds())
 
-    const itemsToAdd: CollectionItemData[] = []
+    const itemsToAdd: ManagedCollectionItemInput[] = []
     for (const item of items) {
         // RSS items don't have an ID - we hash the title.
         const id = simpleHash(item.title)
@@ -125,11 +131,24 @@ export async function importData(collection: ManagedCollection, sourceId: string
         itemsToAdd.push({
             id,
             slug: slugify(item.title),
+            slugByLocale: {},
             fieldData: {
-                [titleFieldId]: item.title,
-                [linkFieldId]: item.link,
-                [dateFieldId]: item.date,
-                [contentFieldId]: item.content,
+                [titleFieldId]: {
+                    type: "string",
+                    value: item.title,
+                },
+                [linkFieldId]: {
+                    type: "link",
+                    value: item.link,
+                },
+                [dateFieldId]: {
+                    type: "date",
+                    value: item.date?.toISOString() ?? null,
+                },
+                [contentFieldId]: {
+                    type: "formattedText",
+                    value: item.content,
+                },
             },
         })
     }
@@ -155,7 +174,15 @@ export function App({ collection, initialRssSourceId }: Props) {
 
     const selectedSource = rssSources.find(source => source.id === selectedSourceId)
 
-    const handleImport = async () => {
+    const isAllowedToImportData = useIsAllowedTo(
+        "ManagedCollection.addItems",
+        "ManagedCollection.removeItems",
+        "ManagedCollection.setFields",
+        "ManagedCollection.setPluginData"
+    )
+
+    const handleImport = useCallback(async () => {
+        if (!isAllowedToImportData) return
         if (!selectedSource) return
 
         setIsSyncing(true)
@@ -166,7 +193,7 @@ export function App({ collection, initialRssSourceId }: Props) {
         } finally {
             setIsSyncing(false)
         }
-    }
+    }, [isAllowedToImportData, selectedSource, collection, selectedSourceId])
 
     return (
         <main>
@@ -193,7 +220,12 @@ export function App({ collection, initialRssSourceId }: Props) {
                 </select>
             </div>
 
-            <button disabled={!selectedSource || isSyncing} className="framer-button-primary" onClick={handleImport}>
+            <button
+                className="framer-button-primary"
+                onClick={handleImport}
+                disabled={!isAllowedToImportData || !selectedSource || isSyncing}
+                title={isAllowedToImportData ? undefined : "Insufficient permissions"}
+            >
                 Import
             </button>
         </main>

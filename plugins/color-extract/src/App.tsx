@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
     CanvasNode,
     ColorStop,
@@ -6,6 +6,7 @@ import {
     framer,
     supportsBackgroundGradient,
     supportsBackgroundImage,
+    useIsAllowedTo,
 } from "framer-plugin"
 import { extractColors } from "extract-colors"
 import { BrowserOptions } from "extract-colors/lib/types/Options"
@@ -30,6 +31,8 @@ export function App() {
 
     const supportsGradient = !!currentSelection ? supportsBackgroundGradient(currentSelection) : false
 
+    const isAllowedToSetAttributes = useIsAllowedTo("setAttributes")
+
     useEffect(() => {
         if (currentSelection) {
             if (supportsBackgroundImage(currentSelection)) {
@@ -48,29 +51,34 @@ export function App() {
         }
     }, [selection])
 
-    const handleOnClick = async (node: CanvasNode, color: string) => {
+    const handleOnClick = useCallback(async (node: CanvasNode, color: string) => {
         if (!node || !color) return
+
         await framer.setAttributes(node.id, {
             backgroundColor: color,
         })
-    }
+    }, [])
 
-    const setAsGradient = async (node: CanvasNode, colors: FinalColor[]) => {
-        if (!node || !colors) return
-        if (!supportsBackgroundGradient(node)) return
+    const setAsGradient = useCallback(
+        async (node: CanvasNode, colors: FinalColor[]) => {
+            if (!isAllowedToSetAttributes) return
+            if (!node || !colors) return
+            if (!supportsBackgroundGradient(node)) return
 
-        const colorStops: ColorStop[] = colors.map((color: FinalColor, index: number) => {
-            return { color: color.hex, position: index / (colors.length - 1) }
-        })
+            const colorStops: ColorStop[] = colors.map((color: FinalColor, index: number) => {
+                return { color: color.hex, position: index / (colors.length - 1) }
+            })
 
-        const gradient = node.backgroundGradient
-            ? node.backgroundGradient.cloneWithAttributes({ stops: colorStops })
-            : new LinearGradient({ angle: 90, stops: colorStops })
+            const gradient = node.backgroundGradient
+                ? node.backgroundGradient.cloneWithAttributes({ stops: colorStops })
+                : new LinearGradient({ angle: 90, stops: colorStops })
 
-        await framer.setAttributes(node.id, {
-            backgroundGradient: gradient,
-        })
-    }
+            await framer.setAttributes(node.id, {
+                backgroundGradient: gradient,
+            })
+        },
+        [isAllowedToSetAttributes]
+    )
 
     const colorList = colors.map((color: FinalColor) => {
         return (
@@ -79,7 +87,7 @@ export function App() {
                 className="color"
                 whileHover={{
                     flex: 2,
-                    cursor: "pointer",
+                    cursor: isAllowedToSetAttributes ? "pointer" : "default",
                 }}
                 initial={{
                     flex: 1,
@@ -92,7 +100,8 @@ export function App() {
                     restSpeed: 0.0001,
                 }}
                 onClick={() => {
-                    handleOnClick(currentSelection, color.hex)
+                    if (!isAllowedToSetAttributes) return
+                    void handleOnClick(currentSelection, color.hex)
                 }}
                 style={{ backgroundColor: color.hex }}
             ></motion.div>
@@ -105,11 +114,12 @@ export function App() {
                 <>
                     <div className="interface">{colorList}</div>
                     <button
-                        disabled={!supportsGradient}
+                        disabled={!supportsGradient || !isAllowedToSetAttributes}
                         style={{ opacity: supportsGradient ? 1 : 0.5 }}
                         onClick={() => {
                             setAsGradient(currentSelection, colors)
                         }}
+                        title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}
                     >
                         Set Gradient
                     </button>

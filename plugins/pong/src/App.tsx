@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { CanvasNode, framer } from "framer-plugin"
+import { type CanvasNode, framer, useIsAllowedTo } from "framer-plugin"
 import { Vector2 } from "./vector2"
 import { Rect2 } from "./rect2"
 import { randomRange } from "./randomRange"
@@ -26,6 +26,8 @@ void framer.showUI({
 })
 
 export function App() {
+    const isAllowedToSetAttributes = useIsAllowedTo("setAttributes")
+
     const [isGameRunning, setIsGameRunning] = useState(false)
     const [selection, setSelection] = useState<CanvasNode[]>([])
     const gameState = useRef<GameState | null>()
@@ -152,7 +154,15 @@ export function App() {
                     Stop Game
                 </button>
             ) : (
-                <button className="framer-button-primary" onClick={setupFromSelection}>
+                <button
+                    className="framer-button-primary"
+                    onClick={() => {
+                        if (!isAllowedToSetAttributes) return
+                        setupFromSelection()
+                    }}
+                    disabled={!isAllowedToSetAttributes}
+                    title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}
+                >
                     Start Game
                 </button>
             )}

@@ -1,6 +1,6 @@
 import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react"
 import "./App.css"
-import { framer, Draggable } from "framer-plugin"
+import { framer, Draggable, useIsAllowedTo } from "framer-plugin"
 import Fuse from "fuse.js"
 
 import { IconContext, IconWeight } from "@phosphor-icons/react"
@@ -68,6 +68,8 @@ const fuse = new Fuse(icons, {
 function IconGrid(props: any) {
     const { searchQuery, weight } = props
 
+    const isAllowedToAddSVG = useIsAllowedTo("addSVG")
+
     const deferredQuery = useDeferredValue(searchQuery)
 
     const filteredIcons = useMemo(() => {
@@ -105,18 +107,26 @@ function IconGrid(props: any) {
                 const { Icon } = entry
 
                 return (
-                    <Draggable
-                        data={() => ({
-                            type: "svg",
-                            name: "Icon",
-                            svg: renderToStaticMarkup(<Icon size={32} color={"black"} weight={weight} />),
-                        })}
-                        key={entry.name}
+                    <button
+                        className="icon-parent"
+                        onClick={() => {
+                            if (!isAllowedToAddSVG) return
+                            handleIconClick(entry)
+                        }}
+                        disabled={!isAllowedToAddSVG}
+                        title={isAllowedToAddSVG ? undefined : "Insufficient permissions"}
                     >
-                        <button className="icon-parent" onClick={() => handleIconClick(entry)}>
+                        <Draggable
+                            data={() => ({
+                                type: "svg",
+                                name: "Icon",
+                                svg: renderToStaticMarkup(<Icon size={32} color={"black"} weight={weight} />),
+                            })}
+                            key={entry.name}
+                        >
                             <Icon size={32} color={"var(--framer-color-text)"} weight={weight} />
-                        </button>
-                    </Draggable>
+                        </Draggable>
+                    </button>
                 )
             })}
         </div>

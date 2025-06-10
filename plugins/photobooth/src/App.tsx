@@ -1,15 +1,19 @@
 import { useCallback, useRef } from "react"
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import Webcam from "react-webcam"
 import { useAnimate } from "framer-motion"
 
 import "./App.css"
 
 export function App() {
+    const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
+
     const webcamRef = useRef<any>(null)
     const [scope, animate] = useAnimate()
 
     const capture = useCallback(async () => {
+        if (!isAllowedToUpsertImage) return
+
         const image = webcamRef.current.getScreenshot({
             minWidth: 1280,
             minHeight: 720,
@@ -27,7 +31,7 @@ export function App() {
         }
 
         animate(".webcam-flash", { opacity: 0 }, { duration: 0.3 })
-    }, [webcamRef])
+    }, [isAllowedToUpsertImage, webcamRef])
 
     return (
         <main ref={scope}>
@@ -46,7 +50,13 @@ export function App() {
                     />
                 </div>
             </div>
-            <button onClick={capture}>Take Selfie</button>
+            <button
+                onClick={capture}
+                disabled={!isAllowedToUpsertImage}
+                title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
+            >
+                Take Selfie
+            </button>
         </main>
     )
 }

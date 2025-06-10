@@ -1,4 +1,4 @@
-import { framer, Draggable } from "framer-plugin"
+import { framer, Draggable, useIsAllowedTo } from "framer-plugin"
 
 import sectionFAQImage from "./assets/FAQ.png"
 import sectionFeaturesLargeImage from "./assets/Features.png"
@@ -10,7 +10,7 @@ import sectionTextImageImage from "./assets/TextImage.png"
 import buttonImage from "./assets/Button.png"
 import tabsImage from "./assets/Tabs.png"
 import { SearchIcon } from "./assets/SearchIcon"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import "./App.css"
 import { SegmentedControl } from "./components/SegmentedControl"
@@ -124,9 +124,16 @@ const colors: Color[] = [
     },
 ]
 
+function getPermissionTitle(isAllowed: boolean) {
+    return isAllowed ? undefined : "Insufficient permissions"
+}
+
 export function App() {
     const [search, setSearch] = useState("")
     const [activeTab, setActiveTab] = useState("components")
+
+    const isAllowedToAddDetachedComponentLayers = useIsAllowedTo("addDetachedComponentLayers")
+    const isAllowedToUpsertColorStyle = useIsAllowedTo("createColorStyle", "ColorStyle.setAttributes")
 
     const filteredLayoutItems = useMemo(() => {
         return layoutSectionItems.filter(item => item.title.toLowerCase().includes(search.toLowerCase()))
@@ -140,24 +147,28 @@ export function App() {
         return colors.filter(item => item.title.toLowerCase().includes(search.toLowerCase()))
     }, [search])
 
-    const handleAddColors = async (colors: Color[]) => {
-        const colorStyles = await framer.getColorStyles()
+    const handleAddColors = useCallback(
+        async (colors: Color[]) => {
+            if (!isAllowedToUpsertColorStyle) return
+            const colorStyles = await framer.getColorStyles()
 
-        colors.forEach(color => {
-            const existingStyle = colorStyles.find(style => style.name === color.title)
+            colors.forEach(color => {
+                const existingStyle = colorStyles.find(style => style.name === color.title)
 
-            if (existingStyle) {
-                existingStyle.setAttributes({
-                    light: color.color,
-                })
-            } else {
-                framer.createColorStyle({
-                    name: color.title,
-                    light: color.color,
-                })
-            }
-        })
-    }
+                if (existingStyle) {
+                    existingStyle.setAttributes({
+                        light: color.color,
+                    })
+                } else {
+                    framer.createColorStyle({
+                        name: color.title,
+                        light: color.color,
+                    })
+                }
+            })
+        },
+        [isAllowedToUpsertColorStyle]
+    )
 
     const hasNoResults = () => {
         if (activeTab === "components") return filteredComponentItems.length === 0
@@ -203,12 +214,17 @@ export function App() {
                                 <button
                                     className="section-button"
                                     key={section.key}
-                                    onClick={() =>
+                                    disabled={!isAllowedToAddDetachedComponentLayers}
+                                    title={
+                                        isAllowedToAddDetachedComponentLayers ? undefined : "Insufficient permissions"
+                                    }
+                                    onClick={() => {
+                                        if (!isAllowedToAddDetachedComponentLayers) return
                                         framer.addDetachedComponentLayers({
                                             url: section.url,
                                             layout: true,
                                         })
-                                    }
+                                    }}
                                 >
                                     <Draggable
                                         data={{
@@ -236,12 +252,15 @@ export function App() {
                             <button
                                 key={section.key}
                                 className="section-button"
-                                onClick={() =>
+                                disabled={!isAllowedToAddDetachedComponentLayers}
+                                title={isAllowedToAddDetachedComponentLayers ? undefined : "Insufficient permissions"}
+                                onClick={() => {
+                                    if (!isAllowedToAddDetachedComponentLayers) return
                                     framer.addDetachedComponentLayers({
                                         url: section.url,
                                         layout: true,
                                     })
-                                }
+                                }}
                             >
                                 <Draggable
                                     data={{
@@ -272,12 +291,26 @@ export function App() {
                                     }}
                                 />
                                 <div className="color-label">{color.title}</div>
-                                <button className="copy-button" onClick={() => handleAddColors([color])}>
+                                <button
+                                    className="copy-button"
+                                    disabled={!isAllowedToUpsertColorStyle}
+                                    title={getPermissionTitle(isAllowedToUpsertColorStyle)}
+                                    onClick={() => {
+                                        handleAddColors([color])
+                                    }}
+                                >
                                     Add
                                 </button>
                             </div>
                         ))}
-                        <button className="action-button" onClick={() => handleAddColors(filteredColorItems)}>
+                        <button
+                            className="action-button"
+                            disabled={!isAllowedToUpsertColorStyle}
+                            title={getPermissionTitle(isAllowedToUpsertColorStyle)}
+                            onClick={() => {
+                                handleAddColors(filteredColorItems)
+                            }}
+                        >
                             Add to Project
                         </button>
                     </div>

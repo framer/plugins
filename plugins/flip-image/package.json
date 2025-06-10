@@ -14,7 +14,7 @@
     },
     "dependencies": {
         "comlink": "^4.4.1",
-        "framer-plugin": "^2.0.4",
+        "framer-plugin": "^3.3.2",
         "react": "^18",
         "react-dom": "^18",
         "vite-plugin-mkcert": "^1"
@@ -29,7 +29,7 @@
         "eslint-plugin-react-hooks": "^4",
         "eslint-plugin-react-refresh": "^0",
         "typescript": "^5.4.5",
-        "vite": "^6",
-        "vite-plugin-framer": "^1.0.1"
+        "vite": "^6.3.5",
+        "vite-plugin-framer": "^1.0.7"
     }
 }

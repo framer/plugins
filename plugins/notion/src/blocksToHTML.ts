@@ -38,9 +38,7 @@ export function richTextToHTML(texts: RichTextItemResponse[]) {
         .join("")
 }
 
-const YOUTUBE_ID_REGEX =
-    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)(?<videoId>[^"&?\/\s]{11})/i
-
+const YOUTUBE_ID_REGEX = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))(?<videoId>[^?&]+)/iu
 export function blocksToHtml(blocks: BlockObjectResponse[]) {
     let htmlContent = ""
 

@@ -1,17 +1,17 @@
-import { useCallback, useEffect, useState } from "react"
+import { extractColors } from "extract-colors"
+import type { FinalColor } from "extract-colors/lib/types/Color"
+import type { BrowserOptions } from "extract-colors/lib/types/Options"
+import { motion } from "framer-motion"
 import {
-    CanvasNode,
-    ColorStop,
+    type CanvasNode,
+    type ColorStop,
     LinearGradient,
     framer,
     supportsBackgroundGradient,
     supportsBackgroundImage,
     useIsAllowedTo,
 } from "framer-plugin"
-import { extractColors } from "extract-colors"
-import { BrowserOptions } from "extract-colors/lib/types/Options"
-import { FinalColor } from "extract-colors/lib/types/Color"
-import { motion } from "framer-motion"
+import { useCallback, useEffect, useState } from "react"
 import "./App.css"
 
 function useSelection() {
@@ -101,6 +101,7 @@ export function App() {
                 }}
                 onClick={() => {
                     if (!isAllowedToSetAttributes) return
+                    if (!currentSelection) return
                     void handleOnClick(currentSelection, color.hex)
                 }}
                 style={{ backgroundColor: color.hex }}
@@ -117,6 +118,7 @@ export function App() {
                         disabled={!supportsGradient || !isAllowedToSetAttributes}
                         style={{ opacity: supportsGradient ? 1 : 0.5 }}
                         onClick={() => {
+                            if (!currentSelection) return
                             setAsGradient(currentSelection, colors)
                         }}
                         title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}

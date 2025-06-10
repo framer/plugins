@@ -1,7 +1,7 @@
 import * as Slider from "@radix-ui/react-slider"
 import { useEffect, useState } from "react"
 
-function numDigitsAfterDecimal(x) {
+function numDigitsAfterDecimal(x: number) {
     var afterDecimalStr = x.toString().split(".")[1] || ""
     return afterDecimalStr.length
 }
@@ -55,10 +55,11 @@ export function NumberInput({
                 }}
                 onKeyDown={e => {
                     if (e.key === "Enter" || e.key === "Tab" || e.key === "ArrowUp" || e.key === "ArrowDown") {
-                        const value = sanitize(e.target.value)
+                        const target = e.target as HTMLInputElement
+                        const value = sanitize(target.value)
 
                         onValueChange?.(value)
-                        e.target.value = value.toString()
+                        target.value = value.toString()
                     }
                 }}
             />

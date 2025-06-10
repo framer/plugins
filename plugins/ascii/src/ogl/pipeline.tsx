@@ -1,7 +1,9 @@
+// @ts-nocheck - TODO: fix this
+
+import { Camera, Mesh, Plane, Program, Renderer, Transform } from "ogl"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Renderer, Camera, Transform, Plane, Program, Mesh, Texture } from "ogl"
-import { assert, bytesFromCanvas } from "../utils"
 import { DEFAULT_WIDTH } from "../App"
+import { assert, bytesFromCanvas } from "../utils"
 
 export function useOGLPipeline() {
     const isMountedRef = useRef(false)

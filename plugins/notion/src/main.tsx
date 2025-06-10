@@ -1,17 +1,17 @@
-import "./globals.css"
 import "framer-plugin/framer.css"
+import "./globals.css"
 
-import React, { ReactNode, Suspense } from "react"
-import ReactDOM from "react-dom/client"
-import { App } from "./App"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import React, { type ReactNode, Suspense } from "react"
+import ReactDOM from "react-dom/client"
 import { ErrorBoundary } from "react-error-boundary"
+import { App } from "./App"
 import { CenteredSpinner } from "./components/CenteredSpinner"
-import { PluginContext, PluginContextUpdate, getPluginContext, synchronizeDatabase } from "./notion"
+import { type PluginContext, type PluginContextUpdate, getPluginContext, synchronizeDatabase } from "./notion"
 
 import { framer } from "framer-plugin"
-import { logSyncResult } from "./debug.ts"
 import { ErrorBoundaryFallback } from "./components/ErrorBoundaryFallback"
+import { logSyncResult } from "./debug.ts"
 import { assert } from "./utils.ts"
 
 const root = document.getElementById("root")

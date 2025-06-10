@@ -1,7 +1,7 @@
-import { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
-import { richTextToPlainText, useDatabasesQuery } from "./notion"
-import { FormEvent, useEffect, useRef, useState } from "react"
+import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
+import { type FormEvent, useEffect, useRef, useState } from "react"
 import notionConnectSrc from "./assets/notion-connect.png"
+import { richTextToPlainText, useDatabasesQuery } from "./notion"
 import { assert } from "./utils"
 
 interface SelectDatabaseProps {

@@ -1,6 +1,6 @@
-import Dropzone from "react-dropzone"
 import { useState } from "react"
-import { DroppedAsset } from "../App"
+import Dropzone from "react-dropzone"
+import { type DroppedAsset } from "../App"
 import { getPermissionTitle } from "../utils"
 
 export function Upload({
@@ -24,6 +24,8 @@ export function Upload({
             }}
             onDrop={async acceptedFiles => {
                 const file = acceptedFiles[0]
+                if (!file) return
+
                 const url = URL.createObjectURL(file)
 
                 if (file.type.includes("image")) {

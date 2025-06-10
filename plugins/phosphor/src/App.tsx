@@ -1,13 +1,11 @@
+import { Draggable, framer, useIsAllowedTo } from "framer-plugin"
+import Fuse from "fuse.js"
 import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react"
 import "./App.css"
-import { framer, Draggable, useIsAllowedTo } from "framer-plugin"
-import Fuse from "fuse.js"
-
-import { IconContext, IconWeight } from "@phosphor-icons/react"
-import * as Icons from "@phosphor-icons/react"
 
 import { icons as iconData } from "@phosphor-icons/core"
-import { Icon } from "@phosphor-icons/react"
+import * as Icons from "@phosphor-icons/react"
+import { type Icon, type IconWeight, IconContext } from "@phosphor-icons/react"
 import { renderToStaticMarkup } from "react-dom/server"
 
 interface IconEntry {

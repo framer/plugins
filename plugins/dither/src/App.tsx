@@ -1,12 +1,12 @@
+import cn from "clsx"
 import { ImageAsset, framer, useIsAllowedTo } from "framer-plugin"
+import { Camera, Mesh, Plane, Program, Renderer, Transform } from "ogl"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
-import { Renderer, Camera, Transform, Plane, Program, Mesh } from "ogl"
-import { OrderedDither } from "./materials/ordered"
-import cn from "clsx"
-import { assert, bytesFromCanvas, getPermissionTitle } from "./utils"
 import { Upload } from "./dropzone/drag-and-drop"
+import { OrderedDither, type OrderedDitherRef } from "./materials/ordered"
 import { useImageTexture } from "./use-image-texture"
+import { assert, bytesFromCanvas, getPermissionTitle } from "./utils"
 
 if (import.meta.env.DEV) {
     import.meta.hot?.accept(() => {
@@ -46,7 +46,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
     const [savingInAction, setSavingInAction] = useState<boolean>(false)
-    const ditherRef = useRef()
+    const ditherRef = useRef<OrderedDitherRef | null>(null)
 
     const [renderer] = useState(() => new Renderer({ alpha: true }))
     const gl = renderer.gl
@@ -84,11 +84,16 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     const [resolution, setResolution] = useState([DEFAULT_WIDTH, DEFAULT_WIDTH])
 
     useEffect(() => {
+        if (!resolution[0] || !resolution[1]) return
+
         renderer.setSize(resolution[0], resolution[1])
+
+        // @ts-expect-error - TODO: fix this
         program?.setResolution?.(resolution[0], resolution[1])
     }, [renderer, program, resolution])
 
     useEffect(() => {
+        if (!ditherRef.current) return
         ditherRef.current?.setPixelSize(exportSize * 0.008)
     }, [exportSize])
 
@@ -101,6 +106,8 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         gl,
         droppedAsset?.src || image?.url,
         texture => {
+            if (!program) return
+            // @ts-expect-error - TODO: not sure why this is needed
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },
@@ -188,11 +195,15 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
 
     useEffect(() => {
         const resizeObserver = new ResizeObserver(([entry]) => {
-            const { blockSize: height } = entry.borderBoxSize[0]
+            if (!entry) return
 
-            void framer.showUI({ position: "top right", width: 280, height })
+            const borderBoxSize = entry.borderBoxSize
+            if (!borderBoxSize[0]) return
+
+            void framer.showUI({ position: "top right", width: 280, height: borderBoxSize[0].blockSize })
         })
 
+        if (!containerRef.current) return
         resizeObserver.observe(containerRef.current)
 
         return () => resizeObserver.disconnect()
@@ -266,6 +277,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             <div className={cn("gui", disabled && "disabled")}>
                 <OrderedDither
                     ref={node => {
+                        if (!node) return
                         ditherRef.current = node
                         setProgram(node?.program)
                     }}
@@ -296,6 +308,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     ref={uploadRef}
                     isAllowed={isAllowedToUpsertImage}
                     setDroppedAsset={asset => {
+                        if (typeof asset !== "object") return
                         setDroppedAsset(asset)
                     }}
                 />

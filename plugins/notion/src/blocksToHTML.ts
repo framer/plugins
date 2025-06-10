@@ -1,4 +1,4 @@
-import { BlockObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
+import type { BlockObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
 import { assert } from "./utils"
 
 export function richTextToHTML(texts: RichTextItemResponse[]) {
@@ -80,7 +80,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 const tag = block.type === "bulleted_list_item" ? "ul" : "ol"
 
                 // Start the list if it's the first item of its type or the previous item isn't a list of the same type
-                if (i === 0 || blocks[i - 1].type !== block.type) htmlContent += `<${tag}>`
+                if (i === 0 || blocks.at(i - 1)?.type !== block.type) htmlContent += `<${tag}>`
 
                 if (block.type === "bulleted_list_item") {
                     htmlContent += `<li>${richTextToHTML(block.bulleted_list_item.rich_text)}</li>`
@@ -90,7 +90,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 }
 
                 // If next block is not the same type, close the list
-                if (i === blocks.length - 1 || blocks[i + 1].type !== block.type) {
+                if (i === blocks.length - 1 || blocks.at(i + 1)?.type !== block.type) {
                     htmlContent += `</${tag}>`
                 }
                 break

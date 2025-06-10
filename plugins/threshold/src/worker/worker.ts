@@ -1,4 +1,4 @@
-import { Endpoint, expose, transfer } from "comlink"
+import { type Endpoint, expose, transfer } from "comlink"
 
 export class CanvasWorker {
     private offscreenCanvas: OffscreenCanvas
@@ -33,7 +33,11 @@ export class CanvasWorker {
         const imgData = imageData.data
 
         for (let i = 0; i < imgData.length; i += 4) {
-            const grayscale = imgData[i] * 0.3 + imgData[i + 1] * 0.59 + imgData[i + 2] * 0.11
+            let r = imgData[i] ?? 0
+            let g = imgData[i + 1] ?? 0
+            let b = imgData[i + 2] ?? 0
+
+            const grayscale = r * 0.3 + g * 0.59 + b * 0.11
             const binaryColor = grayscale < threshold ? 0 : 255
             imgData[i] = imgData[i + 1] = imgData[i + 2] = binaryColor
         }

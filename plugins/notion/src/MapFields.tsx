@@ -1,16 +1,16 @@
 import { isFullDatabase } from "@notionhq/client"
-import { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
+import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import classNames from "classnames"
-import { ManagedCollectionField } from "framer-plugin"
+import { type ManagedCollectionField } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { Button } from "./components/Button"
 import { CheckboxTextfield } from "./components/CheckboxTexfield"
 import { IconChevron } from "./components/Icons"
 import {
-    NotionProperty,
-    PluginContext,
-    SynchronizeMutationOptions,
-    SynchronizeProgress,
+    type NotionProperty,
+    type PluginContext,
+    type SynchronizeMutationOptions,
+    type SynchronizeProgress,
     getCollectionFieldForProperty,
     getNotionProperties,
     getPossibleSlugFields,

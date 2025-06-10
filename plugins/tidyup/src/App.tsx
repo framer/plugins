@@ -1,14 +1,14 @@
 import {
+    type CanvasNode,
+    type CanvasRootNode,
     framer,
-    CanvasRootNode,
-    supportsPins,
-    CanvasNode,
-    isWebPageNode,
     isComponentNode,
     isVectorSetNode,
+    isWebPageNode,
+    supportsPins,
     useIsAllowedTo,
 } from "framer-plugin"
-import { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback, useReducer } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react"
 import "./App.css"
 import { Stepper } from "./Stepper"
 import { isNumber } from "./isNumber"
@@ -556,7 +556,7 @@ function assertNever(condition: never): never {
 }
 
 function uppercaseFirstCharacter(value: string) {
-    return value[0].toUpperCase() + value.slice(1)
+    return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
 function isArray(value: unknown): value is unknown[] {

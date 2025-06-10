@@ -1,9 +1,9 @@
-import { OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
+import { type OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { GLSL } from "../glsl"
-import { useGradientTexture } from "../use-gradient-texture"
-import { NumberInput } from "../inputs/number-input"
 import { ColorInput } from "../inputs/color-input"
+import { NumberInput } from "../inputs/number-input"
+import { useGradientTexture } from "../use-gradient-texture"
 import { useImageTexture } from "../use-image-texture"
 
 export class OrderedDitherMaterial extends Program {
@@ -226,7 +226,15 @@ const MATRICES = [
 
 const SHOW_DEV_TOOLS = false
 
-export const OrderedDither = forwardRef(function RandomDither({ gl }: { gl: OGLRenderingContext }, ref) {
+export type OrderedDitherRef = {
+    program: OrderedDitherMaterial
+    setPixelSize: (value: number) => void
+}
+
+export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingContext }>(function RandomDither(
+    { gl },
+    ref
+) {
     const [mode, setMode] = useState<string>("BAYER_4x4")
     const [colorMode, setColorMode] = useState(1)
     const [quantization, setQuantization] = useState(3)
@@ -357,8 +365,9 @@ export const OrderedDither = forwardRef(function RandomDither({ gl }: { gl: OGLR
                     <div className="gui-row">
                         <label className="gui-label">Color A</label>
                         <ColorInput
-                            value={colors[0]}
-                            onChange={(color: string) => {
+                            value={colors[0] ?? ""}
+                            onChange={color => {
+                                if (typeof color !== "string") return
                                 setColors(v => {
                                     const newColors = [...v]
                                     newColors[0] = color
@@ -370,8 +379,9 @@ export const OrderedDither = forwardRef(function RandomDither({ gl }: { gl: OGLR
                     <div className="gui-row">
                         <label className="gui-label">Color B</label>
                         <ColorInput
-                            value={colors[1]}
-                            onChange={(color: string) => {
+                            value={colors[1] ?? ""}
+                            onChange={color => {
+                                if (typeof color !== "string") return
                                 setColors(v => {
                                     const newColors = [...v]
                                     newColors[1] = color

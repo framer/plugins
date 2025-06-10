@@ -38,6 +38,9 @@ export function richTextToHTML(texts: RichTextItemResponse[]) {
         .join("")
 }
 
+const YOUTUBE_ID_REGEX =
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)(?<videoId>[^"&?\/\s]{11})/i
+
 export function blocksToHtml(blocks: BlockObjectResponse[]) {
     let htmlContent = ""
 
@@ -97,24 +100,19 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
             case "code":
                 htmlContent += `<pre><code class="language-${block.code.language.replace(" ", "-")}">${richTextToHTML(block.code.rich_text)}</code></pre>`
                 break
-            case "video":
+            case "video": {
                 if (block.video.type !== "external") {
                     break
                 }
 
                 const videoUrl = block.video.external.url
-                const youtubeMatch = videoUrl.match(
-                    /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i
-                )
-
-                const videoId = youtubeMatch?.[1]
-                if (!videoId) {
-                    break
+                const videoId = videoUrl.match(YOUTUBE_ID_REGEX)?.groups?.videoId
+                if (videoId) {
+                    // Framer styles and modifies the YouTube iframe automatically
+                    htmlContent += `<iframe src="https://www.youtube.com/embed/${videoId}"></iframe>`
                 }
-
-                // Framer styles and modifies the YouTube iframe automatically
-                htmlContent += `<iframe src="https://www.youtube.com/embed/${videoId}"></iframe>`
                 break
+            }
             default:
                 // TODO: More block types can be added here!
                 break

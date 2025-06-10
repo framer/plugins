@@ -1,6 +1,6 @@
+import * as cheerio from "cheerio"
 import { useContext, useEffect, useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
-import sitemapper from "sitemap-urls"
 import InlineSpinner from "../components/InlineSpinner"
 import Loading from "../components/Loading"
 import { useBatchIndexingResult, useMockPerformanceResults, usePerformanceResults } from "../hooks"
@@ -124,9 +124,12 @@ export default function SiteHasIndexedSitemap({ site, logout }: SiteHasIndexedSi
                 const sitemapResult = await fetch(`https://cors.farpace.workers.dev/${site.domain}/sitemap.xml`)
                 const sitemapText = await sitemapResult.text()
 
-                const extracted = await sitemapper.extractUrls(sitemapText)
+                const sitemap = cheerio.load(sitemapText, { xmlMode: true })
+                const urls = sitemap("loc")
+                    .map((_, el) => sitemap(el).text())
+                    .get()
 
-                setUrls([...new Set(extracted)].sort())
+                setUrls([...new Set(urls)].sort())
             }
         }
 

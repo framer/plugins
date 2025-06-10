@@ -8,7 +8,8 @@
         "build": "vite build",
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
         "preview": "vite preview",
-        "pack": "npx framer-plugin-tools@latest pack"
+        "pack": "npx framer-plugin-tools@latest pack",
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "framer-plugin": "^3.3.2",

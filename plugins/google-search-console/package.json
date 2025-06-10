@@ -8,7 +8,8 @@
     "build": "VITE_OAUTH_API_DOMAIN=https://oauth.fetch.tools/google-search-console-plugin vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "pack": "npx framer-plugin-tools@latest pack",
-    "preview": "vite preview"
+    "preview": "vite preview",
+        "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ataverascrespo/react18-ts-textfit": "^1.0.0",

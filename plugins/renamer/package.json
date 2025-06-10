@@ -9,7 +9,8 @@
     "format": "prettier --check '**/*.{js,json,jsx,md,ts,svelte,css}' --write",
     "build": "vite build",
     "pack": "npx framer-plugin-tools@latest pack",
-    "preview": "vite preview"
+    "preview": "vite preview",
+        "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.1.0",

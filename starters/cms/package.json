@@ -11,7 +11,7 @@
         "lint": "eslint . --max-warnings 0",
         "pack": "framer-plugin-tools pack",
         "preview": "vite preview",
-        "typecheck": "tsc"
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "framer-plugin": "^3.3.2",

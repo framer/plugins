@@ -2,9 +2,9 @@ import type { ManagedCollection, ManagedCollectionFieldInput, Field } from "fram
 import type { DataSource } from "./data"
 import type { PossibleField } from "./fields"
 
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { useState, useEffect, memo } from "react"
-import { mergeFieldsWithExistingFields, syncCollection } from "./data"
+import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 import { ALLOWED_FILE_TYPES, isCollectionReference } from "./utils"
 
 function ChevronIcon() {
@@ -39,24 +39,34 @@ const fieldTypeOptions: { type: Field["type"]; label: string }[] = [
 interface FieldMappingRowProps {
     field: PossibleField
     originalFieldName: string | undefined
+    isIgnored: boolean
     disabled: boolean
-    onToggleDisabled?: (fieldId: string) => void
+    onToggleIgnored?: (fieldId: string) => void
     onNameChange?: (fieldId: string, name: string) => void
     onTypeChange?: (fieldId: string, type: string) => void
 }
 
 const FieldMappingRow = memo(
-    ({ field, originalFieldName, disabled, onToggleDisabled, onNameChange, onTypeChange }: FieldMappingRowProps) => {
+    ({
+        field,
+        originalFieldName,
+        isIgnored,
+        disabled,
+        onToggleIgnored,
+        onNameChange,
+        onTypeChange,
+    }: FieldMappingRowProps) => {
         return (
             <>
                 <button
                     type="button"
                     className="source-field"
-                    aria-disabled={disabled}
-                    onClick={() => onToggleDisabled?.(field.id)}
+                    aria-disabled={isIgnored}
+                    onClick={disabled ? undefined : () => onToggleIgnored?.(field.id)}
                     tabIndex={0}
+                    disabled={disabled}
                 >
-                    <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
+                    <input type="checkbox" checked={!isIgnored} tabIndex={-1} readOnly disabled={disabled} />
                     <span>{originalFieldName ?? field.id}</span>
                 </button>
                 <ChevronIcon />
@@ -64,9 +74,9 @@ const FieldMappingRow = memo(
                     type="text"
                     style={{
                         width: "100%",
-                        opacity: disabled ? 0.5 : 1,
+                        opacity: isIgnored || disabled ? 0.5 : 1,
                     }}
-                    disabled={disabled}
+                    disabled={isIgnored || disabled}
                     placeholder={field.id}
                     value={field.name}
                     onChange={event => onNameChange?.(field.id, event.target.value)}
@@ -80,9 +90,9 @@ const FieldMappingRow = memo(
                 <select
                     style={{
                         width: "100%",
-                        opacity: disabled ? 0.5 : 1,
+                        opacity: isIgnored || disabled ? 0.5 : 1,
                     }}
-                    disabled={disabled}
+                    disabled={isIgnored || disabled}
                     value={isCollectionReference(field) ? field.collectionId : field.type}
                     onChange={event => onTypeChange?.(field.id, event.target.value)}
                 >
@@ -217,7 +227,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         })
     }
 
-    const toggleFieldDisabledState = (fieldId: string) => {
+    const toggleFieldIgnoredState = (fieldId: string) => {
         setIgnoredFieldIds(previousIgnoredFieldIds => {
             const updatedIgnoredFieldIds = new Set(previousIgnoredFieldIds)
 
@@ -245,8 +255,20 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         try {
             setStatus("syncing-collection")
 
-            const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
+            const fieldsToSync = fields
+                .filter(field => !ignoredFieldIds.has(field.id))
+                .map(field => ({
+                    ...field,
+                    name: field.name.trim() || field.id,
+                }))
+                .filter(field => field.type !== "unsupported")
+                .filter(
+                    field =>
+                        (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
+                        field.collectionId !== ""
+                )
 
+            await collection.setFields(fieldsToSync)
             await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField.id)
             await framer.closePlugin("Synchronization successful", {
                 variant: "success",
@@ -260,6 +282,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             setStatus("mapping-fields")
         }
     }
+
+    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
     if (isLoadingFields) {
         return (
@@ -285,6 +309,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         if (!selectedField) return
                         setSelectedSlugField(selectedField)
                     }}
+                    disabled={!isAllowedToManage}
+                    style={{ opacity: isAllowedToManage ? 1 : 0.5 }}
                 >
                     {possibleSlugFields.map(possibleSlugField => {
                         return (
@@ -311,8 +337,9 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             key={`field-${field.id}`}
                             field={field}
                             originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
-                            disabled={ignoredFieldIds.has(field.id)}
-                            onToggleDisabled={toggleFieldDisabledState}
+                            isIgnored={ignoredFieldIds.has(field.id)}
+                            disabled={!isAllowedToManage}
+                            onToggleIgnored={toggleFieldIgnoredState}
                             onNameChange={changeFieldName}
                             onTypeChange={changeFieldType}
                         />
@@ -331,14 +358,20 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                                 name: isCollectionReference(field) ? "Missing Collection" : "Unsupported field",
                             }}
                             originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
-                            disabled={true}
+                            isIgnored={true}
+                            disabled={!isAllowedToManage}
                         />
                     ))}
             </div>
 
             <footer>
                 <hr className="sticky-top" />
-                <button type="submit" disabled={isSyncing} tabIndex={0}>
+                <button
+                    type="submit"
+                    disabled={isSyncing || !isAllowedToManage}
+                    tabIndex={0}
+                    title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                >
                     {isSyncing ? (
                         <div className="framer-spinner" />
                     ) : (

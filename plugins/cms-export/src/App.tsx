@@ -1,11 +1,11 @@
 import type { Collection } from "framer-plugin"
 
-import "./App.css"
 import { framer } from "framer-plugin"
-import { ChangeEvent, useEffect, useState } from "react"
-import { exportCollectionAsCSV, convertCollectionToCSV } from "./csv"
-import { PreviewTable } from "./PreviewTable"
+import { type ChangeEvent, useEffect, useState } from "react"
+import "./App.css"
 import splashImageSrc from "./assets/splash.png"
+import { convertCollectionToCSV, exportCollectionAsCSV } from "./csv"
+import { PreviewTable } from "./PreviewTable"
 
 export function App() {
     const [isLoading, setIsLoading] = useState(true)

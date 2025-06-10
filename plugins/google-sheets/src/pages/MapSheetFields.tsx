@@ -1,13 +1,13 @@
-import { Fragment, useMemo, useState } from "react"
-import { ManagedCollectionField } from "framer-plugin"
-import { useInView } from "react-intersection-observer"
 import cx from "classnames"
-import { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
+import type { ManagedCollectionField } from "framer-plugin"
+import { Fragment, useMemo, useState } from "react"
+import { useInView } from "react-intersection-observer"
+import type { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
 
-import { IconChevron } from "../components/Icons"
 import { Button } from "../components/Button"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
-import { generateUniqueNames } from "../utils"
+import { IconChevron } from "../components/Icons"
+import { assert, generateUniqueNames } from "../utils"
 
 interface FieldTypeOption {
     type: CollectionFieldType
@@ -92,6 +92,7 @@ const createFieldConfig = (
 ): ManagedCollectionField[] => {
     return headerRow.map((_, columnIndex) => {
         const sanitizedName = uniqueColumnNames[columnIndex]
+        assert(sanitizedName, "Sanitized name is undefined")
 
         return {
             id: sanitizedName,
@@ -215,8 +216,9 @@ export function MapSheetFieldsPage({
         const allFields = fieldConfig
             .filter(field => !disabledColumns.has(field.id))
             .map(field => {
-                if (fieldNameOverrides[field.id]) {
-                    field.name = fieldNameOverrides[field.id]
+                const maybeOverride = fieldNameOverrides[field.id]
+                if (maybeOverride) {
+                    field.name = maybeOverride
                 }
 
                 return field

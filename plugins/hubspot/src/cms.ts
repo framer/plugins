@@ -1,4 +1,4 @@
-import { framer, ManagedCollectionField } from "framer-plugin"
+import { type ManagedCollectionField, framer } from "framer-plugin"
 import { useEffect } from "react"
 
 export const MAX_CMS_ITEMS = 10_000

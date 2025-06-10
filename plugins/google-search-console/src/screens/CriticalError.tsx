@@ -1,4 +1,4 @@
-import { Site } from '../types';
+import type { Site } from '../types';
 import plus from '../images/Plus@2x.png';
 
 interface CriticalErrorProps {

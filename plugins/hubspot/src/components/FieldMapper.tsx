@@ -1,10 +1,10 @@
-import { CheckboxTextfield } from "@/components/CheckboxTextField"
-import { IconChevron } from "@/components/Icons"
-import { ScrollFadeContainer } from "@/components/ScrollFadeContainer"
-import { assert } from "@/utils"
-import { ManagedCollectionField } from "framer-plugin"
-import { Fragment, useMemo } from "react"
 import cx from "classnames"
+import { type ManagedCollectionField } from "framer-plugin"
+import { Fragment, useMemo } from "react"
+import { assert } from "../utils"
+import { CheckboxTextfield } from "./CheckboxTextField"
+import { IconChevron } from "./Icons"
+import { ScrollFadeContainer } from "./ScrollFadeContainer"
 
 export interface ManagedCollectionFieldConfig {
     field: ManagedCollectionField | null

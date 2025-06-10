@@ -1,10 +1,10 @@
 import type { Collection } from "framer-plugin"
 import type { ImportResult, ImportResultItem } from "./csv"
 
-import "./App.css"
 import { framer, useIsAllowedTo } from "framer-plugin"
-import { ChangeEvent, useEffect, useMemo, useRef, useState, useCallback } from "react"
-import { processRecords, parseCSV, importCSV, ImportError } from "./csv"
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import "./App.css"
+import { importCSV, ImportError, parseCSV, processRecords } from "./csv"
 
 function ImportIcon() {
     return (

@@ -1,11 +1,11 @@
-import { cloneElement, useEffect, useState } from "react"
+import { AnimatePresence, type MotionProps, motion } from "framer-motion"
 import { framer } from "framer-plugin"
-import { RouteComponentProps, useLocation, useRoute } from "wouter"
-import { AnimatePresence, MotionProps, motion } from "framer-motion"
-import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
+import { cloneElement, useEffect, useState } from "react"
+import { type RouteComponentProps, useLocation, useRoute } from "wouter"
+import type { BlogPluginContext } from "./blog"
 import { Layout } from "./components/Layout"
-import { HubDBPluginContext } from "./hubdb"
-import { BlogPluginContext } from "./blog"
+import { PageErrorBoundaryFallback } from "./components/PageErrorBoundaryFallback"
+import type { HubDBPluginContext } from "./hubdb"
 
 interface PluginContexts {
     blogPluginContext: BlogPluginContext | null

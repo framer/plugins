@@ -1,9 +1,9 @@
-import { useRef, useState } from "react"
 import { framer } from "framer-plugin"
-import auth from "@/auth"
-import { Button } from "@/components/Button"
-import { Logo } from "@/components/Logo"
+import { useRef, useState } from "react"
 import { useLocation } from "wouter"
+import auth from "../auth"
+import { Button } from "../components/Button"
+import { Logo } from "../components/Logo"
 
 export default function AuthPage() {
     const [, navigate] = useLocation()

@@ -29,15 +29,15 @@ export function matchCase(original: string, template: string): string {
   let output = "";
 
   for (let index = 0; index < original.length; index++) {
-    const originalCharacter = original[index];
+    const originalCharacter = original.charAt(index);
 
     if (index >= maxIndex) {
       output += originalCharacter;
       continue;
     }
 
-    const templateCharacter = template[index];
-
+    const templateCharacter = template.charAt(index);
+    
     if (isUpperCase(templateCharacter)) {
       output += originalCharacter.toUpperCase();
       continue;

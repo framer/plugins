@@ -1,5 +1,5 @@
 import { createContext, useCallback, useEffect, useRef, useState } from 'react';
-import { GoogleToken } from './types';
+import type { GoogleToken } from './types';
 
 export const AuthContext = createContext<GoogleToken | null>(null);
 
@@ -19,7 +19,7 @@ export function getLocalStorageTokens() {
 
 export function useGoogleToken() {
   const [loading, setLoading] = useState(false);
-  const pollInterval = useRef<number>();
+  const pollInterval = useRef<ReturnType<typeof setInterval>>();
 
   const pollForTokens = (readKey: string) => {
     // Clear any previous interval timers, one may already exist

@@ -1,7 +1,7 @@
-import { useAccountQuery, useMeetingsQuery } from "@/api"
-import { CenteredSpinner } from "@/components/CenteredSpinner"
-import { ComponentInsert } from "@/components/ComponentInsert"
-import { ScrollFadeContainer } from "@/components/ScrollFadeContainer"
+import { useAccountQuery, useMeetingsQuery } from "../../api"
+import { CenteredSpinner } from "../../components/CenteredSpinner"
+import { ComponentInsert } from "../../components/ComponentInsert"
+import { ScrollFadeContainer } from "../../components/ScrollFadeContainer"
 
 export default function MeetingsPage() {
     const { data: account, isLoading: isLoadingAccount } = useAccountQuery()

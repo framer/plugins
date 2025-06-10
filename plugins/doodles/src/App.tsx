@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from "react"
-import { framer, useIsAllowedTo } from "framer-plugin"
-import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas"
 import * as Slider from "@radix-ui/react-slider"
+import { framer, useIsAllowedTo } from "framer-plugin"
+import { useCallback, useRef, useState } from "react"
+import { type ReactSketchCanvasRef, ReactSketchCanvas } from "react-sketch-canvas"
 
 import "./App.css"
 
@@ -68,58 +68,60 @@ export function App() {
     const [historyIndex, setHistoryIndex] = useState(0)
     const [historySize, setHistorySize] = useState(0)
 
-    const handleStrokeInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleStrokeInput = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.value
         setStrokeInputValue(newValue)
-    }
+    }, [])
 
-    const handleStrokeHueInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleStrokeHueInput = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.value
         setStrokeHueInputValue(newValue)
-    }
+    }, [])
 
-    const handleStrokeSaturateInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleStrokeSaturateInput = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.value
         setStrokeSaturateInputValue(newValue)
-    }
+    }, [])
 
-    const handleStrokeLightInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleStrokeLightInput = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.value
         setStrokeLightInputValue(newValue)
-    }
+    }, [])
 
-    function handleStrokeSliderChange(value: number[]) {
-        setStrokeValue(value[0])
-        setStrokeInputValue(`${value[0]}`)
-    }
+    const handleStrokeSliderChange = useCallback((values: number[]) => {
+        const value = values[0]
+        if (!isDefined(value)) return
+        setStrokeValue(value)
+        setStrokeInputValue(`${value}`)
+    }, [])
 
-    const handleStrokeInputKeydown = (event: React.KeyboardEvent) => {
+    const handleStrokeInputKeydown = useCallback((event: React.KeyboardEvent) => {
         if (event.key === "Enter") {
             const newValue = parseFloat(strokeInputValue)
             setStrokeValue(newValue)
         }
-    }
+    }, [])
 
-    const handleStrokeHueInputKeydown = (event: React.KeyboardEvent) => {
+    const handleStrokeHueInputKeydown = useCallback((event: React.KeyboardEvent) => {
         if (event.key === "Enter") {
             const newValue = parseFloat(strokeHueInputValue)
             setStrokeColor({ ...strokeColor, h: newValue })
         }
-    }
+    }, [])
 
-    const handleStrokeSaturateInputKeydown = (event: React.KeyboardEvent) => {
+    const handleStrokeSaturateInputKeydown = useCallback((event: React.KeyboardEvent) => {
         if (event.key === "Enter") {
             const newValue = parseFloat(strokeSaturateInputValue)
             setStrokeColor({ ...strokeColor, s: newValue })
         }
-    }
+    }, [])
 
-    const handleStrokeLightInputKeydown = (event: React.KeyboardEvent) => {
+    const handleStrokeLightInputKeydown = useCallback((event: React.KeyboardEvent) => {
         if (event.key === "Enter") {
             const newValue = parseFloat(strokeLightInputValue)
             setStrokeColor({ ...strokeColor, l: newValue })
         }
-    }
+    }, [])
 
     return (
         <main>
@@ -233,6 +235,7 @@ export function App() {
                         max={360}
                         step={1}
                         onValueChange={newHue => {
+                            if (!isDefined(newHue[0])) return
                             setStrokeColor({ ...strokeColor, h: newHue[0] })
                             setStrokeHueInputValue(`${newHue[0]}`)
                         }}
@@ -262,6 +265,7 @@ export function App() {
                         max={100}
                         step={1}
                         onValueChange={newValue => {
+                            if (!isDefined(newValue[0])) return
                             setStrokeColor({ ...strokeColor, s: newValue[0] })
                             setStrokeSaturateInputValue(`${newValue[0]}`)
                         }}
@@ -299,6 +303,7 @@ export function App() {
                         max={100}
                         step={1}
                         onValueChange={newValue => {
+                            if (!isDefined(newValue[0])) return
                             setStrokeColor({ ...strokeColor, l: newValue[0] })
                             setStrokeLightInputValue(`${newValue[0]}`)
                         }}
@@ -351,4 +356,8 @@ export function App() {
             </div>
         </main>
     )
+}
+
+function isDefined<T>(value: T | null | undefined): value is T {
+    return value !== null && value !== undefined
 }

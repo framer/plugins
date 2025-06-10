@@ -105,7 +105,7 @@ export function next<T>(array: T[], index: number): NonNullable<T> | undefined {
   return item;
 }
 
-export function forwards(iterations: number, length: number): number {
+export function forwards(iterations: number): number {
   return iterations + 1;
 }
 

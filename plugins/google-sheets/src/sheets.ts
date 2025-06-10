@@ -1,6 +1,8 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { ManagedCollection, ManagedCollectionField, framer } from "framer-plugin"
+import { type ManagedCollectionField, ManagedCollection, framer } from "framer-plugin"
 import auth from "./auth"
+import { logSyncResult } from "./debug.ts"
+import { queryClient } from "./main.tsx"
 import {
     assert,
     columnToLetter,
@@ -10,8 +12,6 @@ import {
     parseStringToArray,
     slugify,
 } from "./utils"
-import { logSyncResult } from "./debug.ts"
-import { queryClient } from "./main.tsx"
 
 const USER_INFO_API_URL = "https://www.googleapis.com/oauth2/v1"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
@@ -358,7 +358,10 @@ function processSheetRow({
         // +1 as zero-indexed, another +1 to account for header row
         const location = columnToLetter(colIndex + 1) + (rowIndex + 2)
 
-        const fieldValue = getFieldValue(fieldTypes[colIndex], cell)
+        const fieldType = fieldTypes[colIndex]
+        assert(isDefined(fieldType), "Field type must be defined")
+
+        const fieldValue = getFieldValue(fieldType, cell)
 
         if (fieldValue === null) {
             status.warnings.push({
@@ -380,7 +383,10 @@ function processSheetRow({
             unsyncedRowIds.delete(itemId)
         }
 
-        fieldData[uniqueHeaderRowNames[colIndex]] = fieldValue
+        const fieldName = uniqueHeaderRowNames[colIndex]
+        assert(isDefined(fieldName), "Field name must be defined")
+
+        fieldData[fieldName] = fieldValue
     }
 
     if (!slugValue || !itemId) {
@@ -585,12 +591,15 @@ export async function getPluginContext(): Promise<PluginContext> {
         const uniqueHeaderRowNames = generateUniqueNames(sheetHeaderRow)
 
         ignoredColumns =
-            parseStringToArray<number>(legacyIgnoredIndexes, "number")?.map(idx => uniqueHeaderRowNames[idx]) ?? []
-        slugColumn = legacySlugIndex ? uniqueHeaderRowNames[parseInt(legacySlugIndex)] : null
+            parseStringToArray<number>(legacyIgnoredIndexes, "number")
+                ?.map(idx => uniqueHeaderRowNames[idx])
+                .filter(isDefined) ?? []
+
+        slugColumn = legacySlugIndex ? (uniqueHeaderRowNames[parseInt(legacySlugIndex)] ?? null) : null
 
         collectionFields = collectionFields.map((field, index) => ({
             ...field,
-            id: uniqueHeaderRowNames.find(name => name === field.name) ?? uniqueHeaderRowNames[index],
+            id: uniqueHeaderRowNames.find(name => name === field.name) ?? uniqueHeaderRowNames[index] ?? field.name,
         }))
 
         await Promise.all([

@@ -1,7 +1,7 @@
-import { useLayoutEffect, useRef, useState } from "react"
 import { framer } from "framer-plugin"
-import { getPluginContext, PluginContext } from "../sheets"
+import { useLayoutEffect, useRef, useState } from "react"
 import auth from "../auth"
+import { type PluginContext, getPluginContext } from "../sheets"
 
 import { Hero } from "../components/Hero"
 

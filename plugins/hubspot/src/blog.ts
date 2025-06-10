@@ -1,17 +1,17 @@
-import { framer, ManagedCollection, ManagedCollectionField } from "framer-plugin"
 import { useMutation } from "@tanstack/react-query"
-import { fetchAllBlogPosts, BlogPost } from "./api"
-import { assert, isDefined } from "./utils"
-import { HUBSPOT_BLOG_FIELDS } from "./constants"
+import { type ManagedCollectionField, framer, ManagedCollection, } from "framer-plugin"
+import { BlogPost, fetchAllBlogPosts } from "./api"
 import {
+    type FieldsById,
+    type SyncResult,
+    type SyncStatus,
     computeFieldSets,
     createFieldSetHash,
-    FieldsById,
     logSyncResult,
     MAX_CMS_ITEMS,
-    SyncResult,
-    SyncStatus,
 } from "./cms"
+import { HUBSPOT_BLOG_FIELDS } from "./constants"
+import { assert, isDefined } from "./utils"
 
 export const PLUGIN_INCLUDED_FIELDS_HASH = "hubspotPluginBlogIncludedFieldsHash"
 

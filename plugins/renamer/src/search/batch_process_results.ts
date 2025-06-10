@@ -2,7 +2,6 @@ import type { CanvasNode, Result } from "./types";
 
 import { framer } from "framer-plugin";
 import { isCanvasNode } from "./traits";
-import { replaceAllRanges } from "../utils/text";
 
 interface BatchProcessResultsOptions {
   process: (result: Result, node: CanvasNode, index: number) => Promise<void>;

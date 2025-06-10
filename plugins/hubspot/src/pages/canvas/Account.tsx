@@ -1,7 +1,7 @@
 import { framer } from "framer-plugin"
-import { useUserQuery } from "@/api"
-import auth from "@/auth"
-import { CenteredSpinner } from "@/components/CenteredSpinner"
+import { useUserQuery } from "../../api"
+import auth from "../../auth"
+import { CenteredSpinner } from "../../components/CenteredSpinner"
 
 export default function AccountPage() {
     const { data: user, isLoading: isLoadingUser } = useUserQuery()

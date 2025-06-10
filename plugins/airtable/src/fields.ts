@@ -190,8 +190,10 @@ async function inferRecordLinksField(
         }
     }
 
+    const foundCollection = foundCollections[0]
+
     // Only add unsupported field if we didn't find a matching collection
-    if (foundCollections.length === 0) {
+    if (!foundCollection) {
         return {
             id: fieldSchema.id,
             name: fieldSchema.name,
@@ -210,7 +212,7 @@ async function inferRecordLinksField(
         userEditable: false,
         airtableType: "multipleRecordLinks",
         supportedCollections: foundCollections,
-        collectionId: foundCollections[0].id,
+        collectionId: foundCollection.id,
         type,
         single: fieldSchema.options.prefersSingleRecordLink,
     }

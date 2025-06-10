@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from 'react';
-import { GoogleSitemap, GoogleToken, SiteWithGoogleSite } from '../types';
+import type { GoogleSitemap, GoogleToken, SiteWithGoogleSite } from '../types';
 import { googleApiCall, sitemapUrl } from '../utils';
 import { AuthContext, useGoogleToken } from '../auth';
 import SiteHasIndexedSitemap from './SiteHasIndexedSitemap';

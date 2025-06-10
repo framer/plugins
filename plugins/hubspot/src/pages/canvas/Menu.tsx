@@ -1,11 +1,10 @@
-import { useEffect } from "react"
-import { framer } from "framer-plugin"
-import { useLocation } from "wouter"
 import cx from "classnames"
-import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "@/api"
-import { Logo } from "@/components/Logo"
-import { ChartIcon, FormsIcon, PersonIcon, MessageIcon, LightningIcon, MeetingsIcon } from "@/components/Icons"
-import { PluginError } from "@/PluginError"
+import { framer } from "framer-plugin"
+import { useEffect } from "react"
+import { useLocation } from "wouter"
+import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "../../api"
+import { ChartIcon, FormsIcon, LightningIcon, MeetingsIcon, MessageIcon, PersonIcon } from "../../components/Icons"
+import { Logo } from "../../components/Logo"
 
 const queryHooks = {
     "/canvas/forms": { hook: useFormsQuery, shouldRefetch: true },

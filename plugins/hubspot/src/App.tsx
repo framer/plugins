@@ -1,22 +1,22 @@
 import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
-import { Route, Router } from "./router"
 import auth from "./auth"
+import { type BlogPluginContext, getBlogPluginContext, shouldSyncBlogImmediately, syncBlogs } from "./blog"
+import { type HubDBPluginContext, getHubDBPluginContext, shouldSyncHubDBImmediately, syncHubDBTable } from "./hubdb"
 import AuthPage from "./pages/Auth"
 import {
-    CanvasMenuPage,
-    MeetingsPage,
     AccountPage,
+    CanvasMenuPage,
     ChatPage,
-    FormsPage,
     FormsInstallationPage,
-    TrackingPage,
+    FormsPage,
     LearnMoreTrackingPage,
+    MeetingsPage,
+    TrackingPage,
 } from "./pages/canvas"
-import { CMSMenuPage, BlogPage, MapHubDBFieldsPage, HubDBPage } from "./pages/cms"
-import { BlogPluginContext, getBlogPluginContext, shouldSyncBlogImmediately, syncBlogs } from "./blog"
-import { getHubDBPluginContext, HubDBPluginContext, shouldSyncHubDBImmediately, syncHubDBTable } from "./hubdb"
+import { BlogPage, CMSMenuPage, HubDBPage, MapHubDBFieldsPage } from "./pages/cms"
+import { type Route, Router } from "./router"
 
 const routes: Route[] = [
     {

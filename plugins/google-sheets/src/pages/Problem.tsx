@@ -1,7 +1,7 @@
-import { PropsWithChildren, useLayoutEffect, useState } from "react"
-import { getPluginContext, PluginContext } from "../sheets"
 import { framer } from "framer-plugin"
+import { type PropsWithChildren, useLayoutEffect, useState } from "react"
 import { Button } from "../components/Button"
+import { type PluginContext, getPluginContext } from "../sheets"
 
 interface Props extends PropsWithChildren {
     height: number

@@ -2,7 +2,7 @@ import { Check, Loader } from 'react-feather';
 import { requestIndexing } from '../api';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../auth';
-import { GoogleToken } from '../types';
+import type { GoogleToken } from '../types';
 
 interface ReIndexButtonProps {
   urls: string[] | null;

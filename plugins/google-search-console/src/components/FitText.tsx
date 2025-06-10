@@ -1,5 +1,5 @@
-import { ReactNode, useState } from 'react';
 import { Textfit } from '@ataverascrespo/react18-ts-textfit';
+import { type ReactNode, useState } from 'react';
 
 interface FitTextProps {
   children: ReactNode;

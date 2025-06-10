@@ -1,11 +1,11 @@
 import {
+    type CollectionItemInput,
+    type Field,
+    type FieldDataEntryInput,
+    type FieldDataInput,
     Collection,
-    Field,
     CollectionItem,
-    CollectionItemInput,
     framer,
-    FieldDataInput,
-    FieldDataEntryInput,
 } from "framer-plugin"
 
 type CSVRecord = Record<string, string>
@@ -150,15 +150,19 @@ function getFieldDataEntryInputForField(
                 return new ConversionError(`Invalid value for field “${field.name}” expected a valid date`)
             }
             const isoDate = date.toISOString().split("T")[0]
+            if (!isDefined(isoDate)) {
+                return new ConversionError(`Invalid value for field “${field.name}” expected a valid date`)
+            }
             return { type: "date", value: new Date(isoDate).toJSON() }
         }
 
         case "enum": {
             if (value === null) {
-                if (field.cases.length === 0) {
+                const firstCase = field.cases[0]
+                if (!isDefined(firstCase)) {
                     return new ConversionError(`Enum “${field.name}” has no cases`)
                 }
-                return { type: "enum", value: field.cases[0].id }
+                return { type: "enum", value: firstCase.id }
             }
             const matchingCase = field.cases.find(
                 enumCase => collator.compare(enumCase.name, value) === 0 || enumCase.id === value
@@ -266,7 +270,12 @@ export async function processRecords(collection: Collection, records: CSVRecord[
     const fields = await collection.getFields()
     const allItemIdBySlug = new Map<string, Map<string, string>>()
 
-    const csvHeader = Object.keys(records[0])
+    const firstRecord = records[0]
+    if (!isDefined(firstRecord)) {
+        throw new ImportError("error", "Import failed. No records were found in your CSV.")
+    }
+
+    const csvHeader = Object.keys(firstRecord)
     const { slugIndex, basedOnIndex } = findSlugFieldIndex(
         csvHeader,
         {
@@ -303,9 +312,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
         existingItemsBySlug.set(item.slug, item)
     }
 
-    const fieldsToImport = fields.filter(field =>
-        csvHeader.find(header => collator.compare(header, field.name) === 0)
-    )
+    const fieldsToImport = fields.filter(field => csvHeader.find(header => collator.compare(header, field.name) === 0))
 
     for (const record of records) {
         let slug: string | undefined
@@ -313,12 +320,22 @@ export async function processRecords(collection: Collection, records: CSVRecord[
 
         // Try to get slug from the slug field first
         if (slugIndex !== -1) {
-            slug = slugify(values[slugIndex])
+            const slugValue = values[slugIndex]
+            if (!isDefined(slugValue)) {
+                result.warnings.missingSlugCount++
+                continue
+            }
+            slug = slugify(slugValue)
         }
 
         // If no slug and we have a basedOn field, try to get slug from that
         if (!slug && basedOnIndex !== -1) {
-            slug = slugify(values[basedOnIndex])
+            const basedOnValue = values[basedOnIndex]
+            if (!isDefined(basedOnValue)) {
+                result.warnings.missingSlugCount++
+                continue
+            }
+            slug = slugify(basedOnValue)
         }
 
         if (!slug) {
@@ -466,4 +483,8 @@ const trimSlugRegExp = /^-+|-+$/gu
  */
 export function slugify(value: string): string {
     return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
+}
+
+function isDefined<T>(value: T | null | undefined): value is T {
+    return value !== null && value !== undefined
 }

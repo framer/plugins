@@ -1,0 +1,163 @@
+/* Your Plugin CSS */
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 0 15px 15px 15px;
+    height: 100%;
+    gap: 10px;
+    padding-top: 80px;
+    padding-bottom: 15px;
+    width: 100%;
+    height: 100%;
+}
+
+.framer-control-row {
+    width: 100%;
+    height: 30px;
+}
+
+.section-inner-container {
+    width: 100%;
+    background: var(--framer-color-bg-secondary);
+    border-radius: 8px;
+    position: relative;
+    cursor: pointer;
+}
+
+.section-container.layout-section {
+    padding: 10px;
+}
+
+.section-inner-container:hover .section-image {
+    transform: scale(1.02);
+}
+
+.section-inner-container:hover::after {
+    opacity: 0.02;
+}
+
+.section-inner-container::after {
+    content: "";
+    transition: opacity 0.1s ease-out;
+    border-radius: 8px;
+    padding: 10px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background: var(--framer-color-text);
+    opacity: 0;
+}
+
+.section-button {
+    border-radius: 8px;
+    height: auto;
+    padding: 0;
+    background: var(--framer-color-bg-secondary);
+    width: 100%;
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.section-image {
+    z-index: 1;
+    overflow: hidden;
+    border-radius: 6px;
+    box-shadow:0px 4px 8px 0px rgba(0, 0, 0, .1);
+    transition: transform 0.1s ease-out;
+    filter: drop-shadow(0px 10px 20px rgba(0, 0, 0, 0.2));
+}
+
+.search-container {
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-direction: column;
+    left: 15px;
+    right: 15px;
+    background: var(--framer-color-bg);
+    padding-bottom: 10px;
+
+}
+
+.search-container svg {
+    color: var(--framer-color-text-tertiary);
+    position: absolute;
+    top: 7px;
+    left: 8px;
+    bottom: 0;
+    height: 100%;
+}
+
+.search-input {
+    width: 100%;
+    background: var(--framer-color-bg-secondary);
+    padding-left: 30px;
+}
+
+.no-results {
+    text-align: center;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    padding: 20px;
+    height: 100%;
+    width: 100%;
+    color: var(--framer-color-text-tertiary);
+}
+
+.contents-column {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.contents-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 40px);
+    width: 100%;
+    min-height: 100%;
+
+}
+
+.color-container {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    gap: 10px;
+    color: var(--framer-color-text-secondary);
+    position: relative;
+}
+
+.color-box {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--framer-color-divider);
+}
+
+.copy-button {
+    display: none;
+    position: absolute;
+    right: 0px;
+    font-size: 12px;
+    width: auto;
+}
+
+.color-container:hover .copy-button {
+    display: block;
+}
+
+.action-button {
+    margin-top: auto;
+}

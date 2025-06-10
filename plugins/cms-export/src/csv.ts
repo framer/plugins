@@ -1,6 +1,6 @@
-import type { Collection, CollectionField, CollectionItem, SupportedCollectionField } from "framer-plugin"
+import type { Collection, Field, CollectionItem } from "framer-plugin"
 
-import { isColorStyle, isFileAsset, isImageAsset } from "framer-plugin"
+import { isColorStyle } from "framer-plugin"
 import { shouldBeNever } from "./assert"
 
 function downloadFile(file: File) {
@@ -27,7 +27,9 @@ function escapeCell(value: string) {
     return value.replace(/"/gu, '""')
 }
 
-function isFieldSupported(field: CollectionField): field is SupportedCollectionField {
+type SupportedField = Exclude<Field, { type: "divider" | "unsupported" }>
+
+function isFieldSupported(field: Field): field is SupportedField {
     switch (field.type) {
         case "image":
         case "file":
@@ -43,6 +45,7 @@ function isFieldSupported(field: CollectionField): field is SupportedCollectionF
         case "number":
             return true
 
+        case "divider":
         case "unsupported":
             return false
 
@@ -52,15 +55,21 @@ function isFieldSupported(field: CollectionField): field is SupportedCollectionF
     }
 }
 
-export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]): Rows {
+export function getDataForCSV(slugFieldName: string | null, fields: Field[], items: CollectionItem[]): Rows {
     const rows: Rows = []
     const supportedFields = fields.filter(isFieldSupported)
 
-    // Add header row.
-    rows.push(supportedFields.map(field => field.name))
+    // Add header row with slug field at the start.
+    const header: Columns = [slugFieldName ?? "Slug"]
+    for (const field of supportedFields) {
+        if (field.type === "image") {
+            header.push(field.name, `${field.name}:alt`)
+        } else {
+            header.push(field.name)
+        }
+    }
 
-    // Add slug header to the start.
-    rows[0].unshift("Slug")
+    rows.push(header)
 
     // Add all the data rows.
     for (const item of items) {
@@ -70,72 +79,62 @@ export function getDataForCSV(fields: CollectionField[], items: CollectionItem[]
         columns.push(item.slug)
 
         for (const field of supportedFields) {
-            const value = item.fieldData[field.id]
+            const fieldData = item.fieldData[field.id]
 
-            switch (field.type) {
-                case "image":
+            switch (fieldData.type) {
                 case "file": {
-                    if (!isImageAsset(value) && !isFileAsset(value)) {
+                    if (!fieldData.value) {
                         columns.push("")
                         continue
                     }
 
-                    columns.push(`${value.url}`)
+                    columns.push(`${fieldData.value.url}`)
                     continue
                 }
 
-                case "collectionReference":
-                case "formattedText": {
-                    if (typeof value !== "string") {
-                        columns.push("")
+                case "image": {
+                    if (!fieldData.value) {
+                        columns.push("", "")
                         continue
                     }
 
-                    columns.push(`${value}`)
+                    columns.push(`${fieldData.value.url}`, fieldData.value.altText ? `${fieldData.value.altText}` : "")
                     continue
                 }
 
                 case "multiCollectionReference": {
-                    if (!Array.isArray(value) || value.some(v => typeof v !== "string")) {
-                        columns.push("")
-                        continue
-                    }
-
-                    columns.push(`${value.join(",")}`)
+                    columns.push(`${fieldData.value.join(",")}`)
                     continue
                 }
 
                 case "enum": {
-                    if (!value) {
-                        columns.push(field.cases[0].name)
-                        continue
-                    }
-
-                    columns.push(`${value}`)
+                    columns.push(`${fieldData.value}`)
                     continue
                 }
 
                 case "color": {
-                    if (isColorStyle(value)) {
-                        columns.push(value.light)
+                    if (isColorStyle(fieldData.value)) {
+                        columns.push(fieldData.value.light)
                         continue
                     }
 
-                    columns.push(typeof value === "string" ? value : "")
+                    columns.push(fieldData.value)
                     continue
                 }
 
+                case "collectionReference":
+                case "formattedText":
                 case "string":
                 case "boolean":
                 case "date":
                 case "link":
                 case "number": {
-                    columns.push(`${value}`)
+                    columns.push(`${fieldData.value ?? ""}`)
                     continue
                 }
 
                 default: {
-                    shouldBeNever(field)
+                    shouldBeNever(fieldData)
                 }
             }
         }
@@ -150,7 +149,7 @@ export async function convertCollectionToCSV(collection: Collection) {
     const fields = await collection.getFields()
     const items = await collection.getItems()
 
-    const rows = getDataForCSV(fields, items)
+    const rows = getDataForCSV(collection.slugFieldName, fields, items)
 
     const csv = rows
         .map(row => {

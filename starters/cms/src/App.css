@@ -19,17 +19,26 @@ form {
     gap: 10px;
 }
 
-.sticky-top {
+.sticky-divider {
     position: sticky;
     top: 0;
 }
 
-.field-input {
+select {
     width: 100%;
+}
+
+select:disabled,
+input[type="text"]:disabled,
+.ignored {
+    opacity: 0.5;
+}
+
+.mapping select {
     flex-shrink: 1;
 }
 
-.column-span-2 {
+.fields-column {
     grid-column: span 2 / span 2;
 }
 
@@ -49,6 +58,10 @@ form {
 
 .setup {
     align-items: center;
+}
+
+.setup select {
+    font-weight: 600;
 }
 
 .intro {
@@ -82,10 +95,6 @@ form {
     width: 100%;
     justify-content: space-between;
     color: var(--framer-color-text-secondary);
-}
-
-.setup select {
-    width: 100%;
 }
 
 .mapping {
@@ -126,10 +135,6 @@ form {
     gap: 8px;
 }
 
-.mapping .source-field[aria-disabled="true"] {
-    opacity: 0.5;
-}
-
 .mapping .source-field:focus-visible {
     outline: none;
     box-shadow: inset 0 0 0 1px var(--framer-color-tint);
@@ -141,6 +146,18 @@ form {
 
 .mapping .source-field input[type="checkbox"]:focus {
     box-shadow: none;
+}
+
+[data-framer-theme="light"] .mapping .source-field input[type="checkbox"]:not(:checked) {
+    background: #ccc;
+}
+
+[data-framer-theme="dark"] .mapping .source-field input[type="checkbox"]:not(:checked) {
+    background: #666;
+}
+
+.mapping input[type="text"] {
+    width: 100%;
 }
 
 .mapping footer {
@@ -165,4 +182,8 @@ form {
     height: 45px;
     background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
     pointer-events: none;
+}
+
+.mapping footer > button {
+    text-transform: capitalize;
 }

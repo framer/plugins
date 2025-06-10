@@ -95,6 +95,18 @@ class Auth {
         return authorize
     }
 
+    async isWorkerAlive(): Promise<boolean> {
+        try {
+            const res = await fetch(`${this.AUTH_URI}/poll`, {
+                method: "POST",
+            })
+            return res.status === 400
+        } catch (error) {
+            console.error("Failed to connect to OAuth worker:", error)
+            return false
+        }
+    }
+
     private isTokensExpired() {
         const tokens = this.tokens.get()
         if (!tokens) return true

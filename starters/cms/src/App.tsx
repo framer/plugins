@@ -1,10 +1,8 @@
 import "./App.css"
 
-import type { ManagedCollection } from "framer-plugin"
-
-import { framer } from "framer-plugin"
+import { framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
-import { DataSource, getDataSource } from "./data"
+import { type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { SelectDataSource } from "./SelectDataSource"
 

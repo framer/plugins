@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">
+    <rect style="width: 100%; height: 100%; fill: rgb(103, 102, 255);" />
+
+    <path d="M 10.5 19.5 L 18 12" fill="transparent" stroke-width="3" stroke="rgb(255, 255, 255)" stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    <path d="M 10.5 10.5 L 19.5 10.5 L 19.5 19.5" fill="transparent" stroke-width="3" stroke="rgb(255, 255, 255)"
+        stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>

@@ -1,70 +1,63 @@
-import type { ManagedCollection, EditableManagedCollectionField } from "framer-plugin"
-import type { DataSource } from "./data"
+import { type ManagedCollectionFieldInput, framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
+import { useEffect, useState } from "react"
+import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 
-import { framer } from "framer-plugin"
-import { useState, useEffect, memo } from "react"
-import { getDataSources, mergeFieldsWithExistingFields, syncCollection } from "./data"
+interface FieldMappingRowProps {
+    field: ManagedCollectionFieldInput
+    originalFieldName: string | undefined
+    isIgnored: boolean
+    onToggleDisabled: (fieldId: string) => void
+    onNameChange: (fieldId: string, name: string) => void
+    disabled: boolean
+}
 
-function ChevronIcon() {
+function FieldMappingRow({
+    field,
+    originalFieldName,
+    isIgnored,
+    onToggleDisabled,
+    onNameChange,
+    disabled,
+}: FieldMappingRowProps) {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
-            <path
-                d="M 3 11 L 6 8 L 3 5"
-                fill="transparent"
-                strokeWidth="1.5"
-                stroke="#999"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        <>
+            <button
+                type="button"
+                className={`source-field ${isIgnored ? "ignored" : ""}`}
+                onClick={() => onToggleDisabled(field.id)}
+                disabled={disabled}
+            >
+                <input type="checkbox" checked={!isIgnored} tabIndex={-1} readOnly />
+                <span>{originalFieldName ?? field.id}</span>
+            </button>
+            <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" fill="none">
+                <title>maps to</title>
+                <path
+                    fill="transparent"
+                    stroke="#999"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="m2.5 7 3-3-3-3"
+                />
+            </svg>
+            <input
+                type="text"
+                disabled={isIgnored || disabled}
+                placeholder={field.id}
+                value={field.name}
+                onChange={event => onNameChange(field.id, event.target.value)}
+                onKeyDown={event => {
+                    if (event.key === "Enter") {
+                        event.preventDefault()
+                    }
+                }}
             />
-        </svg>
+        </>
     )
 }
 
-interface FieldMappingRowProps {
-    field: EditableManagedCollectionField
-    originalFieldName: string | undefined
-    disabled: boolean
-    onToggleDisabled: (fieldId: string) => void
-    onNameChange: (fieldId: string, name: string) => void
-}
-
-const FieldMappingRow = memo(
-    ({ field, originalFieldName, disabled, onToggleDisabled, onNameChange }: FieldMappingRowProps) => {
-        return (
-            <>
-                <button
-                    type="button"
-                    className="source-field"
-                    aria-disabled={disabled}
-                    onClick={() => onToggleDisabled(field.id)}
-                    tabIndex={0}
-                >
-                    <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
-                    <span>{originalFieldName ?? field.id}</span>
-                </button>
-                <ChevronIcon />
-                <input
-                    type="text"
-                    style={{
-                        width: "100%",
-                        opacity: disabled ? 0.5 : 1,
-                    }}
-                    disabled={disabled}
-                    placeholder={field.id}
-                    value={field.name}
-                    onChange={event => onNameChange(field.id, event.target.value)}
-                    onKeyDown={event => {
-                        if (event.key === "Enter") {
-                            event.preventDefault()
-                        }
-                    }}
-                />
-            </>
-        )
-    }
-)
-
-const initialManagedCollectionFields: EditableManagedCollectionField[] = []
+const initialManagedCollectionFields: ManagedCollectionFieldInput[] = []
 const initialFieldIds: ReadonlySet<string> = new Set()
 
 interface FieldMappingProps {
@@ -82,18 +75,14 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
 
-    const [selectedSlugField, setSelectedSlugField] = useState<EditableManagedCollectionField | null>(
+    const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 
     const [fields, setFields] = useState(initialManagedCollectionFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
-    const [dataSourceName] = useState(
-        () =>
-            getDataSources().find(dataSourceIdentifier => dataSourceIdentifier.id === dataSource.id)?.name ||
-            dataSource.id
-    )
+    const dataSourceName = dataSourceOptions.find(option => option.id === dataSource.id)?.name ?? dataSource.id
 
     useEffect(() => {
         const abortController = new AbortController()
@@ -150,6 +139,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         })
     }
 
+    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
@@ -164,12 +155,13 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         try {
             setStatus("syncing-collection")
 
-            const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
+            const fieldsToSync = fields
+                .filter(field => !ignoredFieldIds.has(field.id))
+                .map(field => ({ ...field, name: field.name.trim() || field.id }))
 
+            await collection.setFields(fieldsToSync)
             await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField)
-            await framer.closePlugin("Synchronization successful", {
-                variant: "success",
-            })
+            await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)
             framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
@@ -190,7 +182,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     return (
         <main className="framer-hide-scrollbar mapping">
-            <hr className="sticky-top" />
+            <hr className="sticky-divider" />
             <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
                     Slug Field
@@ -205,6 +197,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             if (!selectedField) return
                             setSelectedSlugField(selectedField)
                         }}
+                        disabled={!isAllowedToManage}
                     >
                         {possibleSlugFields.map(possibleSlugField => {
                             return (
@@ -217,30 +210,29 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 </label>
 
                 <div className="fields">
-                    <span className="column-span-2">Column</span>
+                    <span className="fields-column">Column</span>
                     <span>Field</span>
                     {fields.map(field => (
                         <FieldMappingRow
                             key={`field-${field.id}`}
                             field={field}
                             originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
-                            disabled={ignoredFieldIds.has(field.id)}
+                            isIgnored={ignoredFieldIds.has(field.id)}
                             onToggleDisabled={toggleFieldDisabledState}
                             onNameChange={changeFieldName}
+                            disabled={!isAllowedToManage}
                         />
                     ))}
                 </div>
 
                 <footer>
-                    <hr className="sticky-top" />
-                    <button disabled={isSyncing} tabIndex={0}>
-                        {isSyncing ? (
-                            <div className="framer-spinner" />
-                        ) : (
-                            <span>
-                                Import <span style={{ textTransform: "capitalize" }}>{dataSourceName}</span>
-                            </span>
-                        )}
+                    <hr />
+                    <button
+                        type="submit"
+                        disabled={isSyncing || !isAllowedToManage}
+                        title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                    >
+                        {isSyncing ? <div className="framer-spinner" /> : `Import ${dataSourceName}`}
                     </button>
                 </footer>
             </form>

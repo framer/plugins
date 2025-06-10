@@ -1,6 +1,11 @@
-import type { CollectionItemData, ManagedCollection, EditableManagedCollectionField } from "framer-plugin"
-
-import { framer } from "framer-plugin"
+import {
+    type ManagedCollectionFieldInput,
+    type FieldDataInput,
+    framer,
+    type ManagedCollection,
+    type ManagedCollectionItemInput,
+    type ProtectedMethod,
+} from "framer-plugin"
 
 export const PLUGIN_KEYS = {
     DATA_SOURCE_ID: "dataSourceId",
@@ -9,16 +14,14 @@ export const PLUGIN_KEYS = {
 
 export interface DataSource {
     id: string
-    fields: readonly EditableManagedCollectionField[]
-    items: Record<string, unknown>[]
+    fields: readonly ManagedCollectionFieldInput[]
+    items: FieldDataInput[]
 }
 
-export function getDataSources() {
-    return [
-        { id: "articles", name: "Articles" },
-        { id: "categories", name: "Categories" },
-    ]
-}
+export const dataSourceOptions = [
+    { id: "articles", name: "Articles" },
+    { id: "categories", name: "Categories" },
+] as const
 
 /**
  * Retrieve data and process it into a structured format.
@@ -42,7 +45,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     const dataSource = await dataSourceResponse.json()
 
     // Map your source fields to supported field types in Framer
-    const fields: EditableManagedCollectionField[] = []
+    const fields: ManagedCollectionFieldInput[] = []
     for (const field of dataSource.fields) {
         switch (field.type) {
             case "string":
@@ -71,17 +74,19 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
         }
     }
 
+    const items = dataSource.items as FieldDataInput[]
+
     return {
         id: dataSource.id,
         fields,
-        items: dataSource.items,
+        items,
     }
 }
 
 export function mergeFieldsWithExistingFields(
-    sourceFields: readonly EditableManagedCollectionField[],
-    existingFields: readonly EditableManagedCollectionField[]
-): EditableManagedCollectionField[] {
+    sourceFields: readonly ManagedCollectionFieldInput[],
+    existingFields: readonly ManagedCollectionFieldInput[]
+): ManagedCollectionFieldInput[] {
     return sourceFields.map(sourceField => {
         const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
         if (existingField) {
@@ -94,30 +99,27 @@ export function mergeFieldsWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: readonly EditableManagedCollectionField[],
-    slugField: EditableManagedCollectionField
+    fields: readonly ManagedCollectionFieldInput[],
+    slugField: ManagedCollectionFieldInput
 ) {
-    const sanitizedFields = fields.map(field => ({
-        ...field,
-        name: field.name.trim() || field.id,
-    }))
-
-    const items: CollectionItemData[] = []
+    const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
 
     for (let i = 0; i < dataSource.items.length; i++) {
         const item = dataSource.items[i]
+        if (!item) throw new Error("Logic error")
+
         const slugValue = item[slugField.id]
-        if (typeof slugValue !== "string" || !slugValue) {
+        if (!slugValue || typeof slugValue.value !== "string") {
             console.warn(`Skipping item at index ${i} because it doesn't have a valid slug`)
             continue
         }
 
-        unsyncedItems.delete(slugValue)
+        unsyncedItems.delete(slugValue.value)
 
-        const fieldData: CollectionItemData["fieldData"] = {}
+        const fieldData: FieldDataInput = {}
         for (const [fieldName, value] of Object.entries(item)) {
-            const field = sanitizedFields.find(field => field.id === fieldName)
+            const field = fields.find(field => field.id === fieldName)
 
             // Field is in the data but skipped based on selected fields.
             if (!field) continue
@@ -128,20 +130,25 @@ export async function syncCollection(
         }
 
         items.push({
-            id: slugValue,
-            slug: slugValue,
+            id: slugValue.value,
+            slug: slugValue.value,
             draft: false,
             fieldData,
         })
     }
 
-    await collection.setFields(sanitizedFields)
     await collection.removeItems(Array.from(unsyncedItems))
     await collection.addItems(items)
 
     await collection.setPluginData(PLUGIN_KEYS.DATA_SOURCE_ID, dataSource.id)
     await collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id)
 }
+
+export const syncMethods = [
+    "ManagedCollection.removeItems",
+    "ManagedCollection.addItems",
+    "ManagedCollection.setPluginData",
+] as const satisfies ProtectedMethod[]
 
 export async function syncExistingCollection(
     collection: ManagedCollection,
@@ -153,6 +160,10 @@ export async function syncExistingCollection(
     }
 
     if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId) {
+        return { didSync: false }
+    }
+
+    if (!framer.isAllowedTo(...syncMethods)) {
         return { didSync: false }
     }
 

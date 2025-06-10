@@ -1,21 +1,21 @@
+import * as cheerio from 'cheerio';
 import { useContext, useEffect, useState } from 'react';
-import sitemapper from 'sitemap-urls';
 import { useErrorBoundary } from 'react-error-boundary';
-import type { GoogleInspectionResult, SiteWithGoogleSite } from '../types';
+import InlineSpinner from '../components/InlineSpinner';
+import Loading from '../components/Loading';
 import {
   useBatchIndexingResult,
   useMockPerformanceResults,
   usePerformanceResults,
 } from '../hooks';
-import Performance from './Performance';
-import { getDateRange } from '../utils';
-import Loading from '../components/Loading';
-import { ResizeContext } from '../resize';
 import doc from '../images/Doc.svg';
-import indexNone from '../images/IndexNone.svg';
 import indexAdded from '../images/IndexAdded.svg';
-import InlineSpinner from '../components/InlineSpinner';
+import indexNone from '../images/IndexNone.svg';
 import { mockUrls } from '../mocks';
+import { ResizeContext } from '../resize';
+import type { GoogleInspectionResult, SiteWithGoogleSite } from '../types';
+import { getDateRange } from '../utils';
+import Performance from './Performance';
 
 interface URLRowProps {
   url: string;
@@ -157,9 +157,12 @@ export default function SiteHasIndexedSitemap({
         );
         const sitemapText = await sitemapResult.text();
 
-        const extracted = await sitemapper.extractUrls(sitemapText);
+        const sitemap = cheerio.load(sitemapText, { xmlMode: true });
+        const urls = sitemap('loc')
+          .map((_, el) => sitemap(el).text())
+          .get();
 
-        setUrls([...new Set(extracted)].sort());
+        setUrls([...new Set(urls)].sort());
       }
     }
 

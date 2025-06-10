@@ -2,7 +2,7 @@ import type { Collection } from "framer-plugin"
 import type { ImportResult, ImportResultItem } from "./csv"
 
 import "./App.css"
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { ChangeEvent, useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { processRecords, parseCSV, importCSV, ImportError } from "./csv"
 
@@ -119,7 +119,7 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
 }
 
 export function App({ collection }: { collection: Collection }) {
-    const isAllowedToAddItems = framer.isAllowedTo("Collection.addItems")
+    const isAllowedToAddItems = useIsAllowedTo("Collection.addItems")
 
     const form = useRef<HTMLFormElement>(null)
     const inputOpenedFromImportButton = useRef(false)

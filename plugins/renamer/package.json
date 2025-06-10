@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "check": "svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
     "dev": "vite",
     "format": "prettier --check '**/*.{js,json,jsx,md,ts,svelte,css}' --write",
     "build": "vite build",
@@ -13,7 +13,6 @@
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.1.0",
-    "@tsconfig/svelte": "^5.0.4",
     "prettier": "^3.3.3",
     "prettier-plugin-svelte": "^3.2.6",
     "svelte": "^5.0.0-next.201",

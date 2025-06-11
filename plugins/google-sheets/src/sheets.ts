@@ -1,5 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { type ManagedCollectionField, ManagedCollection, framer } from "framer-plugin"
+import {
+    type FieldDataEntryInput,
+    type FieldDataInput,
+    type ManagedCollectionFieldInput,
+    ManagedCollection,
+    framer,
+} from "framer-plugin"
 import auth from "./auth"
 import { logSyncResult } from "./debug.ts"
 import { queryClient } from "./main.tsx"
@@ -202,7 +208,7 @@ function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?:
     })
 }
 
-export type CollectionFieldType = ManagedCollectionField["type"]
+export type CollectionFieldType = ManagedCollectionFieldInput["type"]
 
 export interface PluginContextNew {
     type: "new"
@@ -214,7 +220,7 @@ export interface PluginContextUpdate {
     type: "update"
     spreadsheetId: string
     sheetTitle: string
-    collectionFields: ManagedCollectionField[]
+    collectionFields: ManagedCollectionFieldInput[]
     collection: ManagedCollection
     hasChangedFields: boolean
     ignoredColumns: string[]
@@ -272,7 +278,7 @@ export interface SyncMutationOptions {
     spreadsheetId: string
     sheetTitle: string
     fetchedSheet?: Sheet
-    fields: ManagedCollectionField[]
+    fields: ManagedCollectionFieldInput[]
     slugColumn: string | null
     ignoredColumns: string[]
     colFieldTypes: CollectionFieldType[]
@@ -303,24 +309,24 @@ function extractDateFromSerialNumber(serialNumber: number) {
     return new Date(baseDate.getTime() + wholeDays * MS_PER_DAY + milliseconds)
 }
 
-function getFieldValue(fieldType: CollectionFieldType, cellValue: CellValue) {
-    switch (fieldType) {
+function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue): FieldDataEntryInput | null {
+    switch (type) {
         case "number": {
             const num = Number(cellValue)
             if (Number.isNaN(num)) {
                 return null
             }
 
-            return num
+            return { type, value: num }
         }
         case "boolean": {
-            return CELL_BOOLEAN_VALUES.includes(cellValue)
+            return { type, value: CELL_BOOLEAN_VALUES.includes(cellValue) }
         }
         case "date": {
             if (typeof cellValue !== "number") return null
             try {
                 const date = extractDateFromSerialNumber(cellValue)
-                return date.toISOString()
+                return { type, value: date.toISOString() }
             } catch {
                 return null
             }
@@ -331,7 +337,7 @@ function getFieldValue(fieldType: CollectionFieldType, cellValue: CellValue) {
         case "formattedText":
         case "color":
         case "string": {
-            return String(cellValue)
+            return { type, value: String(cellValue) }
         }
         default:
             return null
@@ -348,7 +354,7 @@ function processSheetRow({
     status,
     fieldTypes,
 }: ProcessSheetRowParams) {
-    const fieldData: Record<string, unknown> = {}
+    const fieldData: FieldDataInput = {}
     let slugValue: string | null = null
     let itemId: string | null = null
 
@@ -361,9 +367,9 @@ function processSheetRow({
         const fieldType = fieldTypes[colIndex]
         assert(isDefined(fieldType), "Field type must be defined")
 
-        const fieldValue = getFieldValue(fieldType, cell)
+        const fieldDataEntryInput = getFieldDataEntryInput(fieldType, cell)
 
-        if (fieldValue === null) {
+        if (fieldDataEntryInput === null) {
             status.warnings.push({
                 rowIndex,
                 message: `Invalid cell value at ${location}.`,
@@ -372,12 +378,12 @@ function processSheetRow({
         }
 
         if (colIndex === slugFieldColumnIndex) {
-            if (typeof fieldValue !== "string") {
+            if (typeof fieldDataEntryInput.value !== "string") {
                 continue
             }
 
-            slugValue = slugify(fieldValue)
-            itemId = generateHashId(fieldValue)
+            slugValue = slugify(fieldDataEntryInput.value)
+            itemId = generateHashId(fieldDataEntryInput.value)
 
             // Mark row as seen
             unsyncedRowIds.delete(itemId)
@@ -386,7 +392,7 @@ function processSheetRow({
         const fieldName = uniqueHeaderRowNames[colIndex]
         assert(isDefined(fieldName), "Field name must be defined")
 
-        fieldData[fieldName] = fieldValue
+        fieldData[fieldName] = fieldDataEntryInput
     }
 
     if (!slugValue || !itemId) {
@@ -452,8 +458,7 @@ export async function syncSheet({
         throw new Error("Expected to have at least one field selected to sync.")
     }
 
-    const collection = await framer.getManagedCollection()
-    await collection.setFields(fields)
+    const collection = await framer.getActiveManagedCollection()
 
     const unsyncedItemIds = new Set(await collection.getItemIds())
 
@@ -503,7 +508,7 @@ export async function syncSheet({
 }
 
 export async function getPluginContext(): Promise<PluginContext> {
-    const collection = await framer.getManagedCollection()
+    const collection = await framer.getActiveManagedCollection()
     let collectionFields = await collection.getFields()
 
     const tokens = await auth.getTokens()
@@ -661,7 +666,11 @@ export const useSyncSheetMutation = ({
     onError?: (e: Error) => void
 }) => {
     return useMutation({
-        mutationFn: (args: SyncMutationOptions) => syncSheet(args),
+        mutationFn: async (args: SyncMutationOptions) => {
+            const collection = await framer.getActiveManagedCollection()
+            await collection.setFields(args.fields)
+            return await syncSheet(args)
+        },
         onSuccess,
         onError,
     })

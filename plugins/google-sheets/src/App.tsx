@@ -17,7 +17,7 @@ import { Authenticate } from "./pages/Authenticate"
 import { MapSheetFieldsPage } from "./pages/MapSheetFields"
 import { Problem } from "./pages/Problem"
 import { SelectSheetPage } from "./pages/SelectSheet"
-import { assert } from "./utils"
+import { assert, syncMethods } from "./utils"
 
 interface AppProps {
     pluginContext: PluginContext
@@ -147,7 +147,10 @@ export function App({ pluginContext }: AppProps) {
     const [context, setContext] = useState(pluginContext)
     const mode = framer.mode
 
-    const shouldSyncOnly = mode === "syncManagedCollection" && shouldSyncImmediately(context)
+    // Not a hook because we don't want to re-run the effect
+    const isAllowedToSync = framer.isAllowedTo(...syncMethods)
+    const shouldSyncOnly = mode === "syncManagedCollection" && shouldSyncImmediately(context) && isAllowedToSync
+
     useLayoutEffect(() => {
         if (!shouldSyncOnly) return
         assert(context.type === "update")

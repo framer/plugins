@@ -1,6 +1,6 @@
 import { useState } from "react"
 import Dropzone from "react-dropzone"
-import { type DroppedAsset } from "../App"
+import type { DroppedAsset } from "../App"
 import { getPermissionTitle } from "../utils"
 
 export function Upload({

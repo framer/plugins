@@ -55,11 +55,10 @@ export function NumberInput({
                 }}
                 onKeyDown={e => {
                     if (e.key === "Enter" || e.key === "Tab" || e.key === "ArrowUp" || e.key === "ArrowDown") {
-                        const target = e.target as HTMLInputElement
-                        const value = sanitize(target.value)
+                        const value = sanitize(e.currentTarget.value)
 
                         onValueChange?.(value)
-                        target.value = value.toString()
+                        e.currentTarget.value = value.toString()
                     }
                 }}
             />

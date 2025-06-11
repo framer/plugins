@@ -1,8 +1,8 @@
-import type { ManagedCollectionField } from "framer-plugin"
+import type { ManagedCollectionFieldInput } from "framer-plugin"
 
 // There is no endpoint to retrieve all possible fields dynamically since blog fields are fixed,
 // This does not included all possible fields, just the CMS relevant ones.
-export const HUBSPOT_BLOG_FIELDS: ManagedCollectionField[] = [
+export const HUBSPOT_BLOG_FIELDS: ManagedCollectionFieldInput[] = [
     {
         name: "ID", // Unique ID of the blog post
         type: "string",

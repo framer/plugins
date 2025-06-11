@@ -1,5 +1,5 @@
 import cx from "classnames"
-import { type ManagedCollectionField } from "framer-plugin"
+import { type ManagedCollectionFieldInput } from "framer-plugin"
 import { Fragment, useMemo } from "react"
 import { assert } from "../utils"
 import { CheckboxTextfield } from "./CheckboxTextField"
@@ -7,7 +7,7 @@ import { IconChevron } from "./Icons"
 import { ScrollFadeContainer } from "./ScrollFadeContainer"
 
 export interface ManagedCollectionFieldConfig {
-    field: ManagedCollectionField | null
+    field: ManagedCollectionFieldInput | null
     originalFieldName: string
 }
 

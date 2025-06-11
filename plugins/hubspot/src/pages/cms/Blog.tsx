@@ -1,4 +1,4 @@
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { useSyncBlogsMutation } from "../../blog"
 import { useLoggingToggle } from "../../cms"
@@ -6,7 +6,7 @@ import { Button } from "../../components/Button"
 import { FieldMapper, type ManagedCollectionFieldConfig } from "../../components/FieldMapper"
 import { HUBSPOT_BLOG_FIELDS } from "../../constants"
 import { type PageProps } from "../../router"
-import { isDefined } from "../../utils"
+import { isDefined, syncMethods } from "../../utils"
 
 export default function Blog({ blogPluginContext }: PageProps) {
     useLoggingToggle()
@@ -80,6 +80,8 @@ export default function Blog({ blogPluginContext }: PageProps) {
         sync({ includedFieldIds: Array.from(includedFieldIds), fields: allFields })
     }
 
+    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
+
     return (
         <form onSubmit={handleSubmit} className="h-full px-[15px] pb-[15px]">
             <FieldMapper
@@ -92,9 +94,16 @@ export default function Blog({ blogPluginContext }: PageProps) {
                 toLabel="Collection Field"
                 className="pb-[15px]"
                 height={365}
+                disabled={!isAllowedToManage}
             />
             <div className="sticky left-0 bottom-0 flex justify-between bg-primary pt-[15px] border-t border-divider items-center max-w-full">
-                <Button variant="secondary" className="w-full" isLoading={isSyncing}>
+                <Button
+                    variant="secondary"
+                    className="w-full"
+                    isLoading={isSyncing}
+                    disabled={!isAllowedToManage}
+                    title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                >
                     Import Blog
                 </Button>
             </div>

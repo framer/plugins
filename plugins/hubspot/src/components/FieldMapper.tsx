@@ -21,6 +21,7 @@ interface FieldMapperProps {
     toLabel?: string
     className?: string
     height?: number
+    disabled: boolean
 }
 const getInitialSortedFields = (
     fields: ManagedCollectionFieldConfig[],
@@ -52,6 +53,7 @@ export const FieldMapper = ({
     toLabel = "Field",
     height,
     className,
+    disabled,
 }: FieldMapperProps) => {
     // We only want to sort on initial render
     const sortedCollectionFieldConfig = useMemo(
@@ -73,7 +75,7 @@ export const FieldMapper = ({
                         <Fragment key={i}>
                             <CheckboxTextfield
                                 value={fieldConfig.originalFieldName}
-                                disabled={!fieldConfig.field}
+                                disabled={!fieldConfig.field || disabled}
                                 checked={!!fieldConfig.field && isSelected}
                                 onChange={() => {
                                     assert(fieldConfig.field)
@@ -82,15 +84,15 @@ export const FieldMapper = ({
                             />
                             <div
                                 className={cx("flex items-center justify-center", {
-                                    "opacity-50": isUnsupported,
+                                    "opacity-50": isUnsupported || disabled,
                                 })}
                             >
                                 <IconChevron />
                             </div>
                             <input
                                 type="text"
-                                className={cx("w-full", { "opacity-50": isUnsupported })}
-                                disabled={!fieldConfig.field || !isSelected}
+                                className={cx("w-full", { "opacity-50": isUnsupported || disabled })}
+                                disabled={!fieldConfig.field || !isSelected || disabled}
                                 placeholder={fieldConfig.originalFieldName}
                                 value={
                                     !fieldConfig.field

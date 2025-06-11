@@ -318,8 +318,7 @@ async function processAllRows(rows: HubDbTableRowV3[], processRowParams: Omit<Pr
 }
 
 export async function syncHubDBTable({ fields, tableId, slugFieldId, includedFieldIds }: SyncMutationOptions) {
-    const collection = await framer.getManagedCollection()
-    await collection.setFields(fields)
+    const collection = await framer.getActiveManagedCollection()
 
     const fieldsById = new Map(fields.map(field => [field.id, field]))
     const unsyncedItemIds = new Set(await collection.getItemIds())
@@ -366,7 +365,7 @@ export async function syncHubDBTable({ fields, tableId, slugFieldId, includedFie
 }
 
 export async function getHubDBPluginContext(): Promise<HubDBPluginContext> {
-    const collection = await framer.getManagedCollection()
+    const collection = await framer.getActiveManagedCollection()
     const collectionFields = await collection.getFields()
 
     const [tableId, rawIncludedFieldHash, slugFieldId] = await Promise.all([
@@ -417,7 +416,11 @@ export const useSyncHubDBTableMutation = ({
     onError?: (e: Error) => void
 }) => {
     return useMutation({
-        mutationFn: (args: SyncMutationOptions) => syncHubDBTable(args),
+        mutationFn: async (args: SyncMutationOptions) => {
+            const collection = await framer.getActiveManagedCollection()
+            await collection.setFields(args.fields)
+            return await syncHubDBTable(args)
+        },
         onSuccess,
         onError,
     })

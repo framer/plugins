@@ -1,4 +1,4 @@
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { Link } from "wouter"
 import { useAccountQuery, useInboxesQuery } from "../../api"
@@ -18,6 +18,8 @@ export default function ChatPage() {
     })
     const { data: account, isLoading: isLoadingAccount } = useAccountQuery()
     const { data: inboxes, isLoading: isLoadingInboxes } = useInboxesQuery()
+
+    const isAllowedToSetCustomCode = useIsAllowedTo("setCustomCode")
 
     useEffect(() => {
         async function checkExistingSettings() {
@@ -40,6 +42,8 @@ export default function ChatPage() {
     }, [])
 
     useEffect(() => {
+        if (!isAllowedToSetCustomCode) return
+
         async function applySettings() {
             const customCode = await framer.getCustomCode()
             const existingHTML = customCode?.bodyStart.html
@@ -67,7 +71,7 @@ export default function ChatPage() {
         }
 
         applySettings()
-    }, [settings, hasSetExistingSettings])
+    }, [settings, hasSetExistingSettings, isAllowedToSetCustomCode])
 
     if (isLoadingAccount || isLoadingInboxes) return <CenteredSpinner />
 
@@ -108,6 +112,9 @@ export default function ChatPage() {
                     id="enableWidgetCookieBanner"
                     value={settings.enableWidgetCookieBanner}
                     onChange={value => setSettings({ ...settings, enableWidgetCookieBanner: value.target.value })}
+                    disabled={!isAllowedToSetCustomCode}
+                    title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
+                    className={isAllowedToSetCustomCode ? undefined : "opacity-50"}
                 >
                     <option value="true">Enabled</option>
                     <option value="false">Disabled</option>
@@ -124,6 +131,8 @@ export default function ChatPage() {
                     ]}
                     value={settings.disableAttachment}
                     onValueChange={value => setSettings({ ...settings, disableAttachment: value })}
+                    disabled={!isAllowedToSetCustomCode}
+                    title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
                 />
             </div>
             <hr />

@@ -213,8 +213,7 @@ function processBlog(posts: BlogPost[], processBlogParams: ProcessBlogParams) {
 }
 
 export async function syncBlogs({ fields, includedFieldIds }: SyncBlogMutation) {
-    const collection = await framer.getManagedCollection()
-    await collection.setFields(fields)
+    const collection = await framer.getActiveManagedCollection()
 
     const fieldsById = new Map(fields.map(field => [field.id, field]))
     const unsyncedItemIds = new Set(await collection.getItemIds())
@@ -257,7 +256,11 @@ export const useSyncBlogsMutation = ({
     onError?: (e: Error) => void
 }) => {
     return useMutation({
-        mutationFn: (args: SyncBlogMutation) => syncBlogs(args),
+        mutationFn: async (args: SyncBlogMutation) => {
+            const collection = await framer.getActiveManagedCollection()
+            await collection.setFields(args.fields)
+            return await syncBlogs(args)
+        },
         onSuccess,
         onError,
     })

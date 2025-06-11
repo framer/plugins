@@ -1,5 +1,5 @@
-import { motion } from "framer-motion"
 import cx from "classnames"
+import { motion } from "framer-motion"
 
 interface Option {
     value: string
@@ -11,9 +11,11 @@ interface SegmentedControlProps {
     value: string
     name: string
     onValueChange: (value: string) => void
+    disabled?: boolean
+    title?: string
 }
 
-export const SegmentedControls = ({ options, value, onValueChange }: SegmentedControlProps) => {
+export const SegmentedControls = ({ options, value, onValueChange, disabled, title }: SegmentedControlProps) => {
     const selectedIndex = options.findIndex(option => option.value === value)
     const segmentWidth = 130 / options.length
 
@@ -31,11 +33,19 @@ export const SegmentedControls = ({ options, value, onValueChange }: SegmentedCo
             {options.map(option => (
                 <div
                     key={option.value}
-                    onClick={() => onValueChange(option.value)}
+                    onClick={
+                        disabled
+                            ? undefined
+                            : () => {
+                                  onValueChange(option.value)
+                              }
+                    }
                     className={cx("relative flex-grow text-center z-10", {
                         "text-tint dark:text-white cursor-default": value === option.value,
                         "text-tertiary hover:text-tertiary cursor-pointer": value !== option.value,
+                        "opacity-50": disabled,
                     })}
+                    title={title}
                 >
                     {option.label}
                 </div>

@@ -1,4 +1,4 @@
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
 import { type Column, usePublishedTable } from "../../../api"
 import { useLoggingToggle } from "../../../cms"
@@ -13,7 +13,7 @@ import {
     useSyncHubDBTableMutation,
 } from "../../../hubdb"
 import { type PageProps } from "../../../router"
-import { assert, isDefined } from "../../../utils"
+import { assert, isDefined, syncMethods } from "../../../utils"
 
 const getInitialSlugFieldId = (context: HubDBPluginContext, columns: Column[]): string | null => {
     if (context.type === "update" && context.slugFieldId) return context.slugFieldId
@@ -96,6 +96,8 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
         })
     }
 
+    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
+
     if (isLoadingTable) return <CenteredSpinner size="medium" />
 
     if (!tableId) return <div>Expected `tableId` query param</div>
@@ -110,6 +112,7 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
                     onChange={e => setSlugFieldId(e.target.value)}
                     id="slugField"
                     required
+                    disabled={!isAllowedToManage}
                 >
                     {slugFields.map(field => (
                         <option key={field.id} value={field.id}>
@@ -140,9 +143,16 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
                     }))
                 }}
                 className="pb-[15px] mt-2.5"
+                disabled={!isAllowedToManage}
             />
             <div className="sticky left-0 bottom-0 flex justify-between bg-primary pt-[15px] border-t border-divider items-center max-w-full">
-                <Button variant="secondary" className="w-full" isLoading={isSyncing}>
+                <Button
+                    variant="secondary"
+                    className="w-full"
+                    isLoading={isSyncing}
+                    disabled={!isAllowedToManage}
+                    title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                >
                     Import {table ? table.label : "Untitled"}
                 </Button>
             </div>

@@ -1,6 +1,6 @@
 import type { AirtableBase, AirtableTable, DataSource } from "./data"
 
-import { framer, ManagedCollection } from "framer-plugin"
+import { framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { getTables, getUserBases } from "./data"
 import { inferFields } from "./fields"
@@ -71,9 +71,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
             })
         } catch (error) {
             console.error(error)
-            framer.notify(`Failed to load data source. Check the logs for more details.`, {
-                variant: "error",
-            })
+            framer.notify("Failed to load data source. Check the logs for more details.", { variant: "error" })
         } finally {
             setIsLoading(false)
         }
@@ -123,7 +121,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                 </select>
             </label>
 
-            <button disabled={!selectedBaseId || !selectedTableId || isLoading}>
+            <button type="submit" disabled={!selectedBaseId || !selectedTableId || isLoading}>
                 {isLoading ? <div className="framer-spinner" /> : "Next"}
             </button>
         </form>

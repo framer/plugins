@@ -112,7 +112,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
         case "date":
             if (typeof value === "string") {
                 const date = new Date(value)
-                if (isNaN(date.getTime())) return null
+                if (Number.isNaN(date.getTime())) return null
                 return {
                     value: date.toISOString(),
                     type: "date",
@@ -318,10 +318,7 @@ export async function syncCollection(
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
 
-    for (let i = 0; i < dataSourceItems.length; i++) {
-        const item = dataSourceItems[i]
-        if (!item) continue
-
+    for (const item of dataSourceItems) {
         items.push({
             id: item.id,
             slug: item.slugValue,

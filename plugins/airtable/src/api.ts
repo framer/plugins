@@ -369,7 +369,7 @@ const MAX_RETRY_ATTEMPTS = 10
 
 // Exponential backoff with "Full Jitter" algorithm
 const calculateBackoffDelay = (numAttempts: number): number => {
-    const rawBackoffTime = INITIAL_RETRY_DELAY * Math.pow(2, numAttempts)
+    const rawBackoffTime = INITIAL_RETRY_DELAY * 2 ** numAttempts
     const clippedBackoffTime = Math.min(MAX_RETRY_DELAY, rawBackoffTime)
     return Math.random() * clippedBackoffTime
 }
@@ -387,7 +387,9 @@ const request = async ({ path, method, query, body, signal }: RequestOptions, nu
         for (const [key, value] of Object.entries(query)) {
             if (value !== undefined) {
                 if (Array.isArray(value)) {
-                    value.forEach(val => url.searchParams.append(key, decodeURIComponent(val)))
+                    for (const val of value) {
+                        url.searchParams.append(key, decodeURIComponent(val))
+                    }
                 } else {
                     url.searchParams.append(key, String(value))
                 }

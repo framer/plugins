@@ -1,4 +1,4 @@
-import type { ManagedCollection, EditableManagedCollectionField, Field } from "framer-plugin"
+import type { ManagedCollection, ManagedCollectionFieldInput, Field } from "framer-plugin"
 import type { DataSource } from "./data"
 import type { PossibleField } from "./fields"
 
@@ -10,6 +10,7 @@ import { ALLOWED_FILE_TYPES, isCollectionReference } from "./utils"
 function ChevronIcon() {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
+            <title>Chevron</title>
             <path
                 d="M 3 11 L 6 8 L 3 5"
                 fill="transparent"
@@ -131,7 +132,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
 
-    const [selectedSlugField, setSelectedSlugField] = useState<EditableManagedCollectionField | null>(
+    const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 
@@ -337,7 +338,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
             <footer>
                 <hr className="sticky-top" />
-                <button disabled={isSyncing} tabIndex={0}>
+                <button type="submit" disabled={isSyncing} tabIndex={0}>
                     {isSyncing ? (
                         <div className="framer-spinner" />
                     ) : (

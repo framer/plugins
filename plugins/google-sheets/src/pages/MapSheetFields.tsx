@@ -1,5 +1,5 @@
 import cx from "classnames"
-import type { ManagedCollectionField } from "framer-plugin"
+import type { ManagedCollectionFieldInput } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { useInView } from "react-intersection-observer"
 import type { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
@@ -25,7 +25,7 @@ const fieldTypeOptions: FieldTypeOption[] = [
     { type: "date", label: "Date" },
 ]
 
-const getInitialSlugColumn = (context: PluginContext, slugFields: ManagedCollectionField[]): string => {
+const getInitialSlugColumn = (context: PluginContext, slugFields: ManagedCollectionFieldInput[]): string => {
     if (context.type === "update" && context.slugColumn) {
         return context.slugColumn
     }
@@ -89,7 +89,7 @@ const createFieldConfig = (
     uniqueColumnNames: string[],
     context: PluginContext,
     row?: Row
-): ManagedCollectionField[] => {
+): ManagedCollectionFieldInput[] => {
     return headerRow.map((_, columnIndex) => {
         const sanitizedName = uniqueColumnNames[columnIndex]
         assert(sanitizedName, "Sanitized name is undefined")
@@ -98,7 +98,7 @@ const createFieldConfig = (
             id: sanitizedName,
             name: sanitizedName,
             type: getFieldType(context, sanitizedName, row?.[columnIndex]),
-        } as ManagedCollectionField
+        } as ManagedCollectionFieldInput
     })
 }
 
@@ -113,7 +113,7 @@ const getFieldNameOverrides = (context: PluginContext): Record<string, string> =
     return result
 }
 
-const getPossibleSlugFields = (fieldConfig: ManagedCollectionField[]): ManagedCollectionField[] => {
+const getPossibleSlugFields = (fieldConfig: ManagedCollectionFieldInput[]): ManagedCollectionFieldInput[] => {
     return fieldConfig.filter(field => field.type === "string")
 }
 
@@ -139,7 +139,7 @@ export function MapSheetFieldsPage({
     const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
 
     const uniqueColumnNames = useMemo(() => generateUniqueNames(headerRow), [headerRow])
-    const [fieldConfig, setFieldConfig] = useState<ManagedCollectionField[]>(() =>
+    const [fieldConfig, setFieldConfig] = useState<ManagedCollectionFieldInput[]>(() =>
         createFieldConfig(headerRow, uniqueColumnNames, pluginContext, rows[0])
     )
     const [disabledColumns, setDisabledColumns] = useState(
@@ -201,7 +201,7 @@ export function MapSheetFieldsPage({
                     return {
                         ...field,
                         type,
-                    } as ManagedCollectionField
+                    } as ManagedCollectionFieldInput
                 }
                 return field
             })

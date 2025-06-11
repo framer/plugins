@@ -14,7 +14,15 @@ import {
     type RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { type CollectionItemData, type ManagedCollection, type ManagedCollectionField, framer } from "framer-plugin"
+import {
+    type FieldDataEntryInput,
+    type FieldDataInput,
+    type ManagedCollection,
+    type ManagedCollectionField,
+    type ManagedCollectionFieldInput,
+    type ManagedCollectionItemInput,
+    framer
+} from "framer-plugin"
 import pLimit from "p-limit"
 import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
 import { assert, assertNever, formatDate, isDefined, isString, slugify } from "./utils"
@@ -232,7 +240,7 @@ export function getCollectionFieldForProperty<
     property: TProperty,
     fieldType: ManagedCollectionField["type"],
     databaseIdMap: DatabaseIdMap
-): ManagedCollectionField | null {
+): ManagedCollectionFieldInput | null {
     switch (property.type) {
         case "email":
         case "rich_text": {
@@ -386,63 +394,113 @@ export function richTextToPlainText(richText: RichTextItemResponse[]) {
     return richText.map(value => value.plain_text).join("")
 }
 
-export function getPropertyValue(
+export function getFieldDataEntryInput(
     property: PageObjectResponse["properties"][string],
     { supportsHtml }: { supportsHtml: boolean }
-): unknown | undefined {
+): FieldDataEntryInput | undefined {
     switch (property.type) {
         case "checkbox": {
-            return property.checkbox
+            return {
+                type: "boolean",
+                value: property.checkbox,
+            }
         }
         case "last_edited_time": {
-            return property.last_edited_time
+            return {
+                type: "date",
+                value: property.last_edited_time,
+            }
         }
         case "created_time": {
-            return property.created_time
+            return {
+                type: "date",
+                value: property.created_time,
+            }
         }
         case "rich_text": {
             if (supportsHtml) {
-                return richTextToHTML(property.rich_text)
+                return {
+                    type: "formattedText",
+                    value: richTextToHTML(property.rich_text),
+                }
             }
 
-            return richTextToPlainText(property.rich_text)
+            return {
+                type: "string",
+                value: richTextToPlainText(property.rich_text),
+            }
         }
         case "select": {
-            if (!property.select) return null
+            if (!property.select) return undefined
 
-            return property.select.id
+            return {
+                type: "enum",
+                value: property.select.id,
+            }
         }
         case "title":
             if (supportsHtml) {
-                return richTextToHTML(property.title)
+                return {
+                    type: "formattedText",
+                    value: richTextToHTML(property.title),
+                }
             }
 
-            return richTextToPlainText(property.title)
+            return {
+                type: "string",
+                value: richTextToPlainText(property.title),
+            }
         case "number": {
-            return property.number
+            if (property.number === null) return undefined
+            return {
+                type: "number",
+                value: property.number,
+            }
         }
         case "url": {
-            return property.url
+            return {
+                type: "link",
+                value: property.url,
+            }
         }
         case "unique_id": {
-            return property.unique_id.number
+            if (Number.isNaN(property.unique_id.number) || typeof property.unique_id.number !== "number") return undefined
+            return {
+                type: "number",
+                value: property.unique_id.number,
+            }
         }
         case "date": {
-            return property.date?.start
+            return {
+                type: "date",
+                value: property.date?.start ?? null,
+            }
         }
         case "relation": {
-            return property.relation.map(({ id }) => id)
+            return {
+                type: "multiCollectionReference",
+                value: property.relation.map(({ id }) => id),
+            }
         }
         case "files": {
             const firstFile = property.files[0]
-            if (!firstFile) return null
+            if (!firstFile) return {
+                type: "file",
+                value: null,
+            }
 
-            if (firstFile.type === "external") {
-                return firstFile.external.url
+            if (firstFile.type === "external" && firstFile.external.url) {
+                return {
+                    type: "link",
+                    value: firstFile.external.url,
+                }
             }
 
             if (firstFile.type === "file") {
-                return firstFile.file.url
+                return {
+                    type: "file",
+                    value: firstFile.file.url,
+                }
             }
         }
     }
@@ -457,7 +515,7 @@ export interface SynchronizeProgress {
 type OnProgressHandler = (progress: SynchronizeProgress) => void
 
 export interface SynchronizeMutationOptions {
-    fields: ManagedCollectionField[]
+    fields: ManagedCollectionFieldInput[]
     ignoredFieldIds: string[]
     lastSyncedTime: string | null
     slugFieldId: string
@@ -503,10 +561,10 @@ async function processItem(
     fieldsById: FieldsById,
     slugFieldId: string,
     status: SyncStatus
-): Promise<CollectionItemData | null> {
+): Promise<ManagedCollectionItemInput | null> {
     let slugValue: null | string = null
 
-    const fieldData: Record<string, unknown> = {}
+    const fieldData: FieldDataInput = {}
 
     assert(isFullPage(item))
 
@@ -515,12 +573,9 @@ async function processItem(
         assert(property)
 
         if (property.id === slugFieldId) {
-            const resolvedSlug = getPropertyValue(property, { supportsHtml: false })
-            if (!resolvedSlug || typeof resolvedSlug !== "string") {
-                continue
-            }
-
-            slugValue = slugify(resolvedSlug)
+            const resolvedSlug = getFieldDataEntryInput(property, { supportsHtml: false })
+            assert(typeof resolvedSlug?.value === "string", "Slug value is not a string")
+            slugValue = slugify(resolvedSlug.value as string)
         }
 
         const field = fieldsById.get(property.id)
@@ -530,21 +585,25 @@ async function processItem(
             continue
         }
 
-        const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
-        if (!fieldValue) {
+        const fieldDataEntry = getFieldDataEntryInput(property, { supportsHtml: field.type === "formattedText" })
+        if (!fieldDataEntry) {
             status.warnings.push({
                 url: item.url,
                 fieldId: field.id,
                 message: `Value is missing for field ${field.name}`,
             })
+            continue
         }
 
-        fieldData[field.id] = fieldValue
+        fieldData[field.id] = fieldDataEntry
     }
 
     if (fieldsById.has(pageContentProperty.id) && item.id) {
         const contentHTML = await getPageBlocksAsRichText(item.id)
-        fieldData[pageContentProperty.id] = contentHTML
+        fieldData[pageContentProperty.id] = {
+            type: "formattedText",
+            value: contentHTML,
+        }
     }
 
     if (!slugValue) {
@@ -562,7 +621,7 @@ async function processItem(
     }
 }
 
-type FieldsById = Map<FieldId, ManagedCollectionField>
+type FieldsById = Map<FieldId, ManagedCollectionFieldInput>
 
 async function processAllItems(
     data: PageObjectResponse[],
@@ -623,7 +682,7 @@ async function processAllItems(
     }
 }
 
-export function hasFieldConfigurationChanged(a: ManagedCollectionField[], b: ManagedCollectionField[]) {
+export function hasFieldConfigurationChanged(a: ManagedCollectionFieldInput[], b: ManagedCollectionFieldInput[]) {
     if (a.length !== b.length) return true
 
     for (let i = 0; i < a.length; i++) {
@@ -646,10 +705,9 @@ export async function synchronizeDatabase(
     assert(isFullDatabase(database))
     assert(notion)
 
-    const collection = await framer.getManagedCollection()
-    await collection.setFields(fields)
+    const collection = await framer.getActiveManagedCollection()
 
-    const fieldsById = new Map<string, ManagedCollectionField>()
+    const fieldsById = new Map<string, ManagedCollectionFieldInput>()
     for (const field of fields) {
         fieldsById.set(field.id, field)
     }
@@ -704,7 +762,9 @@ export function useSynchronizeDatabaseMutation(
         onError,
         mutationFn: async (options: SynchronizeMutationOptions): Promise<SynchronizeResult> => {
             assert(database)
-
+            
+            const collection = await framer.getActiveManagedCollection()
+            await collection.setFields(options.fields)
             return synchronizeDatabase(database, options)
         },
     })

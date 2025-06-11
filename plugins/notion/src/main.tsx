@@ -1,5 +1,5 @@
-import "framer-plugin/framer.css"
 import "./globals.css"
+import "framer-plugin/framer.css"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import React, { type ReactNode, Suspense } from "react"
@@ -12,7 +12,7 @@ import { type PluginContext, type PluginContextUpdate, getPluginContext, synchro
 import { framer } from "framer-plugin"
 import { ErrorBoundaryFallback } from "./components/ErrorBoundaryFallback"
 import { logSyncResult } from "./debug.ts"
-import { assert } from "./utils.ts"
+import { assert, syncMethods } from "./utils.ts"
 
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
@@ -62,7 +62,9 @@ async function runPlugin() {
         const pluginContext = await getPluginContext()
         const mode = framer.mode
 
-        if (mode === "syncManagedCollection" && shouldSyncImmediately(pluginContext)) {
+        const isAllowedToSync = framer.isAllowedTo(...syncMethods)
+
+        if (mode === "syncManagedCollection" && shouldSyncImmediately(pluginContext) && isAllowedToSync) {
             assert(pluginContext.slugFieldId)
 
             const result = await synchronizeDatabase(pluginContext.database, {

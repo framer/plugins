@@ -458,8 +458,7 @@ export async function syncSheet({
         throw new Error("Expected to have at least one field selected to sync.")
     }
 
-    const collection = await framer.getManagedCollection()
-    await collection.setFields(fields)
+    const collection = await framer.getActiveManagedCollection()
 
     const unsyncedItemIds = new Set(await collection.getItemIds())
 
@@ -509,7 +508,7 @@ export async function syncSheet({
 }
 
 export async function getPluginContext(): Promise<PluginContext> {
-    const collection = await framer.getManagedCollection()
+    const collection = await framer.getActiveManagedCollection()
     let collectionFields = await collection.getFields()
 
     const tokens = await auth.getTokens()
@@ -667,7 +666,11 @@ export const useSyncSheetMutation = ({
     onError?: (e: Error) => void
 }) => {
     return useMutation({
-        mutationFn: (args: SyncMutationOptions) => syncSheet(args),
+        mutationFn: async (args: SyncMutationOptions) => {
+            const collection = await framer.getActiveManagedCollection()
+            await collection.setFields(args.fields)
+            return await syncSheet(args)
+        },
         onSuccess,
         onError,
     })

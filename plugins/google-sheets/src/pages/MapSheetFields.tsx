@@ -1,5 +1,5 @@
 import cx from "classnames"
-import type { ManagedCollectionFieldInput } from "framer-plugin"
+import { useIsAllowedTo, type ManagedCollectionFieldInput } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { useInView } from "react-intersection-observer"
 import type { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
@@ -7,7 +7,7 @@ import type { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, Syn
 import { Button } from "../components/Button"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { IconChevron } from "../components/Icons"
-import { assert, generateUniqueNames } from "../utils"
+import { assert, generateUniqueNames, syncMethods } from "../utils"
 
 interface FieldTypeOption {
     type: CollectionFieldType
@@ -235,6 +235,8 @@ export function MapSheetFieldsPage({
         })
     }
 
+    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
+
     return (
         <form onSubmit={handleSubmit} className="col gap-[15px] flex-1 text-tertiary">
             <div className="h-px border-b border-divider sticky top-0" />
@@ -242,10 +244,12 @@ export function MapSheetFieldsPage({
                 <div className="flex flex-col gap-2 w-full">
                     <label htmlFor="collectionName">Slug Field</label>
                     <select
-                        className="w-full"
+                        className={cx("w-full", !isAllowedToManage && "opacity-50")}
                         value={slugColumn}
                         onChange={e => setSlugColumn(e.target.value)}
                         required
+                        disabled={!isAllowedToManage}
+                        title={isAllowedToManage ? undefined : "Insufficient permissions"}
                     >
                         {slugFields.map(field => (
                             <option key={field.id} value={field.id}>
@@ -266,9 +270,10 @@ export function MapSheetFieldsPage({
                         <Fragment key={i}>
                             <CheckboxTextfield
                                 value={field.name}
-                                darken={isDisabled}
+                                darken={isDisabled || !isAllowedToManage}
                                 checked={!isDisabled}
                                 onChange={() => handleFieldToggle(field.id)}
+                                disabled={!isAllowedToManage}
                             />
                             <div className="flex items-center justify-center">
                                 <IconChevron />
@@ -276,20 +281,21 @@ export function MapSheetFieldsPage({
                             <input
                                 type="text"
                                 className={cx("w-full", {
-                                    "opacity-50": isDisabled,
+                                    "opacity-50": isDisabled || !isAllowedToManage,
                                 })}
-                                disabled={isDisabled}
+                                disabled={isDisabled || !isAllowedToManage}
                                 placeholder={field.name}
                                 value={fieldNameOverrides[field.id] ?? ""}
                                 onChange={e => handleFieldNameChange(field.id, e.target.value)}
                             />
                             <select
-                                className="w-full"
-                                disabled={isDisabled}
+                                className={cx("w-full", !isAllowedToManage && "opacity-50")}
+                                disabled={isDisabled || !isAllowedToManage}
                                 value={field.type}
                                 onChange={e => {
                                     handleFieldTypeChange(field.id, e.target.value as CollectionFieldType)
                                 }}
+                                title={isAllowedToManage ? undefined : "Insufficient permissions"}
                             >
                                 {fieldTypeOptions.map(({ type, label }) => (
                                     <option key={type} value={type}>
@@ -304,7 +310,13 @@ export function MapSheetFieldsPage({
                 <div ref={scrollRef} className="h-0 w-0 bg-red-500 "></div>
             </div>
             <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full overflow-hidden">
-                <Button variant="secondary" isLoading={isPending} className="w-full">
+                <Button
+                    variant="secondary"
+                    isLoading={isPending}
+                    className="w-full"
+                    disabled={!isAllowedToManage}
+                    title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                >
                     {`Import from ${sheetTitle}`}
                 </Button>
             </div>

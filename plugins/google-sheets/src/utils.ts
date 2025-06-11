@@ -1,3 +1,5 @@
+import type { ProtectedMethod } from "framer-plugin"
+
 export function assert(condition: unknown, ...msg: unknown[]): asserts condition {
     if (condition) return
 
@@ -94,3 +96,10 @@ export function generateUniqueNames(names: string[]): string[] {
         return count > 0 ? `${name} ${count + 1}` : name
     })
 }
+
+export const syncMethods = [
+    "ManagedCollection.addItems",
+    "ManagedCollection.removeItems",
+    "ManagedCollection.setItemOrder",
+    "ManagedCollection.setPluginData",
+] as const satisfies ProtectedMethod[]

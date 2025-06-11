@@ -1,5 +1,5 @@
-import "framer-plugin/framer.css"
 import "./globals.css"
+import "framer-plugin/framer.css"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { framer } from "framer-plugin"

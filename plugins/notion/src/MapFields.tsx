@@ -1,7 +1,7 @@
 import { isFullDatabase } from "@notionhq/client"
 import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import classNames from "classnames"
-import { type ManagedCollectionField } from "framer-plugin"
+import { type ManagedCollectionField, type ManagedCollectionFieldInput } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { Button } from "./components/Button"
 import { CheckboxTextfield } from "./components/CheckboxTexfield"
@@ -75,7 +75,7 @@ function getInitialSlugFieldId(context: PluginContext, fieldOptions: NotionPrope
 function getLastSynchronizedAtTimestamp(
     pluginContext: PluginContext,
     database: GetDatabaseResponse,
-    fields: ManagedCollectionField[],
+    fields: ManagedCollectionFieldInput[],
     slugFieldId: string,
     disabledFieldIds: Set<string>
 ): string | null {
@@ -176,7 +176,7 @@ export function MapDatabaseFields({
 
         if (isLoading) return
 
-        const cmsFields: ManagedCollectionField[] = []
+        const cmsFields: ManagedCollectionFieldInput[] = []
         for (const property of notionProperties) {
             if (!isSupportedNotionProperty(property)) continue
             if (disabledFieldIds.has(property.id)) continue

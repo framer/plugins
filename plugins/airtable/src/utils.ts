@@ -1,4 +1,4 @@
-import { PossibleField } from "./fields"
+import type { PossibleField } from "./fields"
 
 /**
  * Type guard to check if a value is defined (not null or undefined)

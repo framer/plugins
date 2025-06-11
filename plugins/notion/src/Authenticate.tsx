@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { PluginContext, authorize, getOauthURL, getPluginContext } from "./notion"
+import { type PluginContext, authorize, getOauthURL, getPluginContext } from "./notion"
 import loginIllustration from "./assets/notion-doodle.png"
 import { Button } from "./components/Button"
 import { generateRandomId } from "./utils"

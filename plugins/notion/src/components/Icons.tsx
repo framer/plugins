@@ -1,4 +1,4 @@
-import { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 
 export function IconChevron() {
     return (

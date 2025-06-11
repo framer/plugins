@@ -1,5 +1,5 @@
 import { useCallback, useContext, useState } from 'react';
-import { GoogleToken, SiteWithGoogleSite } from '../types';
+import type { GoogleToken, SiteWithGoogleSite } from '../types';
 import { googleApiCall, sitemapUrl } from '../utils';
 import { useErrorBoundary } from 'react-error-boundary';
 import { AuthContext, useGoogleToken } from '../auth';

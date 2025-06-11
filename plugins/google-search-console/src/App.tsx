@@ -1,17 +1,22 @@
-import { framer, PublishInfo } from 'framer-plugin';
-import { useState, useEffect, useContext, useCallback, useRef } from 'react';
-import './App.css';
-import { GoogleSite, GoogleToken, Site, SiteWithGoogleSite } from './types';
-import { googleApiCall, stripTrailingSlash } from './utils';
-import GoogleLogin from './screens/GoogleLogin';
+import { type PublishInfo, framer } from 'framer-plugin';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ErrorBoundary, useErrorBoundary } from 'react-error-boundary';
+import './App.css';
 import { AuthContext, useGoogleToken } from './auth';
-import CriticalError from './screens/CriticalError';
-import SiteView from './screens/SiteView';
 import Loading from './components/Loading';
 import { LARGE_HEIGHT, PLUGIN_WIDTH, SMALL_HEIGHT } from './constants';
-import NeedsPublish from './screens/NeedsPublish';
 import { mockSiteInfo } from './mocks';
+import CriticalError from './screens/CriticalError';
+import GoogleLogin from './screens/GoogleLogin';
+import NeedsPublish from './screens/NeedsPublish';
+import SiteView from './screens/SiteView';
+import type {
+  GoogleSite,
+  GoogleToken,
+  Site,
+  SiteWithGoogleSite,
+} from './types';
+import { googleApiCall, stripTrailingSlash } from './utils';
 
 framer.showUI({
   position: 'top right',

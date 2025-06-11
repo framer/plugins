@@ -1,6 +1,6 @@
 import { getLocalStorageTokens } from './auth';
 import { GoogleError } from './errors';
-import { GoogleQueryResult, GoogleToken } from './types';
+import type { GoogleQueryResult, GoogleToken } from './types';
 
 export function sitemapUrl(siteUrl: string) {
   const fullUrl = new URL(siteUrl);
@@ -183,7 +183,7 @@ export function getDateRange(range: number) {
     dates.push(new Date(new Date(today).setDate(today.getDate() - i)));
   }
 
-  return dates.map((date) => date.toISOString().split('T', 1)[0]);
+  return dates.map((date) => date.toISOString().split('T', 1)[0]).filter(isDefined);
 }
 
 export function mapQueries(queries: GoogleQueryResult) {
@@ -202,4 +202,8 @@ export function mapQueries(queries: GoogleQueryResult) {
     ...item,
     percent: item.val / maxVal || 0,
   }));
+}
+
+export function isDefined<T>(value: T | null | undefined): value is T {
+  return value !== null && value !== undefined
 }

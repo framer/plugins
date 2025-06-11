@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import sitemapper from 'sitemap-urls';
 import { useErrorBoundary } from 'react-error-boundary';
-import { GoogleInspectionResult, SiteWithGoogleSite } from '../types';
+import type { GoogleInspectionResult, SiteWithGoogleSite } from '../types';
 import {
   useBatchIndexingResult,
   useMockPerformanceResults,

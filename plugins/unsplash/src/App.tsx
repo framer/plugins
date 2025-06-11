@@ -1,12 +1,21 @@
-import { PropsWithChildren, memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
-import { UnsplashPhoto, getRandomPhoto, useListPhotosInfinite } from "./api"
-import { framer, Draggable, useIsAllowedTo } from "framer-plugin"
-import { ErrorBoundary } from "react-error-boundary"
 import { QueryErrorResetBoundary, useMutation } from "@tanstack/react-query"
-import { Spinner } from "./Spinner"
 import cx from "classnames"
-import { SearchIcon } from "./icons"
+import { Draggable, framer, useIsAllowedTo } from "framer-plugin"
+import {
+    type PropsWithChildren,
+    memo,
+    useCallback,
+    useDeferredValue,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from "react"
 import { Blurhash } from "react-blurhash"
+import { ErrorBoundary } from "react-error-boundary"
+import { type UnsplashPhoto, getRandomPhoto, useListPhotosInfinite } from "./api"
+import { SearchIcon } from "./icons"
+import { Spinner } from "./Spinner"
 
 const mode = framer.mode
 
@@ -169,8 +178,9 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
                 const itemHeight = heightForPhoto(photo, columnWidth)
 
                 const minColumnIndex = heightPerColumn.indexOf(Math.min(...heightPerColumn))
+                if (minColumnIndex === -1) continue
 
-                columns[minColumnIndex].push(photo)
+                columns[minColumnIndex]?.push(photo)
                 heightPerColumn[minColumnIndex] += itemHeight
             }
         }
@@ -339,6 +349,7 @@ const placeholderHeights = [
 
 const Placeholders = ({ index }: { index: number }) => {
     const heights = placeholderHeights[index % placeholderHeights.length]
+    if (!heights) return null
 
     return heights.map(height => (
         <div key={height} className="animate-pulse">

@@ -1,25 +1,25 @@
-import { Column, usePublishedTable } from "@/api"
-import { useLoggingToggle } from "@/cms"
-import { CenteredSpinner } from "@/components/CenteredSpinner"
-import { Button } from "@/components/Button"
-import { useSearchParams } from "@/hooks/useSearchParams"
-import {
-    getCollectionFieldForHubDBColumn,
-    getPossibleSlugFields,
-    HubDBPluginContext,
-    useSyncHubDBTableMutation,
-} from "@/hubdb"
-import { PageProps } from "@/router"
-import { assert, isDefined } from "@/utils"
 import { framer } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
-import { FieldMapper, ManagedCollectionFieldConfig } from "@/components/FieldMapper"
+import { type Column, usePublishedTable } from "../../../api"
+import { useLoggingToggle } from "../../../cms"
+import { Button } from "../../../components/Button"
+import { CenteredSpinner } from "../../../components/CenteredSpinner"
+import { FieldMapper, type ManagedCollectionFieldConfig } from "../../../components/FieldMapper"
+import { useSearchParams } from "../../../hooks/useSearchParams"
+import {
+    type HubDBPluginContext,
+    getCollectionFieldForHubDBColumn,
+    getPossibleSlugFields,
+    useSyncHubDBTableMutation,
+} from "../../../hubdb"
+import { type PageProps } from "../../../router"
+import { assert, isDefined } from "../../../utils"
 
 const getInitialSlugFieldId = (context: HubDBPluginContext, columns: Column[]): string | null => {
     if (context.type === "update" && context.slugFieldId) return context.slugFieldId
 
     const textColumns = columns.filter(col => col.type === "TEXT")
-    return textColumns[0].id ?? null
+    return textColumns[0]?.id ?? null
 }
 
 const createFieldConfig = (columns: Column[]): ManagedCollectionFieldConfig[] => {
@@ -78,8 +78,9 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
             .map(fieldConfig => fieldConfig.field)
             .filter(isDefined)
             .map(field => {
-                if (fieldNameOverrides[field.id]) {
-                    field.name = fieldNameOverrides[field.id]
+                const maybeFieldNameOverride = fieldNameOverrides[field.id]
+                if (maybeFieldNameOverride) {
+                    field.name = maybeFieldNameOverride
                 }
                 return field
             })

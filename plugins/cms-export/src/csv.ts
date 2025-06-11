@@ -1,4 +1,4 @@
-import type { Collection, Field, CollectionItem } from "framer-plugin"
+import type { Collection, CollectionItem, Field } from "framer-plugin"
 
 import { isColorStyle } from "framer-plugin"
 import { shouldBeNever } from "./assert"
@@ -80,6 +80,11 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
 
         for (const field of supportedFields) {
             const fieldData = item.fieldData[field.id]
+
+            if (!fieldData) {
+                console.warn(`Field data not found for field ${field.name} in item ${item.slug}`)
+                continue
+            }
 
             switch (fieldData.type) {
                 case "file": {

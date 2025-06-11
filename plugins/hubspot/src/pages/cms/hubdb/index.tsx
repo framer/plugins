@@ -1,10 +1,10 @@
-import { usePublishedTables } from "@/api"
-import { useLoggingToggle } from "@/cms"
-import { CenteredSpinner } from "@/components/CenteredSpinner"
 import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
-import hero from "@/assets/Hero.png"
+import { usePublishedTables } from "../../../api"
+import hero from "../../../assets/Hero.png"
+import { useLoggingToggle } from "../../../cms"
+import { CenteredSpinner } from "../../../components/CenteredSpinner"
 
 // 1000 is the max number of HubDB tables
 const LIMIT = 1000
@@ -17,8 +17,8 @@ export default function HubDBPage() {
     const [selectedTableId, setSelectedTableId] = useState("")
 
     useEffect(() => {
-        if (tables && tables.length > 0) {
-            setSelectedTableId(tables[0].id || "")
+        if (tables && tables[0]?.id) {
+            setSelectedTableId(tables[0].id)
         }
     }, [tables])
 

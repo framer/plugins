@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react"
 import { framer } from "framer-plugin"
+import { useEffect, useState } from "react"
 import { Link } from "wouter"
-import { useAccountQuery, useInboxesQuery } from "@/api"
-import { SegmentedControls } from "@/components/SegmentedControls"
-import { CenteredSpinner } from "@/components/CenteredSpinner"
+import { useAccountQuery, useInboxesQuery } from "../../api"
+import { CenteredSpinner } from "../../components/CenteredSpinner"
+import { SegmentedControls } from "../../components/SegmentedControls"
 
 interface Settings {
     enableWidgetCookieBanner: string
@@ -25,7 +25,7 @@ export default function ChatPage() {
             const existingHTML = customCode?.bodyStart.html
 
             const matches = (existingHTML ?? "").match(/window\.hsConversationsSettings\s*=\s*(\{.*?\});/)
-            if (matches) {
+            if (matches && matches[1]) {
                 const { enableWidgetCookieBanner, disableAttachment } = JSON.parse(matches[1])
                 setSettings({
                     enableWidgetCookieBanner: enableWidgetCookieBanner.toString(),

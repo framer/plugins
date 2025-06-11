@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
-import { GoogleQueryResult } from '../types';
-import { mapQueries } from '../utils';
-import { CSSProperties, useMemo, useState } from 'react';
-import Loading from '../components/Loading';
 import aveta from 'aveta';
+import { type CSSProperties, useMemo, useState } from 'react';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import FitText from '../components/FitText';
+import Loading from '../components/Loading';
+import type { GoogleQueryResult } from '../types';
+import { mapQueries } from '../utils';
 
 function dateFormatter(value: number) {
   const date = new Date(value * 1000);
@@ -71,7 +71,7 @@ function QueriesTable({ queries }: QueriesTableProps) {
 const mapPerfToChart = (performance: GoogleQueryResult) => {
   return (performance.rows || []).map((row) => {
     return {
-      date: new Date(row.keys[0]).getTime() / 1000,
+      date: new Date(row.keys[0] ?? '').getTime() / 1000,
       clicks: row.clicks,
       impressions: row.impressions,
     };

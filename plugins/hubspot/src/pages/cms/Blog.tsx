@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react"
-import { Button } from "@/components/Button"
-import { HUBSPOT_BLOG_FIELDS } from "@/constants"
-import { isDefined } from "@/utils"
 import { framer } from "framer-plugin"
-import { useLoggingToggle } from "@/cms"
-import { PageProps } from "@/router"
-import { FieldMapper, ManagedCollectionFieldConfig } from "@/components/FieldMapper"
-import { useSyncBlogsMutation } from "@/blog"
+import { useEffect, useState } from "react"
+import { useSyncBlogsMutation } from "../../blog"
+import { useLoggingToggle } from "../../cms"
+import { Button } from "../../components/Button"
+import { FieldMapper, type ManagedCollectionFieldConfig } from "../../components/FieldMapper"
+import { HUBSPOT_BLOG_FIELDS } from "../../constants"
+import { type PageProps } from "../../router"
+import { isDefined } from "../../utils"
 
 export default function Blog({ blogPluginContext }: PageProps) {
     useLoggingToggle()
@@ -70,8 +70,9 @@ export default function Blog({ blogPluginContext }: PageProps) {
             .map(fieldConfig => fieldConfig.field)
             .filter(isDefined)
             .map(field => {
-                if (fieldNameOverrides[field.id]) {
-                    field.name = fieldNameOverrides[field.id]
+                const maybeFieldNameOverride = fieldNameOverrides[field.id]
+                if (maybeFieldNameOverride) {
+                    field.name = maybeFieldNameOverride
                 }
                 return field
             })

@@ -1,5 +1,5 @@
-import { DatabaseIcon, FormsIcon } from "@/components/Icons"
-import { MenuOption } from "@/components/MenuOption"
+import { DatabaseIcon, FormsIcon } from "../../components/Icons"
+import { MenuOption } from "../../components/MenuOption"
 
 export default function MenuPage() {
     return (

@@ -1,9 +1,9 @@
-import { PropsWithChildren } from "react"
-import { framer } from "framer-plugin"
-import { ErrorBoundary } from "react-error-boundary"
 import { QueryErrorResetBoundary } from "@tanstack/react-query"
+import { framer } from "framer-plugin"
+import type { PropsWithChildren } from "react"
+import { ErrorBoundary } from "react-error-boundary"
 import { PluginError } from "../PluginError"
-import auth from "@/auth"
+import auth from "../auth"
 
 export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
     <QueryErrorResetBoundary>

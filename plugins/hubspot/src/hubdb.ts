@@ -1,25 +1,25 @@
-import { framer, ManagedCollection, ManagedCollectionField } from "framer-plugin"
 import { useMutation } from "@tanstack/react-query"
+import { type ManagedCollectionField, framer, ManagedCollection, } from "framer-plugin"
 import pLimit from "p-limit"
 import {
+    type Column,
+    type HubDBCellValue,
+    type HubDBFile,
+    type HubDBImage,
+    type HubDbTableRowV3,
+    type HubDBValueOption,
     fetchPublishedTable,
     fetchTableRows,
-    HubDbTableRowV3,
-    Column,
-    HubDBCellValue,
-    HubDBValueOption,
-    HubDBImage,
-    HubDBFile,
 } from "./api"
 import {
-    slugify,
-    logSyncResult,
-    createFieldSetHash,
+    type FieldsById,
+    type SyncResult,
+    type SyncStatus,
     computeFieldSets,
+    createFieldSetHash,
+    logSyncResult,
     MAX_CMS_ITEMS,
-    FieldsById,
-    SyncResult,
-    SyncStatus,
+    slugify,
 } from "./cms"
 import { assert, isDefined } from "./utils"
 

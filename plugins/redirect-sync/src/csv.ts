@@ -13,6 +13,9 @@ export function parseCSV(csv: string): ParsedRedirects[] {
     if (rows.length === 0) return []
 
     const firstRow = rows[0]
+    if (!isDefined(firstRow)) {
+        throw new Error("CSV had no rows")
+    }
     const hasHeaders = firstRow[0] === "from" && firstRow[1] === "to"
 
     if (firstRow.length > 3 || firstRow.length < 2) {
@@ -22,6 +25,10 @@ export function parseCSV(csv: string): ParsedRedirects[] {
     const dataRows = hasHeaders ? rows.slice(1) : rows
 
     return dataRows.map(row => {
+        if (!isDefined(row[0]) || !isDefined(row[1])) {
+            throw new Error("CSV had invalid row")
+        }
+
         return {
             from: row[0],
             to: row[1],
@@ -66,4 +73,8 @@ export function generateCsv(redirects: readonly Redirect[]): string {
     }))
 
     return Papa.unparse(redirectOutputs, { columns: ["from", "to", "expandToAllLocales"] })
+}
+
+function isDefined<T>(value: T | null | undefined): value is T {
+    return value !== null && value !== undefined
 }

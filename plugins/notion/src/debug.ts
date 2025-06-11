@@ -1,4 +1,4 @@
-import { SynchronizeResult } from "./notion"
+import type { SynchronizeResult } from "./notion"
 
 export function logSyncResult(result: SynchronizeResult) {
     if (result.errors.length > 0) {

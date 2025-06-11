@@ -1,13 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useContext, useEffect, useState } from 'react';
-import {
+import { useErrorBoundary } from 'react-error-boundary';
+import { AuthContext, useGoogleToken } from './auth';
+import type {
   GoogleInspectionResult,
   GoogleQueryResult,
   GoogleToken,
 } from './types';
-import { useErrorBoundary } from 'react-error-boundary';
 import { batchGoogleApiCall, googleApiCall } from './utils';
-import { AuthContext, useGoogleToken } from './auth';
 
 interface GoogleInspectCall {
   apiPath: string;

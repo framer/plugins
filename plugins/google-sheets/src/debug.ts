@@ -1,4 +1,4 @@
-import { SyncResult } from "./sheets"
+import type { SyncResult } from "./sheets"
 
 export const PLUGIN_LOG_SYNC_KEY = "sheetsLogSyncResult"
 

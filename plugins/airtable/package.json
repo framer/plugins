@@ -8,7 +8,8 @@
         "build": "vite build",
         "lint": "eslint . --max-warnings 0",
         "preview": "vite preview",
-        "pack": "npx framer-plugin-tools@latest pack"
+        "pack": "npx framer-plugin-tools@latest pack",
+        "typecheck": "tsc"
     },
     "dependencies": {
         "framer-plugin": "^3.0.0",

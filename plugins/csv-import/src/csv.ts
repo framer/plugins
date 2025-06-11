@@ -1,11 +1,11 @@
 import {
+    type CollectionItemInput,
+    type Field,
+    type FieldDataEntryInput,
+    type FieldDataInput,
     Collection,
-    Field,
     CollectionItem,
-    CollectionItemInput,
     framer,
-    FieldDataInput,
-    FieldDataEntryInput,
 } from "framer-plugin"
 
 type CSVRecord = Record<string, string>
@@ -150,15 +150,15 @@ function getFieldDataEntryInputForField(
                 return new ConversionError(`Invalid value for field “${field.name}” expected a valid date`)
             }
             const isoDate = date.toISOString().split("T")[0]
+            assert(isoDate, `Invalid value for field “${field.name}” expected a valid date`)
             return { type: "date", value: new Date(isoDate).toJSON() }
         }
 
         case "enum": {
             if (value === null) {
-                if (field.cases.length === 0) {
-                    return new ConversionError(`Enum “${field.name}” has no cases`)
-                }
-                return { type: "enum", value: field.cases[0].id }
+                const [firstCase] = field.cases
+                assert(firstCase, `No cases found for enum “${field.name}”`)
+                return { type: "enum", value: firstCase.id }
             }
             const matchingCase = field.cases.find(
                 enumCase => collator.compare(enumCase.name, value) === 0 || enumCase.id === value
@@ -266,7 +266,10 @@ export async function processRecords(collection: Collection, records: CSVRecord[
     const fields = await collection.getFields()
     const allItemIdBySlug = new Map<string, Map<string, string>>()
 
-    const csvHeader = Object.keys(records[0])
+    const firstRecord = records[0]
+    assert(firstRecord, "No records were found in your CSV.")
+
+    const csvHeader = Object.keys(firstRecord)
     const { slugIndex, basedOnIndex } = findSlugFieldIndex(
         csvHeader,
         {
@@ -303,21 +306,19 @@ export async function processRecords(collection: Collection, records: CSVRecord[
         existingItemsBySlug.set(item.slug, item)
     }
 
-    const fieldsToImport = fields.filter(field =>
-        csvHeader.find(header => collator.compare(header, field.name) === 0)
-    )
+    const fieldsToImport = fields.filter(field => csvHeader.find(header => collator.compare(header, field.name) === 0))
 
     for (const record of records) {
         let slug: string | undefined
         const values = Object.values(record)
 
         // Try to get slug from the slug field first
-        if (slugIndex !== -1) {
+        if (slugIndex !== -1 && !isUndefined(values[slugIndex])) {
             slug = slugify(values[slugIndex])
         }
 
         // If no slug and we have a basedOn field, try to get slug from that
-        if (!slug && basedOnIndex !== -1) {
+        if (!slug && basedOnIndex !== -1 && !isUndefined(values[basedOnIndex])) {
             slug = slugify(values[basedOnIndex])
         }
 
@@ -466,4 +467,30 @@ const trimSlugRegExp = /^-+|-+$/gu
  */
 export function slugify(value: string): string {
     return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
+}
+
+function assert(condition: unknown, ...msg: unknown[]): asserts condition {
+    if (condition) return
+
+    const e = Error("Assertion Error" + (msg.length > 0 ? ": " + msg.join(" ") : ""))
+    // Hack the stack so the assert call itself disappears. Works in jest and in chrome.
+    if (e.stack) {
+        try {
+            const lines = e.stack.split("\n")
+            if (lines[1]?.includes("assert")) {
+                lines.splice(1, 1)
+                e.stack = lines.join("\n")
+            } else if (lines[0]?.includes("assert")) {
+                lines.splice(0, 1)
+                e.stack = lines.join("\n")
+            }
+        } catch {
+            // nothing
+        }
+    }
+    throw e
+}
+
+function isUndefined(value: unknown): value is undefined {
+    return value === undefined
 }

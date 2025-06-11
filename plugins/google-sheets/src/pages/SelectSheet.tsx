@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react"
 import { framer } from "framer-plugin"
-import { useSpreadsheetInfoQuery } from "../sheets"
+import { useEffect, useState } from "react"
 import { Hero } from "../components/Hero"
+import { useSpreadsheetInfoQuery } from "../sheets"
 
 type InputChangeEvent = React.ChangeEvent<HTMLInputElement>
 type SelectChangeEvent = React.ChangeEvent<HTMLSelectElement>
@@ -28,11 +28,12 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
     }, [isSpreadSheetInfoError, onError])
 
     useEffect(() => {
-        if (!spreadsheetInfo?.sheets.length) {
+        const firstSheet = spreadsheetInfo?.sheets[0]
+        if (!firstSheet) {
             return
         }
 
-        setSelectedSheetTitle(spreadsheetInfo.sheets[0].properties.title)
+        setSelectedSheetTitle(firstSheet.properties.title)
     }, [spreadsheetInfo])
 
     const handleSheetSelect = (e: SelectChangeEvent) => {

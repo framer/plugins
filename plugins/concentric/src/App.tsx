@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react"
-import { CanvasNode, framer, supportsBorderRadius, useIsAllowedTo } from "framer-plugin"
 import * as Slider from "@radix-ui/react-slider"
+import { type CanvasNode, framer, supportsBorderRadius, useIsAllowedTo } from "framer-plugin"
+import { useEffect, useRef, useState } from "react"
 
 import "./App.css"
 
@@ -80,6 +80,11 @@ export function App() {
             }
 
             const childNode = children[0]
+            if (!childNode) {
+                setState(null)
+                return
+            }
+
             childNode.getRect().then(childRect => {
                 if (!active) return
                 if (!childRect) {

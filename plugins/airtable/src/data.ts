@@ -1,9 +1,9 @@
 import type {
-    ManagedCollection,
-    ManagedCollectionItemInput,
-    ManagedCollectionField,
     FieldDataEntryInput,
     FieldDataInput,
+    ManagedCollection,
+    ManagedCollectionField,
+    ManagedCollectionItemInput,
 } from "framer-plugin"
 import type { PossibleField } from "./fields"
 
@@ -216,12 +216,18 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                             type: field.type,
                         }
                         break
-                    case "enum":
+                    case "enum": {
+                        const firstCase = field.cases[0]
+                        if (!firstCase) {
+                            console.warn(`Skipping item “${item.id}” because enum field “${field.name}” has no cases.`)
+                            continue
+                        }
                         fieldData[field.id] = {
-                            value: field.cases[0].id,
+                            value: firstCase.id,
                             type: "enum",
                         }
                         break
+                    }
                     case "boolean":
                         fieldData[field.id] = {
                             value: false,
@@ -314,6 +320,7 @@ export async function syncCollection(
 
     for (let i = 0; i < dataSourceItems.length; i++) {
         const item = dataSourceItems[i]
+        if (!item) continue
 
         items.push({
             id: item.id,

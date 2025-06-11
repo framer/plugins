@@ -1,4 +1,4 @@
-import { ManagedCollectionField } from "framer-plugin"
+import type { ManagedCollectionField } from "framer-plugin"
 
 // There is no endpoint to retrieve all possible fields dynamically since blog fields are fixed,
 // This does not included all possible fields, just the CMS relevant ones.

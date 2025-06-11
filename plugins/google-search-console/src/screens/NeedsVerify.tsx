@@ -1,5 +1,5 @@
 import plus from '../images/Plus@2x.png';
-import { SiteWithGoogleSite } from '../types';
+import type { SiteWithGoogleSite } from '../types';
 
 interface NeedsVerifyProps {
   retry: () => void;

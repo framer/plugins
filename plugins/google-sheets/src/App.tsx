@@ -1,23 +1,23 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
+import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
 import {
+    type PluginContext,
+    type PluginContextUpdate,
     getPluginContext,
-    PluginContext,
-    PluginContextUpdate,
     syncSheet,
     useFetchUserInfo,
     useSheetQuery,
     useSyncSheetMutation,
 } from "./sheets"
-import { PLUGIN_LOG_SYNC_KEY, logSyncResult } from "./debug"
 
+import auth from "./auth"
+import { CenteredSpinner } from "./components/CenteredSpinner"
 import { Authenticate } from "./pages/Authenticate"
 import { MapSheetFieldsPage } from "./pages/MapSheetFields"
-import { SelectSheetPage } from "./pages/SelectSheet"
-import { CenteredSpinner } from "./components/CenteredSpinner"
 import { Problem } from "./pages/Problem"
+import { SelectSheetPage } from "./pages/SelectSheet"
 import { assert } from "./utils"
-import auth from "./auth"
 
 interface AppProps {
     pluginContext: PluginContext

@@ -1,9 +1,9 @@
-import { Color, OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
-import { useCharactersAtlasTexture } from "../hooks/use-characters-atlas-texture"
-import { GLSL } from "../glsl"
 import { SegmentedControl } from "@radix-ui/themes"
+import { Color, type OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { ColorInput } from "../color-input"
+import { GLSL } from "../glsl"
+import { useCharactersAtlasTexture } from "../hooks/use-characters-atlas-texture"
 import { NumberInput } from "../number-input"
 
 export class ASCIIMaterial extends Program {
@@ -172,7 +172,12 @@ export class ASCIIMaterial extends Program {
 
 const FONTS = ["Roboto Mono", "Fragment Mono", "Martian Mono", "Space Mono", "Courier Prime"]
 
-export const ASCII = forwardRef(function Ascii({ gl }: { gl: OGLRenderingContext }, ref) {
+export type ASCIIRef = {
+    program: ASCIIMaterial
+    setPixelSize: (value: number) => void
+}
+
+export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function Ascii({ gl }, ref) {
     const [characters, setCharacters] = useState(" ./FR#")
     const [colorMode, setColorMode] = useState(0)
     const [pixelSize, setPixelSize] = useState(10)

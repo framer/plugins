@@ -1,14 +1,14 @@
+import "@radix-ui/themes/styles.css"
+import cn from "clsx"
 import { type ImageAsset, framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
-import "@radix-ui/themes/styles.css"
 import "./App.css"
-import { ASCII } from "./materials/ascii"
-import cn from "clsx"
 import { Upload } from "./dropzone/drag-and-drop"
-import { useOGLPipeline } from "./ogl/pipeline"
+import { useGLBTexture } from "./hooks/use-glb-texture"
 import { useImageTexture } from "./hooks/use-image-texture"
 import { useVideoTexture } from "./hooks/use-video-texture"
-import { useGLBTexture } from "./hooks/use-glb-texture"
+import { type ASCIIRef, ASCII } from "./materials/ascii"
+import { useOGLPipeline } from "./ogl/pipeline"
 import { BASE_PATH, getPermissionTitle } from "./utils"
 
 import.meta.hot?.accept(() => {
@@ -50,7 +50,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>()
     const [assetResolution, setAssetResolution] = useState<[number, number]>([DEFAULT_WIDTH, DEFAULT_WIDTH])
     const [exportSize, setExportSize] = useState<number>(DEFAULT_WIDTH)
-    const asciiRef = useRef()
+    const asciiRef = useRef<ASCIIRef | null>(null)
     const { gl, toBytes, program, setProgram, setResolution } = useOGLPipeline()
 
     const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
@@ -63,6 +63,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         gl,
         droppedAsset?.src ? (droppedAsset?.type === "image" ? droppedAsset?.src : undefined) : framerCanvasImage?.url,
         texture => {
+            // @ts-expect-error - TODO: not sure why this is needed
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },
@@ -73,6 +74,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         gl,
         droppedAsset?.type === "video" ? droppedAsset?.src : undefined,
         texture => {
+            // @ts-expect-error - TODO: not sure why this is needed
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },
@@ -90,6 +92,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
               : undefined,
         droppedAsset?.type,
         texture => {
+            // @ts-expect-error - TODO: not sure why this is needed
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },
@@ -147,9 +150,11 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         if (!containerRef.current) return
 
         const resizeObserver = new ResizeObserver(([entry]) => {
-            const { blockSize: height } = entry.borderBoxSize[0]
+            if (!entry) return
+            const borderBoxSize = entry.borderBoxSize[0]
+            if (!borderBoxSize) return
 
-            void framer.showUI({ position: "top right", width: 280, height })
+            void framer.showUI({ position: "top right", width: 280, height: borderBoxSize.blockSize })
         })
 
         resizeObserver.observe(containerRef.current)
@@ -212,6 +217,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
             <div className={cn("gui")}>
                 <ASCII
                     ref={node => {
+                        if (!node) return
                         asciiRef.current = node
                         setProgram(node?.program)
                     }}
@@ -241,6 +247,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                 <Upload
                     isAllowed={isAllowedToUpsertImage}
                     setDroppedAsset={asset => {
+                        if (typeof asset !== "object") return
                         setDroppedAsset(asset)
                     }}
                 />

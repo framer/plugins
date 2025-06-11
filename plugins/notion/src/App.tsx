@@ -1,13 +1,17 @@
+import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import "./App.css"
-import { PluginContext, PluginContextNew, PluginContextUpdate, useSynchronizeDatabaseMutation } from "./notion"
-
-import { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
-import { SelectDatabase } from "./SelectDatabase"
-import { MapDatabaseFields } from "./MapFields"
-import { logSyncResult } from "./debug"
 import { Authentication } from "./Authenticate"
+import { MapDatabaseFields } from "./MapFields"
+import { SelectDatabase } from "./SelectDatabase"
+import { logSyncResult } from "./debug"
+import {
+    type PluginContext,
+    type PluginContextNew,
+    type PluginContextUpdate,
+    useSynchronizeDatabaseMutation,
+} from "./notion"
 
 interface AppProps {
     context: PluginContext

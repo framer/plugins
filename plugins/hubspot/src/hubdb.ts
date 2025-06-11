@@ -1,5 +1,11 @@
 import { useMutation } from "@tanstack/react-query"
-import { type ManagedCollectionField, framer, ManagedCollection, } from "framer-plugin"
+import {
+    type FieldDataEntryInput,
+    type FieldDataInput,
+    type ManagedCollectionFieldInput,
+    framer,
+    ManagedCollection,
+} from "framer-plugin"
 import pLimit from "p-limit"
 import {
     type Column,
@@ -31,14 +37,14 @@ const PLUGIN_SLUG_FIELD_ID_KEY = "hubdbSlugFieldId"
 const CONCURRENCY_LIMIT = 5
 
 export interface SyncMutationOptions {
-    fields: ManagedCollectionField[]
+    fields: ManagedCollectionFieldInput[]
     tableId: string
     slugFieldId: string
     includedFieldIds: string[]
 }
 
 export interface ProcessRowParams {
-    fields: ManagedCollectionField[]
+    fields: ManagedCollectionFieldInput[]
     row: HubDbTableRowV3
     fieldsById: FieldsById
     columns: Column[]
@@ -60,7 +66,7 @@ export interface HubDBPluginContextUpdate {
     hasChangedFields: boolean
     slugFieldId: string
     columns: Column[]
-    collectionFields: ManagedCollectionField[]
+    collectionFields: ManagedCollectionFieldInput[]
 }
 
 export type HubDBPluginContext = HubDBPluginContextNew | HubDBPluginContextUpdate
@@ -68,44 +74,61 @@ export type HubDBPluginContext = HubDBPluginContextNew | HubDBPluginContextUpdat
 /**
  * Get the value of a HubDB cell in a format compatible with a collection field.
  */
-async function getFieldValue(column: Column, cellValue: HubDBCellValue): Promise<unknown | undefined> {
+function getFieldValue(column: Column, cellValue: HubDBCellValue): FieldDataEntryInput | undefined {
     switch (column.type) {
-        case "TEXT":
-        case "URL":
-        case "RICHTEXT":
-            return typeof cellValue === "string" ? cellValue : undefined
+        case "TEXT": {
+            if (typeof cellValue !== "string") return undefined
+            return { type: "string", value: cellValue }
+        }
 
-        case "NUMBER":
-            return typeof cellValue === "number" ? cellValue : undefined
+        case "URL": {
+            if (typeof cellValue !== "string") return undefined
+            return { type: "link", value: cellValue }
+        }
 
-        case "DATE":
-        case "DATETIME":
-            return typeof cellValue === "number" ? new Date(cellValue).toUTCString() : undefined
-
-        case "BOOLEAN":
-            return cellValue === 1 ? true : false
-
-        case "SELECT":
-            return (cellValue as HubDBValueOption).name
-
-        case "IMAGE":
-            return (cellValue as HubDBImage).url
-
-        case "FILE":
-            return (cellValue as HubDBFile).url
+        case "RICHTEXT": {
+            if (typeof cellValue !== "string") return undefined
+            return { type: "formattedText", value: cellValue }
+        }
 
         case "CURRENCY":
-            return typeof cellValue === "number" ? cellValue : undefined
+        case "NUMBER": {
+            if (typeof cellValue !== "number") return undefined
+            return { type: "number", value: cellValue }
+        }
 
-        default:
+        case "DATE":
+        case "DATETIME": {
+            if (typeof cellValue !== "number") return undefined
+            return { type: "date", value: new Date(cellValue).toUTCString() }
+        }
+
+        case "BOOLEAN": {
+            return { type: "boolean", value: cellValue === 1 }
+        }
+
+        case "SELECT": {
+            return { type: "enum", value: (cellValue as HubDBValueOption).name }
+        }
+
+        case "IMAGE": {
+            return { type: "image", value: (cellValue as HubDBImage).url }
+        }
+
+        case "FILE": {
+            return { type: "file", value: (cellValue as HubDBFile).url }
+        }
+
+        default: {
             return undefined
+        }
     }
 }
 
 /**
  * Get the collection field schema for a HubDB column.
  */
-export function getCollectionFieldForHubDBColumn(column: Column): ManagedCollectionField | null {
+export function getCollectionFieldForHubDBColumn(column: Column): ManagedCollectionFieldInput | null {
     assert(column.id)
 
     const fieldMetadata = {
@@ -194,7 +217,7 @@ export function shouldSyncHubDBImmediately(
  * fields differ from the HubDb columns
  */
 function hasFieldConfigurationChanged(
-    currentManagedCollectionFields: ManagedCollectionField[],
+    currentManagedCollectionFields: ManagedCollectionFieldInput[],
     columns: Column[],
     includedFieldIds: string[]
 ): boolean {
@@ -226,7 +249,7 @@ function hasFieldConfigurationChanged(
 
 async function processRow({ row, columns, fieldsById, slugFieldId, status, unsyncedItemIds }: ProcessRowParams) {
     let slugValue: string | null = null
-    const fieldData: Record<string, unknown> = {}
+    const fieldData: FieldDataInput = {}
 
     assert(row.id)
     unsyncedItemIds.delete(row.id)
@@ -238,7 +261,7 @@ async function processRow({ row, columns, fieldsById, slugFieldId, status, unsyn
 
         assert(column.id)
 
-        const collectionFieldValue = await getFieldValue(column, cellValue)
+        const collectionFieldValue = getFieldValue(column, cellValue)
 
         if (column.id === slugFieldId) {
             if (typeof cellValue !== "string") continue
@@ -256,9 +279,9 @@ async function processRow({ row, columns, fieldsById, slugFieldId, status, unsyn
                 fieldName: columnName,
                 message: `Value is missing for field ${field.name}`,
             })
+        } else {
+            fieldData[column.id] = collectionFieldValue
         }
-
-        fieldData[column.id] = collectionFieldValue
     }
 
     if (!slugValue) {
@@ -295,8 +318,7 @@ async function processAllRows(rows: HubDbTableRowV3[], processRowParams: Omit<Pr
 }
 
 export async function syncHubDBTable({ fields, tableId, slugFieldId, includedFieldIds }: SyncMutationOptions) {
-    const collection = await framer.getManagedCollection()
-    await collection.setFields(fields)
+    const collection = await framer.getActiveManagedCollection()
 
     const fieldsById = new Map(fields.map(field => [field.id, field]))
     const unsyncedItemIds = new Set(await collection.getItemIds())
@@ -343,7 +365,7 @@ export async function syncHubDBTable({ fields, tableId, slugFieldId, includedFie
 }
 
 export async function getHubDBPluginContext(): Promise<HubDBPluginContext> {
-    const collection = await framer.getManagedCollection()
+    const collection = await framer.getActiveManagedCollection()
     const collectionFields = await collection.getFields()
 
     const [tableId, rawIncludedFieldHash, slugFieldId] = await Promise.all([
@@ -394,7 +416,11 @@ export const useSyncHubDBTableMutation = ({
     onError?: (e: Error) => void
 }) => {
     return useMutation({
-        mutationFn: (args: SyncMutationOptions) => syncHubDBTable(args),
+        mutationFn: async (args: SyncMutationOptions) => {
+            const collection = await framer.getActiveManagedCollection()
+            await collection.setFields(args.fields)
+            return await syncHubDBTable(args)
+        },
         onSuccess,
         onError,
     })

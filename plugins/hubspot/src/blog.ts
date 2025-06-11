@@ -1,5 +1,11 @@
 import { useMutation } from "@tanstack/react-query"
-import { type ManagedCollectionField, framer, ManagedCollection, } from "framer-plugin"
+import {
+    type FieldDataEntryInput,
+    type FieldDataInput,
+    type ManagedCollectionFieldInput,
+    framer,
+    ManagedCollection,
+} from "framer-plugin"
 import { BlogPost, fetchAllBlogPosts } from "./api"
 import {
     type FieldsById,
@@ -16,12 +22,12 @@ import { assert, isDefined } from "./utils"
 export const PLUGIN_INCLUDED_FIELDS_HASH = "hubspotPluginBlogIncludedFieldsHash"
 
 export interface SyncBlogMutation {
-    fields: ManagedCollectionField[]
+    fields: ManagedCollectionFieldInput[]
     includedFieldIds: string[]
 }
 
 export interface ProcessBlogParams {
-    fields: ManagedCollectionField[]
+    fields: ManagedCollectionFieldInput[]
     fieldsById: FieldsById
     unsyncedItemIds: Set<string>
 }
@@ -39,7 +45,7 @@ export interface BlogPluginContextNew {
 export interface BlogPluginContextUpdate {
     type: "update"
     collection: ManagedCollection
-    collectionFields: ManagedCollectionField[]
+    collectionFields: ManagedCollectionFieldInput[]
     includedFieldIds: string[]
     hasChangedFields: boolean
 }
@@ -81,29 +87,77 @@ export async function getBlogPluginContext(): Promise<BlogPluginContext> {
     }
 }
 
-// eslint-disable-next-line
-function isBlogPropertyValueMissing(value: any): boolean {
-    // Empty array
-    if (Array.isArray(value)) {
-        return value.length === 0
-    }
+function getFieldDataEntryInput(field: ManagedCollectionFieldInput, value: unknown): FieldDataEntryInput | undefined {
+    switch (field.type) {
+        case "string": {
+            if (typeof value !== "string") return undefined
+            return { type: "string", value }
+        }
 
-    // No keys
-    if (typeof value === "object") {
-        return Object.keys(value).length === 0
-    }
+        case "number": {
+            if (typeof value !== "number") return undefined
+            return { type: "number", value }
+        }
 
-    // For all other types
-    return value === null || value === undefined || value === ""
+        case "date": {
+            if (typeof value !== "number") return undefined
+            return { type: "date", value: new Date(value).toUTCString() }
+        }
+
+        case "boolean": {
+            if (typeof value !== "boolean") return undefined
+            return { type: "boolean", value }
+        }
+
+        case "enum": {
+            if (typeof value !== "string") return undefined
+            return { type: "enum", value }
+        }
+
+        case "image": {
+            if (typeof value !== "string") return undefined
+            return { type: "image", value }
+        }
+
+        case "file": {
+            if (typeof value !== "string") return undefined
+            return { type: "file", value }
+        }
+
+        case "color": {
+            if (typeof value !== "string") return undefined
+            return { type: "color", value }
+        }
+
+        case "formattedText": {
+            if (typeof value !== "string") return undefined
+            return { type: "formattedText", value }
+        }
+
+        case "link": {
+            if (typeof value !== "string") return undefined
+            return { type: "link", value }
+        }
+
+        case "collectionReference":
+        case "multiCollectionReference": {
+            // TODO: Implement
+            return undefined
+        }
+
+        default: {
+            field satisfies never
+        }
+    }
 }
 
 function processPost({ post, fieldsById, unsyncedItemIds, status }: ProcessPostParams) {
     let slugValue: string | null = null
-    const fieldData: Record<string, unknown> = {}
+    const fieldData: FieldDataInput = {}
 
     unsyncedItemIds.delete(post.id)
 
-    for (const [propertyName, propertyValue] of Object.entries(post)) {
+    for (const [propertyName, propertyValue] of Object.entries(post) as [string, unknown][]) {
         if (propertyName === "slug") {
             assert(typeof propertyValue === "string", "Expected 'slug' to be a string")
 
@@ -115,14 +169,15 @@ function processPost({ post, fieldsById, unsyncedItemIds, status }: ProcessPostP
         // Not included in field mapping, skip
         if (!field) continue
 
-        if (isBlogPropertyValueMissing(propertyValue)) {
+        const fieldDataEntryInput = getFieldDataEntryInput(field, propertyValue)
+        if (fieldDataEntryInput) {
+            fieldData[propertyName] = fieldDataEntryInput
+        } else {
             status.warnings.push({
                 fieldName: propertyName,
                 message: `Value is missing for field ${field.name}`,
             })
         }
-
-        fieldData[propertyName] = propertyValue
     }
 
     if (!slugValue) {
@@ -158,8 +213,7 @@ function processBlog(posts: BlogPost[], processBlogParams: ProcessBlogParams) {
 }
 
 export async function syncBlogs({ fields, includedFieldIds }: SyncBlogMutation) {
-    const collection = await framer.getManagedCollection()
-    await collection.setFields(fields)
+    const collection = await framer.getActiveManagedCollection()
 
     const fieldsById = new Map(fields.map(field => [field.id, field]))
     const unsyncedItemIds = new Set(await collection.getItemIds())
@@ -202,7 +256,11 @@ export const useSyncBlogsMutation = ({
     onError?: (e: Error) => void
 }) => {
     return useMutation({
-        mutationFn: (args: SyncBlogMutation) => syncBlogs(args),
+        mutationFn: async (args: SyncBlogMutation) => {
+            const collection = await framer.getActiveManagedCollection()
+            await collection.setFields(args.fields)
+            return await syncBlogs(args)
+        },
         onSuccess,
         onError,
     })

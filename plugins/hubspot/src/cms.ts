@@ -1,4 +1,4 @@
-import { type ManagedCollectionField, framer } from "framer-plugin"
+import { type ManagedCollectionFieldInput, framer } from "framer-plugin"
 import { useEffect } from "react"
 
 export const MAX_CMS_ITEMS = 10_000
@@ -20,7 +20,7 @@ export interface SyncResult extends SyncStatus {
     status: "success" | "completed_with_errors"
 }
 
-export type FieldsById = Map<string, ManagedCollectionField>
+export type FieldsById = Map<string, ManagedCollectionFieldInput>
 
 const isLoggingEnabled = () => {
     return localStorage.getItem(PLUGIN_LOG_SYNC_KEY) === "true"
@@ -113,7 +113,7 @@ export function createFieldSetHash(fieldIds: string[]): string {
  * Processes a field set to determine the complementary fields
  */
 export function computeFieldSets(params: {
-    currentFields: ManagedCollectionField[]
+    currentFields: ManagedCollectionFieldInput[]
     allPossibleFieldIds: string[]
     storedHash: string
 }) {

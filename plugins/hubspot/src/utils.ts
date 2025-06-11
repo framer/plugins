@@ -1,3 +1,5 @@
+import type { ProtectedMethod } from "framer-plugin"
+
 export function assert(condition: unknown, ...msg: unknown[]): asserts condition {
     if (condition) return
 
@@ -23,3 +25,9 @@ export function assert(condition: unknown, ...msg: unknown[]): asserts condition
 export function isDefined<T>(value: T): value is NonNullable<T> {
     return value !== undefined && value !== null
 }
+
+export const syncMethods = [
+    "ManagedCollection.removeItems",
+    "ManagedCollection.addItems",
+    "ManagedCollection.setPluginData",
+] as const satisfies ProtectedMethod[]

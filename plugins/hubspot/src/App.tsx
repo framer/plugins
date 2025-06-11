@@ -17,6 +17,7 @@ import {
 } from "./pages/canvas"
 import { BlogPage, CMSMenuPage, HubDBPage, MapHubDBFieldsPage } from "./pages/cms"
 import { type Route, Router } from "./router"
+import { syncMethods } from "./utils"
 
 const routes: Route[] = [
     {
@@ -144,14 +145,17 @@ export function App() {
             const shouldSyncBlog = mode === "syncManagedCollection" && shouldSyncBlogImmediately(blogContext)
             const shouldSyncHubDB = mode === "syncManagedCollection" && shouldSyncHubDBImmediately(hubContext)
 
-            if (shouldSyncBlog) {
+            // Not a hook because we don't want to re-run this effect
+            const isAllowedToSync = framer.isAllowedTo(...syncMethods)
+
+            if (isAllowedToSync && shouldSyncBlog) {
                 return syncBlogs({
                     includedFieldIds: blogContext.includedFieldIds,
                     fields: blogContext.collectionFields,
                 }).then(() => framer.closePlugin("Synchronization successful"))
             }
 
-            if (shouldSyncHubDB) {
+            if (isAllowedToSync && shouldSyncHubDB) {
                 return syncHubDBTable({
                     tableId: hubContext.tableId,
                     fields: hubContext.collectionFields,

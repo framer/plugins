@@ -1,16 +1,12 @@
 import { isFullDatabase } from "@notionhq/client"
 import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import classNames from "classnames"
-import { type ManagedCollectionField, type ManagedCollectionFieldInput } from "framer-plugin"
+import { useIsAllowedTo, type ManagedCollectionField, type ManagedCollectionFieldInput } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { Button } from "./components/Button"
 import { CheckboxTextfield } from "./components/CheckboxTexfield"
 import { IconChevron } from "./components/Icons"
 import {
-    type NotionProperty,
-    type PluginContext,
-    type SynchronizeMutationOptions,
-    type SynchronizeProgress,
     getCollectionFieldForProperty,
     getNotionProperties,
     getPossibleSlugFields,
@@ -19,8 +15,12 @@ import {
     isSupportedNotionProperty,
     richTextToPlainText,
     supportedCMSTypeByNotionPropertyType,
+    type NotionProperty,
+    type PluginContext,
+    type SynchronizeMutationOptions,
+    type SynchronizeProgress,
 } from "./notion"
-import { assert } from "./utils"
+import { assert, syncMethods } from "./utils"
 
 function getSortedProperties(database: GetDatabaseResponse): NotionProperty[] {
     return getNotionProperties(database).sort((propertyA, propertyB) => {
@@ -123,6 +123,8 @@ export function MapDatabaseFields({
     isLoading: boolean
     pluginContext: PluginContext
 }) {
+    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
+
     const slugFields = useMemo(() => getPossibleSlugFields(database), [database])
     const [slugFieldId, setSlugFieldId] = useState<string | null>(() =>
         getInitialSlugFieldId(pluginContext, slugFields)
@@ -227,9 +229,10 @@ export function MapDatabaseFields({
                         Slug Field
                     </label>
                     <select
-                        className="w-full"
+                        className={classNames("w-full", !isAllowedToManage && "opacity-50")}
                         value={slugFieldId ?? ""}
                         onChange={e => setSlugFieldId(e.target.value)}
+                        disabled={!isAllowedToManage}
                         required
                     >
                         {slugFields.map(field => (
@@ -256,7 +259,7 @@ export function MapDatabaseFields({
                                 <Fragment key={property.id}>
                                     <CheckboxTextfield
                                         value={property.name}
-                                        disabled={!isSupported}
+                                        disabled={!isSupported || !isAllowedToManage}
                                         checked={!disabledFieldIds.has(property.id)}
                                         onChange={() => {
                                             handleFieldToggle(property.id)
@@ -265,15 +268,20 @@ export function MapDatabaseFields({
                                     <div
                                         className={classNames(
                                             "flex items-center justify-center place-self-center text-tertiary",
-                                            !isSupported && "opacity-50"
+                                            (!isSupported || !isAllowedToManage) && "opacity-50"
                                         )}
                                     >
                                         <IconChevron />
                                     </div>
                                     <input
                                         type="text"
-                                        className={classNames("w-full", !isSupported && "opacity-50")}
-                                        disabled={!isSupported || disabledFieldIds.has(property.id)}
+                                        className={classNames(
+                                            "w-full",
+                                            (!isSupported || !isAllowedToManage) && "opacity-50"
+                                        )}
+                                        disabled={
+                                            !isSupported || !isAllowedToManage || disabledFieldIds.has(property.id)
+                                        }
                                         placeholder={property.name}
                                         value={isSupported ? (fieldNameOverrides[property.id] ?? "") : "Unsupported"}
                                         onChange={e => {
@@ -281,14 +289,14 @@ export function MapDatabaseFields({
                                         }}
                                     ></input>
                                     <select
-                                        className="w-full"
+                                        className={classNames("w-full", (!isSupported || !isAllowedToManage) && "opacity-50")}
                                         onChange={event =>
                                             handleFieldTypeChange(
                                                 property.id,
                                                 event.target.value as ManagedCollectionField["type"]
                                             )
                                         }
-                                        disabled={!isSupported}
+                                        disabled={!isSupported || !isAllowedToManage}
                                         value={!isSupported ? "unsupported" : fieldTypeByFieldId[property.id]}
                                     >
                                         {!isSupported && (
@@ -312,7 +320,13 @@ export function MapDatabaseFields({
             <div className="left-0 bottom-0 pb-[15px] w-full flex justify-between sticky bg-primary pt-4 border-t border-divider border-opacity-20 items-center max-w-full">
                 <div className="tailwind-hell-escape-hatch-gradient-bottom" />
 
-                <Button variant="primary" isLoading={isLoading} disabled={!slugFieldId} className="w-full">
+                <Button
+                    variant="primary"
+                    isLoading={isLoading}
+                    onClick={handleSubmit}
+                    disabled={!slugFieldId || !isAllowedToManage}
+                    title={!isAllowedToManage ? "Insufficient permissions" : undefined}
+                >
                     Import from {title.trim() ? title : "Untitled"}
                 </Button>
             </div>

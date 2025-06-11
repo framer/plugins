@@ -706,7 +706,6 @@ export async function synchronizeDatabase(
     assert(notion)
 
     const collection = await framer.getActiveManagedCollection()
-    await collection.setFields(fields)
 
     const fieldsById = new Map<string, ManagedCollectionFieldInput>()
     for (const field of fields) {
@@ -763,7 +762,9 @@ export function useSynchronizeDatabaseMutation(
         onError,
         mutationFn: async (options: SynchronizeMutationOptions): Promise<SynchronizeResult> => {
             assert(database)
-
+            
+            const collection = await framer.getActiveManagedCollection()
+            await collection.setFields(options.fields)
             return synchronizeDatabase(database, options)
         },
     })

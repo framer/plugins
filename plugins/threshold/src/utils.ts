@@ -43,3 +43,7 @@ export function assert(condition: unknown, ...msg: unknown[]): asserts condition
     }
     throw e
 }
+
+export function isUndefined(value: unknown): value is undefined {
+    return value === undefined
+}

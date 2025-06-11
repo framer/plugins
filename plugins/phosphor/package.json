@@ -10,7 +10,7 @@
         "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
         "pack": "npx framer-plugin-tools@latest pack",
         "preview": "vite preview",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc"
     },
     "dependencies": {
         "@phosphor-icons/core": "^2.0.8",

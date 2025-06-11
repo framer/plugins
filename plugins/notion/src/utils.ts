@@ -72,8 +72,7 @@ export function generateRandomId() {
     window.crypto.getRandomValues(array)
 
     let id = ""
-    for (let i = 0; i < array.length; i++) {
-        const value = array.at(i) ?? 0
+    for (const value of array) {
         id += value.toString(16).padStart(2, "0")
     }
 

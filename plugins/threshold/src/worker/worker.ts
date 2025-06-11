@@ -1,4 +1,5 @@
 import { type Endpoint, expose, transfer } from "comlink"
+import { assert, isUndefined } from "../utils"
 
 export class CanvasWorker {
     private offscreenCanvas: OffscreenCanvas
@@ -33,9 +34,12 @@ export class CanvasWorker {
         const imgData = imageData.data
 
         for (let i = 0; i < imgData.length; i += 4) {
-            let r = imgData[i] ?? 0
-            let g = imgData[i + 1] ?? 0
-            let b = imgData[i + 2] ?? 0
+            const r = imgData[i]
+            const g = imgData[i + 1]
+            const b = imgData[i + 2]
+            assert(!isUndefined(r), "r is undefined")
+            assert(!isUndefined(g), "g is undefined")
+            assert(!isUndefined(b), "b is undefined")
 
             const grayscale = r * 0.3 + g * 0.59 + b * 0.11
             const binaryColor = grayscale < threshold ? 0 : 255

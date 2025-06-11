@@ -14,12 +14,7 @@ import {
     type RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import {
-    type CollectionItemData,
-    type ManagedCollection,
-    type ManagedCollectionField,
-    framer,
-} from "framer-plugin"
+import { type CollectionItemData, type ManagedCollection, type ManagedCollectionField, framer } from "framer-plugin"
 import pLimit from "p-limit"
 import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
 import { assert, assertNever, formatDate, isDefined, isString, slugify } from "./utils"
@@ -634,8 +629,8 @@ export function hasFieldConfigurationChanged(a: ManagedCollectionField[], b: Man
     for (let i = 0; i < a.length; i++) {
         const fieldA = a[i]
         const fieldB = b[i]
-
-        if (!fieldA || !fieldB) return true
+        assert(fieldA, "Field A is undefined")
+        assert(fieldB, "Field B is undefined")
 
         if (fieldA.id !== fieldB.id) return true
         if (fieldA.type !== fieldB.type) return true

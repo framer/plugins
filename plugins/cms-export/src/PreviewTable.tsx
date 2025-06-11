@@ -1,4 +1,4 @@
-import type { Collection, CollectionItem } from "framer-plugin"
+import type { Collection } from "framer-plugin"
 
 import { framer } from "framer-plugin"
 import { useEffect, useRef, useState } from "react"
@@ -29,16 +29,8 @@ export function PreviewTable({ collection }: Props) {
 
             const fields = await collection.getFields()
             const items = await collection.getItems()
-            const previewItems: CollectionItem[] = []
 
-            for (let index = 0; index < items.length; index++) {
-                const item = items[index]
-                if (!item) continue
-
-                previewItems.push(item)
-            }
-
-            setPreviewCSV(getDataForCSV(collection.slugFieldName, fields, previewItems))
+            setPreviewCSV(getDataForCSV(collection.slugFieldName, fields, items))
         }
 
         const resize = () => {

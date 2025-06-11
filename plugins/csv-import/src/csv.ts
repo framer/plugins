@@ -150,18 +150,14 @@ function getFieldDataEntryInputForField(
                 return new ConversionError(`Invalid value for field “${field.name}” expected a valid date`)
             }
             const isoDate = date.toISOString().split("T")[0]
-            if (!isDefined(isoDate)) {
-                return new ConversionError(`Invalid value for field “${field.name}” expected a valid date`)
-            }
+            assert(isoDate, `Invalid value for field “${field.name}” expected a valid date`)
             return { type: "date", value: new Date(isoDate).toJSON() }
         }
 
         case "enum": {
             if (value === null) {
-                const firstCase = field.cases[0]
-                if (!isDefined(firstCase)) {
-                    return new ConversionError(`Enum “${field.name}” has no cases`)
-                }
+                const [firstCase] = field.cases
+                assert(firstCase, `No cases found for enum “${field.name}”`)
                 return { type: "enum", value: firstCase.id }
             }
             const matchingCase = field.cases.find(
@@ -271,9 +267,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
     const allItemIdBySlug = new Map<string, Map<string, string>>()
 
     const firstRecord = records[0]
-    if (!isDefined(firstRecord)) {
-        throw new ImportError("error", "Import failed. No records were found in your CSV.")
-    }
+    assert(firstRecord, "No records were found in your CSV.")
 
     const csvHeader = Object.keys(firstRecord)
     const { slugIndex, basedOnIndex } = findSlugFieldIndex(
@@ -319,23 +313,13 @@ export async function processRecords(collection: Collection, records: CSVRecord[
         const values = Object.values(record)
 
         // Try to get slug from the slug field first
-        if (slugIndex !== -1) {
-            const slugValue = values[slugIndex]
-            if (!isDefined(slugValue)) {
-                result.warnings.missingSlugCount++
-                continue
-            }
-            slug = slugify(slugValue)
+        if (slugIndex !== -1 && !isUndefined(values[slugIndex])) {
+            slug = slugify(values[slugIndex])
         }
 
         // If no slug and we have a basedOn field, try to get slug from that
-        if (!slug && basedOnIndex !== -1) {
-            const basedOnValue = values[basedOnIndex]
-            if (!isDefined(basedOnValue)) {
-                result.warnings.missingSlugCount++
-                continue
-            }
-            slug = slugify(basedOnValue)
+        if (!slug && basedOnIndex !== -1 && !isUndefined(values[basedOnIndex])) {
+            slug = slugify(values[basedOnIndex])
         }
 
         if (!slug) {
@@ -485,6 +469,28 @@ export function slugify(value: string): string {
     return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
 }
 
-function isDefined<T>(value: T | null | undefined): value is T {
-    return value !== null && value !== undefined
+function assert(condition: unknown, ...msg: unknown[]): asserts condition {
+    if (condition) return
+
+    const e = Error("Assertion Error" + (msg.length > 0 ? ": " + msg.join(" ") : ""))
+    // Hack the stack so the assert call itself disappears. Works in jest and in chrome.
+    if (e.stack) {
+        try {
+            const lines = e.stack.split("\n")
+            if (lines[1]?.includes("assert")) {
+                lines.splice(1, 1)
+                e.stack = lines.join("\n")
+            } else if (lines[0]?.includes("assert")) {
+                lines.splice(0, 1)
+                e.stack = lines.join("\n")
+            }
+        } catch {
+            // nothing
+        }
+    }
+    throw e
+}
+
+function isUndefined(value: unknown): value is undefined {
+    return value === undefined
 }

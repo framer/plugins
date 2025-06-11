@@ -9,7 +9,7 @@
         "lint": "eslint . --max-warnings 0",
         "preview": "vite preview",
         "pack": "npx framer-plugin-tools@latest pack",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc"
     },
     "dependencies": {
         "framer-plugin": "^3.0.0",

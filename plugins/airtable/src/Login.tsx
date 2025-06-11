@@ -23,17 +23,14 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             clearInterval(pollInterval.current)
         }
 
-        return new Promise(
-            resolve =>
-                (pollInterval.current = setInterval(
-                    () =>
-                        auth.fetchTokens(readKey).then(tokens => {
-                            clearInterval(pollInterval.current)
-                            resolve(tokens)
-                        }),
-                    2500
-                ))
-        )
+        return new Promise(resolve => {
+            pollInterval.current = setInterval(() => {
+                auth.fetchTokens(readKey).then(tokens => {
+                    clearInterval(pollInterval.current)
+                    resolve(tokens)
+                })
+            }, 2500)
+        })
     }
 
     const login = async (event: React.FormEvent<HTMLFormElement>) => {

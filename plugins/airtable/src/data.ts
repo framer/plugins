@@ -3,7 +3,9 @@ import type {
     FieldDataInput,
     ManagedCollection,
     ManagedCollectionField,
+    ManagedCollectionFieldInput,
     ManagedCollectionItemInput,
+    ProtectedMethod,
 } from "framer-plugin"
 import type { PossibleField } from "./fields"
 
@@ -112,7 +114,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
         case "date":
             if (typeof value === "string") {
                 const date = new Date(value)
-                if (isNaN(date.getTime())) return null
+                if (Number.isNaN(date.getTime())) return null
                 return {
                     value: date.toISOString(),
                     type: "date",
@@ -265,7 +267,7 @@ export interface DataSource {
     baseId: string
     tableId: string
     tableName: string
-    fields: PossibleField[]
+    fields: readonly PossibleField[]
 }
 
 export function mergeFieldsWithExistingFields(
@@ -293,35 +295,14 @@ export function mergeFieldsWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: readonly PossibleField[],
+    fields: readonly ManagedCollectionFieldInput[],
     slugFieldId: string
 ) {
-    const sanitizedFields = fields
-        .map(field => ({
-            ...field,
-            name: field.name.trim() || field.id,
-        }))
-        .filter(field => field.type !== "unsupported")
-        .filter(
-            field =>
-                (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
-                field.collectionId !== ""
-        )
-
-    const dataSourceItems = await getItems(
-        {
-            ...dataSource,
-            fields: sanitizedFields,
-        },
-        slugFieldId
-    )
+    const dataSourceItems = await getItems({ ...dataSource, fields }, slugFieldId)
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
 
-    for (let i = 0; i < dataSourceItems.length; i++) {
-        const item = dataSourceItems[i]
-        if (!item) continue
-
+    for (const item of dataSourceItems) {
         items.push({
             id: item.id,
             slug: item.slugValue,
@@ -332,7 +313,6 @@ export async function syncCollection(
         unsyncedItems.delete(item.id)
     }
 
-    await collection.setFields(sanitizedFields)
     await collection.removeItems(Array.from(unsyncedItems))
     await collection.addItems(items)
 
@@ -343,6 +323,12 @@ export async function syncCollection(
         collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugFieldId),
     ])
 }
+
+export const syncMethods = [
+    "ManagedCollection.removeItems",
+    "ManagedCollection.addItems",
+    "ManagedCollection.setPluginData",
+] as const satisfies ProtectedMethod[]
 
 export async function syncExistingCollection(
     collection: ManagedCollection,
@@ -356,6 +342,10 @@ export async function syncExistingCollection(
     }
 
     if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId) {
+        return { didSync: false }
+    }
+
+    if (!framer.isAllowedTo(...syncMethods)) {
         return { didSync: false }
     }
 

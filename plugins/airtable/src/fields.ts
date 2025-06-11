@@ -1,11 +1,11 @@
-import type { ManagedCollection, ManagedCollectionField } from "framer-plugin"
+import type { ManagedCollection, ManagedCollectionFieldInput } from "framer-plugin"
 
 import { framer } from "framer-plugin"
-import { type AirtableFieldSchema } from "./api"
+import type { AirtableFieldSchema } from "./api"
 import { PLUGIN_KEYS } from "./data"
 import { ALLOWED_FILE_TYPES } from "./utils"
 
-type AllowedType = ManagedCollectionField["type"] | "unsupported"
+type AllowedType = ManagedCollectionFieldInput["type"] | "unsupported"
 
 interface InferredField {
     /**
@@ -38,7 +38,7 @@ interface InferredUnsupportedField {
 }
 
 export type PossibleField = (
-    | ManagedCollectionField
+    | ManagedCollectionFieldInput
     | {
           id: string
           name: string
@@ -149,7 +149,9 @@ function inferAttachmentsField(fieldSchema: AirtableFieldSchema & { type: "multi
 }
 
 function inferDateField(
-    fieldSchema: AirtableFieldSchema & { type: "date" | "dateTime" | "createdTime" | "lastModifiedTime" }
+    fieldSchema: AirtableFieldSchema & {
+        type: "date" | "dateTime" | "createdTime" | "lastModifiedTime"
+    }
 ): PossibleField {
     return {
         id: fieldSchema.id,
@@ -185,7 +187,10 @@ async function inferRecordLinksField(
         )) {
             const existingTableId = await existingCollection.getPluginData(PLUGIN_KEYS.TABLE_ID)
             if (existingTableId === fieldSchema.options.linkedTableId) {
-                foundCollections.push({ id: existingCollection.id, name: existingCollection.name })
+                foundCollections.push({
+                    id: existingCollection.id,
+                    name: existingCollection.name,
+                })
             }
         }
     }
@@ -314,12 +319,12 @@ async function inferFormulaField(
     }
 
     // Create a temporary schema with the result type for recursive inference
-    const resultSchema: AirtableFieldSchema = {
+    const resultSchema = {
         id: fieldSchema.id,
         name: fieldSchema.name,
-        type: result.type as any,
-        options: {} as any,
-    }
+        type: result.type,
+        options: {},
+    } as AirtableFieldSchema
 
     // Handle formula result being another formula (prevent recursion)
     if (result.type === "formula") {

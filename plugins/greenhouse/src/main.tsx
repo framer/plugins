@@ -14,7 +14,12 @@ const previousDataSourceId = await activeCollection.getPluginData(PLUGIN_KEYS.DA
 const previousSlugFieldId = await activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID)
 const previousCollectionBoardToken = await activeCollection.getPluginData(PLUGIN_KEYS.SPACE_ID)
 
-const { didSync } = await syncExistingCollection(activeCollection, previousDataSourceId, previousSlugFieldId)
+const { didSync } = await syncExistingCollection(
+    activeCollection,
+    previousDataSourceId,
+    previousSlugFieldId,
+    previousBoardToken
+)
 
 if (didSync) {
     await framer.closePlugin("Synchronization successful", {

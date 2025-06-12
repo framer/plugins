@@ -15,8 +15,8 @@ export const PLUGIN_KEYS = {
     SPACE_ID: `${pkg.name}:spaceId`,
 } as const
 
-function getApiEndpoint(spaceId: string, dataSourceId: string) {
-    return `https://boards-api.greenhouse.io/v1/boards/${spaceId}/${dataSourceId}`
+function getApiEndpoint(boardToken: string, dataSourceId: string) {
+    return `https://boards-api.greenhouse.io/v1/boards/${boardToken}/${dataSourceId}`
 }
 
 function decodeHtml(html: string) {
@@ -34,6 +34,7 @@ export type ExtendedManagedCollectionFieldInput = ManagedCollectionFieldInput & 
 }
 
 export interface DataSource {
+    boardToken: string
     id: string
     fields: readonly ExtendedManagedCollectionFieldInput[]
     items: FieldDataInput[]
@@ -41,12 +42,13 @@ export interface DataSource {
     slugField: ManagedCollectionFieldInput | null
 }
 
-export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
-    const collection = await framer.getActiveManagedCollection()
-    const spaceId = await collection.getPluginData(PLUGIN_KEYS.SPACE_ID)
-
-    if (!spaceId) {
-        throw new Error("No board ID found. Please select a board.")
+export async function getDataSource(
+    boardToken: string,
+    dataSourceId: string,
+    abortSignal?: AbortSignal
+): Promise<DataSource> {
+    if (!boardToken) {
+        throw new Error("No Board Token found. Please select a board.")
     }
 
     const dataSource = dataSourceOptions.find(option => option.id === dataSourceId)
@@ -54,7 +56,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
         throw new Error(`No data source found for id "${dataSourceId}".`)
     }
 
-    const response = await fetch(getApiEndpoint(spaceId, dataSource.apiEndpoint), { signal: abortSignal })
+    const response = await fetch(getApiEndpoint(boardToken, dataSource.apiEndpoint), { signal: abortSignal })
     const data = await response.json()
 
     const fields: ExtendedManagedCollectionFieldInput[] = []
@@ -71,7 +73,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
                 matchingCollections = await filterAsync(collections, async collection => {
                     const collectionSpaceId = await collection.getPluginData(PLUGIN_KEYS.SPACE_ID)
                     const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-                    return dataSourceId === fieldWithCollection.getCollection().id && collectionSpaceId === spaceId
+                    return dataSourceId === fieldWithCollection.getCollection().id && collectionSpaceId === boardToken
                 })
 
                 if (matchingCollections.length === 0) {
@@ -214,6 +216,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
     }
 
     return {
+        boardToken,
         id: dataSourceId,
         fields,
         items,
@@ -300,9 +303,10 @@ export async function syncCollection(
 export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDataSourceId: string | null,
-    previousSlugFieldId: string | null
+    previousSlugFieldId: string | null,
+    previousBoardToken: string | null
 ): Promise<{ didSync: boolean }> {
-    if (!previousDataSourceId) {
+    if (!previousDataSourceId || !previousBoardToken) {
         return { didSync: false }
     }
 
@@ -311,7 +315,7 @@ export async function syncExistingCollection(
     }
 
     try {
-        const dataSource = await getDataSource(previousDataSourceId)
+        const dataSource = await getDataSource(previousBoardToken, previousDataSourceId)
         const existingFields = await collection.getFields()
 
         const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)

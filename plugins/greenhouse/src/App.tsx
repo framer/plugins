@@ -16,17 +16,6 @@ interface AppProps {
 export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoading, setIsLoading] = useState(Boolean(previousDataSourceId || previousBoardToken))
-    const [boardToken, setBoardToken] = useState<string | null>(previousBoardToken)
-
-    useEffect(() => {
-        if (boardToken) {
-            // this will be the default board token for the plugin
-            framer.setPluginData(PLUGIN_KEYS.SPACE_ID, boardToken)
-
-            // this will be the board token for the collection
-            collection.setPluginData(PLUGIN_KEYS.SPACE_ID, boardToken)
-        }
-    }, [boardToken, collection])
 
     useLayoutEffect(() => {
         const hasDataSourceSelected = Boolean(dataSource)
@@ -43,23 +32,12 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
         const abortController = new AbortController()
 
         async function init() {
-            setIsLoading(true)
-
             try {
-                if (!previousBoardToken) return
-                const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${previousBoardToken}`, {
-                    signal: abortController.signal,
-                })
-                if (response.status === 200) {
-                    setBoardToken(previousBoardToken)
-                } else {
-                    throw new Error(
-                        `Error loading previously configured board “${previousBoardToken}”. Check the logs for more details.`
-                    )
-                }
+                if (!previousBoardToken || !previousDataSourceId) return
 
-                if (!previousDataSourceId) return
-                const dataSource = await getDataSource(previousDataSourceId, abortController.signal)
+                setIsLoading(true)
+
+                const dataSource = await getDataSource(previousBoardToken, previousDataSourceId, abortController.signal)
                 if (dataSource) {
                     setDataSource(dataSource)
                 } else {
@@ -98,8 +76,10 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
     if (!dataSource) {
         return (
             <SelectDataSource
-                onSelectBoardToken={setBoardToken}
-                onSelectDataSource={setDataSource}
+                onSelectDataSource={dataSource => {
+                    setDataSource(dataSource)
+                    framer.setPluginData(PLUGIN_KEYS.SPACE_ID, dataSource.boardToken)
+                }}
                 previousDataSourceId={previousDataSourceId}
                 previousBoardToken={previousBoardToken}
             />

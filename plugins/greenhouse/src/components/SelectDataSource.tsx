@@ -13,24 +13,11 @@ export function SelectDataSource({
     onSelectDataSource,
     previousDataSourceId,
     previousBoardToken,
-    onSelectBoardToken,
 }: SelectDataSourceProps) {
     const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(
         previousDataSourceId ?? dataSourceOptions[0].id
     )
     const [isLoading, setIsLoading] = useState(false)
-
-    // const [defaultBoardToken, setDefaultBoardToken] = useState<string | null>(previousBoardToken)
-
-    // useEffect(() => {
-    //     async function getBoardToken() {
-    //         const defaultBoardToken = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
-    //         if (defaultBoardToken) {
-    //             setDefaultBoardToken(defaultBoardToken)
-    //         }
-    //     }
-    //     getBoardToken()
-    // }, [])
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -43,15 +30,7 @@ export function SelectDataSource({
         try {
             setIsLoading(true)
 
-            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}`)
-            if (response.status === 200) {
-                onSelectBoardToken?.(boardToken)
-                console.log("success")
-            } else {
-                throw new Error(`Board ${boardToken} not found`)
-            }
-
-            const dataSource = await getDataSource(selectedDataSourceId)
+            const dataSource = await getDataSource(boardToken, selectedDataSourceId)
             onSelectDataSource(dataSource)
         } catch (error) {
             console.error(error)

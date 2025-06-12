@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@ataverascrespo/react18-ts-textfit": "^1.0.0",
-    "@triozer/framer-toolbox": "^0.7.0",
     "aveta": "^1.4.1",
     "cheerio": "^1.1.0",
     "framer-plugin": "^3.3.2",

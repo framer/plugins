@@ -1,7 +1,7 @@
 import "./App.css"
 
 import { framer, type ManagedCollection } from "framer-plugin"
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { type DataSource, getDataSource, PLUGIN_KEYS } from "./data"
 import { FieldMapping } from "./components/FieldMapping"
 import { SelectDataSource } from "./components/SelectDataSource"
@@ -13,7 +13,7 @@ interface AppProps {
     previousBoardToken: string | null
 }
 
-export function AppCms({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
+export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoading, setIsLoading] = useState(Boolean(previousDataSourceId || previousBoardToken))
     const [boardToken, setBoardToken] = useState<string | null>(previousBoardToken)
@@ -28,20 +28,15 @@ export function AppCms({ collection, previousDataSourceId, previousSlugFieldId, 
         }
     }, [boardToken, collection])
 
-    useEffect(() => {
-        if (dataSource) {
-            framer.showUI({
-                width: 320,
-                height: 427,
-                minHeight: 427,
-                resizable: true,
-            })
-        } else {
-            framer.showUI({
-                width: 320,
-                height: 325,
-            })
-        }
+    useLayoutEffect(() => {
+        const hasDataSourceSelected = Boolean(dataSource)
+
+        framer.showUI({
+            width: hasDataSourceSelected ? 320 : 320,
+            height: hasDataSourceSelected ? 427 : 325,
+            minHeight: hasDataSourceSelected ? 427 : undefined,
+            resizable: hasDataSourceSelected,
+        })
     }, [dataSource])
 
     useEffect(() => {

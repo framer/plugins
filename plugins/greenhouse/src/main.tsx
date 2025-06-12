@@ -3,7 +3,7 @@ import "framer-plugin/framer.css"
 import { framer } from "framer-plugin"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-import { AppCms } from "./App.tsx"
+import { App } from "./App.tsx"
 import { PLUGIN_KEYS, syncExistingCollection } from "./data"
 
 const previousBoardToken = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
@@ -26,7 +26,7 @@ if (didSync) {
 
     createRoot(root).render(
         <StrictMode>
-            <AppCms
+            <App
                 collection={activeCollection}
                 previousDataSourceId={previousDataSourceId}
                 previousSlugFieldId={previousSlugFieldId}

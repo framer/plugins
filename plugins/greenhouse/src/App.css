@@ -251,10 +251,8 @@ a {
 
 .missing-collection {
     overflow: hidden;
-    text-overflow: ellipsis;
     flex-shrink: 0;
     height: 30px;
-    width: 134px;
     color: var(--framer-color-text);
     font-size: 12px;
     font-family: var(--framer-font-family);
@@ -269,4 +267,12 @@ a {
     cursor: not-allowed;
     display: flex;
     align-items: center;
+    width: 100%;
+}
+
+.missing-collection span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
 }

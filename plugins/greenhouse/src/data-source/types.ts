@@ -12,7 +12,7 @@ export type Field = {
     name: string
     type: ManagedCollectionFieldInput["type"]
     map?: (value: any) => any
-    slugifiable?: boolean
+    canBeUsedAsSlug?: boolean
 }
 export type CollectionReferenceField = Field & {
     type: "collectionReference" | "multiCollectionReference"

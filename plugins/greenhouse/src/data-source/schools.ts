@@ -1,7 +1,7 @@
 import type { Field, GreenhouseDataSource } from "./types"
 
-const idField: Field = { id: "id", name: "ID", type: "string", slugifiable: true }
-const textField: Field = { id: "text", name: "Text", type: "string", slugifiable: true }
+const idField: Field = { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true }
+const textField: Field = { id: "text", name: "Text", type: "string", canBeUsedAsSlug: true }
 
 const fields: Field[] = [idField, textField]
 

@@ -51,7 +51,10 @@ function FieldMappingRow({
             {(field.type === "multiCollectionReference" || field.type === "collectionReference") &&
             Array.isArray(field.collectionsOptions) ? (
                 field.collectionsOptions.length === 0 ? (
-                    <div className="missing-collection">Missing Collection</div>
+                    <div className="missing-collection">
+                        {" "}
+                        <span>Missing Collection</span>
+                    </div>
                 ) : (
                     <select
                         style={{
@@ -103,7 +106,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const isLoadingFields = status === "loading-fields"
 
     const [possibleSlugFields] = useState(() =>
-        dataSource.fields.filter(field => field.type === "string" && field.slugifiable)
+        dataSource.fields.filter(field => field.type === "string" && field.canBeUsedAsSlug)
     )
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(

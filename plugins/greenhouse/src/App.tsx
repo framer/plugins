@@ -5,7 +5,6 @@ import { useEffect, useState } from "react"
 import { type DataSource, getDataSource, PLUGIN_KEYS } from "./data"
 import { FieldMapping } from "./components/FieldMapping"
 import { SelectDataSource } from "./components/SelectDataSource"
-import Page from "./page"
 
 interface AppProps {
     collection: ManagedCollection

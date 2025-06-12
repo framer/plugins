@@ -3,9 +3,9 @@ import DepartmentsDataSource from "./departments"
 import OfficesDataSource from "./offices"
 import type { CollectionReferenceField, Field, GreenhouseDataSource } from "./types"
 
-const idField: Field = { id: "id", name: "ID", type: "string", slugifiable: true }
+const idField: Field = { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true }
 const internalIdField: Field = { id: "internal_job_id", name: "Internal Job ID", type: "string" }
-const titleField: Field = { id: "title", name: "Title", type: "string", slugifiable: true }
+const titleField: Field = { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true }
 const updatedAtField: Field = { id: "updated_at", name: "Updated At", type: "date" }
 const requisitionIdField: Field = {
     id: "requisition_id",

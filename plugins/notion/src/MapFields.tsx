@@ -72,31 +72,6 @@ function getInitialSlugFieldId(context: PluginContext, fieldOptions: NotionPrope
     return fieldOptions[0]?.id ?? null
 }
 
-function getLastSynchronizedAtTimestamp(
-    pluginContext: PluginContext,
-    database: GetDatabaseResponse,
-    fields: ManagedCollectionFieldInput[],
-    slugFieldId: string,
-    disabledFieldIds: Set<string>
-): string | null {
-    if (pluginContext.type !== "update") return null
-
-    // Always resync if the slug field changes.
-    if (pluginContext.slugFieldId !== slugFieldId) return null
-
-    // Always resync if field config changes
-    if (hasDatabaseFieldsChanged(pluginContext.collectionFields, database, Array.from(disabledFieldIds))) {
-        return null
-    }
-
-    // If the field configuration such as types changed always resync.
-    if (hasFieldConfigurationChanged(pluginContext.collectionFields, fields)) {
-        return null
-    }
-
-    return pluginContext.lastSyncedTime
-}
-
 const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
     boolean: "Boolean",
     date: "Date",
@@ -205,13 +180,6 @@ export function MapDatabaseFields({
             fields: cmsFields,
             ignoredFieldIds: Array.from(disabledFieldIds),
             slugFieldId,
-            lastSyncedTime: getLastSynchronizedAtTimestamp(
-                pluginContext,
-                database,
-                cmsFields,
-                slugFieldId,
-                disabledFieldIds
-            ),
         })
     }
 
@@ -289,7 +257,10 @@ export function MapDatabaseFields({
                                         }}
                                     ></input>
                                     <select
-                                        className={classNames("w-full", (!isSupported || !isAllowedToManage) && "opacity-50")}
+                                        className={classNames(
+                                            "w-full",
+                                            (!isSupported || !isAllowedToManage) && "opacity-50"
+                                        )}
                                         onChange={event =>
                                             handleFieldTypeChange(
                                                 property.id,

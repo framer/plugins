@@ -73,7 +73,6 @@ async function runPlugin() {
                 },
                 fields: pluginContext.collectionFields,
                 ignoredFieldIds: pluginContext.ignoredFieldIds,
-                lastSyncedTime: pluginContext.lastSyncedTime,
                 slugFieldId: pluginContext.slugFieldId,
             })
 

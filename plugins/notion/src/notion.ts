@@ -21,7 +21,7 @@ import {
     type ManagedCollectionField,
     type ManagedCollectionFieldInput,
     type ManagedCollectionItemInput,
-    framer
+    framer,
 } from "framer-plugin"
 import pLimit from "p-limit"
 import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
@@ -39,7 +39,6 @@ export const getOauthURL = (writeKey: string) =>
 const notionBearerStorageKey = "notionBearerToken"
 
 const pluginDatabaseIdKey = "notionPluginDatabaseId"
-const pluginLastSyncedKey = "notionPluginLastSynced"
 const ignoredFieldIdsKey = "notionPluginIgnoredFieldIds"
 const pluginSlugIdKey = "notionPluginSlugId"
 const databaseNameKey = "notionDatabaseName"
@@ -396,6 +395,7 @@ export function richTextToPlainText(richText: RichTextItemResponse[]) {
 
 export function getFieldDataEntryInput(
     property: PageObjectResponse["properties"][string],
+    fieldType: ManagedCollectionField["type"],
     { supportsHtml }: { supportsHtml: boolean }
 ): FieldDataEntryInput | undefined {
     switch (property.type) {
@@ -464,7 +464,8 @@ export function getFieldDataEntryInput(
             }
         }
         case "unique_id": {
-            if (Number.isNaN(property.unique_id.number) || typeof property.unique_id.number !== "number") return undefined
+            if (Number.isNaN(property.unique_id.number) || typeof property.unique_id.number !== "number")
+                return undefined
             return {
                 type: "number",
                 value: property.unique_id.number,
@@ -484,10 +485,11 @@ export function getFieldDataEntryInput(
         }
         case "files": {
             const firstFile = property.files[0]
-            if (!firstFile) return {
-                type: "file",
-                value: null,
-            }
+            if (!firstFile)
+                return {
+                    type: "file",
+                    value: null,
+                }
 
             if (firstFile.type === "external" && firstFile.external.url) {
                 return {
@@ -496,9 +498,10 @@ export function getFieldDataEntryInput(
                 }
             }
 
-            if (firstFile.type === "file") {
+            const isFileOrImage = fieldType === "file" || fieldType === "image"
+            if (firstFile.type === "file" && isFileOrImage) {
                 return {
-                    type: "file",
+                    type: fieldType,
                     value: firstFile.file.url,
                 }
             }
@@ -517,7 +520,6 @@ type OnProgressHandler = (progress: SynchronizeProgress) => void
 export interface SynchronizeMutationOptions {
     fields: ManagedCollectionFieldInput[]
     ignoredFieldIds: string[]
-    lastSyncedTime: string | null
     slugFieldId: string
     onProgress: OnProgressHandler
 }
@@ -573,7 +575,7 @@ async function processItem(
         assert(property)
 
         if (property.id === slugFieldId) {
-            const resolvedSlug = getFieldDataEntryInput(property, { supportsHtml: false })
+            const resolvedSlug = getFieldDataEntryInput(property, "string", { supportsHtml: false })
             assert(typeof resolvedSlug?.value === "string", "Slug value is not a string")
             slugValue = slugify(resolvedSlug.value as string)
         }
@@ -585,7 +587,9 @@ async function processItem(
             continue
         }
 
-        const fieldDataEntry = getFieldDataEntryInput(property, { supportsHtml: field.type === "formattedText" })
+        const fieldDataEntry = getFieldDataEntryInput(property, field.type, {
+            supportsHtml: field.type === "formattedText",
+        })
         if (!fieldDataEntry) {
             status.warnings.push({
                 url: item.url,
@@ -627,7 +631,6 @@ async function processAllItems(
     data: PageObjectResponse[],
     fieldsByKey: FieldsById,
     slugFieldId: string,
-    lastSyncedDate: string | null,
     onProgress: OnProgressHandler
 ) {
     const seenItemIds = new Set<string>()
@@ -650,14 +653,6 @@ async function processAllItems(
     const promises = data.map(item =>
         limit(async () => {
             seenItemIds.add(item.id)
-
-            if (isUnchangedSinceLastSync(item.last_edited_time, lastSyncedDate)) {
-                status.info.push({
-                    message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSyncedDate!)}`,
-                    url: item.url,
-                })
-                return null
-            }
 
             const result = await processItem(item, fieldsByKey, slugFieldId, status)
 
@@ -700,7 +695,7 @@ export function hasFieldConfigurationChanged(a: ManagedCollectionFieldInput[], b
 
 export async function synchronizeDatabase(
     database: GetDatabaseResponse,
-    { fields, ignoredFieldIds, lastSyncedTime, slugFieldId, onProgress }: SynchronizeMutationOptions
+    { fields, ignoredFieldIds, slugFieldId, onProgress }: SynchronizeMutationOptions
 ): Promise<SynchronizeResult> {
     assert(isFullDatabase(database))
     assert(notion)
@@ -717,13 +712,8 @@ export async function synchronizeDatabase(
     })
     assert(data.every(isFullPage), "Response is not a full page")
 
-    const { collectionItems, status, seenItemIds } = await processAllItems(
-        data,
-        fieldsById,
-        slugFieldId,
-        lastSyncedTime,
-        onProgress
-    )
+    const { collectionItems, status, seenItemIds } = await processAllItems(data, fieldsById, slugFieldId, onProgress)
+    console.log("collectionItems", collectionItems)
 
     const itemIdsToDelete = new Set(await collection.getItemIds())
     for (const itemId of seenItemIds) {
@@ -740,7 +730,6 @@ export async function synchronizeDatabase(
     await Promise.all([
         collection.setPluginData(ignoredFieldIdsKey, JSON.stringify(ignoredFieldIds)),
         collection.setPluginData(pluginDatabaseIdKey, database.id),
-        collection.setPluginData(pluginLastSyncedKey, new Date().toISOString()),
         collection.setPluginData(pluginSlugIdKey, slugFieldId),
         collection.setPluginData(databaseNameKey, richTextToPlainText(database.title)),
     ])
@@ -762,7 +751,7 @@ export function useSynchronizeDatabaseMutation(
         onError,
         mutationFn: async (options: SynchronizeMutationOptions): Promise<SynchronizeResult> => {
             assert(database)
-            
+
             const collection = await framer.getActiveManagedCollection()
             await collection.setFields(options.fields)
             return synchronizeDatabase(database, options)
@@ -800,7 +789,6 @@ export interface PluginContextUpdate {
     database: GetDatabaseResponse
     collection: ManagedCollection
     collectionFields: ManagedCollectionField[]
-    lastSyncedTime: string
     hasChangedFields: boolean
     ignoredFieldIds: FieldId[]
     slugFieldId: string | null
@@ -865,15 +853,12 @@ export async function getPluginContext(): Promise<PluginContext> {
         assert(notion, "Notion client is not initialized")
         const database = await notion.databases.retrieve({ database_id: databaseId })
 
-        const [rawIgnoredFieldIds, lastSyncedTime, slugFieldId] = await Promise.all([
+        const [rawIgnoredFieldIds, slugFieldId] = await Promise.all([
             collection.getPluginData(ignoredFieldIdsKey),
-            collection.getPluginData(pluginLastSyncedKey),
             collection.getPluginData(pluginSlugIdKey),
         ])
 
         const ignoredFieldIds = getIgnoredFieldIds(rawIgnoredFieldIds)
-
-        assert(lastSyncedTime, "Expected last synced time to be set")
 
         return {
             type: "update",
@@ -881,7 +866,6 @@ export async function getPluginContext(): Promise<PluginContext> {
             collection,
             collectionFields,
             ignoredFieldIds,
-            lastSyncedTime,
             slugFieldId,
             hasChangedFields: hasDatabaseFieldsChanged(collectionFields, database, ignoredFieldIds),
             isAuthenticated: hasAuthToken,
@@ -939,18 +923,6 @@ export function hasDatabaseFieldsChanged(
     }
 
     return false
-}
-
-export function isUnchangedSinceLastSync(lastEditedTime: string, lastSyncedTime: string | null): boolean {
-    if (!lastSyncedTime) return false
-
-    const lastEdited = new Date(lastEditedTime)
-    const lastSynced = new Date(lastSyncedTime)
-    // Last edited time is rounded to the nearest minute.
-    // So we should round lastSyncedTime to the nearest minute as well.
-    lastSynced.setSeconds(0, 0)
-
-    return lastSynced > lastEdited
 }
 
 interface PaginatedArgs {

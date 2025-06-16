@@ -16,6 +16,6 @@ jobs:
               with:
                   node-version-file: .tool-versions
 
-            - run: npm ci
+            - run: yarn
 
-            - run: npm run typecheck
+            - run: yarn typecheck

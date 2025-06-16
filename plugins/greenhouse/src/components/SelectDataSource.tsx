@@ -1,6 +1,7 @@
 import { framer } from "framer-plugin"
-import { useEffect, useRef, useState } from "react"
-import { type DataSource, getDataSource, dataSourceOptions, PLUGIN_KEYS } from "../data"
+import { useState } from "react"
+import { type DataSource, getDataSource, dataSourceOptions } from "../data"
+import Asset from "../../assets/Asset.png"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
@@ -44,7 +45,7 @@ export function SelectDataSource({
 
     return (
         <main className="framer-hide-scrollbar setup">
-            <img src="/Asset.png" alt="Greenhouse Hero" onDragStart={e => e.preventDefault()} />
+            <img src={Asset} alt="Greenhouse Hero" onDragStart={e => e.preventDefault()} />
 
             <form onSubmit={handleSubmit}>
                 <label>

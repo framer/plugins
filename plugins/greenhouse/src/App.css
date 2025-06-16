@@ -115,19 +115,6 @@ form {
     width: 134px;
 }
 
-.canvas button {
-    height: 110px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.canvas button p {
-    color: var(--framer-color-text-tertiary);
-}
-
 .mapping {
     padding-bottom: 0;
 }
@@ -142,7 +129,7 @@ form {
     grid-template-columns: 1fr 8px 1fr;
     gap: 10px;
     margin-bottom: auto;
-    padding-bottom: 10px;
+    padding-bottom: 35px;
     align-items: center;
     color: var(--framer-color-text-tertiary);
     padding-top: 15px;
@@ -224,8 +211,7 @@ input[type="checkbox"]:checked {
 }
 
 .setup,
-.mapping,
-.canvas {
+.mapping {
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -234,45 +220,10 @@ input[type="checkbox"]:checked {
     width: 100%;
 }
 
-.setup,
-.canvas {
+.setup {
     padding-bottom: 15px;
 }
 
 a {
     color: currentColor;
-}
-
-.previous-page {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.missing-collection {
-    overflow: hidden;
-    flex-shrink: 0;
-    height: 30px;
-    color: var(--framer-color-text);
-    font-size: 12px;
-    font-family: var(--framer-font-family);
-    caret-color: var(--framer-color-text);
-    background: var(--framer-color-bg-tertiary);
-    border-radius: 8px;
-    font-weight: 500;
-    padding: 0px 10px;
-    outline: none;
-    border: none;
-    opacity: 0.5;
-    cursor: not-allowed;
-    display: flex;
-    align-items: center;
-    width: 100%;
-}
-
-.missing-collection span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    width: 100%;
 }

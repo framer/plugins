@@ -203,30 +203,6 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         })
     }
 
-    const triggerRef = useRef<HTMLDivElement>(null)
-    const [isScrolled, setIsScrolled] = useState(false)
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                setIsScrolled(entry.isIntersecting)
-            },
-            {
-                root: null,
-                rootMargin: "0px",
-                threshold: 0,
-            }
-        )
-
-        if (triggerRef.current) {
-            observer.observe(triggerRef.current)
-        }
-
-        return () => {
-            observer.disconnect()
-        }
-    }, [fields])
-
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
@@ -307,10 +283,9 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             onCollectionChange={changeCollectionId}
                         />
                     ))}
-                    <div ref={triggerRef} style={{ position: "absolute", bottom: "-50px", left: 0, right: 0 }}></div>
                 </div>
 
-                <footer className={isScrolled ? "scrolled" : ""}>
+                <footer>
                     <hr className="sticky-top" />
                     <button disabled={isSyncing} tabIndex={0}>
                         {isSyncing ? (

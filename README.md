@@ -19,14 +19,14 @@ Check out [our documentation](https://www.framer.com/developers/plugins-introduc
 
 ### 🎛️ Get Started
 
--   To set up this repository for local development, clone the repo and run `npm install` in the root.
--   Run a specific plugin by entering the directory with `cd plugins/[plugin-name]` and running `npm run dev`.
--   In Framer, enable "Developer Tools" via the Plugin sub-menu in the Main Menu
+- To set up this repository for local development, clone the repo and run `npm install` in the root.
+- Run a specific plugin by entering the directory with `cd plugins/[plugin-name]` and running `npm run dev`.
+- In Framer, enable "Developer Tools" via the Plugin sub-menu in the Main Menu
 
 ### 🛠️ Contribute
 
--   Have a polished Plugin you’d like to share with others? Contributions are welcome.
+- Have a polished Plugin you’d like to share with others? Contributions are welcome.
 
 ### 🔮 Feedback
 
--   For feature requests and bug reports, please open an Issue in this Repository.
+- For feature requests and bug reports, please open an Issue in this Repository.

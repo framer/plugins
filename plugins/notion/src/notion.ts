@@ -396,8 +396,7 @@ export function richTextToPlainText(richText: RichTextItemResponse[]) {
 
 export function getFieldDataEntryInput(
     property: PageObjectResponse["properties"][string],
-    fieldType: ManagedCollectionField["type"],
-    { supportsHtml }: { supportsHtml: boolean }
+    fieldType: ManagedCollectionField["type"]
 ): FieldDataEntryInput | undefined {
     switch (property.type) {
         case "checkbox": {
@@ -419,7 +418,7 @@ export function getFieldDataEntryInput(
             }
         }
         case "rich_text": {
-            if (supportsHtml) {
+            if (fieldType === "formattedText") {
                 return {
                     type: "formattedText",
                     value: richTextToHTML(property.rich_text),
@@ -440,7 +439,7 @@ export function getFieldDataEntryInput(
             }
         }
         case "title":
-            if (supportsHtml) {
+            if (fieldType === "formattedText") {
                 return {
                     type: "formattedText",
                     value: richTextToHTML(property.title),
@@ -465,8 +464,10 @@ export function getFieldDataEntryInput(
             }
         }
         case "unique_id": {
-            if (Number.isNaN(property.unique_id.number) || typeof property.unique_id.number !== "number")
+            if (Number.isNaN(property.unique_id.number) || typeof property.unique_id.number !== "number") {
                 return undefined
+            }
+
             return {
                 type: "number",
                 value: property.unique_id.number,
@@ -486,11 +487,7 @@ export function getFieldDataEntryInput(
         }
         case "files": {
             const firstFile = property.files[0]
-            if (!firstFile)
-                return {
-                    type: "file",
-                    value: null,
-                }
+            if (!firstFile) return { type: "file", value: null }
 
             if (firstFile.type === "external" && firstFile.external.url) {
                 return {
@@ -577,7 +574,7 @@ async function processItem(
         assert(property)
 
         if (property.id === slugFieldId) {
-            const resolvedSlug = getFieldDataEntryInput(property, "string", { supportsHtml: false })
+            const resolvedSlug = getFieldDataEntryInput(property, "string")
             assert(typeof resolvedSlug?.value === "string", "Slug value is not a string")
             slugValue = slugify(resolvedSlug.value as string)
         }
@@ -589,9 +586,7 @@ async function processItem(
             continue
         }
 
-        const fieldDataEntry = getFieldDataEntryInput(property, field.type, {
-            supportsHtml: field.type === "formattedText",
-        })
+        const fieldDataEntry = getFieldDataEntryInput(property, field.type)
         if (!fieldDataEntry) {
             status.warnings.push({
                 url: item.url,

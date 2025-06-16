@@ -2,6 +2,22 @@ import { type ManagedCollectionFieldInput, framer, type ManagedCollection } from
 import { useEffect, useRef, useState } from "react"
 import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection } from "../data"
 import { type ExtendedManagedCollectionFieldInput } from "../data"
+import { isCollectionReference, isMissingReferenceField } from "../utils"
+
+function ChevronIcon() {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
+            <path
+                d="M 3 11 L 6 8 L 3 5"
+                fill="transparent"
+                strokeWidth="1.5"
+                stroke="#999"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
+        </svg>
+    )
+}
 
 interface FieldMappingRowProps {
     field: ExtendedManagedCollectionFieldInput
@@ -11,9 +27,6 @@ interface FieldMappingRowProps {
     onNameChange: (fieldId: string, name: string) => void
     onCollectionChange: (fieldId: string, collectionId: string) => void
 }
-
-const isMissingReferenceField = (field: ManagedCollectionFieldInput) =>
-    (field.type === "multiCollectionReference" || field.type === "collectionReference") && !field.collectionId
 
 function FieldMappingRow({
     field,
@@ -35,44 +48,36 @@ function FieldMappingRow({
                 tabIndex={0}
                 style={isMissingReference ? { cursor: "not-allowed" } : {}}
             >
-                <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
+                <input
+                    type="checkbox"
+                    checked={!disabled}
+                    tabIndex={-1}
+                    readOnly
+                    style={isMissingReference ? { cursor: "not-allowed" } : {}}
+                />
                 <span>{originalFieldName ?? field.id}</span>
             </button>
-            <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" fill="none">
-                <path
-                    fill="transparent"
-                    stroke="#999"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="m2.5 7 3-3-3-3"
-                />
-            </svg>
-            {(field.type === "multiCollectionReference" || field.type === "collectionReference") &&
-            Array.isArray(field.collectionsOptions) ? (
-                field.collectionsOptions.length === 0 ? (
-                    <div className="missing-collection">
-                        {" "}
-                        <span>Missing Collection</span>
-                    </div>
-                ) : (
-                    <select
-                        style={{
-                            width: "100%",
-                            opacity: disabled ? 0.5 : 1,
-                            ...(isMissingReference ? { cursor: "not-allowed" } : {}),
-                        }}
-                        disabled={disabled}
-                        value={field.collectionId}
-                        onChange={e => onCollectionChange(field.id, e.target.value)}
-                    >
-                        {field.collectionsOptions.map(collection => (
-                            <option key={collection.id} value={collection.id}>
-                                {collection.name}
-                            </option>
-                        ))}
-                    </select>
-                )
+            <ChevronIcon />
+            {isCollectionReference(field) ? (
+                <select
+                    style={{
+                        width: "100%",
+                        opacity: disabled ? 0.5 : 1,
+                        ...(isMissingReference ? { cursor: "not-allowed" } : {}),
+                    }}
+                    disabled={disabled}
+                    value={field.collectionId}
+                    onChange={e => onCollectionChange(field.id, e.target.value)}
+                >
+                    {field.supportedCollections?.length === 0 && (
+                        <option value="unsupported">Missing Collection</option>
+                    )}
+                    {field.supportedCollections?.map(collection => (
+                        <option key={collection.id} value={collection.id}>
+                            {collection.name}
+                        </option>
+                    ))}
+                </select>
             ) : (
                 <input
                     type="text"

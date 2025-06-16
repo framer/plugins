@@ -16,7 +16,7 @@ export type Field = {
 }
 export type CollectionReferenceField = Field & {
     type: "collectionReference" | "multiCollectionReference"
-    getCollection: () => GreenhouseDataSource // this to avoid circular dependencies
+    getCollection: () => GreenhouseDataSource // this is a function to avoid circular dependencies
     map?: (value: any) => string[]
 }
 

@@ -1,3 +1,5 @@
+import { ManagedCollectionFieldInput } from "framer-plugin"
+
 function slugify(text: string) {
     return text
         .trim()
@@ -40,4 +42,12 @@ export async function filterAsync<T>(arr: T[], asyncCallback: (item: T) => Promi
     const promises = arr.map(asyncCallback)
     const results = await Promise.all(promises)
     return arr.filter((_, index) => results[index])
+}
+
+export function isCollectionReference(field: ManagedCollectionFieldInput) {
+    return field.type === "collectionReference" || field.type === "multiCollectionReference"
+}
+
+export function isMissingReferenceField(field: ManagedCollectionFieldInput) {
+    return isCollectionReference(field) && !field.collectionId
 }

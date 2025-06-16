@@ -4,9 +4,10 @@ import {
     type ManagedCollection,
     ManagedCollectionFieldInput,
     type ManagedCollectionItemInput,
+    ProtectedMethod,
 } from "framer-plugin"
 import pkg from "../package.json"
-import { createUniqueSlug, filterAsync } from "./utils"
+import { createUniqueSlug } from "./utils"
 import { CollectionReferenceField, dataSources } from "./data-source/types"
 
 export const PLUGIN_KEYS = {
@@ -29,7 +30,7 @@ export const dataSourceOptions = dataSources
 
 // this is used in FieldMapping.tsx to display the collections options in the dropdown
 export type ExtendedManagedCollectionFieldInput = ManagedCollectionFieldInput & {
-    collectionsOptions?: ManagedCollection[]
+    supportedCollections?: ManagedCollection[]
     canBeUsedAsSlug?: boolean
 }
 
@@ -59,38 +60,40 @@ export async function getDataSource(
     const response = await fetch(getApiEndpoint(boardToken, dataSource.apiEndpoint), { signal: abortSignal })
     const data = await response.json()
 
+    const collections = await framer.getManagedCollections()
+    const collectionsMap: Map<string, ManagedCollection[]> = new Map()
+    for (const collection of collections) {
+        const collectionSpaceId = await collection.getPluginData(PLUGIN_KEYS.SPACE_ID)
+        const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
+        if (collectionSpaceId === boardToken && dataSourceId) {
+            const value = collectionsMap.get(dataSourceId)
+            if (value) {
+                value.push(collection)
+                collectionsMap.set(dataSourceId, value)
+            } else {
+                collectionsMap.set(dataSourceId, [collection])
+            }
+        }
+    }
+
     const fields: ExtendedManagedCollectionFieldInput[] = []
 
     for (const field of dataSource.fields) {
         if (field.type === "multiCollectionReference" || field.type === "collectionReference") {
-            let collectionId = ""
-            let matchingCollections: ManagedCollection[] = []
-            // collection exists on the field if it's a multiCollectionReference or collectionReference
-            const fieldWithCollection = field as CollectionReferenceField
+            // field is a collection reference field
+            const referenceCollectionId = (field as CollectionReferenceField)?.getCollection()?.id
+            const matchingCollections = collectionsMap.get(referenceCollectionId)
 
-            if (fieldWithCollection.getCollection()) {
-                const collections = await framer.getManagedCollections()
-                matchingCollections = await filterAsync(collections, async collection => {
-                    const collectionSpaceId = await collection.getPluginData(PLUGIN_KEYS.SPACE_ID)
-                    const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-                    return dataSourceId === fieldWithCollection.getCollection().id && collectionSpaceId === boardToken
-                })
-
-                if (matchingCollections.length === 0) {
-                    console.warn(`No collection found for data source "${fieldWithCollection.getCollection().id}".`)
-                } else {
-                    collectionId = matchingCollections[0].id
-                }
-            } else {
-                console.warn(`No collection source found for collection reference field"${field.name}".`)
+            if (!matchingCollections) {
+                console.warn(`No collection found for data source "${referenceCollectionId}".`)
             }
 
             fields.push({
                 id: field.id,
                 name: field.name,
                 type: field.type,
-                collectionId,
-                collectionsOptions: matchingCollections,
+                collectionId: matchingCollections?.[0]?.id ?? "", // if no collection is found, the field will be visible but not imported
+                supportedCollections: matchingCollections,
                 canBeUsedAsSlug: field.canBeUsedAsSlug,
             })
         } else {
@@ -296,9 +299,16 @@ export async function syncCollection(
     await collection.removeItems(Array.from(unsyncedItems))
     await collection.addItems(items)
 
+    await collection.setPluginData(PLUGIN_KEYS.SPACE_ID, dataSource.boardToken)
     await collection.setPluginData(PLUGIN_KEYS.DATA_SOURCE_ID, dataSource.id)
     await collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id)
 }
+
+export const syncMethods = [
+    "ManagedCollection.removeItems",
+    "ManagedCollection.addItems",
+    "ManagedCollection.setPluginData",
+] as const satisfies ProtectedMethod[]
 
 export async function syncExistingCollection(
     collection: ManagedCollection,
@@ -314,6 +324,10 @@ export async function syncExistingCollection(
         return { didSync: false }
     }
 
+    if (!framer.isAllowedTo(...syncMethods)) {
+        return { didSync: false }
+    }
+
     try {
         const dataSource = await getDataSource(previousBoardToken, previousDataSourceId)
         const existingFields = await collection.getFields()
@@ -326,42 +340,7 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        const fields: ManagedCollectionFieldInput[] = []
-        for (const field of existingFields) {
-            if (field.type === "multiCollectionReference" || field.type === "collectionReference") {
-                fields.push({
-                    id: field.id,
-                    name: field.name,
-                    type: field.type,
-                    collectionId: field.collectionId,
-                })
-            } else if (field.type === "enum") {
-                fields.push({
-                    id: field.id,
-                    name: field.name,
-                    type: field.type,
-                    cases: field.cases.map(c => ({
-                        id: c.id,
-                        name: c.name,
-                    })),
-                })
-            } else if (field.type === "file") {
-                fields.push({
-                    id: field.id,
-                    name: field.name,
-                    type: field.type,
-                    allowedFileTypes: field.allowedFileTypes,
-                })
-            } else {
-                fields.push({
-                    id: field.id,
-                    name: field.name,
-                    type: field.type,
-                })
-            }
-        }
-
-        await syncCollection(collection, dataSource, fields, slugField)
+        await syncCollection(collection, dataSource, existingFields, slugField)
         return { didSync: true }
     } catch (error) {
         console.error(error)

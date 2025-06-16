@@ -21,7 +21,7 @@ import {
     type ManagedCollectionField,
     type ManagedCollectionFieldInput,
     type ManagedCollectionItemInput,
-    framer
+    framer,
 } from "framer-plugin"
 import pLimit from "p-limit"
 import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
@@ -396,7 +396,7 @@ export function richTextToPlainText(richText: RichTextItemResponse[]) {
 
 export function getFieldDataEntryInput(
     property: PageObjectResponse["properties"][string],
-    { supportsHtml }: { supportsHtml: boolean }
+    fieldType: ManagedCollectionField["type"]
 ): FieldDataEntryInput | undefined {
     switch (property.type) {
         case "checkbox": {
@@ -418,7 +418,7 @@ export function getFieldDataEntryInput(
             }
         }
         case "rich_text": {
-            if (supportsHtml) {
+            if (fieldType === "formattedText") {
                 return {
                     type: "formattedText",
                     value: richTextToHTML(property.rich_text),
@@ -439,7 +439,7 @@ export function getFieldDataEntryInput(
             }
         }
         case "title":
-            if (supportsHtml) {
+            if (fieldType === "formattedText") {
                 return {
                     type: "formattedText",
                     value: richTextToHTML(property.title),
@@ -464,7 +464,10 @@ export function getFieldDataEntryInput(
             }
         }
         case "unique_id": {
-            if (Number.isNaN(property.unique_id.number) || typeof property.unique_id.number !== "number") return undefined
+            if (Number.isNaN(property.unique_id.number) || typeof property.unique_id.number !== "number") {
+                return undefined
+            }
+
             return {
                 type: "number",
                 value: property.unique_id.number,
@@ -484,10 +487,7 @@ export function getFieldDataEntryInput(
         }
         case "files": {
             const firstFile = property.files[0]
-            if (!firstFile) return {
-                type: "file",
-                value: null,
-            }
+            if (!firstFile) return { type: "file", value: null }
 
             if (firstFile.type === "external" && firstFile.external.url) {
                 return {
@@ -496,9 +496,10 @@ export function getFieldDataEntryInput(
                 }
             }
 
-            if (firstFile.type === "file") {
+            const isFileOrImage = fieldType === "file" || fieldType === "image"
+            if (firstFile.type === "file" && isFileOrImage) {
                 return {
-                    type: "file",
+                    type: fieldType,
                     value: firstFile.file.url,
                 }
             }
@@ -573,7 +574,7 @@ async function processItem(
         assert(property)
 
         if (property.id === slugFieldId) {
-            const resolvedSlug = getFieldDataEntryInput(property, { supportsHtml: false })
+            const resolvedSlug = getFieldDataEntryInput(property, "string")
             assert(typeof resolvedSlug?.value === "string", "Slug value is not a string")
             slugValue = slugify(resolvedSlug.value as string)
         }
@@ -585,7 +586,7 @@ async function processItem(
             continue
         }
 
-        const fieldDataEntry = getFieldDataEntryInput(property, { supportsHtml: field.type === "formattedText" })
+        const fieldDataEntry = getFieldDataEntryInput(property, field.type)
         if (!fieldDataEntry) {
             status.warnings.push({
                 url: item.url,
@@ -762,7 +763,7 @@ export function useSynchronizeDatabaseMutation(
         onError,
         mutationFn: async (options: SynchronizeMutationOptions): Promise<SynchronizeResult> => {
             assert(database)
-            
+
             const collection = await framer.getActiveManagedCollection()
             await collection.setFields(options.fields)
             return synchronizeDatabase(database, options)

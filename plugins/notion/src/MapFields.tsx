@@ -289,7 +289,10 @@ export function MapDatabaseFields({
                                         }}
                                     ></input>
                                     <select
-                                        className={classNames("w-full", (!isSupported || !isAllowedToManage) && "opacity-50")}
+                                        className={classNames(
+                                            "w-full",
+                                            (!isSupported || !isAllowedToManage) && "opacity-50"
+                                        )}
                                         onChange={event =>
                                             handleFieldTypeChange(
                                                 property.id,

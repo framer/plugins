@@ -10,7 +10,7 @@
     "build": "vite build",
     "pack": "npx framer-plugin-tools@latest pack",
     "preview": "vite preview",
-        "typecheck": "tsc"
+    "typecheck": "tsc"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.1.0",

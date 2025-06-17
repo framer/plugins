@@ -1,6 +1,5 @@
 {
     "name": "google-sheets",
-    "private": false,
     "type": "module",
     "scripts": {
         "dev": "vite",

@@ -76,7 +76,7 @@ const FieldMappingRow = memo(
             <>
                 <button
                     type="button"
-                    className="source-field"
+                    className={"source-field" + (unsupported || missingCollection ? " unsupported" : "")}
                     aria-disabled={isIgnored}
                     onClick={disabled ? undefined : () => onToggleIgnored?.(field.id)}
                     tabIndex={0}
@@ -314,7 +314,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 target="_blank"
                 className="heading-link"
             >
-                {dataSource.tableName}
+                {dataSource.tableName || "Untitled Table"}
             </a>
 
             <label className="slug-field" htmlFor="slugField">

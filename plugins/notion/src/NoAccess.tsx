@@ -1,25 +1,14 @@
-import { useLayoutEffect, useState } from "react"
-import { framer } from "framer-plugin"
+import { useState } from "react"
 import auth from "./auth"
 
 export function NoTableAccess({ previousDatabaseId }: { previousDatabaseId: string | null }) {
     const [isRetrying, setIsRetrying] = useState(false)
 
-    useLayoutEffect(() => {
-        framer.showUI({
-            height: 110,
-            width: 240,
-            resizable: false,
-        })
-    }, [])
-
     const handleViewClick = () => {
-        window.open("[add database url here]", "_blank")
+        window.open(`https://notion.so/${previousDatabaseId?.replace(/-/g, "")}`, "_blank")
     }
 
-    const handleRetryClick = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
-
+    const handleRetryClick = () => {
         setIsRetrying(true)
         auth.authorize()
             .then(() => {
@@ -37,25 +26,21 @@ export function NoTableAccess({ previousDatabaseId }: { previousDatabaseId: stri
     }
 
     return (
-        <form onSubmit={handleRetryClick}>
+        <div className="no-access-container">
             <p>
-                Your Notion account does not have access to the synced table. Retry or{" "}
-                <span style={{ color: "#27B5F8" }} onClick={handleLogout}>
-                    log out
-                </span>{" "}
-                of the Notion plugin.
+                Your Notion account does not have access to the synced database. Retry or{" "}
+                <a onClick={handleLogout}>log out</a> of the Notion plugin.
             </p>
             <div className="actions">
-                <button className="action-button">{isRetrying ? <div className="framer-spinner" /> : "Retry"}</button>
-                <button
-                    type="button"
-                    className="action-button"
-                    style={{ color: "white", background: "#1D9CE7" }}
-                    onClick={handleViewClick}
-                >
-                    View Database
+                <button className="action-button" onClick={handleRetryClick}>
+                    {isRetrying ? <div className="framer-spinner" /> : "Retry"}
                 </button>
+                {previousDatabaseId && (
+                    <button className="action-button framer-button-primary" onClick={handleViewClick}>
+                        View Database
+                    </button>
+                )}
             </div>
-        </form>
+        </div>
     )
 }

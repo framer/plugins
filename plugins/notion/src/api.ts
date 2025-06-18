@@ -23,7 +23,7 @@ export const PLUGIN_KEYS = {
 // This is the most recent date when the page content formatted text importing was updated.
 // If the last synced date for an item is before this date, the content is updated regardless of last edited time.
 // The allows users to get the latest content formatting updates automatically.
-const LAST_CONTENT_IMPORTING_UPDATE_DATE = new Date("2025-05-29T12:00:00.000Z")
+const LAST_CONTENT_IMPORTING_UPDATE_DATE = new Date("2025-06-18T12:00:00.000Z")
 
 export type FieldId = string
 

@@ -107,12 +107,13 @@ export async function syncCollection(
 
             seenItemIds.add(item.id)
 
+            let skipContent = false
             if (isUnchangedSinceLastSync(item.last_edited_time, lastSynced)) {
                 console.warn({
-                    message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSynced!)}`,
+                    message: `Skipping content update. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSynced!)}`,
                     url: item.url,
                 })
-                return null
+                skipContent = true
             }
 
             let slugValue: null | string = null
@@ -147,7 +148,7 @@ export async function syncCollection(
                 return null
             }
 
-            if (sanitizedFieldsById.has(pageContentProperty.id) && item.id) {
+            if (sanitizedFieldsById.has(pageContentProperty.id) && item.id && !skipContent) {
                 const contentHTML = await getPageBlocksAsRichText(item.id)
                 fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
             }

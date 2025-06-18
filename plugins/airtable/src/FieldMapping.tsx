@@ -59,6 +59,19 @@ const FieldMappingRow = memo(
         onNameChange,
         onTypeChange,
     }: FieldMappingRowProps) => {
+        const selectOptions =
+            unsupported || missingCollection
+                ? []
+                : isCollectionReference(field)
+                  ? field.supportedCollections.map(collection => ({ id: collection.id, label: collection.name }))
+                  : (field.allowedTypes?.map(type => {
+                        const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1)
+                        return {
+                            id: type,
+                            label: fieldTypeOptions.find(option => option.type === type)?.label ?? capitalizedType,
+                        }
+                    }) ?? [])
+
         return (
             <>
                 <button
@@ -93,39 +106,27 @@ const FieldMappingRow = memo(
                                 }
                             }}
                         />
-                        <select
-                            style={{
-                                width: "100%",
-                                opacity: isIgnored || disabled ? 0.5 : 1,
-                            }}
-                            disabled={isIgnored || disabled}
-                            value={isCollectionReference(field) ? field.collectionId : field.type}
-                            onChange={event => onTypeChange?.(field.id, event.target.value)}
-                        >
-                            {isCollectionReference(field) && (
-                                <>
-                                    {field.supportedCollections.length === 0 && (
-                                        <option value="unsupported">Unsupported</option>
-                                    )}
-                                    {field.supportedCollections.map(collection => (
-                                        <option key={collection.id} value={collection.id}>
-                                            {collection.name}
-                                        </option>
-                                    ))}
-                                </>
-                            )}
-                            {!isCollectionReference(field) &&
-                                field.allowedTypes?.map(type => {
-                                    const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1)
-
-                                    return (
-                                        <option key={type} value={type}>
-                                            {fieldTypeOptions.find(option => option.type === type)?.label ??
-                                                capitalizedType}
-                                        </option>
-                                    )
-                                })}
-                        </select>
+                        {selectOptions.length <= 1 ? (
+                            <div className={"single-select-option" + (isIgnored || disabled ? " disabled" : "")}>
+                                {selectOptions[0].label}
+                            </div>
+                        ) : (
+                            <select
+                                style={{
+                                    width: "100%",
+                                    opacity: isIgnored || disabled ? 0.5 : 1,
+                                }}
+                                disabled={isIgnored || disabled}
+                                value={isCollectionReference(field) ? field.collectionId : field.type}
+                                onChange={event => onTypeChange?.(field.id, event.target.value)}
+                            >
+                                {selectOptions.map(option => (
+                                    <option key={option.id} value={option.id}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                     </>
                 )}
             </>

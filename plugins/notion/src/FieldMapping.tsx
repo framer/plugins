@@ -1,10 +1,4 @@
-import {
-    framer,
-    useIsAllowedTo,
-    type ManagedCollectionField,
-    type ManagedCollectionFieldInput,
-    type ManagedCollection,
-} from "framer-plugin"
+import { framer, useIsAllowedTo, type ManagedCollectionField, type ManagedCollection } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
 import {
     getDataSourceFieldsInfo,
@@ -306,6 +300,7 @@ export function FieldMapping({
                         disabled={isSyncing || !isAllowedToManage}
                         tabIndex={0}
                         title={!isAllowedToManage ? "Insufficient permissions" : undefined}
+                        className="framer-button-primary"
                     >
                         {isSyncing ? (
                             <div className="framer-spinner" />

@@ -82,45 +82,51 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                 <img src="airtable.svg" alt="Airtable icon" style={{ width: 80, height: 80 }} />
             </div>
 
-            <label htmlFor="base">
-                Base
-                <select
-                    id="base"
-                    onChange={event => setSelectedBaseId(event.target.value)}
-                    value={selectedBaseId}
-                    disabled={status === "loading-bases"}
-                >
-                    <option value="" disabled>
-                        {status === "loading-bases" ? "Loading…" : "Choose…"}
-                    </option>
-                    {bases.map(({ id, name }) => (
-                        <option key={id} value={id}>
-                            {name}
+            <div className="setup-container">
+                <label htmlFor="base">
+                    Base
+                    <select
+                        id="base"
+                        onChange={event => setSelectedBaseId(event.target.value)}
+                        value={selectedBaseId}
+                        disabled={status === "loading-bases"}
+                    >
+                        <option value="" disabled>
+                            {status === "loading-bases" ? "Loading…" : "Choose…"}
                         </option>
-                    ))}
-                </select>
-            </label>
+                        {bases.map(({ id, name }) => (
+                            <option key={id} value={id}>
+                                {name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
 
-            <label htmlFor="table">
-                Table
-                <select
-                    id="table"
-                    onChange={event => setSelectedTableId(event.target.value)}
-                    value={selectedTableId}
-                    disabled={!selectedBaseId || status === "loading-tables"}
-                >
-                    <option value="" disabled>
-                        {status === "loading-tables" ? "Loading…" : "Choose…"}
-                    </option>
-                    {tables.map(({ id, name }) => (
-                        <option key={id} value={id}>
-                            {name}
+                <label htmlFor="table">
+                    Table
+                    <select
+                        id="table"
+                        onChange={event => setSelectedTableId(event.target.value)}
+                        value={selectedTableId}
+                        disabled={!selectedBaseId || status === "loading-tables"}
+                    >
+                        <option value="" disabled>
+                            {status === "loading-tables" ? "Loading…" : "Choose…"}
                         </option>
-                    ))}
-                </select>
-            </label>
+                        {tables.map(({ id, name }) => (
+                            <option key={id} value={id}>
+                                {name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            </div>
 
-            <button type="submit" disabled={!selectedBaseId || !selectedTableId || isLoading}>
+            <button
+                type="submit"
+                disabled={!selectedBaseId || !selectedTableId || isLoading}
+                className="framer-button-primary"
+            >
                 {isLoading ? <div className="framer-spinner" /> : "Next"}
             </button>
         </form>

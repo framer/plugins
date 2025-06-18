@@ -40,6 +40,8 @@ interface FieldMappingRowProps {
     originalFieldName: string | undefined
     isIgnored: boolean
     disabled: boolean
+    unsupported?: boolean
+    missingCollection?: boolean
     onToggleIgnored?: (fieldId: string) => void
     onNameChange?: (fieldId: string, name: string) => void
     onTypeChange?: (fieldId: string, type: string) => void
@@ -51,6 +53,8 @@ const FieldMappingRow = memo(
         originalFieldName,
         isIgnored,
         disabled,
+        unsupported,
+        missingCollection,
         onToggleIgnored,
         onNameChange,
         onTypeChange,
@@ -69,54 +73,61 @@ const FieldMappingRow = memo(
                     <span>{originalFieldName ?? field.id}</span>
                 </button>
                 <ChevronIcon />
-                <input
-                    type="text"
-                    style={{
-                        width: "100%",
-                        opacity: isIgnored || disabled ? 0.5 : 1,
-                    }}
-                    disabled={isIgnored || disabled}
-                    placeholder={field.id}
-                    value={field.name}
-                    onChange={event => onNameChange?.(field.id, event.target.value)}
-                    onKeyDown={event => {
-                        if (event.key === "Enter") {
-                            event.preventDefault()
-                        }
-                    }}
-                />
-                <select
-                    style={{
-                        width: "100%",
-                        opacity: isIgnored || disabled ? 0.5 : 1,
-                    }}
-                    disabled={isIgnored || disabled}
-                    value={isCollectionReference(field) ? field.collectionId : field.type}
-                    onChange={event => onTypeChange?.(field.id, event.target.value)}
-                >
-                    {isCollectionReference(field) && (
-                        <>
-                            {field.supportedCollections.length === 0 && (
-                                <option value="unsupported">Unsupported</option>
+                {unsupported || missingCollection ? (
+                    <div className="unsupported-field">{unsupported ? "Unsupported Field" : "Missing Collection"}</div>
+                ) : (
+                    <>
+                        <input
+                            type="text"
+                            style={{
+                                width: "100%",
+                                opacity: isIgnored || disabled ? 0.5 : 1,
+                            }}
+                            disabled={isIgnored || disabled}
+                            placeholder={field.id}
+                            value={field.name}
+                            onChange={event => onNameChange?.(field.id, event.target.value)}
+                            onKeyDown={event => {
+                                if (event.key === "Enter") {
+                                    event.preventDefault()
+                                }
+                            }}
+                        />
+                        <select
+                            style={{
+                                width: "100%",
+                                opacity: isIgnored || disabled ? 0.5 : 1,
+                            }}
+                            disabled={isIgnored || disabled}
+                            value={isCollectionReference(field) ? field.collectionId : field.type}
+                            onChange={event => onTypeChange?.(field.id, event.target.value)}
+                        >
+                            {isCollectionReference(field) && (
+                                <>
+                                    {field.supportedCollections.length === 0 && (
+                                        <option value="unsupported">Unsupported</option>
+                                    )}
+                                    {field.supportedCollections.map(collection => (
+                                        <option key={collection.id} value={collection.id}>
+                                            {collection.name}
+                                        </option>
+                                    ))}
+                                </>
                             )}
-                            {field.supportedCollections.map(collection => (
-                                <option key={collection.id} value={collection.id}>
-                                    {collection.name}
-                                </option>
-                            ))}
-                        </>
-                    )}
-                    {!isCollectionReference(field) &&
-                        field.allowedTypes?.map(type => {
-                            const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1)
+                            {!isCollectionReference(field) &&
+                                field.allowedTypes?.map(type => {
+                                    const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1)
 
-                            return (
-                                <option key={type} value={type}>
-                                    {fieldTypeOptions.find(option => option.type === type)?.label ?? capitalizedType}
-                                </option>
-                            )
-                        })}
-                </select>
+                                    return (
+                                        <option key={type} value={type}>
+                                            {fieldTypeOptions.find(option => option.type === type)?.label ??
+                                                capitalizedType}
+                                        </option>
+                                    )
+                                })}
+                        </select>
+                    </>
+                )}
             </>
         )
     }
@@ -345,18 +356,24 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         />
                     ))}
                 {fields
-                    .filter(
-                        field =>
-                            (isCollectionReference(field) && field.supportedCollections.length === 0) ||
-                            field.type === "unsupported"
-                    )
+                    .filter(field => isCollectionReference(field) && field.supportedCollections.length === 0)
                     .map(field => (
                         <FieldMappingRow
                             key={`field-${field.id}`}
-                            field={{
-                                ...field,
-                                name: isCollectionReference(field) ? "Missing Collection" : "Unsupported field",
-                            }}
+                            field={field}
+                            missingCollection
+                            originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
+                            isIgnored={true}
+                            disabled={!isAllowedToManage}
+                        />
+                    ))}
+                {fields
+                    .filter(field => field.type === "unsupported")
+                    .map(field => (
+                        <FieldMappingRow
+                            key={`field-${field.id}`}
+                            field={field}
+                            unsupported
                             originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
                             isIgnored={true}
                             disabled={!isAllowedToManage}

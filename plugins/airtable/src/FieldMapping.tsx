@@ -86,7 +86,6 @@ const FieldMappingRow = memo(
                         }
                     }}
                 />
-                <ChevronIcon />
                 <select
                     style={{
                         width: "100%",
@@ -324,7 +323,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
             <div className="fields">
                 <span className="column-span-2">Airtable Column</span>
-                <span className="column-span-2">Field Name</span>
+                <span>Field Name</span>
                 <span>Type</span>
                 {fields
                     .filter(

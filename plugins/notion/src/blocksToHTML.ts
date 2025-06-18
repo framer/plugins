@@ -38,7 +38,8 @@ export function richTextToHTML(texts: RichTextItemResponse[]) {
         .join("")
 }
 
-export function blocksToHTML(blocks: BlockObjectResponse[]) {
+const YOUTUBE_ID_REGEX = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))(?<videoId>[^?&]+)/iu
+export function blocksToHtml(blocks: BlockObjectResponse[]) {
     let htmlContent = ""
 
     for (let i = 0; i < blocks.length; i++) {
@@ -61,6 +62,9 @@ export function blocksToHTML(blocks: BlockObjectResponse[]) {
             case "divider":
                 htmlContent += "<hr >"
                 break
+            case "quote":
+                htmlContent += `<blockquote>${richTextToHTML(block.quote.rich_text)}</blockquote>`
+                break
             case "image":
                 switch (block.image.type) {
                     case "external":
@@ -76,7 +80,7 @@ export function blocksToHTML(blocks: BlockObjectResponse[]) {
                 const tag = block.type === "bulleted_list_item" ? "ul" : "ol"
 
                 // Start the list if it's the first item of its type or the previous item isn't a list of the same type
-                if (i === 0 || blocks[i - 1].type !== block.type) htmlContent += `<${tag}>`
+                if (i === 0 || blocks.at(i - 1)?.type !== block.type) htmlContent += `<${tag}>`
 
                 if (block.type === "bulleted_list_item") {
                     htmlContent += `<li>${richTextToHTML(block.bulleted_list_item.rich_text)}</li>`
@@ -86,7 +90,7 @@ export function blocksToHTML(blocks: BlockObjectResponse[]) {
                 }
 
                 // If next block is not the same type, close the list
-                if (i === blocks.length - 1 || blocks[i + 1].type !== block.type) {
+                if (i === blocks.length - 1 || blocks.at(i + 1)?.type !== block.type) {
                     htmlContent += `</${tag}>`
                 }
                 break
@@ -94,6 +98,19 @@ export function blocksToHTML(blocks: BlockObjectResponse[]) {
             case "code":
                 htmlContent += `<pre><code class="language-${block.code.language.replace(" ", "-")}">${richTextToHTML(block.code.rich_text)}</code></pre>`
                 break
+            case "video": {
+                if (block.video.type !== "external") {
+                    break
+                }
+
+                const videoUrl = block.video.external.url
+                const videoId = videoUrl.match(YOUTUBE_ID_REGEX)?.groups?.videoId
+                if (videoId) {
+                    // Framer styles and modifies the YouTube iframe automatically
+                    htmlContent += `<iframe src="https://www.youtube.com/embed/${videoId}"></iframe>`
+                }
+                break
+            }
             default:
                 // TODO: More block types can be added here!
                 break

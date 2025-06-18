@@ -191,7 +191,8 @@ export async function syncExistingCollection(
     previousDataSourceId: string | null,
     previousSlugFieldId: string | null,
     previousIgnoredFieldIds: string | null,
-    previousLastSynced: string | null
+    previousLastSynced: string | null,
+    previousDatabaseName: string | null
 ): Promise<{ didSync: boolean }> {
     if (!previousDataSourceId) {
         return { didSync: false }
@@ -228,9 +229,10 @@ export async function syncExistingCollection(
         return { didSync: true }
     } catch (error) {
         console.error(error)
-        framer.notify(`Failed to sync collection “${previousDataSourceId}”. Check browser console for more details.`, {
-            variant: "error",
-        })
+        framer.notify(
+            `Failed to sync database “${previousDatabaseName || previousDataSourceId}”. Check browser console for more details.`,
+            { variant: "error" }
+        )
         return { didSync: false }
     }
 }

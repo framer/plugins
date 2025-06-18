@@ -12,6 +12,7 @@ interface AppProps {
     previousSlugFieldId: string | null
     previousLastSynced: string | null
     previousIgnoredFieldIds: string | null
+    previousDatabaseName: string | null
 }
 
 export function App({
@@ -20,6 +21,7 @@ export function App({
     previousSlugFieldId,
     previousLastSynced,
     previousIgnoredFieldIds,
+    previousDatabaseName,
 }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
@@ -59,7 +61,7 @@ export function App({
 
                 console.error(error)
                 framer.notify(
-                    `Error loading previously configured data source “${previousDataSourceId}”. Check the logs for more details.`,
+                    `Error loading previously configured database “${previousDatabaseName || previousDataSourceId}”. Check the logs for more details.`,
                     { variant: "error" }
                 )
             })

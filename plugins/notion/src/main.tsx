@@ -9,6 +9,7 @@ import auth from "./auth"
 import { syncExistingCollection } from "./data"
 import { PLUGIN_KEYS } from "./api"
 import { Authenticate } from "./Login.tsx"
+import { syncMethods } from "./utils"
 
 const activeCollection = await framer.getActiveManagedCollection()
 
@@ -43,13 +44,20 @@ const [previousDatabaseId, previousSlugFieldId, previousLastSynced, previousIgno
         activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_NAME),
     ])
 
-const { didSync } = await syncExistingCollection(
-    activeCollection,
-    previousDatabaseId,
-    previousSlugFieldId,
-    previousIgnoredFieldIds,
-    previousLastSynced
-)
+const isAllowedToSync = framer.isAllowedTo(...syncMethods)
+
+let didSync = false
+
+if (isAllowedToSync) {
+    const { didSync: didSyncResult } = await syncExistingCollection(
+        activeCollection,
+        previousDatabaseId,
+        previousSlugFieldId,
+        previousIgnoredFieldIds,
+        previousLastSynced
+    )
+    didSync = didSyncResult
+}
 
 if (didSync) {
     await framer.closePlugin("Synchronization successful", {

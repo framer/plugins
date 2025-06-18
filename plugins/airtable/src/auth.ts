@@ -25,9 +25,10 @@ class Auth {
     storedTokens?: StoredTokens | null
 
     constructor() {
-        this.AUTH_URI = location.hostname.includes("localhost")
-            ? "https://localhost:8787"
-            : "https://oauth.fetch.tools/airtable-plugin"
+        // this.AUTH_URI = location.hostname.includes("localhost")
+        //     ? "https://localhost:8787"
+        //     : "https://oauth.fetch.tools/airtable-plugin"
+        this.AUTH_URI = "https://oauth.fetch.tools/airtable-plugin"
     }
 
     logout() {

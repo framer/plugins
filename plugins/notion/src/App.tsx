@@ -80,6 +80,7 @@ export function App({
         return (
             <main className="loading">
                 <div className="framer-spinner" />
+                <p>Loading {previousDatabaseName || "database"}...</p>
             </main>
         )
     }

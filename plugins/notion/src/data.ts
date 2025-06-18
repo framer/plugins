@@ -120,7 +120,7 @@ export async function syncCollection(
 
             for (const property of Object.values(item.properties)) {
                 if (property.id === slugField.id) {
-                    const resolvedSlug = getPropertyValue(property, { supportsHtml: false })
+                    const resolvedSlug = getPropertyValue(property, { type: "string" })
 
                     if (!resolvedSlug || typeof resolvedSlug !== "string") {
                         break
@@ -132,7 +132,7 @@ export async function syncCollection(
                 const field = sanitizedFieldsById.get(property.id)
                 if (!field) continue
 
-                const fieldValue = getPropertyValue(property, { supportsHtml: field.type === "formattedText" })
+                const fieldValue = getPropertyValue(property, field)
                 if (fieldValue === null || fieldValue === undefined) {
                     console.warn(
                         `Skipping item at index ${index} because it doesn't have a valid value for field ${field.name}`

@@ -6,7 +6,6 @@ import type {
     RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints"
 import { framer, type ManagedCollectionField, type ManagedCollectionFieldInput } from "framer-plugin"
-import pLimit from "p-limit"
 import { blocksToHTML, richTextToHTML } from "./blocksToHTML"
 import { assert } from "./utils"
 
@@ -68,13 +67,6 @@ export const supportedCMSTypeByNotionPropertyType = {
     files: ["file", "image"],
     relation: ["multiCollectionReference"],
 } satisfies Partial<Record<NotionProperty["type"], ReadonlyArray<ManagedCollectionField["type"]>>>
-
-export const supportedNotionPropertyTypes = Object.keys(supportedCMSTypeByNotionPropertyType) as ReadonlyArray<
-    NotionProperty["type"]
->
-
-type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
-type SupportedNotionProperty = Extract<NotionProperty, { type: SupportedPropertyType }>
 
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.

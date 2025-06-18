@@ -10,7 +10,7 @@
         "check-eslint": "run g:check-eslint",
         "pack": "npx framer-plugin-tools@latest pack",
         "preview": "vite preview",
-        "typecheck": "tsc"
+        "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
         "@phosphor-icons/core": "^2.0.8",

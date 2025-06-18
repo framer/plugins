@@ -7,7 +7,7 @@
         "check-eslint": "run g:check-eslint",
         "preview": "vite preview",
         "pack": "npx framer-plugin-tools@latest pack",
-        "typecheck": "tsc --noEmit"
+        "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
         "@tanstack/react-query": "^5.51.11",

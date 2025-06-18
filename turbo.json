@@ -12,7 +12,7 @@
         "check-eslint": {
             "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json", "$TURBO_ROOT$/packages/eslint-config/**/*"]
         },
-        "typecheck": {
+        "check-typescript": {
             "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json"]
         }
     }

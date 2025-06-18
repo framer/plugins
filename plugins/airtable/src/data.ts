@@ -124,15 +124,17 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
 
         case "string":
             if (fieldSchema.airtableType === "barcode") {
-                if (!value || typeof value !== "object" || !value.text) return null
+                if (!value || typeof value !== "object" || !("text" in value) || typeof value.text !== "string")
+                    return null
                 return {
-                    value: String(value.text),
+                    value: value.text,
                     type: "string",
                 }
             } else if (fieldSchema.airtableType === "aiText") {
-                if (!value || typeof value !== "object" || !value.value) return null
+                if (!value || typeof value !== "object" || !("value" in value) || typeof value.value !== "string")
+                    return null
                 return {
-                    value: String(value.value),
+                    value: value.value,
                     type: "string",
                 }
             }

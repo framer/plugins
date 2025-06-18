@@ -12,6 +12,10 @@ form {
     -webkit-user-select: none;
 }
 
+select {
+    cursor: pointer;
+}
+
 .sticky-top {
     position: sticky;
     top: 0;
@@ -130,6 +134,21 @@ form {
     align-items: center;
     opacity: 0.5;
     color: var(--framer-color-text-secondary);
+}
+
+.mapping .single-select-option {
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    padding: 0px 10px;
+    height: 30px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    color: var(--framer-color-text);
+}
+
+.mapping .single-select-option.disabled {
+    opacity: 0.5;
 }
 
 .mapping footer {

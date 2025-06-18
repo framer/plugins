@@ -151,6 +151,18 @@ select {
     opacity: 0.5;
 }
 
+.mapping .heading-link {
+    width: fit-content;
+    max-width: 100%;
+    color: var(--framer-color-text-primary);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.mapping .heading-link:hover {
+    text-decoration: underline;
+}
+
 .mapping footer {
     position: sticky;
     bottom: 0;

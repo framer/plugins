@@ -108,7 +108,7 @@ const FieldMappingRow = memo(
                         />
                         {selectOptions.length <= 1 ? (
                             <div className={"single-select-option" + (isIgnored || disabled ? " disabled" : "")}>
-                                {selectOptions[0].label}
+                                {selectOptions[0]?.label}
                             </div>
                         ) : (
                             <select
@@ -308,6 +308,15 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     return (
         <form className="framer-hide-scrollbar mapping" onSubmit={handleSubmit}>
             <hr className="sticky-top" />
+
+            <a
+                href={`https://airtable.com/${dataSource.baseId}/${dataSource.tableId}`}
+                target="_blank"
+                className="heading-link"
+            >
+                {dataSource.tableName}
+            </a>
+
             <label className="slug-field" htmlFor="slugField">
                 Slug Field
                 <select

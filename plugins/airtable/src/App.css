@@ -45,6 +45,13 @@ form {
     border-radius: 10px;
 }
 
+.setup-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
 .setup label {
     display: flex;
     flex-direction: row;

@@ -250,6 +250,12 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                             type: "boolean",
                         }
                         break
+                    case "number":
+                        fieldData[field.id] = {
+                            value: 0,
+                            type: "number",
+                        }
+                        break
                     case "image":
                     case "file":
                     case "link":

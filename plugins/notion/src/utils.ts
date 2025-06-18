@@ -1,3 +1,5 @@
+import type { ProtectedMethod } from "framer-plugin"
+
 export function assert(condition: unknown, ...msg: unknown[]): asserts condition {
     if (condition) return
 
@@ -82,3 +84,10 @@ export function generateRandomId() {
 export function assertNever(x: never, error?: unknown): never {
     throw error || new Error((x as unknown) ? `Unexpected value: ${x}` : "Application entered invalid state")
 }
+
+export const syncMethods = [
+    "ManagedCollection.setFields",
+    "ManagedCollection.removeItems",
+    "ManagedCollection.addItems",
+    "ManagedCollection.setPluginData",
+] as const satisfies ProtectedMethod[]

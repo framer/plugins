@@ -1,19 +1,21 @@
 import {
     framer,
+    useIsAllowedTo,
     type ManagedCollectionField,
     type ManagedCollectionFieldInput,
     type ManagedCollection,
 } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
 import {
-    type DataSource,
     getDataSourceFieldsInfo,
     mergeFieldsInfoWithExistingFields,
     syncCollection,
     fieldsInfoToCollectionFields,
+    type DataSource,
 } from "./data"
 import { getPossibleSlugFieldIds, type FieldId, type FieldInfo } from "./api"
 import classNames from "classnames"
+import { syncMethods } from "./utils"
 
 type FieldType = ManagedCollectionField["type"]
 
@@ -35,6 +37,7 @@ const labelByFieldTypeOption: Record<FieldType, string> = {
 interface FieldMappingRowProps {
     fieldInfo: FieldInfo
     ignored: boolean
+    isAllowedToManage: boolean
     onToggleIgnored: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
     onFieldTypeChange: (fieldId: string, type: FieldType) => void
@@ -43,13 +46,14 @@ interface FieldMappingRowProps {
 function FieldMappingRow({
     fieldInfo,
     ignored,
+    isAllowedToManage,
     onToggleIgnored,
     onNameChange,
     onFieldTypeChange,
 }: FieldMappingRowProps) {
     const { id, name, originalName, type, allowedTypes } = fieldInfo
     const isUnsupported = !Array.isArray(allowedTypes) || allowedTypes.length === 0
-    const disabled = isUnsupported || ignored
+    const disabled = isUnsupported || ignored || !isAllowedToManage
 
     return (
         <>
@@ -132,6 +136,8 @@ export function FieldMapping({
     previousLastSynced,
     previousIgnoredFieldIds,
 }: FieldMappingProps) {
+    const isAllowedToManage = useIsAllowedTo(...syncMethods)
+
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
     )
@@ -259,6 +265,7 @@ export function FieldMapping({
                         name="slugField"
                         className="field-input"
                         value={selectedSlugFieldId ?? ""}
+                        disabled={!isAllowedToManage}
                         onChange={event => {
                             setSelectedSlugFieldId(
                                 possibleSlugFieldIds.includes(event.target.value) ? event.target.value : null
@@ -286,6 +293,7 @@ export function FieldMapping({
                                 key={`field-${fieldInfo.id}`}
                                 fieldInfo={fieldInfo}
                                 ignored={ignoredFieldIds.has(fieldInfo.id)}
+                                isAllowedToManage={isAllowedToManage}
                                 onToggleIgnored={toggleFieldIgnoredState}
                                 onNameChange={changeFieldName}
                                 onFieldTypeChange={changeFieldType}
@@ -296,8 +304,16 @@ export function FieldMapping({
 
                 <footer>
                     <hr className="sticky-top" />
-                    <button disabled={isSyncing} tabIndex={0}>
-                        {isSyncing ? <div className="framer-spinner" /> : <span>Import from {dataSourceName}</span>}
+                    <button
+                        disabled={isSyncing || !isAllowedToManage}
+                        tabIndex={0}
+                        title={!isAllowedToManage ? "Insufficient permissions" : undefined}
+                    >
+                        {isSyncing ? (
+                            <div className="framer-spinner" />
+                        ) : (
+                            <span>Import from {dataSourceName.trim() ? dataSourceName : "Untitled"}</span>
+                        )}
                     </button>
                 </footer>
             </form>

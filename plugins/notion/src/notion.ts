@@ -83,6 +83,9 @@ const defaultValueForFieldType: Record<ManagedCollectionField["type"], unknown> 
     link: "",
     file: null,
     enum: null,
+    color: "",
+    collectionReference: null,
+    multiCollectionReference: null,
 }
 
 const noneOptionId = "__NONE__"
@@ -244,7 +247,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     date: ["date"],
     number: ["number"],
     title: ["string"],
-    rich_text: ["formattedText", "string"],
+    rich_text: ["formattedText", "string", "color"],
     created_time: ["date"],
     last_edited_time: ["date"],
     select: ["enum"],
@@ -465,8 +468,10 @@ export function richTextToPlainText(richText: RichTextItemResponse[]) {
 
 export function getFieldDataEntryInput(
     property: PageObjectResponse["properties"][string],
-    fieldType: ManagedCollectionField["type"]
+    field: ManagedCollectionField
 ): FieldDataEntryInput | undefined {
+    const fieldType = field.type as ManagedCollectionField["type"]
+
     switch (property.type) {
         case "checkbox": {
             return {
@@ -487,24 +492,47 @@ export function getFieldDataEntryInput(
             }
         }
         case "rich_text": {
-            if (supportsHtml) {
-                return richTextToHTML(property.rich_text)
+            if (fieldType === "formattedText") {
+                return {
+                    type: "formattedText",
+                    value: richTextToHTML(property.rich_text),
+                }
+            } else if (fieldType === "color") {
+                return {
+                    type: "color",
+                    value: richTextToPlainText(property.rich_text),
+                }
             }
 
-            return richTextToPlainText(property.rich_text)
+            return {
+                type: "string",
+                value: richTextToPlainText(property.rich_text),
+            }
         }
         case "email": {
-            if (supportsHtml) {
-                return `<p>${property.email ?? ""}</p>`
+            if (fieldType === "formattedText") {
+                return {
+                    type: "formattedText",
+                    value: `<p>${property.email ?? ""}</p>`,
+                }
             } else if (fieldType === "link") {
-                return EMAIL_REGEX.test(property.email ?? "") ? `mailto:${property.email}` : ""
+                return {
+                    type: "link",
+                    value: EMAIL_REGEX.test(property.email ?? "") ? `mailto:${property.email}` : "",
+                }
             }
 
-            return property.email ?? ""
+            return {
+                type: "string",
+                value: property.email ?? "",
+            }
         }
         case "select": {
             if (!property.select) {
-                return field?.cases[0].id ?? null
+                return {
+                    type: "enum",
+                    value: field?.cases[0].id ?? null,
+                }
             }
 
             return {
@@ -514,10 +542,16 @@ export function getFieldDataEntryInput(
         }
         case "status": {
             if (!property.status) {
-                return field?.cases[0].id ?? null
+                return {
+                    type: "enum",
+                    value: field?.cases[0].id ?? null,
+                }
             }
 
-            return property.status.id
+            return {
+                type: "enum",
+                value: property.status.id,
+            }
         }
         case "title":
             if (fieldType === "formattedText") {
@@ -543,21 +577,27 @@ export function getFieldDataEntryInput(
             switch (fieldType) {
                 case "link":
                 case "file":
-                    return isValidUrl(value) ? value : ""
+                    return { type: fieldType, value: isValidUrl(value) ? value : "" }
                 case "image":
-                    return isImageFileUrl(value) ? value : ""
+                    return { type: fieldType, value: isImageFileUrl(value) ? value : "" }
                 default:
-                    return value
+                    return { type: fieldType, value }
             }
         }
         case "unique_id": {
             if (fieldType === "string") {
-                return property.unique_id.prefix
-                    ? `${property.unique_id.prefix}-${property.unique_id.number}`
-                    : String(property.unique_id.number)
+                return {
+                    type: "string",
+                    value: property.unique_id.prefix
+                        ? `${property.unique_id.prefix}-${property.unique_id.number}`
+                        : String(property.unique_id.number),
+                }
             }
 
-            return property.unique_id.number
+            return {
+                type: "number",
+                value: property.unique_id.number as number,
+            }
         }
         case "date": {
             return {
@@ -567,10 +607,16 @@ export function getFieldDataEntryInput(
         }
         case "relation": {
             if (fieldType === "collectionReference") {
-                return property.relation[0]?.id ?? null
+                return {
+                    type: "collectionReference",
+                    value: property.relation[0]?.id ?? null,
+                }
             }
 
-            return property.relation.map(({ id }) => id)
+            return {
+                type: "multiCollectionReference",
+                value: property.relation.map(({ id }) => id),
+            }
         }
         case "files": {
             for (const file of property.files) {
@@ -590,55 +636,100 @@ export function getFieldDataEntryInput(
                     }
                 }
 
-                return url
+                return {
+                    type: fieldType,
+                    value: url,
+                }
             }
-            return ""
+            return {
+                type: fieldType,
+                value: "",
+            }
         }
         case "phone_number": {
             if (fieldType === "link") {
-                return PHONE_REGEX.test(property.phone_number ?? "") ? `tel:${property.phone_number}` : ""
+                return {
+                    type: "link",
+                    value: PHONE_REGEX.test(property.phone_number ?? "") ? `tel:${property.phone_number}` : "",
+                }
             }
 
-            return property.phone_number ?? ""
+            return {
+                type: "string",
+                value: property.phone_number ?? "",
+            }
         }
         case "people": {
             const firstUser = property.people[0]
-            if (!firstUser) return ""
-            return "name" in firstUser ? firstUser.name : ""
+            if (!firstUser) return { type: "string", value: "" }
+            return {
+                type: "string",
+                value: "name" in firstUser ? firstUser.name : "",
+            }
         }
         case "created_by": {
-            return "name" in property.created_by ? property.created_by.name : ""
+            return {
+                type: "string",
+                value: "name" in property.created_by ? property.created_by.name : "",
+            }
         }
         case "last_edited_by": {
-            return "name" in property.last_edited_by ? property.last_edited_by.name : ""
+            return {
+                type: "string",
+                value: "name" in property.last_edited_by ? property.last_edited_by.name : "",
+            }
         }
 
         case "formula": {
             const value = property.formula
 
             if (!value) {
-                return defaultValueForFieldType[fieldType] ?? null
+                return {
+                    type: fieldType,
+                    value: defaultValueForFieldType[fieldType] ?? null,
+                }
             }
 
             switch (fieldType) {
                 case "string":
-                    return String(value[value.type] ?? "")
+                    return {
+                        type: "string",
+                        value: String(value[value.type] ?? ""),
+                    }
                 case "link":
                 case "image":
                 case "file":
                     const url = String(value[value.type] ?? "")
                     if (url && isValidUrl(url)) {
-                        return url
+                        return {
+                            type: fieldType,
+                            value: url,
+                        }
                     }
-                    return ""
+                    return {
+                        type: fieldType,
+                        value: "",
+                    }
                 case "number":
-                    return Number(value[value.type] ?? 0)
+                    return {
+                        type: "number",
+                        value: Number(value[value.type] ?? 0),
+                    }
                 case "date":
-                    return value.type == "date" ? formatDateString(value.date) : null
+                    return {
+                        type: "date",
+                        value: value.type == "date" ? formatDateString(value.date) : null,
+                    }
                 case "boolean":
-                    return value.type == "boolean" ? value.boolean : Boolean(value[value.type])
+                    return {
+                        type: "boolean",
+                        value: value.type == "boolean" ? value.boolean : Boolean(value[value.type]),
+                    }
                 default:
-                    return defaultValueForFieldType[fieldType] ?? null
+                    return {
+                        type: fieldType,
+                        value: defaultValueForFieldType[fieldType] ?? null,
+                    }
             }
         }
         case "rollup": {
@@ -649,9 +740,14 @@ export function getFieldDataEntryInput(
             switch (value?.type) {
                 case "array":
                     const item = value.array[0]
-                    result = item
-                        ? getPropertyValue(item, { fieldType, field })
-                        : (defaultValueForFieldType[fieldType] ?? null)
+                    if (item) {
+                        const fieldDataEntry = getFieldDataEntryInput(item, field)
+                        if (fieldDataEntry) {
+                            result = fieldDataEntry.value || (defaultValueForFieldType[fieldType] ?? null)
+                        }
+                    } else {
+                        result = defaultValueForFieldType[fieldType] ?? null
+                    }
                     break
                 case "number":
                     result = value.number ?? 0
@@ -692,7 +788,10 @@ export function getFieldDataEntryInput(
                     break
             }
 
-            return result
+            return {
+                type: fieldType,
+                value: result,
+            }
         }
     }
 
@@ -708,7 +807,7 @@ export interface SynchronizeProgress {
 type OnProgressHandler = (progress: SynchronizeProgress) => void
 
 export interface SynchronizeMutationOptions {
-    fields: ManagedCollectionFieldInput[]
+    fields: ManagedCollectionField[]
     ignoredFieldIds: string[]
     lastSyncedTime: string | null
     slugFieldId: string
@@ -766,20 +865,20 @@ async function processItem(
         assert(property)
 
         if (property.id === slugFieldId) {
-            const resolvedSlug = getFieldDataEntryInput(property, "string")
+            const resolvedSlug = getFieldDataEntryInput(property, { type: "string" } as ManagedCollectionField)
             assert(typeof resolvedSlug?.value === "string", "Slug value is not a string")
             slugValue = slugify(resolvedSlug.value as string)
         }
 
-        const field = fieldsById.get(property.id)
+        const field = fieldsById.get(property.id) as ManagedCollectionField
 
         // We can continue if the property was not included in the field mapping
         if (!field) {
             continue
         }
 
-        const fieldValue = getPropertyValue(property, { fieldType: field.type, field })
-        if (fieldValue === null || fieldValue === undefined) {
+        const fieldDataEntry = getFieldDataEntryInput(property, field)
+        if (fieldDataEntry === null || fieldDataEntry === undefined) {
             status.warnings.push({
                 url: item.url,
                 fieldId: field.id,
@@ -822,7 +921,7 @@ async function processItem(
     }
 }
 
-type FieldsById = Map<FieldId, ManagedCollectionFieldInput>
+type FieldsById = Map<FieldId, ManagedCollectionField>
 
 async function processAllItems(
     data: PageObjectResponse[],
@@ -910,7 +1009,7 @@ export async function synchronizeDatabase(
 
     const collection = await framer.getActiveManagedCollection()
 
-    const fieldsById = new Map<string, ManagedCollectionFieldInput>()
+    const fieldsById = new Map<string, ManagedCollectionField>()
     for (const field of fields) {
         fieldsById.set(field.id, field)
     }

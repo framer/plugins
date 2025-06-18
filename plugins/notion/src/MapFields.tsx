@@ -292,7 +292,8 @@ export function MapDatabaseFields({
                                         type="text"
                                         className={classNames(
                                             "w-full",
-                                            (!isSupported || !isAllowedToManage) && "opacity-50"
+                                            (!isSupported || !isAllowedToManage) && "opacity-50",
+                                            !isSupported && "col-span-2"
                                         )}
                                         disabled={
                                             !isSupported || !isAllowedToManage || disabledFieldIds.has(property.id)

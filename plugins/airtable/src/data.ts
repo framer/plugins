@@ -11,6 +11,7 @@ import type { PossibleField } from "./fields"
 
 import { framer } from "framer-plugin"
 import { type AirtableFieldSchema, fetchAllBases, fetchRecords, fetchTable, fetchTables } from "./api"
+import { inferFields } from "./fields"
 import { richTextToHTML } from "./utils"
 
 export const PLUGIN_KEYS = {
@@ -366,18 +367,30 @@ export async function syncExistingCollection(
     try {
         await framer.hideUI()
 
-        const existingFields = await collection.getFields()
         const table = await fetchTable(previousBaseId, previousTableId)
         if (!table) {
             throw new Error(`Table “${previousTableName}” not found`)
         }
+
+        // Use properly inferred fields instead of existing collection fields
+        const inferredFields = await inferFields(collection, table)
+
+        // Filter fields to match the format expected by syncCollection
+        const fieldsToSync = inferredFields
+            .filter(field => field.type !== "unsupported")
+            .filter(
+                field =>
+                    (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
+                    field.collectionId !== ""
+            )
+
         const dataSource: DataSource = {
             baseId: previousBaseId,
             tableId: previousTableId,
             tableName: table.name,
-            fields: existingFields,
+            fields: inferredFields,
         }
-        await syncCollection(collection, dataSource, existingFields, previousSlugFieldId)
+        await syncCollection(collection, dataSource, fieldsToSync, previousSlugFieldId)
         return { didSync: true }
     } catch (error) {
         console.error(error)

@@ -133,7 +133,7 @@ function inferUrlField(fieldSchema: AirtableFieldSchema & { type: "url" }): Poss
         userEditable: false,
         airtableType: fieldSchema.type,
         type: "link",
-        allowedTypes: ["link", "image", "file"],
+        allowedTypes: ["link", "image", "file", "string"],
     }
 }
 
@@ -160,6 +160,28 @@ function inferDateField(
         airtableType: fieldSchema.type,
         type: "date",
         allowedTypes: ["date"],
+    }
+}
+
+function inferBarcodeField(fieldSchema: AirtableFieldSchema & { type: "barcode" }): PossibleField {
+    return {
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        userEditable: false,
+        airtableType: fieldSchema.type,
+        type: "string",
+        allowedTypes: ["string"],
+    }
+}
+
+function inferAiTextField(fieldSchema: AirtableFieldSchema & { type: "aiText" }): PossibleField {
+    return {
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        userEditable: false,
+        airtableType: fieldSchema.type,
+        type: "string",
+        allowedTypes: ["string"],
     }
 }
 
@@ -283,6 +305,12 @@ async function inferFieldByType(
 
         case "formula":
             return await inferFormulaField(fieldSchema, collection, tableIdBeingLinkedTo, depth)
+
+        case "barcode":
+            return inferBarcodeField(fieldSchema)
+
+        case "aiText":
+            return inferAiTextField(fieldSchema)
 
         // Future support for Lookup/Rollup can be added here
         // case "lookup":

@@ -5,7 +5,7 @@ import type {
     PageObjectResponse,
     RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints"
-import { framer, type ManagedCollectionField } from "framer-plugin"
+import { framer, type ManagedCollectionField, type ManagedCollectionFieldInput } from "framer-plugin"
 import pLimit from "p-limit"
 import { blocksToHTML, richTextToHTML } from "./blocksToHTML"
 import { assert } from "./utils"
@@ -271,7 +271,7 @@ export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
 
 export function getPropertyValue(
     property: PageObjectResponse["properties"][string],
-    { supportsHtml, field }: { supportsHtml: boolean; field?: ManagedCollectionField }
+    field: ManagedCollectionFieldInput
 ): unknown | undefined {
     switch (property.type) {
         case "checkbox": {
@@ -284,7 +284,7 @@ export function getPropertyValue(
             return property.created_time
         }
         case "rich_text": {
-            if (supportsHtml) {
+            if (field.type === "formattedText") {
                 return richTextToHTML(property.rich_text)
             }
 
@@ -292,20 +292,20 @@ export function getPropertyValue(
         }
         case "select": {
             if (!property.select) {
-                return field?.type === "enum" ? (field?.cases?.[0]?.id ?? null) : null
+                return field.type === "enum" ? (field.cases?.[0]?.id ?? null) : null
             }
 
             return property.select.id
         }
         case "status": {
             if (!property.status) {
-                return field?.type === "enum" ? (field?.cases?.[0]?.id ?? null) : null
+                return field.type === "enum" ? (field.cases?.[0]?.id ?? null) : null
             }
 
             return property.status.id
         }
         case "title": {
-            if (supportsHtml) {
+            if (field.type === "formattedText") {
                 return richTextToHTML(property.title)
             }
 

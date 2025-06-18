@@ -12,14 +12,6 @@ form {
     -webkit-user-select: none;
 }
 
-select:disabled {
-    opacity: 0.5;
-}
-
-select:not(:disabled) {
-    cursor: pointer;
-}
-
 .sticky-top {
     position: sticky;
     top: 0;
@@ -138,31 +130,6 @@ select:not(:disabled) {
     align-items: center;
     opacity: 0.5;
     color: var(--framer-color-text-secondary);
-}
-
-.mapping .field-type-select {
-    width: 100%;
-}
-
-.mapping .heading-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-}
-
-.mapping .heading-link {
-    width: fit-content;
-    max-width: 50%;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-}
-
-.mapping .heading-link:hover {
-    text-decoration: underline;
 }
 
 .mapping footer {

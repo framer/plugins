@@ -35,12 +35,14 @@ if (!tokens) {
     })
 }
 
-const [previousDatabaseId, previousSlugFieldId, previousLastSynced, previousIgnoredFieldIds] = await Promise.all([
-    activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_ID),
-    activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
-    activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
-    activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS),
-])
+const [previousDatabaseId, previousSlugFieldId, previousLastSynced, previousIgnoredFieldIds, previousDatabaseName] =
+    await Promise.all([
+        activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_ID),
+        activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
+        activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
+        activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS),
+        activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_NAME),
+    ])
 
 const isAllowedToSync = framer.isAllowedTo(...syncMethods)
 
@@ -52,7 +54,8 @@ if (isAllowedToSync) {
         previousDatabaseId,
         previousSlugFieldId,
         previousIgnoredFieldIds,
-        previousLastSynced
+        previousLastSynced,
+        previousDatabaseName
     )
     didSync = didSyncResult
 }
@@ -70,6 +73,7 @@ if (didSync) {
                 previousSlugFieldId={previousSlugFieldId}
                 previousLastSynced={previousLastSynced}
                 previousIgnoredFieldIds={previousIgnoredFieldIds}
+                previousDatabaseName={previousDatabaseName}
             />
         </React.StrictMode>
     )

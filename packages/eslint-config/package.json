@@ -7,6 +7,10 @@
     "files": [
         "src"
     ],
+    "scripts": {
+        "check-eslint": "run g:check-eslint",
+        "check-typescript": "run g:check-typescript"
+    },
     "dependencies": {
         "@eslint/js": "^9.29.0",
         "eslint": "^9.29.0",

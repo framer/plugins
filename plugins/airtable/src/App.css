@@ -106,6 +106,10 @@ select {
     gap: 8px;
 }
 
+.mapping .source-field.unsupported {
+    pointer-events: none;
+}
+
 .mapping .source-field[aria-disabled="true"] {
     opacity: 0.5;
 }

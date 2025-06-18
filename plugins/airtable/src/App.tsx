@@ -24,7 +24,7 @@ export function App({ collection, previousBaseId, previousTableId, previousSlugF
     const [noTableAccess, setNoTableAccess] = useState(false)
 
     useLayoutEffect(() => {
-        const hasDataSourceSelected = Boolean(dataSource)
+        const hasDataSourceSelected = Boolean(dataSource) || isLoadingDataSource
 
         framer.showUI({
             width: hasDataSourceSelected ? 600 : 320,

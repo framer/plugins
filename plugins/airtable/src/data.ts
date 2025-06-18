@@ -262,6 +262,12 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                             type: field.type,
                         }
                         break
+                    case "color":
+                        fieldData[field.id] = {
+                            value: "#000000",
+                            type: "color",
+                        }
+                        break
                     default:
                         console.warn(
                             `Missing value for field “${field.name}” on item “${item.id}”, it will be set to the default value for its type.`

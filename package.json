@@ -20,6 +20,7 @@
     "devDependencies": {
         "eslint": "^9.29.0",
         "jiti": "^2.4.2",
-        "turbo": "^2.5.4"
+        "turbo": "^2.5.4",
+        "typescript": "^5.8.3"
     }
 }

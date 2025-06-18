@@ -2929,7 +2929,6 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -3053,11 +3052,9 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     ogl: "npm:^1.0.8"
     prettier: "npm:^3.2.5"
-    prettier-plugin-organize-imports: "npm:^3.2.4"
     react: "npm:^18"
     react-dom: "npm:^18"
     react-dropzone: "npm:^14.2.3"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -3383,7 +3380,6 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -3437,7 +3433,6 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -3523,7 +3518,6 @@ __metadata:
     react: "npm:^18"
     react-dom: "npm:^18"
     react-slider: "npm:^2.0.6"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -3636,7 +3630,6 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -3820,7 +3813,6 @@ __metadata:
     radix-ui: "npm:^1.1.3"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -3868,10 +3860,8 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     ogl: "npm:^1.0.8"
     prettier: "npm:^3.2.5"
-    prettier-plugin-organize-imports: "npm:^3.2.4"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -4007,7 +3997,6 @@ __metadata:
     react-dom: "npm:^18"
     react-sketch-canvas: "npm:^6.2.0"
     svgo: "npm:^3.3.2"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -4524,7 +4513,6 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -4802,7 +4790,6 @@ __metadata:
     react-feather: "npm:^2.0.10"
     recharts: "npm:^2.12.7"
     sitemap-urls: "npm:^3.0.0"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -4826,7 +4813,6 @@ __metadata:
     react-error-boundary: "npm:^4.0.13"
     react-intersection-observer: "npm:^9.10.3"
     tailwindcss: "npm:^3.4.4"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -4935,7 +4921,6 @@ __metadata:
     react-dom: "npm:^18"
     react-error-boundary: "npm:^6.0.0"
     tailwindcss: "npm:^3.4.3"
-    typescript: "npm:^5.8.3"
     usehooks-ts: "npm:^3.1.1"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
@@ -5364,7 +5349,6 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -5970,7 +5954,6 @@ __metadata:
     react-dom: "npm:^18"
     react-error-boundary: "npm:^4.0.13"
     tailwindcss: "npm:^3.4.3"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -6205,7 +6188,6 @@ __metadata:
     fuse.js: "npm:^7.0.0"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -6225,7 +6207,6 @@ __metadata:
     react: "npm:^18"
     react-dom: "npm:^18"
     react-webcam: "npm:^7.2.0"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -6281,6 +6262,7 @@ __metadata:
     eslint: "npm:^9.29.0"
     jiti: "npm:^2.4.2"
     turbo: "npm:^2.5.4"
+    typescript: "npm:^5.8.3"
   languageName: unknown
   linkType: soft
 
@@ -6311,7 +6293,6 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -6403,23 +6384,6 @@ __metadata:
   version: 1.2.1
   resolution: "prelude-ls@npm:1.2.1"
   checksum: 10/0b9d2c76801ca652a7f64892dd37b7e3fab149a37d2424920099bf894acccc62abb4424af2155ab36dea8744843060a2d8ddc983518d0b1e22265a22324b72ed
-  languageName: node
-  linkType: hard
-
-"prettier-plugin-organize-imports@npm:^3.2.4":
-  version: 3.2.4
-  resolution: "prettier-plugin-organize-imports@npm:3.2.4"
-  peerDependencies:
-    "@volar/vue-language-plugin-pug": ^1.0.4
-    "@volar/vue-typescript": ^1.0.4
-    prettier: ">=2.0"
-    typescript: ">=2.9"
-  peerDependenciesMeta:
-    "@volar/vue-language-plugin-pug":
-      optional: true
-    "@volar/vue-typescript":
-      optional: true
-  checksum: 10/93c98d365af500aa4c72f5330d82c20a20d0e7661a9692e6f26a76a2f4f88b99e0f85dcb8871e98b6d687d6e19ea5f1dcc937f9e29fd0778e888675ecafed233
   languageName: node
   linkType: hard
 
@@ -6918,7 +6882,6 @@ __metadata:
     papaparse: "npm:^5.5.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -6942,7 +6905,6 @@ __metadata:
     prettier-plugin-svelte: "npm:^3.2.6"
     svelte: "npm:^5.0.0-next.201"
     svelte-check: "npm:^3.8.4"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -7112,7 +7074,6 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -7623,11 +7584,9 @@ __metadata:
     comlink: "npm:^4.4.1"
     framer-plugin: "npm:^3.3.2"
     prettier: "npm:^3.2.5"
-    prettier-plugin-organize-imports: "npm:^3.2.4"
     react: "npm:^18"
     react-dom: "npm:^18"
     roughjs: "npm:^4.6.6"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -7644,7 +7603,6 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    typescript: "npm:^5.8.3"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -7879,7 +7837,6 @@ __metadata:
     react-dom: "npm:^18"
     react-error-boundary: "npm:^4.0.13"
     tailwindcss: "npm:^3.4.1"
-    typescript: "npm:^5.8.3"
     valibot: "npm:0.29.0"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"

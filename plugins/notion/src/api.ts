@@ -328,14 +328,15 @@ export function getPropertyValue(
         }
         case "files": {
             const firstFile = property.files[0]
-            if (!firstFile) return ""
 
-            if (firstFile.type === "external") {
-                return firstFile.external.url ?? ""
-            }
+            if (firstFile) {
+                if (firstFile.type === "external") {
+                    return firstFile.external?.url ?? ""
+                }
 
-            if (firstFile.type === "file") {
-                return firstFile.file.url ?? ""
+                if (firstFile.type === "file") {
+                    return firstFile.file?.url ?? ""
+                }
             }
 
             return ""

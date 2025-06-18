@@ -97,7 +97,7 @@ const FieldMappingRow = memo(
                                 opacity: isIgnored || disabled ? 0.5 : 1,
                             }}
                             disabled={isIgnored || disabled}
-                            placeholder={field.id}
+                            placeholder={originalFieldName ?? field.id}
                             value={field.name}
                             onChange={event => onNameChange?.(field.id, event.target.value)}
                             onKeyDown={event => {
@@ -269,10 +269,13 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
             const fieldsToSync = fields
                 .filter(field => !ignoredFieldIds.has(field.id))
-                .map(field => ({
-                    ...field,
-                    name: field.name.trim() || field.id,
-                }))
+                .map(field => {
+                    const originalFieldName = dataSource.fields.find(sourceField => sourceField.id === field.id)?.name
+                    return {
+                        ...field,
+                        name: field.name.trim() || originalFieldName || field.id,
+                    }
+                })
                 .filter(field => field.type !== "unsupported")
                 .filter(
                     field =>

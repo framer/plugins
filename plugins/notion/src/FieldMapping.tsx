@@ -119,8 +119,6 @@ function FieldMappingRow({
     )
 }
 
-const initialManagedCollectionFields: ManagedCollectionFieldInput[] = []
-
 interface FieldMappingProps {
     collection: ManagedCollection
     dataSource: DataSource

@@ -9,6 +9,7 @@
         "plugins/*"
     ],
     "scripts": {
+        "check": "turbo run --continue check-eslint typecheck",
         "clean": "rm -rf ./p",
         "copy": "bash ./scripts/copy-build.sh",
         "dev": "turbo run dev --concurrency=20",

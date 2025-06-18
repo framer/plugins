@@ -9,7 +9,11 @@
             "cache": false,
             "persistent": true
         },
-        "check-eslint": {},
-        "typecheck": {}
+        "check-eslint": {
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json", "$TURBO_ROOT$/packages/eslint-config/**/*"]
+        },
+        "typecheck": {
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json"]
+        }
     }
 }

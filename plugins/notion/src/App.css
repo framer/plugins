@@ -259,6 +259,14 @@ select:not([disabled]) {
 
 /* No Access */
 
+.no-access-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    padding: 0 15px 15px;
+}
+
 .actions {
     display: flex;
     flex-direction: row;

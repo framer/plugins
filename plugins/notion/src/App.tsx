@@ -5,6 +5,8 @@ import { useEffect, useLayoutEffect, useState } from "react"
 import { type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { SelectDataSource } from "./SelectDataSource"
+import { NoTableAccess } from "./NoAccess"
+import { APIErrorCode } from "@notionhq/client"
 
 interface AppProps {
     collection: ManagedCollection
@@ -25,9 +27,16 @@ export function App({
 }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
+    const [hasAccessError, setHasAccessError] = useState(false)
 
     useLayoutEffect(() => {
-        if (dataSource || isLoadingDataSource) {
+        if (hasAccessError) {
+            framer.showUI({
+                width: 280,
+                height: 114,
+                resizable: false,
+            })
+        } else if (dataSource || isLoadingDataSource) {
             framer.showUI({
                 width: 600,
                 height: 500,
@@ -60,10 +69,21 @@ export function App({
                 if (abortController.signal.aborted) return
 
                 console.error(error)
-                framer.notify(
-                    `Error loading previously configured database “${previousDatabaseName || previousDataSourceId}”. Check the logs for more details.`,
-                    { variant: "error" }
-                )
+
+                // Check for Notion API error codes
+                if (
+                    error.code === APIErrorCode.RestrictedResource ||
+                    error.code === APIErrorCode.ObjectNotFound ||
+                    error.code === APIErrorCode.Unauthorized ||
+                    error.status === 403
+                ) {
+                    setHasAccessError(true)
+                } else {
+                    framer.notify(
+                        `Error loading previously configured database "${previousDatabaseName || previousDataSourceId}". Check the logs for more details.`,
+                        { variant: "error" }
+                    )
+                }
             })
             .finally(() => {
                 if (abortController.signal.aborted) return
@@ -83,6 +103,10 @@ export function App({
                 <p>Loading {previousDatabaseName || "database"}...</p>
             </main>
         )
+    }
+
+    if (hasAccessError) {
+        return <NoTableAccess previousDatabaseId={previousDataSourceId} />
     }
 
     if (!dataSource) {

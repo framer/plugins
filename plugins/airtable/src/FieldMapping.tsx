@@ -323,8 +323,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             </label>
 
             <div className="fields">
-                <span className="column-span-2">Column</span>
-                <span className="column-span-2">Field</span>
+                <span className="column-span-2">Airtable Column</span>
+                <span className="column-span-2">Field Name</span>
                 <span>Type</span>
                 {fields
                     .filter(
@@ -371,6 +371,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     disabled={isSyncing || !isAllowedToManage}
                     tabIndex={0}
                     title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                    className="framer-button-primary"
                 >
                     {isSyncing ? (
                         <div className="framer-spinner" />

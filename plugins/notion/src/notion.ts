@@ -261,8 +261,8 @@ export const supportedCMSTypeByNotionPropertyType = {
     people: ["string"],
     created_by: ["string"],
     last_edited_by: ["string"],
-    formula: ["string", "number", "boolean", "date", "link", "image", "file"],
-    rollup: ["string", "number", "boolean", "date", "link", "image", "file"],
+    formula: ["string", "number", "boolean", "date", "link", "image", "file", "color"],
+    rollup: ["string", "number", "boolean", "date", "link", "image", "file", "color"],
     "cover-image": ["image"],
     "page-content": ["formattedText"],
 } satisfies Record<SupportedPropertyType | CustomPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
@@ -692,8 +692,9 @@ export function getFieldDataEntryInput(
 
             switch (fieldType) {
                 case "string":
+                case "color":
                     return {
-                        type: "string",
+                        type: "color",
                         value: String(value[value.type] ?? ""),
                     }
                 case "link":
@@ -763,6 +764,7 @@ export function getFieldDataEntryInput(
             switch (fieldType) {
                 case "string":
                 case "date":
+                case "color":
                     if (typeof result !== "string") {
                         result = ""
                     }

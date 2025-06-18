@@ -39,7 +39,7 @@ export function richTextToHTML(texts: RichTextItemResponse[]) {
 }
 
 const YOUTUBE_ID_REGEX = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))(?<videoId>[^?&]+)/iu
-export function blocksToHtml(blocks: BlockObjectResponse[]) {
+export function blocksToHTML(blocks: BlockObjectResponse[]) {
     let htmlContent = ""
 
     for (let i = 0; i < blocks.length; i++) {

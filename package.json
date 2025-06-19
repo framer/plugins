@@ -12,7 +12,7 @@
         "check": "turbo run --continue check-eslint check-typescript",
         "clean": "rm -rf ./p",
         "copy": "bash ./scripts/copy-build.sh",
-        "dev": "turbo run dev --concurrency=20",
+        "dev": "turbo run dev --concurrency=40",
         "build": "turbo run build --env-mode=loose && run copy",
         "g:check-eslint": "cd $INIT_CWD && DEBUG='eslint:eslint' eslint .",
         "g:check-typescript": "tsc --project $INIT_CWD"

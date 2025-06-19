@@ -21,19 +21,19 @@
         "react-blurhash": "^0.3.0",
         "react-dom": "^18",
         "react-error-boundary": "^4.0.13",
-        "valibot": "0.29.0",
-        "vite-plugin-mkcert": "^1"
+        "valibot": "0.29.0"
     },
     "devDependencies": {
         "@types/react": "^18",
         "@types/react-dom": "^18",
-        "@vitejs/plugin-react-swc": "^3.6.0",
+        "@vitejs/plugin-react-swc": "^3.10.2",
         "autoprefixer": "^10.4.18",
         "lightningcss": "^1.24.0",
         "postcss": "^8.4.37",
         "tailwindcss": "^3.4.1",
         "typescript": "^5.8.3",
         "vite": "^6.3.5",
-        "vite-plugin-framer": "^1.0.7"
+        "vite-plugin-framer": "^1.0.7",
+        "vite-plugin-mkcert": "^1.17.8"
     }
 }

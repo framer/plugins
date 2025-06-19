@@ -21,16 +21,16 @@
     "react-error-boundary": "^4.0.13",
     "react-feather": "^2.0.10",
     "recharts": "^2.12.7",
-    "sitemap-urls": "^3.0.0",
-    "vite-plugin-mkcert": "^1"
+    "sitemap-urls": "^3.0.0"
   },
   "devDependencies": {
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@vitejs/plugin-react-swc": "^3",
+    "@vitejs/plugin-react-swc": "^3.10.2",
     "prettier": "^3.2.5",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-framer": "^1.0.7"
+    "vite-plugin-framer": "^1.0.7",
+    "vite-plugin-mkcert": "^1.17.8"
   }
 }

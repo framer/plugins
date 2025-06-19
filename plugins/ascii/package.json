@@ -22,22 +22,17 @@
         "ogl": "^1.0.8",
         "react": "^18",
         "react-dom": "^18",
-        "react-dropzone": "^14.2.3",
-        "vite-plugin-mkcert": "^1"
+        "react-dropzone": "^14.2.3"
     },
     "devDependencies": {
-        "@swc/cli": "^0.4.0",
-        "@swc/core": "^1.7.14",
         "@types/react": "^18",
         "@types/react-dom": "^18",
-        "@vitejs/plugin-react-swc": "^3.6.0",
+        "@vitejs/plugin-react-swc": "^3.10.2",
         "prettier": "^3.2.5",
         "prettier-plugin-organize-imports": "^3.2.4",
         "typescript": "^5.8.3",
         "vite": "^6.3.5",
-        "vite-plugin-framer": "^1.0.7"
-    },
-    "optionalDependencies": {
-        "@rollup/rollup-linux-x64-gnu": "4.9.5"
+        "vite-plugin-framer": "^1.0.7",
+        "vite-plugin-mkcert": "^1.17.8"
     }
 }

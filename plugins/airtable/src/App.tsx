@@ -24,11 +24,11 @@ export function App({ collection, previousBaseId, previousTableId, previousSlugF
     const [noTableAccess, setNoTableAccess] = useState(false)
 
     useLayoutEffect(() => {
-        const hasDataSourceSelected = Boolean(dataSource) || isLoadingDataSource
+        const hasDataSourceSelected = Boolean(dataSource)
 
         framer.showUI({
-            width: hasDataSourceSelected ? 600 : 320,
-            height: hasDataSourceSelected ? 500 : 345,
+            width: hasDataSourceSelected ? 360 : 320,
+            height: hasDataSourceSelected ? 425 : 350,
             minWidth: hasDataSourceSelected ? 360 : undefined,
             minHeight: hasDataSourceSelected ? 425 : undefined,
             resizable: hasDataSourceSelected,

@@ -1,5 +1,6 @@
 {
     "$schema": "https://turbo.build/schema.json",
+    "ui": "tui",
     "tasks": {
         "build": {
             "outputs": ["dist/**"]
@@ -8,6 +9,7 @@
             "cache": false,
             "persistent": true
         },
+        "check-eslint": {},
         "typecheck": {}
     }
 }

@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "check-eslint": "run g:check-eslint",
         "preview": "vite preview",
         "pack": "npx framer-plugin-tools@latest pack",
         "typecheck": "tsc"
@@ -19,17 +19,11 @@
         "vite-plugin-mkcert": "^1"
     },
     "devDependencies": {
-        "@eslint/js": "^9",
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "@vitejs/plugin-react": "^4.3.1",
         "@vitejs/plugin-react-swc": "^3",
-        "eslint": "^9.9.0",
-        "eslint-plugin-react-hooks": "^5.1.0",
-        "eslint-plugin-react-refresh": "^0.4.9",
-        "globals": "^15.9.0",
-        "typescript": "^5.3",
-        "typescript-eslint": "^8.0.1",
+        "typescript": "^5.8.3",
         "vite": "^6.3.5",
         "vite-plugin-framer": "^1.0.7"
     }

@@ -12,6 +12,7 @@
         "typecheck": "tsc"
     },
     "dependencies": {
+        "classnames": "^2.5.1",
         "framer-plugin": "^3.3.2",
         "react": "^18",
         "react-dom": "^18",

@@ -2936,13 +2936,9 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -3057,7 +3053,6 @@ __metadata:
     "@radix-ui/themes": "npm:^3.1.3"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     clsx: "npm:^2.1.1"
     colorjs.io: "npm:^0.5.2"
     framer-plugin: "npm:^3.3.2"
@@ -3066,9 +3061,6 @@ __metadata:
     react: "npm:^18"
     react-dom: "npm:^18"
     react-dropzone: "npm:^14.2.3"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -3387,13 +3379,9 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -3438,15 +3426,11 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     extract-colors: "npm:^4.0.2"
     framer-motion: "npm:^11.0.18"
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -3522,16 +3506,12 @@ __metadata:
     "@radix-ui/react-slider": "npm:^1.1.2"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     framer-motion: "npm:^11.0.8"
     framer-plugin: "npm:^3.3.2"
     lightningcss: "npm:^1.24.0"
     react: "npm:^18"
     react-dom: "npm:^18"
     react-slider: "npm:^2.0.6"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -3636,14 +3616,10 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     csv-parse: "npm:^5.6.0"
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -3819,14 +3795,10 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     framer-plugin: "npm:^3.3.2"
     radix-ui: "npm:^1.1.3"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -3865,7 +3837,6 @@ __metadata:
     "@radix-ui/react-slider": "npm:^1.2.0"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     clsx: "npm:^2.1.1"
     colorjs.io: "npm:^0.5.2"
     framer-plugin: "npm:^3.3.2"
@@ -3873,9 +3844,6 @@ __metadata:
     prettier: "npm:^3.2.5"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -3999,7 +3967,6 @@ __metadata:
     "@types/react-dom": "npm:^18"
     "@uiw/react-color": "npm:^2.1.1"
     "@uiw/react-color-shade-slider": "npm:^2.1.1"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     extract-colors: "npm:^4.0.2"
     framer-motion: "npm:^11.0.18"
     framer-plugin: "npm:^3.3.2"
@@ -4008,9 +3975,6 @@ __metadata:
     react-dom: "npm:^18"
     react-sketch-canvas: "npm:^6.2.0"
     svgo: "npm:^3.3.2"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -4519,14 +4483,10 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     comlink: "npm:^4.4.1"
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -4791,7 +4751,6 @@ __metadata:
     "@triozer/framer-toolbox": "npm:^0.1.14"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     aveta: "npm:^1.4.1"
     framer-plugin: "npm:^1.1.0"
     prettier: "npm:^3.2.5"
@@ -4801,9 +4760,6 @@ __metadata:
     react-feather: "npm:^2.0.10"
     recharts: "npm:^2.12.7"
     sitemap-urls: "npm:^3.0.0"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -4814,7 +4770,6 @@ __metadata:
     "@tanstack/react-query": "npm:^5.51.11"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     autoprefixer: "npm:^10.4.19"
     classnames: "npm:^2.5.1"
     framer-plugin: "npm:^3.3.2"
@@ -4824,9 +4779,6 @@ __metadata:
     react-error-boundary: "npm:^4.0.13"
     react-intersection-observer: "npm:^9.10.3"
     tailwindcss: "npm:^3.4.4"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -4921,7 +4873,6 @@ __metadata:
     "@tanstack/react-query": "npm:^5.80.6"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     autoprefixer: "npm:^10.4.21"
     classnames: "npm:^2.5.1"
     framer-motion: "npm:^12.17.0"
@@ -4933,9 +4884,6 @@ __metadata:
     react-error-boundary: "npm:^6.0.0"
     tailwindcss: "npm:^3.4.3"
     usehooks-ts: "npm:^3.1.1"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
     wouter: "npm:^3.7.1"
   languageName: unknown
   linkType: soft
@@ -5356,13 +5304,9 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -5956,7 +5900,6 @@ __metadata:
     "@tanstack/react-query": "npm:^5.29.2"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     autoprefixer: "npm:^10.4.19"
     classnames: "npm:^2.5.1"
     framer-plugin: "npm:^3.3.2"
@@ -5965,9 +5908,6 @@ __metadata:
     react-dom: "npm:^18"
     react-error-boundary: "npm:^4.0.13"
     tailwindcss: "npm:^3.4.3"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -6194,14 +6134,10 @@ __metadata:
     "@phosphor-icons/react": "npm:^2.0.15"
     "@types/react": "npm:^18.0.26"
     "@types/react-dom": "npm:^18.0.10"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     framer-plugin: "npm:^3.3.2"
     fuse.js: "npm:^7.0.0"
     react: "npm:^18.2.0"
     react-dom: "npm:^18.2.0"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -6211,16 +6147,12 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     base64-arraybuffer: "npm:^1.0.2"
     framer-motion: "npm:^11.0.8"
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
     react-webcam: "npm:^7.2.0"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -6303,13 +6235,9 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -6891,14 +6819,10 @@ __metadata:
     "@types/papaparse": "npm:^5.3.15"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     framer-plugin: "npm:^3.3.2"
     papaparse: "npm:^5.5.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -7083,14 +7007,10 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     classnames: "npm:^2.5.1"
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -7594,16 +7514,12 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     comlink: "npm:^4.4.1"
     framer-plugin: "npm:^3.3.2"
     prettier: "npm:^3.2.5"
     react: "npm:^18"
     react-dom: "npm:^18"
     roughjs: "npm:^4.6.6"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -7613,13 +7529,9 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18"
     react-dom: "npm:^18"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 
@@ -7839,7 +7751,6 @@ __metadata:
     "@tanstack/react-query": "npm:^5.28.6"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    "@vitejs/plugin-react-swc": "npm:^3.10.2"
     autoprefixer: "npm:^10.4.18"
     blurhash: "npm:^2.0.5"
     classnames: "npm:^2.5.1"
@@ -7852,9 +7763,6 @@ __metadata:
     react-error-boundary: "npm:^4.0.13"
     tailwindcss: "npm:^3.4.1"
     valibot: "npm:0.29.0"
-    vite: "npm:^6.3.5"
-    vite-plugin-framer: "npm:^1.0.7"
-    vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
 

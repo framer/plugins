@@ -4,11 +4,11 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "dev": "vite",
-        "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
+        "dev": "run g:dev",
+        "build": "run g:build",
         "check-eslint": "run g:check-eslint",
         "pack": "npx framer-plugin-tools@latest pack",
-        "preview": "vite preview",
+        "preview": "run g:preview",
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
@@ -27,12 +27,8 @@
         "@hubspot/api-client": "^13.0.0",
         "@types/react": "^18",
         "@types/react-dom": "^18",
-        "@vitejs/plugin-react-swc": "^3.10.2",
         "autoprefixer": "^10.4.21",
         "postcss": "^8.5.4",
-        "tailwindcss": "^3.4.3",
-        "vite": "^6.3.5",
-        "vite-plugin-framer": "^1.0.7",
-        "vite-plugin-mkcert": "^1.17.8"
+        "tailwindcss": "^3.4.3"
     }
 }

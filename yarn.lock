@@ -364,6 +364,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@framer/vite-config@workspace:packages/vite-config":
+  version: 0.0.0-use.local
+  resolution: "@framer/vite-config@workspace:packages/vite-config"
+  dependencies:
+    "@vitejs/plugin-react-swc": "npm:^3.10.2"
+    vite: "npm:^6.3.5"
+    vite-plugin-framer: "npm:^1.0.7"
+    vite-plugin-mkcert: "npm:^1.17.8"
+  languageName: unknown
+  linkType: soft
+
 "@hubspot/api-client@npm:^13.0.0":
   version: 13.0.0
   resolution: "@hubspot/api-client@npm:13.0.0"

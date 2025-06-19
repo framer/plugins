@@ -1,19 +1,7 @@
-# Framer Plugin Template
+# Greenhouse Plugin
 
-This is a template for using the Framer Plugin API in a TypeScript project.
+Plugin for syncing Greehouse jobs into the Framer CMS.
 
-## Quickstart
+**By:** @clementroche 
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Learn more: https://www.framer.com/developers/plugins/introduction
+![Greehouse Image](../../assets/greenhouse.png)

@@ -364,7 +364,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@framer/vite-config@workspace:packages/vite-config":
+"@framer/vite-config@workspace:*, @framer/vite-config@workspace:packages/vite-config":
   version: 0.0.0-use.local
   resolution: "@framer/vite-config@workspace:packages/vite-config"
   dependencies:
@@ -6271,10 +6271,12 @@ __metadata:
   resolution: "plugins@workspace:."
   dependencies:
     "@framer/eslint-config": "workspace:*"
+    "@framer/vite-config": "workspace:*"
     eslint: "npm:^9.29.0"
     jiti: "npm:^2.4.2"
     turbo: "npm:^2.5.4"
     typescript: "npm:^5.8.3"
+    vite: "npm:^6.3.5"
   languageName: unknown
   linkType: soft
 

@@ -8,16 +8,16 @@ import "./App.css"
 export function App() {
     const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
 
-    const webcamRef = useRef<any>(null)
+    const webcamRef = useRef<Webcam>(null)
     const [scope, animate] = useAnimate()
 
     const capture = useCallback(async () => {
         if (!isAllowedToUpsertImage) return
+        if (!webcamRef.current) return
 
-        const image = webcamRef.current.getScreenshot({
-            minWidth: 1280,
-            minHeight: 720,
-        })
+        const image = webcamRef.current.getScreenshot({ width: 1280, height: 720 })
+        if (!image) return
+
         animate(".webcam-flash", { opacity: 1 })
 
         const imageData = await getAssetDataFromUrl(image)
@@ -61,7 +61,7 @@ export function App() {
     )
 }
 
-export async function getAssetDataFromUrl(url: string) {
+async function getAssetDataFromUrl(url: string) {
     const response = await fetch(url)
     const blob = await response.blob()
 

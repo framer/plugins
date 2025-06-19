@@ -8,10 +8,10 @@
         "dev": "vite",
         "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
         "format": "prettier . --write",
-        "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+        "check-eslint": "run g:check-eslint",
         "pack": "npx framer-plugin-tools@latest pack",
         "preview": "vite preview",
-        "typecheck": "tsc"
+        "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
         "@radix-ui/react-slider": "^1.2.0",
@@ -30,15 +30,10 @@
         "@swc/core": "^1.7.14",
         "@types/react": "^18",
         "@types/react-dom": "^18",
-        "@typescript-eslint/eslint-plugin": "^6",
-        "@typescript-eslint/parser": "^6",
         "@vitejs/plugin-react-swc": "^3.6.0",
-        "eslint": "^8",
-        "eslint-plugin-react-hooks": "^4",
-        "eslint-plugin-react-refresh": "^0",
         "prettier": "^3.2.5",
         "prettier-plugin-organize-imports": "^3.2.4",
-        "typescript": "^5.4.5",
+        "typescript": "^5.8.3",
         "vite": "^6.3.5",
         "vite-plugin-framer": "^1.0.7"
     },

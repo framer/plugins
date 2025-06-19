@@ -1,5 +1,6 @@
 {
     "$schema": "https://turbo.build/schema.json",
+    "ui": "tui",
     "tasks": {
         "build": {
             "outputs": ["dist/**"]
@@ -8,6 +9,11 @@
             "cache": false,
             "persistent": true
         },
-        "typecheck": {}
+        "check-eslint": {
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json", "$TURBO_ROOT$/packages/eslint-config/**/*"]
+        },
+        "check-typescript": {
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json"]
+        }
     }
 }

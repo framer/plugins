@@ -52,7 +52,7 @@ const weightOptions: WeightOption[] = [
     },
 ]
 
-const icons: ReadonlyArray<IconEntry> = iconData.map((entry: any) => ({
+const icons: ReadonlyArray<IconEntry> = iconData.map(entry => ({
     ...entry,
     Icon: Icons[entry.pascal_name as keyof typeof Icons] as Icons.Icon,
 }))
@@ -63,7 +63,7 @@ const fuse = new Fuse(icons, {
     useExtendedSearch: true,
 })
 
-function IconGrid(props: any) {
+function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
     const { searchQuery, weight } = props
 
     const isAllowedToAddSVG = useIsAllowedTo("addSVG")

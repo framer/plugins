@@ -6,7 +6,7 @@ import { framer } from "framer-plugin";
 import { mount } from "svelte";
 
 // Expose framer on the global scope for testing.
-(window as any).framer = framer;
+(window as unknown as Record<string, unknown>).framer = framer;
 
 void framer.showUI({
   position: "top right",

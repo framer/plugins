@@ -28,11 +28,6 @@ async function svgToBytes(svgText: string) {
     return uint8Array
 }
 
-export async function getAssetDataFromSVG(svgString: string): Promise<string> {
-    const encodedSvg = encodeURIComponent(svgString)
-    const imageUrl = `data:image/svg+xml;charset=utf-8,${encodedSvg}`
-    return imageUrl
-}
 export function App() {
     const isAllowedToAddImage = useIsAllowedTo("addImage")
 

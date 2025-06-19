@@ -128,7 +128,7 @@ export function useIndexingResults(
       setResult({ progress: 0, results: null });
 
       if (currentPageUrl) {
-        googleApiCall<{ inspectionResult: any }>(
+        googleApiCall<{ inspectionResult: GoogleInspectionResult }>(
           '/v1/urlInspection/index:inspect',
           authContext.access_token,
           refresh,
@@ -149,7 +149,9 @@ export function useIndexingResults(
       }
 
       const promises = (urls || []).map(async (url) => {
-        const inspection = await googleApiCall<{ inspectionResult: any }>(
+        const inspection = await googleApiCall<{
+          inspectionResult: GoogleInspectionResult;
+        }>(
           '/v1/urlInspection/index:inspect',
           authContext.access_token,
           refresh,
@@ -172,7 +174,7 @@ export function useIndexingResults(
         const results = await Promise.all(promises);
         setResult((currResult) => ({ progress: currResult.progress, results }));
       } catch (e) {
-        showBoundary;
+        showBoundary(e);
       }
     }
 

@@ -29,7 +29,7 @@ export function App() {
     const [colors, setColors] = useState<FinalColor[]>([])
     const currentSelection = selection[0]
 
-    const supportsGradient = !!currentSelection ? supportsBackgroundGradient(currentSelection) : false
+    const supportsGradient = currentSelection ? supportsBackgroundGradient(currentSelection) : false
 
     const isAllowedToSetAttributes = useIsAllowedTo("setAttributes")
 

@@ -1,20 +1,25 @@
 {
     "name": "plugins",
+    "packageManager": "yarn@4.9.1",
     "private": true,
     "license": "MIT",
     "workspaces": [
         "starters/*",
+        "packages/*",
         "plugins/*"
     ],
     "scripts": {
+        "check": "turbo run --continue check-eslint check-typescript",
         "clean": "rm -rf ./p",
         "copy": "bash ./scripts/copy-build.sh",
         "dev": "turbo run dev --concurrency=20",
         "build": "turbo run build --env-mode=loose && run copy",
-        "typecheck": "turbo run typecheck"
+        "g:check-eslint": "cd $INIT_CWD && DEBUG='eslint:eslint' eslint .",
+        "g:check-typescript": "tsc --project $INIT_CWD"
     },
     "devDependencies": {
-        "turbo": "^2.1.2"
-    },
-    "packageManager": "yarn@4.9.1"
+        "eslint": "^9.29.0",
+        "jiti": "^2.4.2",
+        "turbo": "^2.5.4"
+    }
 }

@@ -1,11 +1,11 @@
 import { type OGLRenderingContext, Texture } from "ogl"
-import { useEffect, useState } from "react"
+import { useEffect, useState, type DependencyList } from "react"
 
 export function useVideoTexture(
     gl: OGLRenderingContext,
     src: string | undefined,
     onUpdate: (texture: Texture) => void,
-    deps: any[] = []
+    deps: DependencyList = []
 ) {
     const [texture] = useState(
         () => new Texture(gl, { minFilter: gl.NEAREST, magFilter: gl.NEAREST, generateMipmaps: false })

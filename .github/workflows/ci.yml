@@ -1,4 +1,4 @@
-name: Typecheck
+name: Check
 
 on:
     push:
@@ -6,7 +6,7 @@ on:
     pull_request:
 
 jobs:
-    typecheck:
+    check:
         runs-on: ubuntu-latest
 
         steps:
@@ -18,4 +18,4 @@ jobs:
 
             - run: yarn
 
-            - run: yarn typecheck
+            - run: yarn check

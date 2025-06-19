@@ -1,5 +1,7 @@
+/* eslint-disable -- TODO: fix this */
 // @ts-nocheck - TODO: fix this
 
+import { type DependencyList } from "react"
 import {
     type GLTFDescription,
     type OGLRenderingContext,
@@ -426,7 +428,7 @@ export function useGLBTexture(
     src: string | undefined,
     type: string | undefined = "glb",
     onUpdate: (texture: Texture) => void,
-    deps: any[] = []
+    deps: DependencyList = []
 ) {
     const [lutTexture] = useState(() =>
         TextureLoader.load(gl, {
@@ -473,7 +475,7 @@ export function useGLBTexture(
                         precision highp float;
                     `
 
-            let defines = `
+            const defines = `
                         ${node.geometry.attributes.uv ? `#define UV` : ``}
                         ${node.geometry.attributes.normal ? `#define NORMAL` : ``}
                         ${node.geometry.isInstanced ? `#define INSTANCED` : ``}

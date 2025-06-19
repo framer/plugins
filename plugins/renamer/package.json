@@ -8,9 +8,13 @@
     "dev": "vite",
     "format": "prettier --check '**/*.{js,json,jsx,md,ts,svelte,css}' --write",
     "build": "vite build",
+    "check-eslint": "run g:check-eslint",
     "pack": "npx framer-plugin-tools@latest pack",
     "preview": "vite preview",
-    "typecheck": "tsc"
+    "check-typescript": "run g:check-typescript"
+  },
+  "dependencies": {
+    "framer-plugin": "^3.3.2"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.1.0",
@@ -19,12 +23,9 @@
     "svelte": "^5.0.0-next.201",
     "svelte-check": "^3.8.4",
     "tslib": "^2.6.3",
-    "typescript": "^5.2.2",
+    "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-framer": "^1.0.7",
     "vite-plugin-mkcert": "^1"
-  },
-  "dependencies": {
-    "framer-plugin": "^3.3.2"
   }
 }

@@ -1,4 +1,6 @@
 {
     "editor.rulers": [120],
-    "eslint.workingDirectories": [{ "mode": "auto" }]
+    "eslint.workingDirectories": [{ "mode": "auto" }],
+    "biome.enabled": false,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
 }

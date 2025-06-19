@@ -121,7 +121,11 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                 </select>
             </label>
 
-            <button type="submit" disabled={!selectedBaseId || !selectedTableId || isLoading}>
+            <button
+                type="submit"
+                disabled={!selectedBaseId || !selectedTableId || isLoading}
+                className="framer-button-primary"
+            >
                 {isLoading ? <div className="framer-spinner" /> : "Next"}
             </button>
         </form>

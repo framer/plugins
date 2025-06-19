@@ -12,6 +12,14 @@ form {
     -webkit-user-select: none;
 }
 
+select {
+    padding: 0px 16px 1px 10px;
+}
+
+select:not([disabled]) {
+    cursor: pointer;
+}
+
 .sticky-top {
     position: sticky;
     top: 0;
@@ -45,6 +53,13 @@ form {
     border-radius: 10px;
 }
 
+.setup-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
 .setup label {
     display: flex;
     flex-direction: row;
@@ -66,7 +81,7 @@ form {
 
 .mapping .fields {
     display: grid;
-    grid-template-columns: 1fr 8px 1fr 8px 1fr;
+    grid-template-columns: 1fr 8px 1fr 1fr;
     gap: 10px;
     margin-bottom: auto;
     padding-bottom: 10px;
@@ -95,6 +110,10 @@ form {
     gap: 8px;
 }
 
+.mapping .source-field.unsupported {
+    pointer-events: none;
+}
+
 .mapping .source-field[aria-disabled="true"] {
     opacity: 0.5;
 }
@@ -110,6 +129,50 @@ form {
 
 .mapping .source-field input[type="checkbox"]:focus {
     box-shadow: none;
+}
+
+.mapping .unsupported-field {
+    grid-column: span 2;
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    padding: 0px 10px;
+    height: 30px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    opacity: 0.5;
+    color: var(--framer-color-text-secondary);
+}
+
+.mapping .single-select-option {
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    padding: 0px 10px;
+    height: 30px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    color: var(--framer-color-text);
+}
+
+.mapping .single-select-option.disabled {
+    opacity: 0.5;
+}
+
+.mapping .field-type-select {
+    width: 100%;
+}
+
+.mapping .heading-link {
+    width: fit-content;
+    max-width: 100%;
+    color: var(--framer-color-text-primary);
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.mapping .heading-link:hover {
+    text-decoration: underline;
 }
 
 .mapping footer {

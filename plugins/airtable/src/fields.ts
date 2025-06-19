@@ -113,7 +113,7 @@ function inferDurationField(fieldSchema: AirtableFieldSchema & { type: "duration
         airtableType: fieldSchema.type,
         airtableOptions: fieldSchema.options,
         type: "string",
-        allowedTypes: ["string"],
+        allowedTypes: ["string", "number"],
     }
 }
 

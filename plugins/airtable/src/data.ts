@@ -300,18 +300,13 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                     case "image":
                     case "file":
                     case "link":
+                    case "color":
                     case "date":
                     case "collectionReference":
                     case "multiCollectionReference":
                         fieldData[field.id] = {
                             value: null,
                             type: field.type,
-                        }
-                        break
-                    case "color":
-                        fieldData[field.id] = {
-                            value: "#000000",
-                            type: "color",
                         }
                         break
                     default:

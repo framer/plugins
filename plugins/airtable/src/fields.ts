@@ -125,7 +125,7 @@ function inferStringField(fieldSchema: AirtableFieldSchema & { type: "singleLine
         airtableType: fieldSchema.type,
         airtableOptions: fieldSchema.options,
         type: "string",
-        allowedTypes: ["string", "formattedText", "color"],
+        allowedTypes: ["string", "formattedText"],
     }
 }
 

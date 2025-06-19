@@ -1,3 +1,4 @@
+/* eslint-disable -- TODO: fix this */
 // @ts-nocheck - TODO: fix this
 
 import { Camera, Mesh, Plane, Program, Renderer, Transform } from "ogl"

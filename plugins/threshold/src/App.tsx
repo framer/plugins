@@ -35,11 +35,11 @@ export function App() {
     return <ThresholdImage image={image} maxWidth={248} maxHeight={400} />
 }
 
-const debounce = (fn: Function, ms = 300) => {
+const debounce = <T extends (...args: never[]) => void>(fn: T, ms = 300) => {
     let timeoutId: ReturnType<typeof setTimeout>
-    return function (this: any, ...args: any[]) {
+    return function (...args: Parameters<T>) {
         clearTimeout(timeoutId)
-        timeoutId = setTimeout(() => fn.apply(this, args), ms)
+        timeoutId = setTimeout(() => fn(...args), ms)
     }
 }
 

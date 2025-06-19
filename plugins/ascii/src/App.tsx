@@ -20,7 +20,7 @@ void framer.showUI({ position: "top right", width: 280, height: 500 })
 export const CANVAS_WIDTH = 250
 export const DEFAULT_WIDTH = 500
 
-export function useSelectedImage() {
+function useSelectedImage() {
     const [selection, setSelection] = useState<ImageAsset | null>(null)
 
     useEffect(() => {

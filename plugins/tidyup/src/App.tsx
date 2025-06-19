@@ -180,7 +180,7 @@ function getSortedRects(
     }
 
     switch (layout) {
-        case "horizontal":
+        case "horizontal": {
             let currentX = 0
 
             for (const rect of result) {
@@ -190,6 +190,7 @@ function getSortedRects(
             }
 
             break
+        }
         case "grid": {
             const maxSize = getMaxSize(result)
             result.forEach((rect, index) => {

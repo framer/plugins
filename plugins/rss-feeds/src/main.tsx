@@ -3,7 +3,8 @@ import "framer-plugin/framer.css"
 import { framer } from "framer-plugin"
 import React from "react"
 import ReactDOM from "react-dom/client"
-import { App, importData } from "./App.tsx"
+import { App } from "./App.tsx"
+import { importData } from "./data.ts"
 
 async function runPlugin() {
     const mode = framer.mode

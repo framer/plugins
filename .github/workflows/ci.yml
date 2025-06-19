@@ -6,7 +6,22 @@ on:
     pull_request:
 
 jobs:
-    check:
+    yarn:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .tool-versions
+
+            - run: yarn
+              env:
+                  # https://yarnpkg.com/features/security#hardened-mode
+                  YARN_ENABLE_HARDENED_MODE: 1
+
+    eslint:
         runs-on: ubuntu-latest
 
         steps:
@@ -18,4 +33,18 @@ jobs:
 
             - run: yarn
 
-            - run: yarn check
+            - run: yarn turbo check-eslint
+
+    typescript:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .tool-versions
+
+            - run: yarn
+
+            - run: yarn turbo check-typescript

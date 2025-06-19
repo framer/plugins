@@ -350,7 +350,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@framer/eslint-config@workspace:packages/eslint-config":
+"@framer/eslint-config@workspace:*, @framer/eslint-config@workspace:packages/eslint-config":
   version: 0.0.0-use.local
   resolution: "@framer/eslint-config@workspace:packages/eslint-config"
   dependencies:
@@ -6259,6 +6259,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "plugins@workspace:."
   dependencies:
+    "@framer/eslint-config": "workspace:*"
     eslint: "npm:^9.29.0"
     jiti: "npm:^2.4.2"
     turbo: "npm:^2.5.4"

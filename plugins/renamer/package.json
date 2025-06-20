@@ -6,7 +6,6 @@
   "scripts": {
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "dev": "vite",
-    "format": "prettier --check '**/*.{js,json,jsx,md,ts,svelte,css}' --write",
     "build": "vite build",
     "check-eslint": "run g:check-eslint",
     "pack": "npx framer-plugin-tools@latest pack",
@@ -22,8 +21,6 @@
     "@sveltejs/vite-plugin-svelte": "^5.1.0",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "prettier": "^3.3.3",
-    "prettier-plugin-svelte": "^3.2.6",
     "svelte": "^5.0.0-next.201",
     "svelte-check": "^3.8.4",
     "vite": "^6.3.5",

@@ -6,15 +6,8 @@ import {
     type ManagedCollectionItemInput,
     type ProtectedMethod,
 } from "framer-plugin"
+import { dataSources, type GreenhouseDataSource, type GreenhouseField } from "./dataSources"
 import { decodeHtml, isCollectionReference } from "./utils"
-import { type GreenhouseDataSource, type GreenhouseField, removeGreenhouseKeys } from "./data-source/types"
-import { jobsDataSource } from "./data-source/jobs"
-import { departmentsDataSource } from "./data-source/departments"
-import { sectionsDataSource } from "./data-source/sections"
-import { schoolsDataSource } from "./data-source/schools"
-import { disciplinesDataSource } from "./data-source/disciplines"
-import { degreesDataSource } from "./data-source/degrees"
-import { officesDataSource } from "./data-source/offices"
 
 export const dataSourceIdPluginKey = "dataSourceId"
 export const slugFieldIdPluginKey = "slugFieldId"
@@ -23,16 +16,6 @@ export const spaceIdPluginKey = "spaceId"
 function getApiEndpoint(boardToken: string, dataSource: GreenhouseDataSource) {
     return `https://boards-api.greenhouse.io/v1/boards/${boardToken}/${dataSource.apiEndpoint}`
 }
-
-export const dataSources = [
-    jobsDataSource,
-    departmentsDataSource,
-    officesDataSource,
-    schoolsDataSource,
-    disciplinesDataSource,
-    degreesDataSource,
-    sectionsDataSource,
-] satisfies GreenhouseDataSource[]
 
 function replaceSupportedCollections(
     dataSource: GreenhouseDataSource,
@@ -89,7 +72,7 @@ export async function getDataSource(boardToken: string, dataSourceId: string): P
             const matchingCollections: ManagedCollection[] = []
             for (const collection of boardCollections) {
                 const collectionDataSourceId = await collection.getPluginData(dataSourceIdPluginKey)
-                if (collectionDataSourceId !== field.getCollectionId?.()) {
+                if (collectionDataSourceId !== field.dataSourceId) {
                     continue
                 }
 
@@ -127,9 +110,15 @@ async function getItems(
     const data = await response.json()
 
     const itemIdBySlug: Map<string, string> = new Map()
+    const idField = fieldsToSync[0]
+    if (!idField) {
+        throw new Error("No ID field found in data source.")
+    }
+
     for (const item of data[dataSource.itemsKey]) {
-        const id = String(item[dataSource.idField])
+        const id = String(item[idField.id])
         const slug = String(item[slugFieldId])
+
         if (!itemIdBySlug.has(slug)) {
             itemIdBySlug.set(slug, id)
             continue
@@ -144,7 +133,7 @@ async function getItems(
     }
 
     for (const item of data[dataSource.itemsKey]) {
-        const id = String(item[dataSource.idField])
+        const id = String(item[idField.id])
         const slug = slugByItemId.get(id)
         if (!slug) {
             continue
@@ -155,7 +144,7 @@ async function getItems(
             const isFieldIgnored = !fieldsToSync.find(field => field.id === fieldName)
             const field = dataSource.fields.find(field => field.id === fieldName)
 
-            if (isFieldIgnored || !field) {
+            if (!field || isFieldIgnored) {
                 continue
             }
 
@@ -183,20 +172,23 @@ async function getItems(
                 case "link":
                     fieldData[field.id] = { value: String(value), type: field.type }
                     break
-                case "multiCollectionReference":
-                    if (!Array.isArray(value) || !value.every(item => typeof item === "string")) {
+                case "multiCollectionReference": {
+                    const ids: string[] = []
+                    if (Array.isArray(value)) {
+                        ids.push(...value.map(item => String(item.id)))
+                    }
+
+                    fieldData[field.id] = { value: ids, type: field.type }
+                    break
+                }
+                case "collectionReference": {
+                    if (typeof value !== "object" || value == null || !("id" in value)) {
                         continue
                     }
 
-                    fieldData[field.id] = { value, type: field.type }
+                    fieldData[field.id] = { value: String(value.id), type: field.type }
                     break
-                case "collectionReference":
-                    if (typeof value !== "string") {
-                        continue
-                    }
-
-                    fieldData[field.id] = { value, type: field.type }
-                    break
+                }
             }
         }
 
@@ -218,31 +210,12 @@ export async function syncCollection(
     fields: readonly ManagedCollectionFieldInput[],
     slugField: ManagedCollectionFieldInput
 ) {
-    if (!framer.isAllowedTo(...importMethods)) {
-        framer.notify("You are not allowed to import this collection.", {
-            variant: "error",
-        })
-        return
-    }
-
-    const sanitizedFields = fields
-        .map(field => ({
-            ...field,
-            name: field.name.trim() || field.id,
-        }))
-        .filter(
-            field =>
-                (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
-                field.collectionId !== ""
-        )
-
     const existingItemsIds = await collection.getItemIds()
     const items = await getItems(dataSource, fields, { boardToken, slugFieldId: slugField.id })
     const unsyncedItems = new Set<string>(
         existingItemsIds.filter(existingItemId => !items.find(item => item.id === existingItemId))
     )
 
-    await collection.setFields(removeGreenhouseKeys(sanitizedFields))
     await collection.removeItems(Array.from(unsyncedItems))
     await collection.addItems(items)
 
@@ -256,8 +229,6 @@ export const syncMethods = [
     "ManagedCollection.addItems",
     "ManagedCollection.setPluginData",
 ] as const satisfies ProtectedMethod[]
-
-export const importMethods = [...syncMethods, "ManagedCollection.setFields"] as const satisfies ProtectedMethod[]
 
 export async function syncExistingCollection(
     collection: ManagedCollection,

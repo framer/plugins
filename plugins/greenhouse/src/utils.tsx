@@ -1,17 +1,9 @@
-import type { GreenhouseField } from "./data-source/types"
+import type { GreenhouseField } from "./dataSources"
 
 export function decodeHtml(html: string) {
     const textarea = document.createElement("textarea")
     textarea.innerHTML = html
     return textarea.value
-}
-
-export function createUniqueSlug(slug: string, id: string, existingSlugs: Set<string>) {
-    if (!existingSlugs.has(slug)) {
-        return slug
-    }
-
-    return `${slug}-${id}`
 }
 
 export function isCollectionReference(field: GreenhouseField) {

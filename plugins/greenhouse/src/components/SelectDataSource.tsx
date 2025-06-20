@@ -1,8 +1,8 @@
 import { framer } from "framer-plugin"
 import { useCallback, useState } from "react"
 import hero from "../assets/hero.png"
-import { dataSources, getDataSource } from "../data"
-import type { GreenhouseDataSource } from "../data-source/types"
+import { getDataSource } from "../data"
+import { dataSources, type GreenhouseDataSource } from "../dataSources"
 
 interface SelectDataSourceProps {
     previousBoardToken?: string | null

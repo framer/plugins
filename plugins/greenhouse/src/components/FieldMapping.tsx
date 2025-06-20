@@ -1,8 +1,8 @@
 import { framer, useIsAllowedTo, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
-import { importMethods, mergeFieldsWithExistingFields, syncCollection } from "../data"
+import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "../data"
 import { isCollectionReference, isMissingReferenceField } from "../utils"
-import type { GreenhouseDataSource, GreenhouseField } from "../data-source/types"
+import { removeGreenhouseKeys, type GreenhouseDataSource, type GreenhouseField } from "../dataSources"
 
 function ChevronIcon() {
     return (
@@ -101,17 +101,13 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
     )
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
-    const isAllowedToImport = useIsAllowedTo(...importMethods)
 
     const [possibleSlugFields] = useState(() =>
         dataSource.fields.filter(field => field.type === "string" && field.canBeUsedAsSlug)
     )
 
     const [selectedSlugField, setSelectedSlugField] = useState<GreenhouseField | null>(
-        possibleSlugFields.find(field => field.id === initialSlugFieldId) ??
-            possibleSlugFields.find(field => field.id === dataSource.slugField) ??
-            possibleSlugFields[0] ??
-            null
+        possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 
     const [fields, setFields] = useState(initialManagedCollectionFields)
@@ -193,6 +189,8 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
         })
     }
 
+    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
@@ -207,8 +205,19 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
         try {
             setStatus("syncing-collection")
 
-            const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
+            const fieldsToSync = fields
+                .filter(field => !ignoredFieldIds.has(field.id))
+                .map(field => ({
+                    ...field,
+                    name: field.name.trim() || field.id,
+                }))
+                .filter(
+                    field =>
+                        (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
+                        field.collectionId !== ""
+                )
 
+            await collection.setFields(removeGreenhouseKeys(fieldsToSync))
             await syncCollection(boardToken, collection, dataSource, fieldsToSync, selectedSlugField)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
@@ -278,9 +287,9 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
                 <footer>
                     <hr className="sticky-top" />
                     <button
-                        disabled={isSyncing || !isAllowedToImport}
+                        disabled={isSyncing || !isAllowedToManage}
                         tabIndex={0}
-                        title={!isAllowedToImport ? "Insufficient permissions" : undefined}
+                        title={!isAllowedToManage ? "Insufficient permissions" : undefined}
                     >
                         {isSyncing ? (
                             <div className="framer-spinner" />

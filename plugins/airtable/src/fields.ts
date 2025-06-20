@@ -235,7 +235,7 @@ function inferAiTextField(fieldSchema: AirtableFieldSchema & { type: "aiText" })
     }
 }
 
-async function inferMultipleLookupValuesField(
+async function inferLookupField(
     fieldSchema: AirtableFieldSchema & { type: "multipleLookupValues" },
     collection: ManagedCollection,
     tableIdBeingLinkedTo: string
@@ -423,7 +423,7 @@ async function inferFieldByType(
             return inferDurationField(fieldSchema)
 
         case "multipleLookupValues":
-            return await inferMultipleLookupValuesField(fieldSchema, collection, tableIdBeingLinkedTo)
+            return await inferLookupField(fieldSchema, collection, tableIdBeingLinkedTo)
 
         case "rollup":
             return await inferRollupField(fieldSchema, collection, tableIdBeingLinkedTo)

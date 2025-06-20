@@ -262,6 +262,33 @@ async function inferMultipleLookupValuesField(
     return { ...inferredField, originalAirtableType: "multipleLookupValues" } as PossibleField
 }
 
+async function inferRollupField(
+    fieldSchema: AirtableFieldSchema & { type: "rollup" },
+    collection: ManagedCollection,
+    tableIdBeingLinkedTo: string
+): Promise<PossibleField> {
+    const { options } = fieldSchema
+
+    // If the rollup field doesn't have a result type, treat as unsupported
+    if (!options.result || typeof options.result !== "object" || !options.result.type) {
+        return createUnsupportedField(fieldSchema)
+    }
+
+    // Create a temporary schema with the result type for recursive inference
+    const resultSchema = {
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        type: options.result.type as AirtableFieldSchema["type"],
+        options: options.result.options as AirtableFieldSchema["options"],
+    } as AirtableFieldSchema
+
+    // Use the helper functions to infer the appropriate type based on the result
+    const inferredField = await inferFieldByType(resultSchema, collection, tableIdBeingLinkedTo, 1)
+
+    // Return the inferred field with the rollup field metadata
+    return { ...inferredField, originalAirtableType: "rollup" } as PossibleField
+}
+
 async function inferRecordLinksField(
     fieldSchema: AirtableFieldSchema & { type: "multipleRecordLinks" },
     collection: ManagedCollection,
@@ -398,8 +425,8 @@ async function inferFieldByType(
         case "multipleLookupValues":
             return await inferMultipleLookupValuesField(fieldSchema, collection, tableIdBeingLinkedTo)
 
-        // Future support for Rollup can be added here
-        // case "rollup":
+        case "rollup":
+            return await inferRollupField(fieldSchema, collection, tableIdBeingLinkedTo)
 
         default:
             return createUnsupportedField(fieldSchema)

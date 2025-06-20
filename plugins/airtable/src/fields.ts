@@ -235,8 +235,8 @@ function inferAiTextField(fieldSchema: AirtableFieldSchema & { type: "aiText" })
     }
 }
 
-function inferSingleCollaboratorField(
-    fieldSchema: AirtableFieldSchema & { type: "singleCollaborator" }
+function inferCollaboratorField(
+    fieldSchema: AirtableFieldSchema & { type: "singleCollaborator" | "createdBy" | "lastModifiedBy" }
 ): PossibleField {
     return {
         id: fieldSchema.id,
@@ -435,7 +435,9 @@ async function inferFieldByType(
             return inferAiTextField(fieldSchema)
 
         case "singleCollaborator":
-            return inferSingleCollaboratorField(fieldSchema)
+        case "createdBy":
+        case "lastModifiedBy":
+            return inferCollaboratorField(fieldSchema)
 
         case "duration":
             return inferDurationField(fieldSchema)

@@ -191,6 +191,20 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                         value: value.name,
                         type: "string",
                     }
+                case "multipleCollaborators":
+                    if (!Array.isArray(value) || value.length === 0) return null
+                    const firstCollaborator = value[0]
+                    if (
+                        !firstCollaborator ||
+                        typeof firstCollaborator !== "object" ||
+                        !("name" in firstCollaborator) ||
+                        typeof firstCollaborator.name !== "string"
+                    )
+                        return null
+                    return {
+                        value: firstCollaborator.name,
+                        type: "string",
+                    }
             }
 
             if (typeof value !== "string") return null

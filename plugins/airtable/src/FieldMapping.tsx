@@ -219,6 +219,16 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         return { ...field, type: "string" } as PossibleField
                     case "formattedText":
                         return { ...field, type: "formattedText" } as PossibleField
+                    case "number":
+                        return { ...field, type: "number" } as PossibleField
+                    case "boolean":
+                        return { ...field, type: "boolean" } as PossibleField
+                    case "color":
+                        return { ...field, type: "color" } as PossibleField
+                    case "date":
+                        return { ...field, type: "date" } as PossibleField
+                    case "enum":
+                        return { ...field, type: "enum" } as PossibleField
                     default:
                         return field
                 }

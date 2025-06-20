@@ -1,7 +1,7 @@
 # Greenhouse Plugin
 
-Plugin for syncing Greehouse jobs into the Framer CMS.
+Plugin for syncing Greenhouse jobs into the Framer CMS.
 
-**By:** @clementroche 
+**By:** @clementroche
 
-![Greehouse Image](../../assets/greenhouse.png)
+![Greenhouse Image](../../assets/greenhouse.png)

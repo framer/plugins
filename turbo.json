@@ -18,6 +18,9 @@
                 "$TURBO_ROOT$/packages/eslint-config/src/**/*"
             ]
         },
+        "check-biome": {
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json", "$TURBO_ROOT$/biome.jsonc"]
+        },
         "check-typescript": {
             "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json"]
         },

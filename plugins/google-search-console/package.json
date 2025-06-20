@@ -1,29 +1,30 @@
 {
-  "name": "google-search-console",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "run g:dev",
-    "build": "VITE_OAUTH_API_DOMAIN=https://oauth.fetch.tools/google-search-console-plugin run g:build",
-    "check-eslint": "run g:check-eslint",
-    "pack": "npx framer-plugin-tools@latest pack",
-    "preview": "run g:preview",
-    "check-typescript": "run g:check-typescript"
-  },
-  "dependencies": {
-    "@ataverascrespo/react18-ts-textfit": "^1.0.0",
-    "aveta": "^1.4.1",
-    "framer-plugin": "^1.1.0",
-    "react": "^18",
-    "react-dom": "^18",
-    "react-error-boundary": "^4.0.13",
-    "react-feather": "^2.0.10",
-    "recharts": "^2.12.7",
-    "sitemap-urls": "^3.0.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18",
-    "@types/react-dom": "^18"
-  }
+    "name": "google-search-console",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "run g:dev",
+        "build": "VITE_OAUTH_API_DOMAIN=https://oauth.fetch.tools/google-search-console-plugin run g:build",
+        "check-biome": "run g:check-biome",
+        "check-eslint": "run g:check-eslint",
+        "pack": "npx framer-plugin-tools@latest pack",
+        "preview": "run g:preview",
+        "check-typescript": "run g:check-typescript"
+    },
+    "dependencies": {
+        "@ataverascrespo/react18-ts-textfit": "^1.0.0",
+        "aveta": "^1.4.1",
+        "framer-plugin": "^1.1.0",
+        "react": "^18",
+        "react-dom": "^18",
+        "react-error-boundary": "^4.0.13",
+        "react-feather": "^2.0.10",
+        "recharts": "^2.12.7",
+        "sitemap-urls": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18",
+        "@types/react-dom": "^18"
+    }
 }

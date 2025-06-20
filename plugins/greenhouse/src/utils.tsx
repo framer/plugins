@@ -1,4 +1,4 @@
-import { GreenhouseField } from "./data-source/types"
+import type { GreenhouseField } from "./data-source/types"
 
 export function decodeHtml(html: string) {
     const textarea = document.createElement("textarea")

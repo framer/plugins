@@ -2,7 +2,7 @@ import { framer, useIsAllowedTo, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { importMethods, mergeFieldsWithExistingFields, syncCollection } from "../data"
 import { isCollectionReference, isMissingReferenceField } from "../utils"
-import { GreenhouseDataSource, GreenhouseField } from "../data-source/types"
+import type { GreenhouseDataSource, GreenhouseField } from "../data-source/types"
 
 function ChevronIcon() {
     return (

@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useState } from "react"
 import { FieldMapping } from "./components/FieldMapping"
 import { SelectDataSource } from "./components/SelectDataSource"
 import { getDataSource, spaceIdPluginKey } from "./data"
-import { GreenhouseDataSource } from "./data-source/types"
+import type { GreenhouseDataSource } from "./data-source/types"
 
 interface AppProps {
     collection: ManagedCollection

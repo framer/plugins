@@ -195,7 +195,10 @@ interface FormulaOption {
 interface RollupOption {
     fieldIdInLinkedTable?: string
     recordLinkFieldId?: string
-    result?: AirtableFieldType | null
+    result?: {
+        type: AirtableFieldType
+        options?: AirtableFieldOptions[AirtableFieldType]
+    } | null
     referencedFieldIds?: string[]
 }
 
@@ -207,7 +210,10 @@ interface CountOption {
 interface LookupOption {
     fieldIdInLinkedTable: string | null
     recordLinkFieldId: string | null
-    result: AirtableFieldType | null
+    result: {
+        type: AirtableFieldType
+        options?: AirtableFieldOptions[AirtableFieldType]
+    } | null
 }
 
 interface RatingOption {

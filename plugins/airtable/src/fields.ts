@@ -235,6 +235,21 @@ function inferAiTextField(fieldSchema: AirtableFieldSchema & { type: "aiText" })
     }
 }
 
+function inferSingleCollaboratorField(
+    fieldSchema: AirtableFieldSchema & { type: "singleCollaborator" }
+): PossibleField {
+    return {
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        userEditable: false,
+        airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
+        type: "string",
+        allowedTypes: ["string"],
+        originalAirtableType: fieldSchema.type,
+    }
+}
+
 async function inferLookupField(
     fieldSchema: AirtableFieldSchema & { type: "multipleLookupValues" },
     collection: ManagedCollection,
@@ -418,6 +433,9 @@ async function inferFieldByType(
 
         case "aiText":
             return inferAiTextField(fieldSchema)
+
+        case "singleCollaborator":
+            return inferSingleCollaboratorField(fieldSchema)
 
         case "duration":
             return inferDurationField(fieldSchema)

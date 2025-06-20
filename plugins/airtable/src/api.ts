@@ -54,7 +54,6 @@ type CountValue = number
 type DateValue = string
 type DateTimeValue = string
 type PhoneNumberValue = string
-type LookupValue = Array<string | number | boolean>
 type SingleSelectValue = string | Choice
 type MultipleSelectsValue = string[] | Choice[]
 type SingleCollaboratorValue = CollaboratorValue
@@ -104,7 +103,6 @@ export type AirtableFieldValues = {
     createdTime: CreatedTimeValue
     rollup: RollupValue
     count: CountValue
-    lookup: LookupValue
     multipleLookupValues: MultipleLookupValuesValue
     autoNumber: AutoNumberValue
     barcode: BarcodeValue
@@ -265,7 +263,6 @@ type AirtableFieldOptions = {
     createdTime: Record<string, never>
     rollup: RollupOption
     count: CountOption
-    lookup: LookupOption
     multipleLookupValues: LookupOption
     autoNumber: Record<string, never>
     barcode: Record<string, never>
@@ -309,7 +306,6 @@ export type AirtableFieldSchema = AirtableBaseEntity & { description?: string } 
         | { type: "createdTime"; options: AirtableFieldOptions["createdTime"] }
         | { type: "rollup"; options: AirtableFieldOptions["rollup"] }
         | { type: "count"; options: AirtableFieldOptions["count"] }
-        | { type: "lookup"; options: AirtableFieldOptions["lookup"] }
         | { type: "multipleLookupValues"; options: AirtableFieldOptions["multipleLookupValues"] }
         | { type: "autoNumber"; options: AirtableFieldOptions["autoNumber"] }
         | { type: "barcode"; options: AirtableFieldOptions["barcode"] }

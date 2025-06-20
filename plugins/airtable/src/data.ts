@@ -181,6 +181,13 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                     value: result,
                     type: "string",
                 }
+            } else if (fieldSchema.airtableType === "singleCollaborator") {
+                if (!value || typeof value !== "object" || !("name" in value) || typeof value.name !== "string")
+                    return null
+                return {
+                    value: value.name,
+                    type: "string",
+                }
             }
 
             if (typeof value !== "string") return null

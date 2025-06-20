@@ -233,7 +233,17 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                 const field = fieldsById.get(fieldSchema.id)
                 if (!field) continue
 
-                const fieldDataEntry = getFieldDataEntryForFieldSchema(fieldSchema, cellValue)
+                let fieldDataEntry: FieldDataEntryInput | null = null
+
+                if (fieldSchema.isLookup) {
+                    // multipleLookupValues returns an array of values. We only import the first value.
+                    if (Array.isArray(cellValue) && cellValue.length > 0) {
+                        fieldDataEntry = getFieldDataEntryForFieldSchema(fieldSchema, cellValue[0])
+                    }
+                } else {
+                    fieldDataEntry = getFieldDataEntryForFieldSchema(fieldSchema, cellValue)
+                }
+
                 if (!fieldDataEntry) continue
 
                 fieldData[fieldSchema.id] = fieldDataEntry

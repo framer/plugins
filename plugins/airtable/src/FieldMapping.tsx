@@ -109,7 +109,8 @@ const FieldMappingRow = memo(
                     )}
                     {!isCollectionReference(field) &&
                         field.allowedTypes?.map(type => {
-                            const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1)
+                            const capitalizedType =
+                                typeof type === "string" ? type.charAt(0).toUpperCase() + type.slice(1) : ""
 
                             return (
                                 <option key={type} value={type}>

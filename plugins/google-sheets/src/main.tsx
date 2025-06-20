@@ -5,10 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { framer } from "framer-plugin"
 import React, { type ReactNode } from "react"
 import ReactDOM from "react-dom/client"
-import { getPluginContext } from "./sheets.ts"
-
 import { App } from "./App.tsx"
 import { PageErrorBoundaryFallback } from "./components/ErrorBoundaryFallback.tsx"
+import { getPluginContext } from "./sheets.ts"
 
 export const queryClient = new QueryClient({
     defaultOptions: {

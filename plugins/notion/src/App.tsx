@@ -3,15 +3,15 @@ import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import "./App.css"
 import { Authentication } from "./Authenticate"
-import { MapDatabaseFields } from "./MapFields"
-import { SelectDatabase } from "./SelectDatabase"
 import { logSyncResult } from "./debug"
+import { MapDatabaseFields } from "./MapFields"
 import {
     type PluginContext,
     type PluginContextNew,
     type PluginContextUpdate,
     useSynchronizeDatabaseMutation,
 } from "./notion"
+import { SelectDatabase } from "./SelectDatabase"
 
 interface AppProps {
     context: PluginContext

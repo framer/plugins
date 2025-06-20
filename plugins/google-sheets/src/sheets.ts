@@ -2,9 +2,9 @@ import { useMutation, useQuery } from "@tanstack/react-query"
 import {
     type FieldDataEntryInput,
     type FieldDataInput,
-    type ManagedCollectionFieldInput,
-    ManagedCollection,
     framer,
+    ManagedCollection,
+    type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import auth from "./auth"
 import { logSyncResult } from "./debug.ts"

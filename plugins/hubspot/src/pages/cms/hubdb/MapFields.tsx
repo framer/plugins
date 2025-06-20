@@ -7,9 +7,9 @@ import { CenteredSpinner } from "../../../components/CenteredSpinner"
 import { FieldMapper, type ManagedCollectionFieldConfig } from "../../../components/FieldMapper"
 import { useSearchParams } from "../../../hooks/useSearchParams"
 import {
-    type HubDBPluginContext,
     getCollectionFieldForHubDBColumn,
     getPossibleSlugFields,
+    type HubDBPluginContext,
     useSyncHubDBTableMutation,
 } from "../../../hubdb"
 import { type PageProps } from "../../../router"

@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react"
 import { type CanvasNode, framer, useIsAllowedTo } from "framer-plugin"
-import { Vector2 } from "./vector2"
-import { Rect2 } from "./rect2"
+import { useEffect, useRef, useState } from "react"
 import { randomRange } from "./randomRange"
+import { Rect2 } from "./rect2"
+import { Vector2 } from "./vector2"
 
 import "./App.css"
 

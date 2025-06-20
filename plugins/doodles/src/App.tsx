@@ -1,7 +1,7 @@
 import * as Slider from "@radix-ui/react-slider"
 import { framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useRef, useState } from "react"
-import { type ReactSketchCanvasRef, ReactSketchCanvas } from "react-sketch-canvas"
+import { ReactSketchCanvas, type ReactSketchCanvasRef } from "react-sketch-canvas"
 
 import "./App.css"
 

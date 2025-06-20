@@ -1,7 +1,6 @@
-import type { AirtableBase, AirtableTable, DataSource } from "./data"
-
 import { framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useState } from "react"
+import type { AirtableBase, AirtableTable, DataSource } from "./data"
 import { getTables, getUserBases } from "./data"
 import { inferFields } from "./fields"
 

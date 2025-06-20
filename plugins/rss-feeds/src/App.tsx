@@ -1,9 +1,9 @@
-import { type ManagedCollection, framer, useIsAllowedTo } from "framer-plugin"
+import { framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
 
 import "./App.css"
 import { useCallback, useState } from "react"
-import { RSSIcon } from "./icons"
 import { importData, rssSources } from "./data"
+import { RSSIcon } from "./icons"
 
 interface Props {
     collection: ManagedCollection

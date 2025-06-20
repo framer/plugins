@@ -1,27 +1,27 @@
 <script lang="ts">
-  import type { Result } from "../search/types";
+import { framer } from "framer-plugin"
 
-  import { fade } from "svelte/transition";
-  import { framer } from "framer-plugin";
-  import VirtualList from "./virtual_list.svelte";
-  import RenameComparison from "./rename_comparison.svelte";
-  import LayerIcon from "./layer_icon.svelte";
-  import PlaceholderRenameComparison from "./placeholder_rename_comparison.svelte";
+import { fade } from "svelte/transition"
+import type { Result } from "../search/types"
+import LayerIcon from "./layer_icon.svelte"
+import PlaceholderRenameComparison from "./placeholder_rename_comparison.svelte"
+import RenameComparison from "./rename_comparison.svelte"
+import VirtualList from "./virtual_list.svelte"
 
-  interface Props {
-    query: string;
-    indexing: boolean;
-    results: Result[];
-    selectedNodeIds: string[];
-    getTextAfterRename: (result: Result) => string;
-  }
+interface Props {
+    query: string
+    indexing: boolean
+    results: Result[]
+    selectedNodeIds: string[]
+    getTextAfterRename: (result: Result) => string
+}
 
-  let { query, indexing, results, selectedNodeIds, getTextAfterRename }: Props = $props();
+let { query, indexing, results, selectedNodeIds, getTextAfterRename }: Props = $props()
 
-  const focusResult = async (result: Result) => {
-    await framer.setSelection(result.id);
-    await framer.zoomIntoView(result.id, { maxZoom: 1 });
-  };
+const focusResult = async (result: Result) => {
+    await framer.setSelection(result.id)
+    await framer.zoomIntoView(result.id, { maxZoom: 1 })
+}
 </script>
 
 <div class="results">

@@ -1,53 +1,53 @@
 .stepper {
-  display: flex;
-  gap: 10px;
+    display: flex;
+    gap: 10px;
 }
 
 .stepper-input {
-  flex-shrink: 1;
+    flex-shrink: 1;
 }
 
 .stepper-controls {
-  background: var(--framer-color-bg-tertiary);
-  border-radius: 8px;
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  width: 62px;
-  position: relative;
+    background: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    width: 62px;
+    position: relative;
 }
 
 .stepper-divider {
-  width: 1px;
-  height: 12px;
-  flex-shrink: 0;
+    width: 1px;
+    height: 12px;
+    flex-shrink: 0;
 }
 
 [data-framer-theme="light"] .stepper-divider {
-  background: #E3E3E3;
+    background: #e3e3e3;
 }
 
 [data-framer-theme="dark"] .stepper-divider {
-  background: #454545;
+    background: #454545;
 }
 
 .stepper-button {
-  background: none;
-  width: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
+    background: none;
+    width: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
 }
 
 .stepper-button:focus {
-  background: none
+    background: none;
 }
 
 .stepper-button:first-child {
-  border-radius: 8px 0 0 8px;
+    border-radius: 8px 0 0 8px;
 }
 
 .stepper-button:last-child {
-  border-radius: 0 8px 8px 0;
+    border-radius: 0 8px 8px 0;
 }

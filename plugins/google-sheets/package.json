@@ -4,6 +4,7 @@
     "scripts": {
         "dev": "run g:dev",
         "build": "run g:build",
+        "check-biome": "run g:check-biome",
         "check-eslint": "run g:check-eslint",
         "preview": "run g:preview",
         "pack": "npx framer-plugin-tools@latest pack",

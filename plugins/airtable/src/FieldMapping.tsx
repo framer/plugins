@@ -1,10 +1,9 @@
-import type { ManagedCollection, ManagedCollectionFieldInput, Field } from "framer-plugin"
-import type { DataSource } from "./data"
-import type { PossibleField } from "./fields"
-
+import type { Field, ManagedCollection, ManagedCollectionFieldInput } from "framer-plugin"
 import { framer, useIsAllowedTo } from "framer-plugin"
-import { useState, useEffect, memo } from "react"
+import { memo, useEffect, useState } from "react"
+import type { DataSource } from "./data"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
+import type { PossibleField } from "./fields"
 import { ALLOWED_FILE_TYPES, isCollectionReference } from "./utils"
 
 function ChevronIcon() {

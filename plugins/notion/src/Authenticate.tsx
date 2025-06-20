@@ -1,9 +1,9 @@
+import { framer } from "framer-plugin"
 import { useEffect, useRef, useState } from "react"
-import { type PluginContext, authorize, getOauthURL, getPluginContext } from "./notion"
 import loginIllustration from "./assets/notion-doodle.png"
 import { Button } from "./components/Button"
+import { authorize, getOauthURL, getPluginContext, type PluginContext } from "./notion"
 import { generateRandomId } from "./utils"
-import { framer } from "framer-plugin"
 
 function useIsDocumentVisibile() {
     const [isVisible, setIsVisible] = useState(document.visibilityState === "visible")
@@ -61,7 +61,10 @@ export function Authentication({ onAuthenticated, context }: AuthenticationProps
     }
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-[20px] pb-4 overflo">
-            <img src={loginIllustration} className="max-w-100% rounded-md flex-shrink-0 select-none pointer-events-none" />
+            <img
+                src={loginIllustration}
+                className="max-w-100% rounded-md flex-shrink-0 select-none pointer-events-none"
+            />
 
             <div className="flex flex-col items-center gap-2 flex-1 justify-center w-full">
                 {isLoading ? (
@@ -70,9 +73,15 @@ export function Authentication({ onAuthenticated, context }: AuthenticationProps
                     </span>
                 ) : (
                     <ol className="list-inside list-decimal w-full text-secondary gap-[4px] text-md flex flex-col flex-1">
-                        <li className="marker:primary"><span className="text-tertiary pl-[6px]">Log in to your Notion account</span></li>
-                        <li className="marker:primary"><span className="text-tertiary pl-[6px]">Pick the database you want to import</span></li>
-                        <li className="marker:primary"><span className="text-tertiary pl-[6px]">Map the database fields to the CMS</span></li>
+                        <li className="marker:primary">
+                            <span className="text-tertiary pl-[6px]">Log in to your Notion account</span>
+                        </li>
+                        <li className="marker:primary">
+                            <span className="text-tertiary pl-[6px]">Pick the database you want to import</span>
+                        </li>
+                        <li className="marker:primary">
+                            <span className="text-tertiary pl-[6px]">Map the database fields to the CMS</span>
+                        </li>
                     </ol>
                 )}
             </div>

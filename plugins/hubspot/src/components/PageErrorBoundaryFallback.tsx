@@ -2,8 +2,8 @@ import { QueryErrorResetBoundary } from "@tanstack/react-query"
 import { framer } from "framer-plugin"
 import type { PropsWithChildren } from "react"
 import { ErrorBoundary } from "react-error-boundary"
-import { PluginError } from "../PluginError"
 import auth from "../auth"
+import { PluginError } from "../PluginError"
 
 export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
     <QueryErrorResetBoundary>

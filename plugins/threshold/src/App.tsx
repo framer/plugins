@@ -1,5 +1,5 @@
 import * as comlink from "comlink"
-import { ImageAsset, framer, useIsAllowedTo } from "framer-plugin"
+import { framer, ImageAsset, useIsAllowedTo } from "framer-plugin"
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "./App.css"
 import { Spinner } from "./Spinner"

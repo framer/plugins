@@ -1,7 +1,7 @@
-import { useCallback, useRef } from "react"
-import { framer, useIsAllowedTo } from "framer-plugin"
-import Webcam from "react-webcam"
 import { useAnimate } from "framer-motion"
+import { framer, useIsAllowedTo } from "framer-plugin"
+import { useCallback, useRef } from "react"
+import Webcam from "react-webcam"
 
 import "./App.css"
 

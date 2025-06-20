@@ -1,165 +1,164 @@
 <script lang="ts">
-  import type { CanvasNode, IndexEntry, Result } from "./search/types";
-  import type { CategoryFilter, Filter, TextFilter } from "./search/filters";
+import { framer } from "framer-plugin"
+import { fade } from "svelte/transition"
+import starsDarkImage from "./assets/stars_dark.png"
+import starsLightImage from "./assets/stars_light.png"
+import Results from "./components/results.svelte"
+import SearchReplace from "./components/search_replace.svelte"
+import Tabs from "./components/tabs.svelte"
+import { BatchProcessResults } from "./search/batch_process_results"
+import { executeFilters } from "./search/execute_filters"
+import type { CategoryFilter, Filter, TextFilter } from "./search/filters"
+import { Indexer } from "./search/indexer"
+import { cleanUpResult } from "./search/result_processors/clean_up_result"
+import { renameResult } from "./search/result_processors/rename_result"
+import type { CanvasNode, IndexEntry, Result } from "./search/types"
+import { assertNever } from "./utils/assert"
 
-  import { fade } from "svelte/transition";
-  import SearchReplace from "./components/search_replace.svelte";
-  import { executeFilters } from "./search/execute_filters";
-  import { framer } from "framer-plugin";
-  import { Indexer } from "./search/indexer";
-  import starsLightImage from "./assets/stars_light.png";
-  import starsDarkImage from "./assets/stars_dark.png";
-  import Results from "./components/results.svelte";
-  import { BatchProcessResults } from "./search/batch_process_results";
-  import Tabs from "./components/tabs.svelte";
-  import { assertNever } from "./utils/assert";
-  import { renameResult } from "./search/result_processors/rename_result";
-  import { cleanUpResult } from "./search/result_processors/clean_up_result";
+let isAllowedToSetAttributes = $state(framer.isAllowedTo("Node.setAttributes"))
 
-  let isAllowedToSetAttributes = $state(framer.isAllowedTo("Node.setAttributes"));
+$effect(() => {
+    const unsubscribe = framer.subscribeToIsAllowedTo("Node.setAttributes", newIsAllowed => {
+        isAllowedToSetAttributes = newIsAllowed
+    })
 
-  $effect(() => {
-    const unsubscribe = framer.subscribeToIsAllowedTo("Node.setAttributes", (newIsAllowed) => {
-      isAllowedToSetAttributes = newIsAllowed;
-    });
+    return unsubscribe
+})
 
-    return unsubscribe;
-  });
+let currentRootId: string | undefined = $state()
+let currentMode: "search" | "clean" = $state("search")
 
-  let currentRootId: string | undefined = $state();
-  let currentMode: "search" | "clean" = $state("search");
+let indexing: boolean = $state(false)
+let replacing: boolean = $state(false)
+let selectedNodeIds: string[] = $state([])
 
-  let indexing: boolean = $state(false);
-  let replacing: boolean = $state(false);
-  let selectedNodeIds: string[] = $state([]);
+let index: Record<string, IndexEntry> = $state({})
 
-  let index: Record<string, IndexEntry> = $state({});
-
-  let textSearchFilter: TextFilter = $state({
+let textSearchFilter: TextFilter = $state({
     id: "text-search",
     type: "text",
     query: "",
     caseSensitive: false,
     regex: false,
-  });
-  let categoryFilter: CategoryFilter = $state({
+})
+let categoryFilter: CategoryFilter = $state({
     id: "category",
     type: "category",
     category: "all",
-  });
+})
 
-  let filters: Filter[] = $state([textSearchFilter, categoryFilter]);
-  let entries: IndexEntry[] = $derived(Object.values(index));
-  let results: Result[] = $derived(executeFilters(filters, entries));
+let filters: Filter[] = $state([textSearchFilter, categoryFilter])
+let entries: IndexEntry[] = $derived(Object.values(index))
+let results: Result[] = $derived(executeFilters(filters, entries))
 
-  let replacement: string = $state("");
+let replacement: string = $state("")
 
-  const indexer = new Indexer({
+const indexer = new Indexer({
     scope: "page",
     includedNodeTypes: ["FrameNode", "SVGNode", "ComponentInstanceNode"],
     includedAttributes: [],
 
     onRestarted: () => {
-      index = {};
-      indexing = false;
+        index = {}
+        indexing = false
     },
 
     onStarted: () => {
-      indexing = true;
-      resultsRenamer.setReady(false);
+        indexing = true
+        resultsRenamer.setReady(false)
     },
 
-    onUpsert: (entry) => {
-      index[entry.id] = entry;
+    onUpsert: entry => {
+        index[entry.id] = entry
     },
 
     onCompleted: () => {
-      indexing = false;
-      resultsRenamer.setReady(true);
+        indexing = false
+        resultsRenamer.setReady(true)
     },
-  });
+})
 
-  const resultsRenamer = new BatchProcessResults({
+const resultsRenamer = new BatchProcessResults({
     process: async (result: Result, node: CanvasNode) => {
-      switch (currentMode) {
-        case "search":
-          await node.setAttributes({
-            name: renameResult(result, replacement),
-          });
+        switch (currentMode) {
+            case "search":
+                await node.setAttributes({
+                    name: renameResult(result, replacement),
+                })
 
-          return;
+                return
 
-        case "clean":
-          await node.setAttributes({
-            name: cleanUpResult(result),
-          });
+            case "clean":
+                await node.setAttributes({
+                    name: cleanUpResult(result),
+                })
 
-          return;
+                return
 
-        default:
-          assertNever(currentMode);
-      }
+            default:
+                assertNever(currentMode)
+        }
     },
 
     onStarted: () => {
-      replacing = true;
+        replacing = true
     },
 
     onProgress: (count, total) => {},
 
     onCompleted: () => {
-      replacing = false;
-      indexer.restart();
+        replacing = false
+        indexer.restart()
     },
-  });
+})
 
-  const renameResults = () => {
+const renameResults = () => {
     if (!isAllowedToSetAttributes) return
 
-    resultsRenamer.start(results);
-  };
+    resultsRenamer.start(results)
+}
 
-  const throttle = (callback: () => void, delay: number = 1000) => {
-    let timeout: number | null = null;
+const throttle = (callback: () => void, delay: number = 1000) => {
+    let timeout: number | null = null
 
     return () => {
-      if (timeout) return;
+        if (timeout) return
 
-      timeout = setTimeout(() => {
-        callback();
-        timeout = null;
-      }, delay);
-    };
-  };
+        timeout = setTimeout(() => {
+            callback()
+            timeout = null
+        }, delay)
+    }
+}
 
-  const throttledStartIndexer = throttle(() => {
-    indexer.restart();
-  });
+const throttledStartIndexer = throttle(() => {
+    indexer.restart()
+})
 
-  $effect(() => {
-    return framer.subscribeToSelection((selection) => {
-      selectedNodeIds = selection.map((node) => node.id);
-    });
-  });
+$effect(() => {
+    return framer.subscribeToSelection(selection => {
+        selectedNodeIds = selection.map(node => node.id)
+    })
+})
 
-  $effect(() => {
-    currentRootId;
-    indexer.restart();
-  });
+$effect(() => {
+    currentRootId
+    indexer.restart()
+})
 
-  $effect(() => {
-    index = {};
-    indexer.start();
+$effect(() => {
+    index = {}
+    indexer.start()
 
     return framer.subscribeToCanvasRoot(async () => {
-      const root = await framer.getCanvasRoot();
-      currentRootId = root.id;
+        const root = await framer.getCanvasRoot()
+        currentRootId = root.id
 
-      if (replacing) return;
+        if (replacing) return
 
-      throttledStartIndexer();
-    });
-  });
+        throttledStartIndexer()
+    })
+})
 </script>
 
 <div class="app">

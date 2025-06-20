@@ -1,8 +1,8 @@
 import {
-    type ManagedCollectionFieldInput,
     type FieldDataInput,
     framer,
     type ManagedCollection,
+    type ManagedCollectionFieldInput,
     type ManagedCollectionItemInput,
     type ProtectedMethod,
 } from "framer-plugin"

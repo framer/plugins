@@ -2,29 +2,29 @@ import { useMutation } from "@tanstack/react-query"
 import {
     type FieldDataEntryInput,
     type FieldDataInput,
-    type ManagedCollectionFieldInput,
     framer,
     ManagedCollection,
+    type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import pLimit from "p-limit"
 import {
     type Column,
+    fetchPublishedTable,
+    fetchTableRows,
     type HubDBCellValue,
     type HubDBFile,
     type HubDBImage,
-    type HubDbTableRowV3,
     type HubDBValueOption,
-    fetchPublishedTable,
-    fetchTableRows,
+    type HubDbTableRowV3,
 } from "./api"
 import {
-    type FieldsById,
-    type SyncResult,
-    type SyncStatus,
     computeFieldSets,
     createFieldSetHash,
+    type FieldsById,
     logSyncResult,
     MAX_CMS_ITEMS,
+    type SyncResult,
+    type SyncStatus,
     slugify,
 } from "./cms"
 import { assert, isDefined } from "./utils"

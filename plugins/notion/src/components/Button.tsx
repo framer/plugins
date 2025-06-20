@@ -1,5 +1,5 @@
-import { Spinner } from "./Spinner"
 import classNames from "classnames"
+import { Spinner } from "./Spinner"
 
 export type ButtonProps = React.ComponentProps<"button"> & {
     isLoading?: boolean

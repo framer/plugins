@@ -7,10 +7,9 @@ import type {
     ManagedCollectionItemInput,
     ProtectedMethod,
 } from "framer-plugin"
-import type { PossibleField } from "./fields"
-
 import { framer } from "framer-plugin"
 import { type AirtableFieldSchema, fetchAllBases, fetchRecords, fetchTable, fetchTables } from "./api"
+import type { PossibleField } from "./fields"
 import { richTextToHTML } from "./utils"
 
 export const PLUGIN_KEYS = {

@@ -1,14 +1,14 @@
 <script lang="ts">
-  import type { IndexNodeType } from "../search/types";
+import type { IndexNodeType } from "../search/types"
 
-  interface Props {
-    type: IndexNodeType;
-  }
+interface Props {
+    type: IndexNodeType
+}
 
-  let { type }: Props = $props();
+let { type }: Props = $props()
 
-  const width = 12;
-  const height = 12;
+const width = 12
+const height = 12
 </script>
 
 <div class="icon" style:width={`${width}px`} style:height={`${height}px`}>

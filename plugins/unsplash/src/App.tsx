@@ -2,8 +2,8 @@ import { QueryErrorResetBoundary, useMutation } from "@tanstack/react-query"
 import cx from "classnames"
 import { Draggable, framer, useIsAllowedTo } from "framer-plugin"
 import {
-    type PropsWithChildren,
     memo,
+    type PropsWithChildren,
     useCallback,
     useDeferredValue,
     useEffect,
@@ -13,7 +13,7 @@ import {
 } from "react"
 import { Blurhash } from "react-blurhash"
 import { ErrorBoundary } from "react-error-boundary"
-import { type UnsplashPhoto, getRandomPhoto, useListPhotosInfinite } from "./api"
+import { getRandomPhoto, type UnsplashPhoto, useListPhotosInfinite } from "./api"
 import { SearchIcon } from "./icons"
 import { Spinner } from "./Spinner"
 

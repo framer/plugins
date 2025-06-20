@@ -17,11 +17,11 @@ import { useMutation, useQuery } from "@tanstack/react-query"
 import {
     type FieldDataEntryInput,
     type FieldDataInput,
+    framer,
     type ManagedCollection,
     type ManagedCollectionField,
     type ManagedCollectionFieldInput,
     type ManagedCollectionItemInput,
-    framer,
 } from "framer-plugin"
 import pLimit from "p-limit"
 import { blocksToHtml, richTextToHTML } from "./blocksToHTML"

@@ -1,5 +1,5 @@
 import { type OGLRenderingContext, Texture } from "ogl"
-import { useEffect, useState, type DependencyList } from "react"
+import { type DependencyList, useEffect, useState } from "react"
 
 export function useImageTexture(
     gl: OGLRenderingContext,

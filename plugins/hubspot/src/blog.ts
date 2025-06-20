@@ -2,19 +2,19 @@ import { useMutation } from "@tanstack/react-query"
 import {
     type FieldDataEntryInput,
     type FieldDataInput,
-    type ManagedCollectionFieldInput,
     framer,
     ManagedCollection,
+    type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import { BlogPost, fetchAllBlogPosts } from "./api"
 import {
-    type FieldsById,
-    type SyncResult,
-    type SyncStatus,
     computeFieldSets,
     createFieldSetHash,
+    type FieldsById,
     logSyncResult,
     MAX_CMS_ITEMS,
+    type SyncResult,
+    type SyncStatus,
 } from "./cms"
 import { HUBSPOT_BLOG_FIELDS } from "./constants"
 import { assert, isDefined } from "./utils"

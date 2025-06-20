@@ -10,8 +10,8 @@ import {
 } from "framer-plugin"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react"
 import "./App.css"
-import { Stepper } from "./Stepper"
 import { isNumber } from "./isNumber"
+import { Stepper } from "./Stepper"
 
 framer.showUI({
     position: "top right",

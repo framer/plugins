@@ -1,7 +1,7 @@
 import { isFullDatabase } from "@notionhq/client"
 import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import classNames from "classnames"
-import { useIsAllowedTo, type ManagedCollectionField, type ManagedCollectionFieldInput } from "framer-plugin"
+import { type ManagedCollectionField, type ManagedCollectionFieldInput, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { Button } from "./components/Button"
 import { CheckboxTextfield } from "./components/CheckboxTexfield"
@@ -13,12 +13,12 @@ import {
     hasDatabaseFieldsChanged,
     hasFieldConfigurationChanged,
     isSupportedNotionProperty,
-    richTextToPlainText,
-    supportedCMSTypeByNotionPropertyType,
     type NotionProperty,
     type PluginContext,
+    richTextToPlainText,
     type SynchronizeMutationOptions,
     type SynchronizeProgress,
+    supportedCMSTypeByNotionPropertyType,
 } from "./notion"
 import { assert, syncMethods } from "./utils"
 

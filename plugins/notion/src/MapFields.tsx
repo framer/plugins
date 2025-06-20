@@ -4,7 +4,7 @@ import classNames from "classnames"
 import { useIsAllowedTo, type ManagedCollectionField, type ManagedCollectionFieldInput } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { Button } from "./components/Button"
-import { CheckboxTextfield } from "./components/CheckboxTexfield"
+import { CheckboxTextfield } from "./components/CheckboxTextfield"
 import { IconChevron } from "./components/Icons"
 import {
     getCollectionFieldForProperty,
@@ -23,7 +23,13 @@ import {
 import { assert, syncMethods } from "./utils"
 
 function getSortedProperties(database: GetDatabaseResponse): NotionProperty[] {
-    return getNotionProperties(database).sort((propertyA, propertyB) => {
+    const properties = getNotionProperties(database)
+    return properties.sort((propertyA, propertyB) => {
+        // Put title field first
+        if (propertyA.type === "title") return -1
+        if (propertyB.type === "title") return 1
+
+        // Then sort by supported status
         const a = isSupportedNotionProperty(propertyA) ? -1 : 0
         const b = isSupportedNotionProperty(propertyB) ? -1 : 0
         return a - b
@@ -98,18 +104,18 @@ function getLastSynchronizedAtTimestamp(
 }
 
 const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
-    boolean: "Boolean",
+    boolean: "Toggle",
     date: "Date",
     number: "Number",
     formattedText: "Formatted Text",
     color: "Color",
-    enum: "Enum",
+    enum: "Option",
     file: "File",
     image: "Image",
     link: "Link",
     string: "String",
     collectionReference: "Reference",
-    multiCollectionReference: "Multi Reference",
+    multiCollectionReference: "Multi-Reference",
 }
 
 export function MapDatabaseFields({
@@ -215,15 +221,24 @@ export function MapDatabaseFields({
         })
     }
 
-    const title = richTextToPlainText(database.title)
+    const plainTextTitle = richTextToPlainText(database.title)
+    const title = plainTextTitle.trim() ? plainTextTitle : "Untitled"
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2 flex-1">
-            <div className="tailwind-hell-escape-hatch-gradient-top" />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2 flex-1 select-none">
+            <div className="tailwind-hell-escape-hatch-gradient-top pointer-events-none" />
 
             <div className="h-[1px] border-b border-divider mb-2 sticky top-0" />
 
             <div className="flex-1 flex flex-col gap-6">
+                <a
+                    href={database.url}
+                    target="_blank"
+                    className="group w-fit max-w-full flex flex-row items-center gap-1.5"
+                >
+                    {database.icon && <DatabaseIcon icon={database.icon} size={24} />}
+                    <span className="group-hover:underline text-primary text-base font-bold">{title}</span>
+                </a>
                 <div className="flex flex-col gap-2 w-full">
                     <label className="text-tertiary" htmlFor="collectionName">
                         Slug Field
@@ -244,7 +259,7 @@ export function MapDatabaseFields({
                 </div>
 
                 <div className="flex flex-col gap-[10px] w-full items-center justify-center pb-[10px]">
-                    <div className="grid grid-cols-fieldPicker gap-3 w-full items-center justify-center text-tertiary mb-[-3px]">
+                    <div className="grid grid-cols-fieldPicker gap-2.5 w-full items-center justify-center text-tertiary mb-[-3px]">
                         <span>Notion Property</span>
                         <span className="col-start-3">Field Name</span>
                         <span>Field Type</span>
@@ -259,8 +274,8 @@ export function MapDatabaseFields({
                                 <Fragment key={property.id}>
                                     <CheckboxTextfield
                                         value={property.name}
-                                        disabled={!isSupported || !isAllowedToManage}
-                                        checked={!disabledFieldIds.has(property.id)}
+                                        disabled={!isSupported}
+                                        checked={isSupported ? !disabledFieldIds.has(property.id) : false}
                                         onChange={() => {
                                             handleFieldToggle(property.id)
                                         }}
@@ -277,7 +292,8 @@ export function MapDatabaseFields({
                                         type="text"
                                         className={classNames(
                                             "w-full",
-                                            (!isSupported || !isAllowedToManage) && "opacity-50"
+                                            (!isSupported || !isAllowedToManage) && "opacity-50",
+                                            !isSupported && "col-span-2"
                                         )}
                                         disabled={
                                             !isSupported || !isAllowedToManage || disabledFieldIds.has(property.id)
@@ -288,31 +304,29 @@ export function MapDatabaseFields({
                                             handleFieldNameChange(property.id, e.target.value)
                                         }}
                                     ></input>
-                                    <select
-                                        className={classNames(
-                                            "w-full",
-                                            (!isSupported || !isAllowedToManage) && "opacity-50"
-                                        )}
-                                        onChange={event =>
-                                            handleFieldTypeChange(
-                                                property.id,
-                                                event.target.value as ManagedCollectionField["type"]
-                                            )
-                                        }
-                                        disabled={!isSupported || !isAllowedToManage}
-                                        value={!isSupported ? "unsupported" : fieldTypeByFieldId[property.id]}
-                                    >
-                                        {!isSupported && (
-                                            <option value="unsupported" disabled>
-                                                Unsupported
-                                            </option>
-                                        )}
-                                        {fieldOptions?.map(fieldOption => (
-                                            <option key={fieldOption} value={fieldOption}>
-                                                {labelByFieldTypeOption[fieldOption]}
-                                            </option>
+                                    {isSupported &&
+                                        (fieldOptions?.length === 1 ? (
+                                            <div className="w-full self-stretch bg-tertiary text-primary flex flex-col justify-center rounded-lg px-2.5">
+                                                {labelByFieldTypeOption[fieldOptions[0]]}
+                                            </div>
+                                        ) : (
+                                            <select
+                                                className="w-full cursor-pointer px-2.5"
+                                                onChange={event =>
+                                                    handleFieldTypeChange(
+                                                        property.id,
+                                                        event.target.value as ManagedCollectionField["type"]
+                                                    )
+                                                }
+                                                value={fieldTypeByFieldId[property.id]}
+                                            >
+                                                {fieldOptions?.map(fieldOption => (
+                                                    <option key={fieldOption} value={fieldOption}>
+                                                        {labelByFieldTypeOption[fieldOption]}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         ))}
-                                    </select>
                                 </Fragment>
                             )
                         })}
@@ -321,7 +335,7 @@ export function MapDatabaseFields({
             </div>
 
             <div className="left-0 bottom-0 pb-[15px] w-full flex justify-between sticky bg-primary pt-4 border-t border-divider border-opacity-20 items-center max-w-full">
-                <div className="tailwind-hell-escape-hatch-gradient-bottom" />
+                <div className="tailwind-hell-escape-hatch-gradient-bottom pointer-events-none" />
 
                 <Button
                     variant="primary"
@@ -335,4 +349,28 @@ export function MapDatabaseFields({
             </div>
         </form>
     )
+}
+
+interface DatabaseIconProps {
+    icon: {
+        type: string
+        emoji?: string
+        external?: { url: string }
+        file?: { url: string }
+    }
+    size?: number
+}
+
+function DatabaseIcon({ icon, size = 20 }: DatabaseIconProps) {
+    if (!icon) return null
+
+    switch (icon.type) {
+        case "emoji":
+            return <span style={{ fontSize: `${size}px` }}>{icon.emoji}</span>
+        case "external":
+        case "file":
+            return <img src={icon[icon.type]?.url} style={{ width: size, height: size }} className="rounded-sm" />
+    }
+
+    return null
 }

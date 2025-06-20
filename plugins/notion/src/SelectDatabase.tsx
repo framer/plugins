@@ -3,6 +3,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react"
 import notionConnectSrc from "./assets/notion-connect.png"
 import { richTextToPlainText, useDatabasesQuery } from "./notion"
 import { assert } from "./utils"
+import { Button } from "./components/Button"
 
 interface SelectDatabaseProps {
     onDatabaseSelected: (database: GetDatabaseResponse) => void
@@ -66,8 +67,8 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
     const selectEnabled = !isLoadingOrFetching && Boolean(data && data.length > 0)
 
     return (
-        <form className="flex flex-col gap-[10px] w-full h-full" onSubmit={handleSubmit}>
-            <img src={notionConnectSrc} className="rounded-md" />
+        <form className="flex flex-col gap-[10px] w-full h-full select-none" onSubmit={handleSubmit}>
+            <img src={notionConnectSrc} draggable={false} className="rounded-md" />
 
             <p>
                 To manually connect a database, open it in Notion, click on the three dots icon in the top right corner,
@@ -75,11 +76,11 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
             </p>
 
             <div className="flex flex-col gap-[10px] mt-auto pb-[15px]">
-                <div className="flex gap-[10px]">
+                <div className="flex flex-row gap-[10px]">
                     <select
                         value={selectedDatabase ?? ""}
                         onChange={event => setSelectedDatabase(event.target.value)}
-                        className="flex-1 shrink-1"
+                        className="flex-1 shrink-1 cursor-pointer"
                         disabled={!selectEnabled}
                     >
                         {isLoadingOrFetching && (
@@ -104,12 +105,41 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
                             </>
                         )}
                     </select>
+                    <a
+                        href={selectedDatabase ? `https://notion.so/${selectedDatabase?.replace(/-/g, "")}` : ""}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <button type="button" disabled={!selectedDatabase} className="aspect-square w-auto p-0">
+                            <LinkArrowIcon />
+                        </button>
+                    </a>
                 </div>
 
-                <button type="submit" disabled={!selectedDatabase}>
+                <Button type="submit" variant="primary" disabled={!selectedDatabase}>
                     Next
-                </button>
+                </Button>
             </div>
         </form>
+    )
+}
+
+function LinkArrowIcon() {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M17 7l-10 10" />
+            <path d="M8 7l9 0l0 9" />
+        </svg>
     )
 }

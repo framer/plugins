@@ -54,13 +54,41 @@ export type NotionProperty = GetDatabaseResponse["properties"][string]
 // property so it displays in the list where you can configure properties to be
 // synced with the CMS
 const pageContentId = "page-content"
-export const pageContentProperty: SupportedNotionProperty = {
-    type: "rich_text",
+const pageContentProperty: SupportedNotionProperty = {
+    type: "page-content",
     id: pageContentId,
     name: "Content",
     description: "Page Content",
-    rich_text: {},
 }
+
+const pageCoverImageId = "page-cover"
+const pageCoverImageProperty: SupportedNotionProperty = {
+    type: "cover-image",
+    id: pageCoverImageId,
+    name: "Cover Image",
+    description: "Page Cover Image",
+}
+
+const imageFileExtensions = ["jpg", "jpeg", "png", "gif", "apng", "webp", "svg"]
+const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
+const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
+
+const defaultValueForFieldType: Record<ManagedCollectionField["type"], unknown> = {
+    string: "",
+    number: 0,
+    boolean: false,
+    date: null,
+    formattedText: "",
+    image: null,
+    link: "",
+    file: null,
+    enum: null,
+    color: "",
+    collectionReference: null,
+    multiCollectionReference: null,
+}
+
+const noneOptionId = "__NONE__"
 
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.
@@ -76,8 +104,8 @@ if (isAuthenticated()) {
 export function getNotionProperties(database: GetDatabaseResponse) {
     const result: NotionProperty[] = []
 
-    // This property is always there but not included in `"database.properties"
-    result.push(pageContentProperty)
+    // These properties are always there but not included in `"database.properties"
+    result.push(pageContentProperty, pageCoverImageProperty)
 
     for (const key in database.properties) {
         const property = database.properties[key]
@@ -122,7 +150,7 @@ export function initNotionClient() {
 }
 
 // The order in which we display slug fields
-const preferedSlugFieldOrder: NotionProperty["type"][] = ["title", "rich_text"]
+const preferedSlugFieldOrder: NotionProperty["type"][] = ["title", "rich_text", "unique_id", "formula", "rollup"]
 
 /**
  * Given a Notion Database returns a list of possible fields that can be used as
@@ -135,11 +163,8 @@ export function getPossibleSlugFields(database: GetDatabaseResponse) {
         const property = database.properties[key]
         assert(property)
 
-        switch (property.type) {
-            case "title":
-            case "rich_text":
-                options.push(property)
-                break
+        if (preferedSlugFieldOrder.includes(property.type)) {
+            options.push(property)
         }
     }
 
@@ -194,12 +219,26 @@ export const supportedNotionPropertyTypes = [
     "url",
     "files",
     "relation",
+    "phone_number",
+    "unique_id",
+    "people",
+    "created_by",
+    "last_edited_by",
+    "formula",
+    "rollup",
 ] satisfies ReadonlyArray<NotionProperty["type"]>
 
 type SupportedPropertyType = (typeof supportedNotionPropertyTypes)[number]
-type SupportedNotionProperty = Extract<NotionProperty, { type: SupportedPropertyType }>
+type CustomPropertyType = "cover-image" | "page-content"
 
-export function isSupportedNotionProperty(property: NotionProperty): property is SupportedNotionProperty {
+type SupportedNotionProperty =
+    | Extract<NotionProperty, { type: SupportedPropertyType }>
+    | { type: CustomPropertyType; id: string; name: string; description: string }
+
+export function isSupportedNotionProperty(
+    property: NotionProperty | { type: CustomPropertyType }
+): property is SupportedNotionProperty {
+    if (property.type === "cover-image" || property.type === "page-content") return true
     return supportedNotionPropertyTypes.includes(property.type as SupportedPropertyType)
 }
 
@@ -208,16 +247,25 @@ export const supportedCMSTypeByNotionPropertyType = {
     date: ["date"],
     number: ["number"],
     title: ["string"],
-    rich_text: ["formattedText", "string"],
+    rich_text: ["formattedText", "string", "color"],
     created_time: ["date"],
     last_edited_time: ["date"],
     select: ["enum"],
     status: ["enum"],
-    url: ["link"],
-    email: ["formattedText", "string"],
+    url: ["link", "image", "file", "string"],
+    email: ["string", "formattedText", "link"],
     files: ["file", "image"],
-    relation: ["multiCollectionReference"],
-} satisfies Record<SupportedPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
+    relation: ["multiCollectionReference", "collectionReference"],
+    phone_number: ["string", "link"],
+    unique_id: ["string", "number"],
+    people: ["string"],
+    created_by: ["string"],
+    last_edited_by: ["string"],
+    formula: ["string", "number", "boolean", "date", "link", "image", "file", "color"],
+    rollup: ["string", "number", "boolean", "date", "link", "image", "file", "color"],
+    "cover-image": ["image"],
+    "page-content": ["formattedText"],
+} satisfies Record<SupportedPropertyType | CustomPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
 
 function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
     propertyType: T,
@@ -235,7 +283,7 @@ function assertFieldTypeMatchesPropertyType<T extends SupportedPropertyType>(
  * That maps the Notion Property to the Framer CMS collection property type
  */
 export function getCollectionFieldForProperty<
-    TProperty extends Extract<NotionProperty, { type: SupportedPropertyType }>,
+    TProperty extends Extract<NotionProperty, { type: SupportedPropertyType | CustomPropertyType }>,
 >(
     property: TProperty,
     fieldType: ManagedCollectionField["type"],
@@ -243,7 +291,9 @@ export function getCollectionFieldForProperty<
 ): ManagedCollectionFieldInput | null {
     switch (property.type) {
         case "email":
-        case "rich_text": {
+        case "rich_text":
+        case "unique_id":
+        case "url": {
             assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
             return {
@@ -253,8 +303,30 @@ export function getCollectionFieldForProperty<
                 userEditable: false,
             }
         }
+        case "formula":
+        case "rollup": {
+            assertFieldTypeMatchesPropertyType(property.type, fieldType)
+
+            if (fieldType === "file") {
+                return {
+                    type: fieldType,
+                    id: property.id,
+                    name: property.name,
+                    userEditable: false,
+                    allowedFileTypes: [],
+                }
+            }
+
+            return {
+                type: fieldType,
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
         case "date":
-        case "last_edited_time": {
+        case "last_edited_time":
+        case "created_time": {
             assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
             return {
@@ -298,17 +370,11 @@ export function getCollectionFieldForProperty<
                 userEditable: false,
             }
         }
-        case "created_time": {
-            assertFieldTypeMatchesPropertyType(property.type, fieldType)
-
-            return {
-                type: "date",
-                id: property.id,
-                name: property.name,
-                userEditable: false,
-            }
-        }
-        case "title": {
+        case "title":
+        case "phone_number":
+        case "people":
+        case "created_by":
+        case "last_edited_by": {
             assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
             return {
@@ -325,22 +391,12 @@ export function getCollectionFieldForProperty<
                 type: "enum",
                 id: property.id,
                 name: property.name,
-                cases: property.status.groups.map(group => {
+                cases: property.status.options.map(option => {
                     return {
-                        id: group.id,
-                        name: group.name,
+                        id: option.id,
+                        name: option.name,
                     }
                 }),
-                userEditable: false,
-            }
-        }
-        case "url": {
-            assertFieldTypeMatchesPropertyType(property.type, fieldType)
-
-            return {
-                type: "link",
-                id: property.id,
-                name: property.name,
                 userEditable: false,
             }
         }
@@ -377,10 +433,26 @@ export function getCollectionFieldForProperty<
             }
 
             return {
-                type: "multiCollectionReference",
+                type: fieldType,
                 id: property.id,
                 name: property.name,
                 collectionId: collectionId,
+                userEditable: false,
+            }
+        }
+        case "cover-image": {
+            return {
+                type: "image",
+                id: property.id,
+                name: property.name,
+                userEditable: false,
+            }
+        }
+        case "page-content": {
+            return {
+                type: "formattedText",
+                id: property.id,
+                name: property.name,
                 userEditable: false,
             }
         }
@@ -396,8 +468,10 @@ export function richTextToPlainText(richText: RichTextItemResponse[]) {
 
 export function getFieldDataEntryInput(
     property: PageObjectResponse["properties"][string],
-    fieldType: ManagedCollectionField["type"]
+    field: ManagedCollectionField
 ): FieldDataEntryInput | undefined {
+    const fieldType = field.type as ManagedCollectionField["type"]
+
     switch (property.type) {
         case "checkbox": {
             return {
@@ -423,6 +497,11 @@ export function getFieldDataEntryInput(
                     type: "formattedText",
                     value: richTextToHTML(property.rich_text),
                 }
+            } else if (fieldType === "color") {
+                return {
+                    type: "color",
+                    value: richTextToPlainText(property.rich_text),
+                }
             }
 
             return {
@@ -430,12 +509,48 @@ export function getFieldDataEntryInput(
                 value: richTextToPlainText(property.rich_text),
             }
         }
+        case "email": {
+            if (fieldType === "formattedText") {
+                return {
+                    type: "formattedText",
+                    value: `<p>${property.email ?? ""}</p>`,
+                }
+            } else if (fieldType === "link") {
+                return {
+                    type: "link",
+                    value: EMAIL_REGEX.test(property.email ?? "") ? `mailto:${property.email}` : "",
+                }
+            }
+
+            return {
+                type: "string",
+                value: property.email ?? "",
+            }
+        }
         case "select": {
-            if (!property.select) return undefined
+            if (!property.select) {
+                return {
+                    type: "enum",
+                    value: field?.cases[0].id ?? null,
+                }
+            }
 
             return {
                 type: "enum",
                 value: property.select.id,
+            }
+        }
+        case "status": {
+            if (!property.status) {
+                return {
+                    type: "enum",
+                    value: field?.cases[0].id ?? null,
+                }
+            }
+
+            return {
+                type: "enum",
+                value: property.status.id,
             }
         }
         case "title":
@@ -458,19 +573,30 @@ export function getFieldDataEntryInput(
             }
         }
         case "url": {
-            return {
-                type: "link",
-                value: property.url,
+            const value = property.url ?? ""
+            switch (fieldType) {
+                case "link":
+                case "file":
+                    return { type: fieldType, value: isValidUrl(value) ? value : "" }
+                case "image":
+                    return { type: fieldType, value: isImageFileUrl(value) ? value : "" }
+                default:
+                    return { type: fieldType, value }
             }
         }
         case "unique_id": {
-            if (Number.isNaN(property.unique_id.number) || typeof property.unique_id.number !== "number") {
-                return undefined
+            if (fieldType === "string") {
+                return {
+                    type: "string",
+                    value: property.unique_id.prefix
+                        ? `${property.unique_id.prefix}-${property.unique_id.number}`
+                        : String(property.unique_id.number),
+                }
             }
 
             return {
                 type: "number",
-                value: property.unique_id.number,
+                value: property.unique_id.number as number,
             }
         }
         case "date": {
@@ -480,31 +606,198 @@ export function getFieldDataEntryInput(
             }
         }
         case "relation": {
+            if (fieldType === "collectionReference") {
+                return {
+                    type: "collectionReference",
+                    value: property.relation[0]?.id ?? null,
+                }
+            }
+
             return {
                 type: "multiCollectionReference",
                 value: property.relation.map(({ id }) => id),
             }
         }
         case "files": {
-            const firstFile = property.files[0]
-            if (!firstFile) return { type: "file", value: null }
+            for (const file of property.files) {
+                let url = ""
 
-            if (firstFile.type === "external" && firstFile.external.url) {
+                if (file.type === "external") {
+                    url = file.external.url
+                } else if (file.type === "file") {
+                    url = file.file.url
+                }
+
+                if (!url) continue
+
+                if (fieldType === "image") {
+                    if (!isImageFileUrl(url)) {
+                        continue
+                    }
+                }
+
+                return {
+                    type: fieldType,
+                    value: url,
+                }
+            }
+            return {
+                type: fieldType,
+                value: "",
+            }
+        }
+        case "phone_number": {
+            if (fieldType === "link") {
                 return {
                     type: "link",
-                    value: firstFile.external.url,
+                    value: PHONE_REGEX.test(property.phone_number ?? "") ? `tel:${property.phone_number}` : "",
                 }
             }
 
-            const isFileOrImage = fieldType === "file" || fieldType === "image"
-            if (firstFile.type === "file" && isFileOrImage) {
+            return {
+                type: "string",
+                value: property.phone_number ?? "",
+            }
+        }
+        case "people": {
+            const firstUser = property.people[0]
+            if (!firstUser) return { type: "string", value: "" }
+            return {
+                type: "string",
+                value: "name" in firstUser ? firstUser.name : "",
+            }
+        }
+        case "created_by": {
+            return {
+                type: "string",
+                value: "name" in property.created_by ? property.created_by.name : "",
+            }
+        }
+        case "last_edited_by": {
+            return {
+                type: "string",
+                value: "name" in property.last_edited_by ? property.last_edited_by.name : "",
+            }
+        }
+
+        case "formula": {
+            const value = property.formula
+
+            if (!value) {
                 return {
                     type: fieldType,
-                    value: firstFile.file.url,
+                    value: defaultValueForFieldType[fieldType] ?? null,
                 }
+            }
+
+            switch (fieldType) {
+                case "string":
+                case "color":
+                    return {
+                        type: "color",
+                        value: String(value[value.type] ?? ""),
+                    }
+                case "link":
+                case "image":
+                case "file":
+                    const url = String(value[value.type] ?? "")
+                    if (url && isValidUrl(url)) {
+                        return {
+                            type: fieldType,
+                            value: url,
+                        }
+                    }
+                    return {
+                        type: fieldType,
+                        value: "",
+                    }
+                case "number":
+                    return {
+                        type: "number",
+                        value: Number(value[value.type] ?? 0),
+                    }
+                case "date":
+                    return {
+                        type: "date",
+                        value: value.type == "date" ? formatDateString(value.date) : null,
+                    }
+                case "boolean":
+                    return {
+                        type: "boolean",
+                        value: value.type == "boolean" ? value.boolean : Boolean(value[value.type]),
+                    }
+                default:
+                    return {
+                        type: fieldType,
+                        value: defaultValueForFieldType[fieldType] ?? null,
+                    }
+            }
+        }
+        case "rollup": {
+            const value = property.rollup
+
+            let result = null
+
+            switch (value?.type) {
+                case "array":
+                    const item = value.array[0]
+                    if (item) {
+                        const fieldDataEntry = getFieldDataEntryInput(item, field)
+                        if (fieldDataEntry) {
+                            result = fieldDataEntry.value || (defaultValueForFieldType[fieldType] ?? null)
+                        }
+                    } else {
+                        result = defaultValueForFieldType[fieldType] ?? null
+                    }
+                    break
+                case "number":
+                    result = value.number ?? 0
+                    break
+                case "date":
+                    result = formatDateString(value.date)
+                    break
+                default:
+                    result = defaultValueForFieldType[fieldType] ?? null
+                    break
+            }
+
+            switch (fieldType) {
+                case "string":
+                case "date":
+                case "color":
+                    if (typeof result !== "string") {
+                        result = ""
+                    }
+                    break
+                case "image":
+                case "link":
+                case "file":
+                    if (!result || !isValidUrl(result)) {
+                        result = ""
+                    }
+                    break
+                case "number":
+                    if (typeof result !== "number") {
+                        result = 0
+                    }
+                    break
+                case "boolean":
+                    if (typeof result !== "boolean") {
+                        result = false
+                    }
+                    break
+                default:
+                    break
+            }
+
+            return {
+                type: fieldType,
+                value: result,
             }
         }
     }
+
+    return null
 }
 
 export interface SynchronizeProgress {
@@ -516,7 +809,7 @@ export interface SynchronizeProgress {
 type OnProgressHandler = (progress: SynchronizeProgress) => void
 
 export interface SynchronizeMutationOptions {
-    fields: ManagedCollectionFieldInput[]
+    fields: ManagedCollectionField[]
     ignoredFieldIds: string[]
     lastSyncedTime: string | null
     slugFieldId: string
@@ -574,20 +867,20 @@ async function processItem(
         assert(property)
 
         if (property.id === slugFieldId) {
-            const resolvedSlug = getFieldDataEntryInput(property, "string")
+            const resolvedSlug = getFieldDataEntryInput(property, { type: "string" } as ManagedCollectionField)
             assert(typeof resolvedSlug?.value === "string", "Slug value is not a string")
             slugValue = slugify(resolvedSlug.value as string)
         }
 
-        const field = fieldsById.get(property.id)
+        const field = fieldsById.get(property.id) as ManagedCollectionField
 
         // We can continue if the property was not included in the field mapping
         if (!field) {
             continue
         }
 
-        const fieldDataEntry = getFieldDataEntryInput(property, field.type)
-        if (!fieldDataEntry) {
+        const fieldDataEntry = getFieldDataEntryInput(property, field)
+        if (fieldDataEntry === null || fieldDataEntry === undefined) {
             status.warnings.push({
                 url: item.url,
                 fieldId: field.id,
@@ -607,6 +900,14 @@ async function processItem(
         }
     }
 
+    if (fieldsById.has(pageCoverImageProperty.id) && item.cover) {
+        if (item.cover.type === "external") {
+            fieldData[pageCoverImageProperty.id] = { type: "image", value: item.cover.external.url }
+        } else if (item.cover.type === "file") {
+            fieldData[pageCoverImageProperty.id] = { type: "image", value: item.cover.file.url }
+        }
+    }
+
     if (!slugValue) {
         status.warnings.push({
             url: item.url,
@@ -622,7 +923,7 @@ async function processItem(
     }
 }
 
-type FieldsById = Map<FieldId, ManagedCollectionFieldInput>
+type FieldsById = Map<FieldId, ManagedCollectionField>
 
 async function processAllItems(
     data: PageObjectResponse[],
@@ -654,7 +955,9 @@ async function processAllItems(
 
             if (isUnchangedSinceLastSync(item.last_edited_time, lastSyncedDate)) {
                 status.info.push({
-                    message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSyncedDate!)}`,
+                    message: `Skipping. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(
+                        lastSyncedDate!
+                    )}`,
                     url: item.url,
                 })
                 return null
@@ -708,7 +1011,7 @@ export async function synchronizeDatabase(
 
     const collection = await framer.getActiveManagedCollection()
 
-    const fieldsById = new Map<string, ManagedCollectionFieldInput>()
+    const fieldsById = new Map<string, ManagedCollectionField>()
     for (const field of fields) {
         fieldsById.set(field.id, field)
     }
@@ -1000,4 +1303,35 @@ export async function* iteratePaginatedAPI<Args extends PaginatedArgs, Item>(
         seenCursors.add(response.next_cursor)
         nextCursor = response.next_cursor
     } while (nextCursor)
+}
+
+function formatDateString(value: string) {
+    if (!value) return null
+
+    // Remove time from ISO string to prevent time zone issues when importing to Framer.
+    const date = new Date(value)
+
+    // Set the time to midnight (00:00:00.000)
+    date.setHours(0, 0, 0, 0)
+
+    return date.toISOString()
+}
+
+function isValidUrl(url: string): boolean {
+    if (!url) return false
+
+    try {
+        new URL(url)
+        return true
+    } catch {
+        return false
+    }
+}
+
+function isImageFileUrl(url: string): boolean {
+    if (!isValidUrl(url)) return false
+
+    // Remove URL parameters by taking everything before '?'
+    const urlWithoutParams = url.split("?")[0].toLowerCase()
+    return imageFileExtensions.some(ext => urlWithoutParams.endsWith(ext))
 }

@@ -1,51 +1,53 @@
 import { framer } from "framer-plugin"
-import { useState } from "react"
-import { type DataSource, getDataSource, dataSourceOptions } from "../data"
-import Asset from "../../assets/Asset.png"
+import { useCallback, useState } from "react"
+import hero from "../assets/hero.png"
+import { dataSources, getDataSource } from "../data"
+import { GreenhouseDataSource } from "../data-source/types"
 
 interface SelectDataSourceProps {
-    onSelectDataSource: (dataSource: DataSource) => void
-    previousDataSourceId?: string | null
     previousBoardToken?: string | null
-    onSelectBoardToken?: (boardToken: string) => void
+    onSelectBoardToken: (boardToken: string) => void
+    previousDataSourceId?: string | null
+    onSelectDataSource: (dataSource: GreenhouseDataSource) => void
 }
 
 export function SelectDataSource({
-    onSelectDataSource,
-    previousDataSourceId,
     previousBoardToken,
+    onSelectBoardToken,
+    previousDataSourceId,
+    onSelectDataSource,
 }: SelectDataSourceProps) {
-    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(
-        previousDataSourceId ?? dataSourceOptions[0].id
-    )
+    const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
+    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(previousDataSourceId ?? dataSources[0].id)
     const [isLoading, setIsLoading] = useState(false)
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
+    const handleSubmit = useCallback(
+        (event: React.FormEvent<HTMLFormElement>) => {
+            event.preventDefault()
 
-        const boardToken = (event.target as HTMLFormElement).boardToken.value
-        const collection = (event.target as HTMLFormElement).collection.value
-
-        if (!boardToken || !collection) return
-
-        try {
             setIsLoading(true)
 
-            const dataSource = await getDataSource(boardToken, selectedDataSourceId)
-            onSelectDataSource(dataSource)
-        } catch (error) {
-            console.error(error)
-            framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
-                variant: "error",
-            })
-        } finally {
-            setIsLoading(false)
-        }
-    }
+            getDataSource(boardToken, selectedDataSourceId)
+                .then(dataSource => {
+                    onSelectDataSource(dataSource)
+                    onSelectBoardToken(boardToken)
+                })
+                .catch(error => {
+                    console.error(error)
+                    framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
+                        variant: "error",
+                    })
+                })
+                .finally(() => {
+                    setIsLoading(false)
+                })
+        },
+        [boardToken, selectedDataSourceId, onSelectDataSource, onSelectBoardToken]
+    )
 
     return (
         <main className="framer-hide-scrollbar setup">
-            <img src={Asset} alt="Greenhouse Hero" onDragStart={e => e.preventDefault()} />
+            <img src={hero} alt="Greenhouse Hero" />
 
             <form onSubmit={handleSubmit}>
                 <label>
@@ -53,29 +55,32 @@ export function SelectDataSource({
                     <input
                         id="boardToken"
                         type="text"
-                        placeholder="Token"
                         required
-                        defaultValue={previousBoardToken ?? ""}
+                        placeholder="Enter Board Token…"
+                        value={boardToken}
+                        onChange={event => setBoardToken(event.target.value)}
                     />
                 </label>
                 <label>
                     <p>Collection</p>
                     <select
                         id="collection"
+                        required
                         onChange={event => setSelectedDataSourceId(event.target.value)}
                         value={selectedDataSourceId}
+                        disabled={!boardToken}
                     >
                         <option value="" disabled>
                             Choose Source…
                         </option>
-                        {dataSourceOptions.map(({ id, name }) => (
+                        {dataSources.map(({ id, name }) => (
                             <option key={id} value={id}>
                                 {name}
                             </option>
                         ))}
                     </select>
                 </label>
-                <button disabled={!selectedDataSourceId || isLoading}>
+                <button disabled={!boardToken || !selectedDataSourceId || isLoading}>
                     {isLoading ? <div className="framer-spinner" /> : "Next"}
                 </button>
             </form>

@@ -2,5 +2,5 @@
     "id": "gr33nh",
     "name": "Greenhouse",
     "modes": ["syncManagedCollection", "configureManagedCollection"],
-    "icon": "/Icon.png"
+    "icon": "/icon.png"
 }

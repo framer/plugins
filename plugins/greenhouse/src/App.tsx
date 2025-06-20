@@ -2,9 +2,10 @@ import "./App.css"
 
 import { framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
-import { type DataSource, getDataSource, PLUGIN_KEYS } from "./data"
 import { FieldMapping } from "./components/FieldMapping"
 import { SelectDataSource } from "./components/SelectDataSource"
+import { getDataSource, spaceIdPluginKey } from "./data"
+import { GreenhouseDataSource } from "./data-source/types"
 
 interface AppProps {
     collection: ManagedCollection
@@ -14,8 +15,8 @@ interface AppProps {
 }
 
 export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
-    const [dataSource, setDataSource] = useState<DataSource | null>(null)
-    const [isLoading, setIsLoading] = useState(Boolean(previousDataSourceId || previousBoardToken))
+    const [dataSource, setDataSource] = useState<GreenhouseDataSource | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
 
     useLayoutEffect(() => {
         const hasDataSourceSelected = Boolean(dataSource)
@@ -29,40 +30,20 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
     }, [dataSource])
 
     useEffect(() => {
-        const abortController = new AbortController()
+        if (!previousBoardToken || !previousDataSourceId) return
 
-        async function init() {
-            try {
-                if (!previousBoardToken || !previousDataSourceId) return
-
-                setIsLoading(true)
-
-                const dataSource = await getDataSource(previousBoardToken, previousDataSourceId, abortController.signal)
-                if (dataSource) {
-                    setDataSource(dataSource)
-                } else {
-                    throw new Error(
-                        `Error loading previously configured data source “${previousDataSourceId}”. Check the logs for more details.`
-                    )
-                }
-            } catch (error) {
-                if (abortController.signal.aborted) return
-                console.error(error)
-                framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
+        setIsLoading(true)
+        getDataSource(previousBoardToken, previousDataSourceId)
+            .then(setDataSource)
+            .catch(error => {
+                console.error(`Error loading previously configured data source “${previousDataSourceId}”.`, error)
+                framer.notify(`Error loading previously configured data source “${previousDataSourceId}”.`, {
                     variant: "error",
                 })
-            } finally {
-                if (!abortController.signal.aborted) {
-                    setIsLoading(false)
-                }
-            }
-        }
-
-        init()
-
-        return () => {
-            abortController.abort()
-        }
+            })
+            .finally(() => {
+                setIsLoading(false)
+            })
     }, [previousDataSourceId, previousBoardToken])
 
     if (isLoading) {
@@ -73,18 +54,25 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
         )
     }
 
-    if (!dataSource) {
+    if (!previousBoardToken || !dataSource) {
         return (
             <SelectDataSource
-                onSelectDataSource={dataSource => {
-                    setDataSource(dataSource)
-                    framer.setPluginData(PLUGIN_KEYS.SPACE_ID, dataSource.boardToken)
+                onSelectBoardToken={boardToken => {
+                    void framer.setPluginData(spaceIdPluginKey, boardToken)
                 }}
+                onSelectDataSource={setDataSource}
                 previousDataSourceId={previousDataSourceId}
                 previousBoardToken={previousBoardToken}
             />
         )
     }
 
-    return <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
+    return (
+        <FieldMapping
+            collection={collection}
+            boardToken={previousBoardToken}
+            dataSource={dataSource}
+            initialSlugFieldId={previousSlugFieldId}
+        />
+    )
 }

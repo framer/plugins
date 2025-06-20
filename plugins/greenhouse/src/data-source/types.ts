@@ -1,41 +1,42 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
-import JobsDataSource from "./jobs"
-import DepartmentsDataSource from "./departments"
-import SectionsDataSource from "./sections"
-import SchoolsDataSource from "./schools"
-import DisciplinesDataSource from "./disciplines"
-import DegreesDataSource from "./degrees"
-import OfficesDataSource from "./offices"
 
-export type Field = {
+export interface GreenhouseDataSource {
     id: string
     name: string
-    type: ManagedCollectionFieldInput["type"]
-    map?: (value: any) => any
-    canBeUsedAsSlug?: boolean
-}
-export type CollectionReferenceField = Field & {
-    type: "collectionReference" | "multiCollectionReference"
-    getCollection: () => GreenhouseDataSource // this is a function to avoid circular dependencies
-    map?: (value: any) => string[]
-}
-
-export type GreenhouseDataSource = {
-    id: string
-    name: string
-    fields: Field[] | CollectionReferenceField[]
-    idField: Field
-    slugField?: Field
+    fields: GreenhouseField[]
+    idField: string
+    slugField: string
     apiEndpoint: string
     itemsKey: string
 }
 
-export const dataSources: GreenhouseDataSource[] = [
-    JobsDataSource,
-    DepartmentsDataSource,
-    OfficesDataSource,
-    SchoolsDataSource,
-    DisciplinesDataSource,
-    DegreesDataSource,
-    SectionsDataSource,
-]
+export type GreenhouseField = ManagedCollectionFieldInput &
+    (
+        | {
+              type: Exclude<ManagedCollectionFieldInput["type"], "collectionReference" | "multiCollectionReference">
+              getValue?: <T>(value: T) => unknown
+              canBeUsedAsSlug?: boolean
+          }
+        | {
+              type: "collectionReference" | "multiCollectionReference"
+              getCollectionId?: () => string
+              supportedCollections?: { id: string; name: string }[]
+              getValue?: <T>(value: T) => string[]
+          }
+    )
+
+/**
+ * Remove Greenhouse-specific keys from the fields. This is used to ensure that the fields are compatible with Framer API.
+ *
+ * @param fields - The fields to remove the keys from.
+ * @returns The fields with the keys removed.
+ */
+export function removeGreenhouseKeys(fields: GreenhouseField[]): ManagedCollectionFieldInput[] {
+    return fields.map(field => {
+        if (field.type === "collectionReference" || field.type === "multiCollectionReference") {
+            delete field.getCollectionId
+        }
+        delete field.getValue
+        return field
+    })
+}

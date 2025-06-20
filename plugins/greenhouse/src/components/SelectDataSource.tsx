@@ -2,7 +2,7 @@ import { framer } from "framer-plugin"
 import { useCallback, useState } from "react"
 import hero from "../assets/hero.png"
 import { dataSources, getDataSource } from "../data"
-import { GreenhouseDataSource } from "../data-source/types"
+import type { GreenhouseDataSource } from "../data-source/types"
 
 interface SelectDataSourceProps {
     previousBoardToken?: string | null
@@ -18,7 +18,9 @@ export function SelectDataSource({
     onSelectDataSource,
 }: SelectDataSourceProps) {
     const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
-    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(previousDataSourceId ?? dataSources[0].id)
+    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(
+        previousDataSourceId ?? dataSources[0]?.id ?? ""
+    )
     const [isLoading, setIsLoading] = useState(false)
 
     const handleSubmit = useCallback(

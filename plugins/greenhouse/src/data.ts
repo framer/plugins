@@ -2,12 +2,12 @@ import {
     type FieldDataInput,
     framer,
     type ManagedCollection,
-    ManagedCollectionFieldInput,
+    type ManagedCollectionFieldInput,
     type ManagedCollectionItemInput,
-    ProtectedMethod,
+    type ProtectedMethod,
 } from "framer-plugin"
 import { decodeHtml, isCollectionReference } from "./utils"
-import { GreenhouseDataSource, GreenhouseField, removeGreenhouseKeys } from "./data-source/types"
+import { type GreenhouseDataSource, type GreenhouseField, removeGreenhouseKeys } from "./data-source/types"
 import { jobsDataSource } from "./data-source/jobs"
 import { departmentsDataSource } from "./data-source/departments"
 import { sectionsDataSource } from "./data-source/sections"

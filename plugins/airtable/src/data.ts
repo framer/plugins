@@ -54,6 +54,12 @@ const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
 const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
 
 function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
+    if (fieldSchema.originalAirtableType === "multipleLookupValues") {
+        if (!Array.isArray(value)) return null
+        if (value.length === 0) return null
+        value = value[0]
+    }
+
     switch (fieldSchema.type) {
         case "boolean":
             return {
@@ -233,17 +239,7 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                 const field = fieldsById.get(fieldSchema.id)
                 if (!field) continue
 
-                let fieldDataEntry: FieldDataEntryInput | null = null
-
-                if (fieldSchema.isLookup) {
-                    // multipleLookupValues returns an array of values. We only import the first value.
-                    if (Array.isArray(cellValue) && cellValue.length > 0) {
-                        fieldDataEntry = getFieldDataEntryForFieldSchema(fieldSchema, cellValue[0])
-                    }
-                } else {
-                    fieldDataEntry = getFieldDataEntryForFieldSchema(fieldSchema, cellValue)
-                }
-
+                const fieldDataEntry = getFieldDataEntryForFieldSchema(fieldSchema, cellValue)
                 if (!fieldDataEntry) continue
 
                 fieldData[fieldSchema.id] = fieldDataEntry

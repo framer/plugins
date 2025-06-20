@@ -129,65 +129,68 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
             return null
 
         case "string":
-            if (fieldSchema.airtableType === "barcode") {
-                if (!value || typeof value !== "object" || !("text" in value) || typeof value.text !== "string")
-                    return null
-                return {
-                    value: value.text,
-                    type: "string",
-                }
-            } else if (fieldSchema.airtableType === "aiText") {
-                if (!value || typeof value !== "object" || !("value" in value) || typeof value.value !== "string")
-                    return null
-                return {
-                    value: value.value,
-                    type: "string",
-                }
-            } else if (fieldSchema.airtableType === "duration") {
-                if (typeof value !== "number" || Number.isNaN(value)) return null
+            switch (fieldSchema.airtableType) {
+                case "barcode":
+                    if (!value || typeof value !== "object" || !("text" in value) || typeof value.text !== "string")
+                        return null
+                    return {
+                        value: value.text,
+                        type: "string",
+                    }
+                case "aiText":
+                    if (!value || typeof value !== "object" || !("value" in value) || typeof value.value !== "string")
+                        return null
+                    return {
+                        value: value.value,
+                        type: "string",
+                    }
+                case "duration":
+                    if (typeof value !== "number" || Number.isNaN(value)) return null
 
-                const hours = Math.floor(value / 3600)
-                const minutes = Math.floor((value % 3600) / 60)
-                const remainingSeconds = value % 60
-                const seconds = Math.floor(remainingSeconds).toString().padStart(2, "0")
+                    const hours = Math.floor(value / 3600)
+                    const minutes = Math.floor((value % 3600) / 60)
+                    const remainingSeconds = value % 60
+                    const seconds = Math.floor(remainingSeconds).toString().padStart(2, "0")
 
-                let result = ""
-                result += hours.toString()
-                result += ":" + minutes.toString().padStart(2, "0")
+                    let result = ""
+                    result += hours.toString()
+                    result += ":" + minutes.toString().padStart(2, "0")
 
-                // Handle seconds and milliseconds based on format
-                const durationOptions = fieldSchema.airtableOptions as { durationFormat?: string } | undefined
-                switch (durationOptions?.durationFormat) {
-                    case "h:mm":
-                        break
-                    case "h:mm:ss":
-                        result += ":" + seconds
-                        break
-                    case "h:mm:ss.S":
-                        result += ":" + seconds
-                        result += "." + (remainingSeconds % 1).toFixed(1).substring(2)
-                        break
-                    case "h:mm:ss.SS":
-                        result += ":" + seconds
-                        result += "." + (remainingSeconds % 1).toFixed(2).substring(2)
-                        break
-                    case "h:mm:ss.SSS":
-                        result += ":" + seconds
-                        result += "." + (remainingSeconds % 1).toFixed(3).substring(2)
-                        break
-                }
+                    // Handle seconds and milliseconds based on format
+                    const durationOptions = fieldSchema.airtableOptions as { durationFormat?: string } | undefined
+                    switch (durationOptions?.durationFormat) {
+                        case "h:mm":
+                            break
+                        case "h:mm:ss":
+                            result += ":" + seconds
+                            break
+                        case "h:mm:ss.S":
+                            result += ":" + seconds
+                            result += "." + (remainingSeconds % 1).toFixed(1).substring(2)
+                            break
+                        case "h:mm:ss.SS":
+                            result += ":" + seconds
+                            result += "." + (remainingSeconds % 1).toFixed(2).substring(2)
+                            break
+                        case "h:mm:ss.SSS":
+                            result += ":" + seconds
+                            result += "." + (remainingSeconds % 1).toFixed(3).substring(2)
+                            break
+                    }
 
-                return {
-                    value: result,
-                    type: "string",
-                }
-            } else if (fieldSchema.airtableType === "singleCollaborator") {
-                if (!value || typeof value !== "object" || !("name" in value) || typeof value.name !== "string")
-                    return null
-                return {
-                    value: value.name,
-                    type: "string",
-                }
+                    return {
+                        value: result,
+                        type: "string",
+                    }
+                case "singleCollaborator":
+                case "createdBy":
+                case "lastModifiedBy":
+                    if (!value || typeof value !== "object" || !("name" in value) || typeof value.name !== "string")
+                        return null
+                    return {
+                        value: value.name,
+                        type: "string",
+                    }
             }
 
             if (typeof value !== "string") return null

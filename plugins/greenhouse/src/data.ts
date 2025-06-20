@@ -152,7 +152,7 @@ async function getItems(
 
             switch (field.type) {
                 case "string":
-                    fieldData[field.id] = { value: String(value), type: field.type }
+                    fieldData[field.id] = { value: value ? String(value) : "", type: field.type }
                     break
                 case "number":
                     fieldData[field.id] = { value: Number(value), type: field.type }
@@ -161,16 +161,16 @@ async function getItems(
                     fieldData[field.id] = { value: Boolean(value), type: field.type }
                     break
                 case "color":
-                    fieldData[field.id] = { value: String(value), type: field.type }
+                    fieldData[field.id] = { value: value ? String(value) : null, type: field.type }
                     break
                 case "formattedText":
                     fieldData[field.id] = { value: decodeHtml(String(value)), type: field.type }
                     break
                 case "date":
-                    fieldData[field.id] = { value: String(value), type: field.type }
+                    fieldData[field.id] = { value: value ? String(value) : null, type: field.type }
                     break
                 case "link":
-                    fieldData[field.id] = { value: String(value), type: field.type }
+                    fieldData[field.id] = { value: value ? String(value) : null, type: field.type }
                     break
                 case "multiCollectionReference": {
                     const ids: string[] = []

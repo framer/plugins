@@ -159,8 +159,11 @@ form {
     background: #666;
 }
 
-.mapping .target-field:disabled {
+.mapping .target-field {
     width: 100%;
+}
+
+.mapping .target-field:disabled {
     opacity: 0.5;
     cursor: not-allowed;
     background-color: var(--framer-color-bg-tertiary) !important;

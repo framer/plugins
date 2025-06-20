@@ -15,6 +15,7 @@ interface AppProps {
 }
 
 export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
+    const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
     const [dataSource, setDataSource] = useState<GreenhouseDataSource | null>(null)
     const [isLoading, setIsLoading] = useState(false)
 
@@ -22,9 +23,10 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
         const hasDataSourceSelected = Boolean(dataSource)
 
         framer.showUI({
-            width: hasDataSourceSelected ? 320 : 320,
+            width: hasDataSourceSelected ? 400 : 320,
             height: hasDataSourceSelected ? 427 : 325,
             minHeight: hasDataSourceSelected ? 427 : undefined,
+            minWidth: hasDataSourceSelected ? 400 : undefined,
             resizable: hasDataSourceSelected,
         })
     }, [dataSource])
@@ -46,6 +48,12 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
             })
     }, [previousDataSourceId, previousBoardToken])
 
+    useEffect(() => {
+        if (!boardToken) return
+        if (boardToken === previousBoardToken) return
+        void framer.setPluginData(spaceIdPluginKey, boardToken)
+    }, [boardToken, previousBoardToken])
+
     if (isLoading) {
         return (
             <main className="loading">
@@ -57,9 +65,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
     if (!previousBoardToken || !dataSource) {
         return (
             <SelectDataSource
-                onSelectBoardToken={boardToken => {
-                    void framer.setPluginData(spaceIdPluginKey, boardToken)
-                }}
+                onSelectBoardToken={setBoardToken}
                 onSelectDataSource={setDataSource}
                 previousDataSourceId={previousDataSourceId}
                 previousBoardToken={previousBoardToken}
@@ -70,7 +76,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
     return (
         <FieldMapping
             collection={collection}
-            boardToken={previousBoardToken}
+            boardToken={boardToken}
             dataSource={dataSource}
             initialSlugFieldId={previousSlugFieldId}
         />

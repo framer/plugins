@@ -1,7 +1,7 @@
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useState } from "react"
 import hero from "../assets/hero.png"
-import { getDataSource } from "../data"
+import { getDataSource, syncMethods } from "../data"
 import { dataSources, type GreenhouseDataSource } from "../dataSources"
 
 interface SelectDataSourceProps {
@@ -22,6 +22,8 @@ export function SelectDataSource({
         previousDataSourceId ?? dataSources[0]?.id ?? ""
     )
     const [isLoading, setIsLoading] = useState(false)
+
+    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
     const handleSubmit = useCallback(
         (event: React.FormEvent<HTMLFormElement>) => {
@@ -82,7 +84,7 @@ export function SelectDataSource({
                         ))}
                     </select>
                 </label>
-                <button disabled={!boardToken || !selectedDataSourceId || isLoading}>
+                <button disabled={!boardToken || !selectedDataSourceId || isLoading || !isAllowedToManage}>
                     {isLoading ? <div className="framer-spinner" /> : "Next"}
                 </button>
             </form>

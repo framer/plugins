@@ -1,12 +1,28 @@
 {
     "editor.rulers": [120],
     "eslint.workingDirectories": [{ "mode": "auto" }],
-    "biome.enabled": false,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "biome.enabled": true,
+    "editor.defaultFormatter": "biomejs.biome",
     "search.exclude": {
         "**/.turbo": true,
         "**/.yarn": true,
         "**/dist": true,
         "**/yarn.lock": true
+    },
+    "editor.codeActionsOnSave": {
+        "source": "never",
+        "source.addMissingImports.ts": "never",
+        "source.fixAll.eslint": "never",
+        "source.fixAll.ts": "never",
+        "source.fixAll.tsslint": "never",
+        "source.organizeImports": "never",
+        "source.fixAll": "never",
+        "source.removeUnused.ts": "never",
+        "source.removeUnusedImports": "never",
+        "source.sortImports": "never",
+        "quickfix": "never",
+
+        "source.fixAll.biome": "explicit",
+        "source.organizeImports.biome": "explicit"
     }
 }

@@ -1,8 +1,6 @@
 import type { BlockObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
 import { assert } from "./utils"
 
-const youtubeIdRegex = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))(?<videoId>[^?&]+)/u
-
 export function richTextToHTML(texts: RichTextItemResponse[]) {
     return texts
         .map(({ plain_text, annotations, href }) => {

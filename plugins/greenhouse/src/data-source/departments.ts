@@ -1,27 +1,29 @@
-// import CategoryDataSource from "./categories"
-import JobsDataSource from "./jobs"
-import type { CollectionReferenceField, Field, GreenhouseDataSource } from "./types"
+import { jobsDataSource } from "./jobs"
+import type { GreenhouseDataSource, GreenhouseField } from "./types"
 
-const idField: Field = { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true }
-const nameField: Field = { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true }
-const jobsField: CollectionReferenceField = {
+const idField = { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true } satisfies GreenhouseField
+const nameField = { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true } satisfies GreenhouseField
+const jobsField = {
     id: "jobs",
     name: "Jobs",
     type: "multiCollectionReference",
-    getCollection: () => JobsDataSource,
-    map: (jobs: { id: number }[]) => jobs.map(job => String(job.id)),
-}
+    collectionId: "",
+    getCollectionId: () => jobsDataSource.id,
+    getValue: jobs => {
+        if (Array.isArray(jobs)) {
+            return jobs.map(job => String(job.id))
+        }
 
-const fields: Field[] = [idField, nameField, jobsField]
+        return []
+    },
+} satisfies GreenhouseField
 
-const DepartmentsDataSource: GreenhouseDataSource = {
+export const departmentsDataSource = {
     id: "departments",
     name: "Departments",
     apiEndpoint: "departments",
     itemsKey: "departments",
-    fields,
-    idField: idField,
-    slugField: nameField,
-}
-
-export default DepartmentsDataSource
+    fields: [idField, nameField, jobsField],
+    idField: idField.id,
+    slugField: nameField.id,
+} satisfies GreenhouseDataSource

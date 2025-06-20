@@ -1,18 +1,14 @@
-import type { Field, GreenhouseDataSource } from "./types"
+import type { GreenhouseDataSource, GreenhouseField } from "./types"
 
-const idField: Field = { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true }
-const textField: Field = { id: "text", name: "Text", type: "string", canBeUsedAsSlug: true }
+const idField = { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true } satisfies GreenhouseField
+const textField = { id: "text", name: "Text", type: "string", canBeUsedAsSlug: true } satisfies GreenhouseField
 
-const fields: Field[] = [idField, textField]
-
-const DisciplinesDataSource: GreenhouseDataSource = {
+export const disciplinesDataSource = {
     id: "disciplines",
     name: "Disciplines",
     apiEndpoint: "education/disciplines",
     itemsKey: "items",
-    fields,
-    idField: idField,
-    slugField: textField,
-}
-
-export default DisciplinesDataSource
+    fields: [idField, textField],
+    idField: idField.id,
+    slugField: textField.id,
+} satisfies GreenhouseDataSource

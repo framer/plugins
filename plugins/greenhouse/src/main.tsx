@@ -4,15 +4,17 @@ import { framer } from "framer-plugin"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { App } from "./App.tsx"
-import { PLUGIN_KEYS, syncExistingCollection } from "./data"
+import { dataSourceIdPluginKey, slugFieldIdPluginKey, spaceIdPluginKey, syncExistingCollection } from "./data"
 
-const previousBoardToken = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
+const lastUsedBoardToken = await framer.getPluginData(spaceIdPluginKey)
 
 const activeCollection = await framer.getActiveManagedCollection()
 
-const previousDataSourceId = await activeCollection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-const previousSlugFieldId = await activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID)
-const previousCollectionBoardToken = await activeCollection.getPluginData(PLUGIN_KEYS.SPACE_ID)
+const previousDataSourceId = await activeCollection.getPluginData(dataSourceIdPluginKey)
+const previousSlugFieldId = await activeCollection.getPluginData(slugFieldIdPluginKey)
+const previousCollectionBoardToken = await activeCollection.getPluginData(spaceIdPluginKey)
+
+const previousBoardToken = previousCollectionBoardToken ?? lastUsedBoardToken
 
 const { didSync } = await syncExistingCollection(
     activeCollection,
@@ -35,7 +37,7 @@ if (didSync) {
                 collection={activeCollection}
                 previousDataSourceId={previousDataSourceId}
                 previousSlugFieldId={previousSlugFieldId}
-                previousBoardToken={previousCollectionBoardToken ?? previousBoardToken}
+                previousBoardToken={previousBoardToken}
             />
         </StrictMode>
     )

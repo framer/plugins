@@ -6,6 +6,7 @@
     "scripts": {
         "dev": "run g:dev",
         "build": "VITE_OAUTH_API_DOMAIN=https://oauth.fetch.tools/google-search-console-plugin run g:build",
+        "check-biome": "run g:check-biome",
         "check-eslint": "run g:check-eslint",
         "pack": "npx framer-plugin-tools@latest pack",
         "preview": "run g:preview",

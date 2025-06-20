@@ -4,10 +4,10 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "dev": "vite",
-        "build": "vite build",
+        "dev": "run g:dev",
+        "build": "run g:build",
         "check-eslint": "run g:check-eslint",
-        "preview": "vite preview",
+        "preview": "run g:preview",
         "pack": "npx framer-plugin-tools@latest pack",
         "check-typescript": "run g:check-typescript"
     },
@@ -15,17 +15,11 @@
         "framer-plugin": "^3.3.2",
         "papaparse": "^5.5.2",
         "react": "^18",
-        "react-dom": "^18",
-        "vite-plugin-mkcert": "^1"
+        "react-dom": "^18"
     },
     "devDependencies": {
         "@types/papaparse": "^5.3.15",
         "@types/react": "^18",
-        "@types/react-dom": "^18",
-        "@vitejs/plugin-react": "^4.3.1",
-        "@vitejs/plugin-react-swc": "^3",
-        "typescript": "^5.8.3",
-        "vite": "^6.3.5",
-        "vite-plugin-framer": "^1.0.7"
+        "@types/react-dom": "^18"
     }
 }

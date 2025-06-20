@@ -3,6 +3,7 @@
     "ui": "tui",
     "tasks": {
         "build": {
+            "dependsOn": ["^build"],
             "outputs": ["dist/**"]
         },
         "dev": {
@@ -14,6 +15,11 @@
         },
         "check-typescript": {
             "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json"]
+        },
+        "preview": {
+            "dependsOn": ["build"],
+            "cache": false,
+            "persistent": true
         }
     }
 }

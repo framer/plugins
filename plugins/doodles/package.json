@@ -5,11 +5,11 @@
     "type": "module",
     "main": "src/api/index.ts",
     "scripts": {
-        "dev": "vite",
-        "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
+        "dev": "run g:dev",
+        "build": "run g:build",
         "check-eslint": "run g:check-eslint",
         "pack": "npx framer-plugin-tools@latest pack",
-        "preview": "vite preview",
+        "preview": "run g:preview",
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
@@ -23,15 +23,10 @@
         "react-color": "^2.19.3",
         "react-dom": "^18",
         "react-sketch-canvas": "^6.2.0",
-        "svgo": "^3.3.2",
-        "vite-plugin-mkcert": "^1"
+        "svgo": "^3.3.2"
     },
     "devDependencies": {
         "@types/react": "^18",
-        "@types/react-dom": "^18",
-        "@vitejs/plugin-react-swc": "^3",
-        "typescript": "^5.8.3",
-        "vite": "^6.3.5",
-        "vite-plugin-framer": "^1.0.7"
+        "@types/react-dom": "^18"
     }
 }

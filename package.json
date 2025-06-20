@@ -12,14 +12,23 @@
         "check": "turbo run --continue check-eslint check-typescript",
         "clean": "rm -rf ./p",
         "copy": "bash ./scripts/copy-build.sh",
-        "dev": "turbo run dev --concurrency=20",
+        "dev": "turbo run dev --concurrency=40",
         "build": "turbo run build --env-mode=loose && run copy",
+        "g:build": "cd $INIT_CWD && run g:vite build",
         "g:check-eslint": "cd $INIT_CWD && DEBUG='eslint:eslint' eslint .",
-        "g:check-typescript": "tsc --project $INIT_CWD"
+        "g:check-typescript": "tsc --project $INIT_CWD",
+        "g:dev": "cd $INIT_CWD && run g:vite",
+        "g:preview": "cd $INIT_CWD && run g:vite preview",
+        "g:vite": "cd $INIT_CWD && NODE_OPTIONS='--no-warnings=ExperimentalWarning' vite --config $PROJECT_CWD/packages/vite-config/src/index.ts",
+        "preview": "turbo run preview --concurrency=40"
     },
     "devDependencies": {
+        "@framer/eslint-config": "workspace:*",
+        "@framer/vite-config": "workspace:*",
         "eslint": "^9.29.0",
         "jiti": "^2.4.2",
-        "turbo": "^2.5.4"
+        "turbo": "^2.5.4",
+        "typescript": "^5.8.3",
+        "vite": "^6.3.5"
     }
 }

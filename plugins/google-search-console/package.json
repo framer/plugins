@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "VITE_OAUTH_API_DOMAIN=https://oauth.fetch.tools/google-search-console-plugin vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
+    "dev": "run g:dev",
+    "build": "VITE_OAUTH_API_DOMAIN=https://oauth.fetch.tools/google-search-console-plugin run g:build",
     "check-eslint": "run g:check-eslint",
     "pack": "npx framer-plugin-tools@latest pack",
-    "preview": "vite preview",
+    "preview": "run g:preview",
     "check-typescript": "run g:check-typescript"
   },
   "dependencies": {
@@ -21,16 +21,11 @@
     "react-error-boundary": "^4.0.13",
     "react-feather": "^2.0.10",
     "recharts": "^2.12.7",
-    "sitemap-urls": "^3.0.0",
-    "vite-plugin-mkcert": "^1"
+    "sitemap-urls": "^3.0.0"
   },
   "devDependencies": {
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@vitejs/plugin-react-swc": "^3",
-    "prettier": "^3.2.5",
-    "typescript": "^5.8.3",
-    "vite": "^6.3.5",
-    "vite-plugin-framer": "^1.0.7"
+    "prettier": "^3.2.5"
   }
 }

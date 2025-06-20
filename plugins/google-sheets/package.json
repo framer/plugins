@@ -2,10 +2,10 @@
     "name": "google-sheets",
     "type": "module",
     "scripts": {
-        "dev": "vite",
-        "build": "vite build --base=${PREFIX_BASE_PATH:+/$npm_package_name}/",
+        "dev": "run g:dev",
+        "build": "run g:build",
         "check-eslint": "run g:check-eslint",
-        "preview": "vite preview",
+        "preview": "run g:preview",
         "pack": "npx framer-plugin-tools@latest pack",
         "check-typescript": "run g:check-typescript"
     },
@@ -16,18 +16,13 @@
         "react": "^18",
         "react-dom": "^18",
         "react-error-boundary": "^4.0.13",
-        "react-intersection-observer": "^9.10.3",
-        "vite-plugin-mkcert": "^1"
+        "react-intersection-observer": "^9.10.3"
     },
     "devDependencies": {
         "@types/react": "^18",
         "@types/react-dom": "^18",
-        "@vitejs/plugin-react-swc": "^3",
         "autoprefixer": "^10.4.19",
         "postcss": "^8.4.39",
-        "tailwindcss": "^3.4.4",
-        "typescript": "^5.8.3",
-        "vite": "^6.3.5",
-        "vite-plugin-framer": "^1.0.7"
+        "tailwindcss": "^3.4.4"
     }
 }

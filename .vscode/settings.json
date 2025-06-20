@@ -2,5 +2,11 @@
     "editor.rulers": [120],
     "eslint.workingDirectories": [{ "mode": "auto" }],
     "biome.enabled": false,
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "search.exclude": {
+        "**/.turbo": true,
+        "**/.yarn": true,
+        "**/dist": true,
+        "**/yarn.lock": true
+    }
 }

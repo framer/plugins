@@ -58,9 +58,16 @@ function isFieldSupported(field: Field): field is SupportedField {
 export function getDataForCSV(slugFieldName: string | null, fields: Field[], items: CollectionItem[]): Rows {
     const rows: Rows = []
     const supportedFields = fields.filter(isFieldSupported)
+    const hasDraftItems = items.some(item => item.draft)
 
     // Add header row with slug field at the start.
     const header: Columns = [slugFieldName ?? "Slug"]
+
+    // Add draft column if there are any draft items.
+    if (hasDraftItems) {
+        header.push(":draft")
+    }
+
     for (const field of supportedFields) {
         if (field.type === "image") {
             header.push(field.name, `${field.name}:alt`)
@@ -77,6 +84,11 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
 
         // Add the slug cell.
         columns.push(item.slug)
+
+        // Add draft column if there are any draft items.
+        if (hasDraftItems) {
+            columns.push(item.draft ? "true" : "false")
+        }
 
         for (const field of supportedFields) {
             const fieldData = item.fieldData[field.id]

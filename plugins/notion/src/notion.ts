@@ -489,16 +489,14 @@ export function getFieldDataEntryInput(
             const firstFile = property.files[0]
             const type = fieldType === "image" ? "image" : "file"
 
-            if (firstFile) {
-                if (firstFile.type === "external") {
-                    return { type, value: firstFile.external?.url ?? null }
-                }
-                if (firstFile.type === "file") {
-                    return { type, value: firstFile.file?.url ?? null }
-                }
+            switch (firstFile?.type) {
+                case "external":
+                    return { type, value: firstFile.external.url }
+                case "file":
+                    return { type, value: firstFile.file.url }
+                default:
+                    return { type, value: null }
             }
-
-            return { type, value: null }
         }
     }
 }

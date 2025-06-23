@@ -130,7 +130,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
             }
 
         case "color":
-            if (typeof value !== "string") return null
+            if (!value || typeof value !== "string") return null
             return {
                 value,
                 type: "color",
@@ -239,8 +239,8 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                     case "image":
                     case "file":
                     case "link":
-                    case "color":
                     case "date":
+                    case "color":
                     case "collectionReference":
                     case "multiCollectionReference":
                         fieldData[field.id] = {

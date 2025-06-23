@@ -100,7 +100,7 @@ function inferStringField(fieldSchema: AirtableFieldSchema & { type: "singleLine
         userEditable: false,
         airtableType: fieldSchema.type,
         type: "string",
-        allowedTypes: ["string", "formattedText"],
+        allowedTypes: ["string", "formattedText", "color"],
     }
 }
 

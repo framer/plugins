@@ -219,6 +219,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         return { ...field, type: "string" } as PossibleField
                     case "formattedText":
                         return { ...field, type: "formattedText" } as PossibleField
+                    case "color":
+                        return { ...field, type: "color" } as PossibleField
                     default:
                         return field
                 }

@@ -49,6 +49,8 @@ export function SelectDataSource({
         [boardToken, selectedDataSourceId, onSelectDataSource, onSelectBoardToken]
     )
 
+    const isButtonDisabled = !boardToken || !selectedDataSourceId || isLoading || !isAllowedToManage
+
     return (
         <main className="framer-hide-scrollbar setup">
             <img src={hero} alt="Greenhouse Hero" />
@@ -84,9 +86,7 @@ export function SelectDataSource({
                         ))}
                     </select>
                 </label>
-                <button disabled={!boardToken || !selectedDataSourceId || isLoading || !isAllowedToManage}>
-                    {isLoading ? <div className="framer-spinner" /> : "Next"}
-                </button>
+                <button disabled={isButtonDisabled}>{isLoading ? <div className="framer-spinner" /> : "Next"}</button>
             </form>
         </main>
     )

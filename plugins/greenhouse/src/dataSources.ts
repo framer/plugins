@@ -1,4 +1,5 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
+import type { Degree, Department, Discipline, Job, Office, School, Section } from "./api-types"
 
 export interface GreenhouseDataSource {
     id: string
@@ -10,8 +11,11 @@ export interface GreenhouseDataSource {
      * The rest of the fields are the fields of the data source.
      */
     fields: readonly GreenhouseField[]
-    apiEndpoint: string
+    apiPath: string
     itemsKey: string
+    fetch: (
+        boardToken: string
+    ) => Promise<Job[] | Department[] | Office[] | Degree[] | School[] | Discipline[] | Section[]>
 }
 
 export type GreenhouseField = ManagedCollectionFieldInput &
@@ -30,23 +34,101 @@ export type GreenhouseField = ManagedCollectionFieldInput &
           }
     )
 
-const degreesDataSource = createDataSource({ name: "Degrees", apiEndpoint: "education/degrees" }, [
-    { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-    { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
-])
-const schoolsDataSource = createDataSource({ name: "Schools", apiEndpoint: "education/schools" }, [
-    { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-    { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
-])
-const disciplinesDataSource = createDataSource({ name: "Disciplines", apiEndpoint: "education/disciplines" }, [
-    { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-    { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
-])
+const degreesDataSource = createDataSource(
+    {
+        name: "Degrees",
+        apiPath: "education/degrees",
+        fetch: async (boardToken: string) => {
+            const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/degrees`
+
+            const response = await fetch(url)
+            const data = await response.json()
+
+            const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
+
+            const degrees: Degree[] = []
+            for (let i = 0; i < pages; i++) {
+                const response = await fetch(`${url}?page=${i + 1}`)
+                const data = await response.json()
+
+                degrees.push(...data.items)
+            }
+
+            return degrees
+        },
+    },
+    [
+        { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
+        { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
+    ]
+)
+const schoolsDataSource = createDataSource(
+    {
+        name: "Schools",
+        apiPath: "education/schools",
+        fetch: async (boardToken: string) => {
+            const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/schools`
+
+            const response = await fetch(url)
+            const data = await response.json()
+
+            const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
+
+            const schools: School[] = []
+            for (let i = 0; i < pages; i++) {
+                const response = await fetch(`${url}?page=${i + 1}`)
+                const data = await response.json()
+                schools.push(...data.items)
+            }
+
+            return schools
+        },
+    },
+    [
+        { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
+        { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
+    ]
+)
+const disciplinesDataSource = createDataSource(
+    {
+        name: "Disciplines",
+        apiPath: "education/disciplines",
+        fetch: async (boardToken: string) => {
+            const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/disciplines`
+
+            const response = await fetch(url)
+            const data = await response.json()
+
+            const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
+
+            const disciplines: Discipline[] = []
+            for (let i = 0; i < pages; i++) {
+                const response = await fetch(`${url}?page=${i + 1}`)
+                const data = await response.json()
+                disciplines.push(...data.items)
+            }
+
+            return disciplines
+        },
+    },
+    [
+        { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
+        { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
+    ]
+)
 
 const jobsDataSourceName = "Jobs"
 
 const departmentsDataSource = createDataSource(
-    { name: "Departments", apiEndpoint: "departments", itemsKey: "departments" },
+    {
+        name: "Departments",
+        apiPath: "departments",
+        fetch: async (boardToken: string) => {
+            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}/departments`)
+            const data = await response.json()
+            return data.departments as Department[]
+        },
+    },
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
@@ -59,20 +141,40 @@ const departmentsDataSource = createDataSource(
         },
     ]
 )
-const officesDataSource = createDataSource({ name: "Offices", apiEndpoint: "offices", itemsKey: "offices" }, [
-    { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-    { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
-    { id: "location", name: "Location", type: "string" },
+const officesDataSource = createDataSource(
     {
-        id: "departments",
-        name: "Departments",
-        type: "multiCollectionReference",
-        collectionId: "",
-        dataSourceId: departmentsDataSource.name,
+        name: "Offices",
+        apiPath: "offices",
+        fetch: async (boardToken: string) => {
+            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}/offices`)
+            const data = await response.json()
+            return data.offices as Office[]
+        },
     },
-])
+    [
+        { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
+        { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
+        { id: "location", name: "Location", type: "string" },
+        {
+            id: "departments",
+            name: "Departments",
+            type: "multiCollectionReference",
+            collectionId: "",
+            dataSourceId: departmentsDataSource.name,
+        },
+    ]
+)
 const jobsDataSource = createDataSource(
-    { name: jobsDataSourceName, apiEndpoint: "jobs?content=true", itemsKey: "jobs" },
+    {
+        name: jobsDataSourceName,
+        apiPath: "jobs?content=true",
+        itemsKey: "jobs",
+        fetch: async (boardToken: string) => {
+            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs?content=true`)
+            const data = await response.json()
+            return data.jobs as Job[]
+        },
+    },
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
@@ -112,17 +214,29 @@ const jobsDataSource = createDataSource(
     ]
 )
 
-const sectionsDataSource = createDataSource({ name: "Sections", apiEndpoint: "sections", itemsKey: "sections" }, [
-    { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-    { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
+const sectionsDataSource = createDataSource(
     {
-        id: "jobs",
-        name: "Jobs",
-        type: "multiCollectionReference",
-        collectionId: "",
-        dataSourceId: jobsDataSource.name,
+        name: "Sections",
+        apiPath: "sections",
+        itemsKey: "sections",
+        fetch: async (boardToken: string) => {
+            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}/sections`)
+            const data = await response.json()
+            return data.sections as Section[]
+        },
     },
-])
+    [
+        { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
+        { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
+        {
+            id: "jobs",
+            name: "Jobs",
+            type: "multiCollectionReference",
+            collectionId: "",
+            dataSourceId: jobsDataSource.name,
+        },
+    ]
+)
 
 export const dataSources = [
     jobsDataSource,
@@ -135,15 +249,28 @@ export const dataSources = [
 ] satisfies GreenhouseDataSource[]
 
 function createDataSource(
-    { name, apiEndpoint, itemsKey = "items" }: { name: string; apiEndpoint: string; itemsKey?: string },
+    {
+        name,
+        apiPath,
+        itemsKey = "items",
+        fetch,
+    }: {
+        name: string
+        apiPath: string
+        itemsKey?: string
+        fetch: (
+            boardToken: string
+        ) => Promise<Job[] | Department[] | Office[] | Degree[] | School[] | Discipline[] | Section[]>
+    },
     [idField, slugField, ...fields]: [GreenhouseField, GreenhouseField, ...GreenhouseField[]]
 ): GreenhouseDataSource {
     return {
         id: name,
         name,
-        apiEndpoint,
+        apiPath,
         itemsKey,
         fields: [idField, slugField, ...fields],
+        fetch,
     }
 }
 
@@ -154,7 +281,8 @@ function createDataSource(
  * @returns The fields with the keys removed.
  */
 export function removeGreenhouseKeys(fields: GreenhouseField[]): ManagedCollectionFieldInput[] {
-    return fields.map(field => {
+    return fields.map(originalField => {
+        const field = { ...originalField }
         delete field.getValue
         return field
     })

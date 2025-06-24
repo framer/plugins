@@ -8,14 +8,11 @@ import {
 } from "framer-plugin"
 import { dataSources, type GreenhouseDataSource, type GreenhouseField } from "./dataSources"
 import { decodeHtml, isCollectionReference } from "./utils"
+import { isGreenhouseItemField } from "./api-types"
 
 export const dataSourceIdPluginKey = "dataSourceId"
 export const slugFieldIdPluginKey = "slugFieldId"
 export const spaceIdPluginKey = "spaceId"
-
-function getApiEndpoint(boardToken: string, dataSource: GreenhouseDataSource) {
-    return `https://boards-api.greenhouse.io/v1/boards/${boardToken}/${dataSource.apiEndpoint}`
-}
 
 function replaceSupportedCollections(
     dataSource: GreenhouseDataSource,
@@ -65,16 +62,12 @@ export async function getDataSource(boardToken: string, dataSourceId: string): P
 
     if (boardCollections.length > 0) {
         for (const field of dataSource.fields) {
-            if (field.type !== "multiCollectionReference" && field.type !== "collectionReference") {
-                continue
-            }
+            if (!isCollectionReference(field)) continue
 
             const matchingCollections: ManagedCollection[] = []
             for (const collection of boardCollections) {
                 const collectionDataSourceId = await collection.getPluginData(dataSourceIdPluginKey)
-                if (collectionDataSourceId !== field.dataSourceId) {
-                    continue
-                }
+                if (collectionDataSourceId !== field.dataSourceId) continue
 
                 matchingCollections.push(collection)
             }
@@ -106,8 +99,7 @@ async function getItems(
 ): Promise<ManagedCollectionItemInput[]> {
     const items: ManagedCollectionItemInput[] = []
 
-    const response = await fetch(getApiEndpoint(boardToken, dataSource))
-    const data = await response.json()
+    const dataItems = await dataSource.fetch(boardToken)
 
     const itemIdBySlug: Map<string, string> = new Map()
     const idField = fieldsToSync[0]
@@ -115,8 +107,13 @@ async function getItems(
         throw new Error("No ID field found in data source.")
     }
 
-    for (const item of data[dataSource.itemsKey]) {
-        const id = String(item[idField.id])
+    for (const item of dataItems) {
+        const id = String(item.id)
+
+        if (!isGreenhouseItemField(slugFieldId, item)) {
+            throw new Error(`No slug field found in data source.`)
+        }
+
         const slug = String(item[slugFieldId])
 
         if (!itemIdBySlug.has(slug)) {
@@ -127,13 +124,14 @@ async function getItems(
         const uniqueSlug = `${itemIdBySlug.get(slug)}-${id}`
         itemIdBySlug.set(uniqueSlug, id)
     }
+
     const slugByItemId: Map<string, string> = new Map()
     for (const [slug, itemId] of itemIdBySlug.entries()) {
         slugByItemId.set(itemId, slug)
     }
 
-    for (const item of data[dataSource.itemsKey]) {
-        const id = String(item[idField.id])
+    for (const item of dataItems) {
+        const id = String(item.id)
         const slug = slugByItemId.get(id)
         if (!slug) {
             continue
@@ -152,23 +150,19 @@ async function getItems(
 
             switch (field.type) {
                 case "string":
-                    fieldData[field.id] = { value: value ? String(value) : "", type: field.type }
+                    fieldData[field.id] = { value: value ? String(value) : "", type: "string" }
                     break
                 case "number":
-                    fieldData[field.id] = { value: Number(value), type: field.type }
+                    fieldData[field.id] = { value: Number(value), type: "number" }
                     break
                 case "boolean":
-                    fieldData[field.id] = { value: Boolean(value), type: field.type }
-                    break
-                case "color":
-                    fieldData[field.id] = { value: value ? String(value) : null, type: field.type }
+                    fieldData[field.id] = { value: Boolean(value), type: "boolean" }
                     break
                 case "formattedText":
-                    fieldData[field.id] = { value: decodeHtml(String(value)), type: field.type }
+                    fieldData[field.id] = { value: decodeHtml(String(value)), type: "formattedText" }
                     break
+                case "color":
                 case "date":
-                    fieldData[field.id] = { value: value ? String(value) : null, type: field.type }
-                    break
                 case "link":
                     fieldData[field.id] = { value: value ? String(value) : null, type: field.type }
                     break
@@ -178,7 +172,7 @@ async function getItems(
                         ids.push(...value.map(item => String(item.id)))
                     }
 
-                    fieldData[field.id] = { value: ids, type: field.type }
+                    fieldData[field.id] = { value: ids, type: "multiCollectionReference" }
                     break
                 }
                 case "collectionReference": {
@@ -186,7 +180,7 @@ async function getItems(
                         continue
                     }
 
-                    fieldData[field.id] = { value: String(value.id), type: field.type }
+                    fieldData[field.id] = { value: String(value.id), type: "collectionReference" }
                     break
                 }
             }
@@ -212,11 +206,10 @@ export async function syncCollection(
 ) {
     const existingItemsIds = await collection.getItemIds()
     const items = await getItems(dataSource, fields, { boardToken, slugFieldId: slugField.id })
-    const unsyncedItems = new Set<string>(
-        existingItemsIds.filter(existingItemId => !items.find(item => item.id === existingItemId))
-    )
+    const itemIds = new Set(items.map(item => item.id))
+    const unsyncedItemsIds = existingItemsIds.filter(existingItemId => !itemIds.has(existingItemId))
 
-    await collection.removeItems(Array.from(unsyncedItems))
+    await collection.removeItems(unsyncedItemsIds)
     await collection.addItems(items)
 
     await collection.setPluginData(spaceIdPluginKey, boardToken)

@@ -143,6 +143,11 @@ form {
     box-shadow: inset 0 0 0 1px #15372c;
 }
 
+.mapping .source-field.missing-reference,
+.mapping .source-field.missing-reference input[type="checkbox"] {
+    cursor: not-allowed;
+}
+
 .mapping .source-field input[type="checkbox"] {
     cursor: pointer;
 }

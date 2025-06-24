@@ -6,7 +6,9 @@ export function decodeHtml(html: string) {
     return textarea.value
 }
 
-export function isCollectionReference(field: GreenhouseField) {
+export function isCollectionReference(
+    field: GreenhouseField
+): field is Extract<GreenhouseField, { type: "collectionReference" | "multiCollectionReference" }> {
     return field.type === "collectionReference" || field.type === "multiCollectionReference"
 }
 

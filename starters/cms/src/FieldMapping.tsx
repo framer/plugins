@@ -1,5 +1,5 @@
 import { type ManagedCollectionFieldInput, framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 
 interface FieldMappingRowProps {
@@ -123,7 +123,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         return () => abortController.abort()
     }, [initialSlugFieldId, dataSource, collection])
 
-    const changeFieldName = (fieldId: string, name: string) => {
+    const changeFieldName = useCallback((fieldId: string, name: string) => {
         setFields(prevFields => {
             const updatedFields = prevFields.map(field => {
                 if (field.id !== fieldId) return field
@@ -131,9 +131,9 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             })
             return updatedFields
         })
-    }
+    }, [])
 
-    const toggleFieldDisabledState = (fieldId: string) => {
+    const toggleFieldDisabledState = useCallback((fieldId: string) => {
         setIgnoredFieldIds(previousIgnoredFieldIds => {
             const updatedIgnoredFieldIds = new Set(previousIgnoredFieldIds)
 
@@ -145,7 +145,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
             return updatedIgnoredFieldIds
         })
-    }
+    }, [])
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 

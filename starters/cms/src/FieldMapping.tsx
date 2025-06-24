@@ -57,8 +57,10 @@ function FieldMappingRow({
     )
 }
 
-// Empty array to ensure stable reference
-const emptyArray: readonly ManagedCollectionFieldInput[] = []
+// Create a const empty array to be used whenever there are no fields.
+const emptyFields: ManagedCollectionFieldInput[] = []
+Object.freeze(emptyFields)
+
 const initialFieldIds: ReadonlySet<string> = new Set()
 
 interface FieldMappingProps {
@@ -74,7 +76,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const [fields, setFields] = useState<readonly ManagedCollectionFieldInput[]>(emptyArray)
+    const [fields, setFields] = useState<ManagedCollectionFieldInput[]>(emptyFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
     const possibleSlugFields = useMemo(() => fields.filter(field => field.type === "string"), [fields])

@@ -6,6 +6,7 @@ import { FieldMapping } from "./components/FieldMapping"
 import { SelectDataSource } from "./components/SelectDataSource"
 import { getDataSource, spaceIdPluginKey } from "./data"
 import type { GreenhouseDataSource } from "./dataSources"
+import { Loading } from "./components/Loading"
 
 interface AppProps {
     collection: ManagedCollection
@@ -51,15 +52,14 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
     useEffect(() => {
         if (!boardToken) return
         if (boardToken === previousBoardToken) return
-        void framer.setPluginData(spaceIdPluginKey, boardToken)
+
+        if (framer.isAllowedTo("setPluginData")) {
+            framer.setPluginData(spaceIdPluginKey, boardToken)
+        }
     }, [boardToken, previousBoardToken])
 
     if (isLoading) {
-        return (
-            <main className="loading">
-                <div className="framer-spinner" />
-            </main>
-        )
+        return <Loading />
     }
 
     if (!previousBoardToken || !dataSource) {

@@ -102,7 +102,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 htmlContent += `<table>`
                 break
             case "table_row":
-                if (blocks[i - 1]?.type !== "table") {
+                if (blocks[i - 1]?.type === "table") {
                     htmlContent += `<thead><tr>`
                     block.table_row.cells.forEach((cell) => {
                         htmlContent += `<th>${richTextToHTML(cell)}</th>`
@@ -138,6 +138,6 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
         }
     }
-
+    console.log('blocksToHtml', htmlContent)
     return htmlContent
 }

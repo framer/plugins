@@ -74,17 +74,14 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const possibleSlugFields = useMemo(
-        () => dataSource.fields.filter(field => field.type === "string"),
-        [dataSource.fields]
-    )
+    const [fields, setFields] = useState<readonly ManagedCollectionFieldInput[]>(emptyArray)
+    const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
+
+    const possibleSlugFields = useMemo(() => fields.filter(field => field.type === "string"), [fields])
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
-
-    const [fields, setFields] = useState<readonly ManagedCollectionFieldInput[]>(emptyArray)
-    const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
     const dataSourceName = dataSourceOptions.find(option => option.id === dataSource.id)?.name ?? dataSource.id
 

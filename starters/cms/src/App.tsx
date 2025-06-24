@@ -55,7 +55,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
                 setIsLoadingDataSource(false)
             })
 
-        return abortController.abort
+        return () => abortController.abort()
     }, [previousDataSourceId])
 
     if (isLoadingDataSource) {

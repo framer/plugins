@@ -79,7 +79,10 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const [fields, setFields] = useState<ManagedCollectionFieldInput[]>(emptyFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
-    const possibleSlugFields = useMemo(() => fields.filter(field => field.type === "string"), [fields])
+    const possibleSlugFields = useMemo(
+        () => dataSource.fields.filter(field => field.type === "string"),
+        [dataSource.fields]
+    )
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
@@ -117,7 +120,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 }
             })
 
-        return abortController.abort
+        return () => abortController.abort()
     }, [initialSlugFieldId, dataSource, collection])
 
     const changeFieldName = (fieldId: string, name: string) => {

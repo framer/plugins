@@ -1,5 +1,5 @@
 import { type ManagedCollectionFieldInput, framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 
 interface FieldMappingRowProps {
@@ -57,7 +57,10 @@ function FieldMappingRow({
     )
 }
 
-const initialManagedCollectionFields: ManagedCollectionFieldInput[] = []
+// Create a const empty array to be used whenever there are no fields.
+const emptyFields: ManagedCollectionFieldInput[] = []
+Object.freeze(emptyFields)
+
 const initialFieldIds: ReadonlySet<string> = new Set()
 
 interface FieldMappingProps {
@@ -73,14 +76,17 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const [possibleSlugFields] = useState(() => dataSource.fields.filter(field => field.type === "string"))
+    const [fields, setFields] = useState<ManagedCollectionFieldInput[]>(emptyFields)
+    const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
+
+    const possibleSlugFields = useMemo(
+        () => dataSource.fields.filter(field => field.type === "string"),
+        [dataSource.fields]
+    )
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
-
-    const [fields, setFields] = useState(initialManagedCollectionFields)
-    const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
     const dataSourceName = dataSourceOptions.find(option => option.id === dataSource.id)?.name ?? dataSource.id
 
@@ -95,10 +101,14 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 setFields(mergeFieldsWithExistingFields(dataSource.fields, collectionFields))
 
                 const existingFieldIds = new Set(collectionFields.map(field => field.id))
-                const ignoredFields = dataSource.fields.filter(sourceField => !existingFieldIds.has(sourceField.id))
 
                 if (initialSlugFieldId) {
-                    setIgnoredFieldIds(new Set(ignoredFields.map(field => field.id)))
+                    const ignoredIds = new Set<string>()
+                    for (const sourceField of dataSource.fields) {
+                        if (existingFieldIds.has(sourceField.id)) continue
+                        ignoredIds.add(sourceField.id)
+                    }
+                    setIgnoredFieldIds(ignoredIds)
                 }
 
                 setStatus("mapping-fields")
@@ -110,12 +120,10 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 }
             })
 
-        return () => {
-            abortController.abort()
-        }
+        return () => abortController.abort()
     }, [initialSlugFieldId, dataSource, collection])
 
-    const changeFieldName = (fieldId: string, name: string) => {
+    const changeFieldName = useCallback((fieldId: string, name: string) => {
         setFields(prevFields => {
             const updatedFields = prevFields.map(field => {
                 if (field.id !== fieldId) return field
@@ -123,9 +131,9 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             })
             return updatedFields
         })
-    }
+    }, [])
 
-    const toggleFieldDisabledState = (fieldId: string) => {
+    const toggleFieldDisabledState = useCallback((fieldId: string) => {
         setIgnoredFieldIds(previousIgnoredFieldIds => {
             const updatedIgnoredFieldIds = new Set(previousIgnoredFieldIds)
 
@@ -137,7 +145,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
             return updatedIgnoredFieldIds
         })
-    }
+    }, [])
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
@@ -155,9 +163,11 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         try {
             setStatus("syncing-collection")
 
-            const fieldsToSync = fields
-                .filter(field => !ignoredFieldIds.has(field.id))
-                .map(field => ({ ...field, name: field.name.trim() || field.id }))
+            const fieldsToSync: ManagedCollectionFieldInput[] = []
+            for (const field of fields) {
+                if (ignoredFieldIds.has(field.id)) continue
+                fieldsToSync.push({ ...field, name: field.name.trim() || field.id })
+            }
 
             await collection.setFields(fieldsToSync)
             await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField)

@@ -1,6 +1,6 @@
 import type { GreenhouseField } from "./dataSources"
 
-export function decodeHtml(html: string) {
+export function decodeHtml(html: string): string {
     const textarea = document.createElement("textarea")
     textarea.innerHTML = html
     return textarea.value
@@ -12,7 +12,7 @@ export function isCollectionReference(
     return field.type === "collectionReference" || field.type === "multiCollectionReference"
 }
 
-export function isMissingReferenceField(field: GreenhouseField) {
+export function isMissingReferenceField(field: GreenhouseField): boolean {
     if (!isCollectionReference(field)) {
         return false
     }

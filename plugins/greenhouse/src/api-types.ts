@@ -11,19 +11,18 @@ export interface Department {
 export interface Office {
     id: number
     name: string
-    location: string
-    jobs: Job[]
+    location: string | null
+    departments: Department[]
 }
 
 export interface Job {
     id: number
-    internal_job_id: number | null
+    internal_job_id: number
     title: string
     updated_at: string
-    requisition_id: string
+    requisition_id: string | null
     absolute_url: string
     location: Location
-    metadata: unknown[]
     content: string
     departments: Department[]
     offices: Office[]
@@ -87,13 +86,16 @@ export function validateJobs(data: unknown): asserts data is Job[] {
         if (typeof item.id !== "number") {
             throw new Error("Expected job to have numeric id")
         }
+        if (typeof item.internal_job_id !== "number") {
+            throw new Error("Expected job to have numeric internal_job_id")
+        }
         if (typeof item.title !== "string") {
             throw new Error("Expected job to have string title")
         }
         if (typeof item.updated_at !== "string") {
             throw new Error("Expected job to have string updated_at")
         }
-        if (typeof item.requisition_id !== "string") {
+        if (typeof item.requisition_id !== "string" && item.requisition_id !== null) {
             throw new Error("Expected job to have string requisition_id")
         }
         if (typeof item.absolute_url !== "string") {
@@ -104,9 +106,6 @@ export function validateJobs(data: unknown): asserts data is Job[] {
         }
         if (typeof item.location.name !== "string") {
             throw new Error("Expected job to have string location.name")
-        }
-        if (typeof item.metadata !== "object" || item.metadata === null) {
-            throw new Error("Expected job to have object metadata")
         }
         if (typeof item.content !== "string") {
             throw new Error("Expected job to have string content")
@@ -135,11 +134,11 @@ export function validateOffices(data: unknown): asserts data is Office[] {
         if (typeof item.name !== "string") {
             throw new Error("Expected office to have string name")
         }
-        if (typeof item.location !== "string") {
+        if (typeof item.location !== "string" && item.location !== null) {
             throw new Error("Expected office to have string location")
         }
-        if (!Array.isArray(item.jobs)) {
-            throw new Error("Expected office to have jobs array")
+        if (!Array.isArray(item.departments)) {
+            throw new Error("Expected office to have departments array")
         }
     }
 }

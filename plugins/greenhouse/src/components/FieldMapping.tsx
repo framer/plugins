@@ -35,7 +35,7 @@ function FieldMappingRow({
                 onClick={() => onToggleDisabled(field.id)}
                 tabIndex={0}
             >
-                <input type="checkbox" checked={!disabled && !isMissingReference} tabIndex={-1} readOnly />
+                <input type="checkbox" checked={!isDisabled} tabIndex={-1} readOnly />
                 <span>{originalFieldName ?? field.id}</span>
             </button>
             <ChevronIcon />
@@ -61,7 +61,7 @@ function FieldMappingRow({
                 <input
                     type="text"
                     className="target-field"
-                    disabled={disabled}
+                    disabled={disabled} // IsDisabled doesn't make sense here since it's not a collection reference field
                     placeholder={originalFieldName}
                     value={field.name !== originalFieldName ? field.name : ""}
                     onChange={event => onNameChange(field.id, event.target.value ?? originalFieldName ?? "")}

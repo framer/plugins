@@ -130,21 +130,23 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
 
         case "string":
             switch (fieldSchema.airtableType) {
-                case "barcode":
+                case "barcode": {
                     if (!value || typeof value !== "object" || !("text" in value) || typeof value.text !== "string")
                         return null
                     return {
                         value: value.text,
                         type: "string",
                     }
-                case "aiText":
+                }
+                case "aiText": {
                     if (!value || typeof value !== "object" || !("value" in value) || typeof value.value !== "string")
                         return null
                     return {
                         value: value.value,
                         type: "string",
                     }
-                case "duration":
+                }
+                case "duration": {
                     if (typeof value !== "number" || Number.isNaN(value)) return null
 
                     const hours = Math.floor(value / 3600)
@@ -182,16 +184,18 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                         value: result,
                         type: "string",
                     }
+                }
                 case "singleCollaborator":
                 case "createdBy":
-                case "lastModifiedBy":
+                case "lastModifiedBy": {
                     if (!value || typeof value !== "object" || !("name" in value) || typeof value.name !== "string")
                         return null
                     return {
                         value: value.name,
                         type: "string",
                     }
-                case "multipleCollaborators":
+                }
+                case "multipleCollaborators": {
                     if (!Array.isArray(value) || value.length === 0) return null
                     const firstCollaborator = value[0]
                     if (
@@ -205,6 +209,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                         value: firstCollaborator.name,
                         type: "string",
                     }
+                }
             }
 
             if (typeof value !== "string") return null

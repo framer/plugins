@@ -351,7 +351,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             </label>
 
             <div className="fields">
-                <span className="column-span-2">Airtable Column</span>
+                <span className="column-span-2">Column</span>
                 <span>Type</span>
                 <span>Name</span>
                 {fields

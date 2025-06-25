@@ -217,7 +217,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
                     {photosColumns.map((photos, i) => (
                         <div
                             key={`column-${i}`}
-                            className="flex-shrink-0 flex flex-col gap-[5px]"
+                            className="shrink-0 flex flex-col gap-[5px]"
                             style={{ width: columnWidth }}
                         >
                             {photos.map(photo => (
@@ -293,7 +293,7 @@ const GridItem = memo(function GridItem({
                         <div
                             className={cx(
                                 "absolute top-0 right-0 left-0 bottom-0 rounded-lg flex items-center justify-center transition-all pointer-events-none",
-                                loading && "bg-blackDimmed"
+                                loading && "bg-black-dimmed"
                             )}
                         >
                             {loading && <Spinner size="medium" />}
@@ -309,7 +309,7 @@ const GridItem = memo(function GridItem({
             <a
                 target="_blank"
                 href={photo.user.links.html}
-                className="text-2xs text-tertiary whitespace-nowrap overflow-hidden overflow-ellipsis"
+                className="text-2xs text-tertiary whitespace-nowrap overflow-hidden text-ellipsis"
             >
                 {photo.user.name}
             </a>
@@ -326,7 +326,7 @@ const AppErrorBoundary = ({ children }: PropsWithChildren<object>) => (
                     <div className="flex flex-1 items-center justify-center flex-col max-w-[200px] m-auto text-tertiary">
                         Could not load photos
                         <button
-                            className="bg-transparent hover:bg-transparent active:bg-transparent text-blue-600 outline-none"
+                            className="bg-transparent hover:bg-transparent active:bg-transparent text-blue-600 outline-hidden"
                             onClick={() => resetErrorBoundary()}
                         >
                             Try again

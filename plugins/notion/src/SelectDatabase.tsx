@@ -77,19 +77,19 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
             <div className="flex flex-col gap-[10px] mt-auto pb-[15px]">
                 <div className="flex gap-[10px]">
                     <select
-                        value={selectedDatabase ?? (isLoadingOrFetching ? "loading" : "placeholder")}
+                        value={selectedDatabase ?? ""}
                         onChange={event => setSelectedDatabase(event.target.value)}
                         className="flex-1 shrink-1"
                         disabled={!selectEnabled}
                     >
                         {isLoadingOrFetching && (
-                            <option disabled value="loading">
+                            <option disabled value="">
                                 Loading…
                             </option>
                         )}
                         {!isLoadingOrFetching && (
                             <>
-                                <option disabled value="placeholder">
+                                <option disabled value="">
                                     Select Database…
                                 </option>
                                 {(!data || data.length === 0) && <option disabled>No databases…</option>}

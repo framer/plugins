@@ -11,14 +11,15 @@ interface FieldTypeOption {
 }
 
 const fieldTypeOptions: FieldTypeOption[] = [
-    { type: "boolean", label: "Boolean" },
-    { type: "color", label: "Color" },
-    { type: "number", label: "Number" },
-    { type: "string", label: "String" },
+    { type: "string", label: "Plain Text" },
     { type: "formattedText", label: "Formatted Text" },
-    { type: "image", label: "Image" },
-    { type: "link", label: "Link" },
     { type: "date", label: "Date" },
+    { type: "link", label: "Link" },
+    { type: "image", label: "Image" },
+    { type: "color", label: "Color" },
+    { type: "boolean", label: "Toggle" },
+    { type: "number", label: "Number" },
+    { type: "file", label: "File" },
 ]
 
 interface FieldMappingRowProps {
@@ -65,7 +66,7 @@ function FieldMappingRow({
             <input
                 type="text"
                 disabled={isIgnored || disabled}
-                placeholder={field.id}
+                placeholder={originalFieldName}
                 value={field.name}
                 onChange={event => onNameChange(field.id, event.target.value)}
                 onKeyDown={event => {
@@ -112,7 +113,8 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const [fields, setFields] = useState<ManagedCollectionFieldInput[]>(() => getFields(dataSource, collectionFields))
+    const originalFields = useMemo(() => getFields(dataSource, collectionFields), [dataSource, collectionFields])
+    const [fields, setFields] = useState<ManagedCollectionFieldInput[]>(originalFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
     const possibleSlugFields = useMemo(() => fields.filter(field => field.type === "string"), [fields])
@@ -274,7 +276,7 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
                         <FieldMappingRow
                             key={`field-${field.id}`}
                             field={field}
-                            originalFieldName={fields.find(sourceField => sourceField.id === field.id)?.name}
+                            originalFieldName={originalFields.find(sourceField => sourceField.id === field.id)?.name}
                             isIgnored={ignoredFieldIds.has(field.id)}
                             disabled={!isAllowedToManage}
                             onToggleDisabled={toggleFieldDisabledState}

@@ -1,5 +1,11 @@
 /* Your Plugin CSS */
 
+#root {
+    --framer-color-tint: #00c43e;
+    --framer-color-tint-dark: #00ba3b;
+    --framer-color-tint-extra-dark: #00ad37;
+}
+
 main {
     display: flex;
     flex-direction: column;
@@ -182,10 +188,6 @@ input[type="text"]:disabled,
     height: 45px;
     background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
     pointer-events: none;
-}
-
-.mapping footer > button {
-    text-transform: capitalize;
 }
 
 /* Login */

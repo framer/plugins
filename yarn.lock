@@ -6972,7 +6972,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
     tailwindcss: "npm:^4.1.10"
-    valibot: "npm:0.29.0"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -7057,10 +7057,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"valibot@npm:0.29.0":
-  version: 0.29.0
-  resolution: "valibot@npm:0.29.0"
-  checksum: 10/039ee54708518a9985ac040ca022fe6a20651e526c7585f42532747a6354a7c0c14535c8d2bbd141b036a2ac8b8f2760104cc64a4073a059d134fde1ea91c45f
+"valibot@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "valibot@npm:1.1.0"
+  peerDependencies:
+    typescript: ">=5"
+  peerDependenciesMeta:
+    typescript:
+      optional: true
+  checksum: 10/667c99e3ec2825ea97c20f37add7fe7eb9d15fb338c5f49c166ffba13a6f4516c77c060083e1c6bda77a2275c4d37400b711d284bbea03fd4ae160bbca34112c
   languageName: node
   linkType: hard
 

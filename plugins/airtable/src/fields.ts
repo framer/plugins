@@ -99,7 +99,7 @@ function inferEnumField(fieldSchema: AirtableFieldSchema & { type: "singleSelect
 
 function inferNumberField(
     fieldSchema: AirtableFieldSchema & {
-        type: "number" | "percent" | "currency" | "autoNumber" | "rating"
+        type: "number" | "percent" | "currency" | "autoNumber" | "rating" | "count"
     }
 ): PossibleField {
     return {
@@ -399,6 +399,7 @@ async function inferFieldByType(
         case "currency":
         case "autoNumber":
         case "rating":
+        case "count":
             return inferNumberField(fieldSchema)
 
         case "singleLineText":

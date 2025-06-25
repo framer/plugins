@@ -1,0 +1,30 @@
+{
+    "id": "categories",
+    "fields": [
+        { "name": "Title", "type": "string" },
+        { "name": "Description", "type": "string" },
+        { "name": "Color", "type": "color" }
+    ],
+    "items": [
+        {
+            "Title": { "type": "string", "value": "CMS" },
+            "Description": { "type": "string", "value": "Content Management System" },
+            "Color": { "type": "color", "value": "orange" }
+        },
+        {
+            "Title": { "type": "string", "value": "Basics" },
+            "Description": { "type": "string", "value": "Basic content management" },
+            "Color": { "type": "color", "value": "red" }
+        },
+        {
+            "Title": { "type": "string", "value": "Updates" },
+            "Description": { "type": "string", "value": "Updates to the CMS" },
+            "Color": { "type": "color", "value": "blue" }
+        },
+        {
+            "Title": { "type": "string", "value": "Pro Tips" },
+            "Description": { "type": "string", "value": "Tips for using the CMS" },
+            "Color": { "type": "color", "value": "green" }
+        }
+    ]
+}

@@ -1,7 +1,19 @@
-# Framer Google Sheets Plugin
+# CMS Starter
 
-Framer Google Sheets Sync Plugin
+This is a starter for building a CMS plugin for Framer.
 
-**By:** @sakib25800 and @benjamindenboer
+Run the development server:
 
-![Google Sheets Image](../../assets/google-sheets.png)
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+And [open in Framer](https://www.framer.com/developers/plugins/quick-start#opening-in-framer).
+
+Learn more: https://www.framer.com/developers/plugins/introduction

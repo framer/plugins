@@ -3147,8 +3147,8 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     extract-colors: "npm:^4.2.0"
-    framer-motion: "npm:^11.18.2"
     framer-plugin: "npm:^3.3.2"
+    motion: "npm:^12.19.1"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -3212,9 +3212,9 @@ __metadata:
     "@radix-ui/react-slider": "npm:^1.3.5"
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-motion: "npm:^11.18.2"
     framer-plugin: "npm:^3.3.2"
     lightningcss: "npm:^1.30.1"
+    motion: "npm:^12.19.1"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-slider: "npm:^2.0.6"
@@ -3570,8 +3570,8 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     extract-colors: "npm:^4.2.0"
-    framer-motion: "npm:^11.18.2"
     framer-plugin: "npm:^3.3.2"
+    motion: "npm:^12.19.1"
     react: "npm:^18.3.1"
     react-color: "npm:^2.19.3"
     react-dom: "npm:^18.3.1"
@@ -4130,28 +4130,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-motion@npm:^11.18.2":
-  version: 11.18.2
-  resolution: "framer-motion@npm:11.18.2"
-  dependencies:
-    motion-dom: "npm:^11.18.1"
-    motion-utils: "npm:^11.18.1"
-    tslib: "npm:^2.4.0"
-  peerDependencies:
-    "@emotion/is-prop-valid": "*"
-    react: ^18.0.0 || ^19.0.0
-    react-dom: ^18.0.0 || ^19.0.0
-  peerDependenciesMeta:
-    "@emotion/is-prop-valid":
-      optional: true
-    react:
-      optional: true
-    react-dom:
-      optional: true
-  checksum: 10/f8805f9f5664b86aad6b9ed280a79b10e7ed4e31048728d4c3767d95a5c9feeb0279844bbe613dcb3741bb784cdf6ad761e726249fa4feeec9bec4a29f78a397
-  languageName: node
-  linkType: hard
-
 "framer-motion@npm:^12.19.1":
   version: 12.19.1
   resolution: "framer-motion@npm:12.19.1"
@@ -4446,8 +4424,8 @@ __metadata:
     "@types/react-dom": "npm:^18.3.7"
     autoprefixer: "npm:^10.4.21"
     classnames: "npm:^2.5.1"
-    framer-motion: "npm:^12.19.1"
     framer-plugin: "npm:^3.3.2"
+    motion: "npm:^12.19.1"
     p-limit: "npm:^6.2.0"
     postcss: "npm:^8.5.6"
     react: "npm:^18.3.1"
@@ -5127,15 +5105,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"motion-dom@npm:^11.18.1":
-  version: 11.18.1
-  resolution: "motion-dom@npm:11.18.1"
-  dependencies:
-    motion-utils: "npm:^11.18.1"
-  checksum: 10/d9172638e05998486800b1045fd2060dce13c748bdef2071b8d6f94adf87da9f5e11d44367a6ea2b4d2a8701d150a21427c1676b023dfe0e48f36c0383b2ceec
-  languageName: node
-  linkType: hard
-
 "motion-dom@npm:^12.19.0":
   version: 12.19.0
   resolution: "motion-dom@npm:12.19.0"
@@ -5145,17 +5114,31 @@ __metadata:
   languageName: node
   linkType: hard
 
-"motion-utils@npm:^11.18.1":
-  version: 11.18.1
-  resolution: "motion-utils@npm:11.18.1"
-  checksum: 10/8af61c8260ed6abe9c0d4e1037bd80de95a461a62c89daaf26bfdcdccc96799eed5c45adbdff90ea78614336bf2e3b91f4eb6ecb4e4028a3bce53977b54822a2
-  languageName: node
-  linkType: hard
-
 "motion-utils@npm:^12.19.0":
   version: 12.19.0
   resolution: "motion-utils@npm:12.19.0"
   checksum: 10/a6fe6b329bf4e2070bb95788218f36f0d7ea6cc3098e6ea2646ed68d5be88d25fa30e55284463ace78d19a5e19714875a7b70055bd86ae6e52a5fdee08438470
+  languageName: node
+  linkType: hard
+
+"motion@npm:^12.19.1":
+  version: 12.19.1
+  resolution: "motion@npm:12.19.1"
+  dependencies:
+    framer-motion: "npm:^12.19.1"
+    tslib: "npm:^2.4.0"
+  peerDependencies:
+    "@emotion/is-prop-valid": "*"
+    react: ^18.0.0 || ^19.0.0
+    react-dom: ^18.0.0 || ^19.0.0
+  peerDependenciesMeta:
+    "@emotion/is-prop-valid":
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+  checksum: 10/57f24444f34c1c4ecb2f6650ff01ad4f6728b20beee627c6d45c786effa3e4483c89fab9b079ae0642a8b213cba7a14193b171f9e1cc37de87938bbab3730057
   languageName: node
   linkType: hard
 
@@ -5497,8 +5480,8 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     base64-arraybuffer: "npm:^1.0.2"
-    framer-motion: "npm:^11.18.2"
     framer-plugin: "npm:^3.3.2"
+    motion: "npm:^12.19.1"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-webcam: "npm:^7.2.0"

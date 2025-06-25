@@ -1,5 +1,5 @@
-import { AnimatePresence, type MotionProps, motion } from "framer-motion"
 import { framer } from "framer-plugin"
+import { AnimatePresence, type MotionProps, motion } from "motion/react"
 import { cloneElement, useEffect, useState } from "react"
 import { type RouteComponentProps, useLocation, useRoute } from "wouter"
 import type { BlogPluginContext } from "./blog"

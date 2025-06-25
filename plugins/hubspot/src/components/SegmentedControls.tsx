@@ -1,5 +1,5 @@
 import cx from "classnames"
-import { motion } from "framer-motion"
+import { motion } from "motion/react"
 
 interface Option {
     value: string

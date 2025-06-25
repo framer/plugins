@@ -19,7 +19,7 @@
         "framer-plugin": "^3.3.2",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
-        "react-error-boundary": "^4.1.2",
+        "react-error-boundary": "^6.0.0",
         "react-feather": "^2.0.10",
         "recharts": "^2.15.4"
     },

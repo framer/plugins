@@ -682,12 +682,26 @@ const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
     if (typeof cellValue === "number") return "number"
 
     if (typeof cellValue === "string") {
-        const cellValueLowered = cellValue.trim().toLowerCase()
+        const cellValueTrimmed = cellValue.trim()
+        const cellValueLowered = cellValueTrimmed.toLowerCase()
 
         // If the cell value contains a newline, it's probably a formatted text field
         if (cellValueLowered.includes("\n")) return "formattedText"
-        if (/^#[0-9a-f]{6}$/.test(cellValueLowered)) return "color"
+
+        // Detect hex, rgb(), and rgba() CSS color formats
+        if (
+            /^#[0-9a-f]{6}$/.test(cellValueLowered) ||
+            /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(?:\s*,\s*(?:\d*\.?\d+|\d+%))?\s*\)$/i.test(cellValueTrimmed)
+        ) {
+            return "color"
+        }
         if (/<[a-z][\s\S]*>/.test(cellValueLowered)) return "formattedText"
+
+        // Check if the string is an ISO date
+        // Accepts formats like 2023-01-01, 2023-01-01T12:34:56Z, 2023-01-01T12:34:56.789+02:00, etc.
+        if (/^\d{4}-\d{2}-\d{2}(?:[Tt ][\d:.+-Zz]*)?$/.test(cellValueTrimmed) && !isNaN(Date.parse(cellValueTrimmed))) {
+            return "date"
+        }
 
         try {
             new URL(cellValueLowered)
@@ -715,7 +729,7 @@ const getFieldType = (
     }
 
     // Otherwise, infer the field type from the cell value
-    return cellValue ? inferFieldType(cellValue) : "string"
+    return cellValue !== undefined ? inferFieldType(cellValue) : "string"
 }
 
 export function getFields(dataSource: DataSource, collectionFields: ManagedCollectionFieldInput[]) {

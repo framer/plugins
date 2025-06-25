@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"
 import { type OGLRenderingContext, Texture } from "ogl"
+import { useEffect, useState } from "react"
 
 export function useCharactersAtlasTexture(
     gl: OGLRenderingContext,

@@ -1,5 +1,3 @@
-import { createContext } from 'react';
+import { createContext } from "react"
 
-export const ResizeContext = createContext<
-  ((height: 'short' | 'long') => void) | null
->(null);
+export const ResizeContext = createContext<((height: "short" | "long") => void) | null>(null)

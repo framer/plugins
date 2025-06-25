@@ -1,12 +1,11 @@
 /* eslint-disable -- TODO: fix this */
 // @ts-nocheck - TODO: fix this
 
-import { type DependencyList } from "react"
 import {
-    type GLTFDescription,
-    type OGLRenderingContext,
     Camera,
+    type GLTFDescription,
     GLTFLoader,
+    type OGLRenderingContext,
     Orbit,
     Program,
     RenderTarget,
@@ -15,7 +14,7 @@ import {
     Transform,
     Vec3,
 } from "ogl"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { type DependencyList, useCallback, useEffect, useRef, useState } from "react"
 import { GLSL } from "../glsl"
 import { BASE_PATH } from "../utils"
 

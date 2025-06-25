@@ -1,47 +1,45 @@
 <script lang="ts">
-  import { iterate } from "../utils/array";
-  import { matchCase, type Range } from "../utils/text";
+import { iterate } from "../utils/array"
+import { matchCase, type Range } from "../utils/text"
 
-  interface Props {
-    title: string;
-    replacement: string | undefined;
-    ranges: Range[];
-    preserveCase?: boolean;
-    selected: boolean;
-  }
+interface Props {
+    title: string
+    replacement: string | undefined
+    ranges: Range[]
+    preserveCase?: boolean
+    selected: boolean
+}
 
-  let { title, replacement, ranges, preserveCase = false, selected }: Props = $props();
+let { title, replacement, ranges, preserveCase = false, selected }: Props = $props()
 
-  const texts: { text: string; highlighted: boolean }[] = [];
+const texts: { text: string; highlighted: boolean }[] = []
 
-  for (const { current: currentRange, next: nextRange, isFirst: isFirstRange, isLast: isLastRange } of iterate(
-    ranges,
-  )) {
+for (const { current: currentRange, next: nextRange, isFirst: isFirstRange, isLast: isLastRange } of iterate(ranges)) {
     if (isFirstRange) {
-      texts.push({ text: title.slice(0, currentRange[0]), highlighted: false });
+        texts.push({ text: title.slice(0, currentRange[0]), highlighted: false })
     }
 
-    texts.push({ text: title.slice(...currentRange), highlighted: true });
+    texts.push({ text: title.slice(...currentRange), highlighted: true })
 
     if (nextRange) {
-      const inbetween: Range = [currentRange[1], nextRange[0]];
+        const inbetween: Range = [currentRange[1], nextRange[0]]
 
-      const inbetweenLength = inbetween[1] - inbetween[0];
-      if (inbetweenLength === 0) continue;
+        const inbetweenLength = inbetween[1] - inbetween[0]
+        if (inbetweenLength === 0) continue
 
-      texts.push({
-        text: title.slice(inbetween[0], inbetween[1]),
-        highlighted: false,
-      });
+        texts.push({
+            text: title.slice(inbetween[0], inbetween[1]),
+            highlighted: false,
+        })
     }
 
     if (isLastRange) {
-      texts.push({
-        text: title.slice(currentRange[1], title.length),
-        highlighted: false,
-      });
+        texts.push({
+            text: title.slice(currentRange[1], title.length),
+            highlighted: false,
+        })
     }
-  }
+}
 </script>
 
 {#each texts as { text, highlighted }}

@@ -1,52 +1,50 @@
 <script lang="ts" generics="Entry">
-  import type { Snippet } from "svelte";
+import type { Snippet } from "svelte"
 
-  import { fade } from "svelte/transition";
+import { fade } from "svelte/transition"
 
-  interface Props {
-    key: string;
-    item: Snippet<[Entry, number]>;
-    entries: Entry[];
-    height?: number;
-    trailingContent?: Snippet;
-    paddingTop?: number;
-  }
+interface Props {
+    key: string
+    item: Snippet<[Entry, number]>
+    entries: Entry[]
+    height?: number
+    trailingContent?: Snippet
+    paddingTop?: number
+}
 
-  let { key, item, entries, height = 30, trailingContent, paddingTop = 0 }: Props = $props();
+let { key, item, entries, height = 30, trailingContent, paddingTop = 0 }: Props = $props()
 
-  let scrollAreaElement: HTMLDivElement;
+let scrollAreaElement: HTMLDivElement
 
-  let scrollTop = $state(0);
-  let containerHeight = $derived(height * entries.length);
-  let viewportHeight = $state(0);
-  let totalViewportPages = $derived(Math.max(Math.floor(containerHeight / viewportHeight), 0));
-  let itemsPerPage = $derived(Math.ceil(viewportHeight / height));
-  let pageHeight = $derived(itemsPerPage * height);
-  let currentPage = $state(0);
-  let remainingPages = $state(0);
+let scrollTop = $state(0)
+let containerHeight = $derived(height * entries.length)
+let viewportHeight = $state(0)
+let totalViewportPages = $derived(Math.max(Math.floor(containerHeight / viewportHeight), 0))
+let itemsPerPage = $derived(Math.ceil(viewportHeight / height))
+let pageHeight = $derived(itemsPerPage * height)
+let currentPage = $state(0)
+let remainingPages = $state(0)
 
-  let currentPageEntries = $derived(
-    entries.slice(currentPage * itemsPerPage, currentPage * itemsPerPage + itemsPerPage),
-  );
-  let nextPageEntries = $derived(
-    entries.slice((currentPage + 1) * itemsPerPage, (currentPage + 1) * itemsPerPage + itemsPerPage),
-  );
+let currentPageEntries = $derived(entries.slice(currentPage * itemsPerPage, currentPage * itemsPerPage + itemsPerPage))
+let nextPageEntries = $derived(
+    entries.slice((currentPage + 1) * itemsPerPage, (currentPage + 1) * itemsPerPage + itemsPerPage)
+)
 
-  const scroll = () => {
-    scrollTop = scrollAreaElement.scrollTop;
+const scroll = () => {
+    scrollTop = scrollAreaElement.scrollTop
 
-    currentPage = Math.floor(scrollTop / pageHeight);
-    remainingPages = totalViewportPages - currentPage;
-  };
+    currentPage = Math.floor(scrollTop / pageHeight)
+    remainingPages = totalViewportPages - currentPage
+}
 
-  $effect(() => {
-    scroll();
-  });
+$effect(() => {
+    scroll()
+})
 
-  $effect(() => {
-    key;
-    scrollAreaElement.scrollTo(0, 0);
-  });
+$effect(() => {
+    key
+    scrollAreaElement.scrollTo(0, 0)
+})
 </script>
 
 <div class="virtual-list">

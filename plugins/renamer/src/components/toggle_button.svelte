@@ -1,5 +1,5 @@
 <script lang="ts">
-  let { checked = $bindable(), label }: { checked: boolean; label: string } = $props();
+let { checked = $bindable(), label }: { checked: boolean; label: string } = $props()
 </script>
 
 <div class="toggle-button">

@@ -9,12 +9,13 @@
         "plugins/*"
     ],
     "scripts": {
-        "check": "turbo run --continue check-eslint check-typescript",
+        "check": "turbo run --continue check-biome check-eslint check-prettier check-typescript",
         "clean": "rm -rf ./p",
         "copy": "bash ./scripts/copy-build.sh",
         "dev": "turbo run dev --concurrency=40",
         "build": "turbo run build --env-mode=loose && run copy",
         "g:build": "cd $INIT_CWD && run g:vite build",
+        "g:check-biome": "biome check $INIT_CWD",
         "g:check-eslint": "cd $INIT_CWD && DEBUG='eslint:eslint' eslint .",
         "g:check-typescript": "tsc --project $INIT_CWD",
         "g:dev": "cd $INIT_CWD && run g:vite",
@@ -23,6 +24,7 @@
         "preview": "turbo run preview --concurrency=40"
     },
     "devDependencies": {
+        "@biomejs/biome": "^2.0.5",
         "@framer/eslint-config": "workspace:*",
         "@framer/vite-config": "workspace:*",
         "eslint": "^9.29.0",

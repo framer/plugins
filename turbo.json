@@ -11,8 +11,17 @@
             "persistent": true
         },
         "check-eslint": {
-            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json", "$TURBO_ROOT$/packages/eslint-config/**/*"]
+            "inputs": [
+                "$TURBO_DEFAULT$",
+                "$TURBO_ROOT$/tsconfig.json",
+                "$TURBO_ROOT$/packages/eslint-config/*",
+                "$TURBO_ROOT$/packages/eslint-config/src/**/*"
+            ]
         },
+        "check-biome": {
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json", "$TURBO_ROOT$/biome.jsonc"]
+        },
+        "check-prettier": {},
         "check-typescript": {
             "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json"]
         },

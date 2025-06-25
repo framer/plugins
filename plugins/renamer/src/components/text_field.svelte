@@ -1,28 +1,28 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+import type { Snippet } from "svelte"
 
-  interface Props {
-    value: string;
-    placeholder: string;
-    focused?: boolean;
-    disabled?: boolean;
-    leadingContent?: Snippet;
-    onkeydown: (event: KeyboardEvent) => void;
-  }
+interface Props {
+    value: string
+    placeholder: string
+    focused?: boolean
+    disabled?: boolean
+    leadingContent?: Snippet
+    onkeydown: (event: KeyboardEvent) => void
+}
 
-  let { value = $bindable(), placeholder, focused, disabled = false, leadingContent, onkeydown }: Props = $props();
+let { value = $bindable(), placeholder, focused, disabled = false, leadingContent, onkeydown }: Props = $props()
 
-  let inputElement: HTMLInputElement;
+let inputElement: HTMLInputElement
 
-  const focusInput = () => {
-    inputElement.focus();
-  };
+const focusInput = () => {
+    inputElement.focus()
+}
 
-  $effect(() => {
+$effect(() => {
     if (focused) {
-      inputElement.focus();
+        inputElement.focus()
     }
-  });
+})
 </script>
 
 <div class="text-field" onclick={focusInput} onkeydown={focusInput} role="textbox" tabindex="-1">

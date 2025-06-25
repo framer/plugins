@@ -33,10 +33,10 @@ function IconPlus() {
 
 function clamp(value: number, min: number, max: number) {
     return Math.min(Math.max(value, min), max)
-  }
+}
 
 export function Stepper({ value = 0, min = 0, step: stepAmount = 1, onChange }: Props) {
-    const step = (direction: -1 | 1) => onChange(clamp(value + (stepAmount * direction), 0, Infinity))
+    const step = (direction: -1 | 1) => onChange(clamp(value + stepAmount * direction, 0, Infinity))
 
     return (
         <div className="stepper">

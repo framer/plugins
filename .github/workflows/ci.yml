@@ -21,8 +21,28 @@ jobs:
                   # https://yarnpkg.com/features/security#hardened-mode
                   YARN_ENABLE_HARDENED_MODE: 1
 
+    biome:
+        runs-on: ubuntu-latest
+        env:
+            TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .tool-versions
+
+            - run: yarn
+
+            - run: yarn turbo check-biome check-prettier
+
     eslint:
         runs-on: ubuntu-latest
+        env:
+            TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
         steps:
             - uses: actions/checkout@v4
@@ -37,6 +57,9 @@ jobs:
 
     typescript:
         runs-on: ubuntu-latest
+        env:
+            TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
         steps:
             - uses: actions/checkout@v4

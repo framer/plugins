@@ -1,6 +1,6 @@
-import React from "react"
-import { motion } from "framer-motion"
 import cx from "classnames"
+import { motion } from "framer-motion"
+import React from "react"
 import { CaretLeftIcon } from "./Icons"
 
 const PageDivider = () => (

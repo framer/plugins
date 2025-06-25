@@ -1,10 +1,10 @@
 import {
+    Collection,
+    CollectionItem,
     type CollectionItemInput,
     type Field,
     type FieldDataEntryInput,
     type FieldDataInput,
-    Collection,
-    CollectionItem,
     framer,
 } from "framer-plugin"
 

@@ -1,5 +1,5 @@
-import { useLocation } from "wouter"
 import cx from "classnames"
+import { useLocation } from "wouter"
 
 interface Props {
     icon: React.ReactElement

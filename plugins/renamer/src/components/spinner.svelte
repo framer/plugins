@@ -1,9 +1,9 @@
 <script lang="ts">
-  interface Props {
-    type: "dashed" | "solid";
-  }
+interface Props {
+    type: "dashed" | "solid"
+}
 
-  let { type }: Props = $props();
+let { type }: Props = $props()
 </script>
 
 <div title="Indexing...">

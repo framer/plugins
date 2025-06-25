@@ -5,8 +5,8 @@ import { motion } from "framer-motion"
 import {
     type CanvasNode,
     type ColorStop,
-    LinearGradient,
     framer,
+    LinearGradient,
     supportsBackgroundGradient,
     supportsBackgroundImage,
     useIsAllowedTo,

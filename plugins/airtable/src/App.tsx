@@ -1,14 +1,13 @@
 import "./App.css"
 
 import type { ManagedCollection } from "framer-plugin"
-import type { DataSource } from "./data"
-
 import { framer } from "framer-plugin"
-import { fetchTable } from "./api"
-import { inferFields } from "./fields"
-import { FieldMapping } from "./FieldMapping"
-import { NoTableAccess } from "./NoAccess"
 import { useEffect, useLayoutEffect, useState } from "react"
+import { fetchTable } from "./api"
+import type { DataSource } from "./data"
+import { FieldMapping } from "./FieldMapping"
+import { inferFields } from "./fields"
+import { NoTableAccess } from "./NoAccess"
 import { SelectDataSource } from "./SelectDataSource"
 
 interface AppProps {

@@ -7,8 +7,8 @@ import {
     framer,
 } from "framer-plugin"
 import auth from "./auth"
-import { logSyncResult } from "./debug.ts"
-import { queryClient } from "./main.tsx"
+import { logSyncResult } from "./debug"
+import { queryClient } from "./main"
 import {
     assert,
     columnToLetter,
@@ -18,6 +18,7 @@ import {
     parseStringToArray,
     slugify,
 } from "./utils"
+import { type DataSource } from "./data"
 
 const USER_INFO_API_URL = "https://www.googleapis.com/oauth2/v1"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
@@ -157,7 +158,7 @@ function fetchUserInfo() {
     })
 }
 
-function fetchSpreadsheetInfo(spreadsheetId: string) {
+export function fetchSpreadsheetInfo(spreadsheetId: string) {
     return request<SpreadsheetInfo>({
         path: `/spreadsheets/${spreadsheetId}`,
         query: {
@@ -201,7 +202,7 @@ export const useSheetQuery = (spreadsheetId: string, sheetTitle: string, range?:
     })
 }
 
-function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?: string) {
+export function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?: string) {
     return queryClient.fetchQuery({
         queryKey: ["sheet", spreadsheetId, sheetTitle, range],
         queryFn: () => fetchSheet(spreadsheetId, sheetTitle, range),
@@ -411,7 +412,7 @@ function processSheetRow({
     }
 }
 
-function processSheet(
+export function processSheet(
     rows: Row[],
     processRowParams: Omit<ProcessSheetRowParams, "row" | "rowIndex" | "status" | "fieldType">
 ) {
@@ -436,75 +437,13 @@ function processSheet(
     }
 }
 
-function generateHeaderRowHash(headerRow: HeaderRow, ignoredColumns: string[]) {
+export function generateHeaderRowHash(headerRow: HeaderRow, ignoredColumns: string[]) {
     return generateHashId(
         [...headerRow]
             .filter(field => !ignoredColumns.includes(field))
             .sort()
             .join(HEADER_ROW_DELIMITER)
     )
-}
-
-export async function syncSheet({
-    fetchedSheet,
-    spreadsheetId,
-    sheetTitle,
-    fields,
-    ignoredColumns,
-    slugColumn,
-    colFieldTypes,
-}: SyncMutationOptions) {
-    if (fields.length === 0) {
-        throw new Error("Expected to have at least one field selected to sync.")
-    }
-
-    const collection = await framer.getActiveManagedCollection()
-
-    const unsyncedItemIds = new Set(await collection.getItemIds())
-
-    const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
-    const [headerRow, ...rows] = sheet.values
-
-    const uniqueHeaderRowNames = generateUniqueNames(headerRow)
-    const headerRowHash = generateHeaderRowHash(headerRow, ignoredColumns)
-
-    const { collectionItems, status } = processSheet(rows, {
-        uniqueHeaderRowNames,
-        unsyncedRowIds: unsyncedItemIds,
-        fieldTypes: colFieldTypes,
-        ignoredFieldColumnIndexes: ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col)),
-        slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
-    })
-
-    await collection.addItems(collectionItems)
-
-    const itemsToDelete = Array.from(unsyncedItemIds)
-    await collection.removeItems(itemsToDelete)
-    await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
-
-    const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
-    const sheetId = spreadsheetInfo.sheets.find(x => x.properties.title === sheetTitle)?.properties.sheetId
-    assert(sheetId !== undefined, "Expected sheet ID to be defined")
-
-    await Promise.all([
-        collection.setPluginData(PLUGIN_SPREADSHEET_ID_KEY, spreadsheetId),
-        collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId.toString()),
-        collection.setPluginData(PLUGIN_IGNORED_COLUMNS_KEY, JSON.stringify(ignoredColumns)),
-        collection.setPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY, headerRowHash),
-        collection.setPluginData(PLUGIN_SLUG_COLUMN_KEY, slugColumn),
-        collection.setPluginData(PLUGIN_LAST_SYNCED_KEY, new Date().toISOString()),
-    ])
-
-    const result: SyncResult = {
-        status: status.errors.length === 0 ? "success" : "completed_with_errors",
-        errors: status.errors,
-        info: status.info,
-        warnings: status.warnings,
-    }
-
-    logSyncResult(result, collectionItems)
-
-    return result
 }
 
 export async function getPluginContext(): Promise<PluginContext> {
@@ -673,5 +612,88 @@ export const useSyncSheetMutation = ({
         },
         onSuccess,
         onError,
+    })
+}
+
+const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
+    if (typeof cellValue === "boolean") return "boolean"
+    if (typeof cellValue === "number") return "number"
+
+    if (typeof cellValue === "string") {
+        const cellValueTrimmed = cellValue.trim()
+        const cellValueLowered = cellValueTrimmed.toLowerCase()
+
+        // If the cell value contains a newline, it's probably a formatted text field
+        if (cellValueLowered.includes("\n")) return "formattedText"
+
+        // Detect hex, rgb(), and rgba() CSS color formats
+        if (
+            /^#[0-9a-f]{6}$/.test(cellValueLowered) ||
+            /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(?:\s*,\s*(?:\d*\.?\d+|\d+%))?\s*\)$/i.test(cellValueTrimmed)
+        ) {
+            return "color"
+        }
+        if (/<[a-z][\s\S]*>/.test(cellValueLowered)) return "formattedText"
+
+        // Check if the string is an ISO date
+        // Accepts formats like 2023-01-01, 2023-01-01T12:34:56Z, 2023-01-01T12:34:56.789+02:00, etc.
+        if (/^\d{4}-\d{2}-\d{2}(?:[Tt ][\d:.+-Zz]*)?$/.test(cellValueTrimmed) && !isNaN(Date.parse(cellValueTrimmed))) {
+            return "date"
+        }
+
+        try {
+            new URL(cellValueLowered)
+
+            if (/\.(gif|jpe?g|png|apng|svg|webp)$/i.test(cellValueLowered)) return "image"
+
+            return "link"
+        } catch (e) {
+            return "string"
+        }
+    }
+
+    return "string"
+}
+
+const getFieldType = (
+    collectionFields: ManagedCollectionFieldInput[],
+    columnId: string,
+    cellValue?: CellValue
+): CollectionFieldType => {
+    // Determine if the field type is already configured
+    if (collectionFields.length > 0) {
+        const field = collectionFields.find(field => field.id === columnId)
+        return field?.type ?? "string"
+    }
+
+    // Otherwise, infer the field type from the cell value
+    return cellValue !== undefined ? inferFieldType(cellValue) : "string"
+}
+
+export function getFields(dataSource: DataSource, collectionFields: ManagedCollectionFieldInput[]) {
+    const [headerRow, ...rows] = dataSource.sheetRows || []
+    const row = rows[0]
+
+    if (!headerRow) {
+        return []
+    }
+
+    const nameCount = new Map<string, number>()
+    const uniqueColumnNames = headerRow.map(name => {
+        const count = nameCount.get(name) || 0
+        nameCount.set(name, count + 1)
+
+        return count > 0 ? `${name} ${count + 1}` : name
+    })
+
+    return headerRow.map((_, columnIndex) => {
+        const sanitizedName = uniqueColumnNames[columnIndex]
+        assert(sanitizedName, "Sanitized name is undefined")
+
+        return {
+            id: sanitizedName,
+            name: sanitizedName,
+            type: getFieldType(collectionFields, sanitizedName, row?.[columnIndex]),
+        } as ManagedCollectionFieldInput
     })
 }

@@ -2,5 +2,5 @@
     "id": "fa488a",
     "name": "Google Sheets",
     "modes": ["configureManagedCollection", "syncManagedCollection"],
-    "icon": "/sheets.svg"
+    "icon": "/icon.svg"
 }

@@ -1,14 +1,17 @@
-import "./globals.css"
 import "framer-plugin/framer.css"
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { framer } from "framer-plugin"
-import React, { type ReactNode } from "react"
-import ReactDOM from "react-dom/client"
-import { getPluginContext } from "./sheets.ts"
+import { StrictMode } from "react"
+import { createRoot } from "react-dom/client"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { App } from "./App.tsx"
-import { PageErrorBoundaryFallback } from "./components/ErrorBoundaryFallback.tsx"
+import { PLUGIN_KEYS, syncExistingCollection } from "./data"
+import auth from "./auth"
+import { Authenticate } from "./Login"
+
+const activeCollection = await framer.getActiveManagedCollection()
+const collectionFields = await activeCollection.getFields()
 
 export const queryClient = new QueryClient({
     defaultOptions: {
@@ -19,33 +22,71 @@ export const queryClient = new QueryClient({
     },
 })
 
-function renderPlugin(app: ReactNode) {
+const tokens = await auth.getTokens()
+
+const root = document.getElementById("root")
+if (!root) throw new Error("Root element not found")
+
+if (!tokens) {
+    await new Promise<void>(resolve => {
+        createRoot(root).render(
+            <StrictMode>
+                <QueryClientProvider client={queryClient}>
+                    <Authenticate onAuthenticated={resolve} />
+                </QueryClientProvider>
+            </StrictMode>
+        )
+    })
+}
+
+const [
+    previousSheetId,
+    previousSlugFieldId,
+    previousSpreadsheetId,
+    previousLastSynced,
+    previousIgnoredColumns,
+    previousSheetHeaderRowHash,
+] = await Promise.all([
+    activeCollection.getPluginData(PLUGIN_KEYS.SHEET_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.SLUG_COLUMN),
+    activeCollection.getPluginData(PLUGIN_KEYS.SPREADSHEET_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
+    activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_COLUMNS),
+    activeCollection.getPluginData(PLUGIN_KEYS.SHEET_HEADER_ROW_HASH),
+])
+
+const { didSync } = await syncExistingCollection(
+    activeCollection,
+    previousSheetId,
+    previousSlugFieldId,
+    previousSpreadsheetId,
+    previousLastSynced,
+    previousIgnoredColumns,
+    previousSheetHeaderRowHash
+)
+
+if (didSync) {
+    await framer.closePlugin("Synchronization successful", {
+        variant: "success",
+    })
+} else {
     const root = document.getElementById("root")
     if (!root) throw new Error("Root element not found")
 
-    ReactDOM.createRoot(root).render(
-        <React.StrictMode>
+    createRoot(root).render(
+        <StrictMode>
             <QueryClientProvider client={queryClient}>
-                <div className="w-full px-[15px] flex flex-col flex-1 overflow-y-auto no-scrollbar">
-                    <PageErrorBoundaryFallback>{app}</PageErrorBoundaryFallback>
-                </div>
+                <App
+                    collection={activeCollection}
+                    collectionFields={collectionFields}
+                    previousSheetId={previousSheetId}
+                    previousSlugFieldId={previousSlugFieldId}
+                    previousSpreadsheetId={previousSpreadsheetId}
+                    previousLastSynced={previousLastSynced}
+                    previousIgnoredColumns={previousIgnoredColumns}
+                    previousSheetHeaderRowHash={previousSheetHeaderRowHash}
+                />
             </QueryClientProvider>
-        </React.StrictMode>
+        </StrictMode>
     )
 }
-
-async function runPlugin() {
-    try {
-        const pluginContext = await getPluginContext()
-
-        renderPlugin(<App pluginContext={pluginContext} />)
-    } catch (e) {
-        const message = e instanceof Error ? e.message : String(e)
-
-        framer.closePlugin(message, {
-            variant: "error",
-        })
-    }
-}
-
-runPlugin()

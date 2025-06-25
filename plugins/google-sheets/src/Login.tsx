@@ -1,25 +1,24 @@
-import { framer } from "framer-plugin"
+import "./App.css"
+
 import { useLayoutEffect, useRef, useState } from "react"
-import auth from "../auth"
-import { type PluginContext, getPluginContext } from "../sheets"
-
-import { Hero } from "../components/Hero"
-
-import { Button } from "../components/Button"
-import { GoogleLogo } from "../components/GoogleLogo"
+import { framer } from "framer-plugin"
+import auth from "./auth"
+import { Hero } from "./components/Hero"
+import { GoogleLogo } from "./components/GoogleLogo"
 
 interface AuthenticationProps {
-    onAuthenticated: (context: PluginContext) => void
+    onAuthenticated: () => void
 }
 
 export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const [isLoading, setIsLoading] = useState(false)
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
+    const pollTimeout = useRef<number | ReturnType<typeof setTimeout>>()
 
     useLayoutEffect(() => {
         framer.showUI({
             width: 320,
-            height: 345,
+            height: 340,
         })
     }, [])
 
@@ -47,7 +46,9 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
         )
     }
 
-    const login = async () => {
+    const login = async (e: React.FormEvent) => {
+        e.preventDefault() // Prevent form submission from reloading the page
+
         setIsLoading(true)
 
         try {
@@ -60,7 +61,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             // Poll the auth server and wait for tokens
             await pollForTokens(authorization.readKey)
 
-            onAuthenticated(await getPluginContext())
+            onAuthenticated()
         } catch (e) {
             framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
         } finally {
@@ -69,27 +70,24 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     }
 
     return (
-        <div className="col-lg pb-[15px]">
+        <form className="login" onSubmit={login}>
             <Hero />
-            <ol className="list-decimal list-inside space-y-2.5 marker:text-secondary *:text-content *:leading-none *:tracking-normal py-[7px]">
-                <li>
-                    <span className="pl-[10px]">Log in to your Google account</span>
-                </li>
-                <li>
-                    <span className="pl-[10px]">Ensure your sheet has a header row</span>
-                </li>
-                <li>
-                    <span className="pl-[10px]">Map the column fields to the CMS</span>
-                </li>
+
+            <ol className="login-steps">
+                <li>Log in to your Google account</li>
+                <li>Ensure your sheet has a header row</li>
+                <li>Map the column fields to the CMS</li>
             </ol>
-            <Button
-                variant="secondary"
-                onClick={login}
-                isLoading={isLoading}
-                className="w-full inline-flex gap-[8px] items-center"
-            >
-                <GoogleLogo /> <span className="relative">Sign In</span>
-            </Button>
-        </div>
+
+            <button type="submit" className="login-button">
+                {isLoading ? (
+                    <div className="framer-spinner" />
+                ) : (
+                    <>
+                        <GoogleLogo /> Sign In
+                    </>
+                )}
+            </button>
+        </form>
     )
 }

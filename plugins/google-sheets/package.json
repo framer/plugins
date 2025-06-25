@@ -1,5 +1,7 @@
 {
     "name": "google-sheets",
+    "private": true,
+    "version": "0.0.0",
     "type": "module",
     "scripts": {
         "dev": "run g:dev",
@@ -10,19 +12,13 @@
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
-        "@tanstack/react-query": "^5.51.11",
-        "classnames": "^2.5.1",
+        "@tanstack/react-query": "^5.81.2",
         "framer-plugin": "^3.3.2",
         "react": "^18",
-        "react-dom": "^18",
-        "react-error-boundary": "^4.0.13",
-        "react-intersection-observer": "^9.10.3"
+        "react-dom": "^18"
     },
     "devDependencies": {
         "@types/react": "^18",
-        "@types/react-dom": "^18",
-        "autoprefixer": "^10.4.19",
-        "postcss": "^8.4.39",
-        "tailwindcss": "^3.4.4"
+        "@types/react-dom": "^18"
     }
 }

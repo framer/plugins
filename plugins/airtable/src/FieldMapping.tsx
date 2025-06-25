@@ -101,6 +101,18 @@ const FieldMappingRow = memo(
                     <div className="unsupported-field">{unsupported ? "Unsupported Field" : "Missing Collection"}</div>
                 ) : (
                     <>
+                        <select
+                            disabled={isIgnored || disabled || selectOptions.length <= 1}
+                            value={isCollectionReference(field) ? field.collectionId : field.type}
+                            onChange={event => onTypeChange?.(field.id, event.target.value)}
+                            className="field-type-select"
+                        >
+                            {selectOptions.map(option => (
+                                <option key={option.id} value={option.id}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
                         <input
                             type="text"
                             style={{
@@ -117,18 +129,6 @@ const FieldMappingRow = memo(
                                 }
                             }}
                         />
-                        <select
-                            disabled={isIgnored || disabled || selectOptions.length <= 1}
-                            value={isCollectionReference(field) ? field.collectionId : field.type}
-                            onChange={event => onTypeChange?.(field.id, event.target.value)}
-                            className="field-type-select"
-                        >
-                            {selectOptions.map(option => (
-                                <option key={option.id} value={option.id}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
                     </>
                 )}
             </>
@@ -325,21 +325,6 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         className="heading-link"
                     >
                         View in Airtable
-                        <svg width="9" height="9" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M1.5 10.4351L9.98528 1.94978"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                            />
-                            <path
-                                d="M2.20801 1.24268H10.6933V9.72796"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
                     </a>
                 </div>
                 <select
@@ -368,8 +353,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
             <div className="fields">
                 <span className="column-span-2">Airtable Column</span>
-                <span>Field Name</span>
                 <span>Type</span>
+                <span>Name</span>
                 {fields
                     .filter(field => !unsupportedFields.includes(field) && !missingCollectionFields.includes(field))
                     .map(field => (

@@ -331,7 +331,6 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                     case "link":
                     case "color":
                     case "date":
-                    case "color":
                     case "collectionReference":
                     case "multiCollectionReference":
                         fieldData[field.id] = {

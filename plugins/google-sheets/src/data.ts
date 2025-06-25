@@ -7,10 +7,16 @@ import {
     type ProtectedMethod,
 } from "framer-plugin"
 import { assert } from "./utils"
+import { fetchSpreadsheetInfo, fetchSheetWithClient, generateHeaderRowHash, processSheet } from "./sheets"
+import { generateUniqueNames } from "./utils"
 
 export const PLUGIN_KEYS = {
-    DATA_SOURCE_ID: "dataSourceId",
-    SLUG_FIELD_ID: "slugFieldId",
+    SPREADSHEET_ID: "sheetsPluginSpreadsheetId",
+    SHEET_ID: "sheetsPluginSheetId",
+    LAST_SYNCED: "sheetsPluginLastSynced",
+    IGNORED_COLUMNS: "sheetsPluginIgnoredColumns",
+    SHEET_HEADER_ROW_HASH: "sheetsPluginSheetHeaderRowHash",
+    SLUG_COLUMN: "sheetsPluginSlugColumn",
 } as const
 
 export interface DataSource {
@@ -20,47 +26,11 @@ export interface DataSource {
 }
 
 /* Retrieve data and process it into a structured format. */
-export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
-    // Fetch from your data source
-    const dataSourceResponse = await fetch(`/data/${dataSourceId}.json`, { signal: abortSignal })
-    const dataSource = await dataSourceResponse.json()
-
-    // Map your source fields to supported field types in Framer
-    const fields: ManagedCollectionFieldInput[] = []
-    for (const field of dataSource.fields) {
-        switch (field.type) {
-            case "string":
-            case "number":
-            case "boolean":
-            case "color":
-            case "formattedText":
-            case "date":
-            case "link":
-                fields.push({
-                    id: field.name,
-                    name: field.name,
-                    type: field.type,
-                })
-                break
-            case "image":
-            case "file":
-            case "enum":
-            case "collectionReference":
-            case "multiCollectionReference":
-                console.warn(`Support for field type "${field.type}" is not implemented in this Plugin.`)
-                break
-            default: {
-                console.warn(`Unknown field type "${field.type}".`)
-            }
-        }
-    }
-
-    const items = dataSource.items as FieldDataInput[]
-
+export async function getDataSource(spreadsheetId: string, sheetTitle: string): Promise<DataSource> {
     return {
-        id: dataSource.id,
-        fields,
-        items,
+        id: spreadsheetId,
+        sheetTitle,
+        sheetRows: [],
     }
 }
 
@@ -81,48 +51,44 @@ export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
     fields: readonly ManagedCollectionFieldInput[],
+    ignoredFieldIds: Set<string>,
     slugField: ManagedCollectionFieldInput
 ) {
     const items: ManagedCollectionItemInput[] = []
-    const unsyncedItems = new Set(await collection.getItemIds())
+    const unsyncedItemIds = new Set(await collection.getItemIds())
+    const { id: spreadsheetId, sheetTitle } = dataSource
 
-    for (let i = 0; i < dataSource.items.length; i++) {
-        const item = dataSource.items[i]
-        if (!item) throw new Error("Logic error")
+    const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle)
+    const [headerRow, ...rows] = sheet.values
 
-        const slugValue = item[slugField.id]
-        if (!slugValue || typeof slugValue.value !== "string") {
-            console.warn(`Skipping item at index ${i} because it doesn't have a valid slug`)
-            continue
-        }
+    const uniqueHeaderRowNames = generateUniqueNames(headerRow)
+    const headerRowHash = generateHeaderRowHash(headerRow, Array.from(ignoredFieldIds))
 
-        unsyncedItems.delete(slugValue.value)
+    const { collectionItems, status } = processSheet(rows, {
+        uniqueHeaderRowNames,
+        unsyncedRowIds: unsyncedItemIds,
+        fieldTypes: fields.map(field => field.type),
+        ignoredFieldColumnIndexes: Array.from(ignoredFieldIds).map(col => uniqueHeaderRowNames.indexOf(col)),
+        slugFieldColumnIndex: slugField ? uniqueHeaderRowNames.indexOf(slugField.id) : -1,
+    })
 
-        const fieldData: FieldDataInput = {}
-        for (const [fieldName, value] of Object.entries(item)) {
-            const field = fields.find(field => field.id === fieldName)
+    const itemsToDelete = Array.from(unsyncedItemIds)
+    await collection.addItems(collectionItems)
+    await collection.removeItems(itemsToDelete)
+    await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
 
-            // Field is in the data but skipped based on selected fields.
-            if (!field) continue
+    const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
+    const sheetId = spreadsheetInfo.sheets.find(x => x.properties.title === sheetTitle)?.properties.sheetId
+    assert(sheetId !== undefined, "Expected sheet ID to be defined")
 
-            // For details on expected field value, see:
-            // https://www.framer.com/developers/plugins/cms#collections
-            fieldData[field.id] = value
-        }
-
-        items.push({
-            id: slugValue.value,
-            slug: slugValue.value,
-            draft: false,
-            fieldData,
-        })
-    }
-
-    await collection.removeItems(Array.from(unsyncedItems))
-    await collection.addItems(items)
-
-    await collection.setPluginData(PLUGIN_KEYS.DATA_SOURCE_ID, dataSource.id)
-    await collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id)
+    await Promise.all([
+        collection.setPluginData(PLUGIN_KEYS.SPREADSHEET_ID, spreadsheetId),
+        collection.setPluginData(PLUGIN_KEYS.SHEET_ID, sheetId.toString()),
+        collection.setPluginData(PLUGIN_KEYS.IGNORED_COLUMNS, JSON.stringify(Array.from(ignoredFieldIds))),
+        collection.setPluginData(PLUGIN_KEYS.SHEET_HEADER_ROW_HASH, headerRowHash),
+        collection.setPluginData(PLUGIN_KEYS.SLUG_COLUMN, slugField.id),
+        collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
+    ])
 }
 
 export const syncMethods = [
@@ -133,10 +99,14 @@ export const syncMethods = [
 
 export async function syncExistingCollection(
     collection: ManagedCollection,
-    previousDataSourceId: string | null,
-    previousSlugFieldId: string | null
+    previousSheetId: string | null,
+    previousSlugFieldId: string | null,
+    previousSpreadsheetId: string | null,
+    previousLastSynced: string | null,
+    previousIgnoredColumns: string | null,
+    previousSheetHeaderRowHash: string | null
 ): Promise<{ didSync: boolean }> {
-    if (!previousDataSourceId) {
+    if (!previousSpreadsheetId || !previousSheetId) {
         return { didSync: false }
     }
 
@@ -149,18 +119,20 @@ export async function syncExistingCollection(
     }
 
     try {
-        const dataSource = await getDataSource(previousDataSourceId)
+        const dataSource = await getDataSource(previousSpreadsheetId, previousSheetId)
         const existingFields = await collection.getFields()
 
         const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
-            framer.notify(`No field matches the slug field id “${previousSlugFieldId}”. Sync will not be performed.`, {
+            framer.notify(`No field matches the slug field ID “${previousSlugFieldId}”. Sync will not be performed.`, {
                 variant: "error",
             })
             return { didSync: false }
         }
 
-        await syncCollection(collection, dataSource, existingFields, slugField)
+        const ignoredFieldIds = new Set(previousIgnoredColumns ? JSON.parse(previousIgnoredColumns) : []) as Set<string>
+
+        await syncCollection(collection, dataSource, existingFields, ignoredFieldIds, slugField)
         return { didSync: true }
     } catch (error) {
         console.error(error)

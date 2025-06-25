@@ -39,10 +39,31 @@ if (!tokens) {
     })
 }
 
-const previousDataSourceId = await activeCollection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-const previousSlugFieldId = await activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID)
+const [
+    previousSheetId,
+    previousSlugFieldId,
+    previousSpreadsheetId,
+    previousLastSynced,
+    previousIgnoredColumns,
+    previousSheetHeaderRowHash,
+] = await Promise.all([
+    activeCollection.getPluginData(PLUGIN_KEYS.SHEET_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.SLUG_COLUMN),
+    activeCollection.getPluginData(PLUGIN_KEYS.SPREADSHEET_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
+    activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_COLUMNS),
+    activeCollection.getPluginData(PLUGIN_KEYS.SHEET_HEADER_ROW_HASH),
+])
 
-const { didSync } = await syncExistingCollection(activeCollection, previousDataSourceId, previousSlugFieldId)
+const { didSync } = await syncExistingCollection(
+    activeCollection,
+    previousSheetId,
+    previousSlugFieldId,
+    previousSpreadsheetId,
+    previousLastSynced,
+    previousIgnoredColumns,
+    previousSheetHeaderRowHash
+)
 
 if (didSync) {
     await framer.closePlugin("Synchronization successful", {
@@ -58,8 +79,12 @@ if (didSync) {
                 <App
                     collection={activeCollection}
                     collectionFields={collectionFields}
-                    previousDataSourceId={previousDataSourceId}
+                    previousSheetId={previousSheetId}
                     previousSlugFieldId={previousSlugFieldId}
+                    previousSpreadsheetId={previousSpreadsheetId}
+                    previousLastSynced={previousLastSynced}
+                    previousIgnoredColumns={previousIgnoredColumns}
+                    previousSheetHeaderRowHash={previousSheetHeaderRowHash}
                 />
             </QueryClientProvider>
         </StrictMode>

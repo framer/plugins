@@ -158,7 +158,7 @@ function fetchUserInfo() {
     })
 }
 
-function fetchSpreadsheetInfo(spreadsheetId: string) {
+export function fetchSpreadsheetInfo(spreadsheetId: string) {
     return request<SpreadsheetInfo>({
         path: `/spreadsheets/${spreadsheetId}`,
         query: {
@@ -202,7 +202,7 @@ export const useSheetQuery = (spreadsheetId: string, sheetTitle: string, range?:
     })
 }
 
-function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?: string) {
+export function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?: string) {
     return queryClient.fetchQuery({
         queryKey: ["sheet", spreadsheetId, sheetTitle, range],
         queryFn: () => fetchSheet(spreadsheetId, sheetTitle, range),
@@ -412,7 +412,7 @@ function processSheetRow({
     }
 }
 
-function processSheet(
+export function processSheet(
     rows: Row[],
     processRowParams: Omit<ProcessSheetRowParams, "row" | "rowIndex" | "status" | "fieldType">
 ) {
@@ -437,75 +437,13 @@ function processSheet(
     }
 }
 
-function generateHeaderRowHash(headerRow: HeaderRow, ignoredColumns: string[]) {
+export function generateHeaderRowHash(headerRow: HeaderRow, ignoredColumns: string[]) {
     return generateHashId(
         [...headerRow]
             .filter(field => !ignoredColumns.includes(field))
             .sort()
             .join(HEADER_ROW_DELIMITER)
     )
-}
-
-export async function syncSheet({
-    fetchedSheet,
-    spreadsheetId,
-    sheetTitle,
-    fields,
-    ignoredColumns,
-    slugColumn,
-    colFieldTypes,
-}: SyncMutationOptions) {
-    if (fields.length === 0) {
-        throw new Error("Expected to have at least one field selected to sync.")
-    }
-
-    const collection = await framer.getActiveManagedCollection()
-
-    const unsyncedItemIds = new Set(await collection.getItemIds())
-
-    const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
-    const [headerRow, ...rows] = sheet.values
-
-    const uniqueHeaderRowNames = generateUniqueNames(headerRow)
-    const headerRowHash = generateHeaderRowHash(headerRow, ignoredColumns)
-
-    const { collectionItems, status } = processSheet(rows, {
-        uniqueHeaderRowNames,
-        unsyncedRowIds: unsyncedItemIds,
-        fieldTypes: colFieldTypes,
-        ignoredFieldColumnIndexes: ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col)),
-        slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
-    })
-
-    await collection.addItems(collectionItems)
-
-    const itemsToDelete = Array.from(unsyncedItemIds)
-    await collection.removeItems(itemsToDelete)
-    await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
-
-    const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
-    const sheetId = spreadsheetInfo.sheets.find(x => x.properties.title === sheetTitle)?.properties.sheetId
-    assert(sheetId !== undefined, "Expected sheet ID to be defined")
-
-    await Promise.all([
-        collection.setPluginData(PLUGIN_SPREADSHEET_ID_KEY, spreadsheetId),
-        collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId.toString()),
-        collection.setPluginData(PLUGIN_IGNORED_COLUMNS_KEY, JSON.stringify(ignoredColumns)),
-        collection.setPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY, headerRowHash),
-        collection.setPluginData(PLUGIN_SLUG_COLUMN_KEY, slugColumn),
-        collection.setPluginData(PLUGIN_LAST_SYNCED_KEY, new Date().toISOString()),
-    ])
-
-    const result: SyncResult = {
-        status: status.errors.length === 0 ? "success" : "completed_with_errors",
-        errors: status.errors,
-        info: status.info,
-        warnings: status.warnings,
-    }
-
-    logSyncResult(result, collectionItems)
-
-    return result
 }
 
 export async function getPluginContext(): Promise<PluginContext> {

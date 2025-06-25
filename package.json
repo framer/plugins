@@ -9,7 +9,7 @@
         "plugins/*"
     ],
     "scripts": {
-        "check": "turbo run --continue check-biome check-eslint check-prettier check-typescript",
+        "check": "turbo run --continue check-biome check-eslint check-prettier check-svelte check-typescript",
         "clean": "rm -rf ./p",
         "copy": "bash ./scripts/copy-build.sh",
         "dev": "turbo run dev --concurrency=40",

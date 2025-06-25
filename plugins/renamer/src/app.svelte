@@ -104,7 +104,7 @@ const resultsRenamer = new BatchProcessResults({
         replacing = true
     },
 
-    onProgress: (count, total) => {},
+    onProgress: () => {},
 
     onCompleted: () => {
         replacing = false
@@ -119,7 +119,7 @@ const renameResults = () => {
 }
 
 const throttle = (callback: () => void, delay: number = 1000) => {
-    let timeout: number | null = null
+    let timeout: ReturnType<typeof setTimeout> | null = null
 
     return () => {
         if (timeout) return

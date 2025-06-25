@@ -70,4 +70,4 @@ jobs:
 
             - run: yarn
 
-            - run: yarn turbo check-typescript
+            - run: yarn turbo check-svelte check-typescript

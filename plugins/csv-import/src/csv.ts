@@ -279,6 +279,9 @@ export async function processRecords(collection: Collection, records: CSVRecord[
         fields
     )
 
+    // Check if CSV has a draft column
+    const hasDraftColumn = csvHeader.includes(":draft")
+
     for (const field of fields) {
         if (field.type === "collectionReference" || field.type === "multiCollectionReference") {
             const collectionIdBySlug = allItemIdBySlug.get(field.collectionId) ?? new Map<string, string>()
@@ -330,6 +333,15 @@ export async function processRecords(collection: Collection, records: CSVRecord[
             continue
         }
 
+        // Parse draft status
+        let draft = false
+        if (hasDraftColumn) {
+            const draftValue = findRecordValue(record, ":draft")
+            if (draftValue && draftValue.trim() !== "") {
+                draft = BOOLEAN_TRUTHY_VALUES.test(draftValue.trim())
+            }
+        }
+
         const fieldData: FieldDataInput = {}
         for (const field of fieldsToImport) {
             const value = findRecordValue(record, field.name)
@@ -351,6 +363,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
             slug,
             fieldData,
             action: existingItemsBySlug.get(slug) ? "conflict" : "add",
+            draft,
         }
 
         if (item.action === "add") {
@@ -380,10 +393,12 @@ export async function importCSV(collection: Collection, result: ImportResult) {
                     ? {
                           slug: item.slug!,
                           fieldData: item.fieldData,
+                          draft: item.draft,
                       }
                     : {
                           id: item.id!,
                           fieldData: item.fieldData,
+                          draft: item.draft,
                       }
             )
     )

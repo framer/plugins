@@ -207,7 +207,7 @@ interface CountOption {
     recordLinkFieldId?: string | null
 }
 
-interface LookupOption {
+interface MultipleLookupValuesOption {
     fieldIdInLinkedTable: string | null
     recordLinkFieldId: string | null
     result: {
@@ -269,7 +269,7 @@ type AirtableFieldOptions = {
     createdTime: Record<string, never>
     rollup: RollupOption
     count: CountOption
-    multipleLookupValues: LookupOption
+    multipleLookupValues: MultipleLookupValuesOption
     autoNumber: Record<string, never>
     barcode: Record<string, never>
     rating: RatingOption

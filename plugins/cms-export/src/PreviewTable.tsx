@@ -62,7 +62,7 @@ export function PreviewTable({ collection }: Props) {
                         <tr>
                             {previewCSV[0]?.map((cell, columnIndex) => (
                                 <td key={`0-${columnIndex}`} title={cell}>
-                                    {cell}
+                                    {cell === ":draft" ? "Is Draft?" : cell}
                                 </td>
                             ))}
                         </tr>

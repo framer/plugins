@@ -87,8 +87,8 @@ const FieldMappingRow = memo(
                 />
                 <ChevronIcon />
                 <select
+                    className="field-type-select"
                     style={{
-                        width: "100%",
                         opacity: isIgnored || disabled ? 0.5 : 1,
                     }}
                     disabled={isIgnored || disabled}
@@ -385,13 +385,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     tabIndex={0}
                     title={isAllowedToManage ? undefined : "Insufficient permissions"}
                 >
-                    {isSyncing ? (
-                        <div className="framer-spinner" />
-                    ) : (
-                        <span>
-                            Import <span style={{ textTransform: "capitalize" }}>{dataSource.tableName}</span>
-                        </span>
-                    )}
+                    {isSyncing ? <div className="framer-spinner" /> : <span>Import {dataSource.tableName}</span>}
                 </button>
             </footer>
         </form>

@@ -1,24 +1,10 @@
 import { framer, useIsAllowedTo, type ManagedCollection } from "framer-plugin"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "../data"
 import { isCollectionReference, isMissingReferenceField } from "../utils"
 import { removeGreenhouseKeys, type GreenhouseDataSource, type GreenhouseField } from "../dataSources"
 import { Loading } from "./Loading"
-
-function ChevronIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
-            <path
-                d="M 3 11 L 6 8 L 3 5"
-                fill="transparent"
-                strokeWidth="1.5"
-                stroke="#999"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            />
-        </svg>
-    )
-}
+import { ChevronIcon } from "./Icons"
 
 interface FieldMappingRowProps {
     field: GreenhouseField
@@ -38,13 +24,14 @@ function FieldMappingRow({
     onCollectionChange,
 }: FieldMappingRowProps) {
     const isMissingReference = isMissingReferenceField(field)
+    const isDisabled = disabled || isMissingReference
 
     return (
         <>
             <button
                 type="button"
                 className={`source-field ${isMissingReference && "missing-reference"}`}
-                aria-disabled={disabled || isMissingReference}
+                aria-disabled={isDisabled}
                 onClick={() => onToggleDisabled(field.id)}
                 tabIndex={0}
             >
@@ -52,10 +39,10 @@ function FieldMappingRow({
                 <span>{originalFieldName ?? field.id}</span>
             </button>
             <ChevronIcon />
-            {isCollectionReference(field) && (
+            {isCollectionReference(field) ? (
                 <select
                     className="target-field"
-                    disabled={disabled || isMissingReference}
+                    disabled={isDisabled}
                     value={field.collectionId}
                     onChange={event => onCollectionChange(field.id, event.target.value)}
                 >
@@ -70,8 +57,7 @@ function FieldMappingRow({
                         </option>
                     ))}
                 </select>
-            )}
-            {!isCollectionReference(field) && (
+            ) : (
                 <input
                     type="text"
                     className="target-field"
@@ -131,6 +117,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
             .then(async collectionFields => {
                 if (abortController.signal.aborted) return
 
+                setStatus("mapping-fields")
                 setFields(mergeFieldsWithExistingFields(dataSource.fields, collectionFields))
 
                 const existingFieldIds = new Set(collectionFields.map(field => field.id))
@@ -143,8 +130,6 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
                     }
                     setIgnoredFieldIds(ignoredIds)
                 }
-
-                setStatus("mapping-fields")
             })
             .catch(error => {
                 if (!abortController.signal.aborted) {
@@ -158,25 +143,25 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
         }
     }, [initialSlugFieldId, dataSource, collection])
 
-    const changeFieldName = (fieldId: string, name: string) => {
+    const changeFieldName = useCallback((fieldId: string, name: string) => {
         setFields(prevFields =>
             prevFields.map(field => {
                 if (field.id !== fieldId) return field
                 return { ...field, name }
             })
         )
-    }
+    }, [])
 
-    const changeCollectionId = (fieldId: string, collectionId: string) => {
+    const changeCollectionId = useCallback((fieldId: string, collectionId: string) => {
         setFields(prevFields =>
             prevFields.map(field => {
                 if (field.id !== fieldId || !isCollectionReference(field)) return field
                 return { ...field, collectionId }
             })
         )
-    }
+    }, [])
 
-    const toggleFieldDisabledState = (fieldId: string) => {
+    const toggleFieldDisabledState = useCallback((fieldId: string) => {
         setIgnoredFieldIds(previousIgnoredFieldIds => {
             const updatedIgnoredFieldIds = new Set(previousIgnoredFieldIds)
 
@@ -188,7 +173,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
 
             return updatedIgnoredFieldIds
         })
-    }
+    }, [])
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 

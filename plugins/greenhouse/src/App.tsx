@@ -62,7 +62,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
         return <Loading />
     }
 
-    if (!previousBoardToken || !dataSource) {
+    if (!boardToken || !dataSource) {
         return (
             <SelectDataSource
                 onSelectBoardToken={setBoardToken}

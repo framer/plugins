@@ -21,6 +21,7 @@
         "check-biome": {
             "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json", "$TURBO_ROOT$/biome.jsonc"]
         },
+        "check-prettier": {},
         "check-typescript": {
             "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/tsconfig.json"]
         },

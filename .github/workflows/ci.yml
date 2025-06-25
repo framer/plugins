@@ -36,7 +36,7 @@ jobs:
 
             - run: yarn
 
-            - run: yarn turbo check-biome
+            - run: yarn turbo check-biome check-prettier
 
     eslint:
         runs-on: ubuntu-latest

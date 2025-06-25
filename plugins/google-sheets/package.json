@@ -1,28 +1,39 @@
 {
-    "name": "google-sheets",
-    "type": "module",
-    "scripts": {
-        "dev": "run g:dev",
-        "build": "run g:build",
-        "check-eslint": "run g:check-eslint",
-        "preview": "run g:preview",
-        "pack": "npx framer-plugin-tools@latest pack",
-        "check-typescript": "run g:check-typescript"
-    },
-    "dependencies": {
-        "@tanstack/react-query": "^5.51.11",
-        "classnames": "^2.5.1",
-        "framer-plugin": "^3.3.2",
-        "react": "^18",
-        "react-dom": "^18",
-        "react-error-boundary": "^4.0.13",
-        "react-intersection-observer": "^9.10.3"
-    },
-    "devDependencies": {
-        "@types/react": "^18",
-        "@types/react-dom": "^18",
-        "autoprefixer": "^10.4.19",
-        "postcss": "^8.4.39",
-        "tailwindcss": "^3.4.4"
-    }
+  "name": "google-sheets",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "check": "npm run check-typescript && npm run check-eslint",
+    "dev": "vite",
+    "format": "prettier . --write",
+    "check-eslint": "DEBUG='eslint:eslint' eslint --max-warnings 0 .",
+    "check-typescript": "tsc",
+    "pack": "framer-plugin-tools pack",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "framer-plugin": "^3.3.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react-swc": "^3.10.2",
+    "eslint": "^9.29.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "framer-plugin-tools": "^1.0.0",
+    "globals": "^16.2.0",
+    "jiti": "^2.4.2",
+    "prettier": "^3.5.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.34.1",
+    "vite": "^6.3.5",
+    "vite-plugin-framer": "^1.0.7",
+    "vite-plugin-mkcert": "^1.17.8"
+  }
 }

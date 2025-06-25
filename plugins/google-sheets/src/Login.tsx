@@ -61,7 +61,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             // Poll the auth server and wait for tokens
             await pollForTokens(authorization.readKey)
 
-            // onAuthenticated(await getPluginContext())
+            onAuthenticated()
         } catch (e) {
             framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
         } finally {

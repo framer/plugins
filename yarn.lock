@@ -2234,6 +2234,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/query-core@npm:5.81.2":
+  version: 5.81.2
+  resolution: "@tanstack/query-core@npm:5.81.2"
+  checksum: 10/6045477b63ab1e9779224488507ee3899fa511e979ed39909a9fe0fa42cfdc84a43c931a20c9bab7abebf13733d1228a1b89ab605e0f1e3ca3edacba19a1378a
+  languageName: node
+  linkType: hard
+
 "@tanstack/react-query@npm:^5.28.6, @tanstack/react-query@npm:^5.29.2, @tanstack/react-query@npm:^5.80.6":
   version: 5.80.7
   resolution: "@tanstack/react-query@npm:5.80.7"
@@ -2242,6 +2249,17 @@ __metadata:
   peerDependencies:
     react: ^18 || ^19
   checksum: 10/f3de036e7dfa03bd4cb619edc7057ab86fbbf2823a8a76e59409517e03a78c1bd9dbb4f56bf9183ede1a32abd16a4f4120d6f3beb8debd0211373ffe47c5706d
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-query@npm:^5.81.2":
+  version: 5.81.2
+  resolution: "@tanstack/react-query@npm:5.81.2"
+  dependencies:
+    "@tanstack/query-core": "npm:5.81.2"
+  peerDependencies:
+    react: ^18 || ^19
+  checksum: 10/2bab43d904bf4aaf4ddb0e8db1925156aee1783da484d6c17c238054d1e27ff2cbfb1012ccb2ccef578bd3e5d096546648ec06b0bd1ad734c3c48a041d4b6020
   languageName: node
   linkType: hard
 
@@ -4767,6 +4785,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "google-sheets@workspace:plugins/google-sheets"
   dependencies:
+    "@tanstack/react-query": "npm:^5.81.2"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
     framer-plugin: "npm:^3.3.2"

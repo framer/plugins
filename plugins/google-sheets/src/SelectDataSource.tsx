@@ -1,26 +1,77 @@
 import { framer } from "framer-plugin"
-import { useState } from "react"
-import { type DataSource, getDataSource, dataSourceOptions } from "./data"
+import { useState, useEffect } from "react"
+import { type DataSource } from "./data"
+import { Hero } from "./components/Hero"
+import { useSpreadsheetInfoQuery } from "./sheets"
+
+type InputChangeEvent = React.ChangeEvent<HTMLInputElement>
+type SelectChangeEvent = React.ChangeEvent<HTMLSelectElement>
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
 }
 
 export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
-    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(dataSourceOptions[0].id)
+    const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState<string>()
+    const [selectedSheetTitle, setSelectedSheetTitle] = useState<string>()
     const [isLoading, setIsLoading] = useState(false)
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault()
+    const {
+        data: spreadsheetInfo,
+        isFetching: isFetchingSheets,
+        isError: isSpreadSheetInfoError,
+    } = useSpreadsheetInfoQuery(selectedSpreadsheetId ?? "")
+
+    // useEffect(() => {
+    //     if (isSpreadSheetInfoError) {
+    //         onError()
+    //     }
+    // }, [isSpreadSheetInfoError, onError])
+
+    useEffect(() => {
+        const firstSheet = spreadsheetInfo?.sheets[0]
+        if (!firstSheet) {
+            return
+        }
+
+        setSelectedSheetTitle(firstSheet.properties.title)
+    }, [spreadsheetInfo])
+
+    const handleSheetSelect = (e: SelectChangeEvent) => {
+        setSelectedSheetTitle(e.target.value)
+    }
+
+    const handleSheetURLChange = (e: InputChangeEvent) => {
+        try {
+            const url = new URL(e.target.value)
+            if (url.hostname !== "docs.google.com") throw new Error("Not a Google Sheets URL")
+
+            const id = url.pathname.replace("/spreadsheets/d/", "").replace("/edit", "")
+
+            setSelectedSpreadsheetId(id)
+        } catch (err) {
+            setSelectedSpreadsheetId(undefined)
+        }
+    }
+
+    const handleSubmit = async () => {
+        if (selectedSpreadsheetId === undefined || selectedSheetTitle === undefined) {
+            framer.notify("Please select a spreadsheet and sheet", { variant: "error" })
+            return
+        }
 
         try {
             setIsLoading(true)
 
-            const dataSource = await getDataSource(selectedDataSourceId)
+            const dataSource: DataSource = {
+                id: selectedSpreadsheetId,
+                sheetTitle: selectedSheetTitle,
+            }
+
             onSelectDataSource(dataSource)
         } catch (error) {
             console.error(error)
-            framer.notify(`Failed to load data source “${selectedDataSourceId}”. Check the logs for more details.`, {
+            framer.notify(`Failed to load data source “${selectedSpreadsheetId}”. Check the logs for more details.`, {
                 variant: "error",
             })
         } finally {
@@ -30,43 +81,42 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
 
     return (
         <main className="framer-hide-scrollbar setup">
-            <div className="intro">
-                <div className="logo">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none">
-                        <title>CMS Starter</title>
-                        <path
-                            fill="currentColor"
-                            d="M15.5 8c3.59 0 6.5 1.38 6.5 3.083 0 1.702-2.91 3.082-6.5 3.082S9 12.785 9 11.083C9 9.38 11.91 8 15.5 8Zm6.5 7.398c0 1.703-2.91 3.083-6.5 3.083S9 17.101 9 15.398v-2.466c0 1.703 2.91 3.083 6.5 3.083s6.5-1.38 6.5-3.083Zm0 4.316c0 1.703-2.91 3.083-6.5 3.083S9 21.417 9 19.714v-2.466c0 1.702 2.91 3.083 6.5 3.083S22 18.95 22 17.248Z"
-                        />
-                    </svg>
-                </div>
-                <div className="content">
-                    <h2>CMS Starter</h2>
-                    <p>Everything you need to get started with a CMS Plugin.</p>
-                </div>
-            </div>
+            <Hero />
 
-            <form onSubmit={handleSubmit}>
-                <label htmlFor="collection">
+            <div className="setup-container">
+                <div className="property-control">
+                    <p>Spreadsheet</p>
+                    <input placeholder="Sheet URL…" onChange={handleSheetURLChange} autoFocus />
+                </div>
+                <div className="property-control">
+                    <p>Sheet</p>
+
                     <select
-                        id="collection"
-                        onChange={event => setSelectedDataSourceId(event.target.value)}
-                        value={selectedDataSourceId}
+                        onChange={handleSheetSelect}
+                        value={selectedSheetTitle ?? ""}
+                        disabled={!spreadsheetInfo?.sheets.length}
+                        className=""
                     >
                         <option value="" disabled>
-                            Choose Source…
+                            {isFetchingSheets ? "Loading..." : "Choose..."}
                         </option>
-                        {dataSourceOptions.map(({ id, name }) => (
-                            <option key={id} value={id}>
-                                {name}
+
+                        {spreadsheetInfo?.sheets.map(({ properties: { title } }, i) => (
+                            <option value={title} key={i}>
+                                {title}
                             </option>
                         ))}
                     </select>
-                </label>
-                <button type="submit" disabled={!selectedDataSourceId || isLoading}>
-                    {isLoading ? <div className="framer-spinner" /> : "Next"}
-                </button>
-            </form>
+                </div>
+            </div>
+
+            <button
+                type="submit"
+                disabled={!selectedSpreadsheetId || !selectedSheetTitle || isLoading}
+                onClick={handleSubmit}
+            >
+                {isLoading ? <div className="framer-spinner" /> : "Next"}
+            </button>
         </main>
     )
 }

@@ -6,6 +6,10 @@ import { getDataForCSV } from "./csv"
 
 import "./PreviewTable.css"
 
+const cellTitleOverrides: Record<string, string> = {
+    ":draft": "Is Draft?",
+}
+
 interface Props {
     collection: Collection
 }
@@ -62,7 +66,7 @@ export function PreviewTable({ collection }: Props) {
                         <tr>
                             {previewCSV[0]?.map((cell, columnIndex) => (
                                 <td key={`0-${columnIndex}`} title={cell}>
-                                    {cell === ":draft" ? "Is Draft?" : cell}
+                                    {cellTitleOverrides[cell] ?? cell}
                                 </td>
                             ))}
                         </tr>

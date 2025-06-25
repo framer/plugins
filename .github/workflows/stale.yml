@@ -1,0 +1,21 @@
+name: Mark and close stale PRs
+
+on:
+  schedule:
+    - cron: "33 3 * * *"
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-before-stale: 7
+          days-before-close: 7
+          stale-pr-label: "stale"
+          stale-pr-message: >
+            This PR has been automatically marked as stale because it has not had
+            any activity in the last 7 days. It will be closed if no further activity
+            occurs in the next 7 days.
+            

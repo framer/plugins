@@ -533,6 +533,19 @@ export interface SynchronizeResult extends SyncStatus {
     status: "success" | "completed_with_errors"
 }
 
+async function getBlockChildrenIterator(blockId: string) {
+    assert(notion, "Notion client is not initialized")
+    const blocksIterator = iteratePaginatedAPI(notion.blocks.children.list, {
+        block_id: blockId,
+    })
+    const blocks: BlockObjectResponse[] = []
+    for await (const block of blocksIterator) {
+        if (!isFullBlock(block)) continue
+        blocks.push(block)
+    }
+    return blocks
+}
+
 async function getPageBlocksAsRichText(pageId: string) {
     assert(notion, "Notion client is not initialized")
 
@@ -544,6 +557,11 @@ async function getPageBlocksAsRichText(pageId: string) {
     for await (const block of blocksIterator) {
         if (!isFullBlock(block)) continue
         blocks.push(block)
+
+        if (block.type === "table") {
+            const tableRows = await getBlockChildrenIterator(block.id)
+            blocks.push(...tableRows)
+        }
     }
 
     assert(blocks.every(isFullBlock), "Response is not a full block")

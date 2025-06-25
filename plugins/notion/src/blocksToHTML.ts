@@ -98,6 +98,28 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
             case "code":
                 htmlContent += `<pre><code class="language-${block.code.language.replace(" ", "-")}">${richTextToHTML(block.code.rich_text)}</code></pre>`
                 break
+            case "table":
+                htmlContent += `<table>`
+                break
+            case "table_row":
+                if (blocks[i - 1]?.type === "table") {
+                    htmlContent += `<thead><tr>`
+                    block.table_row.cells.forEach((cell) => {
+                        htmlContent += `<th>${richTextToHTML(cell)}</th>`
+                    })
+                    htmlContent += `</tr></thead><tbody>`
+                } else {
+                    htmlContent += `<tr>`
+                    block.table_row.cells.forEach((cell) => {
+                        htmlContent += `<td>${richTextToHTML(cell)}</td>`
+                    })
+                    htmlContent += `</tr>`
+                }
+
+                if (blocks[i + 1]?.type !== "table_row") {
+                    htmlContent += `</tbody></table>`
+                }
+                break
             case "video": {
                 if (block.video.type !== "external") {
                     break
@@ -116,6 +138,5 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
         }
     }
-
     return htmlContent
 }

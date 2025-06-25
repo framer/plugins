@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+import type { Snippet } from "svelte"
 
-  interface Props {
-    selected: boolean;
-    before: string;
-    after: string;
-    children: Snippet;
-    onclick: () => void;
-  }
+interface Props {
+    selected: boolean
+    before: string
+    after: string
+    children: Snippet
+    onclick: () => void
+}
 
-  let { selected, before, after, onclick, children }: Props = $props();
+let { selected, before, after, onclick, children }: Props = $props()
 </script>
 
 <button class="replace-comparison" class:grid={after} class:selected {onclick}>

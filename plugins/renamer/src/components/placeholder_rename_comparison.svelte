@@ -1,5 +1,5 @@
 <script lang="ts">
-  let { index, total, width }: { index: number; total: number; width: number } = $props();
+let { index, total, width }: { index: number; total: number; width: number } = $props()
 </script>
 
 <div class="placeholder-rename-comparison" style:animation-delay={`${index / 20}s`}>

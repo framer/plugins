@@ -8,7 +8,7 @@
     justify-content: center;
     height: 100%;
     width: 100%;
-    aspect-ratio: 16/9;
+    aspect-ratio: 16 / 9;
     border-radius: 8px;
     border: 1px solid var(--framer-color-divider);
     cursor: pointer;

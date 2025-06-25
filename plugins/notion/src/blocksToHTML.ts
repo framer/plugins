@@ -104,13 +104,13 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
             case "table_row":
                 if (blocks[i - 1]?.type === "table") {
                     htmlContent += `<thead><tr>`
-                    block.table_row.cells.forEach((cell) => {
+                    block.table_row.cells.forEach(cell => {
                         htmlContent += `<th>${richTextToHTML(cell)}</th>`
                     })
                     htmlContent += `</tr></thead><tbody>`
                 } else {
                     htmlContent += `<tr>`
-                    block.table_row.cells.forEach((cell) => {
+                    block.table_row.cells.forEach(cell => {
                         htmlContent += `<td>${richTextToHTML(cell)}</td>`
                     })
                     htmlContent += `</tr>`

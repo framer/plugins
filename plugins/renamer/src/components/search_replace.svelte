@@ -1,20 +1,20 @@
 <script lang="ts">
-  import TextField from "./text_field.svelte";
-  import iconSearch from "../assets/icon_search.svg?raw";
-  import Spinner from "./spinner.svelte";
+import iconSearch from "../assets/icon_search.svg?raw"
+import Spinner from "./spinner.svelte"
+import TextField from "./text_field.svelte"
 
-  interface Props {
-    query: string;
-    replacement: string;
-    loading: boolean;
-    disableAction: boolean;
-    actionLabel: string;
-    showReplacement: boolean;
+interface Props {
+    query: string
+    replacement: string
+    loading: boolean
+    disableAction: boolean
+    actionLabel: string
+    showReplacement: boolean
     isAllowed: boolean
-    onRenameClick?: () => void;
-  }
+    onRenameClick?: () => void
+}
 
-  let {
+let {
     query = $bindable(),
     replacement = $bindable(),
     loading,
@@ -23,13 +23,13 @@
     showReplacement,
     isAllowed,
     onRenameClick = () => {},
-  }: Props = $props();
+}: Props = $props()
 
-  const handleTextFieldKeyDown = (event: KeyboardEvent) => {
+const handleTextFieldKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Enter") {
-      onRenameClick();
+        onRenameClick()
     }
-  };
+}
 </script>
 
 <div class="search-replace">

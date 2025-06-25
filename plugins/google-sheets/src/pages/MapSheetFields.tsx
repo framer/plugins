@@ -1,12 +1,11 @@
 import cx from "classnames"
-import { useIsAllowedTo, type ManagedCollectionFieldInput } from "framer-plugin"
+import { type ManagedCollectionFieldInput, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { useInView } from "react-intersection-observer"
-import type { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
-
 import { Button } from "../components/Button"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { IconChevron } from "../components/Icons"
+import type { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
 import { assert, generateUniqueNames, syncMethods } from "../utils"
 
 interface FieldTypeOption {

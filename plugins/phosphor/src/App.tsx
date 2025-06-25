@@ -5,7 +5,7 @@ import "./App.css"
 
 import { icons as iconData } from "@phosphor-icons/core"
 import * as Icons from "@phosphor-icons/react"
-import { type Icon, type IconWeight, IconContext } from "@phosphor-icons/react"
+import { type Icon, IconContext, type IconWeight } from "@phosphor-icons/react"
 import { renderToStaticMarkup } from "react-dom/server"
 
 interface IconEntry {

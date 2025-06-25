@@ -67,7 +67,7 @@ main {
     z-index: 1;
     overflow: hidden;
     border-radius: 6px;
-    box-shadow:0px 4px 8px 0px rgba(0, 0, 0, .1);
+    box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.1);
     transition: transform 0.1s ease-out;
     filter: drop-shadow(0px 10px 20px rgba(0, 0, 0, 0.2));
     user-select: none;
@@ -86,7 +86,6 @@ main {
     right: 15px;
     background: var(--framer-color-bg);
     padding-bottom: 10px;
-
 }
 
 .search-container svg {
@@ -129,7 +128,6 @@ main {
     height: calc(100% - 40px);
     width: 100%;
     min-height: 100%;
-
 }
 
 .color-container {

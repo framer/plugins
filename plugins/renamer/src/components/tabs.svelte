@@ -1,15 +1,15 @@
 <script lang="ts">
-  interface TabItem {
-    label: string;
-    active: () => boolean;
-    select: () => void;
-  }
+interface TabItem {
+    label: string
+    active: () => boolean
+    select: () => void
+}
 
-  interface Props {
-    items: TabItem[];
-  }
+interface Props {
+    items: TabItem[]
+}
 
-  let { items }: Props = $props();
+let { items }: Props = $props()
 </script>
 
 <div class="tabs">

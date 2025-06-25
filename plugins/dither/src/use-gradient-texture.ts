@@ -1,6 +1,6 @@
-import Color from "colorjs.io";
-import { type OGLRenderingContext, Texture } from "ogl";
-import { useEffect, useState } from "react";
+import Color from "colorjs.io"
+import { type OGLRenderingContext, Texture } from "ogl"
+import { useEffect, useState } from "react"
 
 export function useGradientTexture(
     gl: OGLRenderingContext,

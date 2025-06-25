@@ -1,12 +1,10 @@
 import { framer } from "framer-plugin"
 import { useLayoutEffect, useRef, useState } from "react"
 import auth from "../auth"
-import { type PluginContext, getPluginContext } from "../sheets"
-
-import { Hero } from "../components/Hero"
-
 import { Button } from "../components/Button"
 import { GoogleLogo } from "../components/GoogleLogo"
+import { Hero } from "../components/Hero"
+import { getPluginContext, type PluginContext } from "../sheets"
 
 interface AuthenticationProps {
     onAuthenticated: (context: PluginContext) => void

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import { useLocation } from "wouter"
 import auth from "./auth"
 import { type BlogPluginContext, getBlogPluginContext, shouldSyncBlogImmediately, syncBlogs } from "./blog"
-import { type HubDBPluginContext, getHubDBPluginContext, shouldSyncHubDBImmediately, syncHubDBTable } from "./hubdb"
+import { getHubDBPluginContext, type HubDBPluginContext, shouldSyncHubDBImmediately, syncHubDBTable } from "./hubdb"
 import AuthPage from "./pages/Auth"
 import {
     AccountPage,

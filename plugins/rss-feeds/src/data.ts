@@ -1,7 +1,7 @@
 import {
+    type ManagedCollection,
     type ManagedCollectionFieldInput,
     type ManagedCollectionItemInput,
-    type ManagedCollection,
 } from "framer-plugin"
 import { simpleHash, slugify } from "./utils"
 

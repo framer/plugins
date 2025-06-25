@@ -83,13 +83,13 @@ export function SelectDatabase({ onDatabaseSelected }: SelectDatabaseProps) {
                         disabled={!selectEnabled}
                     >
                         {isLoadingOrFetching && (
-                            <option disabled selected>
+                            <option disabled value="">
                                 Loading…
                             </option>
                         )}
                         {!isLoadingOrFetching && (
                             <>
-                                <option disabled selected>
+                                <option disabled value="">
                                     Select Database…
                                 </option>
                                 {(!data || data.length === 0) && <option disabled>No databases…</option>}

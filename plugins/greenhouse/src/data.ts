@@ -83,8 +83,10 @@ export function mergeFieldsWithExistingFields(
     sourceFields: readonly GreenhouseField[],
     existingFields: readonly ManagedCollectionFieldInput[]
 ): GreenhouseField[] {
+    const existingFieldsMap = new Map(existingFields.map(field => [field.id, field]))
+
     return sourceFields.map(sourceField => {
-        const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
+        const existingField = existingFieldsMap.get(sourceField.id)
         if (existingField) {
             return { ...sourceField, name: existingField.name }
         }
@@ -186,7 +188,7 @@ async function getItems(
                 case "image":
                 case "file":
                 case "enum":
-                    break
+                    throw new Error(`${field.type} field is not supported.`)
                 default:
                     assertNever(field)
             }

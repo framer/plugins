@@ -5,11 +5,7 @@ import {
     validateJobs,
     validateOffices,
     validateSections,
-    type Department,
-    type Education,
-    type Job,
-    type Office,
-    type Section,
+    type GreenhouseItem,
 } from "./api-types"
 
 export interface GreenhouseDataSource {
@@ -23,26 +19,31 @@ export interface GreenhouseDataSource {
      */
     fields: readonly GreenhouseField[]
     apiPath: string
-    fetch: (boardToken: string) => Promise<Job[] | Department[] | Office[] | Education[] | Section[]>
+    fetch: (boardToken: string) => Promise<GreenhouseItem[]>
 }
 
 async function fetchGreenhouseData(url: string, itemsKey: string): Promise<unknown[]> {
-    const response = await fetch(url)
-    const data = await response.json()
-    const items = []
+    try {
+        const response = await fetch(url)
+        const data = await response.json()
+        const items = []
 
-    if (data?.meta?.total_count && data?.meta?.per_page) {
-        const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
-        for (let i = 0; i < pages; i++) {
-            const response = await fetch(`${url}?page=${i + 1}`)
-            const data = await response.json()
+        if (data?.meta?.total_count && data?.meta?.per_page) {
+            const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
+            for (let i = 0; i < pages; i++) {
+                const response = await fetch(`${url}?page=${i + 1}`)
+                const data = await response.json()
+                items.push(...(data[itemsKey] as unknown[]))
+            }
+        } else {
             items.push(...(data[itemsKey] as unknown[]))
         }
-    } else {
-        items.push(...(data[itemsKey] as unknown[]))
-    }
 
-    return items
+        return items
+    } catch (error) {
+        console.error("Error fetching Greenhouse data:", error)
+        throw error
+    }
 }
 
 export type GreenhouseField = ManagedCollectionFieldInput &
@@ -251,7 +252,7 @@ function createDataSource(
     }: {
         name: string
         apiPath: string
-        fetch: (boardToken: string) => Promise<Job[] | Department[] | Office[] | Education[] | Section[]>
+        fetch: (boardToken: string) => Promise<GreenhouseItem[]>
     },
     [idField, slugField, ...fields]: [GreenhouseField, GreenhouseField, ...GreenhouseField[]]
 ): GreenhouseDataSource {

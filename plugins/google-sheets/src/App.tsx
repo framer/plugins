@@ -1,31 +1,45 @@
 import "./App.css"
 
-import { framer, type ManagedCollection } from "framer-plugin"
+import { framer, type ManagedCollection, type ManagedCollectionFieldInput } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
 import { type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { SelectDataSource } from "./SelectDataSource"
+import { useSheetQuery } from "./sheets"
 
 interface AppProps {
     collection: ManagedCollection
+    collectionFields: ManagedCollectionFieldInput[]
     previousDataSourceId: string | null
     previousSlugFieldId: string | null
 }
 
-export function App({ collection, previousDataSourceId, previousSlugFieldId }: AppProps) {
+export function App({ collection, collectionFields, previousDataSourceId, previousSlugFieldId }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
 
-    useLayoutEffect(() => {
-        const hasDataSourceSelected = Boolean(dataSource)
+    const { data: sheet, isPending: isSheetPending } = useSheetQuery(dataSource?.id ?? "", dataSource?.sheetTitle ?? "")
 
-        framer.showUI({
-            width: hasDataSourceSelected ? 600 : 320,
-            height: hasDataSourceSelected ? 500 : 345,
-            minWidth: hasDataSourceSelected ? 360 : undefined,
-            minHeight: hasDataSourceSelected ? 425 : undefined,
-            resizable: hasDataSourceSelected,
-        })
+    const isSheetLoading = dataSource && isSheetPending
+
+    useLayoutEffect(() => {
+        if (dataSource || isSheetLoading) {
+            framer.showUI({
+                width: 600,
+                height: 500,
+                minWidth: 360,
+                minHeight: 425,
+                resizable: true,
+            })
+        } else {
+            framer.showUI({
+                width: 320,
+                height: 345,
+                minWidth: 320,
+                minHeight: 345,
+                resizable: false,
+            })
+        }
     }, [dataSource])
 
     useEffect(() => {
@@ -70,5 +84,28 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
         return <SelectDataSource onSelectDataSource={setDataSource} />
     }
 
-    return <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
+    if (isSheetPending) {
+        return (
+            <main className="loading">
+                <div className="framer-spinner" />
+                <p>Loading {dataSource?.sheetTitle || "sheet"}...</p>
+            </main>
+        )
+    }
+
+    if (!sheet?.values || sheet.values.length === 0) {
+        throw new Error("The provided sheet requires at least one row")
+    }
+
+    // TEMPORARY
+    const finalDataSource = { ...dataSource, sheetRows: sheet?.values ?? [] }
+
+    return (
+        <FieldMapping
+            collection={collection}
+            collectionFields={collectionFields}
+            dataSource={finalDataSource}
+            initialSlugFieldId={previousSlugFieldId}
+        />
+    )
 }

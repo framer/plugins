@@ -280,3 +280,13 @@ input[type="text"]:disabled,
 .property-control select {
     width: 160px;
 }
+
+/* Loading state */
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}

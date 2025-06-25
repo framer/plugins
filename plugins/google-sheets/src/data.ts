@@ -6,6 +6,7 @@ import {
     type ManagedCollectionItemInput,
     type ProtectedMethod,
 } from "framer-plugin"
+import { assert } from "./utils"
 
 export const PLUGIN_KEYS = {
     DATA_SOURCE_ID: "dataSourceId",
@@ -15,29 +16,10 @@ export const PLUGIN_KEYS = {
 export interface DataSource {
     id: string
     sheetTitle: string
+    sheetRows: any[][]
 }
 
-export const dataSourceOptions = [
-    { id: "articles", name: "Articles" },
-    { id: "categories", name: "Categories" },
-] as const
-
-/**
- * Retrieve data and process it into a structured format.
- *
- * @example
- * {
- *   id: "articles",
- *   fields: [
- *     { id: "title", name: "Title", type: "string" },
- *     { id: "content", name: "Content", type: "formattedText" }
- *   ],
- *   items: [
- *     { title: "My First Article", content: "Hello world" },
- *     { title: "Another Article", content: "More content here" }
- *   ]
- * }
- */
+/* Retrieve data and process it into a structured format. */
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     // Fetch from your data source
     const dataSourceResponse = await fetch(`/data/${dataSourceId}.json`, { signal: abortSignal })

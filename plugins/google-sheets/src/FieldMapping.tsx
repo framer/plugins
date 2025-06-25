@@ -1,6 +1,7 @@
 import { type ManagedCollectionFieldInput, framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { type DataSource, dataSourceOptions, mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
+import { type DataSource, mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
+import { getFields } from "./sheets"
 
 interface FieldMappingRowProps {
     field: ManagedCollectionFieldInput
@@ -65,63 +66,61 @@ const initialFieldIds: ReadonlySet<string> = new Set()
 
 interface FieldMappingProps {
     collection: ManagedCollection
+    collectionFields: ManagedCollectionFieldInput[]
     dataSource: DataSource
     initialSlugFieldId: string | null
 }
 
-export function FieldMapping({ collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
+export function FieldMapping({ collection, collectionFields, dataSource, initialSlugFieldId }: FieldMappingProps) {
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
     )
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const [fields, setFields] = useState<ManagedCollectionFieldInput[]>(emptyFields)
+    const [fields, setFields] = useState<ManagedCollectionFieldInput[]>(() => getFields(dataSource, collectionFields))
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
-    const possibleSlugFields = useMemo(
-        () => dataSource.fields.filter(field => field.type === "string"),
-        [dataSource.fields]
-    )
+    const possibleSlugFields = useMemo(() => fields.filter(field => field.type === "string"), [fields])
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 
-    const dataSourceName = dataSourceOptions.find(option => option.id === dataSource.id)?.name ?? dataSource.id
+    const dataSourceName = dataSource.sheetTitle
 
-    useEffect(() => {
-        const abortController = new AbortController()
+    // useEffect(() => {
+    //     const abortController = new AbortController()
 
-        collection
-            .getFields()
-            .then(collectionFields => {
-                if (abortController.signal.aborted) return
+    //     collection
+    //         .getFields()
+    //         .then(collectionFields => {
+    //             if (abortController.signal.aborted) return
 
-                setFields(mergeFieldsWithExistingFields(dataSource.fields, collectionFields))
+    //             setFields(mergeFieldsWithExistingFields(dataSource.fields, collectionFields))
 
-                const existingFieldIds = new Set(collectionFields.map(field => field.id))
+    //             const existingFieldIds = new Set(collectionFields.map(field => field.id))
 
-                if (initialSlugFieldId) {
-                    const ignoredIds = new Set<string>()
-                    for (const sourceField of dataSource.fields) {
-                        if (existingFieldIds.has(sourceField.id)) continue
-                        ignoredIds.add(sourceField.id)
-                    }
-                    setIgnoredFieldIds(ignoredIds)
-                }
+    //             if (initialSlugFieldId) {
+    //                 const ignoredIds = new Set<string>()
+    //                 for (const sourceField of dataSource.fields) {
+    //                     if (existingFieldIds.has(sourceField.id)) continue
+    //                     ignoredIds.add(sourceField.id)
+    //                 }
+    //                 setIgnoredFieldIds(ignoredIds)
+    //             }
 
-                setStatus("mapping-fields")
-            })
-            .catch(error => {
-                if (!abortController.signal.aborted) {
-                    console.error("Failed to fetch collection fields:", error)
-                    framer.notify("Failed to load collection fields", { variant: "error" })
-                }
-            })
+    //             setStatus("mapping-fields")
+    //         })
+    //         .catch(error => {
+    //             if (!abortController.signal.aborted) {
+    //                 console.error("Failed to fetch collection fields:", error)
+    //                 framer.notify("Failed to load collection fields", { variant: "error" })
+    //             }
+    //         })
 
-        return () => abortController.abort()
-    }, [initialSlugFieldId, dataSource, collection])
+    //     return () => abortController.abort()
+    // }, [initialSlugFieldId, dataSource, collection])
 
     const changeFieldName = useCallback((fieldId: string, name: string) => {
         setFields(prevFields => {
@@ -226,7 +225,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         <FieldMappingRow
                             key={`field-${field.id}`}
                             field={field}
-                            originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
+                            originalFieldName={fields.find(sourceField => sourceField.id === field.id)?.name}
                             isIgnored={ignoredFieldIds.has(field.id)}
                             onToggleDisabled={toggleFieldDisabledState}
                             onNameChange={changeFieldName}

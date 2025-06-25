@@ -109,6 +109,7 @@ input[type="text"]:disabled,
 
 .mapping form {
     height: 100%;
+    gap: 15px;
 }
 
 .mapping .fields {

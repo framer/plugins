@@ -219,7 +219,7 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
             }
 
             await collection.setFields(fieldsToSync)
-            await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField)
+            await syncCollection(collection, dataSource, fieldsToSync, ignoredFieldIds, selectedSlugField)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)

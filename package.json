@@ -23,6 +23,7 @@
         "preview": "turbo run preview --concurrency=40"
     },
     "devDependencies": {
+        "@biomejs/biome": "^2.0.5",
         "@framer/eslint-config": "workspace:*",
         "@framer/vite-config": "workspace:*",
         "eslint": "^9.29.0",

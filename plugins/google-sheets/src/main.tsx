@@ -11,6 +11,7 @@ import auth from "./auth"
 import { Authenticate } from "./Login"
 
 const activeCollection = await framer.getActiveManagedCollection()
+const collectionFields = await activeCollection.getFields()
 
 export const queryClient = new QueryClient({
     defaultOptions: {
@@ -56,6 +57,7 @@ if (didSync) {
             <QueryClientProvider client={queryClient}>
                 <App
                     collection={activeCollection}
+                    collectionFields={collectionFields}
                     previousDataSourceId={previousDataSourceId}
                     previousSlugFieldId={previousSlugFieldId}
                 />

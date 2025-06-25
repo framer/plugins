@@ -18,6 +18,7 @@ import {
     parseStringToArray,
     slugify,
 } from "./utils"
+import { type DataSource } from "./data"
 
 const USER_INFO_API_URL = "https://www.googleapis.com/oauth2/v1"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
@@ -673,5 +674,74 @@ export const useSyncSheetMutation = ({
         },
         onSuccess,
         onError,
+    })
+}
+
+const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
+    if (typeof cellValue === "boolean") return "boolean"
+    if (typeof cellValue === "number") return "number"
+
+    if (typeof cellValue === "string") {
+        const cellValueLowered = cellValue.trim().toLowerCase()
+
+        // If the cell value contains a newline, it's probably a formatted text field
+        if (cellValueLowered.includes("\n")) return "formattedText"
+        if (/^#[0-9a-f]{6}$/.test(cellValueLowered)) return "color"
+        if (/<[a-z][\s\S]*>/.test(cellValueLowered)) return "formattedText"
+
+        try {
+            new URL(cellValueLowered)
+
+            if (/\.(gif|jpe?g|png|apng|svg|webp)$/i.test(cellValueLowered)) return "image"
+
+            return "link"
+        } catch (e) {
+            return "string"
+        }
+    }
+
+    return "string"
+}
+
+const getFieldType = (
+    collectionFields: ManagedCollectionFieldInput[],
+    columnId: string,
+    cellValue?: CellValue
+): CollectionFieldType => {
+    // Determine if the field type is already configured
+    if (collectionFields.length > 0) {
+        const field = collectionFields.find(field => field.id === columnId)
+        return field?.type ?? "string"
+    }
+
+    // Otherwise, infer the field type from the cell value
+    return cellValue ? inferFieldType(cellValue) : "string"
+}
+
+export function getFields(dataSource: DataSource, collectionFields: ManagedCollectionFieldInput[]) {
+    const [headerRow, ...rows] = dataSource.sheetRows || []
+    const row = rows[0]
+
+    if (!headerRow) {
+        return []
+    }
+
+    const nameCount = new Map<string, number>()
+    const uniqueColumnNames = headerRow.map(name => {
+        const count = nameCount.get(name) || 0
+        nameCount.set(name, count + 1)
+
+        return count > 0 ? `${name} ${count + 1}` : name
+    })
+
+    return headerRow.map((_, columnIndex) => {
+        const sanitizedName = uniqueColumnNames[columnIndex]
+        assert(sanitizedName, "Sanitized name is undefined")
+
+        return {
+            id: sanitizedName,
+            name: sanitizedName,
+            type: getFieldType(collectionFields, sanitizedName, row?.[columnIndex]),
+        } as ManagedCollectionFieldInput
     })
 }

@@ -1,24 +1,44 @@
-import { type ManagedCollectionFieldInput, framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
+import { framer, useIsAllowedTo, type ManagedCollectionFieldInput, type ManagedCollection } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { type DataSource, mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 import { getFields } from "./sheets"
+
+type CollectionFieldType = ManagedCollectionFieldInput["type"]
+
+interface FieldTypeOption {
+    type: CollectionFieldType
+    label: string
+}
+
+const fieldTypeOptions: FieldTypeOption[] = [
+    { type: "boolean", label: "Boolean" },
+    { type: "color", label: "Color" },
+    { type: "number", label: "Number" },
+    { type: "string", label: "String" },
+    { type: "formattedText", label: "Formatted Text" },
+    { type: "image", label: "Image" },
+    { type: "link", label: "Link" },
+    { type: "date", label: "Date" },
+]
 
 interface FieldMappingRowProps {
     field: ManagedCollectionFieldInput
     originalFieldName: string | undefined
     isIgnored: boolean
+    disabled: boolean
     onToggleDisabled: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
-    disabled: boolean
+    onFieldTypeChange: (fieldId: string, type: CollectionFieldType) => void
 }
 
 function FieldMappingRow({
     field,
     originalFieldName,
     isIgnored,
+    disabled,
     onToggleDisabled,
     onNameChange,
-    disabled,
+    onFieldTypeChange,
 }: FieldMappingRowProps) {
     return (
         <>
@@ -54,6 +74,20 @@ function FieldMappingRow({
                     }
                 }}
             />
+            <select
+                disabled={isIgnored || disabled}
+                value={field.type}
+                onChange={e => {
+                    onFieldTypeChange(field.id, e.target.value as CollectionFieldType)
+                }}
+                title={disabled ? undefined : "Insufficient permissions"}
+            >
+                {fieldTypeOptions.map(({ type, label }) => (
+                    <option key={type} value={type}>
+                        {label}
+                    </option>
+                ))}
+            </select>
         </>
     )
 }
@@ -130,6 +164,20 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
             })
             return updatedFields
         })
+    }, [])
+
+    const changeFieldType = useCallback((id: string, type: CollectionFieldType) => {
+        setFields(prevFields =>
+            prevFields.map(field => {
+                if (field.id === id) {
+                    return {
+                        ...field,
+                        type,
+                    } as ManagedCollectionFieldInput
+                }
+                return field
+            })
+        )
     }, [])
 
     const toggleFieldDisabledState = useCallback((fieldId: string) => {
@@ -220,16 +268,18 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
 
                 <div className="fields">
                     <span className="fields-column">Column</span>
-                    <span>Field</span>
+                    <span>Field Name</span>
+                    <span>Field Type</span>
                     {fields.map(field => (
                         <FieldMappingRow
                             key={`field-${field.id}`}
                             field={field}
                             originalFieldName={fields.find(sourceField => sourceField.id === field.id)?.name}
                             isIgnored={ignoredFieldIds.has(field.id)}
+                            disabled={!isAllowedToManage}
                             onToggleDisabled={toggleFieldDisabledState}
                             onNameChange={changeFieldName}
-                            disabled={!isAllowedToManage}
+                            onFieldTypeChange={changeFieldType}
                         />
                     ))}
                 </div>

@@ -121,7 +121,7 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 
-    const dataSourceName = dataSource.sheetTitle
+    const dataSourceName = dataSource.sheetTitle || "Sheet"
 
     // useEffect(() => {
     //     const abortController = new AbortController()
@@ -290,6 +290,7 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
                         type="submit"
                         disabled={isSyncing || !isAllowedToManage}
                         title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                        className="framer-button-primary"
                     >
                         {isSyncing ? <div className="framer-spinner" /> : `Import ${dataSourceName}`}
                     </button>

@@ -24,14 +24,14 @@ function ChevronIcon() {
 }
 
 const fieldTypeOptions: { type: Field["type"]; label: string }[] = [
-    { type: "boolean", label: "Boolean" },
-    { type: "color", label: "Color" },
-    { type: "number", label: "Number" },
-    { type: "string", label: "String" },
+    { type: "string", label: "Plain Text" },
     { type: "formattedText", label: "Formatted Text" },
-    { type: "image", label: "Image" },
-    { type: "link", label: "Link" },
     { type: "date", label: "Date" },
+    { type: "link", label: "Link" },
+    { type: "image", label: "Image" },
+    { type: "color", label: "Color" },
+    { type: "boolean", label: "Toggle" },
+    { type: "number", label: "Number" },
     { type: "enum", label: "Option" },
     { type: "file", label: "File" },
 ]
@@ -117,24 +117,18 @@ const FieldMappingRow = memo(
                                 }
                             }}
                         />
-                        {selectOptions.length <= 1 ? (
-                            <div className={"single-select-option" + (isIgnored || disabled ? " disabled" : "")}>
-                                {selectOptions[0]?.label}
-                            </div>
-                        ) : (
-                            <select
-                                disabled={isIgnored || disabled}
-                                value={isCollectionReference(field) ? field.collectionId : field.type}
-                                onChange={event => onTypeChange?.(field.id, event.target.value)}
-                                className="field-type-select"
-                            >
-                                {selectOptions.map(option => (
-                                    <option key={option.id} value={option.id}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
+                        <select
+                            disabled={isIgnored || disabled || selectOptions.length <= 1}
+                            value={isCollectionReference(field) ? field.collectionId : field.type}
+                            onChange={event => onTypeChange?.(field.id, event.target.value)}
+                            className="field-type-select"
+                        >
+                            {selectOptions.map(option => (
+                                <option key={option.id} value={option.id}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
                     </>
                 )}
             </>
@@ -322,16 +316,32 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         <form className="framer-hide-scrollbar mapping" onSubmit={handleSubmit}>
             <hr className="sticky-top" />
 
-            <a
-                href={`https://airtable.com/${dataSource.baseId}/${dataSource.tableId}`}
-                target="_blank"
-                className="heading-link"
-            >
-                {dataSource.tableName || "Untitled Table"}
-            </a>
-
             <label className="slug-field" htmlFor="slugField">
-                Slug Field
+                <div className="heading-row">
+                    <span>Slug Field</span>
+                    <a
+                        href={`https://airtable.com/${dataSource.baseId}/${dataSource.tableId}`}
+                        target="_blank"
+                        className="heading-link"
+                    >
+                        View in Airtable
+                        <svg width="9" height="9" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M1.5 10.4351L9.98528 1.94978"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                            />
+                            <path
+                                d="M2.20801 1.24268H10.6933V9.72796"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </a>
+                </div>
                 <select
                     required
                     name="slugField"
@@ -403,7 +413,6 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     disabled={isSyncing || !isAllowedToManage}
                     tabIndex={0}
                     title={isAllowedToManage ? undefined : "Insufficient permissions"}
-                    className="framer-button-primary"
                 >
                     {isSyncing ? (
                         <div className="framer-spinner" />

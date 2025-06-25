@@ -12,11 +12,11 @@ form {
     -webkit-user-select: none;
 }
 
-select {
-    padding: 0px 16px 1px 10px;
+select:disabled {
+    opacity: 0.5;
 }
 
-select:not([disabled]) {
+select:not(:disabled) {
     cursor: pointer;
 }
 
@@ -144,31 +144,25 @@ select:not([disabled]) {
     color: var(--framer-color-text-secondary);
 }
 
-.mapping .single-select-option {
-    background-color: var(--framer-color-bg-tertiary);
-    border-radius: 8px;
-    padding: 0px 10px;
-    height: 30px;
+.mapping .field-type-select {
+    width: 100%;
+}
+
+.mapping .heading-row {
     display: flex;
     flex-direction: row;
     align-items: center;
-    color: var(--framer-color-text);
-}
-
-.mapping .single-select-option.disabled {
-    opacity: 0.5;
-}
-
-.mapping .field-type-select {
+    justify-content: space-between;
     width: 100%;
 }
 
 .mapping .heading-link {
     width: fit-content;
-    max-width: 100%;
-    color: var(--framer-color-text-primary);
-    font-size: 1rem;
-    font-weight: 700;
+    max-width: 50%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
 }
 
 .mapping .heading-link:hover {

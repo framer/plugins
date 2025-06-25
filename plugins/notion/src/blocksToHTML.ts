@@ -138,6 +138,5 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
         }
     }
-    console.log('blocksToHtml', htmlContent)
     return htmlContent
 }

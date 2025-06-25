@@ -1,64 +1,108 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer utilities {
+@custom-variant dark (&:where([data-framer-theme="dark"], [data-framer-theme="dark"] *));
+
+@theme {
+    --background-color-primary: var(--framer-color-bg);
+    --background-color-secondary: var(--framer-color-bg-secondary);
+    --background-color-tertiary: var(--framer-color-bg-tertiary);
+    --background-color-tertiary-dimmed-light: rgba(243, 243, 243, 0.75);
+    --background-color-tertiary-dimmed-dark: rgba(43, 43, 43, 0.75);
+    --background-color-divider: var(--framer-color-divider);
+    --background-color-tint: var(--framer-color-tint);
+    --background-color-tint-dimmed: var(--framer-color-tint-dimmed);
+    --background-color-tint-dark: var(--framer-color-tint-dark);
+    --background-color-black-dimmed: rgba(0, 0, 0, 0.5);
+
+    --color-primary: var(--framer-color-text);
+    --color-secondary: var(--framer-color-text-secondary);
+    --color-tertiary: var(--framer-color-text-tertiary);
+    --color-inverted: var(--framer-color-text-inverted);
+    --color-content: #999;
+    --color-sheets-green: #00c43e;
+    --color-framer-red: #ff3366;
+
+    --border-color-divider: var(--framer-color-divider);
+
+    --grid-template-columns-field-picker: 1fr 8px 1fr 1fr;
+
+    --text-2xs: 10px;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+    @import "framer-plugin/framer.css";
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentcolor);
+    }
+}
+
+@utility no-scrollbar {
     /* Chrome, Safari and Opera */
-    .no-scrollbar::-webkit-scrollbar {
+    &::-webkit-scrollbar {
         display: none;
     }
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
 
-    .no-scrollbar {
-        -ms-overflow-style: none; /* IE and Edge */
-        scrollbar-width: none; /* Firefox */
+@utility row {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+@utility col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@utility row-lg {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+}
+
+@utility col-lg {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+@utility scroll-fade {
+    flex-shrink: 0;
+    height: 45px;
+    width: 100%;
+    display: block;
+    overflow: visible;
+    z-index: 10;
+    position: absolute;
+    left: 0;
+    bottom: 63px;
+
+    [data-framer-theme="light"] & {
+        background: linear-gradient(to bottom, transparent, white);
+    }
+
+    [data-framer-theme="dark"] & {
+        background: linear-gradient(180deg, rgba(18, 18, 18, 0) 0%, rgb(17, 17, 17) 97.8%);
     }
 }
 
 @layer components {
-    .row {
-        display: flex;
-        flex-direction: row;
-        gap: 10px;
-    }
-
-    .col {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .row-lg {
-        display: flex;
-        flex-direction: row;
-        gap: 15px;
-    }
-
-    .col-lg {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .scroll-fade {
-        flex-shrink: 0;
-        height: 45px;
-        width: 100%;
-        display: block;
-        overflow: visible;
-        z-index: 10;
-        position: absolute;
-        left: 0;
-        bottom: 63px;
-    }
-
-    [data-framer-theme="light"] .scroll-fade {
-        background: linear-gradient(to bottom, transparent, white);
-    }
-
-    [data-framer-theme="dark"] .scroll-fade {
-        background: linear-gradient(180deg, rgba(18, 18, 18, 0) 0%, rgb(17, 17, 17) 97.8%);
-    }
-
     [data-framer-theme="dark"] input[type="checkbox"]:checked {
         background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHBhdGggZD0iTSAzIDYgTCA1IDggTCA5IDQiIGZpbGw9InRyYW5zcGFyZW50IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlPSIjMmIyYjJiIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS1kYXNoYXJyYXk9IiI+PC9wYXRoPjwvc3ZnPg==");
     }

@@ -12,6 +12,7 @@
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
+        "@tailwindcss/vite": "^4.1.10",
         "@vitejs/plugin-react-swc": "^3.10.2",
         "vite": "^6.3.5",
         "vite-plugin-framer": "^1.0.7",

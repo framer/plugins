@@ -54,6 +54,23 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
         }
     }
 
+    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            e.preventDefault()
+            const selectElement = document.querySelector("select") as HTMLSelectElement
+            if (selectElement) {
+                selectElement.focus()
+            }
+        }
+    }
+
+    const handleSelectKeyDown = (e: React.KeyboardEvent<HTMLSelectElement>) => {
+        if (e.key === "Enter") {
+            e.preventDefault()
+            handleSubmit()
+        }
+    }
+
     const handleSubmit = async () => {
         if (selectedSpreadsheetId === undefined || selectedSheetTitle === undefined) {
             framer.notify("Please select a spreadsheet and sheet", { variant: "error" })
@@ -86,13 +103,19 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
             <div className="setup-container">
                 <div className="property-control">
                     <p>Spreadsheet</p>
-                    <input placeholder="Sheet URL…" onChange={handleSheetURLChange} autoFocus />
+                    <input
+                        placeholder="Sheet URL…"
+                        onChange={handleSheetURLChange}
+                        onKeyDown={handleInputKeyDown}
+                        autoFocus
+                    />
                 </div>
                 <div className="property-control">
                     <p>Sheet</p>
 
                     <select
                         onChange={handleSheetSelect}
+                        onKeyDown={handleSelectKeyDown}
                         value={selectedSheetTitle ?? ""}
                         disabled={!spreadsheetInfo?.sheets.length}
                         className=""

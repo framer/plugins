@@ -5,7 +5,6 @@ import type { DataSource } from "./data"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 import type { PossibleField } from "./fields"
 import { ALLOWED_FILE_TYPES, isCollectionReference } from "./utils"
-import cx from "classnames"
 
 function ChevronIcon() {
     return (
@@ -87,11 +86,11 @@ const FieldMappingRow = memo(
             <>
                 <button
                     type="button"
-                    className={cx("source-field", unsupported || missingCollection ? "unsupported" : "")}
+                    className="source-field"
                     aria-disabled={isIgnored}
                     onClick={disabled ? undefined : () => onToggleIgnored?.(field.id)}
                     tabIndex={0}
-                    disabled={disabled}
+                    disabled={disabled || unsupported || missingCollection}
                 >
                     <input type="checkbox" checked={!isIgnored} tabIndex={-1} readOnly disabled={disabled} />
                     <span>{originalFieldName ?? field.id}</span>

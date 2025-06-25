@@ -7,7 +7,7 @@ import {
     type ProtectedMethod,
 } from "framer-plugin"
 import { dataSources, type GreenhouseDataSource, type GreenhouseField } from "./dataSources"
-import { decodeHtml, isCollectionReference } from "./utils"
+import { assertNever, decodeHtml, isCollectionReference } from "./utils"
 import { isGreenhouseItemField } from "./api-types"
 
 export const dataSourceIdPluginKey = "dataSourceId"
@@ -183,6 +183,12 @@ async function getItems(
                     fieldData[field.id] = { value: String(value.id), type: "collectionReference" }
                     break
                 }
+                case "image":
+                case "file":
+                case "enum":
+                    break
+                default:
+                    assertNever(field)
             }
         }
 
@@ -203,7 +209,7 @@ export async function syncCollection(
     dataSource: GreenhouseDataSource,
     fields: readonly ManagedCollectionFieldInput[],
     slugField: ManagedCollectionFieldInput
-) {
+): Promise<void> {
     const existingItemsIds = await collection.getItemIds()
     const items = await getItems(dataSource, fields, { boardToken, slugFieldId: slugField.id })
     const itemIds = new Set(items.map(item => item.id))

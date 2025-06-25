@@ -1,5 +1,16 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
-import type { Degree, Department, Discipline, Job, Office, School, Section } from "./api-types"
+import {
+    validateDepartments,
+    validateEducations,
+    validateJobs,
+    validateOffices,
+    validateSections,
+    type Department,
+    type Education,
+    type Job,
+    type Office,
+    type Section,
+} from "./api-types"
 
 export interface GreenhouseDataSource {
     id: string
@@ -12,10 +23,26 @@ export interface GreenhouseDataSource {
      */
     fields: readonly GreenhouseField[]
     apiPath: string
-    itemsKey: string
-    fetch: (
-        boardToken: string
-    ) => Promise<Job[] | Department[] | Office[] | Degree[] | School[] | Discipline[] | Section[]>
+    fetch: (boardToken: string) => Promise<Job[] | Department[] | Office[] | Education[] | Section[]>
+}
+
+async function fetchGreenhouseData(url: string, itemsKey: string): Promise<unknown[]> {
+    const response = await fetch(url)
+    const data = await response.json()
+    const items = []
+
+    if (data?.meta?.total_count && data?.meta?.per_page) {
+        const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
+        for (let i = 0; i < pages; i++) {
+            const response = await fetch(`${url}?page=${i + 1}`)
+            const data = await response.json()
+            items.push(...(data[itemsKey] as unknown[]))
+        }
+    } else {
+        items.push(...(data[itemsKey] as unknown[]))
+    }
+
+    return items
 }
 
 export type GreenhouseField = ManagedCollectionFieldInput &
@@ -40,21 +67,9 @@ const degreesDataSource = createDataSource(
         apiPath: "education/degrees",
         fetch: async (boardToken: string) => {
             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/degrees`
-
-            const response = await fetch(url)
-            const data = await response.json()
-
-            const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
-
-            const degrees: Degree[] = []
-            for (let i = 0; i < pages; i++) {
-                const response = await fetch(`${url}?page=${i + 1}`)
-                const data = await response.json()
-
-                degrees.push(...data.items)
-            }
-
-            return degrees
+            const items = await fetchGreenhouseData(url, "items")
+            validateEducations(items)
+            return items
         },
     },
     [
@@ -68,20 +83,9 @@ const schoolsDataSource = createDataSource(
         apiPath: "education/schools",
         fetch: async (boardToken: string) => {
             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/schools`
-
-            const response = await fetch(url)
-            const data = await response.json()
-
-            const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
-
-            const schools: School[] = []
-            for (let i = 0; i < pages; i++) {
-                const response = await fetch(`${url}?page=${i + 1}`)
-                const data = await response.json()
-                schools.push(...data.items)
-            }
-
-            return schools
+            const items = await fetchGreenhouseData(url, "items")
+            validateEducations(items)
+            return items
         },
     },
     [
@@ -95,20 +99,9 @@ const disciplinesDataSource = createDataSource(
         apiPath: "education/disciplines",
         fetch: async (boardToken: string) => {
             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/disciplines`
-
-            const response = await fetch(url)
-            const data = await response.json()
-
-            const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
-
-            const disciplines: Discipline[] = []
-            for (let i = 0; i < pages; i++) {
-                const response = await fetch(`${url}?page=${i + 1}`)
-                const data = await response.json()
-                disciplines.push(...data.items)
-            }
-
-            return disciplines
+            const items = await fetchGreenhouseData(url, "items")
+            validateEducations(items)
+            return items
         },
     },
     [
@@ -124,9 +117,10 @@ const departmentsDataSource = createDataSource(
         name: "Departments",
         apiPath: "departments",
         fetch: async (boardToken: string) => {
-            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}/departments`)
-            const data = await response.json()
-            return data.departments as Department[]
+            const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/departments`
+            const items = await fetchGreenhouseData(url, "departments")
+            validateDepartments(items)
+            return items
         },
     },
     [
@@ -146,9 +140,10 @@ const officesDataSource = createDataSource(
         name: "Offices",
         apiPath: "offices",
         fetch: async (boardToken: string) => {
-            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}/offices`)
-            const data = await response.json()
-            return data.offices as Office[]
+            const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/offices`
+            const items = await fetchGreenhouseData(url, "offices")
+            validateOffices(items)
+            return items
         },
     },
     [
@@ -168,11 +163,11 @@ const jobsDataSource = createDataSource(
     {
         name: jobsDataSourceName,
         apiPath: "jobs?content=true",
-        itemsKey: "jobs",
         fetch: async (boardToken: string) => {
-            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs?content=true`)
-            const data = await response.json()
-            return data.jobs as Job[]
+            const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs?content=true`
+            const items = await fetchGreenhouseData(url, "jobs")
+            validateJobs(items)
+            return items
         },
     },
     [
@@ -218,11 +213,11 @@ const sectionsDataSource = createDataSource(
     {
         name: "Sections",
         apiPath: "sections",
-        itemsKey: "sections",
         fetch: async (boardToken: string) => {
-            const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${boardToken}/sections`)
-            const data = await response.json()
-            return data.sections as Section[]
+            const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/sections`
+            const items = await fetchGreenhouseData(url, "sections")
+            validateSections(items)
+            return items
         },
     },
     [
@@ -252,15 +247,11 @@ function createDataSource(
     {
         name,
         apiPath,
-        itemsKey = "items",
         fetch,
     }: {
         name: string
         apiPath: string
-        itemsKey?: string
-        fetch: (
-            boardToken: string
-        ) => Promise<Job[] | Department[] | Office[] | Degree[] | School[] | Discipline[] | Section[]>
+        fetch: (boardToken: string) => Promise<Job[] | Department[] | Office[] | Education[] | Section[]>
     },
     [idField, slugField, ...fields]: [GreenhouseField, GreenhouseField, ...GreenhouseField[]]
 ): GreenhouseDataSource {
@@ -268,7 +259,6 @@ function createDataSource(
         id: name,
         name,
         apiPath,
-        itemsKey,
         fields: [idField, slugField, ...fields],
         fetch,
     }

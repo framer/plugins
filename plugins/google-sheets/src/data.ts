@@ -14,8 +14,7 @@ export const PLUGIN_KEYS = {
 
 export interface DataSource {
     id: string
-    fields: readonly ManagedCollectionFieldInput[]
-    items: FieldDataInput[]
+    sheetTitle: string
 }
 
 export const dataSourceOptions = [

@@ -7,8 +7,8 @@ import {
     framer,
 } from "framer-plugin"
 import auth from "./auth"
-import { logSyncResult } from "./debug.ts"
-import { queryClient } from "./main.tsx"
+import { logSyncResult } from "./debug"
+import { queryClient } from "./main"
 import {
     assert,
     columnToLetter,

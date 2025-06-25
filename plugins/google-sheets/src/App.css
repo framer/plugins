@@ -239,10 +239,44 @@ input[type="text"]:disabled,
     justify-content: center;
     background-color: rgba(0, 189, 66, 0.08);
     border-radius: 10px;
+    width: 100%;
 }
 
 .hero-image {
     object-fit: contain;
     width: 160px;
     height: 160px;
+}
+
+/* Select Data Source */
+
+.setup {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.setup-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.property-control {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    align-items: center;
+    padding-left: 10px;
+}
+
+.property-control p {
+    flex: 1;
+}
+
+.property-control input,
+.property-control select {
+    width: 160px;
 }

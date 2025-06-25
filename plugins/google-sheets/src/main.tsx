@@ -3,6 +3,7 @@ import "framer-plugin/framer.css"
 import { framer } from "framer-plugin"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { App } from "./App.tsx"
 import { PLUGIN_KEYS, syncExistingCollection } from "./data"
@@ -10,6 +11,15 @@ import auth from "./auth"
 import { Authenticate } from "./Login"
 
 const activeCollection = await framer.getActiveManagedCollection()
+
+export const queryClient = new QueryClient({
+    defaultOptions: {
+        queries: {
+            retry: false,
+            staleTime: 5 * 60 * 1000,
+        },
+    },
+})
 
 const tokens = await auth.getTokens()
 
@@ -20,7 +30,9 @@ if (!tokens) {
     await new Promise<void>(resolve => {
         createRoot(root).render(
             <StrictMode>
-                <Authenticate onAuthenticated={resolve} />
+                <QueryClientProvider client={queryClient}>
+                    <Authenticate onAuthenticated={resolve} />
+                </QueryClientProvider>
             </StrictMode>
         )
     })
@@ -41,11 +53,13 @@ if (didSync) {
 
     createRoot(root).render(
         <StrictMode>
-            <App
-                collection={activeCollection}
-                previousDataSourceId={previousDataSourceId}
-                previousSlugFieldId={previousSlugFieldId}
-            />
+            <QueryClientProvider client={queryClient}>
+                <App
+                    collection={activeCollection}
+                    previousDataSourceId={previousDataSourceId}
+                    previousSlugFieldId={previousSlugFieldId}
+                />
+            </QueryClientProvider>
         </StrictMode>
     )
 }

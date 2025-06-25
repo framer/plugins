@@ -187,3 +187,18 @@ input[type="text"]:disabled,
 .mapping footer > button {
     text-transform: capitalize;
 }
+
+.hero-container {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 189, 66, 0.08);
+    border-radius: 10px;
+}
+
+.hero-image {
+    object-fit: contain;
+    width: 160px;
+    height: 160px;
+}

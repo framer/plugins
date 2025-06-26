@@ -13,19 +13,19 @@
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
-        "@notionhq/client": "^2.2.15",
-        "@tanstack/react-query": "^5.29.2",
+        "@notionhq/client": "^2.3.0",
+        "@tanstack/react-query": "^5.81.2",
         "classnames": "^2.5.1",
         "framer-plugin": "^3.3.2",
-        "react": "^18",
-        "react-dom": "^18",
-        "react-error-boundary": "^4.0.13"
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-error-boundary": "^4.1.2"
     },
     "devDependencies": {
-        "@types/react": "^18",
-        "@types/react-dom": "^18",
-        "autoprefixer": "^10.4.19",
-        "postcss": "^8.4.38",
-        "tailwindcss": "^3.4.3"
+        "@types/react": "^18.3.23",
+        "@types/react-dom": "^18.3.7",
+        "autoprefixer": "^10.4.21",
+        "postcss": "^8.5.6",
+        "tailwindcss": "^3.4.17"
     }
 }

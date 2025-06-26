@@ -15,15 +15,15 @@
     },
     "dependencies": {
         "framer-plugin": "^3.3.2",
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0"
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
     },
     "devDependencies": {
         "@sveltejs/vite-plugin-svelte": "^5.1.0",
-        "@types/react": "^18",
-        "@types/react-dom": "^18",
-        "svelte": "^5.0.0-next.201",
-        "svelte-check": "^3.8.4",
+        "@types/react": "^18.3.23",
+        "@types/react-dom": "^18.3.7",
+        "svelte": "^5.34.8",
+        "svelte-check": "^3.8.6",
         "vite": "^6.3.5",
         "vite-plugin-framer": "^1.0.7",
         "vite-plugin-mkcert": "^1.17.8"

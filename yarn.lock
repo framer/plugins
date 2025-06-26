@@ -451,7 +451,7 @@ __metadata:
     eslint-plugin-react-refresh: "npm:^0.4.20"
     globals: "npm:^16.2.0"
     typescript: "npm:^5.8.3"
-    typescript-eslint: "npm:^8.34.1"
+    typescript-eslint: "npm:^8.35.0"
   languageName: unknown
   linkType: soft
 
@@ -620,7 +620,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@notionhq/client@npm:^2.2.15":
+"@notionhq/client@npm:^2.3.0":
   version: 2.3.0
   resolution: "@notionhq/client@npm:2.3.0"
   dependencies:
@@ -652,14 +652,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@phosphor-icons/core@npm:^2.0.8":
+"@phosphor-icons/core@npm:^2.1.1":
   version: 2.1.1
   resolution: "@phosphor-icons/core@npm:2.1.1"
   checksum: 10/6eb75c5f7d9141b99a3f3b6903639bb39b19f0ade5d297cc835aec1f59169862ae2e9b69e6110489c8c17cc760c2341a720b4bd21cc651d5839c43ee0ba7bf6c
   languageName: node
   linkType: hard
 
-"@phosphor-icons/react@npm:^2.0.15":
+"@phosphor-icons/react@npm:^2.1.10":
   version: 2.1.10
   resolution: "@phosphor-icons/react@npm:2.1.10"
   peerDependencies:
@@ -1596,7 +1596,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/react-slider@npm:1.3.5, @radix-ui/react-slider@npm:^1.1.2, @radix-ui/react-slider@npm:^1.2.0":
+"@radix-ui/react-slider@npm:1.3.5, @radix-ui/react-slider@npm:^1.3.5":
   version: 1.3.5
   resolution: "@radix-ui/react-slider@npm:1.3.5"
   dependencies:
@@ -1978,7 +1978,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/themes@npm:^3.1.3":
+"@radix-ui/themes@npm:^3.2.1":
   version: 3.2.1
   resolution: "@radix-ui/themes@npm:3.2.1"
   dependencies:
@@ -2325,7 +2325,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:^5.28.6, @tanstack/react-query@npm:^5.29.2, @tanstack/react-query@npm:^5.51.11, @tanstack/react-query@npm:^5.80.6":
+"@tanstack/react-query@npm:^5.81.2":
   version: 5.81.2
   resolution: "@tanstack/react-query@npm:5.81.2"
   dependencies:
@@ -2445,7 +2445,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/papaparse@npm:^5.3.15":
+"@types/papaparse@npm:^5.3.16":
   version: 5.3.16
   resolution: "@types/papaparse@npm:5.3.16"
   dependencies:
@@ -2468,7 +2468,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:^18, @types/react-dom@npm:^18.0.10, @types/react-dom@npm:^18.3.5":
+"@types/react-dom@npm:^18.3.7":
   version: 18.3.7
   resolution: "@types/react-dom@npm:18.3.7"
   peerDependencies:
@@ -2477,7 +2477,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:^18, @types/react@npm:^18.0.26, @types/react@npm:^18.3.18":
+"@types/react@npm:^18.3.23":
   version: 18.3.23
   resolution: "@types/react@npm:18.3.23"
   dependencies:
@@ -2678,11 +2678,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "airtable@workspace:plugins/airtable"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -2779,17 +2779,17 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ascii@workspace:plugins/ascii"
   dependencies:
-    "@radix-ui/react-slider": "npm:^1.2.0"
-    "@radix-ui/themes": "npm:^3.1.3"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@radix-ui/react-slider": "npm:^1.3.5"
+    "@radix-ui/themes": "npm:^3.2.1"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     clsx: "npm:^2.1.1"
     colorjs.io: "npm:^0.5.2"
     framer-plugin: "npm:^3.3.2"
-    ogl: "npm:^1.0.8"
-    react: "npm:^18"
-    react-dom: "npm:^18"
-    react-dropzone: "npm:^14.2.3"
+    ogl: "npm:^1.0.11"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    react-dropzone: "npm:^14.3.8"
   languageName: unknown
   linkType: soft
 
@@ -2807,7 +2807,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"autoprefixer@npm:^10.4.18, autoprefixer@npm:^10.4.19, autoprefixer@npm:^10.4.21":
+"autoprefixer@npm:^10.4.21":
   version: 10.4.21
   resolution: "autoprefixer@npm:10.4.21"
   dependencies:
@@ -2825,7 +2825,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aveta@npm:^1.4.1":
+"aveta@npm:^1.5.2":
   version: 1.5.2
   resolution: "aveta@npm:1.5.2"
   dependencies:
@@ -3097,11 +3097,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "cms-export@workspace:plugins/cms-export"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -3110,8 +3110,8 @@ __metadata:
   resolution: "cms-starter@workspace:starters/cms"
   dependencies:
     "@eslint/js": "npm:^9.29.0"
-    "@types/react": "npm:^18.3.18"
-    "@types/react-dom": "npm:^18.3.5"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     "@vitejs/plugin-react-swc": "npm:^3.10.2"
     eslint: "npm:^9.29.0"
     eslint-plugin-react-hooks: "npm:^5.2.0"
@@ -3124,7 +3124,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     typescript: "npm:^5.8.3"
-    typescript-eslint: "npm:^8.34.1"
+    typescript-eslint: "npm:^8.35.0"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -3144,13 +3144,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "color-extract@workspace:plugins/color-extract"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
-    extract-colors: "npm:^4.0.2"
-    framer-motion: "npm:^11.0.18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    extract-colors: "npm:^4.2.0"
+    framer-motion: "npm:^11.18.2"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -3177,7 +3177,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"comlink@npm:^4.4.1":
+"comlink@npm:^4.4.2":
   version: 4.4.2
   resolution: "comlink@npm:4.4.2"
   checksum: 10/ecee53b5b4536b3aa3f7636c383f831e68fbc013def77665cc7fad873d72cfa23b994e1ec4b49e83e4e909c1089a03acae03a523e33a5e5ed938cdb613456434
@@ -3209,14 +3209,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "concentric@workspace:plugins/concentric"
   dependencies:
-    "@radix-ui/react-slider": "npm:^1.1.2"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
-    framer-motion: "npm:^11.0.8"
+    "@radix-ui/react-slider": "npm:^1.3.5"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    framer-motion: "npm:^11.18.2"
     framer-plugin: "npm:^3.3.2"
-    lightningcss: "npm:^1.24.0"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    lightningcss: "npm:^1.30.1"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
     react-slider: "npm:^2.0.6"
   languageName: unknown
   linkType: soft
@@ -3301,12 +3301,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "csv-import@workspace:plugins/csv-import"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     csv-parse: "npm:^5.6.0"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -3454,12 +3454,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "design-system@workspace:plugins/design-system"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"
-    radix-ui: "npm:^1.1.3"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    radix-ui: "npm:^1.4.2"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -3495,15 +3495,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "dither@workspace:plugins/dither"
   dependencies:
-    "@radix-ui/react-slider": "npm:^1.2.0"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@radix-ui/react-slider": "npm:^1.3.5"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     clsx: "npm:^2.1.1"
     colorjs.io: "npm:^0.5.2"
     framer-plugin: "npm:^3.3.2"
-    ogl: "npm:^1.0.8"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    ogl: "npm:^1.0.11"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -3566,15 +3566,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "doodles@workspace:plugins/doodles"
   dependencies:
-    "@radix-ui/react-slider": "npm:^1.1.2"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
-    extract-colors: "npm:^4.0.2"
-    framer-motion: "npm:^11.0.18"
+    "@radix-ui/react-slider": "npm:^1.3.5"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    extract-colors: "npm:^4.2.0"
+    framer-motion: "npm:^11.18.2"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
+    react: "npm:^18.3.1"
     react-color: "npm:^2.19.3"
-    react-dom: "npm:^18"
+    react-dom: "npm:^18.3.1"
     react-sketch-canvas: "npm:^6.2.0"
     svgo: "npm:^3.3.2"
   languageName: unknown
@@ -3941,7 +3941,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"extract-colors@npm:^4.0.2":
+"extract-colors@npm:^4.2.0":
   version: 4.2.0
   resolution: "extract-colors@npm:4.2.0"
   checksum: 10/e2aecf4ae4f9f250e7470eb970cf185bad01e07bb63810141712a0dec732627da4fff60f1390b92fc7d75beb58d58516bc65923f79aca0b46423446d7b45a690
@@ -4068,12 +4068,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "flip-image@workspace:plugins/flip-image"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
-    comlink: "npm:^4.4.1"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    comlink: "npm:^4.4.2"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -4130,7 +4130,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-motion@npm:^11.0.18, framer-motion@npm:^11.0.8":
+"framer-motion@npm:^11.18.2":
   version: 11.18.2
   resolution: "framer-motion@npm:11.18.2"
   dependencies:
@@ -4152,7 +4152,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-motion@npm:^12.17.0":
+"framer-motion@npm:^12.19.1":
   version: 12.19.1
   resolution: "framer-motion@npm:12.19.1"
   dependencies:
@@ -4230,7 +4230,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fuse.js@npm:^7.0.0":
+"fuse.js@npm:^7.1.0":
   version: 7.1.0
   resolution: "fuse.js@npm:7.1.0"
   checksum: 10/9f9105e54372897a46cb3e04074f0db5bd0a428320d4618276a57e6142d7502235a556f05cf87aa3c5d6d9c6fdfa06b901b78379c48aa0951672ccbc4a1bfe70
@@ -4318,16 +4318,16 @@ __metadata:
   resolution: "google-search-console@workspace:plugins/google-search-console"
   dependencies:
     "@ataverascrespo/react18-ts-textfit": "npm:^1.0.0"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
-    aveta: "npm:^1.4.1"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    aveta: "npm:^1.5.2"
     cheerio: "npm:^1.1.0"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
-    react-error-boundary: "npm:^4.0.13"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    react-error-boundary: "npm:^4.1.2"
     react-feather: "npm:^2.0.10"
-    recharts: "npm:^2.12.7"
+    recharts: "npm:^2.15.4"
   languageName: unknown
   linkType: soft
 
@@ -4335,18 +4335,18 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "google-sheets@workspace:plugins/google-sheets"
   dependencies:
-    "@tanstack/react-query": "npm:^5.51.11"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
-    autoprefixer: "npm:^10.4.19"
+    "@tanstack/react-query": "npm:^5.81.2"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    autoprefixer: "npm:^10.4.21"
     classnames: "npm:^2.5.1"
     framer-plugin: "npm:^3.3.2"
-    postcss: "npm:^8.4.39"
-    react: "npm:^18"
-    react-dom: "npm:^18"
-    react-error-boundary: "npm:^4.0.13"
-    react-intersection-observer: "npm:^9.10.3"
-    tailwindcss: "npm:^3.4.4"
+    postcss: "npm:^8.5.6"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    react-error-boundary: "npm:^4.1.2"
+    react-intersection-observer: "npm:^9.16.0"
+    tailwindcss: "npm:^3.4.17"
   languageName: unknown
   linkType: soft
 
@@ -4368,11 +4368,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "greenhouse@workspace:plugins/greenhouse"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -4441,19 +4441,19 @@ __metadata:
   resolution: "hubspot@workspace:plugins/hubspot"
   dependencies:
     "@hubspot/api-client": "npm:^13.0.0"
-    "@tanstack/react-query": "npm:^5.80.6"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@tanstack/react-query": "npm:^5.81.2"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     autoprefixer: "npm:^10.4.21"
     classnames: "npm:^2.5.1"
-    framer-motion: "npm:^12.17.0"
+    framer-motion: "npm:^12.19.1"
     framer-plugin: "npm:^3.3.2"
     p-limit: "npm:^6.2.0"
-    postcss: "npm:^8.5.4"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    postcss: "npm:^8.5.6"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
-    tailwindcss: "npm:^3.4.3"
+    tailwindcss: "npm:^3.4.17"
     usehooks-ts: "npm:^3.1.1"
     wouter: "npm:^3.7.1"
   languageName: unknown
@@ -4775,7 +4775,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lightningcss@npm:^1.24.0":
+"lightningcss@npm:^1.30.1":
   version: 1.30.1
   resolution: "lightningcss@npm:1.30.1"
   dependencies:
@@ -4833,11 +4833,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "locale-sync@workspace:plugins/locale-sync"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -5277,18 +5277,18 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "notion@workspace:plugins/notion"
   dependencies:
-    "@notionhq/client": "npm:^2.2.15"
-    "@tanstack/react-query": "npm:^5.29.2"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
-    autoprefixer: "npm:^10.4.19"
+    "@notionhq/client": "npm:^2.3.0"
+    "@tanstack/react-query": "npm:^5.81.2"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    autoprefixer: "npm:^10.4.21"
     classnames: "npm:^2.5.1"
     framer-plugin: "npm:^3.3.2"
-    postcss: "npm:^8.4.38"
-    react: "npm:^18"
-    react-dom: "npm:^18"
-    react-error-boundary: "npm:^4.0.13"
-    tailwindcss: "npm:^3.4.3"
+    postcss: "npm:^8.5.6"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    react-error-boundary: "npm:^4.1.2"
+    tailwindcss: "npm:^3.4.17"
   languageName: unknown
   linkType: soft
 
@@ -5315,7 +5315,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ogl@npm:^1.0.8":
+"ogl@npm:^1.0.11":
   version: 1.0.11
   resolution: "ogl@npm:1.0.11"
   checksum: 10/6a157ca41883eaa695db9736ccf07f5bd7746ea1252c05551a72f32027003bed787ca0b228a03f18c4fb69eba8f124290a51c82ae0d9f95885ac30a1b9699d18
@@ -5386,7 +5386,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"papaparse@npm:^5.5.2":
+"papaparse@npm:^5.5.3":
   version: 5.5.3
   resolution: "papaparse@npm:5.5.3"
   checksum: 10/383e38f8ff910be48b684e7f47b84dbe5e67708669c13bb21f316a0591ef183ff670dfc7eb9f6d0a8b67e21a5b0e8934712cda96ff8fb678d6591e597d108bd1
@@ -5479,14 +5479,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "phosphor@workspace:plugins/phosphor"
   dependencies:
-    "@phosphor-icons/core": "npm:^2.0.8"
-    "@phosphor-icons/react": "npm:^2.0.15"
-    "@types/react": "npm:^18.0.26"
-    "@types/react-dom": "npm:^18.0.10"
+    "@phosphor-icons/core": "npm:^2.1.1"
+    "@phosphor-icons/react": "npm:^2.1.10"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"
-    fuse.js: "npm:^7.0.0"
-    react: "npm:^18.2.0"
-    react-dom: "npm:^18.2.0"
+    fuse.js: "npm:^7.1.0"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -5494,13 +5494,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "photobooth@workspace:plugins/photobooth"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     base64-arraybuffer: "npm:^1.0.2"
-    framer-motion: "npm:^11.0.8"
+    framer-motion: "npm:^11.18.2"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
     react-webcam: "npm:^7.2.0"
   languageName: unknown
   linkType: soft
@@ -5576,11 +5576,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "pong@workspace:plugins/pong"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -5654,7 +5654,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"postcss@npm:^8.4.37, postcss@npm:^8.4.38, postcss@npm:^8.4.39, postcss@npm:^8.4.47, postcss@npm:^8.5.3, postcss@npm:^8.5.4":
+"postcss@npm:^8.4.47, postcss@npm:^8.5.3, postcss@npm:^8.5.6":
   version: 8.5.6
   resolution: "postcss@npm:8.5.6"
   dependencies:
@@ -5737,7 +5737,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"radix-ui@npm:^1.1.3":
+"radix-ui@npm:^1.1.3, radix-ui@npm:^1.4.2":
   version: 1.4.2
   resolution: "radix-ui@npm:1.4.2"
   dependencies:
@@ -5837,7 +5837,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^18, react-dom@npm:^18.2.0, react-dom@npm:^18.3.1":
+"react-dom@npm:^18.3.1":
   version: 18.3.1
   resolution: "react-dom@npm:18.3.1"
   dependencies:
@@ -5849,7 +5849,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dropzone@npm:^14.2.3":
+"react-dropzone@npm:^14.3.8":
   version: 14.3.8
   resolution: "react-dropzone@npm:14.3.8"
   dependencies:
@@ -5862,7 +5862,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-error-boundary@npm:^4.0.13":
+"react-error-boundary@npm:^4.1.2":
   version: 4.1.2
   resolution: "react-error-boundary@npm:4.1.2"
   dependencies:
@@ -5895,7 +5895,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-intersection-observer@npm:^9.10.3":
+"react-intersection-observer@npm:^9.16.0":
   version: 9.16.0
   resolution: "react-intersection-observer@npm:9.16.0"
   peerDependencies:
@@ -6032,7 +6032,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^18, react@npm:^18.2.0, react@npm:^18.3.1":
+"react@npm:^18.3.1":
   version: 18.3.1
   resolution: "react@npm:18.3.1"
   dependencies:
@@ -6077,7 +6077,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"recharts@npm:^2.12.7":
+"recharts@npm:^2.15.4":
   version: 2.15.4
   resolution: "recharts@npm:2.15.4"
   dependencies:
@@ -6100,13 +6100,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "redirect-sync@workspace:plugins/redirect-sync"
   dependencies:
-    "@types/papaparse": "npm:^5.3.15"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/papaparse": "npm:^5.3.16"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"
-    papaparse: "npm:^5.5.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    papaparse: "npm:^5.5.3"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -6122,13 +6122,13 @@ __metadata:
   resolution: "renamer@workspace:plugins/renamer"
   dependencies:
     "@sveltejs/vite-plugin-svelte": "npm:^5.1.0"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18.2.0"
-    react-dom: "npm:^18.2.0"
-    svelte: "npm:^5.0.0-next.201"
-    svelte-check: "npm:^3.8.4"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    svelte: "npm:^5.34.8"
+    svelte-check: "npm:^3.8.6"
     vite: "npm:^6.3.5"
     vite-plugin-framer: "npm:^1.0.7"
     vite-plugin-mkcert: "npm:^1.17.8"
@@ -6291,12 +6291,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "rss-feeds@workspace:plugins/rss-feeds"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     classnames: "npm:^2.5.1"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -6540,7 +6540,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"svelte-check@npm:^3.8.4":
+"svelte-check@npm:^3.8.6":
   version: 3.8.6
   resolution: "svelte-check@npm:3.8.6"
   dependencies:
@@ -6604,7 +6604,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"svelte@npm:^5.0.0-next.201":
+"svelte@npm:^5.34.8":
   version: 5.34.8
   resolution: "svelte@npm:5.34.8"
   dependencies:
@@ -6643,7 +6643,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tailwindcss@npm:^3.4.1, tailwindcss@npm:^3.4.3, tailwindcss@npm:^3.4.4":
+"tailwindcss@npm:^3.4.17":
   version: 3.4.17
   resolution: "tailwindcss@npm:3.4.17"
   dependencies:
@@ -6712,12 +6712,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "threshold@workspace:plugins/threshold"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
-    comlink: "npm:^4.4.1"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    comlink: "npm:^4.4.2"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
     roughjs: "npm:^4.6.6"
   languageName: unknown
   linkType: soft
@@ -6726,11 +6726,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "tidyup@workspace:plugins/tidyup"
   dependencies:
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"
-    react: "npm:^18"
-    react-dom: "npm:^18"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
 
@@ -6877,7 +6877,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript-eslint@npm:^8.34.1":
+"typescript-eslint@npm:^8.35.0":
   version: 8.35.0
   resolution: "typescript-eslint@npm:8.35.0"
   dependencies:
@@ -6947,20 +6947,20 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "unsplash@workspace:plugins/unsplash"
   dependencies:
-    "@tanstack/react-query": "npm:^5.28.6"
-    "@types/react": "npm:^18"
-    "@types/react-dom": "npm:^18"
-    autoprefixer: "npm:^10.4.18"
+    "@tanstack/react-query": "npm:^5.81.2"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    autoprefixer: "npm:^10.4.21"
     blurhash: "npm:^2.0.5"
     classnames: "npm:^2.5.1"
     framer-plugin: "npm:^3.3.2"
-    lightningcss: "npm:^1.24.0"
-    postcss: "npm:^8.4.37"
-    react: "npm:^18"
+    lightningcss: "npm:^1.30.1"
+    postcss: "npm:^8.5.6"
+    react: "npm:^18.3.1"
     react-blurhash: "npm:^0.3.0"
-    react-dom: "npm:^18"
-    react-error-boundary: "npm:^4.0.13"
-    tailwindcss: "npm:^3.4.1"
+    react-dom: "npm:^18.3.1"
+    react-error-boundary: "npm:^4.1.2"
+    tailwindcss: "npm:^3.4.17"
     valibot: "npm:0.29.0"
   languageName: unknown
   linkType: soft

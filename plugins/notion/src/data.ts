@@ -201,7 +201,8 @@ export async function syncExistingCollection(
     try {
         const dataSource = await getDataSource(previousDataSourceId)
         const existingFields = await collection.getFields()
-        const fieldsInfo = getDataSourceFieldsInfo(dataSource.database)
+        const dataSourceFieldsInfo = getDataSourceFieldsInfo(dataSource.database)
+        const fieldsInfo = mergeFieldsInfoWithExistingFields(dataSourceFieldsInfo, existingFields)
         const fields = await fieldsInfoToCollectionFields(fieldsInfo)
 
         const slugField = fields.find(field => field.id === previousSlugFieldId)

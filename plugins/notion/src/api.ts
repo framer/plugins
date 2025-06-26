@@ -341,11 +341,11 @@ export function getPropertyValue(
 
             switch (firstFile?.type) {
                 case "external":
-                    return { type: field.type, value: firstFile.external.url }
+                    return firstFile.external.url
                 case "file":
-                    return { type: field.type, value: firstFile.file.url }
+                    return firstFile.file.url
                 default:
-                    return { type: field.type, value: null }
+                    return null
             }
         }
         case "email": {

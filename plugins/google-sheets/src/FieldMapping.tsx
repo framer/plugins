@@ -63,18 +63,6 @@ function FieldMappingRow({
                     d="m2.5 7 3-3-3-3"
                 />
             </svg>
-            <input
-                type="text"
-                disabled={isIgnored || disabled}
-                placeholder={originalFieldName}
-                value={field.name}
-                onChange={event => onNameChange(field.id, event.target.value)}
-                onKeyDown={event => {
-                    if (event.key === "Enter") {
-                        event.preventDefault()
-                    }
-                }}
-            />
             <select
                 disabled={isIgnored || disabled}
                 value={field.type}
@@ -89,6 +77,18 @@ function FieldMappingRow({
                     </option>
                 ))}
             </select>
+            <input
+                type="text"
+                disabled={isIgnored || disabled}
+                placeholder={originalFieldName}
+                value={field.name}
+                onChange={event => onNameChange(field.id, event.target.value)}
+                onKeyDown={event => {
+                    if (event.key === "Enter") {
+                        event.preventDefault()
+                    }
+                }}
+            />
         </>
     )
 }
@@ -279,8 +279,8 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
 
                 <div className="fields">
                     <span className="fields-column">Column</span>
-                    <span>Name</span>
                     <span>Type</span>
+                    <span>Name</span>
                     {fields.map(field => (
                         <FieldMappingRow
                             key={`field-${field.id}`}

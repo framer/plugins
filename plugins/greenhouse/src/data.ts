@@ -6,9 +6,9 @@ import {
     type ManagedCollectionItemInput,
     type ProtectedMethod,
 } from "framer-plugin"
+import { isGreenhouseItemField } from "./api-types"
 import { dataSources, type GreenhouseDataSource, type GreenhouseField } from "./dataSources"
 import { assertNever, decodeHtml, isCollectionReference } from "./utils"
-import { isGreenhouseItemField } from "./api-types"
 
 export const dataSourceIdPluginKey = "dataSourceId"
 export const slugFieldIdPluginKey = "slugFieldId"
@@ -110,20 +110,19 @@ async function getItems(
     }
 
     for (const item of dataItems) {
-        const id = String(item.id)
-
         if (!isGreenhouseItemField(slugFieldId, item)) {
             throw new Error(`No slug field found in data source.`)
         }
 
-        const slug = String(item[slugFieldId])
+        const id = String(item.id)
+        const slug = String(item[slugFieldId]).trim()
 
         if (!itemIdBySlug.has(slug)) {
             itemIdBySlug.set(slug, id)
             continue
         }
 
-        const uniqueSlug = `${itemIdBySlug.get(slug)}-${id}`
+        const uniqueSlug = `${slug} ${id}`
         itemIdBySlug.set(uniqueSlug, id)
     }
 
@@ -152,7 +151,10 @@ async function getItems(
 
             switch (field.type) {
                 case "string":
-                    fieldData[field.id] = { value: value ? String(value) : "", type: "string" }
+                    fieldData[field.id] = {
+                        value: value ? String(value) : "",
+                        type: "string",
+                    }
                     break
                 case "number":
                     fieldData[field.id] = { value: Number(value), type: "number" }
@@ -161,12 +163,18 @@ async function getItems(
                     fieldData[field.id] = { value: Boolean(value), type: "boolean" }
                     break
                 case "formattedText":
-                    fieldData[field.id] = { value: decodeHtml(String(value)), type: "formattedText" }
+                    fieldData[field.id] = {
+                        value: decodeHtml(String(value)),
+                        type: "formattedText",
+                    }
                     break
                 case "color":
                 case "date":
                 case "link":
-                    fieldData[field.id] = { value: value ? String(value) : null, type: field.type }
+                    fieldData[field.id] = {
+                        value: value ? String(value) : null,
+                        type: field.type,
+                    }
                     break
                 case "multiCollectionReference": {
                     const ids: string[] = []
@@ -174,7 +182,10 @@ async function getItems(
                         ids.push(...value.map(item => String(item.id)))
                     }
 
-                    fieldData[field.id] = { value: ids, type: "multiCollectionReference" }
+                    fieldData[field.id] = {
+                        value: ids,
+                        type: "multiCollectionReference",
+                    }
                     break
                 }
                 case "collectionReference": {
@@ -182,7 +193,10 @@ async function getItems(
                         continue
                     }
 
-                    fieldData[field.id] = { value: String(value.id), type: "collectionReference" }
+                    fieldData[field.id] = {
+                        value: String(value.id),
+                        type: "collectionReference",
+                    }
                     break
                 }
                 case "image":
@@ -213,7 +227,10 @@ export async function syncCollection(
     slugField: ManagedCollectionFieldInput
 ): Promise<void> {
     const existingItemsIds = await collection.getItemIds()
-    const items = await getItems(dataSource, fields, { boardToken, slugFieldId: slugField.id })
+    const items = await getItems(dataSource, fields, {
+        boardToken,
+        slugFieldId: slugField.id,
+    })
     const itemIds = new Set(items.map(item => item.id))
     const unsyncedItemsIds = existingItemsIds.filter(existingItemId => !itemIds.has(existingItemId))
 

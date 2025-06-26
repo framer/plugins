@@ -3,10 +3,10 @@ import "./App.css"
 import { framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
 import { FieldMapping } from "./components/FieldMapping"
+import { Loading } from "./components/Loading"
 import { SelectDataSource } from "./components/SelectDataSource"
 import { getDataSource, spaceIdPluginKey } from "./data"
 import type { GreenhouseDataSource } from "./dataSources"
-import { Loading } from "./components/Loading"
 
 interface AppProps {
     collection: ManagedCollection

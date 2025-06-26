@@ -1,11 +1,11 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
 import {
+    type GreenhouseItem,
     validateDepartments,
     validateEducations,
     validateJobs,
     validateOffices,
     validateSections,
-    type GreenhouseItem,
 } from "./api-types"
 
 export interface GreenhouseDataSource {

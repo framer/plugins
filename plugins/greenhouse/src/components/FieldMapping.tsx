@@ -1,10 +1,10 @@
-import { framer, useIsAllowedTo, type ManagedCollection } from "framer-plugin"
+import { framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "../data"
+import { type GreenhouseDataSource, type GreenhouseField, removeGreenhouseKeys } from "../dataSources"
 import { isCollectionReference, isMissingReferenceField } from "../utils"
-import { removeGreenhouseKeys, type GreenhouseDataSource, type GreenhouseField } from "../dataSources"
-import { Loading } from "./Loading"
 import { ChevronIcon } from "./Icons"
+import { Loading } from "./Loading"
 
 interface FieldMappingRowProps {
     field: GreenhouseField

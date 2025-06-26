@@ -135,6 +135,10 @@ const FieldMappingRow = memo(
     }
 )
 
+function isFieldMissingCollection(field: PossibleField): boolean {
+    return isCollectionReference(field) && field.supportedCollections.length === 0
+}
+
 const initialManagedCollectionFields: PossibleField[] = []
 const initialFieldIds: ReadonlySet<string> = new Set()
 
@@ -306,11 +310,6 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         )
     }
 
-    const unsupportedFields: PossibleField[] = fields.filter(field => field.type === "unsupported")
-    const missingCollectionFields: PossibleField[] = fields.filter(
-        field => isCollectionReference(field) && field.supportedCollections.length === 0
-    )
-
     return (
         <form className="framer-hide-scrollbar mapping" onSubmit={handleSubmit}>
             <hr className="sticky-top" />
@@ -355,7 +354,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 <span>Type</span>
                 <span>Name</span>
                 {fields
-                    .filter(field => !unsupportedFields.includes(field) && !missingCollectionFields.includes(field))
+                    .filter(field => field.type !== "unsupported" && !isFieldMissingCollection(field))
                     .map(field => (
                         <FieldMappingRow
                             key={`field-${field.id}`}
@@ -368,7 +367,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             onTypeChange={changeFieldType}
                         />
                     ))}
-                {missingCollectionFields.map(field => (
+                {fields.filter(isFieldMissingCollection).map(field => (
                     <FieldMappingRow
                         key={`field-${field.id}`}
                         field={field}
@@ -378,16 +377,18 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         disabled={!isAllowedToManage}
                     />
                 ))}
-                {unsupportedFields.map(field => (
-                    <FieldMappingRow
-                        key={`field-${field.id}`}
-                        field={field}
-                        unsupported
-                        originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
-                        isIgnored={true}
-                        disabled={!isAllowedToManage}
-                    />
-                ))}
+                {fields
+                    .filter(field => field.type === "unsupported")
+                    .map(field => (
+                        <FieldMappingRow
+                            key={`field-${field.id}`}
+                            field={field}
+                            unsupported
+                            originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
+                            isIgnored={true}
+                            disabled={!isAllowedToManage}
+                        />
+                    ))}
             </div>
 
             <footer>

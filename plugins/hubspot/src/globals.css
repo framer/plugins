@@ -1,8 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:is([data-framer-theme='dark'] *));
 
-@theme {
+@theme inline {
     --background-color-primary: var(--framer-color-bg);
     --background-color-secondary: var(--framer-color-bg-secondary);
     --background-color-tertiary: var(--framer-color-bg-tertiary);

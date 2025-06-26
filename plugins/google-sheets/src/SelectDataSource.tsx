@@ -137,7 +137,6 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 type="submit"
                 disabled={!selectedSpreadsheetId || !selectedSheetTitle || isLoading}
                 onClick={handleSubmit}
-                className="framer-button-primary"
             >
                 {isLoading ? <div className="framer-spinner" /> : "Next"}
             </button>

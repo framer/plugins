@@ -244,7 +244,16 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
             <hr className="sticky-divider" />
             <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
-                    Slug Field
+                    <div className="heading-row">
+                        <span>Slug Field</span>
+                        <a
+                            href={`https://docs.google.com/spreadsheets/d/${dataSource.id}/edit`}
+                            target="_blank"
+                            className="heading-link"
+                        >
+                            View in Google Sheets
+                        </a>
+                    </div>
                     <select
                         required
                         name="slugField"
@@ -270,8 +279,8 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
 
                 <div className="fields">
                     <span className="fields-column">Column</span>
-                    <span>Field Name</span>
-                    <span>Field Type</span>
+                    <span>Name</span>
+                    <span>Type</span>
                     {fields.map(field => (
                         <FieldMappingRow
                             key={`field-${field.id}`}
@@ -292,7 +301,6 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
                         type="submit"
                         disabled={isSyncing || !isAllowedToManage}
                         title={isAllowedToManage ? undefined : "Insufficient permissions"}
-                        className="framer-button-primary"
                     >
                         {isSyncing ? <div className="framer-spinner" /> : `Import ${dataSourceName}`}
                     </button>

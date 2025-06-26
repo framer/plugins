@@ -22,14 +22,6 @@ export function assert(condition: unknown, ...msg: unknown[]): asserts condition
     throw e
 }
 
-export function isDefined<T>(value: T): value is NonNullable<T> {
-    return value !== undefined && value !== null
-}
-
-export function isString(value: unknown): value is string {
-    return typeof value === "string"
-}
-
 // Match everything except for letters, numbers and parentheses.
 const nonSlugCharactersRegExp = /[^\p{Letter}\p{Number}()]+/gu
 // Match leading/trailing dashes, for trimming purposes.
@@ -42,16 +34,6 @@ const trimSlugRegExp = /^-+|-+$/gu
  */
 export function slugify(value: string): string {
     return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
-}
-
-export function isURL(value: string): boolean {
-    try {
-        new URL(value)
-
-        return true
-    } catch {
-        return false
-    }
 }
 
 export function formatDate(isoDateString: string) {
@@ -79,10 +61,6 @@ export function generateRandomId() {
     }
 
     return id
-}
-
-export function assertNever(x: never, error?: unknown): never {
-    throw error || new Error((x as unknown) ? `Unexpected value: ${x}` : "Application entered invalid state")
 }
 
 export const syncMethods = [

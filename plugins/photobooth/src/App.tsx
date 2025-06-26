@@ -1,5 +1,5 @@
-import { useAnimate } from "framer-motion"
 import { framer, useIsAllowedTo } from "framer-plugin"
+import { useAnimate } from "motion/react"
 import { useCallback, useRef } from "react"
 import Webcam from "react-webcam"
 

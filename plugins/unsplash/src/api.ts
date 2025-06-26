@@ -35,11 +35,11 @@ const listPhotosSchema = v.object({
     total_pages: v.number(),
 })
 
-export type UnsplashPhoto = v.Input<typeof unsplashPhotoSchema>
+export type UnsplashPhoto = v.InferInput<typeof unsplashPhotoSchema>
 
-export type UnsplashUrls = v.Input<typeof urlsSchema>
-export type UnsplashLinks = v.Input<typeof unsplashUserSchema>
-export type UnsplashUser = v.Input<typeof unsplashUserSchema>
+export type UnsplashUrls = v.InferInput<typeof urlsSchema>
+export type UnsplashLinks = v.InferInput<typeof unsplashUserSchema>
+export type UnsplashUser = v.InferInput<typeof unsplashUserSchema>
 
 const UNSPLASH_BASE_URL = "https://unsplash-plugin.framer-team.workers.dev"
 
@@ -50,11 +50,11 @@ interface FetchOptions extends Omit<RequestInit, "headers"> {
     body?: any
 }
 
-export async function fetchUnsplash<TSchema extends v.BaseSchema>(
+export async function fetchUnsplash<TSchema extends v.GenericSchema>(
     path: string,
     schema: TSchema,
     { body, ...options }: FetchOptions = {}
-): Promise<v.Input<TSchema>> {
+): Promise<v.InferInput<TSchema>> {
     const response = await fetch(`${UNSPLASH_BASE_URL}${path}`, {
         body: body ? JSON.stringify(body) : undefined,
         ...options,

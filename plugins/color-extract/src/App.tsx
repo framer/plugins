@@ -1,7 +1,6 @@
 import { extractColors } from "extract-colors"
 import type { FinalColor } from "extract-colors/lib/types/Color"
 import type { BrowserOptions } from "extract-colors/lib/types/Options"
-import { motion } from "framer-motion"
 import {
     type CanvasNode,
     type ColorStop,
@@ -11,6 +10,7 @@ import {
     supportsBackgroundImage,
     useIsAllowedTo,
 } from "framer-plugin"
+import { motion } from "motion/react"
 import { useCallback, useEffect, useState } from "react"
 import "./App.css"
 

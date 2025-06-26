@@ -41,7 +41,7 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
                 </Button>
                 {spreadsheetId && (
                     <Button
-                        className="w-auto flex-1 !bg-[#15C43E] text-white hover:bg-[#15C43E]"
+                        className="w-auto flex-1 bg-[#15C43E]! text-white hover:bg-[#15C43E]"
                         onClick={handleOpenClick}
                     >
                         Open Sheet

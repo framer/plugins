@@ -140,7 +140,7 @@ export function iterate<T>(array: T[], behaviour: IterationBehaviour = forwards)
 
                     const value = {
                         index,
-                        current: array[index],
+                        current: array[index] as T, // No nice way to assert, as undefined could be valid
                         previous: previous(array, index),
                         next: next(array, index),
                         isFirst: index === 0,

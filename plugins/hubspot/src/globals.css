@@ -1,75 +1,124 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-framer-theme="dark"], [data-framer-theme="dark"] *));
+
+@theme inline {
+    --background-color-primary: var(--framer-color-bg);
+    --background-color-secondary: var(--framer-color-bg-secondary);
+    --background-color-tertiary: var(--framer-color-bg-tertiary);
+    --background-color-tertiary-dimmed-light: rgba(243, 243, 243, 0.75);
+    --background-color-tertiary-dimmed-dark: rgba(43, 43, 43, 0.75);
+    --background-color-divider: var(--framer-color-divider);
+    --background-color-tint: var(--framer-color-tint);
+    --background-color-tint-dimmed: var(--framer-color-tint-dimmed);
+    --background-color-tint-dark: var(--framer-color-tint-dark);
+    --background-color-black-dimmed: rgba(0, 0, 0, 0.5);
+    --background-color-hs-orange: #ff5c35;
+    --background-color-framer-red: #ff3366;
+    --background-color-framer-blue: #0099ff;
+
+    --color-primary: var(--framer-color-text);
+    --color-secondary: var(--framer-color-text-secondary);
+    --color-tertiary: var(--framer-color-text-tertiary);
+    --color-inverted: var(--framer-color-text-inverted);
+    --color-tint: var(--framer-color-tint);
+    --color-hs-orange: #ff5c35;
+    --color-framer-red: #ff3366;
+
+    --border-color-divider: var(--framer-color-divider);
+
+    --text-2xs: 10px;
+
+    --grid-template-columns-field-picker: 1fr 8px 1fr;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+    @import "framer-plugin/framer.css";
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentcolor);
+    }
+}
+
+@utility no-scrollbar {
+    /* Chrome, Safari and Opera */
+    &::-webkit-scrollbar {
+        display: none;
+    }
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+@utility row {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+@utility col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+@utility row-lg {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+}
+
+@utility col-lg {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+@utility framer-button-destructive {
+    @apply bg-framer-red text-white;
+
+    &:hover {
+        background-color: #e15;
+    }
+
+    &:focus {
+        background-color: #e15;
+    }
+}
+
+@utility input-container {
+    @apply row items-center justify-between pl-[15px] text-tertiary;
+
+    & > p {
+        @apply max-w-[134px] truncate text-primary;
+    }
+}
+
+@utility tile {
+    @apply bg-tertiary-dimmed-light dark:bg-tertiary-dimmed-dark dark:hover:bg-tertiary hover:bg-tertiary;
+}
+
+@utility segment-control-shadow {
+    box-shadow:
+        0px 2px 4px 0px rgba(0, 0, 0, 0.1),
+        0px 1px 0px 0px rgba(0, 0, 0, 0.05);
+}
 
 @layer base {
     h6 {
         @apply font-semibold text-primary leading-[1.2];
-    }
-}
-
-@layer utilities {
-    /* Chrome, Safari and Opera */
-    .no-scrollbar::-webkit-scrollbar {
-        display: none;
-    }
-
-    .no-scrollbar {
-        -ms-overflow-style: none; /* IE and Edge */
-        scrollbar-width: none; /* Firefox */
-    }
-}
-
-@layer components {
-    .row {
-        display: flex;
-        flex-direction: row;
-        gap: 10px;
-    }
-
-    .col {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .row-lg {
-        display: flex;
-        flex-direction: row;
-        gap: 15px;
-    }
-
-    .col-lg {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .framer-button-destructive {
-        @apply bg-framer-red text-white;
-    }
-
-    .framer-button-destructive:hover,
-    .framer-button-destructive:focus {
-        background-color: #e15;
-    }
-
-    .input-container {
-        @apply row items-center justify-between pl-[15px] text-tertiary;
-    }
-
-    .input-container > p {
-        @apply max-w-[134px] truncate text-primary;
-    }
-
-    .tile {
-        @apply bg-tertiaryDimmedLight dark:bg-tertiaryDimmedDark dark:hover:bg-tertiary hover:bg-tertiary;
-    }
-
-    .segment-control-shadow {
-        box-shadow:
-            0px 2px 4px 0px rgba(0, 0, 0, 0.1),
-            0px 1px 0px 0px rgba(0, 0, 0, 0.05);
     }
 }
 

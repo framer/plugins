@@ -258,7 +258,7 @@ export function MapSheetFieldsPage({
                     </select>
                 </div>
             </div>
-            <div className="grid grid-cols items-center grid-cols-fieldPicker gap-2.5 mb-auto overflow-hidden mt-[10px]">
+            <div className="grid grid-cols items-center grid-cols-field-picker gap-2.5 mb-auto overflow-hidden mt-[10px]">
                 <span className="col-span-2">Column</span>
                 <span>Field</span>
                 <span>Type</span>

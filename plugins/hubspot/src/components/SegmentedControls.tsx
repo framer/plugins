@@ -1,5 +1,5 @@
 import cx from "classnames"
-import { motion } from "framer-motion"
+import { motion } from "motion/react"
 
 interface Option {
     value: string
@@ -40,7 +40,7 @@ export const SegmentedControls = ({ options, value, onValueChange, disabled, tit
                                   onValueChange(option.value)
                               }
                     }
-                    className={cx("relative flex-grow text-center z-10", {
+                    className={cx("relative grow text-center z-10", {
                         "text-tint dark:text-white cursor-default": value === option.value,
                         "text-tertiary hover:text-tertiary cursor-pointer": value !== option.value,
                         "opacity-50": disabled,

@@ -1,29 +1,29 @@
+import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
 import {
+    type EnumCase,
+    type FieldDataInput,
     framer,
     ManagedCollection,
     type ManagedCollectionFieldInput,
-    type FieldDataInput,
     type ManagedCollectionItemInput,
-    type EnumCase,
 } from "framer-plugin"
-import {
-    getNotionDatabases,
-    getDatabase,
-    richTextToPlainText,
-    pageContentProperty,
-    getDatabaseFieldsInfo,
-    PLUGIN_KEYS,
-    assertFieldTypeMatchesPropertyType,
-    getDatabaseIdMap,
-    type FieldInfo,
-    getDatabaseItems,
-    getPropertyValue,
-    getPageBlocksAsRichText,
-    isUnchangedSinceLastSync,
-} from "./api"
-import { slugify, formatDate } from "./utils"
 import pLimit from "p-limit"
-import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
+import {
+    assertFieldTypeMatchesPropertyType,
+    type FieldInfo,
+    getDatabase,
+    getDatabaseFieldsInfo,
+    getDatabaseIdMap,
+    getDatabaseItems,
+    getNotionDatabases,
+    getPageBlocksAsRichText,
+    getPropertyValue,
+    isUnchangedSinceLastSync,
+    PLUGIN_KEYS,
+    pageContentProperty,
+    richTextToPlainText,
+} from "./api"
+import { formatDate, slugify } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -121,7 +121,7 @@ export async function syncCollection(
 
             for (const property of Object.values(item.properties)) {
                 if (property.id === slugField.id) {
-                    const resolvedSlug = getPropertyValue(property, { type: "string" })
+                    const resolvedSlug = getPropertyValue(property, { type: "string" } as ManagedCollectionFieldInput)
 
                     if (!resolvedSlug || typeof resolvedSlug !== "string") {
                         break
@@ -194,11 +194,7 @@ export async function syncExistingCollection(
     previousLastSynced: string | null,
     previousDatabaseName: string | null
 ): Promise<{ didSync: boolean }> {
-    if (!previousDataSourceId) {
-        return { didSync: false }
-    }
-
-    if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId) {
+    if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId || !previousDataSourceId) {
         return { didSync: false }
     }
 

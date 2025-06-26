@@ -306,8 +306,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         )
     }
 
-    const unsupportedFields = fields.filter(field => field.type === "unsupported")
-    const missingCollectionFields = fields.filter(
+    const unsupportedFields: PossibleField[] = fields.filter(field => field.type === "unsupported")
+    const missingCollectionFields: PossibleField[] = fields.filter(
         field => isCollectionReference(field) && field.supportedCollections.length === 0
     )
 

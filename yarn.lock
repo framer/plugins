@@ -4364,6 +4364,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"greenhouse@workspace:plugins/greenhouse":
+  version: 0.0.0-use.local
+  resolution: "greenhouse@workspace:plugins/greenhouse"
+  dependencies:
+    "@types/react": "npm:^18"
+    "@types/react-dom": "npm:^18"
+    framer-plugin: "npm:^3.3.2"
+    react: "npm:^18"
+    react-dom: "npm:^18"
+  languageName: unknown
+  linkType: soft
+
 "hachure-fill@npm:^0.5.2":
   version: 0.5.2
   resolution: "hachure-fill@npm:0.5.2"

@@ -9,6 +9,7 @@ import {
 } from "./data"
 import { getPossibleSlugFieldIds, type FieldId, type FieldInfo } from "./api"
 import classNames from "classnames"
+import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import { syncMethods } from "./utils"
 
 type FieldType = ManagedCollectionField["type"]
@@ -131,19 +132,20 @@ export function FieldMapping({
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
 
-    const initialFieldsInfo = useMemo(() => getDataSourceFieldsInfo(dataSource.database), [dataSource.database])
-    const possibleSlugFieldIds = useMemo(() => getPossibleSlugFieldIds(dataSource.database), [dataSource.database])
+    const dataSourceName = dataSource.name
+    const database = dataSource.database as DatabaseObjectResponse
+
+    const initialFieldsInfo = useMemo(() => getDataSourceFieldsInfo(database), [database])
+    const possibleSlugFieldIds = useMemo(() => getPossibleSlugFieldIds(database), [database])
 
     const [selectedSlugFieldId, setSelectedSlugFieldId] = useState<FieldId | null>(
         initialSlugFieldId ?? possibleSlugFieldIds[0] ?? null
     )
 
     const [fieldsInfo, setFieldsInfo] = useState(initialFieldsInfo)
-    const [ignoredFieldIds, setIgnoredFieldIds] = useState(
+    const [ignoredFieldIds, setIgnoredFieldIds] = useState<Set<string>>(
         previousIgnoredFieldIds ? new Set(JSON.parse(previousIgnoredFieldIds)) : new Set()
     )
-
-    const dataSourceName = dataSource.name
 
     useEffect(() => {
         const abortController = new AbortController()
@@ -221,6 +223,11 @@ export function FieldMapping({
             const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
             const slugField = fields.find(field => field.id === selectedSlugFieldId)
 
+            if (!slugField) {
+                framer.notify("Selected slug field not found. Sync will not be performed.", { variant: "error" })
+                return
+            }
+
             await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds, previousLastSynced)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
@@ -246,7 +253,14 @@ export function FieldMapping({
             <hr className="sticky-divider" />
             <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
-                    Slug Field
+                    <div className="heading-row">
+                        <span>Slug Field</span>
+                        {database?.url && (
+                            <a href={database.url} target="_blank" className="heading-link">
+                                View in Notion
+                            </a>
+                        )}
+                    </div>
                     <select
                         required
                         name="slugField"

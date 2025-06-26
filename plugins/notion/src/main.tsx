@@ -5,9 +5,9 @@ import React from "react"
 import ReactDOM from "react-dom/client"
 
 import { App } from "./App.tsx"
+import { PLUGIN_KEYS } from "./api"
 import auth from "./auth"
 import { syncExistingCollection } from "./data"
-import { PLUGIN_KEYS } from "./api"
 import { Authenticate } from "./Login.tsx"
 import { syncMethods } from "./utils"
 

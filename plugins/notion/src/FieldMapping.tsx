@@ -77,11 +77,25 @@ function FieldMappingRow({
                     d="m2.5 7 3-3-3-3"
                 />
             </svg>
+            {!isUnsupported && (
+                <select
+                    className="field-type"
+                    disabled={disabled || allowedTypes.length <= 1}
+                    value={type ?? ""}
+                    onChange={event => onFieldTypeChange(id, event.target.value as FieldType)}
+                >
+                    {allowedTypes.map(allowedType => (
+                        <option key={allowedType} value={allowedType}>
+                            {labelByFieldTypeOption[allowedType]}
+                        </option>
+                    ))}
+                </select>
+            )}
             <input
                 type="text"
                 disabled={disabled || isUnsupported}
                 placeholder={originalName ?? id}
-                value={isUnsupported ? "Unsupported" : name}
+                value={isUnsupported ? "Unsupported Field" : name}
                 onChange={event => onNameChange(id, event.target.value)}
                 onKeyDown={event => {
                     if (event.key === "Enter") {
@@ -90,25 +104,6 @@ function FieldMappingRow({
                 }}
                 className={classNames("field-input", isUnsupported && "unsupported")}
             />
-            {!isUnsupported &&
-                (Array.isArray(allowedTypes) && allowedTypes.length > 1 ? (
-                    <select
-                        className="field-type"
-                        disabled={disabled}
-                        value={type ?? ""}
-                        onChange={event => onFieldTypeChange(id, event.target.value as FieldType)}
-                    >
-                        {allowedTypes.map(allowedType => (
-                            <option key={allowedType} value={allowedType}>
-                                {labelByFieldTypeOption[allowedType]}
-                            </option>
-                        ))}
-                    </select>
-                ) : (
-                    <div className={classNames("single-field-type", disabled && "disabled")}>
-                        {allowedTypes[0] ? labelByFieldTypeOption[allowedTypes[0]] : ""}
-                    </div>
-                ))}
         </>
     )
 }
@@ -277,8 +272,8 @@ export function FieldMapping({
 
                 <div className="fields">
                     <span className="fields-column">Notion Property</span>
-                    <span>Field Name</span>
-                    <span>Field Type</span>
+                    <span>Type</span>
+                    <span>Name</span>
                     {fieldsInfo.map(fieldInfo => {
                         return (
                             <FieldMappingRow
@@ -300,7 +295,6 @@ export function FieldMapping({
                         disabled={isSyncing || !isAllowedToManage}
                         tabIndex={0}
                         title={!isAllowedToManage ? "Insufficient permissions" : undefined}
-                        className="framer-button-primary"
                     >
                         {isSyncing ? (
                             <div className="framer-spinner" />

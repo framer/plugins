@@ -170,22 +170,6 @@ form {
     width: 100%;
 }
 
-.mapping .single-field-type {
-    width: 100%;
-    background-color: var(--framer-color-bg-tertiary);
-    border-radius: 8px;
-    padding: 0px 10px;
-    height: 30px;
-    font-weight: 500;
-    color: var(--framer-color-text);
-    display: flex;
-    align-items: center;
-}
-
-.mapping .single-field-type.disabled {
-    opacity: 0.5;
-}
-
 .mapping footer {
     position: sticky;
     bottom: 0;
@@ -210,11 +194,11 @@ form {
     pointer-events: none;
 }
 
-select {
-    padding-left: 10px;
+select:disabled {
+    opacity: 0.5;
 }
 
-select:not([disabled]) {
+select:not(:disabled) {
     cursor: pointer;
 }
 

@@ -25,8 +25,8 @@ export function App({ collection, collectionFields, previousDataSourceId, previo
     useLayoutEffect(() => {
         if (dataSource || isSheetLoading) {
             framer.showUI({
-                width: 600,
-                height: 500,
+                width: 425,
+                height: 425,
                 minWidth: 360,
                 minHeight: 425,
                 resizable: true,

@@ -5930,7 +5930,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-plugin@npm:^3.2.0, framer-plugin@npm:^3.3.2":
+"framer-plugin@npm:^3.3.2":
   version: 3.3.2
   resolution: "framer-plugin@npm:3.3.2"
   peerDependencies:
@@ -7495,7 +7495,7 @@ __metadata:
     eslint: "npm:^9.21.0"
     eslint-plugin-react-hooks: "npm:^5.2.0"
     eslint-plugin-react-refresh: "npm:^0.4.19"
-    framer-plugin: "npm:^3.2.0"
+    framer-plugin: "npm:^3.3.2"
     framer-plugin-tools: "npm:^1.0.0"
     globals: "npm:^16.0.0"
     jiti: "npm:^2.4.2"

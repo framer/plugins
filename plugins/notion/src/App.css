@@ -1,5 +1,23 @@
 /* Your Plugin CSS */
 
+[data-framer-theme="light"] #root {
+    --framer-color-tint: #000;
+    --framer-color-tint-dark: #262626;
+    --framer-color-tint-extra-dark: #333333;
+}
+
+[data-framer-theme="dark"] #root {
+    --framer-color-tint: #fff;
+    --framer-color-tint-dark: #e3e3e3;
+    --framer-color-tint-extra-dark: #c3c3c3;
+    --framer-color-text-reversed: #000;
+}
+
+[data-framer-theme="dark"] input[type="checkbox"]:checked {
+    /* Copy of the checkbox SVG from the built-in Framer CSS, but with a black stroke color instead of white. */
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHBhdGggZD0iTTMgNmwyIDIgNC00IiBmaWxsPSJ0cmFuc3BhcmVudCIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtZGFzaGFycmF5PSI4LjUiIHN0cm9rZS1kYXNob2Zmc2V0PSIwIj48L3BhdGg+PHBhdGggZD0iTTMgNmw2IDAiIGZpbGw9InRyYW5zcGFyZW50IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtZGFzaGFycmF5PSI2IiBzdHJva2UtZGFzaG9mZnNldD0iNiIgPjwvcGF0aD48L3N2Zz4=) !important;
+}
+
 main {
     display: flex;
     flex-direction: column;

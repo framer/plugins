@@ -3386,6 +3386,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"code-versions@workspace:plugins/code-versions":
+  version: 0.0.0-use.local
+  resolution: "code-versions@workspace:plugins/code-versions"
+  dependencies:
+    "@tailwindcss/vite": "npm:^4.1.11"
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    clsx: "npm:^2.1.1"
+    framer-plugin: "npm:^3.3.2"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    tailwind-merge: "npm:^3.3.1"
+    tailwindcss: "npm:^4.1.11"
+  languageName: unknown
+  linkType: soft
+
 "color-convert@npm:^2.0.1":
   version: 2.0.1
   resolution: "color-convert@npm:2.0.1"
@@ -6640,6 +6656,13 @@ __metadata:
     magic-string: "npm:^0.30.11"
     zimmerframe: "npm:^1.1.2"
   checksum: 10/7fe44d8272374c4f878c744e4024b3882106f1b228f6e5659a3c0c7a8a7db8c901ec1783ae085160015156d81492e2e24a7ee7025572042afb7818b7119969f6
+  languageName: node
+  linkType: hard
+
+"tailwind-merge@npm:^3.3.1":
+  version: 3.3.1
+  resolution: "tailwind-merge@npm:3.3.1"
+  checksum: 10/ad97f0763afdfdce785b8de50bc546951bb3cc803ab4f809cb10d654d9b7e28b0d19dead70ab9070edf479af68622a5f6ba16a21584fa8c21236855709dc648f
   languageName: node
   linkType: hard
 

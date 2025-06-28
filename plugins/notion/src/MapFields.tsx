@@ -110,6 +110,7 @@ const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
     string: "String",
     collectionReference: "Reference",
     multiCollectionReference: "Multi Reference",
+    array: "Gallery",
 }
 
 export function MapDatabaseFields({
@@ -141,7 +142,6 @@ export function MapDatabaseFields({
     )
 
     // TODO: Render progress in UI.
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, setProgress] = useState<SynchronizeProgress | null>(null)
 
     assert(isFullDatabase(database))

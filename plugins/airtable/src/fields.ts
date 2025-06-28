@@ -15,11 +15,17 @@ interface InferredField {
      */
     readonly airtableType?: Exclude<AirtableFieldSchema["type"], "multipleRecordLinks" | "singleSelect">
     readonly allowedTypes?: [AllowedType, ...AllowedType[]]
+    /**
+     * The original Airtable field schema options.
+     * Only set when fields are inferred.
+     */
+    readonly airtableOptions?: AirtableFieldSchema["options"]
 }
 
 interface InferredMultipleRecordLinksField {
     type: "collectionReference" | "multiCollectionReference"
     readonly airtableType: "multipleRecordLinks"
+    readonly airtableOptions?: AirtableFieldSchema["options"]
     readonly single: boolean
     readonly supportedCollections: { id: string; name: string }[]
     readonly allowedTypes?: []
@@ -29,11 +35,14 @@ interface InferredEnumField {
     type: "enum"
     readonly airtableType: "singleSelect"
     readonly airtableCases: { id: string; name: string }[]
+    readonly airtableOptions?: AirtableFieldSchema["options"]
     readonly allowedTypes: ["enum"]
 }
 
 interface InferredUnsupportedField {
     type: "unsupported"
+    readonly airtableType?: AirtableFieldSchema["type"]
+    readonly airtableOptions?: AirtableFieldSchema["options"]
     readonly allowedTypes: [AirtableFieldSchema["type"], ...AirtableFieldSchema["type"][]]
 }
 
@@ -46,7 +55,13 @@ export type PossibleField = (
           type: "unsupported"
       }
 ) &
-    (InferredField | InferredMultipleRecordLinksField | InferredEnumField | InferredUnsupportedField)
+    (InferredField | InferredMultipleRecordLinksField | InferredEnumField | InferredUnsupportedField) & {
+        /**
+         * The original Airtable field type before any transformations.
+         * For lookup fields, this will be "multipleLookupValues".
+         */
+        readonly originalAirtableType?: string
+    }
 
 function inferBooleanField(fieldSchema: AirtableFieldSchema & { type: "checkbox" }): PossibleField {
     return {
@@ -54,8 +69,10 @@ function inferBooleanField(fieldSchema: AirtableFieldSchema & { type: "checkbox"
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
         type: "boolean",
         allowedTypes: ["boolean"],
+        originalAirtableType: fieldSchema.type,
     }
 }
 
@@ -65,6 +82,7 @@ function inferEnumField(fieldSchema: AirtableFieldSchema & { type: "singleSelect
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
         type: "enum",
         cases: fieldSchema.options.choices.map(choice => ({
             id: choice.id,
@@ -75,12 +93,13 @@ function inferEnumField(fieldSchema: AirtableFieldSchema & { type: "singleSelect
             name: choice.name,
         })),
         allowedTypes: ["enum"],
+        originalAirtableType: fieldSchema.type,
     }
 }
 
 function inferNumberField(
     fieldSchema: AirtableFieldSchema & {
-        type: "number" | "percent" | "currency" | "autoNumber" | "rating" | "duration"
+        type: "number" | "percent" | "currency" | "autoNumber" | "rating" | "count"
     }
 ): PossibleField {
     return {
@@ -88,8 +107,23 @@ function inferNumberField(
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
         type: "number",
         allowedTypes: ["number"],
+        originalAirtableType: fieldSchema.type,
+    }
+}
+
+function inferDurationField(fieldSchema: AirtableFieldSchema & { type: "duration" }): PossibleField {
+    return {
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        userEditable: false,
+        airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
+        type: "string",
+        allowedTypes: ["string", "number"],
+        originalAirtableType: fieldSchema.type,
     }
 }
 
@@ -99,8 +133,10 @@ function inferStringField(fieldSchema: AirtableFieldSchema & { type: "singleLine
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
         type: "string",
         allowedTypes: ["string", "formattedText", "color"],
+        originalAirtableType: fieldSchema.type,
     }
 }
 
@@ -110,8 +146,10 @@ function inferEmailOrPhoneField(fieldSchema: AirtableFieldSchema & { type: "emai
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
         type: "string",
         allowedTypes: ["string", "link"],
+        originalAirtableType: fieldSchema.type,
     }
 }
 
@@ -121,8 +159,10 @@ function inferTextField(fieldSchema: AirtableFieldSchema & { type: "multilineTex
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
         type: "formattedText",
         allowedTypes: ["formattedText", "string"],
+        originalAirtableType: fieldSchema.type,
     }
 }
 
@@ -132,8 +172,10 @@ function inferUrlField(fieldSchema: AirtableFieldSchema & { type: "url" }): Poss
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
         type: "link",
-        allowedTypes: ["link", "image", "file"],
+        allowedTypes: ["link", "image", "file", "string"],
+        originalAirtableType: fieldSchema.type,
     }
 }
 
@@ -143,8 +185,10 @@ function inferAttachmentsField(fieldSchema: AirtableFieldSchema & { type: "multi
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
         type: "image",
         allowedTypes: ["image", "file", "link"],
+        originalAirtableType: fieldSchema.type,
     }
 }
 
@@ -158,9 +202,108 @@ function inferDateField(
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
         type: "date",
         allowedTypes: ["date"],
+        originalAirtableType: fieldSchema.type,
     }
+}
+
+function inferBarcodeField(fieldSchema: AirtableFieldSchema & { type: "barcode" }): PossibleField {
+    return {
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        userEditable: false,
+        airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
+        type: "string",
+        allowedTypes: ["string"],
+        originalAirtableType: fieldSchema.type,
+    }
+}
+
+function inferAiTextField(fieldSchema: AirtableFieldSchema & { type: "aiText" }): PossibleField {
+    return {
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        userEditable: false,
+        airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
+        type: "string",
+        allowedTypes: ["string"],
+        originalAirtableType: fieldSchema.type,
+    }
+}
+
+function inferCollaboratorField(
+    fieldSchema: AirtableFieldSchema & {
+        type: "singleCollaborator" | "createdBy" | "lastModifiedBy" | "multipleCollaborators"
+    }
+): PossibleField {
+    return {
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        userEditable: false,
+        airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
+        type: "string",
+        allowedTypes: ["string"],
+        originalAirtableType: fieldSchema.type,
+    }
+}
+
+async function inferLookupField(
+    fieldSchema: AirtableFieldSchema & { type: "multipleLookupValues" },
+    collection: ManagedCollection,
+    tableIdBeingLinkedTo: string
+): Promise<PossibleField> {
+    const { options } = fieldSchema
+
+    // If the lookup field doesn't have a result type, treat as unsupported
+    if (!options.result || typeof options.result !== "object" || !options.result.type) {
+        return createUnsupportedField(fieldSchema)
+    }
+
+    // Use the result object as the field schema for recursive inference
+    const resultSchema = {
+        type: options.result.type as AirtableFieldSchema["type"],
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        options: options.result.options as AirtableFieldSchema["options"],
+    } as AirtableFieldSchema
+
+    // Use the helper functions to infer the appropriate type based on the result
+    const inferredField = await inferFieldByType(resultSchema, collection, tableIdBeingLinkedTo, 1)
+
+    // Return the inferred field with the lookup field metadata
+    return { ...inferredField, originalAirtableType: "multipleLookupValues" } as PossibleField
+}
+
+async function inferRollupField(
+    fieldSchema: AirtableFieldSchema & { type: "rollup" },
+    collection: ManagedCollection,
+    tableIdBeingLinkedTo: string
+): Promise<PossibleField> {
+    const { options } = fieldSchema
+
+    // If the rollup field doesn't have a result type, treat as unsupported
+    if (!options.result || typeof options.result !== "object" || !options.result.type) {
+        return createUnsupportedField(fieldSchema)
+    }
+
+    // Create a temporary schema with the result type for recursive inference
+    const resultSchema = {
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        type: options.result.type as AirtableFieldSchema["type"],
+        options: options.result.options as AirtableFieldSchema["options"],
+    } as AirtableFieldSchema
+
+    // Use the helper functions to infer the appropriate type based on the result
+    const inferredField = await inferFieldByType(resultSchema, collection, tableIdBeingLinkedTo, 1)
+
+    // Return the inferred field with the rollup field metadata
+    return { ...inferredField, originalAirtableType: "rollup" } as PossibleField
 }
 
 async function inferRecordLinksField(
@@ -204,10 +347,12 @@ async function inferRecordLinksField(
             name: fieldSchema.name,
             userEditable: false,
             airtableType: fieldSchema.type,
+            airtableOptions: fieldSchema.options,
             type,
             collectionId: "",
             supportedCollections: [],
             single: fieldSchema.options.prefersSingleRecordLink,
+            originalAirtableType: fieldSchema.type,
         }
     }
 
@@ -216,10 +361,12 @@ async function inferRecordLinksField(
         name: fieldSchema.name,
         userEditable: false,
         airtableType: "multipleRecordLinks",
+        airtableOptions: fieldSchema.options,
         supportedCollections: foundCollections,
         collectionId: foundCollection.id,
         type,
         single: fieldSchema.options.prefersSingleRecordLink,
+        originalAirtableType: fieldSchema.type,
     }
 }
 
@@ -252,7 +399,7 @@ async function inferFieldByType(
         case "currency":
         case "autoNumber":
         case "rating":
-        case "duration":
+        case "count":
             return inferNumberField(fieldSchema)
 
         case "singleLineText":
@@ -284,9 +431,26 @@ async function inferFieldByType(
         case "formula":
             return await inferFormulaField(fieldSchema, collection, tableIdBeingLinkedTo, depth)
 
-        // Future support for Lookup/Rollup can be added here
-        // case "lookup":
-        // case "rollup":
+        case "barcode":
+            return inferBarcodeField(fieldSchema)
+
+        case "aiText":
+            return inferAiTextField(fieldSchema)
+
+        case "singleCollaborator":
+        case "createdBy":
+        case "lastModifiedBy":
+        case "multipleCollaborators":
+            return inferCollaboratorField(fieldSchema)
+
+        case "duration":
+            return inferDurationField(fieldSchema)
+
+        case "multipleLookupValues":
+            return await inferLookupField(fieldSchema, collection, tableIdBeingLinkedTo)
+
+        case "rollup":
+            return await inferRollupField(fieldSchema, collection, tableIdBeingLinkedTo)
 
         default:
             return createUnsupportedField(fieldSchema)
@@ -312,9 +476,12 @@ async function inferFormulaField(
             id: fieldSchema.id,
             name: fieldSchema.name,
             userEditable: false,
+            airtableType: fieldSchema.type,
+            airtableOptions: fieldSchema.options,
             type: "file",
             allowedFileTypes: ALLOWED_FILE_TYPES,
             allowedTypes: ["file", "image", "link"],
+            originalAirtableType: fieldSchema.type,
         }
     }
 
@@ -347,8 +514,11 @@ function createUnsupportedField(fieldSchema: AirtableFieldSchema): PossibleField
         id: fieldSchema.id,
         name: fieldSchema.name,
         userEditable: false,
+        airtableType: fieldSchema.type,
+        airtableOptions: fieldSchema.options,
         type: "unsupported",
         allowedTypes: [fieldSchema.type],
+        originalAirtableType: fieldSchema.type,
     }
 }
 

@@ -1,88 +1,125 @@
-import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
-import { framer } from "framer-plugin"
-import { useEffect, useState } from "react"
 import "./App.css"
-import { Authentication } from "./Authenticate"
-import { logSyncResult } from "./debug"
-import { MapDatabaseFields } from "./MapFields"
-import {
-    type PluginContext,
-    type PluginContextNew,
-    type PluginContextUpdate,
-    useSynchronizeDatabaseMutation,
-} from "./notion"
-import { SelectDatabase } from "./SelectDatabase"
+
+import { framer, type ManagedCollection } from "framer-plugin"
+import { useEffect, useLayoutEffect, useState } from "react"
+import { type DataSource, getDataSource } from "./data"
+import { FieldMapping } from "./FieldMapping"
+import { SelectDataSource } from "./SelectDataSource"
+import { NoTableAccess } from "./NoAccess"
+import { APIErrorCode } from "@notionhq/client"
 
 interface AppProps {
-    context: PluginContext
+    collection: ManagedCollection
+    previousDataSourceId: string | null
+    previousSlugFieldId: string | null
+    previousLastSynced: string | null
+    previousIgnoredFieldIds: string | null
+    previousDatabaseName: string | null
 }
 
-interface AuthenticatedAppProps {
-    context: PluginContextNew | PluginContextUpdate
-}
+export function App({
+    collection,
+    previousDataSourceId,
+    previousSlugFieldId,
+    previousLastSynced,
+    previousIgnoredFieldIds,
+    previousDatabaseName,
+}: AppProps) {
+    const [dataSource, setDataSource] = useState<DataSource | null>(null)
+    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
+    const [hasAccessError, setHasAccessError] = useState(false)
 
-export function AuthenticatedApp({ context }: AuthenticatedAppProps) {
-    const [databaseConfig, setDatabaseConfig] = useState<GetDatabaseResponse | null>(
-        context.type === "update" ? context.database : null
-    )
+    useLayoutEffect(() => {
+        if (hasAccessError) {
+            framer.showUI({
+                width: 280,
+                height: 114,
+                resizable: false,
+            })
+        } else if (dataSource || isLoadingDataSource) {
+            framer.showUI({
+                width: 425,
+                height: 425,
+                minWidth: 360,
+                minHeight: 425,
+                resizable: true,
+            })
+        } else {
+            framer.showUI({
+                width: 260,
+                height: 345,
+                minWidth: 260,
+                minHeight: 345,
+                resizable: false,
+            })
+        }
+    }, [dataSource, isLoadingDataSource])
 
     useEffect(() => {
-        const width = databaseConfig ? 360 : 325
-        const height = databaseConfig ? 425 : 370
-        framer.showUI({
-            width,
-            height,
-            minWidth: width,
-            minHeight: height,
-            // Only allow resizing when mapping fields as the default size could not be enough.
-            // This will keep the given dimensions in the Splash Screen.
-            resizable: Boolean(databaseConfig),
-        })
-    }, [databaseConfig])
+        if (!previousDataSourceId) {
+            return
+        }
 
-    const synchronizeMutation = useSynchronizeDatabaseMutation(databaseConfig, {
-        onError(error) {
-            framer.notify(error.message, { variant: "error" })
-        },
-        onSuccess(result) {
-            logSyncResult(result)
+        const abortController = new AbortController()
 
-            if (result.status === "success") {
-                framer.closePlugin("Synchronization successful")
-                return
-            }
-        },
-    })
+        setIsLoadingDataSource(true)
+        getDataSource(previousDataSourceId, abortController.signal)
+            .then(setDataSource)
+            .catch(error => {
+                if (abortController.signal.aborted) return
 
-    const handleDatabaseSelected = (database: GetDatabaseResponse) => {
-        context.databaseIdMap.set(database.id, context.collection.id)
-        setDatabaseConfig(database)
+                console.error(error)
+
+                // Check for Notion API error codes
+                if (
+                    error.code === APIErrorCode.RestrictedResource ||
+                    error.code === APIErrorCode.ObjectNotFound ||
+                    error.code === APIErrorCode.Unauthorized ||
+                    error.status === 403
+                ) {
+                    setHasAccessError(true)
+                } else {
+                    framer.notify(
+                        `Error loading previously configured database "${previousDatabaseName || previousDataSourceId}". Check the logs for more details.`,
+                        { variant: "error" }
+                    )
+                }
+            })
+            .finally(() => {
+                if (abortController.signal.aborted) return
+
+                setIsLoadingDataSource(false)
+            })
+
+        return () => {
+            abortController.abort()
+        }
+    }, [previousDataSourceId])
+
+    if (isLoadingDataSource) {
+        return (
+            <main className="loading">
+                <div className="framer-spinner" />
+                <p>Loading {previousDatabaseName || "database"}...</p>
+            </main>
+        )
     }
 
-    if (!databaseConfig) {
-        return <SelectDatabase onDatabaseSelected={handleDatabaseSelected} />
+    if (hasAccessError) {
+        return <NoTableAccess previousDatabaseId={previousDataSourceId} />
+    }
+
+    if (!dataSource) {
+        return <SelectDataSource onSelectDataSource={setDataSource} />
     }
 
     return (
-        <MapDatabaseFields
-            database={databaseConfig}
-            pluginContext={context}
-            onSubmit={synchronizeMutation.mutate}
-            isLoading={synchronizeMutation.isPending}
+        <FieldMapping
+            collection={collection}
+            dataSource={dataSource}
+            initialSlugFieldId={previousSlugFieldId}
+            previousLastSynced={previousLastSynced}
+            previousIgnoredFieldIds={previousIgnoredFieldIds}
         />
     )
-}
-
-export function App({ context }: AppProps) {
-    const [pluginContext, setPluginContext] = useState(context)
-
-    const handleAuthenticated = (authenticatedContext: PluginContext) => {
-        setPluginContext(authenticatedContext)
-    }
-
-    if (!pluginContext.isAuthenticated) {
-        return <Authentication context={pluginContext} onAuthenticated={handleAuthenticated} />
-    }
-
-    return <AuthenticatedApp context={pluginContext} />
 }

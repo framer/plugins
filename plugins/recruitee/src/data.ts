@@ -39,7 +39,11 @@ function replaceSupportedCollections(
     return { ...dataSource, fields }
 }
 
-export async function getDataSource(companyId: string, boardToken: string, dataSourceId: string): Promise<RecruiteeDataSource> {
+export async function getDataSource(
+    companyId: string,
+    boardToken: string,
+    dataSourceId: string
+): Promise<RecruiteeDataSource> {
     if (!companyId) {
         throw new Error("No Company Id Found. Please provide Company ID.")
     }
@@ -101,7 +105,7 @@ export function mergeFieldsWithExistingFields(
 async function getItems(
     dataSource: RecruiteeDataSource,
     fieldsToSync: readonly ManagedCollectionFieldInput[],
-    { boardToken, slugFieldId , companyId}: { boardToken: string; slugFieldId: string; companyId:string }
+    { boardToken, slugFieldId, companyId }: { boardToken: string; slugFieldId: string; companyId: string }
 ): Promise<ManagedCollectionItemInput[]> {
     const items: ManagedCollectionItemInput[] = []
 
@@ -235,7 +239,7 @@ export async function syncCollection(
     const items = await getItems(dataSource, fields, {
         boardToken,
         slugFieldId: slugField.id,
-        companyId: companyId
+        companyId: companyId,
     })
     const itemIds = new Set(items.map(item => item.id))
     const unsyncedItemsIds = existingItemsIds.filter(existingItemId => !itemIds.has(existingItemId))

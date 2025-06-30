@@ -9,7 +9,7 @@ import {
     dataSourceIdPluginKey,
     slugFieldIdPluginKey,
     spaceIdPluginKey,
-    syncExistingCollection
+    syncExistingCollection,
 } from "./data"
 
 const lastUsedBoardToken = await framer.getPluginData(spaceIdPluginKey)

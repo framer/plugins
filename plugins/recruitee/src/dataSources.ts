@@ -1,10 +1,10 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
 import {
     type RecruiteeItem,
-    validateOffers,
-    validateLocations,
+    validateCandidates,
     validateDepartments,
-    validateCandidates
+    validateLocations,
+    validateOffers,
 } from "./api-types"
 
 export interface RecruiteeDataSource {
@@ -25,22 +25,17 @@ async function fetchRecruiteeData(url: string, boardToken: string, itemsKey: str
     try {
         const response = await fetch(url, {
             headers: new Headers({
-                'Authorization': 'Bearer '+boardToken
-            })
+                Authorization: "Bearer " + boardToken,
+            }),
         })
-        const data = await response.json()
-        const items = []
 
-        if (data?.meta?.total_count && data?.meta?.per_page) {
-            const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
-            for (let i = 0; i < pages; i++) {
-                const response = await fetch(`${url}?page=${i + 1}`)
-                const data = await response.json()
-                items.push(...(data[itemsKey] as unknown[]))
-            }
-        } else {
-            items.push(...(data[itemsKey] as unknown[]))
+        if (response.status !== 200) {
+            const error = await response.json()
+            throw new Error(`${error.error}`)
         }
+
+        const data = await response.json()
+        const items = data[itemsKey]
 
         return items
     } catch (error) {
@@ -69,7 +64,7 @@ const locationDataSource = createDataSource(
     {
         name: "Locations",
         apiPath: "locations",
-        fetch: async (boardToken: string, companyId:string) => {
+        fetch: async (boardToken: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/locations`
             const items = await fetchRecruiteeData(url, boardToken, "locations")
             validateLocations(items)
@@ -79,10 +74,10 @@ const locationDataSource = createDataSource(
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
-        { id: "city", name: "City", type: "string"},
-        { id: "state_name", name: "State", type: "string"},
-        { id: "country_code", name: "Country", type: "string"},
-        { id: "full_address", name: "Full Address", type: "string"},
+        { id: "city", name: "City", type: "string" },
+        { id: "state_name", name: "State", type: "string" },
+        { id: "country_code", name: "Country", type: "string" },
+        { id: "full_address", name: "Full Address", type: "string" },
     ]
 )
 
@@ -90,7 +85,7 @@ const offersDataSource = createDataSource(
     {
         name: "Offers",
         apiPath: "offers",
-        fetch: async (boardToken: string, companyId:string) => {
+        fetch: async (boardToken: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/offers`
             const items = await fetchRecruiteeData(url, boardToken, "offers")
             validateOffers(items)
@@ -129,7 +124,7 @@ const departmentsDataSource = createDataSource(
     {
         name: "Departments",
         apiPath: "departments",
-        fetch: async (boardToken: string, companyId:string) => {
+        fetch: async (boardToken: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/departments`
             const items = await fetchRecruiteeData(url, boardToken, "departments")
             validateDepartments(items)
@@ -140,7 +135,7 @@ const departmentsDataSource = createDataSource(
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
         { id: "status", name: "Status", type: "string" },
-        { id: "offers_count", name: "Offers Count", type: "number" }
+        { id: "offers_count", name: "Offers Count", type: "number" },
     ]
 )
 
@@ -148,7 +143,7 @@ const candidatesDataSource = createDataSource(
     {
         name: "Candidates",
         apiPath: "candidates",
-        fetch: async (boardToken: string, companyId:string) => {
+        fetch: async (boardToken: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/candidates`
             const items = await fetchRecruiteeData(url, boardToken, "candidates")
             validateCandidates(items)
@@ -158,9 +153,9 @@ const candidatesDataSource = createDataSource(
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
-        { id: "emails", name: "Emails", type: "string"},
-        { id: "phones", name: "Phones", type: "string"},
-        { id: "positive_ratings", name: "Ratings", type: "number"}
+        { id: "emails", name: "Emails", type: "string" },
+        { id: "phones", name: "Phones", type: "string" },
+        { id: "positive_ratings", name: "Ratings", type: "number" },
     ]
 )
 
@@ -168,7 +163,7 @@ export const dataSources = [
     offersDataSource,
     locationDataSource,
     departmentsDataSource,
-    candidatesDataSource
+    candidatesDataSource,
 ] satisfies RecruiteeDataSource[]
 
 function createDataSource(

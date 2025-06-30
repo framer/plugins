@@ -1,14 +1,34 @@
+export interface Address {
+    addressLocality: string
+    addressRegion: string
+    addressCountry: string
+}
+
+export interface CompensationComponent {
+    id: string
+    summary: string
+    compensationType: string
+    interval: string
+    currencyCode: string | null
+    minValue: number | null
+    maxValue: number | null
+}
+
+export interface CompensationTiers {
+    id: string
+    tierSummary: string
+    title: string
+    additionalInformation: string | null
+    components: CompensationComponent[]
+}
+
 export interface Job {
     id: string
     title: string
     location: string
     secondaryLocations: {
         location: string
-        address: {
-            addressLocality: string
-            addressRegion: string
-            addressCountry: string
-        }
+        address: Address
     }[]
     department: string | null
     team: string | null
@@ -19,23 +39,17 @@ export interface Job {
     publishedAt: string
     employmentType: string
     address: {
-        postalAddress: {
-            addressLocality: string
-            addressRegion: string
-            addressCountry: string
-        }
+        postalAddress: Address
     }
     jobUrl: string
     applyUrl: string
-    compensation?: {
+    compensation: {
         compensationTierSummary: string
         scrapeableCompensationSalarySummary: string
-        compensationTiers: unknown[]
-        summaryComponents: unknown[]
+        compensationTiers: CompensationTiers[]
+        summaryComponents: CompensationComponent[]
     }
 }
-
-
 
 export type AshbyItem = Job
 
@@ -61,6 +75,24 @@ export function validateJobs(data: unknown): asserts data is Job[] {
         }
         if (typeof item.jobUrl !== "string") {
             throw new Error("Expected job to have a string 'jobUrl'")
+        }
+        if (typeof item.isListed !== "boolean") {
+            throw new Error("Expected job to have a boolean 'isListed'")
+        }
+        if (typeof item.address !== "object" || item.address === null) {
+            throw new Error("Expected job to have an 'address' object")
+        }
+        if (typeof item.address.postalAddress !== "object" || item.address.postalAddress === null) {
+            throw new Error("Expected job address to have a 'postalAddress' object")
+        }
+        if (typeof item.compensation !== "object" || item.compensation === null) {
+            throw new Error("Expected job to have an 'compensation' object")
+        }
+        if (typeof item.compensation.compensationTiers !== "object" || item.compensation.compensationTiers === null) {
+            throw new Error("Expected job to have an 'compensation.compensationTiers' object")
+        }
+        if (typeof item.compensation.summaryComponents !== "object" || item.compensation.summaryComponents === null) {
+            throw new Error("Expected job to have an 'compensation.summaryComponents' object")
         }
     }
 }

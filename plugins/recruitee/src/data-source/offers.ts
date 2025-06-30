@@ -1,5 +1,3 @@
-// import CategoryDataSource from "./categories"
-
 import type { CollectionReferenceField, Field, RecruiteeDataSource } from "./types"
 
 const idField: Field = { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true }
@@ -24,7 +22,7 @@ const companyNameField: Field = {
 }
 
 const firstPublishedField: Field = {
-    id: "first_published",
+    id: "created_at",
     name: "First Published",
     type: "date",
 }

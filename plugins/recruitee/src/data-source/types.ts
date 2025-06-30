@@ -2,6 +2,7 @@ import type { ManagedCollectionFieldInput } from "framer-plugin"
 import OffersDataSource from "./offers"
 import LocationsDataSource from "./locations";
 import DepartmentsDataSource from "./departments";
+import CandidatesDataSource from "./candidates";
 
 export type Field = {
     id: string
@@ -29,5 +30,6 @@ export type RecruiteeDataSource = {
 export const dataSources: RecruiteeDataSource[] = [
     OffersDataSource,
     LocationsDataSource,
-    DepartmentsDataSource
+    DepartmentsDataSource,
+    CandidatesDataSource
 ]

@@ -58,16 +58,9 @@ export type AshbyField = ManagedCollectionFieldInput &
           }
     )
 
-
-
-
-
-    
-const jobsDataSourceName = "Jobs"
-
 const jobsDataSource = createDataSource(
     {
-        name: jobsDataSourceName,
+        name: "Jobs",
         apiPath: "job-board",
         fetch: async (boardToken: string) => {
             const url = `https://api.ashbyhq.com/posting-api/job-board/${boardToken}?includeCompensation=true`

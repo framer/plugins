@@ -1,7 +1,7 @@
 # Recruitee Plugin
 
-Plugin for syncing Recruitee openings into the Framer CMS.
+Plugin for syncing Recruitee Data into the Framer CMS.
 
 **By:** @sushilzore
 
-![Recruitee Image](assets/Asset.png)
+![Recruitee Image](src/assets/hero.png)

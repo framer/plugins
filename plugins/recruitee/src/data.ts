@@ -2,250 +2,95 @@ import {
     type FieldDataInput,
     framer,
     type ManagedCollection,
-    ManagedCollectionFieldInput,
+    type ManagedCollectionFieldInput,
     type ManagedCollectionItemInput,
-    ProtectedMethod,
+    type ProtectedMethod,
 } from "framer-plugin"
-import pkg from "../package.json"
-import { createUniqueSlug } from "./utils"
-import { CollectionReferenceField, dataSources } from "./data-source/types"
+import { isRecruiteeItemField } from "./api-types"
+import { dataSources, type RecruiteeDataSource, type RecruiteeField } from "./dataSources"
+import { assertNever, decodeHtml, isCollectionReference } from "./utils"
 
-export const PLUGIN_KEYS = {
-    DATA_SOURCE_ID: "dataSourceId",
-    SLUG_FIELD_ID: "slugFieldId",
-    SPACE_ID: `${pkg.name}:spaceId`,
-    COMPANY_ID: 'companyId'
-} as const
+export const dataSourceIdPluginKey = "dataSourceId"
+export const slugFieldIdPluginKey = "slugFieldId"
+export const spaceIdPluginKey = "spaceId"
 
-function getApiEndpoint(companyId: string, boardToken: string, dataSourceId: string) {
-    return `https://api.recruitee.com/c/${companyId}/${dataSourceId}`
+export const companyIdPluginKey = "companyId"
+
+function replaceSupportedCollections(
+    dataSource: RecruiteeDataSource,
+    fieldToCollectionsMap: Map<string, ManagedCollection[]>
+): RecruiteeDataSource {
+    const fields = dataSource.fields.map(field => {
+        if (!isCollectionReference(field)) return field
+
+        const matchingCollections = fieldToCollectionsMap.get(field.id)
+
+        return {
+            ...field,
+            collectionId: matchingCollections?.[0]?.id ?? "",
+            supportedCollections:
+                matchingCollections?.map(collection => ({
+                    id: collection.id,
+                    name: collection.name,
+                })) ?? [],
+        }
+    })
+
+    return { ...dataSource, fields }
 }
 
-function decodeHtml(html: string) {
-    const textarea = document.createElement("textarea")
-    textarea.innerHTML = html
-    return textarea.value
-}
-
-export const dataSourceOptions = dataSources
-
-// this is used in FieldMapping.tsx to display the collections options in the dropdown
-export type ExtendedManagedCollectionFieldInput = ManagedCollectionFieldInput & {
-    supportedCollections?: ManagedCollection[]
-    canBeUsedAsSlug?: boolean
-}
-
-export interface DataSource {
-    boardToken: string
-    companyId: string
-    id: string
-    fields: readonly ExtendedManagedCollectionFieldInput[]
-    items: FieldDataInput[]
-    idField: ManagedCollectionFieldInput
-    slugField: ManagedCollectionFieldInput | null
-}
-
-export async function getDataSource(
-    companyId: string,
-    boardToken: string,
-    dataSourceId: string,
-    abortSignal?: AbortSignal
-): Promise<DataSource> {
+export async function getDataSource(companyId: string, boardToken: string, dataSourceId: string): Promise<RecruiteeDataSource> {
+    if (!companyId) {
+        throw new Error("No Company Id Found. Please provide Company ID.")
+    }
     if (!boardToken) {
         throw new Error("No Board Token found. Please select a board.")
     }
-
-    const dataSource = dataSourceOptions.find(option => option.id === dataSourceId)
+    const dataSource = dataSources.find(option => option.id === dataSourceId)
     if (!dataSource) {
         throw new Error(`No data source found for id "${dataSourceId}".`)
     }
 
-    const response = await fetch(
-        getApiEndpoint(companyId, boardToken, dataSource.apiEndpoint),
-        {
-                signal: abortSignal,
-                headers: new Headers({
-                'Authorization': 'Bearer '+boardToken
-                })
-        }
-    )
-    const data = await response.json()
+    const fieldToCollectionsMap = new Map<string, ManagedCollection[]>()
+    const boardCollections: ManagedCollection[] = []
 
-    const collections = await framer.getManagedCollections()
-    const collectionsMap: Map<string, ManagedCollection[]> = new Map()
-    for (const collection of collections) {
-        const collectionSpaceId = await collection.getPluginData(PLUGIN_KEYS.SPACE_ID)
-        const dataSourceId = await collection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-        if (collectionSpaceId === boardToken && dataSourceId) {
-            const value = collectionsMap.get(dataSourceId)
-            if (value) {
-                value.push(collection)
-                collectionsMap.set(dataSourceId, value)
-            } else {
-                collectionsMap.set(dataSourceId, [collection])
-            }
+    const managedCollections = await framer.getManagedCollections()
+    for (const collection of managedCollections) {
+        const collectionBoardToken = await collection.getPluginData(spaceIdPluginKey)
+        if (collectionBoardToken !== boardToken) {
+            continue
         }
+
+        boardCollections.push(collection)
     }
 
-    const fields: ExtendedManagedCollectionFieldInput[] = []
+    if (boardCollections.length > 0) {
+        for (const field of dataSource.fields) {
+            if (!isCollectionReference(field)) continue
 
-    for (const field of dataSource.fields) {
-        if (field.type === "multiCollectionReference" || field.type === "collectionReference") {
-            // field is a collection reference field
-            const referenceCollectionId = (field as CollectionReferenceField)?.getCollection()?.id
-            const matchingCollections = collectionsMap.get(referenceCollectionId)
+            const matchingCollections: ManagedCollection[] = []
+            for (const collection of boardCollections) {
+                const collectionDataSourceId = await collection.getPluginData(dataSourceIdPluginKey)
+                if (collectionDataSourceId !== field.dataSourceId) continue
 
-            if (!matchingCollections) {
-                console.warn(`No collection found for data source "${referenceCollectionId}".`)
+                matchingCollections.push(collection)
             }
 
-            fields.push({
-                id: field.id,
-                name: field.name,
-                type: field.type,
-                collectionId: matchingCollections?.[0]?.id ?? "", // if no collection is found, the field will be visible but not imported
-                supportedCollections: matchingCollections,
-                canBeUsedAsSlug: field.canBeUsedAsSlug,
-            })
-        } else {
-            switch (field.type) {
-                case "string":
-                case "number":
-                case "boolean":
-                case "color":
-                case "formattedText":
-                case "date":
-                case "link":
-                    fields.push({
-                        id: field.id,
-                        name: field.name,
-                        type: field.type,
-                        canBeUsedAsSlug: field.canBeUsedAsSlug,
-                    })
-                    break
-                case "image":
-                case "file":
-                case "enum":
-                    console.warn(`Support for field type "${field.type}" is not implemented in this Plugin.`)
-                    break
-                default: {
-                    console.warn(`Unknown field type "${field.type}".`)
-                }
-            }
+            fieldToCollectionsMap.set(field.id, matchingCollections)
         }
     }
 
-    const items: FieldDataInput[] = []
-
-    const unknownFields = new Set<string>()
-    const warnings = new Set<string>()
-
-    for (const item of data[dataSource.itemsKey]) {
-        const itemData: FieldDataInput = {}
-        for (const [fieldName, rawValue] of Object.entries(item)) {
-            const field = dataSource.fields.find(field => field.id === fieldName)
-
-            if (field) {
-                let value = rawValue
-
-                if (field.map) {
-                    value = field.map(value)
-                }
-
-                switch (field.type) {
-                    case "string":
-                        itemData[field.id] = { value: String(value), type: field.type }
-                        break
-                    case "number":
-                        itemData[field.id] = { value: Number(value), type: field.type }
-                        break
-                    case "boolean":
-                        itemData[field.id] = { value: Boolean(value), type: field.type }
-                        break
-                    case "color":
-                        itemData[field.id] = { value: String(value), type: field.type }
-                        break
-                    case "formattedText":
-                        itemData[field.id] = { value: decodeHtml(String(value)), type: field.type }
-                        break
-                    case "date":
-                        itemData[field.id] = { value: String(value), type: field.type }
-                        break
-                    case "link":
-                        itemData[field.id] = { value: String(value), type: field.type }
-                        break
-                    case "multiCollectionReference":
-                        if (Array.isArray(value) && value.every(item => typeof item === "string")) {
-                            itemData[field.id] = { value, type: field.type }
-                        } else {
-                            warnings.add(
-                                `Expected array of strings for multiCollectionReference field "${field.name}".`
-                            )
-                        }
-                        break
-                    case "collectionReference":
-                        if (typeof value === "string") {
-                            itemData[field.id] = { value, type: field.type }
-                        } else {
-                            warnings.add(`Expected string for collectionReference field "${field.name}".`)
-                        }
-                        break
-                }
-            } else {
-                unknownFields.add(fieldName)
-            }
-        }
-        items.push(itemData)
-    }
-
-    if (unknownFields.size > 0) {
-        console.warn(`Unknown fields: ${Array.from(unknownFields).join(", ")}.`)
-    }
-
-    if (warnings.size > 0) {
-        for (const warning of warnings) {
-            console.warn(warning)
-        }
-    }
-
-    let idField: ManagedCollectionFieldInput
-    let slugField: ManagedCollectionFieldInput | null = null
-
-    if (dataSource.idField.type === "string") {
-        idField = {
-            id: dataSource.idField.id,
-            name: dataSource.idField.name,
-            type: dataSource.idField.type,
-        }
-    } else {
-        throw new Error(`ID field type "${dataSource.idField.type}" is not supported.`)
-    }
-
-    if (dataSource.slugField?.type === "string") {
-        slugField = {
-            id: dataSource.slugField.id,
-            name: dataSource.slugField.name,
-            type: dataSource.slugField.type,
-        }
-    }
-
-    return {
-        companyId,
-        boardToken,
-        id: dataSourceId,
-        fields,
-        items,
-        idField,
-        slugField,
-    }
+    return replaceSupportedCollections(dataSource, fieldToCollectionsMap)
 }
 
 export function mergeFieldsWithExistingFields(
-    sourceFields: readonly ManagedCollectionFieldInput[],
+    sourceFields: readonly RecruiteeField[],
     existingFields: readonly ManagedCollectionFieldInput[]
-): ManagedCollectionFieldInput[] {
+): RecruiteeField[] {
+    const existingFieldsMap = new Map(existingFields.map(field => [field.id, field]))
+
     return sourceFields.map(sourceField => {
-        const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
+        const existingField = existingFieldsMap.get(sourceField.id)
         if (existingField) {
             return { ...sourceField, name: existingField.name }
         }
@@ -253,68 +98,154 @@ export function mergeFieldsWithExistingFields(
     })
 }
 
-export async function syncCollection(
-    collection: ManagedCollection,
-    dataSource: DataSource,
-    fields: readonly ManagedCollectionFieldInput[],
-    slugField: ManagedCollectionFieldInput
-) {
-    const sanitizedFields = fields.map(field => ({
-        ...field,
-        name: field.name.trim() || field.id,
-    }))
-
+async function getItems(
+    dataSource: RecruiteeDataSource,
+    fieldsToSync: readonly ManagedCollectionFieldInput[],
+    { boardToken, slugFieldId , companyId}: { boardToken: string; slugFieldId: string; companyId:string }
+): Promise<ManagedCollectionItemInput[]> {
     const items: ManagedCollectionItemInput[] = []
-    const unsyncedItems = new Set(await collection.getItemIds())
 
-    const existingSlugs = new Map<string, number>()
+    const dataItems = await dataSource.fetch(boardToken, companyId)
 
-    for (let i = 0; i < dataSource.items.length; i++) {
-        const item = dataSource.items[i]
-        if (!item) throw new Error("Logic error")
+    const itemIdBySlug: Map<string, string> = new Map()
+    const idField = fieldsToSync[0]
+    if (!idField) {
+        throw new Error("No ID field found in data source.")
+    }
 
-        const slugValue = item[slugField.id]
-        if (!slugValue || typeof slugValue.value !== "string") {
-            console.warn(`Skipping item at index ${i} because it doesn't have a valid slug`)
+    for (const item of dataItems) {
+        if (!isRecruiteeItemField(slugFieldId, item)) {
+            throw new Error(`No slug field found in data source.`)
+        }
+
+        const id = String(item.id)
+        const slug = String(item[slugFieldId]).trim()
+
+        if (!itemIdBySlug.has(slug)) {
+            itemIdBySlug.set(slug, id)
             continue
         }
 
-        const idValue = item[dataSource.idField?.id ?? ""]
-        if (!idValue || typeof idValue.value !== "string") {
-            console.warn(`Skipping item at index ${i} because it doesn't have a valid id`)
+        const uniqueSlug = `${slug} ${id}`
+        itemIdBySlug.set(uniqueSlug, id)
+    }
+
+    const slugByItemId: Map<string, string> = new Map()
+    for (const [slug, itemId] of itemIdBySlug.entries()) {
+        slugByItemId.set(itemId, slug)
+    }
+
+    for (const item of dataItems) {
+        const id = String(item.id)
+        const slug = slugByItemId.get(id)
+        if (!slug) {
             continue
         }
-
-        unsyncedItems.delete(slugValue.value)
 
         const fieldData: FieldDataInput = {}
-        for (const [fieldName, value] of Object.entries(item)) {
-            const field = sanitizedFields.find(field => field.id === fieldName)
+        for (const [fieldName, rawValue] of Object.entries(item)) {
+            const isFieldIgnored = !fieldsToSync.find(field => field.id === fieldName)
+            const field = dataSource.fields.find(field => field.id === fieldName)
 
-            // Field is in the data but skipped based on selected fields.
-            if (!field) continue
+            if (!field || isFieldIgnored) {
+                continue
+            }
 
-            // For details on expected field value, see:
-            // https://www.framer.com/developers/plugins/cms#collections
-            fieldData[field.id] = value
+            const value = field.getValue ? field.getValue(rawValue) : rawValue
+
+            switch (field.type) {
+                case "string":
+                    fieldData[field.id] = {
+                        value: value ? String(value) : "",
+                        type: "string",
+                    }
+                    break
+                case "number":
+                    fieldData[field.id] = { value: Number(value), type: "number" }
+                    break
+                case "boolean":
+                    fieldData[field.id] = { value: Boolean(value), type: "boolean" }
+                    break
+                case "formattedText":
+                    fieldData[field.id] = {
+                        value: decodeHtml(String(value)),
+                        type: "formattedText",
+                    }
+                    break
+                case "color":
+                case "date":
+                case "link":
+                    fieldData[field.id] = {
+                        value: value ? String(value) : null,
+                        type: field.type,
+                    }
+                    break
+                case "multiCollectionReference": {
+                    const ids: string[] = []
+                    if (Array.isArray(value)) {
+                        ids.push(...value.map(item => String(item.id)))
+                    }
+
+                    fieldData[field.id] = {
+                        value: ids,
+                        type: "multiCollectionReference",
+                    }
+                    break
+                }
+                case "collectionReference": {
+                    if (typeof value !== "object" || value == null || !("id" in value)) {
+                        continue
+                    }
+
+                    fieldData[field.id] = {
+                        value: String(value.id),
+                        type: "collectionReference",
+                    }
+                    break
+                }
+                case "image":
+                case "file":
+                case "enum":
+                    throw new Error(`${field.type} field is not supported.`)
+                default:
+                    assertNever(field)
+            }
         }
 
         items.push({
-            id: idValue.value,
-            slug: createUniqueSlug(slugValue.value, existingSlugs),
+            id,
+            slug,
             draft: false,
             fieldData,
         })
     }
 
-    await collection.setFields(sanitizedFields)
-    await collection.removeItems(Array.from(unsyncedItems))
-    await collection.addItems(items)
+    return items
+}
 
-    await collection.setPluginData(PLUGIN_KEYS.SPACE_ID, dataSource.boardToken)
-    await collection.setPluginData(PLUGIN_KEYS.COMPANY_ID, dataSource.companyId)
-    await collection.setPluginData(PLUGIN_KEYS.DATA_SOURCE_ID, dataSource.id)
-    await collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id)
+export async function syncCollection(
+    companyId: string,
+    boardToken: string,
+    collection: ManagedCollection,
+    dataSource: RecruiteeDataSource,
+    fields: readonly ManagedCollectionFieldInput[],
+    slugField: ManagedCollectionFieldInput
+): Promise<void> {
+    const existingItemsIds = await collection.getItemIds()
+    const items = await getItems(dataSource, fields, {
+        boardToken,
+        slugFieldId: slugField.id,
+        companyId: companyId
+    })
+    const itemIds = new Set(items.map(item => item.id))
+    const unsyncedItemsIds = existingItemsIds.filter(existingItemId => !itemIds.has(existingItemId))
+
+    await collection.removeItems(unsyncedItemsIds)
+    await collection.addItems(items)
+    await collection.setPluginData(companyIdPluginKey, companyId)
+    await collection.setPluginData(spaceIdPluginKey, boardToken)
+    await collection.setPluginData(dataSourceIdPluginKey, dataSource.id)
+    await collection.setPluginData(slugFieldIdPluginKey, slugField.id)
 }
 
 export const syncMethods = [
@@ -339,6 +270,9 @@ export async function syncExistingCollection(
     }
 
     if (!framer.isAllowedTo(...syncMethods)) {
+        framer.closePlugin("You are not allowed to sync this collection.", {
+            variant: "error",
+        })
         return { didSync: false }
     }
 
@@ -354,7 +288,7 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        await syncCollection(collection, dataSource, existingFields, slugField)
+        await syncCollection(previousCompanyId, previousBoardToken, collection, dataSource, existingFields, slugField)
         return { didSync: true }
     } catch (error) {
         console.error(error)

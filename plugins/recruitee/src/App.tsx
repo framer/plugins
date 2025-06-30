@@ -2,91 +2,97 @@ import "./App.css"
 
 import { framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
-import { type DataSource, getDataSource, PLUGIN_KEYS } from "./data"
 import { FieldMapping } from "./components/FieldMapping"
+import { Loading } from "./components/Loading"
 import { SelectDataSource } from "./components/SelectDataSource"
+import {companyIdPluginKey, getDataSource, spaceIdPluginKey} from "./data"
+import type { RecruiteeDataSource } from "./dataSources"
 
 interface AppProps {
     collection: ManagedCollection
     previousDataSourceId: string | null
     previousSlugFieldId: string | null
+    previousBoardToken: string | null
     previousCompanyId: string | null
 }
 
-export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken,previousCompanyId }: AppProps) {
-    const [dataSource, setDataSource] = useState<DataSource | null>(null)
-    const [isLoading, setIsLoading] = useState(Boolean(previousDataSourceId || previousBoardToken))
+export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken, previousCompanyId }: AppProps) {
+    const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
+    const [companyId, setCompanyId] = useState<string>(previousCompanyId ?? "")
+    const [dataSource, setDataSource] = useState<RecruiteeDataSource | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
 
     useLayoutEffect(() => {
         const hasDataSourceSelected = Boolean(dataSource)
 
         framer.showUI({
-            width: hasDataSourceSelected ? 320 : 320,
+            width: hasDataSourceSelected ? 400 : 320,
             height: hasDataSourceSelected ? 427 : 325,
             minHeight: hasDataSourceSelected ? 427 : undefined,
+            minWidth: hasDataSourceSelected ? 400 : undefined,
             resizable: hasDataSourceSelected,
         })
     }, [dataSource])
 
     useEffect(() => {
-        const abortController = new AbortController()
+        if (!previousBoardToken || !previousDataSourceId || !previousCompanyId) return
 
-        async function init() {
-            try {
-                if (!previousBoardToken || !previousDataSourceId || !previousCompanyId) return
-
-                setIsLoading(true)
-
-                const dataSource = await getDataSource(previousCompanyId, previousBoardToken, previousDataSourceId, abortController.signal)
-                if (dataSource) {
-                    setDataSource(dataSource)
-                } else {
-                    throw new Error(
-                        `Error loading previously configured data source “${previousDataSourceId}”. Check the logs for more details.`
-                    )
-                }
-            } catch (error) {
-                if (abortController.signal.aborted) return
-                console.error(error)
-                framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
+        setIsLoading(true)
+        getDataSource(previousCompanyId, previousBoardToken, previousDataSourceId)
+            .then(setDataSource)
+            .catch(error => {
+                console.error(`Error loading previously configured data source “${previousDataSourceId}”.`, error)
+                framer.notify(`Error loading previously configured data source “${previousDataSourceId}”.`, {
                     variant: "error",
                 })
-            } finally {
-                if (!abortController.signal.aborted) {
-                    setIsLoading(false)
-                }
-            }
-        }
+            })
+            .finally(() => {
+                setIsLoading(false)
+            })
+    }, [previousCompanyId, previousDataSourceId, previousBoardToken])
 
-        init()
+    useEffect(() => {
+        if (!boardToken) return
+        if (boardToken === previousBoardToken) return
 
-        return () => {
-            abortController.abort()
+        if (framer.isAllowedTo("setPluginData")) {
+            framer.setPluginData(spaceIdPluginKey, boardToken)
         }
-    }, [previousDataSourceId, previousBoardToken, previousCompanyId])
+    }, [boardToken, previousBoardToken])
+
+    useEffect(() => {
+        if (!companyId) return
+        if (companyId === previousCompanyId) return
+
+        if (framer.isAllowedTo("setPluginData")) {
+            framer.setPluginData(companyIdPluginKey, companyId)
+        }
+    },[companyId, previousCompanyId])
 
     if (isLoading) {
-        return (
-            <main className="loading">
-                <div className="framer-spinner" />
-            </main>
-        )
+        return <Loading />
     }
 
-    if (!dataSource) {
+    if (!boardToken || !dataSource) {
         return (
             <SelectDataSource
-                onSelectDataSource={dataSource => {
-                    setDataSource(dataSource)
-                    framer.setPluginData(PLUGIN_KEYS.SPACE_ID, dataSource.boardToken)
-                    framer.setPluginData(PLUGIN_KEYS.COMPANY_ID, dataSource.companyId)
-                }}
+                previousCompanyId={previousCompanyId}
+                onSelectCompanyId={setCompanyId}
+                onSelectBoardToken={setBoardToken}
+                onSelectDataSource={setDataSource}
                 previousDataSourceId={previousDataSourceId}
                 previousBoardToken={previousBoardToken}
-                previousCompanyId={previousCompanyId}
             />
         )
     }
 
-    return <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
+    return (
+        <FieldMapping
+            collection={collection}
+            companyId={companyId}
+            boardToken={boardToken}
+            dataSource={dataSource}
+            initialSlugFieldId={previousSlugFieldId}
+        />
+    )
 }

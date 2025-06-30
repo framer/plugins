@@ -1,17 +1,29 @@
 import "framer-plugin/framer.css"
+
 import { framer } from "framer-plugin"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { App } from "./App.tsx"
-import { PLUGIN_KEYS, syncExistingCollection } from "./data"
+import {
+    companyIdPluginKey,
+    dataSourceIdPluginKey,
+    slugFieldIdPluginKey,
+    spaceIdPluginKey,
+    syncExistingCollection
+} from "./data"
 
-const previousBoardToken = await framer.getPluginData(PLUGIN_KEYS.SPACE_ID)
+const lastUsedBoardToken = await framer.getPluginData(spaceIdPluginKey)
+const lastUsedCompanyId = await framer.getPluginData(companyIdPluginKey)
+
 const activeCollection = await framer.getActiveManagedCollection()
 
-const previousDataSourceId = await activeCollection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID)
-const previousSlugFieldId = await activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID)
-const previousCollectionBoardToken = await activeCollection.getPluginData(PLUGIN_KEYS.SPACE_ID)
-const previousCompanyId = await framer.getPluginData(PLUGIN_KEYS.COMPANY_ID)
+const previousDataSourceId = await activeCollection.getPluginData(dataSourceIdPluginKey)
+const previousSlugFieldId = await activeCollection.getPluginData(slugFieldIdPluginKey)
+const previousCollectionBoardToken = await activeCollection.getPluginData(spaceIdPluginKey)
+const previousCollectionCompanyId = await activeCollection.getPluginData(companyIdPluginKey)
+
+const previousBoardToken = previousCollectionBoardToken ?? lastUsedBoardToken
+const previousCompanyId = previousCollectionCompanyId ?? lastUsedCompanyId
 
 const { didSync } = await syncExistingCollection(
     activeCollection,
@@ -35,7 +47,7 @@ if (didSync) {
                 collection={activeCollection}
                 previousDataSourceId={previousDataSourceId}
                 previousSlugFieldId={previousSlugFieldId}
-                previousBoardToken={previousCollectionBoardToken ?? previousBoardToken}
+                previousBoardToken={previousBoardToken}
                 previousCompanyId={previousCompanyId}
             />
         </StrictMode>

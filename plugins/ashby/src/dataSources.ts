@@ -1,11 +1,7 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
 import {
     type AshbyItem,
-    // validateDepartments,
-    // validateEducations,
-    validateJobs,
-    // validateOffices,
-    // validateSections,
+    validateJobs,   
 } from "./api-types"
 
 export interface AshbyDataSource {
@@ -62,106 +58,12 @@ export type AshbyField = ManagedCollectionFieldInput &
           }
     )
 
-// const degreesDataSource = createDataSource(
-//     {
-//         name: "Degrees",
-//         apiPath: "education/degrees",
-//         fetch: async (boardToken: string) => {
-//             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/degrees`
-//             const items = await fetchAshbyData(url, "items")
-//             validateEducations(items)
-//             return items
-//         },
-//     },
-//     [
-//         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-//         { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
-//     ]
-// )
 
-// const schoolsDataSource = createDataSource(
-//     {
-//         name: "Schools",
-//         apiPath: "education/schools",
-//         fetch: async (boardToken: string) => {
-//             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/schools`
-//             const items = await fetchAshbyData(url, "items")
-//             validateEducations(items)
-//             return items
-//         },
-//     },
-//     [
-//         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-//         { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
-//     ]
-// )
 
-// const disciplinesDataSource = createDataSource(
-//     {
-//         name: "Disciplines",
-//         apiPath: "education/disciplines",
-//         fetch: async (boardToken: string) => {
-//             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/disciplines`
-//             const items = await fetchAshbyData(url, "items")
-//             validateEducations(items)
-//             return items
-//         },
-//     },
-//     [
-//         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-//         { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
-//     ]
-// )
 
+
+    
 const jobsDataSourceName = "Jobs"
-
-// const departmentsDataSource = createDataSource(
-//     {
-//         name: "Departments",
-//         apiPath: "departments",
-//         fetch: async (boardToken: string) => {
-//             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/departments`
-//             const items = await fetchAshbyData(url, "departments")
-//             validateDepartments(items)
-//             return items
-//         },
-//     },
-//     [
-//         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-//         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
-//         {
-//             id: "jobs",
-//             name: "Jobs",
-//             type: "multiCollectionReference",
-//             dataSourceId: jobsDataSourceName,
-//             collectionId: "",
-//         },
-//     ]
-// )
-// const officesDataSource = createDataSource(
-//     {
-//         name: "Offices",
-//         apiPath: "offices",
-//         fetch: async (boardToken: string) => {
-//             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/offices`
-//             const items = await fetchAshbyData(url, "offices")
-//             validateOffices(items)
-//             return items
-//         },
-//     },
-//     [
-//         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-//         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
-//         { id: "location", name: "Location", type: "string" },
-//         {
-//             id: "departments",
-//             name: "Departments",
-//             type: "multiCollectionReference",
-//             collectionId: "",
-//             dataSourceId: departmentsDataSource.name,
-//         },
-//     ]
-// )
 
 const jobsDataSource = createDataSource(
     {
@@ -186,42 +88,15 @@ const jobsDataSource = createDataSource(
         { id: "publishedAt", name: "Published At", type: "date" },
         { id: "jobUrl", name: "Job URL", type: "link" },
         { id: "applyUrl", name: "Apply URL", type: "link" },
+        // TODO: Compensation and Address are not strings.
         { id: "compensation", name: "Compensation", type: "string" },
+        { id: "address", name: "Address", type: "string" },
     ]
 )
 
-// const sectionsDataSource = createDataSource(
-//     {
-//         name: "Sections",
-//         apiPath: "sections",
-//         fetch: async (boardToken: string) => {
-//             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/sections`
-//             const items = await fetchAshbyData(url, "sections")
-//             validateSections(items)
-//             return items
-//         },
-//     },
-//     [
-//         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-//         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
-//         {
-//             id: "jobs",
-//             name: "Jobs",
-//             type: "multiCollectionReference",
-//             collectionId: "",
-//             dataSourceId: jobsDataSource.name,
-//         },
-//     ]
-// )
 
 export const dataSources = [
     jobsDataSource,
-    // departmentsDataSource,
-    // officesDataSource,
-    // schoolsDataSource,
-    // disciplinesDataSource,
-    // degreesDataSource,
-    // sectionsDataSource,
 ] satisfies AshbyDataSource[]
 
 function createDataSource(

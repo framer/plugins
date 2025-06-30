@@ -2,13 +2,13 @@ import { framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useState } from "react"
 import hero from "../assets/hero.png"
 import { getDataSource, syncMethods } from "../data"
-import { dataSources, type GreenhouseDataSource } from "../dataSources"
+import { type AshbyDataSource, dataSources } from "../dataSources"
 
 interface SelectDataSourceProps {
     previousBoardToken?: string | null
     onSelectBoardToken: (boardToken: string) => void
     previousDataSourceId?: string | null
-    onSelectDataSource: (dataSource: GreenhouseDataSource) => void
+    onSelectDataSource: (dataSource: AshbyDataSource) => void
 }
 
 export function SelectDataSource({

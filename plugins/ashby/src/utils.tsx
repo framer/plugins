@@ -1,4 +1,4 @@
-import type { GreenhouseField } from "./dataSources"
+import type { AshbyField } from "./dataSources"
 
 export function decodeHtml(html: string): string {
     const textarea = document.createElement("textarea")
@@ -7,12 +7,12 @@ export function decodeHtml(html: string): string {
 }
 
 export function isCollectionReference(
-    field: GreenhouseField
-): field is Extract<GreenhouseField, { type: "collectionReference" | "multiCollectionReference" }> {
+    field: AshbyField
+): field is Extract<AshbyField, { type: "collectionReference" | "multiCollectionReference" }> {
     return field.type === "collectionReference" || field.type === "multiCollectionReference"
 }
 
-export function isMissingReferenceField(field: GreenhouseField): boolean {
+export function isMissingReferenceField(field: AshbyField): boolean {
     if (!isCollectionReference(field)) {
         return false
     }

@@ -6,7 +6,7 @@ import { FieldMapping } from "./components/FieldMapping"
 import { Loading } from "./components/Loading"
 import { SelectDataSource } from "./components/SelectDataSource"
 import { getDataSource, spaceIdPluginKey } from "./data"
-import type { GreenhouseDataSource } from "./dataSources"
+import type { AshbyDataSource } from "./dataSources"
 
 interface AppProps {
     collection: ManagedCollection
@@ -17,7 +17,7 @@ interface AppProps {
 
 export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
     const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
-    const [dataSource, setDataSource] = useState<GreenhouseDataSource | null>(null)
+    const [dataSource, setDataSource] = useState<AshbyDataSource | null>(null)
     const [isLoading, setIsLoading] = useState(false)
 
     useLayoutEffect(() => {

@@ -6,8 +6,8 @@ import {
     type ManagedCollectionItemInput,
     type ProtectedMethod,
 } from "framer-plugin"
-import { isGreenhouseItemField } from "./api-types"
-import { dataSources, type GreenhouseDataSource, type GreenhouseField } from "./dataSources"
+import { isAshbyItemField } from "./api-types"
+import { type AshbyDataSource, type AshbyField, dataSources } from "./dataSources"
 import { assertNever, decodeHtml, isCollectionReference } from "./utils"
 
 export const dataSourceIdPluginKey = "dataSourceId"
@@ -15,9 +15,9 @@ export const slugFieldIdPluginKey = "slugFieldId"
 export const spaceIdPluginKey = "spaceId"
 
 function replaceSupportedCollections(
-    dataSource: GreenhouseDataSource,
+    dataSource: AshbyDataSource,
     fieldToCollectionsMap: Map<string, ManagedCollection[]>
-): GreenhouseDataSource {
+): AshbyDataSource {
     const fields = dataSource.fields.map(field => {
         if (!isCollectionReference(field)) return field
 
@@ -37,7 +37,7 @@ function replaceSupportedCollections(
     return { ...dataSource, fields }
 }
 
-export async function getDataSource(boardToken: string, dataSourceId: string): Promise<GreenhouseDataSource> {
+export async function getDataSource(boardToken: string, dataSourceId: string): Promise<AshbyDataSource> {
     if (!boardToken) {
         throw new Error("No Board Token found. Please select a board.")
     }
@@ -46,6 +46,8 @@ export async function getDataSource(boardToken: string, dataSourceId: string): P
     if (!dataSource) {
         throw new Error(`No data source found for id "${dataSourceId}".`)
     }
+
+    
 
     const fieldToCollectionsMap = new Map<string, ManagedCollection[]>()
     const boardCollections: ManagedCollection[] = []
@@ -80,9 +82,9 @@ export async function getDataSource(boardToken: string, dataSourceId: string): P
 }
 
 export function mergeFieldsWithExistingFields(
-    sourceFields: readonly GreenhouseField[],
+    sourceFields: readonly AshbyField[],
     existingFields: readonly ManagedCollectionFieldInput[]
-): GreenhouseField[] {
+): AshbyField[] {
     const existingFieldsMap = new Map(existingFields.map(field => [field.id, field]))
 
     return sourceFields.map(sourceField => {
@@ -95,7 +97,7 @@ export function mergeFieldsWithExistingFields(
 }
 
 async function getItems(
-    dataSource: GreenhouseDataSource,
+    dataSource: AshbyDataSource,
     fieldsToSync: readonly ManagedCollectionFieldInput[],
     { boardToken, slugFieldId }: { boardToken: string; slugFieldId: string }
 ): Promise<ManagedCollectionItemInput[]> {
@@ -110,7 +112,7 @@ async function getItems(
     }
 
     for (const item of dataItems) {
-        if (!isGreenhouseItemField(slugFieldId, item)) {
+        if (!isAshbyItemField(slugFieldId, item)) {
             throw new Error(`No slug field found in data source.`)
         }
 
@@ -222,7 +224,7 @@ async function getItems(
 export async function syncCollection(
     boardToken: string,
     collection: ManagedCollection,
-    dataSource: GreenhouseDataSource,
+    dataSource: AshbyDataSource,
     fields: readonly ManagedCollectionFieldInput[],
     slugField: ManagedCollectionFieldInput
 ): Promise<void> {
@@ -233,6 +235,7 @@ export async function syncCollection(
     })
     const itemIds = new Set(items.map(item => item.id))
     const unsyncedItemsIds = existingItemsIds.filter(existingItemId => !itemIds.has(existingItemId))
+
 
     await collection.removeItems(unsyncedItemsIds)
     await collection.addItems(items)

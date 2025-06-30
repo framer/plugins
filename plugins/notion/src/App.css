@@ -89,7 +89,7 @@ form {
     height: 100%;
     width: 100%;
     flex: 1;
-    text-align: center;
+    text-align: left;
     gap: 15px;
 }
 

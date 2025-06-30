@@ -28,15 +28,21 @@ if (!tokens) {
     })
 }
 
-const [previousDatabaseId, previousSlugFieldId, previousLastSynced, previousIgnoredFieldIds, previousDatabaseName] =
-    await Promise.all([
-        activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_ID),
-        activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
-        activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
-        activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS),
-        activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_NAME),
-    ])
-const databaseIdMap = await getDatabaseIdMap()
+const [
+    previousDatabaseId,
+    previousSlugFieldId,
+    previousLastSynced,
+    previousIgnoredFieldIds,
+    previousDatabaseName,
+    databaseIdMap,
+] = await Promise.all([
+    activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
+    activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS),
+    activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_NAME),
+    getDatabaseIdMap(),
+])
 
 const isAllowedToSync = framer.isAllowedTo(...syncMethods)
 

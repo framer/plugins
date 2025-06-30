@@ -3,7 +3,6 @@ import type {
     FieldDataInput,
     ManagedCollection,
     ManagedCollectionField,
-    ManagedCollectionFieldInput,
     ManagedCollectionItemInput,
     ProtectedMethod,
 } from "framer-plugin"
@@ -390,7 +389,7 @@ export function mergeFieldsWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: readonly ManagedCollectionFieldInput[],
+    fields: readonly PossibleField[],
     slugFieldId: string
 ) {
     const dataSourceItems = await getItems({ ...dataSource, fields }, slugFieldId)
@@ -457,13 +456,13 @@ export async function syncExistingCollection(
         const inferredFields = await inferFields(collection, table)
 
         // Filter fields to match the format expected by syncCollection
-        const fieldsToSync = inferredFields
-            .filter(field => field.type !== "unsupported")
-            .filter(
-                field =>
-                    (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
-                    field.collectionId !== ""
-            )
+        const fieldsToSync = inferredFields.filter(
+            field =>
+                existingFields.find(existingField => existingField.id === field.id) &&
+                field.type !== "unsupported" &&
+                ((field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
+                    field.collectionId !== "")
+        )
 
         const dataSource: DataSource = {
             baseId: previousBaseId,

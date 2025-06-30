@@ -14,18 +14,12 @@ interface InferredField {
      * Only set when fields are inferred.
      */
     readonly airtableType?: Exclude<AirtableFieldSchema["type"], "multipleRecordLinks" | "singleSelect">
-    /**
-     * The original Airtable field schema options.
-     * Only set when fields are inferred.
-     */
-    readonly airtableOptions?: AirtableFieldSchema["options"]
     readonly allowedTypes?: [AllowedType, ...AllowedType[]]
 }
 
 interface InferredMultipleRecordLinksField {
     type: "collectionReference" | "multiCollectionReference"
     readonly airtableType: "multipleRecordLinks"
-    readonly airtableOptions?: AirtableFieldSchema["options"]
     readonly supportedCollections: { id: string; name: string }[]
     readonly allowedTypes?: []
 }
@@ -34,14 +28,12 @@ interface InferredEnumField {
     type: "enum"
     readonly airtableType: "singleSelect"
     readonly airtableCases: { id: string; name: string }[]
-    readonly airtableOptions?: AirtableFieldSchema["options"]
     readonly allowedTypes: ["enum"]
 }
 
 interface InferredUnsupportedField {
     type: "unsupported"
     readonly airtableType?: AirtableFieldSchema["type"]
-    readonly airtableOptions?: AirtableFieldSchema["options"]
     readonly allowedTypes: [AirtableFieldSchema["type"], ...AirtableFieldSchema["type"][]]
 }
 
@@ -60,6 +52,11 @@ export type PossibleField = (
          * For lookup fields, this will be "multipleLookupValues".
          */
         readonly originalAirtableType?: string
+        /**
+         * The Airtable field schema options.
+         * Only set when fields are inferred.
+         */
+        readonly airtableOptions?: AirtableFieldSchema["options"]
     }
 
 /**

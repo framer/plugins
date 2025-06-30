@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useState } from "react"
 import { FieldMapping } from "./components/FieldMapping"
 import { Loading } from "./components/Loading"
 import { SelectDataSource } from "./components/SelectDataSource"
-import {companyIdPluginKey, getDataSource, spaceIdPluginKey} from "./data"
+import { companyIdPluginKey, getDataSource, spaceIdPluginKey } from "./data"
 import type { RecruiteeDataSource } from "./dataSources"
 
 interface AppProps {
@@ -16,7 +16,13 @@ interface AppProps {
     previousCompanyId: string | null
 }
 
-export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken, previousCompanyId }: AppProps) {
+export function App({
+    collection,
+    previousDataSourceId,
+    previousSlugFieldId,
+    previousBoardToken,
+    previousCompanyId,
+}: AppProps) {
     const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
     const [companyId, setCompanyId] = useState<string>(previousCompanyId ?? "")
     const [dataSource, setDataSource] = useState<RecruiteeDataSource | null>(null)
@@ -67,7 +73,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
         if (framer.isAllowedTo("setPluginData")) {
             framer.setPluginData(companyIdPluginKey, companyId)
         }
-    },[companyId, previousCompanyId])
+    }, [companyId, previousCompanyId])
 
     if (isLoading) {
         return <Loading />

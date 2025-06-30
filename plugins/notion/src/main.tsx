@@ -7,7 +7,7 @@ import ReactDOM from "react-dom/client"
 import { App } from "./App.tsx"
 import { PLUGIN_KEYS } from "./api"
 import auth from "./auth"
-import { syncExistingCollection } from "./data"
+import { getDatabaseIdMap, syncExistingCollection } from "./data"
 import { Authenticate } from "./Login.tsx"
 import { syncMethods } from "./utils"
 
@@ -36,6 +36,7 @@ const [previousDatabaseId, previousSlugFieldId, previousLastSynced, previousIgno
         activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS),
         activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_NAME),
     ])
+const databaseIdMap = await getDatabaseIdMap()
 
 const isAllowedToSync = framer.isAllowedTo(...syncMethods)
 
@@ -48,7 +49,8 @@ if (isAllowedToSync) {
         previousSlugFieldId,
         previousIgnoredFieldIds,
         previousLastSynced,
-        previousDatabaseName
+        previousDatabaseName,
+        databaseIdMap
     )
     didSync = didSyncResult
 }
@@ -67,6 +69,7 @@ if (didSync) {
                 previousLastSynced={previousLastSynced}
                 previousIgnoredFieldIds={previousIgnoredFieldIds}
                 previousDatabaseName={previousDatabaseName}
+                databaseIdMap={databaseIdMap}
             />
         </React.StrictMode>
     )

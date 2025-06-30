@@ -1,13 +1,13 @@
 import { framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "../data"
-import { type GreenhouseDataSource, type GreenhouseField, removeGreenhouseKeys } from "../dataSources"
+import { type AshbyDataSource, type AshbyField, removeAshbyKeys } from "../dataSources"
 import { isCollectionReference, isMissingReferenceField } from "../utils"
 import { ChevronIcon } from "./Icons"
 import { Loading } from "./Loading"
 
 interface FieldMappingRowProps {
-    field: GreenhouseField
+    field: AshbyField
     originalFieldName: string | undefined
     disabled: boolean
     onToggleDisabled: (fieldId: string) => void
@@ -71,12 +71,12 @@ function FieldMappingRow({
     )
 }
 
-const emptyArray: GreenhouseField[] = []
+const emptyArray: AshbyField[] = []
 
 interface FieldMappingProps {
     boardToken: string
     collection: ManagedCollection
-    dataSource: GreenhouseDataSource
+    dataSource: AshbyDataSource
     initialSlugFieldId: string | null
 }
 
@@ -92,11 +92,11 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
         [dataSource]
     )
 
-    const [selectedSlugField, setSelectedSlugField] = useState<GreenhouseField | null>(
+    const [selectedSlugField, setSelectedSlugField] = useState<AshbyField | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 
-    const [fields, setFields] = useState<GreenhouseField[]>(emptyArray)
+    const [fields, setFields] = useState<AshbyField[]>(emptyArray)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(() => {
         const initialFieldIds = new Set()
 
@@ -191,7 +191,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
         try {
             setStatus("syncing-collection")
 
-            const fieldsToSync: GreenhouseField[] = []
+            const fieldsToSync: AshbyField[] = []
 
             for (const field of fields) {
                 if (ignoredFieldIds.has(field.id) || isMissingReferenceField(field)) continue
@@ -201,7 +201,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
                 })
             }
 
-            await collection.setFields(removeGreenhouseKeys(fieldsToSync))
+            await collection.setFields(removeAshbyKeys(fieldsToSync))
             await syncCollection(boardToken, collection, dataSource, fieldsToSync, selectedSlugField)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {

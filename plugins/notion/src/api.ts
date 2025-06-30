@@ -1,6 +1,7 @@
 import { Client, collectPaginatedAPI, isFullBlock, isFullDatabase, isFullPage } from "@notionhq/client"
 import type {
     BlockObjectResponse,
+    DatabaseObjectResponse,
     GetDatabaseResponse,
     PageObjectResponse,
     RichTextItemResponse,
@@ -124,13 +125,17 @@ export async function getNotionDatabases() {
         },
     })
 
-    return results.filter(isFullDatabase)
+    return results.filter(isFullDatabase) as DatabaseObjectResponse[]
 }
 
-export function assertFieldTypeMatchesPropertyType<T extends keyof typeof supportedCMSTypeByNotionPropertyType>(
-    propertyType: T,
+export function assertFieldTypeMatchesPropertyType(
+    propertyType: NotionProperty["type"],
     fieldType: ManagedCollectionField["type"]
 ): asserts fieldType is ManagedCollectionField["type"] {
+    if (!isSupportedPropertyType(propertyType)) {
+        throw new Error(`Property type '${propertyType}' is not supported.`)
+    }
+
     const allowedFieldTypes = supportedCMSTypeByNotionPropertyType[propertyType]
 
     if (!allowedFieldTypes.includes(fieldType as never)) {
@@ -146,7 +151,11 @@ export async function getDatabase(databaseId: string) {
     assert(notion, "Notion client is not initialized")
     const database = await notion.databases.retrieve({ database_id: databaseId })
 
-    return database
+    if (!isFullDatabase(database)) {
+        throw new Error(`Database ${databaseId} is not a full database`)
+    }
+
+    return database as DatabaseObjectResponse
 }
 
 export function richTextToPlainText(richText: RichTextItemResponse[] | undefined) {
@@ -275,7 +284,7 @@ export async function getPageBlocksAsRichText(pageId: string) {
 export function getPropertyValue(
     property: PageObjectResponse["properties"][string],
     field: ManagedCollectionFieldInput
-): unknown | undefined {
+): boolean | number | string | string[] | null {
     switch (property.type) {
         case "checkbox": {
             return property.checkbox ?? false
@@ -324,7 +333,7 @@ export function getPropertyValue(
             return property.unique_id.number
         }
         case "date": {
-            return property.date?.start
+            return property.date?.start ?? null
         }
         case "relation": {
             return property.relation.map(({ id }) => id)
@@ -345,6 +354,8 @@ export function getPropertyValue(
             return property.email ?? ""
         }
     }
+
+    return null
 }
 
 export async function getDatabaseItems(database: GetDatabaseResponse): Promise<PageObjectResponse[]> {

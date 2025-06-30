@@ -1,6 +1,7 @@
-import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
+import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import {
     type EnumCase,
+    type FieldDataEntryInput,
     type FieldDataInput,
     framer,
     ManagedCollection,
@@ -33,13 +34,13 @@ export type DatabaseIdMap = Map<string, string>
 export interface DataSource {
     id: string
     name: string
-    database: GetDatabaseResponse
+    database: DatabaseObjectResponse
 }
 
 export async function getDataSources(): Promise<DataSource[]> {
     const databases = await getNotionDatabases()
 
-    return databases.map((database: GetDatabaseResponse) => {
+    return databases.map((database: DatabaseObjectResponse) => {
         return {
             id: database.id,
             name: richTextToPlainText(database.title) || "Untitled Database",
@@ -48,7 +49,7 @@ export async function getDataSources(): Promise<DataSource[]> {
     })
 }
 
-export function getDataSourceFieldsInfo(database: GetDatabaseResponse, databaseIdMap: DatabaseIdMap): FieldInfo[] {
+export function getDataSourceFieldsInfo(database: DatabaseObjectResponse, databaseIdMap: DatabaseIdMap): FieldInfo[] {
     return getDatabaseFieldsInfo(database, databaseIdMap)
 }
 
@@ -141,7 +142,7 @@ export async function syncCollection(
                     )
                 }
 
-                fieldData[field.id] = { type: field.type, value: fieldValue }
+                fieldData[field.id] = { type: field.type, value: fieldValue } as FieldDataEntryInput
             }
 
             if (!slugValue || typeof slugValue !== "string") {
@@ -266,7 +267,7 @@ export async function fieldsInfoToCollectionFields(
             case "string":
             case "formattedText":
             case "link":
-            case "image":
+            case "image": {
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
                 fields.push({
                     type: fieldType,
@@ -275,7 +276,8 @@ export async function fieldsInfoToCollectionFields(
                     userEditable: false,
                 })
                 break
-            case "enum":
+            }
+            case "enum": {
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
                 let cases: EnumCase[] | null = null
@@ -305,7 +307,8 @@ export async function fieldsInfoToCollectionFields(
                 }
 
                 break
-            case "file":
+            }
+            case "file": {
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
                 fields.push({
                     type: "file",
@@ -315,23 +318,27 @@ export async function fieldsInfoToCollectionFields(
                     userEditable: false,
                 })
                 break
-            case "multiCollectionReference":
+            }
+            case "multiCollectionReference": {
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
-                const databaseId = property.relation?.database_id
-                if (databaseId && databaseIdMap) {
-                    const collectionId = databaseIdMap.get(databaseId)
-                    if (collectionId) {
-                        fields.push({
-                            type: "multiCollectionReference",
-                            id: fieldInfo.id,
-                            name: fieldInfo.name,
-                            collectionId,
-                            userEditable: false,
-                        })
+                if (property.type === "relation") {
+                    const databaseId = property.relation?.database_id
+                    if (databaseId && databaseIdMap) {
+                        const collectionId = databaseIdMap.get(databaseId)
+                        if (collectionId) {
+                            fields.push({
+                                type: "multiCollectionReference",
+                                id: fieldInfo.id,
+                                name: fieldInfo.name,
+                                collectionId,
+                                userEditable: false,
+                            })
+                        }
                     }
                 }
                 break
+            }
             default:
                 throw new Error(`Unsupported field type: ${fieldType}`)
         }

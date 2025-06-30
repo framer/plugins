@@ -1,7 +1,7 @@
 import "./App.css"
 
-import { useLayoutEffect, useRef, useState } from "react"
 import { framer } from "framer-plugin"
+import { useLayoutEffect, useRef, useState } from "react"
 import auth from "./auth"
 
 interface AuthenticationProps {

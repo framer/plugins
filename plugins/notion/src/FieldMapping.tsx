@@ -179,7 +179,7 @@ export function FieldMapping({
         return () => {
             abortController.abort()
         }
-    }, [initialSlugFieldId, dataSource, collection])
+    }, [initialSlugFieldId, dataSource, collection, initialFieldsInfo])
 
     const changeFieldName = (fieldId: string, name: string) => {
         setFieldsInfo(prevFieldsInfo => {

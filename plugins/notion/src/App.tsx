@@ -2,8 +2,8 @@ import "./App.css"
 
 import { APIErrorCode } from "@notionhq/client"
 import { framer, type ManagedCollection } from "framer-plugin"
-import { useEffect, useLayoutEffect, useState } from "react"
-import { type DataSource, getDataSource } from "./data"
+import { useEffect, useLayoutEffect, useMemo, useState } from "react"
+import { type DatabaseIdMap, type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { NoTableAccess } from "./NoAccess"
 import { SelectDataSource } from "./SelectDataSource"
@@ -30,6 +30,14 @@ export function App({
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
     const [hasAccessError, setHasAccessError] = useState(false)
+
+    // Support self-referencing databases by allowing the current collection to be referenced.
+    const finalDatabaseIdMap = useMemo(() => {
+        if (dataSource?.database.id) {
+            return new Map(databaseIdMap).set(dataSource.database.id, collection.id)
+        }
+        return databaseIdMap
+    }, [databaseIdMap, dataSource?.database.id, collection.id])
 
     useLayoutEffect(() => {
         if (hasAccessError) {
@@ -122,7 +130,7 @@ export function App({
             initialSlugFieldId={previousSlugFieldId}
             previousLastSynced={previousLastSynced}
             previousIgnoredFieldIds={previousIgnoredFieldIds}
-            databaseIdMap={databaseIdMap}
+            databaseIdMap={finalDatabaseIdMap}
         />
     )
 }

@@ -1,0 +1,6 @@
+{
+    "id": "gr33nh",
+    "name": "Recruitee",
+    "modes": ["syncManagedCollection", "configureManagedCollection"],
+    "icon": "/icon.png"
+}

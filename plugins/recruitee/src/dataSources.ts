@@ -102,12 +102,11 @@ const offersDataSource = createDataSource(
         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
         { id: "employment_type", name: "Type", type: "string" },
         { id: "status", name: "Status", type: "string" },
-        { id: "candidates_count", name: "Candidates Count", type: "string" },
-        { id: "hired_candidates_count", name: "Hired Candidates Count", type: "string" },
-        { id: "disqualified_candidates_count", name: "Disqualified Candidates Count", type: "string" },
+        { id: "candidates_count", name: "Candidates Count", type: "number" },
+        { id: "hired_candidates_count", name: "Hired Candidates Count", type: "number" },
+        { id: "disqualified_candidates_count", name: "Disqualified Candidates Count", type: "number" },
         { id: "city", name: "City", type: "string" },
         { id: "mailbox_email", name: "Email", type: "string" },
-        { id: "company_name", name: "Company", type: "string" },
         { id: "requirements", name: "Requirements", type: "formattedText" },
         { id: "description", name: "Description", type: "formattedText" },
         { id: "offer_tags", name: "Tags", type: "string" }
@@ -129,7 +128,7 @@ const departmentsDataSource = createDataSource(
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
         { id: "status", name: "Status", type: "string" },
-        { id: "offers_count", name: "Offers Count", type: "string" }
+        { id: "offers_count", name: "Offers Count", type: "number" }
     ]
 )
 

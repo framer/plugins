@@ -63,7 +63,7 @@ export function App({
                 resizable: false,
             })
         }
-    }, [dataSource, isLoadingDataSource])
+    }, [dataSource, isLoadingDataSource, hasAccessError])
 
     useEffect(() => {
         if (!previousDataSourceId) {
@@ -104,7 +104,7 @@ export function App({
         return () => {
             abortController.abort()
         }
-    }, [previousDataSourceId])
+    }, [previousDataSourceId, previousDatabaseName])
 
     if (isLoadingDataSource) {
         return (

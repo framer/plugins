@@ -57,7 +57,7 @@ export function generateRandomId() {
 
     let id = ""
     for (let i = 0; i < array.length; i++) {
-        id += array[i].toString(16).padStart(2, "0")
+        id += array[i]!.toString(16).padStart(2, "0")
     }
 
     return id

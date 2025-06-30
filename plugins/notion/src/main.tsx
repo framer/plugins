@@ -13,13 +13,6 @@ import { syncMethods } from "./utils"
 
 const activeCollection = await framer.getActiveManagedCollection()
 
-const isWorkerAlive = await auth.isWorkerAlive()
-if (!isWorkerAlive) {
-    framer.closePlugin("OAuth worker is not available, please try again.", {
-        variant: "error",
-    })
-}
-
 const tokens = await auth.getTokens()
 
 const root = document.getElementById("root")

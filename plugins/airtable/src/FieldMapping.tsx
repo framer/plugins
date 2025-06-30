@@ -234,8 +234,16 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         return { ...field, type: "string" } as PossibleField
                     case "formattedText":
                         return { ...field, type: "formattedText" } as PossibleField
+                    case "number":
+                        return { ...field, type: "number" } as PossibleField
+                    case "boolean":
+                        return { ...field, type: "boolean" } as PossibleField
                     case "color":
                         return { ...field, type: "color" } as PossibleField
+                    case "date":
+                        return { ...field, type: "date" } as PossibleField
+                    case "enum":
+                        return { ...field, type: "enum" } as PossibleField
                     default:
                         return field
                 }
@@ -274,10 +282,13 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
             const fieldsToSync = fields
                 .filter(field => !ignoredFieldIds.has(field.id))
-                .map(field => ({
-                    ...field,
-                    name: field.name.trim() || field.id,
-                }))
+                .map(field => {
+                    const originalFieldName = dataSource.fields.find(sourceField => sourceField.id === field.id)?.name
+                    return {
+                        ...field,
+                        name: field.name.trim() || originalFieldName || field.id,
+                    }
+                })
                 .filter(field => field.type !== "unsupported")
                 .filter(
                     field =>
@@ -399,13 +410,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     tabIndex={0}
                     title={isAllowedToManage ? undefined : "Insufficient permissions"}
                 >
-                    {isSyncing ? (
-                        <div className="framer-spinner" />
-                    ) : (
-                        <span>
-                            Import <span style={{ textTransform: "capitalize" }}>{dataSource.tableName}</span>
-                        </span>
-                    )}
+                    {isSyncing ? <div className="framer-spinner" /> : <span>Import {dataSource.tableName}</span>}
                 </button>
             </footer>
         </form>

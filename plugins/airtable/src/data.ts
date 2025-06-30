@@ -10,6 +10,7 @@ import type {
 import { framer } from "framer-plugin"
 import { type AirtableFieldSchema, fetchAllBases, fetchRecords, fetchTable, fetchTables } from "./api"
 import type { PossibleField } from "./fields"
+import { inferFields } from "./fields"
 import { richTextToHTML } from "./utils"
 
 export const PLUGIN_KEYS = {
@@ -53,6 +54,12 @@ const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
 const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
 
 function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
+    if (fieldSchema.originalAirtableType === "multipleLookupValues") {
+        if (!Array.isArray(value)) return null
+        if (value.length === 0) return null
+        value = value[0]
+    }
+
     switch (fieldSchema.type) {
         case "boolean":
             return {
@@ -122,6 +129,89 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
             return null
 
         case "string":
+            switch (fieldSchema.airtableType) {
+                case "barcode": {
+                    if (!value || typeof value !== "object" || !("text" in value) || typeof value.text !== "string")
+                        return null
+                    return {
+                        value: value.text,
+                        type: "string",
+                    }
+                }
+                case "aiText": {
+                    if (!value || typeof value !== "object" || !("value" in value) || typeof value.value !== "string")
+                        return null
+                    return {
+                        value: value.value,
+                        type: "string",
+                    }
+                }
+                case "duration": {
+                    if (typeof value !== "number" || Number.isNaN(value)) return null
+
+                    const hours = Math.floor(value / 3600)
+                    const minutes = Math.floor((value % 3600) / 60)
+                    const remainingSeconds = value % 60
+                    const seconds = Math.floor(remainingSeconds).toString().padStart(2, "0")
+
+                    let result = ""
+                    result += hours.toString()
+                    result += ":" + minutes.toString().padStart(2, "0")
+
+                    // Handle seconds and milliseconds based on format
+                    const durationOptions = fieldSchema.airtableOptions as { durationFormat?: string } | undefined
+                    switch (durationOptions?.durationFormat) {
+                        case "h:mm":
+                            break
+                        case "h:mm:ss":
+                            result += ":" + seconds
+                            break
+                        case "h:mm:ss.S":
+                            result += ":" + seconds
+                            result += "." + (remainingSeconds % 1).toFixed(1).substring(2)
+                            break
+                        case "h:mm:ss.SS":
+                            result += ":" + seconds
+                            result += "." + (remainingSeconds % 1).toFixed(2).substring(2)
+                            break
+                        case "h:mm:ss.SSS":
+                            result += ":" + seconds
+                            result += "." + (remainingSeconds % 1).toFixed(3).substring(2)
+                            break
+                    }
+
+                    return {
+                        value: result,
+                        type: "string",
+                    }
+                }
+                case "singleCollaborator":
+                case "createdBy":
+                case "lastModifiedBy": {
+                    if (!value || typeof value !== "object" || !("name" in value) || typeof value.name !== "string")
+                        return null
+                    return {
+                        value: value.name,
+                        type: "string",
+                    }
+                }
+                case "multipleCollaborators": {
+                    if (!Array.isArray(value) || value.length === 0) return null
+                    const firstCollaborator = value[0]
+                    if (
+                        !firstCollaborator ||
+                        typeof firstCollaborator !== "object" ||
+                        !("name" in firstCollaborator) ||
+                        typeof firstCollaborator.name !== "string"
+                    )
+                        return null
+                    return {
+                        value: firstCollaborator.name,
+                        type: "string",
+                    }
+                }
+            }
+
             if (typeof value !== "string") return null
             return {
                 value,
@@ -233,6 +323,12 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                         fieldData[field.id] = {
                             value: false,
                             type: "boolean",
+                        }
+                        break
+                    case "number":
+                        fieldData[field.id] = {
+                            value: 0,
+                            type: "number",
                         }
                         break
                     case "image":
@@ -356,13 +452,26 @@ export async function syncExistingCollection(
         if (!table) {
             throw new Error(`Table “${previousTableName}” not found`)
         }
+
+        // Use properly inferred fields instead of existing collection fields
+        const inferredFields = await inferFields(collection, table)
+
+        // Filter fields to match the format expected by syncCollection
+        const fieldsToSync = inferredFields
+            .filter(field => field.type !== "unsupported")
+            .filter(
+                field =>
+                    (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
+                    field.collectionId !== ""
+            )
+
         const dataSource: DataSource = {
             baseId: previousBaseId,
             tableId: previousTableId,
             tableName: table.name,
-            fields: existingFields,
+            fields: inferredFields,
         }
-        await syncCollection(collection, dataSource, existingFields, previousSlugFieldId)
+        await syncCollection(collection, dataSource, fieldsToSync, previousSlugFieldId)
         return { didSync: true }
     } catch (error) {
         console.error(error)

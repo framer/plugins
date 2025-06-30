@@ -51,10 +51,6 @@ form {
     opacity: 0.5;
 }
 
-.field-input.unsupported {
-    grid-column: span 2;
-}
-
 .fields-column {
     grid-column: span 2 / span 2;
 }
@@ -174,6 +170,19 @@ form {
 
 .mapping .source-field input[type="checkbox"]:focus {
     box-shadow: none;
+}
+
+.mapping .unsupported-field {
+    grid-column: span 2;
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    padding: 0px 10px;
+    height: 30px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    opacity: 0.5;
+    color: var(--framer-color-text-secondary);
 }
 
 [data-framer-theme="light"] .mapping .source-field input[type="checkbox"]:not(:checked) {

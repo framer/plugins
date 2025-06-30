@@ -7,6 +7,7 @@ import type {
 } from "@notionhq/client/build/src/api-endpoints"
 import { framer, type ManagedCollectionField, type ManagedCollectionFieldInput } from "framer-plugin"
 import { blocksToHTML, richTextToHTML } from "./blocksToHTML"
+import type { DatabaseIdMap } from "./data"
 import { assert } from "./utils"
 
 export const API_BASE_URL = "https://notion-plugin-api.framer-team.workers.dev"
@@ -156,7 +157,7 @@ function isSupportedPropertyType(type: string): type is keyof typeof supportedCM
     return type in supportedCMSTypeByNotionPropertyType
 }
 
-export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
+export function getDatabaseFieldsInfo(database: GetDatabaseResponse, databaseIdMap: DatabaseIdMap) {
     const result: FieldInfo[] = []
 
     // This property is always there but not included in `"database.properties"
@@ -164,6 +165,7 @@ export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
 
     const supported: FieldInfo[] = []
     const unsupported: FieldInfo[] = []
+    const missingCollection: FieldInfo[] = []
 
     for (const key in database.properties) {
         const property = database.properties[key]
@@ -181,6 +183,11 @@ export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
             notionProperty: property,
         }
 
+        if (isMissingCollection(fieldInfo, databaseIdMap)) {
+            missingCollection.push(fieldInfo)
+            continue
+        }
+
         const isUnsupported = !Array.isArray(allowedTypes) || allowedTypes.length === 0
         if (isUnsupported) {
             unsupported.push(fieldInfo)
@@ -190,7 +197,7 @@ export function getDatabaseFieldsInfo(database: GetDatabaseResponse) {
     }
 
     // Maintain original order except unsupported fields go to the end
-    const allFields = result.concat(supported, unsupported)
+    const allFields = result.concat(supported, missingCollection, unsupported)
 
     // Sort title field to beginning of the list
     return allFields.sort((a, b) => {
@@ -263,20 +270,6 @@ export async function getPageBlocksAsRichText(pageId: string) {
     assert(blocks.every(isFullBlock), "Response is not a full block")
 
     return blocksToHTML(blocks)
-}
-
-type DatabaseIdMap = Map<string, string>
-export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
-    const databaseIdMap: DatabaseIdMap = new Map()
-
-    for (const collection of await framer.getCollections()) {
-        const collectionDatabaseId = await collection.getPluginData(PLUGIN_KEYS.DATABASE_ID)
-        if (!collectionDatabaseId) continue
-
-        databaseIdMap.set(collectionDatabaseId, collection.id)
-    }
-
-    return databaseIdMap
 }
 
 export function getPropertyValue(
@@ -427,4 +420,12 @@ export async function* iteratePaginatedAPI<Args extends PaginatedArgs, Item>(
         seenCursors.add(response.next_cursor)
         nextCursor = response.next_cursor
     } while (nextCursor)
+}
+
+export function isMissingCollection(fieldInfo: FieldInfo, databaseIdMap: DatabaseIdMap): boolean {
+    return Boolean(
+        fieldInfo.notionProperty?.type === "relation" &&
+            fieldInfo.notionProperty.relation?.database_id &&
+            !databaseIdMap.has(fieldInfo.notionProperty.relation.database_id)
+    )
 }

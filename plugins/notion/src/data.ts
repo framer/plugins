@@ -13,7 +13,6 @@ import {
     type FieldInfo,
     getDatabase,
     getDatabaseFieldsInfo,
-    getDatabaseIdMap,
     getDatabaseItems,
     getNotionDatabases,
     getPageBlocksAsRichText,
@@ -28,6 +27,8 @@ import { formatDate, slugify } from "./utils"
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
 const CONCURRENCY_LIMIT = 5
+
+export type DatabaseIdMap = Map<string, string>
 
 export interface DataSource {
     id: string
@@ -47,8 +48,8 @@ export async function getDataSources(): Promise<DataSource[]> {
     })
 }
 
-export function getDataSourceFieldsInfo(database: GetDatabaseResponse): FieldInfo[] {
-    return getDatabaseFieldsInfo(database)
+export function getDataSourceFieldsInfo(database: GetDatabaseResponse, databaseIdMap: DatabaseIdMap): FieldInfo[] {
+    return getDatabaseFieldsInfo(database, databaseIdMap)
 }
 
 /**
@@ -192,7 +193,8 @@ export async function syncExistingCollection(
     previousSlugFieldId: string | null,
     previousIgnoredFieldIds: string | null,
     previousLastSynced: string | null,
-    previousDatabaseName: string | null
+    previousDatabaseName: string | null,
+    databaseIdMap: DatabaseIdMap
 ): Promise<{ didSync: boolean }> {
     if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId || !previousDataSourceId) {
         return { didSync: false }
@@ -201,7 +203,8 @@ export async function syncExistingCollection(
     try {
         const dataSource = await getDataSource(previousDataSourceId)
         const existingFields = await collection.getFields()
-        const dataSourceFieldsInfo = getDataSourceFieldsInfo(dataSource.database)
+
+        const dataSourceFieldsInfo = getDataSourceFieldsInfo(dataSource.database, databaseIdMap)
         const fieldsInfo = mergeFieldsInfoWithExistingFields(dataSourceFieldsInfo, existingFields)
         const fields = await fieldsInfoToCollectionFields(fieldsInfo)
 
@@ -336,4 +339,17 @@ export async function fieldsInfoToCollectionFields(fieldsInfo: FieldInfo[]): Pro
     }
 
     return fields as ManagedCollectionFieldInput[]
+}
+
+export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
+    const databaseIdMap: DatabaseIdMap = new Map()
+
+    for (const collection of await framer.getCollections()) {
+        const collectionDatabaseId = await collection.getPluginData(PLUGIN_KEYS.DATABASE_ID)
+        if (!collectionDatabaseId) continue
+
+        databaseIdMap.set(collectionDatabaseId, collection.id)
+    }
+
+    return databaseIdMap
 }

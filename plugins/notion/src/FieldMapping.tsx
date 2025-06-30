@@ -1,15 +1,16 @@
-import { framer, useIsAllowedTo, type ManagedCollectionField, type ManagedCollection } from "framer-plugin"
+import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+import classNames from "classnames"
+import { framer, type ManagedCollection, type ManagedCollectionField, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
+import { type FieldId, type FieldInfo, getPossibleSlugFieldIds, isMissingCollection } from "./api"
 import {
+    type DatabaseIdMap,
+    type DataSource,
+    fieldsInfoToCollectionFields,
     getDataSourceFieldsInfo,
     mergeFieldsInfoWithExistingFields,
     syncCollection,
-    fieldsInfoToCollectionFields,
-    type DataSource,
 } from "./data"
-import { getPossibleSlugFieldIds, type FieldId, type FieldInfo } from "./api"
-import classNames from "classnames"
-import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import { syncMethods } from "./utils"
 
 type FieldType = ManagedCollectionField["type"]
@@ -33,6 +34,8 @@ interface FieldMappingRowProps {
     fieldInfo: FieldInfo
     ignored: boolean
     isAllowedToManage: boolean
+    unsupported: boolean
+    missingCollection: boolean
     onToggleIgnored: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
     onFieldTypeChange: (fieldId: string, type: FieldType) => void
@@ -42,19 +45,21 @@ function FieldMappingRow({
     fieldInfo,
     ignored,
     isAllowedToManage,
+    unsupported,
+    missingCollection,
     onToggleIgnored,
     onNameChange,
     onFieldTypeChange,
 }: FieldMappingRowProps) {
     const { id, name, originalName, type, allowedTypes } = fieldInfo
-    const isUnsupported = !Array.isArray(allowedTypes) || allowedTypes.length === 0
-    const disabled = isUnsupported || ignored || !isAllowedToManage
+    const isNotSupported = unsupported || missingCollection
+    const disabled = isNotSupported || ignored || !isAllowedToManage
 
     return (
         <>
             <button
                 type="button"
-                className={classNames("source-field", isUnsupported && "unsupported")}
+                className={classNames("source-field", isNotSupported && "unsupported")}
                 aria-disabled={disabled}
                 onClick={() => onToggleIgnored(id)}
                 tabIndex={0}
@@ -78,33 +83,37 @@ function FieldMappingRow({
                     d="m2.5 7 3-3-3-3"
                 />
             </svg>
-            {!isUnsupported && (
-                <select
-                    className="field-type"
-                    disabled={disabled || allowedTypes.length <= 1}
-                    value={type ?? ""}
-                    onChange={event => onFieldTypeChange(id, event.target.value as FieldType)}
-                >
-                    {allowedTypes.map(allowedType => (
-                        <option key={allowedType} value={allowedType}>
-                            {labelByFieldTypeOption[allowedType]}
-                        </option>
-                    ))}
-                </select>
+            {isNotSupported ? (
+                <div className="unsupported-field">{unsupported ? "Unsupported Field" : "Missing Collection"}</div>
+            ) : (
+                <>
+                    <select
+                        className="field-type"
+                        disabled={disabled || allowedTypes.length <= 1}
+                        value={type ?? ""}
+                        onChange={event => onFieldTypeChange(id, event.target.value as FieldType)}
+                    >
+                        {allowedTypes.map(allowedType => (
+                            <option key={allowedType} value={allowedType}>
+                                {labelByFieldTypeOption[allowedType]}
+                            </option>
+                        ))}
+                    </select>
+                    <input
+                        type="text"
+                        disabled={disabled}
+                        placeholder={originalName ?? id}
+                        value={name}
+                        onChange={event => onNameChange(id, event.target.value)}
+                        onKeyDown={event => {
+                            if (event.key === "Enter") {
+                                event.preventDefault()
+                            }
+                        }}
+                        className="field-input"
+                    />
+                </>
             )}
-            <input
-                type="text"
-                disabled={disabled || isUnsupported}
-                placeholder={originalName ?? id}
-                value={isUnsupported ? "Unsupported Field" : name}
-                onChange={event => onNameChange(id, event.target.value)}
-                onKeyDown={event => {
-                    if (event.key === "Enter") {
-                        event.preventDefault()
-                    }
-                }}
-                className={classNames("field-input", isUnsupported && "unsupported")}
-            />
         </>
     )
 }
@@ -115,6 +124,7 @@ interface FieldMappingProps {
     initialSlugFieldId: string | null
     previousLastSynced: string | null
     previousIgnoredFieldIds: string | null
+    databaseIdMap: DatabaseIdMap
 }
 
 export function FieldMapping({
@@ -123,6 +133,7 @@ export function FieldMapping({
     initialSlugFieldId,
     previousLastSynced,
     previousIgnoredFieldIds,
+    databaseIdMap,
 }: FieldMappingProps) {
     const isAllowedToManage = useIsAllowedTo(...syncMethods)
 
@@ -135,7 +146,7 @@ export function FieldMapping({
     const dataSourceName = dataSource.name
     const database = dataSource.database as DatabaseObjectResponse
 
-    const initialFieldsInfo = useMemo(() => getDataSourceFieldsInfo(database), [database])
+    const initialFieldsInfo = useMemo(() => getDataSourceFieldsInfo(database, databaseIdMap), [database, databaseIdMap])
     const possibleSlugFieldIds = useMemo(() => getPossibleSlugFieldIds(database), [database])
 
     const [selectedSlugFieldId, setSelectedSlugFieldId] = useState<FieldId | null>(
@@ -295,6 +306,10 @@ export function FieldMapping({
                                 fieldInfo={fieldInfo}
                                 ignored={ignoredFieldIds.has(fieldInfo.id)}
                                 isAllowedToManage={isAllowedToManage}
+                                unsupported={
+                                    !Array.isArray(fieldInfo.allowedTypes) || fieldInfo.allowedTypes.length === 0
+                                }
+                                missingCollection={isMissingCollection(fieldInfo, databaseIdMap)}
                                 onToggleIgnored={toggleFieldIgnoredState}
                                 onNameChange={changeFieldName}
                                 onFieldTypeChange={changeFieldType}

@@ -1,12 +1,12 @@
 import "./App.css"
 
+import { APIErrorCode } from "@notionhq/client"
 import { framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
 import { type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
-import { SelectDataSource } from "./SelectDataSource"
 import { NoTableAccess } from "./NoAccess"
-import { APIErrorCode } from "@notionhq/client"
+import { SelectDataSource } from "./SelectDataSource"
 
 interface AppProps {
     collection: ManagedCollection
@@ -15,6 +15,7 @@ interface AppProps {
     previousLastSynced: string | null
     previousIgnoredFieldIds: string | null
     previousDatabaseName: string | null
+    databaseIdMap: DatabaseIdMap
 }
 
 export function App({
@@ -24,6 +25,7 @@ export function App({
     previousLastSynced,
     previousIgnoredFieldIds,
     previousDatabaseName,
+    databaseIdMap,
 }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
@@ -120,6 +122,7 @@ export function App({
             initialSlugFieldId={previousSlugFieldId}
             previousLastSynced={previousLastSynced}
             previousIgnoredFieldIds={previousIgnoredFieldIds}
+            databaseIdMap={databaseIdMap}
         />
     )
 }

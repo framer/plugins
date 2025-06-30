@@ -63,16 +63,25 @@ export type PossibleField = (
         readonly originalAirtableType?: string
     }
 
+/**
+ * Creates the common metadata properties that are repeated across all inference functions
+ */
+function createFieldMetadata(fieldSchema: AirtableFieldSchema) {
+    return {
+        airtableOptions: fieldSchema.options,
+        originalAirtableType: fieldSchema.type,
+    }
+}
+
 function inferBooleanField(fieldSchema: AirtableFieldSchema & { type: "checkbox" }): PossibleField {
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "boolean",
         allowedTypes: ["boolean"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -82,7 +91,6 @@ function inferEnumField(fieldSchema: AirtableFieldSchema & { type: "singleSelect
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "enum",
         cases: fieldSchema.options.choices.map(choice => ({
             id: choice.id,
@@ -93,7 +101,7 @@ function inferEnumField(fieldSchema: AirtableFieldSchema & { type: "singleSelect
             name: choice.name,
         })),
         allowedTypes: ["enum"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -107,10 +115,9 @@ function inferNumberField(
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "number",
         allowedTypes: ["number"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -120,10 +127,9 @@ function inferDurationField(fieldSchema: AirtableFieldSchema & { type: "duration
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "string",
         allowedTypes: ["string", "number"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -133,10 +139,9 @@ function inferStringField(fieldSchema: AirtableFieldSchema & { type: "singleLine
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "string",
         allowedTypes: ["string", "formattedText", "color"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -146,10 +151,9 @@ function inferEmailOrPhoneField(fieldSchema: AirtableFieldSchema & { type: "emai
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "string",
         allowedTypes: ["string", "link"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -159,10 +163,9 @@ function inferTextField(fieldSchema: AirtableFieldSchema & { type: "multilineTex
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "formattedText",
         allowedTypes: ["formattedText", "string"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -172,10 +175,9 @@ function inferUrlField(fieldSchema: AirtableFieldSchema & { type: "url" }): Poss
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "link",
         allowedTypes: ["link", "image", "file", "string"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -185,10 +187,9 @@ function inferAttachmentsField(fieldSchema: AirtableFieldSchema & { type: "multi
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "image",
         allowedTypes: ["image", "file", "link"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -202,10 +203,9 @@ function inferDateField(
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "date",
         allowedTypes: ["date"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -215,10 +215,9 @@ function inferBarcodeField(fieldSchema: AirtableFieldSchema & { type: "barcode" 
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "string",
         allowedTypes: ["string"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -228,10 +227,9 @@ function inferAiTextField(fieldSchema: AirtableFieldSchema & { type: "aiText" })
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "string",
         allowedTypes: ["string"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -245,10 +243,9 @@ function inferCollaboratorField(
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "string",
         allowedTypes: ["string"],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -347,12 +344,11 @@ async function inferRecordLinksField(
             name: fieldSchema.name,
             userEditable: false,
             airtableType: fieldSchema.type,
-            airtableOptions: fieldSchema.options,
             type,
             collectionId: "",
             supportedCollections: [],
             single: fieldSchema.options.prefersSingleRecordLink,
-            originalAirtableType: fieldSchema.type,
+            ...createFieldMetadata(fieldSchema),
         }
     }
 
@@ -361,12 +357,11 @@ async function inferRecordLinksField(
         name: fieldSchema.name,
         userEditable: false,
         airtableType: "multipleRecordLinks",
-        airtableOptions: fieldSchema.options,
         supportedCollections: foundCollections,
         collectionId: foundCollection.id,
         type,
         single: fieldSchema.options.prefersSingleRecordLink,
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 
@@ -477,11 +472,10 @@ async function inferFormulaField(
             name: fieldSchema.name,
             userEditable: false,
             airtableType: fieldSchema.type,
-            airtableOptions: fieldSchema.options,
             type: "file",
             allowedFileTypes: ALLOWED_FILE_TYPES,
             allowedTypes: ["file", "image", "link"],
-            originalAirtableType: fieldSchema.type,
+            ...createFieldMetadata(fieldSchema),
         }
     }
 
@@ -515,10 +509,9 @@ function createUnsupportedField(fieldSchema: AirtableFieldSchema): PossibleField
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
-        airtableOptions: fieldSchema.options,
         type: "unsupported",
         allowedTypes: [fieldSchema.type],
-        originalAirtableType: fieldSchema.type,
+        ...createFieldMetadata(fieldSchema),
     }
 }
 

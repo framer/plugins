@@ -6375,6 +6375,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"recruitee@workspace:plugins/recruitee":
+  version: 0.0.0-use.local
+  resolution: "recruitee@workspace:plugins/recruitee"
+  dependencies:
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    framer-plugin: "npm:^3.3.2"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+  languageName: unknown
+  linkType: soft
+
 "redirect-sync@workspace:plugins/redirect-sync":
   version: 0.0.0-use.local
   resolution: "redirect-sync@workspace:plugins/redirect-sync"

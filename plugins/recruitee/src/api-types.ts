@@ -2,16 +2,28 @@
 export interface Offer {
     id: number
     title: string
+    department: string| null
     employment_type: string
     status: string
     candidates_count: number
     hired_candidates_count: number
     disqualified_candidates_count: number
-    city: string
+    location: string| null
+    street: string| null
+    city: string| null
+    state_name:string| null
+    postal_code:string| null
+    country_code:string| null
     mailbox_email: string
     requirements: string
     description: string
     offer_tags: string
+    url:string
+    enabled_for_referrals:boolean
+    on_site:boolean
+    remote:boolean
+    published_at:string| null
+    closed_at:string| null
 }
 export interface Location {
     id: number
@@ -58,6 +70,9 @@ export function validateOffers(data: unknown): asserts data is Offer[] {
         if (typeof item.title !== "string") {
             throw new Error("Expected offer to have string title")
         }
+        if ((item.department != null) && (typeof item.department !== "string")) {
+            throw new Error("Expected candidates to have string department")
+        }
         if (typeof item.employment_type !== "string") {
             throw new Error("Expected offer to have string employment type")
         }
@@ -87,6 +102,30 @@ export function validateOffers(data: unknown): asserts data is Offer[] {
         }
         if (!Array.isArray(item.offer_tags)) {
             throw new Error("Expected candidates to have string emails")
+        }
+        if ((item.location != null) && (typeof item.location !== "string")) {
+            throw new Error("Expected candidates to have string location")
+        }
+        if ((item.street != null) && (typeof item.street !== "string")) {
+            throw new Error("Expected candidates to have string street")
+        }
+        if ((item.state_name != null) && (typeof item.state_name !== "string")) {
+            throw new Error("Expected candidates to have string state name")
+        }
+        if ((item.postal_code != null) && (typeof item.postal_code !== "string")) {
+            throw new Error("Expected candidates to have string postal code")
+        }
+        if ((item.country_code != null) && (typeof item.country_code !== "string")) {
+            throw new Error("Expected candidates to have string country code")
+        }
+        if ((item.enabled_for_referrals != null) && (typeof item.enabled_for_referrals !== "boolean")) {
+            throw new Error("Expected candidates to have boolean enabled for referrals")
+        }
+        if ((item.on_site != null) && (typeof item.on_site !== "boolean")) {
+            throw new Error("Expected candidates to have boolean on site")
+        }
+        if ((item.remote != null) && (typeof item.remote !== "boolean")) {
+            throw new Error("Expected candidates to have boolean remote")
         }
     }
 }

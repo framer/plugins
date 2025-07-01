@@ -1,10 +1,5 @@
 import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
-import {
-    type FieldDataInput,
-    framer,
-    ManagedCollection,
-    type ManagedCollectionFieldInput,
-} from "framer-plugin"
+import { type FieldDataInput, framer, ManagedCollection, type ManagedCollectionFieldInput } from "framer-plugin"
 import pLimit from "p-limit"
 import {
     assertFieldTypeMatchesPropertyType,
@@ -25,6 +20,13 @@ import { formatDate, isNotNull, slugify } from "./utils"
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
 const CONCURRENCY_LIMIT = 5
+
+const SLUG_FIELD: ManagedCollectionFieldInput = {
+    type: "string",
+    id: "slug",
+    name: "Slug",
+    userEditable: false,
+}
 
 export type DatabaseIdMap = Map<string, string>
 
@@ -120,7 +122,7 @@ export async function syncCollection(
 
             for (const property of Object.values(item.properties)) {
                 if (property.id === slugField.id) {
-                    const resolvedSlug = getPropertyValue(property, { type: "string", name: "Slug", id: "slug" })
+                    const resolvedSlug = getPropertyValue(property, SLUG_FIELD)
 
                     if (!resolvedSlug || typeof resolvedSlug !== "string") {
                         break

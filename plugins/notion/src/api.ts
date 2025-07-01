@@ -125,7 +125,7 @@ export async function getNotionDatabases() {
         },
     })
 
-    return results.filter(isFullDatabase) as DatabaseObjectResponse[]
+    return results.filter(isFullDatabase)
 }
 
 export function assertFieldTypeMatchesPropertyType(
@@ -155,7 +155,7 @@ export async function getDatabase(databaseId: string) {
         throw new Error(`Database ${databaseId} is not a full database`)
     }
 
-    return database as DatabaseObjectResponse
+    return database
 }
 
 export function richTextToPlainText(richText: RichTextItemResponse[] | undefined) {

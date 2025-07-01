@@ -76,7 +76,7 @@ class Auth {
             const bearerToken = localStorage.getItem(PLUGIN_KEYS.BEARER_TOKEN)
             if (!bearerToken) return null
 
-            const storedTokens = { bearer_token: bearerToken } as Tokens
+            const storedTokens = { bearer_token: bearerToken }
             this.storedTokens = storedTokens
 
             return storedTokens

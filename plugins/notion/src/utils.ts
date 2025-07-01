@@ -22,6 +22,10 @@ export function assert(condition: unknown, ...msg: unknown[]): asserts condition
     throw e
 }
 
+export function isNotNull<T>(value: T): value is NonNullable<T> {
+    return value !== null
+}
+
 // Match everything except for letters, numbers and parentheses.
 const nonSlugCharactersRegExp = /[^\p{Letter}\p{Number}()]+/gu
 // Match leading/trailing dashes, for trimming purposes.

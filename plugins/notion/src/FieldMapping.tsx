@@ -11,7 +11,7 @@ import {
     mergeFieldsInfoWithExistingFields,
     syncCollection,
 } from "./data"
-import { syncMethods } from "./utils"
+import { assert, syncMethods } from "./utils"
 
 type FieldType = ManagedCollectionField["type"]
 
@@ -91,7 +91,11 @@ function FieldMappingRow({
                         className="field-type"
                         disabled={disabled || allowedTypes.length <= 1}
                         value={type ?? ""}
-                        onChange={event => onFieldTypeChange(id, event.target.value as FieldType)}
+                        onChange={event => {
+                            const value = allowedTypes.find(type => type === event.target.value)
+                            assert(value, "Invalid field type")
+                            onFieldTypeChange(id, value)
+                        }}
                     >
                         {allowedTypes.map(allowedType => (
                             <option key={allowedType} value={allowedType}>
@@ -144,7 +148,7 @@ export function FieldMapping({
     const isLoadingFields = status === "loading-fields"
 
     const dataSourceName = dataSource.name
-    const database = dataSource.database as DatabaseObjectResponse
+    const database = dataSource.database
 
     const initialFieldsInfo = useMemo(() => getDataSourceFieldsInfo(database, databaseIdMap), [database, databaseIdMap])
     const possibleSlugFieldIds = useMemo(() => getPossibleSlugFieldIds(database), [database])

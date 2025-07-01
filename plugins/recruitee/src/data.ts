@@ -187,7 +187,7 @@ async function getItems(
                 case "multiCollectionReference": {
                     const ids: string[] = []
                     if (Array.isArray(value)) {
-                        ids.push(...value.map(item => String(item)))
+                        ids.push(...value.map(item => String(item))) // this works only in Recruitee API, make sure to update this if we change the API
                     }
 
                     fieldData[field.id] = {

@@ -172,7 +172,7 @@ async function getItems(
                     break
                 case "formattedText":
                     fieldData[field.id] = {
-                        value: decodeHtml(String(value)),
+                        value: decodeHtml(value ? String(value) : ""),
                         type: "formattedText",
                     }
                     break

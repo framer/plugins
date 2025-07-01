@@ -1,12 +1,10 @@
 import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import {
     type EnumCase,
-    type FieldDataEntryInput,
     type FieldDataInput,
     framer,
     ManagedCollection,
     type ManagedCollectionFieldInput,
-    type ManagedCollectionItemInput,
 } from "framer-plugin"
 import pLimit from "p-limit"
 import {
@@ -23,7 +21,7 @@ import {
     pageContentProperty,
     richTextToPlainText,
 } from "./api"
-import { formatDate, slugify } from "./utils"
+import { formatDate, isNotNull, slugify } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -123,7 +121,7 @@ export async function syncCollection(
 
             for (const property of Object.values(item.properties)) {
                 if (property.id === slugField.id) {
-                    const resolvedSlug = getPropertyValue(property, { type: "string" } as ManagedCollectionFieldInput)
+                    const resolvedSlug = getPropertyValue(property, { type: "string", name: "Slug", id: "slug" })
 
                     if (!resolvedSlug || typeof resolvedSlug !== "string") {
                         break
@@ -142,7 +140,7 @@ export async function syncCollection(
                     )
                 }
 
-                fieldData[field.id] = { type: field.type, value: fieldValue } as FieldDataEntryInput
+                fieldData[field.id] = { type: field.type, value: fieldValue }
             }
 
             if (!slugValue || typeof slugValue !== "string") {
@@ -165,7 +163,7 @@ export async function syncCollection(
     )
 
     const result = await Promise.all(promises)
-    const items = result.filter(Boolean) as ManagedCollectionItemInput[]
+    const items = result.filter(isNotNull)
 
     const itemIdsToDelete = new Set(await collection.getItemIds())
     for (const itemId of seenItemIds) {
@@ -217,9 +215,9 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        const ignoredFieldIds = (
-            previousIgnoredFieldIds ? new Set(JSON.parse(previousIgnoredFieldIds)) : new Set()
-        ) as Set<string>
+        const ignoredFieldIds: Set<string> = previousIgnoredFieldIds
+            ? new Set(JSON.parse(previousIgnoredFieldIds))
+            : new Set()
 
         const fieldsToSync = fields.filter(
             field =>
@@ -242,7 +240,7 @@ export async function fieldsInfoToCollectionFields(
     fieldsInfo: FieldInfo[],
     databaseIdMap: DatabaseIdMap
 ): Promise<ManagedCollectionFieldInput[]> {
-    const fields = []
+    const fields: ManagedCollectionFieldInput[] = []
 
     for (const fieldInfo of fieldsInfo) {
         const property = fieldInfo.notionProperty
@@ -280,19 +278,19 @@ export async function fieldsInfoToCollectionFields(
             case "enum": {
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
-                let cases: EnumCase[] | null = null
+                let cases: Extract<ManagedCollectionFieldInput, { type: "enum" }>["cases"] | null = null
                 switch (property?.type) {
                     case "select":
                         cases = property.select.options.map(option => ({
                             id: option.id,
                             name: option.name,
-                        })) as EnumCase[]
+                        }))
                         break
                     case "status":
                         cases = property.status.options.map(option => ({
                             id: option.id,
                             name: option.name,
-                        })) as EnumCase[]
+                        }))
                         break
                 }
 
@@ -344,7 +342,7 @@ export async function fieldsInfoToCollectionFields(
         }
     }
 
-    return fields as ManagedCollectionFieldInput[]
+    return fields
 }
 
 export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {

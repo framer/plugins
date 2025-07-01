@@ -22,6 +22,8 @@ export interface CompensationTiers {
     components: CompensationComponent[]
 }
 
+// https://developers.ashbyhq.com/docs/public-job-posting-api
+
 export interface Job {
     id: string
     title: string
@@ -49,11 +51,10 @@ export interface Job {
         compensationTiers: CompensationTiers[]
         summaryComponents: CompensationComponent[]
     }
+    shouldDisplayCompensationOnJobPostings: boolean
 }
 
-
-
-export type AshbyItem = Job 
+export type AshbyItem = Job
 
 export function isAshbyItemField<T extends AshbyItem>(field: unknown, itemType: T): field is keyof T {
     if (typeof field !== "string" || field === "") return false
@@ -96,8 +97,8 @@ export function validateJobs(data: unknown): asserts data is Job[] {
         if (!Array.isArray(item.compensation.summaryComponents)) {
             throw new Error("Expected job to have an array 'compensation.summaryComponents'")
         }
+        if (typeof item.shouldDisplayCompensationOnJobPostings !== "boolean") {
+            throw new Error("Expected job to have a boolean 'shouldDisplayCompensationOnJobPostings'")
+        }
     }
 }
-
-
-

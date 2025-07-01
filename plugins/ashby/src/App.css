@@ -56,10 +56,10 @@ form {
 }
 
 .setup img {
-    height: 180px;
+    height: 200px;
     width: 100%;
     border-radius: 10px;
-    background-color: #15372c;
+    background-color: #483FAC;
     object-fit: contain;
 }
 
@@ -140,7 +140,7 @@ form {
 
 .mapping .source-field:focus-visible {
     outline: none;
-    box-shadow: inset 0 0 0 1px #15372c;
+    box-shadow: inset 0 0 0 1px #483FAC;
 }
 
 .mapping .source-field.missing-reference,
@@ -200,8 +200,8 @@ form {
 }
 
 input[type="checkbox"]:checked {
-    background-color: #15372c;
-    border-color: #15372c;
+    background-color: #483FAC;
+    border-color: #483FAC;
 }
 
 .setup,

@@ -47,8 +47,6 @@ export async function getDataSource(boardToken: string, dataSourceId: string): P
         throw new Error(`No data source found for id "${dataSourceId}".`)
     }
 
-    
-
     const fieldToCollectionsMap = new Map<string, ManagedCollection[]>()
     const boardCollections: ManagedCollection[] = []
 
@@ -166,7 +164,7 @@ async function getItems(
                     break
                 case "formattedText":
                     fieldData[field.id] = {
-                        value: decodeHtml(String(value)),
+                        value: decodeHtml(value ? String(value) : ""),
                         type: "formattedText",
                     }
                     break
@@ -235,7 +233,6 @@ export async function syncCollection(
     })
     const itemIds = new Set(items.map(item => item.id))
     const unsyncedItemsIds = existingItemsIds.filter(existingItemId => !itemIds.has(existingItemId))
-
 
     await collection.removeItems(unsyncedItemsIds)
     await collection.addItems(items)

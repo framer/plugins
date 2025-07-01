@@ -10,6 +10,7 @@ import {
     getFieldDataEntryForProperty,
     getNotionDatabases,
     getPageBlocksAsRichText,
+    getSlugValue,
     isUnchangedSinceLastSync,
     PLUGIN_KEYS,
     pageContentProperty,
@@ -122,13 +123,13 @@ export async function syncCollection(
 
             for (const property of Object.values(item.properties)) {
                 if (property.id === slugField.id) {
-                    const slugEntry = getFieldDataEntryForProperty(property, SLUG_FIELD)
+                    const slug = getSlugValue(property)
 
-                    if (!slugEntry || typeof slugEntry.value !== "string") {
+                    if (!slug) {
                         break
                     }
 
-                    slugValue = slugify(slugEntry.value)
+                    slugValue = slugify(slug)
                 }
 
                 const field = sanitizedFieldsById.get(property.id)

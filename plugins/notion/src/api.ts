@@ -55,8 +55,8 @@ export const pageContentProperty: FieldInfo = {
     notionProperty: null,
 }
 
-// The order in which we display slug fields
-const preferedSlugFieldOrder: NotionProperty["type"][] = ["title", "rich_text"]
+// The valid field types that can be used as a slug, in order of preference
+const slugFieldTypes: NotionProperty["type"][] = ["title", "rich_text"]
 
 export const supportedCMSTypeByNotionPropertyType = {
     checkbox: ["boolean"],
@@ -231,22 +231,30 @@ export function getPossibleSlugFieldIds(database: GetDatabaseResponse) {
         const property = database.properties[key]
         assert(property)
 
-        switch (property.type) {
-            case "title":
-            case "rich_text":
-                options.push(property)
-                break
+        if (slugFieldTypes.includes(property.type)) {
+            options.push(property)
         }
     }
 
     function getOrderIndex(type: NotionProperty["type"]): number {
-        const index = preferedSlugFieldOrder.indexOf(type)
-        return index === -1 ? preferedSlugFieldOrder.length : index
+        const index = slugFieldTypes.indexOf(type)
+        return index === -1 ? slugFieldTypes.length : index
     }
 
     options.sort((a, b) => getOrderIndex(a.type) - getOrderIndex(b.type))
 
     return options.map(property => property.id)
+}
+
+export function getSlugValue(property: PageObjectResponse["properties"][string]): string | null {
+    switch (property.type) {
+        case "title":
+            return richTextToPlainText(property.title)
+        case "rich_text":
+            return richTextToPlainText(property.rich_text)
+        default:
+            return null
+    }
 }
 
 async function getBlockChildrenIterator(blockId: string) {

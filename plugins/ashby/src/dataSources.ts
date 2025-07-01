@@ -81,11 +81,57 @@ const jobsDataSource = createDataSource(
         { id: "publishedAt", name: "Published At", type: "date" },
         { id: "jobUrl", name: "Job URL", type: "link" },
         { id: "applyUrl", name: "Apply URL", type: "link" },
-        // TODO: Compensation and Address are not strings.
-        { id: "compensation", name: "Compensation", type: "string" },
-        { id: "address", name: "Address", type: "string" },
+        { id: "compensation", name : "Compensation", type: "string", getValue: value => {
+            if (typeof value !== "object" || value === null) return null
+            
+            const parts = []
+            
+            // Add string fields if they exist and aren't empty
+            if ("compensationTierSummary" in value && typeof value.compensationTierSummary === "string" && value.compensationTierSummary.trim()) {
+                parts.push(value.compensationTierSummary.trim())
+            }
+            if ("scrapeableCompensationSalarySummary" in value && typeof value.scrapeableCompensationSalarySummary === "string" && value.scrapeableCompensationSalarySummary.trim()) {
+                parts.push(value.scrapeableCompensationSalarySummary.trim())
+            }
+            
+            // Add compensation tiers
+            if ("compensationTiers" in value && Array.isArray(value.compensationTiers)) {
+                const tierSummaries = value.compensationTiers
+                    .map(tier => typeof tier.tierSummary === "string" ? tier.tierSummary.trim() : "")
+                    .filter(Boolean)
+                if (tierSummaries.length) parts.push(tierSummaries.join(", "))
+            }
+            
+            // Add summary components
+            if ("summaryComponents" in value && Array.isArray(value.summaryComponents)) {
+                const componentSummaries = value.summaryComponents.map(component => {
+                    const range = component.minValue === component.maxValue 
+                        ? `${component.currencyCode}${component.minValue.toLocaleString()}`
+                        : `${component.currencyCode}${component.minValue.toLocaleString()}-${component.maxValue.toLocaleString()}`
+                    return `${component.compensationType} (${component.interval}): ${range}`
+                })
+                parts.push(componentSummaries.join(", "))
+            }
+            
+            return parts.length ? parts.join(" | ") : null
+        }},
+        { id: "address", name: "Address", type: "string", getValue: value => {
+            if (typeof value === "object" && value !== null && "postalAddress" in value) {
+                const address = (value as { postalAddress: { addressLocality: string; addressRegion: string; addressCountry: string } }).postalAddress
+                const parts = [
+                    address?.addressLocality?.trim(),
+                    address?.addressRegion?.trim(),
+                    address?.addressCountry?.trim()
+                ].filter(Boolean)
+                
+                return parts.length > 0 ? parts.join(", ") : null
+            }
+
+            return null
+        }},
     ]
 )
+
 
 
 export const dataSources = [

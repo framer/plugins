@@ -51,7 +51,9 @@ export interface Job {
     }
 }
 
-export type AshbyItem = Job
+
+
+export type AshbyItem = Job 
 
 export function isAshbyItemField<T extends AshbyItem>(field: unknown, itemType: T): field is keyof T {
     if (typeof field !== "string" || field === "") return false
@@ -86,13 +88,16 @@ export function validateJobs(data: unknown): asserts data is Job[] {
             throw new Error("Expected job address to have a 'postalAddress' object")
         }
         if (typeof item.compensation !== "object" || item.compensation === null) {
-            throw new Error("Expected job to have an 'compensation' object")
+            throw new Error("Expected job to have a 'compensation' object")
         }
-        if (typeof item.compensation.compensationTiers !== "object" || item.compensation.compensationTiers === null) {
-            throw new Error("Expected job to have an 'compensation.compensationTiers' object")
+        if (!Array.isArray(item.compensation.compensationTiers)) {
+            throw new Error("Expected job to have an array 'compensation.compensationTiers'")
         }
-        if (typeof item.compensation.summaryComponents !== "object" || item.compensation.summaryComponents === null) {
-            throw new Error("Expected job to have an 'compensation.summaryComponents' object")
+        if (!Array.isArray(item.compensation.summaryComponents)) {
+            throw new Error("Expected job to have an array 'compensation.summaryComponents'")
         }
     }
 }
+
+
+

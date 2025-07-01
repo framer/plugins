@@ -96,6 +96,8 @@ const offersDataSource = createDataSource(
         { id: "employment_type", name: "Type", type: "string" },
         { id: "status", name: "Status", type: "string" },
         { id: "candidates_count", name: "Candidates Count", type: "number" },
+        { id: "shared_openings_count", name: "Shared Openings Count", type: "number" },
+        { id: "dynamic_fields_count", name: "Dynamic Fields Count", type: "number" },
         {
             id: "hired_candidates_count",
             name: "Hired Candidates Count",

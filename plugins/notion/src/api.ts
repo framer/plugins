@@ -5,7 +5,12 @@ import type {
     PageObjectResponse,
     RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints"
-import { framer, type ManagedCollectionField, type ManagedCollectionFieldInput } from "framer-plugin"
+import {
+    type FieldDataEntryInput,
+    framer,
+    type ManagedCollectionField,
+    type ManagedCollectionFieldInput,
+} from "framer-plugin"
 import { blocksToHTML, richTextToHTML } from "./blocksToHTML"
 import type { DatabaseIdMap } from "./data"
 import { assert } from "./utils"
@@ -23,7 +28,7 @@ export const PLUGIN_KEYS = {
 // This is the most recent date when the page content formatted text importing was updated.
 // If the last synced date for an item is before this date, the content is updated regardless of last edited time.
 // The allows users to get the latest content formatting updates automatically.
-const LAST_CONTENT_IMPORTING_UPDATE_DATE = new Date("2025-06-18T12:00:00.000Z")
+const LAST_CONTENT_IMPORTING_UPDATE_DATE = new Date("2025-07-01T12:00:00.000Z")
 
 export type FieldId = string
 
@@ -280,77 +285,95 @@ export async function getPageBlocksAsRichText(pageId: string) {
     return blocksToHTML(blocks)
 }
 
-export function getPropertyValue(
+export function getFieldDataEntryForProperty(
     property: PageObjectResponse["properties"][string],
     field: ManagedCollectionFieldInput
-): boolean | number | string | string[] | null {
+): FieldDataEntryInput | null {
     switch (property.type) {
         case "checkbox": {
-            return property.checkbox ?? false
+            return { type: "boolean", value: property.checkbox ?? false }
         }
         case "last_edited_time": {
-            return property.last_edited_time
+            return { type: "date", value: property.last_edited_time }
         }
         case "created_time": {
-            return property.created_time
+            return { type: "date", value: property.created_time }
         }
         case "rich_text": {
             if (field.type === "formattedText") {
-                return richTextToHTML(property.rich_text)
+                return { type: "formattedText", value: richTextToHTML(property.rich_text) }
             }
 
-            return richTextToPlainText(property.rich_text)
+            return { type: "string", value: richTextToPlainText(property.rich_text) }
         }
         case "select": {
-            if (!property.select) {
-                return field.type === "enum" ? (field.cases?.[0]?.id ?? null) : null
+            if (field.type === "enum") {
+                if (!property.select) {
+                    const firstCase = field.cases?.[0]?.id
+                    return firstCase ? { type: "enum", value: firstCase } : null
+                }
+
+                return { type: "enum", value: property.select.id }
             }
 
-            return property.select.id
+            return null
         }
         case "status": {
-            if (!property.status) {
-                return field.type === "enum" ? (field.cases?.[0]?.id ?? null) : null
+            if (field.type === "enum") {
+                if (!property.status) {
+                    const firstCase = field.cases?.[0]?.id
+                    return firstCase ? { type: "enum", value: firstCase } : null
+                }
+
+                return { type: "enum", value: property.status.id }
             }
 
-            return property.status.id
+            return null
         }
         case "title": {
             if (field.type === "formattedText") {
-                return richTextToHTML(property.title)
+                return { type: "formattedText", value: richTextToHTML(property.title) }
             }
 
-            return richTextToPlainText(property.title)
+            return { type: "string", value: richTextToPlainText(property.title) }
         }
         case "number": {
-            return property.number ?? 0
+            return { type: "number", value: property.number ?? 0 }
         }
         case "url": {
-            return property.url ?? ""
+            return { type: "link", value: property.url ?? "" }
         }
         case "unique_id": {
-            return property.unique_id.number
+            return { type: "string", value: property.unique_id.number?.toString() ?? "" }
         }
         case "date": {
-            return property.date?.start ?? null
+            return { type: "date", value: property.date?.start ?? null }
         }
         case "relation": {
-            return property.relation.map(({ id }) => id)
+            return { type: "multiCollectionReference", value: property.relation.map(({ id }) => id) }
         }
         case "files": {
-            const firstFile = property.files[0]
+            if (field.type === "file" || field.type === "image") {
+                const firstFile = property.files[0]
 
-            switch (firstFile?.type) {
-                case "external":
-                    return firstFile.external.url
-                case "file":
-                    return firstFile.file.url
-                default:
-                    return null
+                switch (firstFile?.type) {
+                    case "external":
+                        return { type: field.type, value: firstFile.external.url }
+                    case "file":
+                        return { type: field.type, value: firstFile.file.url }
+                    default:
+                        return { type: field.type, value: null }
+                }
             }
+
+            return null
         }
         case "email": {
-            return property.email ?? ""
+            if (field.type === "formattedText" || field.type === "string") {
+                return { type: field.type, value: property.email ?? "" }
+            }
+
+            return null
         }
     }
 

@@ -56,7 +56,7 @@ export function SelectDataSource({
             <img src={hero} alt="Greenhouse Hero" />
 
             <form onSubmit={handleSubmit}>
-                <label>
+                <div>
                     <p>Board Token</p>
                     <input
                         id="boardToken"
@@ -66,8 +66,8 @@ export function SelectDataSource({
                         value={boardToken}
                         onChange={event => setBoardToken(event.target.value)}
                     />
-                </label>
-                <label>
+                </div>
+                <div>
                     <p>Collection</p>
                     <select
                         id="collection"
@@ -85,7 +85,9 @@ export function SelectDataSource({
                             </option>
                         ))}
                     </select>
-                </label>
+                </div>
+
+                    
                 <button disabled={isButtonDisabled}>{isLoading ? <div className="framer-spinner" /> : "Next"}</button>
             </form>
         </main>

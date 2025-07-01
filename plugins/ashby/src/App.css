@@ -73,15 +73,14 @@ form {
     pointer-events: none;
 }
 
-.setup label {
+.setup div {
     display: flex;
     flex-direction: row;
     align-items: center;
-    height: 30px;
-    width: 100%;
     justify-content: space-between;
+    width: 100%;
+    height: 30px;
     color: var(--framer-color-text-secondary);
-    padding-left: 15px;
 }
 
 .setup select {

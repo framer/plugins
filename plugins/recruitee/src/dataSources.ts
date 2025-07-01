@@ -100,16 +100,28 @@ const offersDataSource = createDataSource(
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
+        { id: "department", name: "Department", type: "string" },
         { id: "employment_type", name: "Type", type: "string" },
         { id: "status", name: "Status", type: "string" },
         { id: "candidates_count", name: "Candidates Count", type: "number" },
         { id: "hired_candidates_count", name: "Hired Candidates Count", type: "number" },
         { id: "disqualified_candidates_count", name: "Disqualified Candidates Count", type: "number" },
+        { id: "location", name: "Location", type: "string" },
+        { id: "street", name: "Street", type: "string" },
         { id: "city", name: "City", type: "string" },
+        { id: "state_name", name: "State", type: "string" },
+        { id: "postal_code", name: "Postal Code", type: "string" },
+        { id: "country_code", name: "Country Code", type: "string" },
         { id: "mailbox_email", name: "Email", type: "string" },
         { id: "requirements", name: "Requirements", type: "formattedText" },
         { id: "description", name: "Description", type: "formattedText" },
-        { id: "offer_tags", name: "Tags", type: "string" }
+        { id: "offer_tags", name: "Tags", type: "string" },
+        { id: "url", name: "Url", type: "string" },
+        { id: "enabled_for_referrals", name: "Enabled For Referrals", type: "boolean" },
+        { id: "on_site", name: "Is On Site?", type: "boolean" },
+        { id: "remote", name: "Is Remote", type: "boolean" },
+        { id: "published_at", name: "Published At", type: "string" },
+        { id: "closed_at", name: "Closed At", type: "string" }
     ]
 )
 

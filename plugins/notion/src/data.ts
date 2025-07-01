@@ -118,9 +118,7 @@ export async function syncCollection(
                 if (property.id === slugField.id) {
                     const slug = getSlugValue(property)
 
-                    if (!slug) {
-                        break
-                    }
+                    if (!slug) break
 
                     slugValue = slugify(slug)
                 }
@@ -129,12 +127,12 @@ export async function syncCollection(
                 if (!field) continue
 
                 const fieldEntry = getFieldDataEntryForProperty(property, field)
-                if (fieldEntry === null || fieldEntry === undefined) {
+                if (fieldEntry) {
+                    fieldData[field.id] = fieldEntry
+                } else {
                     console.warn(
                         `Skipping item at index ${index} because it doesn't have a valid value for field ${field.name}`
                     )
-                } else {
-                    fieldData[field.id] = fieldEntry
                 }
             }
 

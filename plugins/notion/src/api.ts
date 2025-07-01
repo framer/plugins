@@ -315,28 +315,24 @@ export function getFieldDataEntryForProperty(
             return { type: "string", value: richTextToPlainText(property.rich_text) }
         }
         case "select": {
-            if (field.type === "enum") {
-                if (!property.select) {
-                    const firstCase = field.cases?.[0]?.id
-                    return firstCase ? { type: "enum", value: firstCase } : null
-                }
+            if (field.type !== "enum") return null
 
-                return { type: "enum", value: property.select.id }
+            if (!property.select) {
+                const firstCase = field.cases?.[0]?.id
+                return firstCase ? { type: "enum", value: firstCase } : null
             }
 
-            return null
+            return { type: "enum", value: property.select.id }
         }
         case "status": {
-            if (field.type === "enum") {
-                if (!property.status) {
-                    const firstCase = field.cases?.[0]?.id
-                    return firstCase ? { type: "enum", value: firstCase } : null
-                }
+            if (field.type !== "enum") return null
 
-                return { type: "enum", value: property.status.id }
+            if (!property.status) {
+                const firstCase = field.cases?.[0]?.id
+                return firstCase ? { type: "enum", value: firstCase } : null
             }
 
-            return null
+            return { type: "enum", value: property.status.id }
         }
         case "title": {
             if (field.type === "formattedText") {
@@ -361,27 +357,23 @@ export function getFieldDataEntryForProperty(
             return { type: "multiCollectionReference", value: property.relation.map(({ id }) => id) }
         }
         case "files": {
-            if (field.type === "file" || field.type === "image") {
-                const firstFile = property.files[0]
+            if (field.type !== "file" && field.type !== "image") return null
 
-                switch (firstFile?.type) {
-                    case "external":
-                        return { type: field.type, value: firstFile.external.url }
-                    case "file":
-                        return { type: field.type, value: firstFile.file.url }
-                    default:
-                        return { type: field.type, value: null }
-                }
+            const firstFile = property.files[0]
+
+            switch (firstFile?.type) {
+                case "external":
+                    return { type: field.type, value: firstFile.external.url }
+                case "file":
+                    return { type: field.type, value: firstFile.file.url }
+                default:
+                    return { type: field.type, value: null }
             }
-
-            return null
         }
         case "email": {
-            if (field.type === "formattedText" || field.type === "string") {
-                return { type: field.type, value: property.email ?? "" }
-            }
+            if (field.type !== "formattedText" && field.type !== "string") return null
 
-            return null
+            return { type: field.type, value: property.email ?? "" }
         }
     }
 

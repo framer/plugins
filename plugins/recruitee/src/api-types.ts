@@ -72,6 +72,7 @@ export interface Location {
     note: string | null
     state_name: string | null
     state_code: string | null
+    archived_at: string | null
     created_at: string | null
     updated_at: string | null
 }
@@ -95,9 +96,11 @@ export interface Candidate {
     positive_ratings: number
     has_avatar: boolean
     pending_result_request: boolean
+    my_pending_result_request: boolean
     tasks_count: number
     my_upcoming_event: boolean
     followed: boolean
+    viewed: boolean
     upcoming_event: boolean
     rating_visible: boolean
     ratings_count: number
@@ -109,6 +112,7 @@ export interface Candidate {
     last_message_at: string | null
     is_anonymous: boolean
     adminapp_url: string | null
+    admin_id: number | null
     referrer: string | null
     created_at: string | null
     updated_at: string | null
@@ -329,6 +333,9 @@ export function validateLocations(data: unknown): asserts data is Location[] {
         if (item.state_code != null && typeof item.state_code !== "string") {
             throw new Error("Expected candidates to have string state_code")
         }
+        if (item.archived_at != null && typeof item.archived_at !== "string") {
+            throw new Error("Expected candidates to have string archived_at")
+        }
         if (item.created_at != null && typeof item.created_at !== "string") {
             throw new Error("Expected candidates to have string created_at")
         }
@@ -398,6 +405,9 @@ export function validateCandidates(data: unknown): asserts data is Candidate[] {
         if (typeof item.pending_result_request !== "boolean") {
             throw new Error("Expected candidates to have boolean pending_result_request")
         }
+        if (typeof item.my_pending_result_request !== "boolean") {
+            throw new Error("Expected candidates to have boolean my_pending_result_request")
+        }
         if (item.positive_ratings != null && typeof item.positive_ratings !== "number") {
             throw new Error("Expected candidates to have number positive rating")
         }
@@ -409,6 +419,9 @@ export function validateCandidates(data: unknown): asserts data is Candidate[] {
         }
         if (typeof item.followed !== "boolean") {
             throw new Error("Expected candidates to have boolean followed")
+        }
+        if (typeof item.viewed !== "boolean") {
+            throw new Error("Expected candidates to have boolean viewed")
         }
         if (typeof item.upcoming_event !== "boolean") {
             throw new Error("Expected candidates to have boolean upcoming_event")
@@ -442,6 +455,9 @@ export function validateCandidates(data: unknown): asserts data is Candidate[] {
         }
         if (item.adminapp_url != null && typeof item.adminapp_url !== "string") {
             throw new Error("Expected candidates to have string adminapp_url")
+        }
+        if (item.admin_id != null && typeof item.admin_id !== "number") {
+            throw new Error("Expected candidates to have number admin_id")
         }
         if (item.referrer != null && typeof item.referrer !== "string") {
             throw new Error("Expected candidates to have string referrer")

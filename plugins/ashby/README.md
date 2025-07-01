@@ -2,6 +2,6 @@
 
 Plugin for syncing Ashby jobs into the Framer CMS.
 
-**By:** @clementroche
+**By:** @FerminBD
 
 ![Ashby Image](../../assets/ashby.png)

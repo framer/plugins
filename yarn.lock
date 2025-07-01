@@ -3281,6 +3281,18 @@ __metadata:
   checksum: 10/a0789dd882211b87116e81e2648ccb7f60340b34f19877dd020b39ebb4714e475eb943e14ba3e22201c221ef6645b7bfe10297e76b6ac95b48a9898c1211ce66
   languageName: node
   linkType: hard
+  
+"ashby@workspace:plugins/ashby":
+  version: 0.0.0-use.local
+  resolution: "ashby@workspace:plugins/ashby"
+  dependencies:
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    framer-plugin: "npm:^3.3.2"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+  languageName: unknown
+  linkType: soft
 
 "asynckit@npm:^0.4.0":
   version: 0.4.0

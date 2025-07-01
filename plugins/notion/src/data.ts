@@ -1,6 +1,5 @@
 import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import {
-    type EnumCase,
     type FieldDataInput,
     framer,
     ManagedCollection,

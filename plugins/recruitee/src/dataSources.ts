@@ -74,10 +74,18 @@ const locationDataSource = createDataSource(
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
+        { id: "is_valid", name: "Is Valid?", type: "boolean" },
+        { id: "lang_code", name: "Lang Code", type: "string" },
         { id: "city", name: "City", type: "string" },
         { id: "state_name", name: "State", type: "string" },
+        { id: "state_code", name: "State Code", type: "string" },
+        { id: "postal_code", name: "Postal Code", type: "string" },
         { id: "country_code", name: "Country", type: "string" },
+        { id: "street", name: "Street", type: "string" },
         { id: "full_address", name: "Full Address", type: "string" },
+        { id: "note", name: "Note", type: "string" },
+        { id: "created_at", name: "Created At", type: "string" },
+        { id: "updated_at", name: "Updated At", type: "string" },
     ]
 )
 
@@ -95,6 +103,7 @@ const offersDataSource = createDataSource(
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
+        { id: "position", name: "Position", type: "number" },
         { id: "department", name: "Department", type: "string" },
         { id: "employment_type", name: "Type", type: "string" },
         { id: "status", name: "Status", type: "string" },
@@ -105,6 +114,7 @@ const offersDataSource = createDataSource(
         { id: "street", name: "Street", type: "string" },
         { id: "city", name: "City", type: "string" },
         { id: "state_name", name: "State", type: "string" },
+        { id: "state_code", name: "State Code", type: "string" },
         { id: "postal_code", name: "Postal Code", type: "string" },
         { id: "country_code", name: "Country Code", type: "string" },
         { id: "mailbox_email", name: "Email", type: "string" },
@@ -112,11 +122,30 @@ const offersDataSource = createDataSource(
         { id: "description", name: "Description", type: "formattedText" },
         { id: "offer_tags", name: "Tags", type: "string" },
         { id: "url", name: "Url", type: "string" },
+        { id: "adminapp_url", name: "Adminapp Url", type: "string" },
+        { id: "careers_url", name: "Careers Url", type: "string" },
+        { id: "kind", name: "Kind", type: "string" },
+        { id: "has_active_campaign", name: "Has Active Campaign", type: "boolean" },
         { id: "enabled_for_referrals", name: "Enabled For Referrals", type: "boolean" },
+        { id: "number_of_openings", name: "Number Of Openings", type: "number" },
+        { id: "highlight_html", name: "Highlight Html", type: "string" },
+        { id: "job_scheduler", name: "Job Scheduler", type: "string" },
+        { id: "lang_code", name: "Lang Code", type: "string" },
+        { id: "eeo_settings", name: "Eeo Settings", type: "string" },
+        { id: "hiring_manager_id", name: "Hiring Manager Id", type: "number" },
         { id: "on_site", name: "Is On Site?", type: "boolean" },
+        { id: "pipeline_template_id", name: "Pipeline Template Id", type: "number" },
         { id: "remote", name: "Is Remote", type: "boolean" },
         { id: "published_at", name: "Published At", type: "string" },
-        { id: "closed_at", name: "Closed At", type: "string" }
+        { id: "closed_at", name: "Closed At", type: "string" },
+        { id: "priority", name: "Priority", type: "string" },
+        {
+            id: "location_ids",
+            name: "Locations",
+            type: "multiCollectionReference",
+            collectionId: "",
+            dataSourceId: locationDataSource.name,
+        },
     ]
 )
 
@@ -136,6 +165,7 @@ const departmentsDataSource = createDataSource(
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
         { id: "status", name: "Status", type: "string" },
         { id: "offers_count", name: "Offers Count", type: "number" },
+        { id: "talent_pools_count", name: "Talent Pools Count", type: "number" },
     ]
 )
 
@@ -152,10 +182,32 @@ const candidatesDataSource = createDataSource(
     },
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
+        { id: "initials", name: "Initials", type: "string" },
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
+        { id: "example", name: "Example", type: "boolean" },
         { id: "emails", name: "Emails", type: "string" },
         { id: "phones", name: "Phones", type: "string" },
         { id: "positive_ratings", name: "Ratings", type: "number" },
+        { id: "photo_thumb_url", name: "Photo Thumb Url", type: "string" },
+        { id: "has_avatar", name: "Has Avatar", type: "boolean" },
+        { id: "pending_result_request", name: "Pending Result Request", type: "boolean" },
+        { id: "tasks_count", name: "Tasks Count", type: "number" },
+        { id: "my_upcoming_event", name: "My Upcoming Event", type: "boolean" },
+        { id: "followed", name: "Followed", type: "boolean" },
+        { id: "upcoming_event", name: "Upcoming Event", type: "boolean" },
+        { id: "rating_visible", name: "Rating Visible", type: "boolean" },
+        { id: "ratings_count", name: "Ratings Count", type: "number" },
+        { id: "unread_notifications", name: "Unread Notifications", type: "boolean" },
+        { id: "is_revealed", name: "Is Revealed", type: "boolean" },
+        { id: "is_hired", name: "Is Hired", type: "boolean" },
+        { id: "my_last_rating", name: "My Last Rating", type: "string" },
+        { id: "source", name: "Source", type: "string" },
+        { id: "last_message_at", name: "Last Message At", type: "string" },
+        { id: "adminapp_url", name: "Admin App Url", type: "string" },
+        { id: "is_anonymous", name: "Is Anonymous", type: "boolean" },
+        { id: "referrer", name: "Referrer", type: "string" },
+        { id: "created_at", name: "Created At", type: "string" },
+        { id: "updated_at", name: "Updated At", type: "string" },
     ]
 )
 

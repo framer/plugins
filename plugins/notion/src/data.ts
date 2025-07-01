@@ -22,13 +22,6 @@ import { formatDate, isNotNull, slugify } from "./utils"
 // This is to prevent rate limiting.
 const CONCURRENCY_LIMIT = 5
 
-const SLUG_FIELD: ManagedCollectionFieldInput = {
-    type: "string",
-    id: "slug",
-    name: "Slug",
-    userEditable: false,
-}
-
 export type DatabaseIdMap = Map<string, string>
 
 export interface DataSource {

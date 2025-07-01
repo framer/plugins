@@ -74,7 +74,7 @@ const locationDataSource = createDataSource(
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
-        { id: "is_valid", name: "Is Valid?", type: "boolean" },
+        { id: "is_valid", name: "Is Valid", type: "boolean" },
         { id: "lang_code", name: "Lang Code", type: "string" },
         { id: "city", name: "City", type: "string" },
         { id: "state_name", name: "State", type: "string" },

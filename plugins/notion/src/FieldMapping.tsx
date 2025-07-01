@@ -1,4 +1,3 @@
-import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import classNames from "classnames"
 import { framer, type ManagedCollection, type ManagedCollectionField, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"

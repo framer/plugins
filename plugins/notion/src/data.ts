@@ -7,9 +7,9 @@ import {
     getDatabase,
     getDatabaseFieldsInfo,
     getDatabaseItems,
+    getFieldDataEntryForProperty,
     getNotionDatabases,
     getPageBlocksAsRichText,
-    getPropertyValue,
     isUnchangedSinceLastSync,
     PLUGIN_KEYS,
     pageContentProperty,
@@ -122,26 +122,26 @@ export async function syncCollection(
 
             for (const property of Object.values(item.properties)) {
                 if (property.id === slugField.id) {
-                    const resolvedSlug = getPropertyValue(property, SLUG_FIELD)
+                    const slugEntry = getFieldDataEntryForProperty(property, SLUG_FIELD)
 
-                    if (!resolvedSlug || typeof resolvedSlug !== "string") {
+                    if (!slugEntry || typeof slugEntry.value !== "string") {
                         break
                     }
 
-                    slugValue = slugify(resolvedSlug)
+                    slugValue = slugify(slugEntry.value)
                 }
 
                 const field = sanitizedFieldsById.get(property.id)
                 if (!field) continue
 
-                const fieldValue = getPropertyValue(property, field)
-                if (fieldValue === null || fieldValue === undefined) {
+                const fieldEntry = getFieldDataEntryForProperty(property, field)
+                if (fieldEntry === null || fieldEntry === undefined) {
                     console.warn(
                         `Skipping item at index ${index} because it doesn't have a valid value for field ${field.name}`
                     )
+                } else {
+                    fieldData[field.id] = fieldEntry
                 }
-
-                fieldData[field.id] = { type: field.type, value: fieldValue }
             }
 
             if (!slugValue || typeof slugValue !== "string") {

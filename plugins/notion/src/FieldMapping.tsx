@@ -13,9 +13,7 @@ import {
 } from "./data"
 import { assert, syncMethods } from "./utils"
 
-type FieldType = ManagedCollectionField["type"]
-
-const labelByFieldTypeOption: Record<FieldType, string> = {
+const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
     boolean: "Toggle",
     date: "Date",
     number: "Number",
@@ -38,7 +36,7 @@ interface FieldMappingRowProps {
     missingCollection: boolean
     onToggleIgnored: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
-    onFieldTypeChange: (fieldId: string, type: FieldType) => void
+    onFieldTypeChange: (fieldId: string, type: ManagedCollectionField["type"]) => void
 }
 
 function FieldMappingRow({
@@ -195,7 +193,7 @@ export function FieldMapping({
         })
     }
 
-    const changeFieldType = (fieldId: string, type: FieldType) => {
+    const changeFieldType = (fieldId: string, type: ManagedCollectionField["type"]) => {
         setFieldsInfo(prevFieldsInfo => {
             const updatedFieldInfo = prevFieldsInfo.map(fieldInfo => {
                 if (fieldInfo.id !== fieldId) return fieldInfo

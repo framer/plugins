@@ -187,7 +187,7 @@ async function getItems(
                 case "multiCollectionReference": {
                     const ids: string[] = []
                     if (Array.isArray(value)) {
-                        ids.push(...value.map(item => String(item.id)))
+                        ids.push(...value.map(item => String(item)))
                     }
 
                     fieldData[field.id] = {

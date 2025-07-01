@@ -1,8 +1,5 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
-import {
-    type AshbyItem,
-    validateJobs,   
-} from "./api-types"
+import { type AshbyItem, validateJobs } from "./api-types"
 
 export interface AshbyDataSource {
     id: string
@@ -22,18 +19,11 @@ async function fetchAshbyData(url: string, itemsKey: string): Promise<unknown[]>
     try {
         const response = await fetch(url)
         const data = await response.json()
-        const items = []
+        const items = data[itemsKey]
 
-        if (data?.meta?.total_count && data?.meta?.per_page) {
-            const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
-            for (let i = 0; i < pages; i++) {
-                const response = await fetch(`${url}?page=${i + 1}`)
-                const data = await response.json()
-                items.push(...(data[itemsKey] as unknown[]))
-            }
-        } else {
-            items.push(...(data[itemsKey] as unknown[]))
-        }
+        // console.log(items)
+
+        // await new Promise(resolve => setTimeout(resolve, 1000000))
 
         return items
     } catch (error) {
@@ -72,7 +62,7 @@ const jobsDataSource = createDataSource(
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
-        { id: "descriptionPlain", name: "Description", type: "formattedText" },
+        { id: "descriptionHtml", name: "Description", type: "formattedText" },
         { id: "department", name: "Department", type: "string" },
         { id: "team", name: "Team", type: "string" },
         { id: "location", name: "Location", type: "string" },
@@ -81,62 +71,96 @@ const jobsDataSource = createDataSource(
         { id: "publishedAt", name: "Published At", type: "date" },
         { id: "jobUrl", name: "Job URL", type: "link" },
         { id: "applyUrl", name: "Apply URL", type: "link" },
-        { id: "compensation", name : "Compensation", type: "string", getValue: value => {
-            if (typeof value !== "object" || value === null) return null
-            
-            const parts = []
-            
-            // Add string fields if they exist and aren't empty
-            if ("compensationTierSummary" in value && typeof value.compensationTierSummary === "string" && value.compensationTierSummary.trim()) {
-                parts.push(value.compensationTierSummary.trim())
-            }
-            if ("scrapeableCompensationSalarySummary" in value && typeof value.scrapeableCompensationSalarySummary === "string" && value.scrapeableCompensationSalarySummary.trim()) {
-                parts.push(value.scrapeableCompensationSalarySummary.trim())
-            }
-            
-            // Add compensation tiers
-            if ("compensationTiers" in value && Array.isArray(value.compensationTiers)) {
-                const tierSummaries = value.compensationTiers
-                    .map(tier => typeof tier.tierSummary === "string" ? tier.tierSummary.trim() : "")
-                    .filter(Boolean)
-                if (tierSummaries.length) parts.push(tierSummaries.join(", "))
-            }
-            
-            // Add summary components
-            if ("summaryComponents" in value && Array.isArray(value.summaryComponents)) {
-                const componentSummaries = value.summaryComponents.map(component => {
-                    const range = component.minValue === component.maxValue 
-                        ? `${component.currencyCode}${component.minValue.toLocaleString()}`
-                        : `${component.currencyCode}${component.minValue.toLocaleString()}-${component.maxValue.toLocaleString()}`
-                    return `${component.compensationType} (${component.interval}): ${range}`
-                })
-                parts.push(componentSummaries.join(", "))
-            }
-            
-            return parts.length ? parts.join(" | ") : null
-        }},
-        { id: "address", name: "Address", type: "string", getValue: value => {
-            if (typeof value === "object" && value !== null && "postalAddress" in value) {
-                const address = (value as { postalAddress: { addressLocality: string; addressRegion: string; addressCountry: string } }).postalAddress
-                const parts = [
-                    address?.addressLocality?.trim(),
-                    address?.addressRegion?.trim(),
-                    address?.addressCountry?.trim()
-                ].filter(Boolean)
-                
-                return parts.length > 0 ? parts.join(", ") : null
-            }
+        {
+            id: "shouldDisplayCompensationOnJobPostings",
+            name: "Should Display Compensation",
+            type: "boolean",
+        },
+        {
+            id: "compensation",
+            name: "Compensation",
+            type: "string",
+            getValue: value => {
+                if (typeof value !== "object" || value === null) return null
 
-            return null
-        }},
+                if ("scrapeableCompensationSalarySummary" in value) {
+                    return value.scrapeableCompensationSalarySummary
+                }
+
+                if ("compensationTierSummary" in value) {
+                    return value.compensationTierSummary
+                }
+
+                return null
+
+                // const parts = []
+
+                // // Add string fields if they exist and aren't empty
+                // if (
+                //     "compensationTierSummary" in value &&
+                //     typeof value.compensationTierSummary === "string" &&
+                //     value.compensationTierSummary.trim()
+                // ) {
+                //     parts.push(value.compensationTierSummary.trim())
+                // }
+                // if (
+                //     "scrapeableCompensationSalarySummary" in value &&
+                //     typeof value.scrapeableCompensationSalarySummary === "string" &&
+                //     value.scrapeableCompensationSalarySummary.trim()
+                // ) {
+                //     parts.push(value.scrapeableCompensationSalarySummary.trim())
+                // }
+
+                // // Add compensation tiers
+                // if ("compensationTiers" in value && Array.isArray(value.compensationTiers)) {
+                //     const tierSummaries = value.compensationTiers
+                //         .map(tier => (typeof tier.tierSummary === "string" ? tier.tierSummary.trim() : ""))
+                //         .filter(Boolean)
+                //     if (tierSummaries.length) parts.push(tierSummaries.join(", "))
+                // }
+
+                // // Add summary components
+                // if ("summaryComponents" in value && Array.isArray(value.summaryComponents)) {
+                //     const componentSummaries = value.summaryComponents.map(component => {
+                //         const range =
+                //             component.minValue === component.maxValue
+                //                 ? `${component.currencyCode}${component.minValue.toLocaleString()}`
+                //                 : `${component.currencyCode}${component.minValue.toLocaleString()}-${component.maxValue.toLocaleString()}`
+                //         return `${component.compensationType} (${component.interval}): ${range}`
+                //     })
+                //     parts.push(componentSummaries.join(", "))
+                // }
+
+                // return parts.length ? parts.join(" | ") : null
+            },
+        },
+        {
+            id: "address",
+            name: "Address",
+            type: "string",
+            getValue: value => {
+                if (typeof value === "object" && value !== null && "postalAddress" in value) {
+                    const address = (
+                        value as {
+                            postalAddress: { addressLocality: string; addressRegion: string; addressCountry: string }
+                        }
+                    ).postalAddress
+                    const parts = [
+                        address?.addressLocality?.trim(),
+                        address?.addressRegion?.trim(),
+                        address?.addressCountry?.trim(),
+                    ].filter(Boolean)
+
+                    return parts.length > 0 ? parts.join(", ") : null
+                }
+
+                return null
+            },
+        },
     ]
 )
 
-
-
-export const dataSources = [
-    jobsDataSource,
-] satisfies AshbyDataSource[]
+export const dataSources = [jobsDataSource] satisfies AshbyDataSource[]
 
 function createDataSource(
     {

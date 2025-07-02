@@ -1,23 +1,8 @@
 import type { CodeFileVersion } from "framer-plugin"
 import { Tooltip } from "../components/Tooltip"
 import { cn } from "../utils"
-
-function formatRelative(date: Date): string {
-    const now = new Date()
-    const diff = (now.getTime() - date.getTime()) / 1000
-    if (diff < 60) return `${Math.floor(diff)}s ago`
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-    if (diff < 86400 * 7) return `${Math.floor(diff / 86400)}d ago`
-    return date.toLocaleDateString()
-}
-
-function formatFull(date: Date): string {
-    return (
-        `${date.getFullYear().toString().slice(2)}/${(date.getMonth() + 1).toString().padStart(2, "0")}/${date.getDate().toString().padStart(2, "0")}` +
-        ` \u2022 ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }).toLowerCase()}`
-    )
-}
+import { formatFull } from "../utils/date"
+import { FormatFromNow } from "./FormatFromNow"
 
 function Version({
     version,
@@ -28,10 +13,8 @@ function Version({
     isSelected: boolean
     onSelect: (id: string) => void
 }) {
-    const createdAtDate = new Date(version.createdAt)
-
     return (
-        <Tooltip content={formatFull(createdAtDate)} side="bottom" align="center">
+        <Tooltip content={formatFull(version.createdAt)} side="bottom" align="center">
             <div
                 className={cn(
                     "flex items-center gap-2 px-3 py-2 cursor-pointer select-none group relative w-full",
@@ -47,7 +30,7 @@ function Version({
                         isSelected ? "text-gray-700" : "text-gray-900 group-hover:text-gray-700"
                     )}
                 >
-                    {formatRelative(createdAtDate)}
+                    <FormatFromNow date={version.createdAt} />
                 </span>
                 <span className="mx-1 text-gray-300">&bull;</span>
                 <span className={cn(isSelected ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500")}>

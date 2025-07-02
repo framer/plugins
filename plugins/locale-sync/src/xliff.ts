@@ -1,9 +1,10 @@
-import type {
-    Locale,
-    LocalizationData,
-    LocalizationGroup,
-    LocalizationSource,
-    LocalizedValueStatus,
+import {
+    framer,
+    type Locale,
+    type LocalizationData,
+    type LocalizationGroup,
+    type LocalizationSource,
+    type LocalizedValueStatus,
 } from "framer-plugin"
 import "./App.css"
 import { shouldBeNever } from "./assert"
@@ -131,37 +132,58 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
 
 export function createValuesBySourceFromXliff(
     xliffDocument: Document,
-    targetLocale: Locale
+    targetLocale: Locale,
+    localizationGroups: readonly LocalizationGroup[]
 ): LocalizationData["valuesBySource"] {
     const valuesBySource: LocalizationData["valuesBySource"] = {}
 
-    const units = xliffDocument.querySelectorAll("unit")
-    for (const unit of units) {
-        const id = unit.getAttribute("id")
-        const segment = unit.querySelector("segment")
-        const target = unit.querySelector("target")
-        if (!id || !target || !segment) continue
-
-        const notes = unit.querySelectorAll("note")
-        const readonlyNote = [...notes.values()].find(note => {
-            return note.getAttribute("category") === "readonly"
+    const groups = xliffDocument.querySelectorAll("group")
+    for (const group of groups) {
+        const notes = group.querySelectorAll("note")
+        const groupNameNote = [...notes.values()].find(note => {
+            return note.getAttribute("category") === "name"
         })
-        if (readonlyNote?.textContent === "true") continue
+        if (!groupNameNote || !groupNameNote.textContent) throw new Error("Can't find group name")
+        const groupName = groupNameNote.textContent
 
-        const targetValue = target.textContent
-        const state = segment.getAttribute("state") as XliffState | null
-        const status = xliffStateToStatus(state ?? "final")
-        const needsReview = status === "needsReview"
+        const localizationGroup = localizationGroups.find(group => group.name === groupName)
+        if (!localizationGroup) throw new Error(`Can't find localization group for ${groupName}`)
 
-        // Ignore missing or empty values
-        if (!targetValue) continue
+        const units = group.querySelectorAll("unit")
 
-        valuesBySource[id] = {
-            [targetLocale.id]: {
-                action: "set",
-                value: targetValue,
-                needsReview: needsReview ? needsReview : undefined,
-            },
+        for (const unit of units) {
+            const id = unit.getAttribute("id")
+            const segment = unit.querySelector("segment")
+            const source = unit.querySelector("source")
+            const target = unit.querySelector("target")
+            if (!id || !source || !target || !segment) continue
+
+            const notes = unit.querySelectorAll("note")
+            const readonlyNote = [...notes.values()].find(note => {
+                return note.getAttribute("category") === "readonly"
+            })
+            if (readonlyNote?.textContent === "true") continue
+
+            const sourceValue = source.textContent
+            const targetValue = target.textContent
+
+            const localizationSource = localizationGroup.sources.find(source => source.value === sourceValue)
+            if (!localizationSource) throw new Error(`Can't find source for value "${sourceValue}"`)
+
+            const state = segment.getAttribute("state") as XliffState | null
+            const status = xliffStateToStatus(state ?? "final")
+            const needsReview = status === "needsReview"
+
+            // Ignore missing or empty values
+            if (!targetValue) continue
+
+            valuesBySource[localizationSource.id] = {
+                [targetLocale.id]: {
+                    action: "set",
+                    value: targetValue,
+                    needsReview: needsReview ? needsReview : undefined,
+                },
+            }
         }
     }
 

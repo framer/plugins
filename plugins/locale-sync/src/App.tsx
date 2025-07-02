@@ -16,9 +16,10 @@ async function importXliff() {
     importFileAsText(".xlf,.xliff", async (xliffText: string) => {
         try {
             const locales = await framer.getLocales()
+            const localizationGroups = await framer.getLocalizationGroups()
 
             const { xliff, targetLocale } = parseXliff(xliffText, locales)
-            const valuesBySource = createValuesBySourceFromXliff(xliff, targetLocale)
+            const valuesBySource = createValuesBySourceFromXliff(xliff, targetLocale, localizationGroups)
 
             const result = await framer.setLocalizationData({ valuesBySource })
 

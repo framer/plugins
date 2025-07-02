@@ -1,5 +1,11 @@
-import type { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
-import { type FieldDataInput, framer, ManagedCollection, type ManagedCollectionFieldInput } from "framer-plugin"
+import type { DatabaseObjectResponse, PageObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+import {
+    type FieldDataEntryInput,
+    type FieldDataInput,
+    framer,
+    ManagedCollection,
+    type ManagedCollectionFieldInput,
+} from "framer-plugin"
 import pLimit from "p-limit"
 import {
     assertFieldTypeMatchesPropertyType,
@@ -7,7 +13,6 @@ import {
     getDatabase,
     getDatabaseFieldsInfo,
     getDatabaseItems,
-    getFieldDataEntryForProperty,
     getNotionDatabases,
     getPageBlocksAsRichText,
     getSlugValue,
@@ -16,6 +21,7 @@ import {
     pageContentProperty,
     richTextToPlainText,
 } from "./api"
+import { richTextToHtml } from "./blocksToHtml"
 import { formatDate, isNotNull, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
@@ -40,10 +46,6 @@ export async function getDataSources(): Promise<DataSource[]> {
             database,
         }
     })
-}
-
-export function getDataSourceFieldsInfo(database: DatabaseObjectResponse, databaseIdMap: DatabaseIdMap): FieldInfo[] {
-    return getDatabaseFieldsInfo(database, databaseIdMap)
 }
 
 /**
@@ -132,7 +134,7 @@ export async function syncCollection(
                 }
             }
 
-            if (!slugValue || typeof slugValue !== "string") {
+            if (!slugValue) {
                 console.warn(`Skipping item at index ${index} because it doesn't have a valid slug`)
                 return null
             }
@@ -192,7 +194,7 @@ export async function syncExistingCollection(
         const dataSource = await getDataSource(previousDatabaseId)
         const existingFields = await collection.getFields()
 
-        const dataSourceFieldsInfo = getDataSourceFieldsInfo(dataSource.database, databaseIdMap)
+        const dataSourceFieldsInfo = getDatabaseFieldsInfo(dataSource.database, databaseIdMap)
         const fieldsInfo = mergeFieldsInfoWithExistingFields(dataSourceFieldsInfo, existingFields)
         const fields = await fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
 
@@ -333,6 +335,93 @@ export async function fieldsInfoToCollectionFields(
     }
 
     return fields
+}
+
+export function getFieldDataEntryForProperty(
+    property: PageObjectResponse["properties"][string],
+    field: ManagedCollectionFieldInput
+): FieldDataEntryInput | null {
+    switch (property.type) {
+        case "checkbox": {
+            return { type: "boolean", value: property.checkbox ?? false }
+        }
+        case "last_edited_time": {
+            return { type: "date", value: property.last_edited_time }
+        }
+        case "created_time": {
+            return { type: "date", value: property.created_time }
+        }
+        case "rich_text": {
+            if (field.type === "formattedText") {
+                return { type: "formattedText", value: richTextToHtml(property.rich_text) }
+            }
+
+            return { type: "string", value: richTextToPlainText(property.rich_text) }
+        }
+        case "select": {
+            if (field.type !== "enum") return null
+
+            if (!property.select) {
+                const firstCase = field.cases?.[0]?.id
+                return firstCase ? { type: "enum", value: firstCase } : null
+            }
+
+            return { type: "enum", value: property.select.id }
+        }
+        case "status": {
+            if (field.type !== "enum") return null
+
+            if (!property.status) {
+                const firstCase = field.cases?.[0]?.id
+                return firstCase ? { type: "enum", value: firstCase } : null
+            }
+
+            return { type: "enum", value: property.status.id }
+        }
+        case "title": {
+            if (field.type === "formattedText") {
+                return { type: "formattedText", value: richTextToHtml(property.title) }
+            }
+
+            return { type: "string", value: richTextToPlainText(property.title) }
+        }
+        case "number": {
+            return { type: "number", value: property.number ?? 0 }
+        }
+        case "url": {
+            return { type: "link", value: property.url ?? "" }
+        }
+        case "unique_id": {
+            return { type: "string", value: property.unique_id.number?.toString() ?? "" }
+        }
+        case "date": {
+            return { type: "date", value: property.date?.start ?? null }
+        }
+        case "relation": {
+            return { type: "multiCollectionReference", value: property.relation.map(({ id }) => id) }
+        }
+        case "files": {
+            if (field.type !== "file" && field.type !== "image") return null
+
+            const firstFile = property.files[0]
+
+            switch (firstFile?.type) {
+                case "external":
+                    return { type: field.type, value: firstFile.external.url }
+                case "file":
+                    return { type: field.type, value: firstFile.file.url }
+                default:
+                    return { type: field.type, value: null }
+            }
+        }
+        case "email": {
+            if (field.type !== "formattedText" && field.type !== "string") return null
+
+            return { type: field.type, value: property.email ?? "" }
+        }
+    }
+
+    return null
 }
 
 export async function getExistingCollectionDatabaseIdMap(): Promise<DatabaseIdMap> {

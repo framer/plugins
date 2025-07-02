@@ -1,12 +1,17 @@
 import classNames from "classnames"
 import { framer, type ManagedCollection, type ManagedCollectionField, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
-import { type FieldId, type FieldInfo, getPossibleSlugFieldIds, isMissingCollection } from "./api"
+import {
+    type FieldId,
+    type FieldInfo,
+    getDatabaseFieldsInfo,
+    getPossibleSlugFieldIds,
+    isMissingCollection,
+} from "./api"
 import {
     type DatabaseIdMap,
     type DataSource,
     fieldsInfoToCollectionFields,
-    getDataSourceFieldsInfo,
     mergeFieldsInfoWithExistingFields,
     syncCollection,
 } from "./data"
@@ -147,7 +152,7 @@ export function FieldMapping({
     const dataSourceName = dataSource.name
     const database = dataSource.database
 
-    const initialFieldsInfo = useMemo(() => getDataSourceFieldsInfo(database, databaseIdMap), [database, databaseIdMap])
+    const initialFieldsInfo = useMemo(() => getDatabaseFieldsInfo(database, databaseIdMap), [database, databaseIdMap])
     const possibleSlugFieldIds = useMemo(() => getPossibleSlugFieldIds(database), [database])
 
     const [selectedSlugFieldId, setSelectedSlugFieldId] = useState<FieldId | null>(
@@ -171,10 +176,10 @@ export function FieldMapping({
                 setStatus("mapping-fields")
             })
             .catch(error => {
-                if (!abortController.signal.aborted) {
-                    console.error("Failed to fetch collection fields:", error)
-                    framer.notify("Failed to load collection fields", { variant: "error" })
-                }
+                if (abortController.signal.aborted) return
+
+                console.error("Failed to fetch collection fields:", error)
+                framer.notify("Failed to load collection fields", { variant: "error" })
             })
 
         return () => {

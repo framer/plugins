@@ -9,6 +9,23 @@ export enum LoadingState {
     Refreshing,
 }
 
+// Use event-based naming for actions
+// Do: VERSIONS_LOADED, VERSION_SELECTED, LOADING_STARTED
+// Don't: SET_VERSIONS, SELECT_VERSION, SET_LOADING
+export enum VersionsActionType {
+    CodeFileSelected = "CODE_FILE_SELECTED",
+    VersionsLoadStarted = "VERSIONS_LOAD_STARTED",
+    VersionsLoaded = "VERSIONS_LOADED",
+    VersionSelected = "VERSION_SELECTED",
+    ContentLoadStarted = "CONTENT_LOAD_STARTED",
+    VersionContentLoaded = "VERSION_CONTENT_LOADED",
+    VersionsError = "VERSIONS_ERROR",
+    ContentError = "CONTENT_ERROR",
+    RestoreError = "RESTORE_ERROR",
+    ErrorsCleared = "ERRORS_CLEARED",
+    StateResetCompleted = "STATE_RESET_COMPLETED",
+}
+
 interface VersionsState {
     codeFile: CodeFile | undefined
     versions: readonly CodeFileVersion[]
@@ -23,21 +40,18 @@ interface VersionsState {
     }
 }
 
-// Use event-based naming for actions
-// Do: VERSIONS_LOADED, VERSION_SELECTED, LOADING_STARTED
-// Don't: SET_VERSIONS, SELECT_VERSION, SET_LOADING
 type VersionsAction =
-    | { type: "CODE_FILE_SELECTED"; payload: { codeFile: CodeFile } }
-    | { type: "VERSIONS_LOADING" }
-    | { type: "VERSIONS_LOADED"; payload: { versions: readonly CodeFileVersion[] } }
-    | { type: "VERSION_SELECTED"; payload: { versionId: string } }
-    | { type: "CONTENT_LOADING" }
-    | { type: "VERSION_CONTENT_LOADED"; payload: { content: string | undefined } }
-    | { type: "VERSIONS_ERROR"; payload: { error: string } }
-    | { type: "CONTENT_ERROR"; payload: { error: string } }
-    | { type: "RESTORE_ERROR"; payload: { error: string } }
-    | { type: "CLEAR_ERRORS" }
-    | { type: "STATE_RESET" }
+    | { type: VersionsActionType.CodeFileSelected; payload: { codeFile: CodeFile } }
+    | { type: VersionsActionType.VersionsLoadStarted }
+    | { type: VersionsActionType.VersionsLoaded; payload: { versions: readonly CodeFileVersion[] } }
+    | { type: VersionsActionType.VersionSelected; payload: { versionId: string } }
+    | { type: VersionsActionType.ContentLoadStarted }
+    | { type: VersionsActionType.VersionContentLoaded; payload: { content: string | undefined } }
+    | { type: VersionsActionType.VersionsError; payload: { error: string } }
+    | { type: VersionsActionType.ContentError; payload: { error: string } }
+    | { type: VersionsActionType.RestoreError; payload: { error: string } }
+    | { type: VersionsActionType.ErrorsCleared }
+    | { type: VersionsActionType.StateResetCompleted }
 
 const initialState: VersionsState = {
     codeFile: undefined,
@@ -51,7 +65,7 @@ const initialState: VersionsState = {
 
 function versionsReducer(state: VersionsState, action: VersionsAction): VersionsState {
     return match(action)
-        .with({ type: "CODE_FILE_SELECTED" }, ({ payload }) => {
+        .with({ type: VersionsActionType.CodeFileSelected }, ({ payload }) => {
             if (state.codeFile?.id !== payload.codeFile.id) {
                 // A different code file is being selected
                 return {
@@ -72,12 +86,12 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
                 }
             }
         })
-        .with({ type: "VERSIONS_LOADING" }, () => ({
+        .with({ type: VersionsActionType.VersionsLoadStarted }, () => ({
             ...state,
             versionsLoading: state.versions.length === 0 ? LoadingState.Initial : LoadingState.Refreshing,
             errors: { ...state.errors, versions: undefined },
         }))
-        .with({ type: "VERSIONS_LOADED" }, ({ payload }) => ({
+        .with({ type: VersionsActionType.VersionsLoaded }, ({ payload }) => ({
             ...state,
             versions: payload.versions,
             versionsLoading: LoadingState.Idle,
@@ -87,42 +101,42 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
                     : state.selectedVersionId,
             errors: { ...state.errors, versions: undefined },
         }))
-        .with({ type: "VERSION_SELECTED" }, ({ payload }) => ({
+        .with({ type: VersionsActionType.VersionSelected }, ({ payload }) => ({
             ...state,
             selectedVersionId: payload.versionId,
             versionContent: undefined,
             errors: { ...state.errors, content: undefined },
         }))
-        .with({ type: "CONTENT_LOADING" }, () => ({
+        .with({ type: VersionsActionType.ContentLoadStarted }, () => ({
             ...state,
             contentLoading: state.versionContent == null ? LoadingState.Initial : LoadingState.Refreshing,
             errors: { ...state.errors, content: undefined },
         }))
-        .with({ type: "VERSION_CONTENT_LOADED" }, ({ payload }) => ({
+        .with({ type: VersionsActionType.VersionContentLoaded }, ({ payload }) => ({
             ...state,
             versionContent: payload.content,
             contentLoading: LoadingState.Idle,
             errors: { ...state.errors, content: undefined },
         }))
-        .with({ type: "VERSIONS_ERROR" }, ({ payload }) => ({
+        .with({ type: VersionsActionType.VersionsError }, ({ payload }) => ({
             ...state,
             versionsLoading: LoadingState.Idle,
             errors: { ...state.errors, versions: payload.error },
         }))
-        .with({ type: "CONTENT_ERROR" }, ({ payload }) => ({
+        .with({ type: VersionsActionType.ContentError }, ({ payload }) => ({
             ...state,
             contentLoading: LoadingState.Idle,
             errors: { ...state.errors, content: payload.error },
         }))
-        .with({ type: "RESTORE_ERROR" }, ({ payload }) => ({
+        .with({ type: VersionsActionType.RestoreError }, ({ payload }) => ({
             ...state,
             errors: { ...state.errors, restore: payload.error },
         }))
-        .with({ type: "CLEAR_ERRORS" }, () => ({
+        .with({ type: VersionsActionType.ErrorsCleared }, () => ({
             ...state,
             errors: {},
         }))
-        .with({ type: "STATE_RESET" }, () => initialState)
+        .with({ type: VersionsActionType.StateResetCompleted }, () => initialState)
         .exhaustive()
 }
 
@@ -145,24 +159,24 @@ export function useCodeFileVersions(): CodeFileVersionsState {
 
     // Helper to load versions
     const loadVersions = useCallback(async (codeFile: CodeFile) => {
-        dispatch({ type: "VERSIONS_LOADING" })
+        dispatch({ type: VersionsActionType.VersionsLoadStarted })
         try {
             const versions = await codeFile.getVersions()
-            dispatch({ type: "VERSIONS_LOADED", payload: { versions } })
+            dispatch({ type: VersionsActionType.VersionsLoaded, payload: { versions } })
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Failed to load versions"
-            dispatch({ type: "VERSIONS_ERROR", payload: { error: errorMessage } })
+            dispatch({ type: VersionsActionType.VersionsError, payload: { error: errorMessage } })
         }
     }, [])
 
     // Handle file selection changes
     useEffect(() => {
         if (fileStatus.type !== StatusTypes.SELECTED_CODE_FILE) {
-            dispatch({ type: "STATE_RESET" })
+            dispatch({ type: VersionsActionType.StateResetCompleted })
             return
         }
 
-        dispatch({ type: "CODE_FILE_SELECTED", payload: { codeFile: fileStatus.codeFile } })
+        dispatch({ type: VersionsActionType.CodeFileSelected, payload: { codeFile: fileStatus.codeFile } })
     }, [fileStatus])
 
     // Load versions when codeFile changes
@@ -175,24 +189,24 @@ export function useCodeFileVersions(): CodeFileVersionsState {
     // Load version content when selected version changes
     useEffect(() => {
         if (!selectedVersion) {
-            dispatch({ type: "VERSION_CONTENT_LOADED", payload: { content: undefined } })
+            dispatch({ type: VersionsActionType.VersionContentLoaded, payload: { content: undefined } })
             return
         }
-        dispatch({ type: "CONTENT_LOADING" })
+        dispatch({ type: VersionsActionType.ContentLoadStarted })
         selectedVersion
             .getContent()
             .then(content => {
-                dispatch({ type: "VERSION_CONTENT_LOADED", payload: { content } })
+                dispatch({ type: VersionsActionType.VersionContentLoaded, payload: { content } })
             })
             .catch(error => {
                 const errorMessage = error instanceof Error ? error.message : "Failed to load version content"
-                dispatch({ type: "CONTENT_ERROR", payload: { error: errorMessage } })
+                dispatch({ type: VersionsActionType.ContentError, payload: { error: errorMessage } })
             })
     }, [selectedVersion])
 
     // Actions
     const selectVersion = useCallback((id: string) => {
-        dispatch({ type: "VERSION_SELECTED", payload: { versionId: id } })
+        dispatch({ type: VersionsActionType.VersionSelected, payload: { versionId: id } })
     }, [])
 
     const restoreVersion = useCallback(async () => {
@@ -200,16 +214,16 @@ export function useCodeFileVersions(): CodeFileVersionsState {
 
         try {
             const newCodeFile = await state.codeFile.setFileContent(state.versionContent)
-            dispatch({ type: "CODE_FILE_SELECTED", payload: { codeFile: newCodeFile } })
+            dispatch({ type: VersionsActionType.CodeFileSelected, payload: { codeFile: newCodeFile } })
             await loadVersions(newCodeFile)
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Failed to restore version"
-            dispatch({ type: "RESTORE_ERROR", payload: { error: errorMessage } })
+            dispatch({ type: VersionsActionType.RestoreError, payload: { error: errorMessage } })
         }
     }, [state.versionContent, state.codeFile, loadVersions])
 
     const clearErrors = useCallback(() => {
-        dispatch({ type: "CLEAR_ERRORS" })
+        dispatch({ type: VersionsActionType.ErrorsCleared })
     }, [])
 
     return {

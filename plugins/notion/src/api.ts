@@ -80,16 +80,17 @@ export function isAuthenticated() {
     return localStorage.getItem(PLUGIN_KEYS.BEARER_TOKEN) !== null
 }
 
-let notion: Client | null = null
-if (isAuthenticated()) {
-    initNotionClient()
-}
+let notionClientSingleton: Client | null = null
 
-export function initNotionClient() {
+export function getNotionClient(): Client {
+    if (notionClientSingleton) {
+        return notionClientSingleton
+    }
+
     const token = localStorage.getItem(PLUGIN_KEYS.BEARER_TOKEN)
     if (!token) throw new Error("Notion API token is missing")
 
-    notion = new Client({
+    notionClientSingleton = new Client({
         fetch: async (url, fetchInit) => {
             const urlObj = new URL(url)
 
@@ -115,14 +116,14 @@ export function initNotionClient() {
         },
         auth: token,
     })
+
+    return notionClientSingleton
 }
 
 export async function getNotionDatabases() {
-    if (!notion) {
-        initNotionClient()
-    }
+    const notion = getNotionClient()
 
-    const results = await collectPaginatedAPI(notion!.search, {
+    const results = await collectPaginatedAPI(notion.search, {
         filter: {
             property: "object",
             value: "database",
@@ -148,11 +149,7 @@ export function assertFieldTypeMatchesPropertyType(
 }
 
 export async function getDatabase(databaseId: string) {
-    if (!notion) {
-        initNotionClient()
-    }
-
-    assert(notion, "Notion client is not initialized")
+    const notion = getNotionClient()
     const database = await notion.databases.retrieve({ database_id: databaseId })
 
     if (!isFullDatabase(database)) {
@@ -201,11 +198,11 @@ export function getDatabaseFieldsInfo(database: GetDatabaseResponse, databaseIdM
             continue
         }
 
-        const isUnsupported = !Array.isArray(allowedTypes) || allowedTypes.length === 0
-        if (isUnsupported) {
-            unsupported.push(fieldInfo)
-        } else {
+        const isSupported = Array.isArray(allowedTypes) && allowedTypes.length > 0
+        if (isSupported) {
             supported.push(fieldInfo)
+        } else {
+            unsupported.push(fieldInfo)
         }
     }
 
@@ -258,7 +255,7 @@ export function getSlugValue(property: PageObjectResponse["properties"][string])
 }
 
 async function getBlockChildrenIterator(blockId: string) {
-    assert(notion, "Notion client is not initialized")
+    const notion = getNotionClient()
     const blocksIterator = iteratePaginatedAPI(notion.blocks.children.list, {
         block_id: blockId,
     })
@@ -271,7 +268,7 @@ async function getBlockChildrenIterator(blockId: string) {
 }
 
 export async function getPageBlocksAsRichText(pageId: string) {
-    assert(notion, "Notion client is not initialized")
+    const notion = getNotionClient()
 
     const blocksIterator = iteratePaginatedAPI(notion.blocks.children.list, {
         block_id: pageId,
@@ -381,7 +378,7 @@ export function getFieldDataEntryForProperty(
 }
 
 export async function getDatabaseItems(database: GetDatabaseResponse): Promise<PageObjectResponse[]> {
-    assert(notion)
+    const notion = getNotionClient()
 
     const data = await collectPaginatedAPI(notion.databases.query, {
         database_id: database.id,

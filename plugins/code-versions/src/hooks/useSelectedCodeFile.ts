@@ -5,6 +5,7 @@ export enum StatusTypes {
     INITIAL = "initial",
     SELECTED_CODE_FILE = "selectedCodeFile",
     NO_SELECTION = "noSelection",
+    ERROR = "error",
 }
 
 type InitialState = {
@@ -20,13 +21,22 @@ type NoSelectionState = {
     type: StatusTypes.NO_SELECTION
 }
 
-type State = InitialState | CodeFileState | NoSelectionState
+type ErrorState = {
+    type: StatusTypes.ERROR
+    error: string
+}
+
+type State = InitialState | CodeFileState | NoSelectionState | ErrorState
 
 // Hook to handle Framer selection changes
 export function useSelectedCodeFile() {
     const [selectedCodeFile, setSelectedCodeFile] = useState<State>({
         type: StatusTypes.INITIAL,
     })
+
+    // Extract code file ID for dependency array
+    const codeFileId =
+        selectedCodeFile.type === StatusTypes.SELECTED_CODE_FILE ? selectedCodeFile.codeFile.id : undefined
 
     useEffect(() => {
         // Subscribe to open code file changes in Code Mode
@@ -56,31 +66,40 @@ export function useSelectedCodeFile() {
 
             // Try to get code file for component instances
             if (isComponentInstanceNode(firstNode)) {
-                const matchingFile = await framer.unstable_getCodeFile(firstNode.componentIdentifier)
-                if (!matchingFile) {
+                try {
+                    const matchingFile = await framer.unstable_getCodeFile(firstNode.componentIdentifier)
+                    if (!matchingFile) {
+                        setSelectedCodeFile({
+                            type: StatusTypes.NO_SELECTION,
+                        })
+                        return
+                    }
+
+                    const componentExports = matchingFile.exports.filter(isCodeFileComponentExport)
+                    const componentExport = componentExports[0]
+                    if (
+                        componentExports.length !== 1 ||
+                        (componentExport && componentExport.name !== firstNode.componentName)
+                    ) {
+                        setSelectedCodeFile({
+                            type: StatusTypes.NO_SELECTION,
+                        })
+                        return
+                    }
+
                     setSelectedCodeFile({
-                        type: StatusTypes.NO_SELECTION,
+                        type: StatusTypes.SELECTED_CODE_FILE,
+                        codeFile: matchingFile,
+                    })
+                    return
+                } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : "Failed to get code file"
+                    setSelectedCodeFile({
+                        type: StatusTypes.ERROR,
+                        error: errorMessage,
                     })
                     return
                 }
-
-                const componentExports = matchingFile.exports.filter(isCodeFileComponentExport)
-                const componentExport = componentExports[0]
-                if (
-                    componentExports.length !== 1 ||
-                    (componentExport && componentExport.name !== firstNode.componentName)
-                ) {
-                    setSelectedCodeFile({
-                        type: StatusTypes.NO_SELECTION,
-                    })
-                    return
-                }
-
-                setSelectedCodeFile({
-                    type: StatusTypes.SELECTED_CODE_FILE,
-                    codeFile: matchingFile,
-                })
-                return
             }
 
             // For other node types, we could potentially get code files in the future
@@ -94,7 +113,7 @@ export function useSelectedCodeFile() {
         const unsubscribeCodeFile = framer.unstable_subscribeToCodeFiles(async codeFiles => {
             if (selectedCodeFile.type !== StatusTypes.SELECTED_CODE_FILE) return
 
-            const matchingFile = codeFiles.find(codeFile => codeFile.id === selectedCodeFile.codeFile.id)
+            const matchingFile = codeFiles.find(codeFile => codeFile.id === codeFileId)
 
             if (!matchingFile) {
                 // Code file has been deleted
@@ -115,13 +134,21 @@ export function useSelectedCodeFile() {
             unsubscribeSelection()
             unsubscribeCodeFile()
         }
-    }, [])
+    }, [selectedCodeFile.type, codeFileId])
 
     const clearSelection = useCallback(() => {
-        framer.setSelection([])
-        setSelectedCodeFile({
-            type: StatusTypes.NO_SELECTION,
-        })
+        try {
+            framer.setSelection([])
+            setSelectedCodeFile({
+                type: StatusTypes.NO_SELECTION,
+            })
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Failed to clear selection"
+            setSelectedCodeFile({
+                type: StatusTypes.ERROR,
+                error: errorMessage,
+            })
+        }
     }, [])
 
     return {

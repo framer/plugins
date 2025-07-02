@@ -15,7 +15,7 @@ interface AppProps {
     previousLastSynced: string | null
     previousIgnoredFieldIds: string | null
     previousDatabaseName: string | null
-    databaseIdMap: DatabaseIdMap
+    existingCollectionDatabaseIdMap: DatabaseIdMap
 }
 
 export function App({
@@ -25,19 +25,19 @@ export function App({
     previousLastSynced,
     previousIgnoredFieldIds,
     previousDatabaseName,
-    databaseIdMap,
+    existingCollectionDatabaseIdMap,
 }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDatabaseId))
     const [hasAccessError, setHasAccessError] = useState(false)
 
     // Support self-referencing databases by allowing the current collection to be referenced.
-    const finalDatabaseIdMap = useMemo(() => {
+    const databaseIdMap = useMemo(() => {
         if (dataSource?.database.id) {
-            return new Map(databaseIdMap).set(dataSource.database.id, collection.id)
+            return new Map(existingCollectionDatabaseIdMap).set(dataSource.database.id, collection.id)
         }
-        return databaseIdMap
-    }, [databaseIdMap, dataSource?.database.id, collection.id])
+        return existingCollectionDatabaseIdMap
+    }, [existingCollectionDatabaseIdMap, dataSource?.database.id, collection.id])
 
     useLayoutEffect(() => {
         if (hasAccessError) {
@@ -130,7 +130,7 @@ export function App({
             initialSlugFieldId={previousSlugFieldId}
             previousLastSynced={previousLastSynced}
             previousIgnoredFieldIds={previousIgnoredFieldIds}
-            databaseIdMap={finalDatabaseIdMap}
+            databaseIdMap={databaseIdMap}
         />
     )
 }

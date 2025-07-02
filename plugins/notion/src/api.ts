@@ -11,7 +11,7 @@ import {
     type ManagedCollectionField,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
-import { blocksToHTML, richTextToHTML } from "./blocksToHTML"
+import { blocksToHtml, richTextToHtml } from "./blocksToHtml"
 import type { DatabaseIdMap } from "./data"
 import { assert } from "./utils"
 
@@ -290,7 +290,7 @@ export async function getPageBlocksAsRichText(pageId: string) {
 
     assert(blocks.every(isFullBlock), "Response is not a full block")
 
-    return blocksToHTML(blocks)
+    return blocksToHtml(blocks)
 }
 
 export function getFieldDataEntryForProperty(
@@ -309,7 +309,7 @@ export function getFieldDataEntryForProperty(
         }
         case "rich_text": {
             if (field.type === "formattedText") {
-                return { type: "formattedText", value: richTextToHTML(property.rich_text) }
+                return { type: "formattedText", value: richTextToHtml(property.rich_text) }
             }
 
             return { type: "string", value: richTextToPlainText(property.rich_text) }
@@ -336,7 +336,7 @@ export function getFieldDataEntryForProperty(
         }
         case "title": {
             if (field.type === "formattedText") {
-                return { type: "formattedText", value: richTextToHTML(property.title) }
+                return { type: "formattedText", value: richTextToHtml(property.title) }
             }
 
             return { type: "string", value: richTextToPlainText(property.title) }

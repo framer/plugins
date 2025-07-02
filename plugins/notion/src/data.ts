@@ -335,7 +335,7 @@ export async function fieldsInfoToCollectionFields(
     return fields
 }
 
-export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
+export async function getExistingCollectionDatabaseIdMap(): Promise<DatabaseIdMap> {
     const databaseIdMap: DatabaseIdMap = new Map()
     const promises: Promise<void>[] = []
 

@@ -136,7 +136,7 @@ export function FieldMapping({
     previousIgnoredFieldIds,
     databaseIdMap,
 }: FieldMappingProps) {
-    const isAllowedToManage = useIsAllowedTo(...syncMethods)
+    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
@@ -240,6 +240,7 @@ export function FieldMapping({
                 return
             }
 
+            await collection.setFields(fieldsToSync)
             await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds, previousLastSynced)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {

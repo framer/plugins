@@ -85,11 +85,7 @@ export async function syncCollection(
     ignoredFieldIds: Set<string>,
     lastSynced: string | null
 ) {
-    const sanitizedFields = fields.map(field => ({
-        ...field,
-        name: field.name.trim() || field.id,
-    }))
-    const sanitizedFieldsById = new Map(sanitizedFields.map(field => [field.id, field]))
+    const fieldsById = new Map(fields.map(field => [field.id, field]))
 
     const seenItemIds = new Set<string>()
 
@@ -123,7 +119,7 @@ export async function syncCollection(
                     slugValue = slugify(slug)
                 }
 
-                const field = sanitizedFieldsById.get(property.id)
+                const field = fieldsById.get(property.id)
                 if (!field) continue
 
                 const fieldEntry = getFieldDataEntryForProperty(property, field)
@@ -141,7 +137,7 @@ export async function syncCollection(
                 return null
             }
 
-            if (sanitizedFieldsById.has(pageContentProperty.id) && item.id && !skipContent) {
+            if (fieldsById.has(pageContentProperty.id) && item.id && !skipContent) {
                 const contentHTML = await getPageBlocksAsRichText(item.id)
                 fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
             }
@@ -163,7 +159,6 @@ export async function syncCollection(
         itemIdsToDelete.delete(itemId)
     }
 
-    await collection.setFields(sanitizedFields)
     await collection.removeItems(Array.from(itemIdsToDelete))
     await collection.addItems(items)
 
@@ -239,12 +234,13 @@ export async function fieldsInfoToCollectionFields(
     for (const fieldInfo of fieldsInfo) {
         const property = fieldInfo.notionProperty
         const fieldType = fieldInfo.type
+        const fieldName = fieldInfo.name.trim() || fieldInfo.id
 
         if (fieldInfo.id === pageContentProperty.id) {
             fields.push({
                 type: "formattedText",
                 id: fieldInfo.id,
-                name: fieldInfo.name,
+                name: fieldName,
                 userEditable: false,
             })
             continue
@@ -264,7 +260,7 @@ export async function fieldsInfoToCollectionFields(
                 fields.push({
                     type: fieldType,
                     id: fieldInfo.id,
-                    name: fieldInfo.name,
+                    name: fieldName,
                     userEditable: false,
                 })
                 break
@@ -292,7 +288,7 @@ export async function fieldsInfoToCollectionFields(
                     fields.push({
                         type: "enum",
                         id: fieldInfo.id,
-                        name: fieldInfo.name,
+                        name: fieldName,
                         cases,
                         userEditable: false,
                     })
@@ -305,7 +301,7 @@ export async function fieldsInfoToCollectionFields(
                 fields.push({
                     type: "file",
                     id: fieldInfo.id,
-                    name: fieldInfo.name,
+                    name: fieldName,
                     allowedFileTypes: [],
                     userEditable: false,
                 })
@@ -322,7 +318,7 @@ export async function fieldsInfoToCollectionFields(
                             fields.push({
                                 type: "multiCollectionReference",
                                 id: fieldInfo.id,
-                                name: fieldInfo.name,
+                                name: fieldName,
                                 collectionId,
                                 userEditable: false,
                             })

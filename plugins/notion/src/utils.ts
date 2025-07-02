@@ -68,7 +68,6 @@ export function generateRandomId() {
 }
 
 export const syncMethods = [
-    "ManagedCollection.setFields",
     "ManagedCollection.removeItems",
     "ManagedCollection.addItems",
     "ManagedCollection.setPluginData",

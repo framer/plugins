@@ -17,7 +17,7 @@ function Version({
         <Tooltip content={formatFull(version.createdAt)} side="bottom" align="center">
             <div
                 className={cn(
-                    "flex items-center gap-2 px-3 py-2 cursor-pointer select-none group relative w-full",
+                    "flex items-center flex-nowrap gap-2 px-2 py-[8px] cursor-pointer select-none group relative w-full",
                     isSelected ? "bg-gray-100 rounded-xl" : "",
                     "transition-colors"
                 )}
@@ -26,15 +26,20 @@ function Version({
             >
                 <span
                     className={cn(
-                        "font-semibold",
+                        "font-semibold tabular-nums",
                         isSelected ? "text-gray-700" : "text-gray-900 group-hover:text-gray-700"
                     )}
                 >
                     <FormatFromNow date={version.createdAt} />
                 </span>
-                <span className="mx-1 text-gray-300">&bull;</span>
-                <span className={cn(isSelected ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500")}>
-                    {"author" in version ? (version as any).author : version.id}
+                <span className="text-gray-300">&bull;</span>
+                <span
+                    className={cn(
+                        "flex-1 min-w-0 truncate",
+                        isSelected ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
+                    )}
+                >
+                    {version.createdBy.name}
                 </span>
             </div>
         </Tooltip>

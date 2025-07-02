@@ -29,7 +29,22 @@ export function useSelectedCodeFile() {
     })
 
     useEffect(() => {
-        const unsubscribe = framer.subscribeToSelection(async nodes => {
+        // Subscribe to open code file changes in Code Mode
+        const unsubscribeOpenCodeFile = framer.subscribeToOpenCodeFile(async codeFile => {
+            setSelectedCodeFile(
+                codeFile
+                    ? {
+                          type: StatusTypes.SELECTED_CODE_FILE,
+                          codeFile,
+                      }
+                    : {
+                          type: StatusTypes.NO_SELECTION,
+                      }
+            )
+        })
+
+        // Subscribe to selection changes in Canvas Mode
+        const unsubscribeSelection = framer.subscribeToSelection(async nodes => {
             // If there's no selection or multiple selections, clear the selection
             const firstNode = nodes[0]
             if (nodes.length !== 1) {
@@ -75,7 +90,31 @@ export function useSelectedCodeFile() {
             })
         })
 
-        return unsubscribe
+        // Subscribe for changes in the code file itself, e.g. on save
+        const unsubscribeCodeFile = framer.unstable_subscribeToCodeFiles(async codeFiles => {
+            if (selectedCodeFile.type !== StatusTypes.SELECTED_CODE_FILE) return
+
+            const matchingFile = codeFiles.find(codeFile => codeFile.id === selectedCodeFile.codeFile.id)
+
+            if (!matchingFile) {
+                // Code file has been deleted
+                setSelectedCodeFile({
+                    type: StatusTypes.NO_SELECTION,
+                })
+                return
+            }
+
+            setSelectedCodeFile({
+                type: StatusTypes.SELECTED_CODE_FILE,
+                codeFile: matchingFile,
+            })
+        })
+
+        return () => {
+            unsubscribeOpenCodeFile()
+            unsubscribeSelection()
+            unsubscribeCodeFile()
+        }
     }, [])
 
     const clearSelection = useCallback(() => {

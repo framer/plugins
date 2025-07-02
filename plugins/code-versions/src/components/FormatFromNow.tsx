@@ -1,21 +1,30 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { formatRelative } from "../utils/date"
 
 interface FormatFromNowProps {
     date: Date | string
     locales?: Intl.LocalesArgument
-    intervalMs?: number
 }
 
-export function FormatFromNow({ date, locales, intervalMs = 60000 }: FormatFromNowProps) {
+function getInitialIntervalMs(diff: number) {
+    if (diff < 60 * 1000) return 1000 // update every second
+    if (diff < 60 * 60 * 1000) return 60 * 1000 // update every minute
+    if (diff < 24 * 60 * 60 * 1000) return 60 * 60 * 1000 // update every hour
+    if (diff < 7 * 24 * 60 * 60 * 1000) return 24 * 60 * 60 * 1000 // update every day
+    return null // no update needed
+}
+
+export function FormatFromNow({ date, locales }: FormatFromNowProps) {
     const [now, setNow] = useState(() => new Date())
+    const targetDate = new Date(date)
+    const diff = now.getTime() - targetDate.getTime()
+    const [intervalMs] = useState(() => getInitialIntervalMs(diff))
 
     useEffect(() => {
+        if (intervalMs === null) return
         const id = setInterval(() => setNow(new Date()), intervalMs)
         return () => clearInterval(id)
     }, [intervalMs])
-
-    const targetDate = useMemo(() => new Date(date), [date])
 
     return <span>{formatRelative(now, targetDate, locales)}</span>
 }

@@ -3,13 +3,19 @@ import { useCallback, useEffect, useReducer } from "react"
 import { match } from "ts-pattern"
 import { StatusTypes, useSelectedCodeFile } from "./useSelectedCodeFile"
 
+export enum LoadingState {
+    Idle,
+    Initial,
+    Refreshing,
+}
+
 interface VersionsState {
     codeFile: CodeFile | undefined
     versions: readonly CodeFileVersion[]
     selectedVersionId: string | undefined
     versionContent: string | undefined
-    isLoadingVersions: boolean
-    isLoadingContent: boolean
+    versionsLoading: LoadingState
+    contentLoading: LoadingState
 }
 
 // Use event-based naming for actions
@@ -17,13 +23,11 @@ interface VersionsState {
 // Don't: SET_VERSIONS, SELECT_VERSION, SET_LOADING
 type VersionsAction =
     | { type: "CODE_FILE_SELECTED"; payload: { codeFile: CodeFile } }
+    | { type: "VERSIONS_LOADING" }
     | { type: "VERSIONS_LOADED"; payload: { versions: readonly CodeFileVersion[] } }
     | { type: "VERSION_SELECTED"; payload: { versionId: string } }
+    | { type: "CONTENT_LOADING" }
     | { type: "VERSION_CONTENT_LOADED"; payload: { content: string | undefined } }
-    | { type: "LOADING_VERSIONS_STARTED" }
-    | { type: "LOADING_VERSIONS_FINISHED" }
-    | { type: "LOADING_CONTENT_STARTED" }
-    | { type: "LOADING_CONTENT_FINISHED" }
     | { type: "STATE_RESET" }
 
 const initialState: VersionsState = {
@@ -31,24 +35,40 @@ const initialState: VersionsState = {
     versions: [],
     selectedVersionId: undefined,
     versionContent: undefined,
-    isLoadingVersions: false,
-    isLoadingContent: false,
+    versionsLoading: LoadingState.Idle,
+    contentLoading: LoadingState.Idle,
 }
 
 function versionsReducer(state: VersionsState, action: VersionsAction): VersionsState {
     return match(action)
-        .with({ type: "CODE_FILE_SELECTED" }, ({ payload }) => ({
+        .with({ type: "CODE_FILE_SELECTED" }, ({ payload }) => {
+            if (state.codeFile?.id !== payload.codeFile.id) {
+                // A different code file is being selected
+                return {
+                    ...state,
+                    codeFile: payload.codeFile,
+                    versions: [],
+                    selectedVersionId: undefined,
+                    versionContent: undefined,
+                    versionsLoading: LoadingState.Initial,
+                    contentLoading: LoadingState.Initial,
+                }
+            } else {
+                // Only update the codeFile reference
+                return {
+                    ...state,
+                    codeFile: payload.codeFile,
+                }
+            }
+        })
+        .with({ type: "VERSIONS_LOADING" }, () => ({
             ...state,
-            codeFile: payload.codeFile,
-            // Reset version state when file changes
-            versions: [],
-            selectedVersionId: undefined,
-            versionContent: undefined,
+            versionsLoading: state.versions.length === 0 ? LoadingState.Initial : LoadingState.Refreshing,
         }))
         .with({ type: "VERSIONS_LOADED" }, ({ payload }) => ({
             ...state,
             versions: payload.versions,
-            // Auto-select first version if available and no version is currently selected
+            versionsLoading: LoadingState.Idle,
             selectedVersionId:
                 payload.versions.length > 0 && !state.selectedVersionId
                     ? payload.versions[0]?.id
@@ -59,25 +79,14 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
             selectedVersionId: payload.versionId,
             versionContent: undefined,
         }))
+        .with({ type: "CONTENT_LOADING" }, () => ({
+            ...state,
+            contentLoading: state.versionContent == null ? LoadingState.Initial : LoadingState.Refreshing,
+        }))
         .with({ type: "VERSION_CONTENT_LOADED" }, ({ payload }) => ({
             ...state,
             versionContent: payload.content,
-        }))
-        .with({ type: "LOADING_VERSIONS_STARTED" }, () => ({
-            ...state,
-            isLoadingVersions: true,
-        }))
-        .with({ type: "LOADING_VERSIONS_FINISHED" }, () => ({
-            ...state,
-            isLoadingVersions: false,
-        }))
-        .with({ type: "LOADING_CONTENT_STARTED" }, () => ({
-            ...state,
-            isLoadingContent: true,
-        }))
-        .with({ type: "LOADING_CONTENT_FINISHED" }, () => ({
-            ...state,
-            isLoadingContent: false,
+            contentLoading: LoadingState.Idle,
         }))
         .with({ type: "STATE_RESET" }, () => initialState)
         .exhaustive()
@@ -99,6 +108,13 @@ export function useCodeFileVersions(): CodeFileVersionsState {
     // Derived state
     const selectedVersion = state.versions.find(version => version.id === state.selectedVersionId)
 
+    // Helper to load versions
+    const loadVersions = useCallback(async (codeFile: CodeFile) => {
+        dispatch({ type: "VERSIONS_LOADING" })
+        const versions = await codeFile.getVersions()
+        dispatch({ type: "VERSIONS_LOADED", payload: { versions } })
+    }, [])
+
     // Handle file selection changes
     useEffect(() => {
         if (fileStatus.type !== StatusTypes.SELECTED_CODE_FILE) {
@@ -114,17 +130,8 @@ export function useCodeFileVersions(): CodeFileVersionsState {
         if (!state.codeFile) {
             return
         }
-
-        dispatch({ type: "LOADING_VERSIONS_STARTED" })
-        state.codeFile
-            .getVersions()
-            .then(versions => {
-                dispatch({ type: "VERSIONS_LOADED", payload: { versions } })
-            })
-            .finally(() => {
-                dispatch({ type: "LOADING_VERSIONS_FINISHED" })
-            })
-    }, [state.codeFile])
+        loadVersions(state.codeFile)
+    }, [state.codeFile, loadVersions])
 
     // Load version content when selected version changes
     useEffect(() => {
@@ -132,16 +139,10 @@ export function useCodeFileVersions(): CodeFileVersionsState {
             dispatch({ type: "VERSION_CONTENT_LOADED", payload: { content: undefined } })
             return
         }
-
-        dispatch({ type: "LOADING_CONTENT_STARTED" })
-        selectedVersion
-            .getContent()
-            .then(content => {
-                dispatch({ type: "VERSION_CONTENT_LOADED", payload: { content } })
-            })
-            .finally(() => {
-                dispatch({ type: "LOADING_CONTENT_FINISHED" })
-            })
+        dispatch({ type: "CONTENT_LOADING" })
+        selectedVersion.getContent().then(content => {
+            dispatch({ type: "VERSION_CONTENT_LOADED", payload: { content } })
+        })
     }, [selectedVersion])
 
     // Actions
@@ -154,8 +155,10 @@ export function useCodeFileVersions(): CodeFileVersionsState {
             return
         }
 
-        await state.codeFile.setFileContent(state.versionContent)
-    }, [state.versionContent, state.codeFile])
+        const newCodeFile = await state.codeFile.setFileContent(state.versionContent)
+        dispatch({ type: "CODE_FILE_SELECTED", payload: { codeFile: newCodeFile } })
+        await loadVersions(newCodeFile)
+    }, [state.versionContent, state.codeFile, loadVersions])
 
     return {
         // Current state
@@ -164,8 +167,8 @@ export function useCodeFileVersions(): CodeFileVersionsState {
             versions: state.versions,
             selectedVersionId: state.selectedVersionId,
             versionContent: state.versionContent,
-            isLoadingVersions: state.isLoadingVersions,
-            isLoadingContent: state.isLoadingContent,
+            versionsLoading: state.versionsLoading,
+            contentLoading: state.contentLoading,
         },
 
         // Actions

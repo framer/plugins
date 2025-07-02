@@ -1,4 +1,5 @@
 import type { CodeFileVersionsState } from "../hooks/useCodeFileVersions"
+import { LoadingState } from "../hooks/useCodeFileVersions"
 import FileDiff from "./FileDiff"
 import VersionsSidebar from "./VersionsSidebar"
 
@@ -17,18 +18,16 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 versions={state.versions}
                 selectedId={state.selectedVersionId}
                 onSelect={selectVersion}
-                isLoading={state.isLoadingVersions}
+                isLoading={state.versionsLoading === LoadingState.Initial}
             />
-            <div className="bg-bg-secondary overflow-hidden">
-                {!state.isLoadingContent && state.versionContent ? (
-                    <FileDiff original={state.versionContent} revised={currentContent ?? ""} />
-                ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                        Loading version content...
-                    </div>
+            <div className="bg-bg-secondary overflow-hidden relative">
+                {state.contentLoading === LoadingState.Initial ? null : (
+                    <FileDiff original={state.versionContent ?? ""} revised={currentContent ?? ""} />
                 )}
             </div>
             {state.versionContent !== currentContent ? (
+                // FIXME: currently button is hidden when it's the same as the current content
+                // hide it only when it's the same as the current version
                 <button
                     className="px-6 py-2 rounded bg-tint text-black font-semibold hover:bg-tint-dark transition disabled:opacity-50 disabled:cursor-not-allowed m-3 w-full"
                     onClick={restoreVersion}

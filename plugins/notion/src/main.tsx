@@ -7,7 +7,7 @@ import ReactDOM from "react-dom/client"
 import { App } from "./App.tsx"
 import { PLUGIN_KEYS } from "./api"
 import auth from "./auth"
-import { getDatabaseIdMap, syncExistingCollection } from "./data"
+import { getExistingCollectionDatabaseIdMap, syncExistingCollection } from "./data"
 import { Authenticate } from "./Login.tsx"
 
 const activeCollection = await framer.getActiveManagedCollection()
@@ -33,14 +33,14 @@ const [
     previousLastSynced,
     previousIgnoredFieldIds,
     previousDatabaseName,
-    databaseIdMap,
+    existingCollectionDatabaseIdMap,
 ] = await Promise.all([
     activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_ID),
     activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
     activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
     activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS),
     activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_NAME),
-    getDatabaseIdMap(),
+    getExistingCollectionDatabaseIdMap(),
 ])
 
 const { didSync } = await syncExistingCollection(
@@ -50,7 +50,7 @@ const { didSync } = await syncExistingCollection(
     previousIgnoredFieldIds,
     previousLastSynced,
     previousDatabaseName,
-    databaseIdMap
+    existingCollectionDatabaseIdMap
 )
 
 if (didSync) {
@@ -67,7 +67,7 @@ if (didSync) {
                 previousLastSynced={previousLastSynced}
                 previousIgnoredFieldIds={previousIgnoredFieldIds}
                 previousDatabaseName={previousDatabaseName}
-                existingCollectionDatabaseIdMap={databaseIdMap}
+                existingCollectionDatabaseIdMap={existingCollectionDatabaseIdMap}
             />
         </React.StrictMode>
     )

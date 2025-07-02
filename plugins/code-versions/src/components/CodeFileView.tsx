@@ -1,10 +1,14 @@
-import { useCodeFileVersions } from "../hooks/useCodeFileVersions"
+import type { CodeFileVersionsState } from "../hooks/useCodeFileVersions"
 import FileDiff from "./FileDiff"
 import VersionsSidebar from "./VersionsSidebar"
 
-export default function CodeFileView() {
-    const { state, selectVersion, restoreVersion } = useCodeFileVersions()
+interface CodeFileViewProps {
+    state: CodeFileVersionsState["state"]
+    selectVersion: CodeFileVersionsState["selectVersion"]
+    restoreVersion: CodeFileVersionsState["restoreVersion"]
+}
 
+export default function CodeFileView({ state, selectVersion, restoreVersion }: CodeFileViewProps) {
     const currentContent = state.codeFile?.content ?? ""
 
     return (
@@ -17,12 +21,12 @@ export default function CodeFileView() {
                 isLoading={state.isLoadingVersions}
             />
             <div className="bg-bg-secondary overflow-hidden">
-                {state.isLoadingContent ? (
+                {!state.isLoadingContent && state.versionContent ? (
+                    <FileDiff original={state.versionContent} revised={currentContent} />
+                ) : (
                     <div className="flex items-center justify-center h-full text-gray-500">
                         Loading version content...
                     </div>
-                ) : (
-                    <FileDiff original={state.versionContent ?? ""} revised={currentContent} />
                 )}
             </div>
             <button

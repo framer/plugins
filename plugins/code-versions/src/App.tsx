@@ -17,7 +17,11 @@ export default function App() {
         })
     }, [])
 
-    const { state } = useCodeFileVersions()
+    const { state, selectVersion, restoreVersion } = useCodeFileVersions()
 
-    return state.codeFile ? <CodeFileView /> : <div>No code file selected</div>
+    return state.codeFile ? (
+        <CodeFileView state={state} selectVersion={selectVersion} restoreVersion={restoreVersion} />
+    ) : (
+        <div>No code file selected</div>
+    )
 }

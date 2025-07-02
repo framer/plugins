@@ -1,4 +1,4 @@
-import type { CodeFile, CodeFileVersion } from "framer-plugin"
+import { type CodeFile, type CodeFileVersion, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useReducer } from "react"
 import { match } from "ts-pattern"
 import { StatusTypes, useSelectedCodeFile } from "./useSelectedCodeFile"
@@ -243,4 +243,8 @@ export function useCodeFileVersions(): CodeFileVersionsState {
         restoreVersion,
         clearErrors,
     }
+}
+
+export const useCanRestoreVersion = () => {
+    return useIsAllowedTo("CodeFile.setFileContent")
 }

@@ -1,5 +1,5 @@
 import type { CodeFileVersionsState } from "../hooks/useCodeFileVersions"
-import { LoadingState } from "../hooks/useCodeFileVersions"
+import { LoadingState, useCanRestoreVersion } from "../hooks/useCodeFileVersions"
 import FileDiff from "./FileDiff"
 import VersionsSidebar from "./VersionsSidebar"
 
@@ -11,6 +11,9 @@ interface CodeFileViewProps {
 
 export default function CodeFileView({ state, selectVersion, restoreVersion }: CodeFileViewProps) {
     const currentContent = state.codeFile?.content
+
+    const canRestoreVersion = useCanRestoreVersion()
+
     return (
         <div className="grid grid-cols-[var(--width-versions)_1fr] grid-rows-[1fr_auto] h-screen bg-bg-base text-text-base">
             <VersionsSidebar
@@ -25,7 +28,7 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                     <FileDiff original={state.versionContent ?? ""} revised={currentContent ?? ""} />
                 )}
             </div>
-            {state.versionContent !== currentContent ? (
+            {state.versionContent !== currentContent && canRestoreVersion ? (
                 // FIXME: currently button is hidden when it's the same as the current content
                 // hide it only when it's the same as the current version
                 <button

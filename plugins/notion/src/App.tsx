@@ -10,7 +10,7 @@ import { SelectDataSource } from "./SelectDataSource"
 
 interface AppProps {
     collection: ManagedCollection
-    previousDataSourceId: string | null
+    previousDatabaseId: string | null
     previousSlugFieldId: string | null
     previousLastSynced: string | null
     previousIgnoredFieldIds: string | null
@@ -20,7 +20,7 @@ interface AppProps {
 
 export function App({
     collection,
-    previousDataSourceId,
+    previousDatabaseId,
     previousSlugFieldId,
     previousLastSynced,
     previousIgnoredFieldIds,
@@ -28,7 +28,7 @@ export function App({
     databaseIdMap,
 }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
-    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
+    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDatabaseId))
     const [hasAccessError, setHasAccessError] = useState(false)
 
     // Support self-referencing databases by allowing the current collection to be referenced.
@@ -66,14 +66,14 @@ export function App({
     }, [dataSource, isLoadingDataSource, hasAccessError])
 
     useEffect(() => {
-        if (!previousDataSourceId) {
+        if (!previousDatabaseId) {
             return
         }
 
         const abortController = new AbortController()
 
         setIsLoadingDataSource(true)
-        getDataSource(previousDataSourceId, abortController.signal)
+        getDataSource(previousDatabaseId, abortController.signal)
             .then(setDataSource)
             .catch(error => {
                 if (abortController.signal.aborted) return
@@ -90,7 +90,7 @@ export function App({
                     setHasAccessError(true)
                 } else {
                     framer.notify(
-                        `Error loading previously configured database "${previousDatabaseName || previousDataSourceId}". Check the logs for more details.`,
+                        `Error loading previously configured database "${previousDatabaseName || previousDatabaseId}". Check the logs for more details.`,
                         { variant: "error" }
                     )
                 }
@@ -104,7 +104,7 @@ export function App({
         return () => {
             abortController.abort()
         }
-    }, [previousDataSourceId, previousDatabaseName])
+    }, [previousDatabaseId, previousDatabaseName])
 
     if (isLoadingDataSource) {
         return (
@@ -116,7 +116,7 @@ export function App({
     }
 
     if (hasAccessError) {
-        return <NoTableAccess previousDatabaseId={previousDataSourceId} />
+        return <NoTableAccess previousDatabaseId={previousDatabaseId} />
     }
 
     if (!dataSource) {

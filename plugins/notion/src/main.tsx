@@ -9,7 +9,6 @@ import { PLUGIN_KEYS } from "./api"
 import auth from "./auth"
 import { getDatabaseIdMap, syncExistingCollection } from "./data"
 import { Authenticate } from "./Login.tsx"
-import { syncMethods } from "./utils"
 
 const activeCollection = await framer.getActiveManagedCollection()
 
@@ -44,22 +43,15 @@ const [
     getDatabaseIdMap(),
 ])
 
-const isAllowedToSync = framer.isAllowedTo(...syncMethods)
-
-let didSync = false
-
-if (isAllowedToSync) {
-    const { didSync: didSyncResult } = await syncExistingCollection(
-        activeCollection,
-        previousDatabaseId,
-        previousSlugFieldId,
-        previousIgnoredFieldIds,
-        previousLastSynced,
-        previousDatabaseName,
-        databaseIdMap
-    )
-    didSync = didSyncResult
-}
+const { didSync } = await syncExistingCollection(
+    activeCollection,
+    previousDatabaseId,
+    previousSlugFieldId,
+    previousIgnoredFieldIds,
+    previousLastSynced,
+    previousDatabaseName,
+    databaseIdMap
+)
 
 if (didSync) {
     await framer.closePlugin("Synchronization successful", {
@@ -70,7 +62,7 @@ if (didSync) {
         <React.StrictMode>
             <App
                 collection={activeCollection}
-                previousDataSourceId={previousDatabaseId}
+                previousDatabaseId={previousDatabaseId}
                 previousSlugFieldId={previousSlugFieldId}
                 previousLastSynced={previousLastSynced}
                 previousIgnoredFieldIds={previousIgnoredFieldIds}

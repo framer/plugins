@@ -10,8 +10,8 @@ interface AuthenticationProps {
 
 export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const [isLoading, setIsLoading] = useState(false)
-    const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
-    const pollTimeout = useRef<number | ReturnType<typeof setTimeout>>()
+    const pollInterval = useRef<ReturnType<typeof setInterval>>()
+    const pollTimeout = useRef<ReturnType<typeof setTimeout>>()
 
     useLayoutEffect(() => {
         framer.showUI({

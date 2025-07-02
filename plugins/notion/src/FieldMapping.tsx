@@ -49,14 +49,14 @@ function FieldMappingRow({
     onFieldTypeChange,
 }: FieldMappingRowProps) {
     const { id, name, originalName, type, allowedTypes } = fieldInfo
-    const isNotSupported = unsupported || missingCollection
-    const disabled = isNotSupported || ignored || !isAllowedToManage
+    const isFieldUnavailable = unsupported || missingCollection
+    const disabled = isFieldUnavailable || ignored || !isAllowedToManage
 
     return (
         <>
             <button
                 type="button"
-                className={classNames("source-field", isNotSupported && "unsupported")}
+                className={classNames("source-field", isFieldUnavailable && "unsupported")}
                 aria-disabled={disabled}
                 onClick={() => onToggleIgnored(id)}
                 tabIndex={0}
@@ -80,7 +80,7 @@ function FieldMappingRow({
                     d="m2.5 7 3-3-3-3"
                 />
             </svg>
-            {isNotSupported ? (
+            {isFieldUnavailable ? (
                 <div className="unsupported-field">{unsupported ? "Unsupported Field" : "Missing Collection"}</div>
             ) : (
                 <>
@@ -285,14 +285,12 @@ export function FieldMapping({
                             )
                         }}
                     >
-                        {possibleSlugFieldIds.map(possibleSlugFieldId => {
-                            return (
-                                <option key={`slug-field-${possibleSlugFieldId}`} value={possibleSlugFieldId}>
-                                    {fieldsInfo.find(field => field.id === possibleSlugFieldId)?.name ??
-                                        possibleSlugFieldId}
-                                </option>
-                            )
-                        })}
+                        {possibleSlugFieldIds.map(possibleSlugFieldId => (
+                            <option key={`slug-field-${possibleSlugFieldId}`} value={possibleSlugFieldId}>
+                                {fieldsInfo.find(field => field.id === possibleSlugFieldId)?.name ??
+                                    possibleSlugFieldId}
+                            </option>
+                        ))}
                     </select>
                 </label>
 
@@ -300,23 +298,19 @@ export function FieldMapping({
                     <span className="fields-column">Notion Property</span>
                     <span>Type</span>
                     <span>Name</span>
-                    {fieldsInfo.map(fieldInfo => {
-                        return (
-                            <FieldMappingRow
-                                key={`field-${fieldInfo.id}`}
-                                fieldInfo={fieldInfo}
-                                ignored={ignoredFieldIds.has(fieldInfo.id)}
-                                isAllowedToManage={isAllowedToManage}
-                                unsupported={
-                                    !Array.isArray(fieldInfo.allowedTypes) || fieldInfo.allowedTypes.length === 0
-                                }
-                                missingCollection={isMissingCollection(fieldInfo, databaseIdMap)}
-                                onToggleIgnored={toggleFieldIgnoredState}
-                                onNameChange={changeFieldName}
-                                onFieldTypeChange={changeFieldType}
-                            />
-                        )
-                    })}
+                    {fieldsInfo.map(fieldInfo => (
+                        <FieldMappingRow
+                            key={`field-${fieldInfo.id}`}
+                            fieldInfo={fieldInfo}
+                            ignored={ignoredFieldIds.has(fieldInfo.id)}
+                            isAllowedToManage={isAllowedToManage}
+                            unsupported={!Array.isArray(fieldInfo.allowedTypes) || fieldInfo.allowedTypes.length === 0}
+                            missingCollection={isMissingCollection(fieldInfo, databaseIdMap)}
+                            onToggleIgnored={toggleFieldIgnoredState}
+                            onNameChange={changeFieldName}
+                            onFieldTypeChange={changeFieldType}
+                        />
+                    ))}
                 </div>
 
                 <footer>

@@ -16,7 +16,7 @@ import {
     pageContentProperty,
     richTextToPlainText,
 } from "./api"
-import { formatDate, isNotNull, slugify } from "./utils"
+import { formatDate, isNotNull, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -49,9 +49,9 @@ export function getDataSourceFieldsInfo(database: DatabaseObjectResponse, databa
 /**
  * Retrieve Notion database and get name and id.
  */
-export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
+export async function getDataSource(databaseId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     // Fetch from your data source
-    const database = await getDatabase(dataSourceId)
+    const database = await getDatabase(databaseId)
 
     if (abortSignal?.aborted) {
         throw new Error("Database loading cancelled")
@@ -181,19 +181,20 @@ export async function syncCollection(
 
 export async function syncExistingCollection(
     collection: ManagedCollection,
-    previousDataSourceId: string | null,
+    previousDatabaseId: string | null,
     previousSlugFieldId: string | null,
     previousIgnoredFieldIds: string | null,
     previousLastSynced: string | null,
     previousDatabaseName: string | null,
     databaseIdMap: DatabaseIdMap
 ): Promise<{ didSync: boolean }> {
-    if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId || !previousDataSourceId) {
+    const isAllowedToSync = framer.isAllowedTo(...syncMethods)
+    if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId || !previousDatabaseId || !isAllowedToSync) {
         return { didSync: false }
     }
 
     try {
-        const dataSource = await getDataSource(previousDataSourceId)
+        const dataSource = await getDataSource(previousDatabaseId)
         const existingFields = await collection.getFields()
 
         const dataSourceFieldsInfo = getDataSourceFieldsInfo(dataSource.database, databaseIdMap)
@@ -222,7 +223,7 @@ export async function syncExistingCollection(
     } catch (error) {
         console.error(error)
         framer.notify(
-            `Failed to sync database “${previousDatabaseName || previousDataSourceId}”. Check browser console for more details.`,
+            `Failed to sync database “${previousDatabaseName || previousDatabaseId}”. Check browser console for more details.`,
             { variant: "error" }
         )
         return { didSync: false }
@@ -340,13 +341,18 @@ export async function fieldsInfoToCollectionFields(
 
 export async function getDatabaseIdMap(): Promise<DatabaseIdMap> {
     const databaseIdMap: DatabaseIdMap = new Map()
+    const promises: Promise<void>[] = []
 
     for (const collection of await framer.getCollections()) {
-        const collectionDatabaseId = await collection.getPluginData(PLUGIN_KEYS.DATABASE_ID)
-        if (!collectionDatabaseId) continue
+        const task = async () => {
+            const collectionDatabaseId = await collection.getPluginData(PLUGIN_KEYS.DATABASE_ID)
+            if (!collectionDatabaseId) return
+            databaseIdMap.set(collectionDatabaseId, collection.id)
+        }
 
-        databaseIdMap.set(collectionDatabaseId, collection.id)
+        promises.push(task())
     }
 
+    await Promise.all(promises)
     return databaseIdMap
 }

@@ -67,7 +67,7 @@ if (didSync) {
                 previousLastSynced={previousLastSynced}
                 previousIgnoredFieldIds={previousIgnoredFieldIds}
                 previousDatabaseName={previousDatabaseName}
-                databaseIdMap={databaseIdMap}
+                existingCollectionDatabaseIdMap={databaseIdMap}
             />
         </React.StrictMode>
     )

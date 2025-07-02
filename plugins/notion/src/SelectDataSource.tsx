@@ -13,7 +13,7 @@ enum Status {
 }
 
 export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
-    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string | null>(null)
+    const [selectedDatabaseId, setSelectedDatabaseId] = useState<string | null>(null)
     const [status, setStatus] = useState<Status>(Status.Loading)
     const [dataSources, setDataSources] = useState<DataSource[]>([])
 
@@ -24,7 +24,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 setDataSources(dataSources)
                 setStatus(Status.Ready)
                 if (dataSources.length > 0) {
-                    setSelectedDataSourceId(dataSources[0]?.id ?? null)
+                    setSelectedDatabaseId(dataSources[0]?.id ?? null)
                 }
             } catch (error) {
                 console.error(error)
@@ -38,12 +38,12 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
-        if (!selectedDataSourceId) return
+        if (!selectedDatabaseId) return
 
         try {
             setStatus(Status.Loading)
 
-            const dataSource = dataSources.find(dataSource => dataSource.id === selectedDataSourceId)
+            const dataSource = dataSources.find(dataSource => dataSource.id === selectedDatabaseId)
             if (!dataSource) {
                 framer.notify("Database not found", { variant: "error" })
                 return
@@ -52,7 +52,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
             onSelectDataSource(dataSource)
         } catch (error) {
             console.error(error)
-            framer.notify(`Failed to load database “${selectedDataSourceId}”. Check the logs for more details.`, {
+            framer.notify(`Failed to load database “${selectedDatabaseId}”. Check the logs for more details.`, {
                 variant: "error",
             })
         } finally {
@@ -74,8 +74,8 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 <label htmlFor="collection">
                     <select
                         id="collection"
-                        onChange={event => setSelectedDataSourceId(event.target.value)}
-                        value={selectedDataSourceId ?? ""}
+                        onChange={event => setSelectedDatabaseId(event.target.value)}
+                        value={selectedDatabaseId ?? ""}
                         disabled={status === Status.Loading}
                     >
                         <option value="" disabled>
@@ -88,7 +88,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                         ))}
                     </select>
                 </label>
-                <button disabled={!selectedDataSourceId || status === Status.Loading}>
+                <button disabled={!selectedDatabaseId || status === Status.Loading}>
                     {status === Status.Loading ? <div className="framer-spinner" /> : "Next"}
                 </button>
             </form>

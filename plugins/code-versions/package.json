@@ -16,6 +16,7 @@
         "test:run": "vitest run"
     },
     "dependencies": {
+        "@radix-ui/react-tooltip": "^1.2.7",
         "@tailwindcss/vite": "^4.1.11",
         "clsx": "^2.1.1",
         "diff": "^8.0.2",

@@ -1,6 +1,6 @@
 {
     "id": "PLACEH",
     "name": "Code Versions",
-    "modes": ["code"],
+    "modes": ["code", "canvas"],
     "icon": "/code-versions.svg"
 }

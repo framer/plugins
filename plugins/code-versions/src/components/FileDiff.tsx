@@ -1,7 +1,7 @@
 import { match, P } from "ts-pattern"
-import { cn } from "./utils"
-import { getLineDiff } from "./utils/diff/line-diff"
-import type { InlineDiff, LineDiff } from "./utils/diff/types"
+import { cn } from "../utils"
+import { getLineDiff } from "../utils/diff/line-diff"
+import type { InlineDiff, LineDiff } from "../utils/diff/types"
 
 interface FileDiffProps {
     original: string
@@ -23,17 +23,13 @@ export default function FileDiff({ original, revised }: FileDiffProps) {
     )
 
     return (
-        <div className="overflow-auto">
+        <div className="overflow-auto h-full w-full">
             <table className="font-mono text-sm border-separate border-spacing-0">
                 <tbody>{rows}</tbody>
             </table>
         </div>
     )
 }
-
-// ============================================================================
-// SUPPORTING STORIES: Row Components
-// ============================================================================
 
 function ChangeRow({ line }: { line: LineDiff & { type: "change" } }) {
     return (
@@ -96,10 +92,6 @@ function DividerRow() {
     )
 }
 
-// ============================================================================
-// DETAILS: Cell Components and Utilities
-// ============================================================================
-
 function LineNumberCell({
     lineNumber,
     className = "text-gray-600",
@@ -117,11 +109,11 @@ function LineNumberCell({
 }
 
 function AddRowLineNumberCell({ lineNumber }: { lineNumber: number | undefined }) {
-    return <LineNumberCell lineNumber={lineNumber} className="text-green-600" prefix="+ " />
+    return <LineNumberCell lineNumber={lineNumber} className="text-green-600 whitespace-nowrap" prefix={"+\u00A0"} />
 }
 
 function RemoveRowLineNumberCell({ lineNumber }: { lineNumber: number | undefined }) {
-    return <LineNumberCell lineNumber={lineNumber} className="text-red-600" prefix="- " />
+    return <LineNumberCell lineNumber={lineNumber} className="text-red-600 whitespace-nowrap" prefix={"-\u00A0"} />
 }
 
 function ContentCell({ children, className = "text-gray-600" }: { children: React.ReactNode; className?: string }) {

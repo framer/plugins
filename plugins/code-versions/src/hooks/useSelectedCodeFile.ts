@@ -1,18 +1,11 @@
-import { type CodeFile, framer, isCodeFileComponentExport, isComponentInstanceNode } from "framer-plugin"
-import { useCallback, useEffect, useState } from "react"
+import { type CodeFile, framer, isComponentInstanceNode } from "framer-plugin"
+import { useEffect, useState } from "react"
 
 export enum StatusTypes {
     SELECTED_CODE_FILE = "selectedCodeFile",
     NO_SELECTION = "noSelection",
     ERROR = "error",
 }
-
-/**
- * Represents no selection on the canvas.
- *
- * To be used with `framer.setSelection` to clear the selection.
- */
-const noSelection = [] as const
 
 type NoSelectionState = {
     type: StatusTypes.NO_SELECTION
@@ -32,7 +25,6 @@ type State = NoSelectionState | CodeFileState | ErrorState
 
 interface UseSelectedCodeFile {
     state: State
-    clearSelection: () => void
 }
 
 // Hook to handle Framer selection changes
@@ -134,23 +126,7 @@ export function useSelectedCodeFile(): UseSelectedCodeFile {
         }
     }, [selectionState.type, codeFileId])
 
-    const clearSelection = useCallback(() => {
-        try {
-            framer.setSelection(noSelection)
-            setSelectionState({
-                type: StatusTypes.NO_SELECTION,
-            })
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : "Failed to clear selection"
-            setSelectionState({
-                type: StatusTypes.ERROR,
-                error: errorMessage,
-            })
-        }
-    }, [])
-
     return {
         state: selectionState,
-        clearSelection,
     }
 }

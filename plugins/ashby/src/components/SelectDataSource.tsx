@@ -18,7 +18,7 @@ export function SelectDataSource({
     onSelectDataSource,
 }: SelectDataSourceProps) {
     const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
-    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(
+    const [selectedDataSourceId] = useState<string>(
         previousDataSourceId ?? dataSources[0]?.id ?? ""
     )
     const [isLoading, setIsLoading] = useState(false)
@@ -66,28 +66,7 @@ export function SelectDataSource({
                         value={boardToken}
                         onChange={event => setBoardToken(event.target.value)}
                     />
-                </div>
-                <div>
-                    <p>Collection</p>
-                    <select
-                        id="collection"
-                        required
-                        onChange={event => setSelectedDataSourceId(event.target.value)}
-                        value={selectedDataSourceId}
-                        disabled={!boardToken}
-                    >
-                        <option value="" disabled>
-                            Choose Source…
-                        </option>
-                        {dataSources.map(({ id, name }) => (
-                            <option key={id} value={id}>
-                                {name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                    
+                </div> 
                 <button disabled={isButtonDisabled}>{isLoading ? <div className="framer-spinner" /> : "Next"}</button>
             </form>
         </main>

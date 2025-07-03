@@ -1,7 +1,8 @@
-@import "framer-plugin/framer.css";
-@import "tailwindcss" important;
+@import "tailwindcss";
 
-@theme {
+@custom-variant dark (&:where([data-framer-theme="dark"], [data-framer-theme="dark"] *));
+
+@theme inline {
     /* Backgrounds */
     --color-framer-bg-base: var(--framer-color-bg);
     --color-framer-bg-primary: var(--framer-color-bg-primary, var(--framer-color-bg));
@@ -31,4 +32,8 @@
 
     /* App specific tokens */
     --width-versions: calc(var(--spacing) * 44);
+}
+
+@layer base {
+    @import "framer-plugin/framer.css";
 }

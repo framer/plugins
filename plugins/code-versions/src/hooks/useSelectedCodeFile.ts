@@ -28,8 +28,13 @@ type ErrorState = {
 
 type State = InitialState | CodeFileState | NoSelectionState | ErrorState
 
+interface UseSelectedCodeFile {
+    state: State
+    clearSelection: () => void
+}
+
 // Hook to handle Framer selection changes
-export function useSelectedCodeFile() {
+export function useSelectedCodeFile(): UseSelectedCodeFile {
     const [selectedCodeFile, setSelectedCodeFile] = useState<State>({
         type: StatusTypes.INITIAL,
     })

@@ -234,7 +234,7 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
         .with({ type: VersionsActionType.VersionSelected }, ({ payload }) => ({
             ...state,
             selectedVersionId: payload.versionId,
-            versionContent: undefined,
+            versionContent: state.selectedVersionId === payload.versionId ? state.versionContent : undefined,
             errors: { ...state.errors, content: undefined },
         }))
         .with({ type: VersionsActionType.ContentLoadStarted }, () => ({

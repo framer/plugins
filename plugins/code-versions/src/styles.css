@@ -4,29 +4,28 @@
 
 @theme inline {
     /* Backgrounds */
-    --color-framer-bg-base: var(--framer-color-bg);
-    --color-framer-bg-primary: var(--framer-color-bg-primary, var(--framer-color-bg));
-    --color-framer-bg-secondary: var(--framer-color-bg-secondary);
-    --color-framer-bg-tertiary: var(--framer-color-bg-tertiary);
-    --color-framer-divider: var(--framer-color-divider);
-    --color-framer-tint: var(--framer-color-tint);
-    --color-framer-tint-dimmed: var(--framer-color-tint-dimmed);
-    --color-framer-tint-dark: var(--framer-color-tint-dark);
+    --color-framer-bg-base: var(--framer-color-bg, light-dark(#ffffff, #111111));
+    --color-framer-bg-primary: var(--framer-color-bg-primary, var(--framer-color-bg, light-dark(#ffffff, #111111)));
+    --color-framer-bg-secondary: var(--framer-color-bg-secondary, light-dark(#eeeeee, #1d1d1d));
+    --color-framer-bg-tertiary: var(--framer-color-bg-tertiary, light-dark(#f3f3f3, #2b2b2b));
+    --color-framer-divider: var(--framer-color-divider, light-dark(#eeeeee, #252525));
+    --color-framer-tint: var(--framer-color-tint, light-dark(#0099ff, #0099ff));
+    --color-framer-tint-dimmed: var(
+        --framer-color-tint-dimmed,
+        light-dark(rgba(0, 153, 255, 0.1), rgba(0, 153, 255, 0.15))
+    );
+    --color-framer-tint-dark: var(--framer-color-tint-dark, light-dark(#0088ff, #0088ff));
     --color-framer-black-dimmed: rgba(0, 0, 0, 0.5);
 
     /* Text colors */
-    --color-framer-text-base: var(--framer-color-text);
-    --color-framer-text-primary: var(--framer-color-text);
-    --color-framer-text-secondary: var(--framer-color-text-secondary);
-    --color-framer-text-tertiary: var(--framer-color-text-tertiary);
-    --color-framer-text-inverted: var(--framer-color-text-inverted);
+    --color-framer-text-base: var(--framer-color-text, light-dark(#333333, #ffffff));
+    --color-framer-text-primary: var(--framer-color-text, light-dark(#333333, #ffffff));
+    --color-framer-text-secondary: var(--framer-color-text-secondary, light-dark(#666666, #cccccc));
+    --color-framer-text-tertiary: var(--framer-color-text-tertiary, light-dark(#999999, #777777));
+    --color-framer-text-inverted: var(--framer-color-text-reversed, light-dark(#ffffff, #ffffff));
 
     /* Borders */
-    --border-color-divider: var(--framer-color-divider);
-
-    /* Font sizes */
-    --font-size-md: 12px;
-    --font-size-2xs: 10px;
+    --border-color-divider: var(--framer-color-divider, light-dark(#eeeeee, #252525));
 
     --spacing: 5px;
 

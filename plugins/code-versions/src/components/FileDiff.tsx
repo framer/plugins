@@ -23,28 +23,26 @@ export default function FileDiff({ original, revised }: FileDiffProps) {
     )
 
     return (
-        <div className="overflow-auto h-full w-full">
-            <table className="font-mono text-sm border-separate border-spacing-0">
-                <tbody>{rows}</tbody>
-            </table>
-        </div>
+        <table className="overflow-auto h-full w-full bg-[#FDFDFD] dark:bg-[#181818] font-mono text-sm border-separate border-spacing-0">
+            <tbody>{rows}</tbody>
+        </table>
     )
 }
 
 function ChangeRow({ line }: { line: LineDiff & { type: "change" } }) {
     return (
         <>
-            <tr className="bg-red-50">
+            <tr className="bg-[#FF3366]/10">
                 <RemoveRowLineNumberCell lineNumber={line.oldLine} />
                 <LineNumberCell lineNumber={undefined} />
-                <ContentCell className="text-red-600">
+                <ContentCell>
                     <InlineDiffs parts={line.inlineDiffs} type="remove" />
                 </ContentCell>
             </tr>
-            <tr className="bg-green-50">
+            <tr className="bg-[#00CC88]/10">
                 <LineNumberCell lineNumber={undefined} />
                 <AddRowLineNumberCell lineNumber={line.newLine} />
-                <ContentCell className="text-green-600">
+                <ContentCell>
                     <InlineDiffs parts={line.inlineDiffs} type="add" />
                 </ContentCell>
             </tr>
@@ -67,7 +65,7 @@ function AddRow({ line }: { line: LineDiff & { type: "add" } }) {
         <tr className="bg-green-50">
             <LineNumberCell lineNumber={undefined} />
             <AddRowLineNumberCell lineNumber={line.newLine} />
-            <ContentCell className="text-green-600">{line.content}</ContentCell>
+            <ContentCell className="text-[#00CC88]/10">{line.content}</ContentCell>
         </tr>
     )
 }
@@ -77,7 +75,7 @@ function RemoveRow({ line }: { line: LineDiff & { type: "remove" } }) {
         <tr className="bg-red-50">
             <RemoveRowLineNumberCell lineNumber={line.oldLine} />
             <LineNumberCell lineNumber={undefined} />
-            <ContentCell className="text-red-600">{line.content}</ContentCell>
+            <ContentCell className="text-[#FF3366]/10">{line.content}</ContentCell>
         </tr>
     )
 }
@@ -102,34 +100,43 @@ function LineNumberCell({
     prefix?: string
 }) {
     return (
-        <td className={cn("text-right pr-2 pl-2 py-1 select-none min-w-8", className)}>
+        <td
+            className={cn(
+                "text-right pr-2 pl-2 py-1 select-none min-w-8 text-[#BBBBBB] dark:text-[#555555] text-[11px]",
+                className
+            )}
+        >
             {lineNumber !== undefined ? `${prefix}${lineNumber}` : ""}
         </td>
     )
 }
 
 function AddRowLineNumberCell({ lineNumber }: { lineNumber: number | undefined }) {
-    return <LineNumberCell lineNumber={lineNumber} className="text-green-600 whitespace-nowrap" prefix={"+\u00A0"} />
+    return <LineNumberCell lineNumber={lineNumber} className="text-[#00CC88]/10 whitespace-nowrap" prefix="+" />
 }
 
 function RemoveRowLineNumberCell({ lineNumber }: { lineNumber: number | undefined }) {
-    return <LineNumberCell lineNumber={lineNumber} className="text-red-600 whitespace-nowrap" prefix={"-\u00A0"} />
+    return <LineNumberCell lineNumber={lineNumber} className="text-[#FF3366]/10 whitespace-nowrap" prefix="-" />
 }
 
-function ContentCell({ children, className = "text-gray-600" }: { children: React.ReactNode; className?: string }) {
-    return <td className={cn("whitespace-pre px-2 py-1", className)}>{children}</td>
+function ContentCell({ children, className }: { children: React.ReactNode; className?: string }) {
+    return (
+        <td className={cn("whitespace-pre px-2 py-1 text-[#666666] dark:text-[#EEEEEE] text-[11px]", className)}>
+            {children}
+        </td>
+    )
 }
 
 function InlineDiffs({ parts, type }: { parts: readonly InlineDiff[]; type: "add" | "remove" }) {
     return parts.map((part, i) =>
         match([part, type] as const)
             .with([{ type: "add" }, "add"], ([part]) => (
-                <mark key={i} className="bg-green-200 text-green-900">
+                <mark key={i} className="bg-[#00CC88]/20">
                     {part.value}
                 </mark>
             ))
             .with([{ type: "remove" }, "remove"], ([part]) => (
-                <mark key={i} className="bg-red-200 text-red-900">
+                <mark key={i} className="bg-[#FF015E]/20">
                     {part.value}
                 </mark>
             ))

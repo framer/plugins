@@ -12,6 +12,7 @@ export function useCodeFileVersions(): CodeFileVersionsState {
     const contentAbortControllerRef = useRef<AbortController | null>(null)
 
     // Derived state
+    // this happens on every render, but should be fast enough, as useMemo isn't free either
     const selectedVersion = state.versions.find(version => version.id === state.selectedVersionId)
 
     // Handle file selection changes

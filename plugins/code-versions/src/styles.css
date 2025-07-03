@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-framer-theme="dark"], [data-framer-theme="dark"] *));
+
+@theme inline {
+    /* Backgrounds */
+    --color-framer-bg-base: var(--framer-color-bg);
+    --color-framer-bg-primary: var(--framer-color-bg-primary, var(--framer-color-bg));
+    --color-framer-bg-secondary: var(--framer-color-bg-secondary);
+    --color-framer-bg-tertiary: var(--framer-color-bg-tertiary);
+    --color-framer-divider: var(--framer-color-divider);
+    --color-framer-tint: var(--framer-color-tint);
+    --color-framer-tint-dimmed: var(--framer-color-tint-dimmed);
+    --color-framer-tint-dark: var(--framer-color-tint-dark);
+    --color-framer-black-dimmed: rgba(0, 0, 0, 0.5);
+
+    /* Text colors */
+    --color-framer-text-base: var(--framer-color-text);
+    --color-framer-text-primary: var(--framer-color-text);
+    --color-framer-text-secondary: var(--framer-color-text-secondary);
+    --color-framer-text-tertiary: var(--framer-color-text-tertiary);
+    --color-framer-text-inverted: var(--framer-color-text-inverted);
+
+    /* Borders */
+    --border-color-divider: var(--framer-color-divider);
+
+    /* Font sizes */
+    --font-size-md: 12px;
+    --font-size-2xs: 10px;
+
+    --spacing: 5px;
+
+    /* App specific tokens */
+    --width-versions: calc(var(--spacing) * 44);
+}
+
+@layer base {
+    @import "framer-plugin/framer.css";
+}

@@ -221,10 +221,9 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
             ...state,
             versions: payload.versions,
             versionsLoading: LoadingState.Idle,
-            selectedVersionId:
-                payload.versions.length > 0 && !state.selectedVersionId
-                    ? payload.versions[0]?.id
-                    : state.selectedVersionId,
+            selectedVersionId: !state.selectedVersionId
+                ? getDefaultSelectedVersionId(payload.versions)
+                : state.selectedVersionId,
             errors: { ...state.errors, versions: undefined },
         }))
         .with({ type: VersionsActionType.VersionSelected }, ({ payload }) => ({
@@ -280,6 +279,14 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
             contentLoading: payload.operation === "content" ? LoadingState.Idle : state.contentLoading,
         }))
         .exhaustive()
+}
+
+// Helper function to determine the default selected version
+// Prefers the second-to-last version (n-1) if available, otherwise falls back to current (first)
+function getDefaultSelectedVersionId(versions: readonly CodeFileVersion[]): string | undefined {
+    if (versions.length === 0) return undefined
+    if (versions.length === 1) return versions[0]?.id
+    return versions[1]?.id // Second version (index 1) is the n-1 version
 }
 
 // Helper function to load versions with abort controller

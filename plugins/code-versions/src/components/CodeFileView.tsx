@@ -34,8 +34,9 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 <button
                     className="px-6 py-2 rounded bg-tint text-black font-semibold hover:bg-tint-dark transition disabled:opacity-50 disabled:cursor-not-allowed m-3 w-full"
                     onClick={restoreVersion}
+                    disabled={state.restoreLoading === LoadingState.Initial}
                 >
-                    Restore
+                    {state.restoreLoading === LoadingState.Initial ? "Restoring..." : "Restore"}
                 </button>
             ) : null}
         </div>

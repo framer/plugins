@@ -8,10 +8,12 @@ function Version({
     version,
     isSelected,
     onSelect,
+    children,
 }: {
     version: CodeFileVersion
     isSelected: boolean
     onSelect: (id: string) => void
+    children: React.ReactNode
 }) {
     return (
         <Tooltip content={formatFull(version.createdAt)} side="bottom" align="center">
@@ -24,25 +26,73 @@ function Version({
                 tabIndex={0}
                 onClick={() => onSelect(version.id)}
             >
-                <span
-                    className={cn(
-                        "font-semibold tabular-nums",
-                        isSelected ? "text-gray-700" : "text-gray-900 group-hover:text-gray-700"
-                    )}
-                >
-                    <FormatFromNow date={version.createdAt} />
-                </span>
-                <span className="text-gray-300">&bull;</span>
-                <span
-                    className={cn(
-                        "flex-1 min-w-0 truncate",
-                        isSelected ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
-                    )}
-                >
-                    {version.createdBy.name}
-                </span>
+                {children}
             </div>
         </Tooltip>
+    )
+}
+
+function CurrentVersion({
+    version,
+    isSelected,
+    onSelect,
+}: {
+    version: CodeFileVersion
+    isSelected: boolean
+    onSelect: (id: string) => void
+}) {
+    return (
+        <Version version={version} isSelected={isSelected} onSelect={onSelect}>
+            <span
+                className={cn(
+                    "font-semibold",
+                    isSelected ? "text-gray-700" : "text-gray-900 group-hover:text-gray-700"
+                )}
+            >
+                Current
+            </span>
+            <span className="text-gray-300">&bull;</span>
+            <span
+                className={cn(
+                    "flex-1 min-w-0 truncate",
+                    isSelected ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
+                )}
+            >
+                {version.createdBy.name}
+            </span>
+        </Version>
+    )
+}
+
+function HistoricalVersion({
+    version,
+    isSelected,
+    onSelect,
+}: {
+    version: CodeFileVersion
+    isSelected: boolean
+    onSelect: (id: string) => void
+}) {
+    return (
+        <Version version={version} isSelected={isSelected} onSelect={onSelect}>
+            <span
+                className={cn(
+                    "font-semibold tabular-nums",
+                    isSelected ? "text-gray-700" : "text-gray-900 group-hover:text-gray-700"
+                )}
+            >
+                <FormatFromNow date={version.createdAt} />
+            </span>
+            <span className="text-gray-300">&bull;</span>
+            <span
+                className={cn(
+                    "flex-1 min-w-0 truncate",
+                    isSelected ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
+                )}
+            >
+                {version.createdBy.name}
+            </span>
+        </Version>
     )
 }
 
@@ -59,6 +109,8 @@ export default function VersionsSidebar({
     onSelect: (id: string) => void
     isLoading?: boolean
 }) {
+    const [currentVersion, ...historicalVersions] = versions
+
     return (
         <aside className={cn("bg-bg-secondary flex flex-col px-0 py-0 h-full border-r border-gray-100", className)}>
             <div className="h-px bg-gray-200 w-full mb-1" />
@@ -66,14 +118,28 @@ export default function VersionsSidebar({
                 {isLoading ? (
                     <div className="flex items-center justify-center h-32 text-gray-500">Loading versions...</div>
                 ) : (
-                    versions.map(version => (
-                        <Version
-                            key={version.id}
-                            version={version}
-                            isSelected={version.id === selectedId}
-                            onSelect={onSelect}
-                        />
-                    ))
+                    <>
+                        {currentVersion && (
+                            <CurrentVersion
+                                version={currentVersion}
+                                isSelected={currentVersion.id === selectedId}
+                                onSelect={onSelect}
+                            />
+                        )}
+                        {historicalVersions.length > 0 && (
+                            <>
+                                <div className="h-px bg-gray-200 w-full my-2" />
+                                {historicalVersions.map(version => (
+                                    <HistoricalVersion
+                                        key={version.id}
+                                        version={version}
+                                        isSelected={version.id === selectedId}
+                                        onSelect={onSelect}
+                                    />
+                                ))}
+                            </>
+                        )}
+                    </>
                 )}
             </div>
         </aside>

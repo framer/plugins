@@ -21,6 +21,13 @@ export default function App() {
     const { state: fileStatus } = useSelectedCodeFile()
     const { state, selectVersion, restoreVersion, clearErrors } = useCodeFileVersions()
 
+    // Close plugin when restore is completed successfully
+    useEffect(() => {
+        if (state.restoreCompleted) {
+            framer.closePlugin()
+        }
+    }, [state.restoreCompleted])
+
     // Handle error states
     if (fileStatus.type === StatusTypes.ERROR) {
         return (
@@ -28,9 +35,6 @@ export default function App() {
                 <div className="text-center">
                     <h2 className="text-lg font-semibold mb-2 text-red-600">Error</h2>
                     <p className="text-sm text-gray-600 mb-4">{fileStatus.error}</p>
-                    <p className="text-xs text-gray-500">
-                        This might be due to insufficient permissions. Please check your project permissions.
-                    </p>
                 </div>
             </div>
         )

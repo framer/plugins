@@ -1,4 +1,4 @@
-import { type CodeFile, type CodeFileVersion, useIsAllowedTo } from "framer-plugin"
+import { type CodeFile, type CodeFileVersion, framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useReducer, useRef } from "react"
 import { match } from "ts-pattern"
 import { StatusTypes, useSelectedCodeFile } from "./useSelectedCodeFile"
@@ -81,10 +81,11 @@ export function useCodeFileVersions(): CodeFileVersionsState {
     const restoreVersion = useCallback(async () => {
         if (!state.versionContent || !state.codeFile) return
 
+        dispatch({ type: VersionsActionType.RestoreStarted })
+
         try {
-            const newCodeFile = await state.codeFile.setFileContent(state.versionContent)
-            dispatch({ type: VersionsActionType.CodeFileSelected, payload: { codeFile: newCodeFile } })
-            await loadVersions(dispatch, newCodeFile, new AbortController())
+            await state.codeFile.setFileContent(state.versionContent)
+            dispatch({ type: VersionsActionType.RestoreCompleted })
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Failed to restore version"
             dispatch({ type: VersionsActionType.RestoreError, payload: { error: errorMessage } })
@@ -103,6 +104,8 @@ export function useCodeFileVersions(): CodeFileVersionsState {
             versionContent: state.versionContent,
             versionsLoading: state.versionsLoading,
             contentLoading: state.contentLoading,
+            restoreLoading: state.restoreLoading,
+            restoreCompleted: state.restoreCompleted,
             errors: state.errors,
         },
 
@@ -135,6 +138,8 @@ export enum VersionsActionType {
     VersionContentLoaded = "VERSION_CONTENT_LOADED",
     VersionsError = "VERSIONS_ERROR",
     ContentError = "CONTENT_ERROR",
+    RestoreStarted = "RESTORE_STARTED",
+    RestoreCompleted = "RESTORE_COMPLETED",
     RestoreError = "RESTORE_ERROR",
     ErrorsCleared = "ERRORS_CLEARED",
     StateResetCompleted = "STATE_RESET_COMPLETED",
@@ -148,6 +153,8 @@ interface VersionsState {
     versionContent: string | undefined
     versionsLoading: LoadingState
     contentLoading: LoadingState
+    restoreLoading: LoadingState
+    restoreCompleted: boolean
     errors: {
         versions?: string
         content?: string
@@ -164,6 +171,8 @@ type VersionsAction =
     | { type: VersionsActionType.VersionContentLoaded; payload: { content: string | undefined } }
     | { type: VersionsActionType.VersionsError; payload: { error: string } }
     | { type: VersionsActionType.ContentError; payload: { error: string } }
+    | { type: VersionsActionType.RestoreStarted }
+    | { type: VersionsActionType.RestoreCompleted }
     | { type: VersionsActionType.RestoreError; payload: { error: string } }
     | { type: VersionsActionType.ErrorsCleared }
     | { type: VersionsActionType.StateResetCompleted }
@@ -192,6 +201,7 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
                     versionContent: undefined,
                     versionsLoading: LoadingState.Initial,
                     contentLoading: LoadingState.Initial,
+                    restoreLoading: LoadingState.Idle,
                     errors: {},
                 }
             } else {
@@ -244,8 +254,19 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
             contentLoading: LoadingState.Idle,
             errors: { ...state.errors, content: payload.error },
         }))
+        .with({ type: VersionsActionType.RestoreStarted }, () => ({
+            ...state,
+            restoreLoading: LoadingState.Initial,
+            errors: { ...state.errors, restore: undefined },
+        }))
+        .with({ type: VersionsActionType.RestoreCompleted }, () => ({
+            ...state,
+            restoreLoading: LoadingState.Idle,
+            restoreCompleted: true,
+        }))
         .with({ type: VersionsActionType.RestoreError }, ({ payload }) => ({
             ...state,
+            restoreLoading: LoadingState.Idle,
             errors: { ...state.errors, restore: payload.error },
         }))
         .with({ type: VersionsActionType.ErrorsCleared }, () => ({
@@ -327,5 +348,7 @@ const initialState: VersionsState = {
     versionContent: undefined,
     versionsLoading: LoadingState.Idle,
     contentLoading: LoadingState.Idle,
+    restoreLoading: LoadingState.Idle,
+    restoreCompleted: false,
     errors: {},
 }

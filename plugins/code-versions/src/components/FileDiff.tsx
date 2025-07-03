@@ -23,9 +23,11 @@ export default function FileDiff({ original, revised }: FileDiffProps) {
     )
 
     return (
-        <table className="overflow-auto w-full bg-[#FDFDFD] dark:bg-[#181818] font-mono text-sm border-separate border-spacing-0">
-            <tbody className="[&>tr]:h-[19px] [&>tr]:leading-[19px]">{rows}</tbody>
-        </table>
+        <div className="ms-3 me-4 mt-3 overflow-auto h-full">
+            <table className="bg-[#FDFDFD] dark:bg-[#181818] font-mono text-sm border-separate border-spacing-0">
+                <tbody>{rows}</tbody>
+            </table>
+        </div>
     )
 }
 

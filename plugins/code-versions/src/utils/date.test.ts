@@ -5,13 +5,13 @@ describe("formatRelative", () => {
     it("formats seconds ago", () => {
         const now = new Date()
         const date = new Date(now.getTime() - 30 * 1000)
-        expect(formatRelative(now, date, "en-GB")).toEqual("30s ago")
+        expect(formatRelative(now, date, "en-GB")).toEqual("now")
     })
 
     it("formats 1 second ago", () => {
         const now = new Date()
         const date = new Date(now.getTime() - 1000)
-        expect(formatRelative(now, date, "en-GB")).toEqual("1s ago")
+        expect(formatRelative(now, date, "en-GB")).toEqual("now")
     })
 
     it("formats minutes ago", () => {

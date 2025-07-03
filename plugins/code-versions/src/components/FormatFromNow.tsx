@@ -7,7 +7,7 @@ interface FormatFromNowProps {
 }
 
 function getInitialIntervalMs(diff: number) {
-    if (diff < 60 * 1000) return 1000 // update every second
+    if (diff < 60 * 1000) return 10 * 1000 // update every ~10 seconds (since display shows "now" until 60s)
     if (diff < 60 * 60 * 1000) return 60 * 1000 // update every minute
     if (diff < 24 * 60 * 60 * 1000) return 60 * 60 * 1000 // update every hour
     if (diff < 7 * 24 * 60 * 60 * 1000) return 24 * 60 * 60 * 1000 // update every day

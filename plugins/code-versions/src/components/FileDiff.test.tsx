@@ -5,7 +5,7 @@ import FileDiff from "./FileDiff"
 const ADDED_CLASS_NAME = "bg-diff-add-bg/10"
 const REMOVED_CLASS_NAME = "bg-diff-remove-bg/10"
 const ADDED_ROW_CLASS_NAME = "bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10"
-const REMOVED_ROW_CLASS_NAME = "bg-gradient-to-r from-transparent from-0% to-[30px] to-diff-remove/10"
+const REMOVED_ROW_CLASS_NAME = "bg-gradient-to-r from-transparent from-0% to-[35px] to-diff-remove/10"
 
 describe("FileDiff", () => {
     describe("when content is identical", () => {

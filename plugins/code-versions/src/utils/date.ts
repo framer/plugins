@@ -2,11 +2,8 @@
  * Formats a date as a relative time string (e.g., "2 minutes ago", "yesterday")
  * Uses the native Intl.RelativeTimeFormat API for proper localization and pluralization
  */
-export function formatRelative(from: Date | string, to: Date | string, locales?: Intl.LocalesArgument): string {
-    const fromDate = typeof from === "string" ? new Date(from) : from
-    const toDate = typeof to === "string" ? new Date(to) : to
-
-    const diff = fromDate.getTime() - toDate.getTime()
+export function formatRelative(from: Date, to: Date, locales?: Intl.LocalesArgument): string {
+    const diff = from.getTime() - to.getTime()
 
     const seconds = Math.floor(diff / 1000)
     if (seconds < 60) return "now"
@@ -20,7 +17,7 @@ export function formatRelative(from: Date | string, to: Date | string, locales?:
     const days = Math.floor(hours / 24)
     if (days < 7) return `${Math.abs(days)}d ago`
 
-    return toDate.toLocaleDateString(locales)
+    return to.toLocaleDateString(locales)
 }
 
 /**

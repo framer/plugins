@@ -1,4 +1,4 @@
-import { diffLines } from "diff"
+import { type ChangeObject } from "diff"
 import { createAddLine, createChangeLine, createContextLine, createRemoveLine } from "./line-creators"
 import type { LineDiff } from "./types"
 
@@ -57,8 +57,8 @@ export function handlePairedRemoveAdd(
 }
 
 export function convertDiffBlockToLineDiffs(
-    cur: ReturnType<typeof diffLines>[number],
-    next: ReturnType<typeof diffLines>[number] | undefined,
+    cur: ChangeObject<string>,
+    next: ChangeObject<string> | undefined,
     oldLine: number,
     newLine: number
 ): UnprocessedDiffBlockResult {

@@ -1,4 +1,4 @@
-import { type CodeFile, type CodeFileVersion, framer, useIsAllowedTo } from "framer-plugin"
+import { type CodeFile, type CodeFileVersion, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useReducer, useRef } from "react"
 import { match } from "ts-pattern"
 import { StatusTypes, useSelectedCodeFile } from "./useSelectedCodeFile"
@@ -45,8 +45,10 @@ export function useCodeFileVersions(): CodeFileVersionsState {
 
         // Cleanup function
         return () => {
-            versionsAbortControllerRef.current === abortController &&
-                (abortController.abort(), (versionsAbortControllerRef.current = null))
+            if (versionsAbortControllerRef.current === abortController) {
+                abortController.abort()
+                versionsAbortControllerRef.current = null
+            }
         }
     }, [state.codeFile])
 
@@ -68,8 +70,10 @@ export function useCodeFileVersions(): CodeFileVersionsState {
 
         // Cleanup function
         return () => {
-            contentAbortControllerRef.current === abortController &&
-                (abortController.abort(), (contentAbortControllerRef.current = null))
+            if (contentAbortControllerRef.current === abortController) {
+                abortController.abort()
+                contentAbortControllerRef.current = null
+            }
         }
     }, [selectedVersion])
 

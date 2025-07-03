@@ -2,10 +2,10 @@ import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 import FileDiff from "./FileDiff"
 
-const ADDED_CLASS_NAME = "bg-[#00CC88]/20"
-const REMOVED_CLASS_NAME = "bg-[#FF015E]/20"
-const ADDED_ROW_CLASS_NAME = "bg-green-50"
-const REMOVED_ROW_CLASS_NAME = "bg-red-50"
+const ADDED_CLASS_NAME = "bg-diff-add-bg/10"
+const REMOVED_CLASS_NAME = "bg-diff-remove-bg/10"
+const ADDED_ROW_CLASS_NAME = "bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10"
+const REMOVED_ROW_CLASS_NAME = "bg-gradient-to-r from-transparent from-0% to-[30px] to-diff-remove/10"
 
 describe("FileDiff", () => {
     describe("when content is identical", () => {

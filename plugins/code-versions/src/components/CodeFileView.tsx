@@ -30,13 +30,15 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 )}
             </div>
             {!isCurrentVersion && canRestoreVersion ? (
-                <button
-                    className="px-6 py-2 rounded bg-tint text-black font-semibold hover:bg-tint-dark transition disabled:opacity-50 disabled:cursor-not-allowed m-3 w-full"
-                    onClick={restoreVersion}
-                    disabled={state.restoreLoading === LoadingState.Initial}
-                >
-                    {state.restoreLoading === LoadingState.Initial ? "Restoring…" : "Restore"}
-                </button>
+                <div className="m-3">
+                    <button
+                        className="px-6 py-2 rounded bg-tint text-black font-semibold hover:bg-tint-dark transition disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                        onClick={restoreVersion}
+                        disabled={state.restoreLoading === LoadingState.Initial}
+                    >
+                        {state.restoreLoading === LoadingState.Initial ? "Restoring…" : "Restore"}
+                    </button>
+                </div>
             ) : null}
         </div>
     )

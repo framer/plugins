@@ -13,10 +13,10 @@
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
-        "@tanstack/react-query": "^5.81.2",
+        "@tanstack/react-query": "^5.81.5",
         "classnames": "^2.5.1",
         "framer-plugin": "^3.3.2",
-        "motion": "^12.19.1",
+        "motion": "^12.23.0",
         "p-limit": "^6.2.0",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",

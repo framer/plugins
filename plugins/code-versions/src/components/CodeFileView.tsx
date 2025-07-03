@@ -12,6 +12,7 @@ interface CodeFileViewProps {
 export default function CodeFileView({ state, selectVersion, restoreVersion }: CodeFileViewProps) {
     const currentContent = state.codeFile?.content
 
+    const isCurrentVersion = state.codeFile?.versionId === state.selectedVersionId
     const canRestoreVersion = useCanRestoreVersion()
 
     return (
@@ -28,15 +29,13 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                     <FileDiff original={state.versionContent ?? ""} revised={currentContent ?? ""} />
                 )}
             </div>
-            {state.versionContent !== currentContent && canRestoreVersion ? (
-                // FIXME: currently button is hidden when it's the same as the current content
-                // hide it only when it's the same as the current version
+            {!isCurrentVersion && canRestoreVersion ? (
                 <button
                     className="px-6 py-2 rounded bg-tint text-black font-semibold hover:bg-tint-dark transition disabled:opacity-50 disabled:cursor-not-allowed m-3 w-full"
                     onClick={restoreVersion}
                     disabled={state.restoreLoading === LoadingState.Initial}
                 >
-                    {state.restoreLoading === LoadingState.Initial ? "Restoring..." : "Restore"}
+                    {state.restoreLoading === LoadingState.Initial ? "Restoring…" : "Restore"}
                 </button>
             ) : null}
         </div>

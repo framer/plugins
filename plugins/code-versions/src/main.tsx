@@ -1,4 +1,3 @@
-import "framer-plugin/framer.css"
 import "./styles.css"
 
 import React from "react"

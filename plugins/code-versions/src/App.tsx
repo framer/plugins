@@ -1,6 +1,7 @@
 import { framer } from "framer-plugin"
 import { useEffect } from "react"
 import CodeFileView from "./components/CodeFileView"
+import { CodeVersionsIcon } from "./components/Icon"
 import { useCodeFileVersions } from "./hooks/useCodeFileVersions"
 import { StatusTypes, useSelectedCodeFile } from "./hooks/useSelectedCodeFile"
 
@@ -96,11 +97,18 @@ export default function App() {
             </div>
         </div>
     ) : (
-        <div className="flex items-center justify-center h-full p-6">
-            <div className="text-center">
-                <h2 className="text-lg font-semibold mb-2">No Code File Selected</h2>
-                <p className="text-sm text-gray-600">
-                    Select a component in the canvas or open a code file to view its versions.
+        <EmptyState />
+    )
+}
+
+function EmptyState() {
+    return (
+        <div className="flex flex-col items-center justify-center h-full space-y-3">
+            <CodeVersionsIcon className="rounded-lg" />
+            <div className="space-y-2 text-center max-w-36">
+                <h2 className="font-semibold text-framer-text-primary text-xs leading-[1.2]">Code Versions</h2>
+                <p className="text-framer-text-tertiary text-xs leading-[1.5]">
+                    Select a Code Component to restore previous versions.
                 </p>
             </div>
         </div>

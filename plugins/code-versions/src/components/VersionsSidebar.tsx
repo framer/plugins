@@ -4,17 +4,13 @@ import { cn } from "../utils"
 import { formatFull } from "../utils/date"
 import { FormatFromNow } from "./FormatFromNow"
 
-function Version({
-    version,
-    isSelected,
-    onSelect,
-    children,
-}: {
+interface VersionProps {
     version: CodeFileVersion
     isSelected: boolean
     onSelect: (id: string) => void
-    children: React.ReactNode
-}) {
+}
+
+function Version({ version, isSelected, onSelect, children }: VersionProps & { children: React.ReactNode }) {
     return (
         <Tooltip content={formatFull(version.createdAt)} side="bottom" align="center">
             <div
@@ -32,15 +28,7 @@ function Version({
     )
 }
 
-function CurrentVersion({
-    version,
-    isSelected,
-    onSelect,
-}: {
-    version: CodeFileVersion
-    isSelected: boolean
-    onSelect: (id: string) => void
-}) {
+function CurrentVersion({ version, isSelected, onSelect }: VersionProps) {
     return (
         <Version version={version} isSelected={isSelected} onSelect={onSelect}>
             <span
@@ -64,15 +52,7 @@ function CurrentVersion({
     )
 }
 
-function HistoricalVersion({
-    version,
-    isSelected,
-    onSelect,
-}: {
-    version: CodeFileVersion
-    isSelected: boolean
-    onSelect: (id: string) => void
-}) {
+function HistoricalVersion({ version, isSelected, onSelect }: VersionProps) {
     return (
         <Version version={version} isSelected={isSelected} onSelect={onSelect}>
             <span

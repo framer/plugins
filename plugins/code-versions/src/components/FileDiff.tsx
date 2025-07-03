@@ -134,7 +134,7 @@ function InlineDiffs({ parts, type }: { parts: readonly InlineDiff[]; type: "add
                 </mark>
             ))
             .with([{ type: "unchanged" }, P._], ([part]) => <span key={i}>{part.value}</span>)
-            .otherwise(() => null)        
+            .otherwise(() => null)
     )
 }
 

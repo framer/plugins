@@ -71,3 +71,20 @@ jobs:
             - run: yarn
 
             - run: yarn turbo check-svelte check-typescript
+
+    test:
+        runs-on: ubuntu-latest
+        env:
+            TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .tool-versions
+
+            - run: yarn
+
+            - run: yarn turbo test

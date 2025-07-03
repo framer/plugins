@@ -23,8 +23,8 @@ export default function FileDiff({ original, revised }: FileDiffProps) {
     )
 
     return (
-        <table className="overflow-auto h-full w-full bg-[#FDFDFD] dark:bg-[#181818] font-mono text-sm border-separate border-spacing-0">
-            <tbody>{rows}</tbody>
+        <table className="overflow-auto w-full bg-[#FDFDFD] dark:bg-[#181818] font-mono text-sm border-separate border-spacing-0">
+            <tbody className="[&>tr]:h-[19px] [&>tr]:leading-[19px]">{rows}</tbody>
         </table>
     )
 }
@@ -32,17 +32,17 @@ export default function FileDiff({ original, revised }: FileDiffProps) {
 function ChangeRow({ line }: { line: LineDiff & { type: "change" } }) {
     return (
         <>
-            <tr className="bg-[#FF3366]/10">
+            <tr className="bg-diff-remove/10 h-[19px] leading-[19px]">
                 <RemoveRowLineNumberCell lineNumber={line.oldLine} />
                 <LineNumberCell lineNumber={undefined} />
-                <ContentCell>
+                <ContentCell className="text-diff-remove">
                     <InlineDiffs parts={line.inlineDiffs} type="remove" />
                 </ContentCell>
             </tr>
-            <tr className="bg-[#00CC88]/10">
+            <tr className="bg-diff-add-bg/10 h-[19px] leading-[19px]">
                 <LineNumberCell lineNumber={undefined} />
                 <AddRowLineNumberCell lineNumber={line.newLine} />
-                <ContentCell>
+                <ContentCell className="text-diff-add">
                     <InlineDiffs parts={line.inlineDiffs} type="add" />
                 </ContentCell>
             </tr>
@@ -52,7 +52,7 @@ function ChangeRow({ line }: { line: LineDiff & { type: "change" } }) {
 
 function ContextRow({ line }: { line: LineDiff & { type: "context" } }) {
     return (
-        <tr>
+        <tr className="h-[19px] leading-[19px]">
             <LineNumberCell lineNumber={line.oldLine} />
             <LineNumberCell lineNumber={line.newLine} />
             <ContentCell>{line.content}</ContentCell>
@@ -62,29 +62,29 @@ function ContextRow({ line }: { line: LineDiff & { type: "context" } }) {
 
 function AddRow({ line }: { line: LineDiff & { type: "add" } }) {
     return (
-        <tr className="bg-green-50">
+        <tr className="bg-diff-add/10 border-t border-b border-diff-add/20 h-[19px] leading-[19px]">
             <LineNumberCell lineNumber={undefined} />
             <AddRowLineNumberCell lineNumber={line.newLine} />
-            <ContentCell className="text-[#00CC88]/10">{line.content}</ContentCell>
+            <ContentCell className="text-diff-add">{line.content}</ContentCell>
         </tr>
     )
 }
 
 function RemoveRow({ line }: { line: LineDiff & { type: "remove" } }) {
     return (
-        <tr className="bg-red-50">
+        <tr className="bg-diff-remove/10 border-t border-b border-diff-remove/20 h-[19px] leading-[19px]">
             <RemoveRowLineNumberCell lineNumber={line.oldLine} />
             <LineNumberCell lineNumber={undefined} />
-            <ContentCell className="text-[#FF3366]/10">{line.content}</ContentCell>
+            <ContentCell className="text-diff-remove">{line.content}</ContentCell>
         </tr>
     )
 }
 
 function DividerRow() {
     return (
-        <tr>
+        <tr className="h-[19px]">
             <td colSpan={3}>
-                <div className="border-b-2 border-dashed border-gray-300 my-2" />
+                <div className="border-b-2 border-dashed border-gray-300" />
             </td>
         </tr>
     )
@@ -92,7 +92,7 @@ function DividerRow() {
 
 function LineNumberCell({
     lineNumber,
-    className = "text-gray-600",
+    className,
     prefix = "",
 }: {
     lineNumber: number | undefined
@@ -100,45 +100,42 @@ function LineNumberCell({
     prefix?: string
 }) {
     return (
-        <td
-            className={cn(
-                "text-right pr-2 pl-2 py-1 select-none min-w-8 text-[#BBBBBB] dark:text-[#555555] text-[11px]",
-                className
-            )}
-        >
+        <td className={cn("text-right select-none text-[#BBBBBB] dark:text-[#555555] text-[11px] pe-3", className)}>
             {lineNumber !== undefined ? `${prefix}${lineNumber}` : ""}
         </td>
     )
 }
 
 function AddRowLineNumberCell({ lineNumber }: { lineNumber: number | undefined }) {
-    return <LineNumberCell lineNumber={lineNumber} className="text-[#00CC88]/10 whitespace-nowrap" prefix="+" />
+    return <LineNumberCell lineNumber={lineNumber} className="text-diff-add whitespace-nowrap" prefix="+" />
 }
 
 function RemoveRowLineNumberCell({ lineNumber }: { lineNumber: number | undefined }) {
-    return <LineNumberCell lineNumber={lineNumber} className="text-[#FF3366]/10 whitespace-nowrap" prefix="-" />
+    return <LineNumberCell lineNumber={lineNumber} className="text-diff-remove whitespace-nowrap" prefix="-" />
 }
 
 function ContentCell({ children, className }: { children: React.ReactNode; className?: string }) {
     return (
-        <td className={cn("whitespace-pre px-2 py-1 text-[#666666] dark:text-[#EEEEEE] text-[11px]", className)}>
-            {children}
-        </td>
+        <td className={cn("whitespace-pre text-[#666666] dark:text-[#EEEEEE] text-[11px]", className)}>{children}</td>
     )
+}
+
+function Mark({ children, className }: { children: React.ReactNode; className?: string }) {
+    return <mark className={cn("h-[19px] inline-block", className)}>{children}</mark>
 }
 
 function InlineDiffs({ parts, type }: { parts: readonly InlineDiff[]; type: "add" | "remove" }) {
     return parts.map((part, i) =>
         match([part, type] as const)
             .with([{ type: "add" }, "add"], ([part]) => (
-                <mark key={i} className="bg-[#00CC88]/20">
+                <Mark key={i} className="bg-diff-add-bg/10 text-diff-add">
                     {part.value}
-                </mark>
+                </Mark>
             ))
             .with([{ type: "remove" }, "remove"], ([part]) => (
-                <mark key={i} className="bg-[#FF015E]/20">
+                <Mark key={i} className="bg-diff-remove-bg/10 text-diff-remove">
                     {part.value}
-                </mark>
+                </Mark>
             ))
             .with([{ type: "unchanged" }, P._], ([part]) => <span key={i}>{part.value}</span>)
             .otherwise(() => null)

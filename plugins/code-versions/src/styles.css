@@ -31,6 +31,12 @@
 
     /* App specific tokens */
     --width-versions: calc(var(--spacing) * 44);
+
+    /* FileDiff colors */
+    --color-diff-add: #00b87a;
+    --color-diff-add-bg: #00cc88;
+    --color-diff-remove: #ff3366;
+    --color-diff-remove-bg: #ff015e;
 }
 
 @layer base {

@@ -11,14 +11,23 @@ export function addContextLimitingAndDividers(diffs: LineDiff[]): LineDiff[] {
     const changeIndices = getChangeIndices(diffs)
     if (changeIndices.length === 0) return diffs
 
-    return markIncludedLines(diffs, changeIndices, CONTEXT_LINES)
-        .map((include, lineIndex) => {
-            if (!include) return null
-            const diff = diffs[lineIndex]
-            if (diff) return diff
-            return createDividerLine([lineIndex, lineIndex + 1])
-        })
-        .filter((line): line is LineDiff => line !== null)
+    return (
+        markIncludedLines(diffs, changeIndices, CONTEXT_LINES)
+            // looping over the diffs multiple times is not ideal, but here, it's a trade-off between performance and readability
+            // and we're going for readability here
+            // In many other cases, we'd want to use a more performant approach.
+            .map((include, lineIndex) => {
+                if (!include) return null
+                const diff = diffs[lineIndex]
+                if (diff) return diff
+                return createDividerLine([lineIndex, lineIndex + 1])
+            })
+            .filter(isLineDiff)
+    )
+}
+
+function isLineDiff(diff: LineDiff | null): diff is LineDiff {
+    return diff !== null
 }
 
 function isChange(d: LineDiff): boolean {
@@ -26,11 +35,21 @@ function isChange(d: LineDiff): boolean {
 }
 
 function getChangeIndices(diffs: LineDiff[]): number[] {
-    return diffs.map((d, i) => (isChange(d) ? i : -1)).filter(i => i !== -1)
+    const indices: number[] = []
+    for (const [index, diff] of diffs.entries()) {
+        if (!isChange(diff)) continue
+
+        indices.push(index)
+    }
+    return indices
 }
 
 function markIncludedLines(diffs: LineDiff[], changeIndices: number[], maxContextLines: number): boolean[] {
-    return diffs.map((d, i) =>
-        changeIndices.some(idx => Math.abs(i - idx) <= maxContextLines && (d.type === "context" || isChange(d)))
-    )
+    const getShouldInclude = (diff: LineDiff, index: number) =>
+        changeIndices.some(
+            changeIndex =>
+                Math.abs(index - changeIndex) <= maxContextLines && (diff.type === "context" || isChange(diff))
+        )
+
+    return diffs.map((diff, index) => getShouldInclude(diff, index))
 }

@@ -1,3 +1,4 @@
+import { isNotNull } from "../../utils"
 import { createDividerLine } from "./line-creators"
 import type { LineDiff } from "./types"
 
@@ -22,12 +23,8 @@ export function addContextLimitingAndDividers(diffs: LineDiff[]): LineDiff[] {
                 if (diff) return diff
                 return createDividerLine([lineIndex, lineIndex + 1])
             })
-            .filter(isLineDiff)
+            .filter(isNotNull)
     )
-}
-
-function isLineDiff(diff: LineDiff | null): diff is LineDiff {
-    return diff !== null
 }
 
 function isChange(d: LineDiff): boolean {

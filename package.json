@@ -10,10 +10,8 @@
     ],
     "scripts": {
         "check": "turbo run --continue check-biome check-eslint check-prettier check-svelte check-typescript",
-        "clean": "rm -rf ./p",
-        "copy": "bash ./scripts/copy-build.sh",
         "dev": "turbo run dev --concurrency=40",
-        "build": "turbo run build --env-mode=loose && run copy",
+        "build": "turbo run build",
         "g:build": "cd $INIT_CWD && run g:vite build",
         "g:check-biome": "biome check $INIT_CWD",
         "g:check-eslint": "cd $INIT_CWD && DEBUG='eslint:eslint' eslint .",

@@ -11,3 +11,12 @@ export function cn(...inputs: ClassValue[]) {
 export function isNotNull<T>(value: T | null): value is T {
     return value !== null
 }
+
+/**
+ * Asserts that a condition is true, throwing an error if it's not
+ */
+export function assert(condition: boolean, message?: string): asserts condition {
+    if (!condition) {
+        throw new Error(message ?? "Assertion failed")
+    }
+}

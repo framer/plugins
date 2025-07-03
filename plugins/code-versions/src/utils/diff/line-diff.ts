@@ -1,4 +1,5 @@
 import { diffLines } from "diff"
+import { assert } from "../../utils"
 import { addContextLimitingAndDividers } from "./context-limiter"
 import { createAddLine, createChangeLine, createContextLine, createRemoveLine } from "./line-creators"
 import type { LineDiff } from "./types"
@@ -33,9 +34,9 @@ export function getLineDiff(oldStr: string, newStr: string): LineDiff[] {
     let oldLine = 1
     let newLine = 1
 
-    for (let i = 0; i < rawDiffs.length; i++) {
+    for (let i = 0; i < rawDiffs.length; i += 1) {
         const currentDiff = rawDiffs[i]
-        if (!currentDiff) continue
+        assert(currentDiff !== undefined, "currentDiff is undefined")
 
         const nextDiff = rawDiffs[i + 1]
         const {
@@ -51,7 +52,9 @@ export function getLineDiff(oldStr: string, newStr: string): LineDiff[] {
         // If skipNext is true, it means we processed both current and next diff blocks together
         // as a paired remove/add operation, so we need to skip the next iteration to avoid
         // processing the same block twice.
-        if (skipNext) i++
+        if (skipNext) {
+            i += 1
+        }
     }
 
     return addContextLimitingAndDividers(result)

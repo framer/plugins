@@ -41,17 +41,28 @@ export default function App() {
         )
     }
 
-    return state.codeFile ? (
-        <div className="h-screen flex flex-col">
+    if (!state.codeFile) {
+        return <EmptyState />
+    }
+
+    return (
+        <div className="h-screen flex flex-col overflow-hidden">
+            <hr className="ms-3 border-t border-framer-divider" />
+
             {/* Error banner for versions loading error */}
             {state.errors.versions && (
-                <div className="bg-red-50 border-b border-red-200 p-3">
+                <div className="sticky top-0 bg-white border-b border-framer-divider p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                            <span className="text-red-600 text-sm font-medium">Failed to load versions:</span>
-                            <span className="text-red-500 text-sm ml-2">{state.errors.versions}</span>
+                            <span className="text-framer-text-primary text-sm font-medium">
+                                Failed to load versions:
+                            </span>
+                            <span className="text-framer-text-secondary text-sm ml-2">{state.errors.versions}</span>
                         </div>
-                        <button onClick={clearErrors} className="text-red-600 hover:text-red-800 text-sm font-medium">
+                        <button
+                            onClick={clearErrors}
+                            className="text-framer-text-primary hover:text-framer-text-base text-sm font-medium w-min px-2"
+                        >
                             Dismiss
                         </button>
                     </div>
@@ -60,15 +71,17 @@ export default function App() {
 
             {/* Error banner for content loading error */}
             {state.errors.content && (
-                <div className="bg-yellow-50 border-b border-yellow-200 p-3">
+                <div className="border-b border-framer-divider p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                            <span className="text-yellow-600 text-sm font-medium">Failed to load content:</span>
-                            <span className="text-yellow-500 text-sm ml-2">{state.errors.content}</span>
+                            <span className="text-framer-text-primary text-sm font-medium">
+                                Failed to load content:
+                            </span>
+                            <span className="text-framer-text-secondary text-sm ml-2">{state.errors.content}</span>
                         </div>
                         <button
                             onClick={clearErrors}
-                            className="text-yellow-600 hover:text-yellow-800 text-sm font-medium"
+                            className="text-framer-text-primary hover:text-framer-text-base text-sm font-medium px-2"
                         >
                             Dismiss
                         </button>
@@ -78,13 +91,18 @@ export default function App() {
 
             {/* Error banner for restore error */}
             {state.errors.restore && (
-                <div className="bg-red-50 border-b border-red-200 p-3">
+                <div className="border-b border-framer-divider p-3">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                            <span className="text-red-600 text-sm font-medium">Failed to restore version:</span>
-                            <span className="text-red-500 text-sm ml-2">{state.errors.restore}</span>
+                            <span className="text-framer-text-primary text-sm font-medium">
+                                Failed to restore version:
+                            </span>
+                            <span className="text-framer-text-secondary text-sm ml-2">{state.errors.restore}</span>
                         </div>
-                        <button onClick={clearErrors} className="text-red-600 hover:text-red-800 text-sm font-medium">
+                        <button
+                            onClick={clearErrors}
+                            className="text-framer-text-primary hover:text-framer-text-base text-sm font-medium px-2"
+                        >
                             Dismiss
                         </button>
                     </div>
@@ -96,8 +114,6 @@ export default function App() {
                 <CodeFileView state={state} selectVersion={selectVersion} restoreVersion={restoreVersion} />
             </div>
         </div>
-    ) : (
-        <EmptyState />
     )
 }
 

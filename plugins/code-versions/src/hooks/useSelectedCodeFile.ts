@@ -41,6 +41,8 @@ export function useSelectedCodeFile() {
     useEffect(() => {
         // Subscribe to open code file changes in Code Mode
         const unsubscribeOpenCodeFile = framer.subscribeToOpenCodeFile(async codeFile => {
+            if (framer.mode !== "code") return
+
             setSelectedCodeFile(
                 codeFile
                     ? {
@@ -55,6 +57,8 @@ export function useSelectedCodeFile() {
 
         // Subscribe to selection changes in Canvas Mode
         const unsubscribeSelection = framer.subscribeToSelection(async nodes => {
+            if (framer.mode !== "canvas") return
+
             // If there's no selection or multiple selections, clear the selection
             const firstNode = nodes[0]
             if (nodes.length !== 1) {

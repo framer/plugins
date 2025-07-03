@@ -35,4 +35,11 @@
 
 @layer base {
     @import "framer-plugin/framer.css";
+
+    input,
+    button,
+    textarea,
+    select {
+        padding: initial;
+    }
 }

@@ -1,4 +1,5 @@
 import type { CodeFileVersion } from "framer-plugin"
+import { useMemo } from "react"
 import { Tooltip } from "../components/Tooltip"
 import { cn } from "../utils"
 import { formatFull } from "../utils/date"
@@ -10,69 +11,61 @@ interface VersionProps {
     onSelect: (id: string) => void
 }
 
-function Version({ version, isSelected, onSelect, children }: VersionProps & { children: React.ReactNode }) {
+function Version({
+    version,
+    isSelected,
+    onSelect,
+    timestamp,
+    name,
+}: VersionProps & {
+    timestamp: React.ReactNode
+    name: string
+}) {
+    const createdAt = useMemo(() => new Date(version.createdAt), [version.createdAt])
+
     return (
-        <Tooltip content={formatFull(version.createdAt)} side="bottom" align="center">
-            <div
+        <Tooltip content={formatFull(createdAt)} side="bottom" align="center">
+            <button
                 className={cn(
-                    "flex items-center flex-nowrap gap-2 px-2 py-[8px] cursor-pointer select-none group relative w-full",
-                    isSelected ? "bg-gray-100 rounded-xl" : "",
-                    "transition-colors"
+                    "h-[34px] px-3 cursor-pointer select-none relative w-full font-medium transition-colors text-left",
+                    isSelected ? "bg-framer-bg-tertiary rounded-lg" : "bg-transparent"
                 )}
-                tabIndex={0}
                 onClick={() => onSelect(version.id)}
             >
-                {children}
-            </div>
+                <span className="sr-only">
+                    Select this version, published on {createdAt.toLocaleDateString()} by {name}, to compare
+                </span>
+                <span className="font-semibold text-framer-text-primary tabular-nums">{timestamp}</span>
+                <span className="text-framer-text-secondary contents">
+                    <span className="mx-1">&middot;</span>
+                    <span className="flex-1 min-w-0 truncate">{name}</span>
+                </span>
+            </button>
         </Tooltip>
     )
 }
 
 function CurrentVersion({ version, isSelected, onSelect }: VersionProps) {
     return (
-        <Version version={version} isSelected={isSelected} onSelect={onSelect}>
-            <span
-                className={cn(
-                    "font-semibold",
-                    isSelected ? "text-gray-700" : "text-gray-900 group-hover:text-gray-700"
-                )}
-            >
-                Current
-            </span>
-            <span className="text-gray-300">&bull;</span>
-            <span
-                className={cn(
-                    "flex-1 min-w-0 truncate",
-                    isSelected ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
-                )}
-            >
-                {version.createdBy.name}
-            </span>
-        </Version>
+        <Version
+            version={version}
+            isSelected={isSelected}
+            onSelect={onSelect}
+            timestamp="Current"
+            name={version.createdBy.name}
+        />
     )
 }
 
 function HistoricalVersion({ version, isSelected, onSelect }: VersionProps) {
     return (
-        <Version version={version} isSelected={isSelected} onSelect={onSelect}>
-            <span
-                className={cn(
-                    "font-semibold tabular-nums",
-                    isSelected ? "text-gray-700" : "text-gray-900 group-hover:text-gray-700"
-                )}
-            >
-                <FormatFromNow date={version.createdAt} />
-            </span>
-            <span className="text-gray-300">&bull;</span>
-            <span
-                className={cn(
-                    "flex-1 min-w-0 truncate",
-                    isSelected ? "text-gray-500" : "text-gray-400 group-hover:text-gray-500"
-                )}
-            >
-                {version.createdBy.name}
-            </span>
-        </Version>
+        <Version
+            version={version}
+            isSelected={isSelected}
+            onSelect={onSelect}
+            timestamp={<FormatFromNow date={version.createdAt} />}
+            name={version.createdBy.name}
+        />
     )
 }
 
@@ -92,36 +85,33 @@ export default function VersionsSidebar({
     const [currentVersion, ...historicalVersions] = versions
 
     return (
-        <aside className={cn("bg-bg-secondary flex flex-col px-0 py-0 h-full border-r border-gray-100", className)}>
-            <div className="h-px bg-gray-200 w-full mb-1" />
-            <div className="flex-1 overflow-y-auto px-2 pb-2">
-                {isLoading ? (
-                    <div className="flex items-center justify-center h-32 text-gray-500">Loading versions...</div>
-                ) : (
-                    <>
-                        {currentVersion && (
-                            <CurrentVersion
-                                version={currentVersion}
-                                isSelected={currentVersion.id === selectedId}
-                                onSelect={onSelect}
-                            />
-                        )}
-                        {historicalVersions.length > 0 && (
-                            <>
-                                <div className="h-px bg-gray-200 w-full my-2" />
-                                {historicalVersions.map(version => (
-                                    <HistoricalVersion
-                                        key={version.id}
-                                        version={version}
-                                        isSelected={version.id === selectedId}
-                                        onSelect={onSelect}
-                                    />
-                                ))}
-                            </>
-                        )}
-                    </>
-                )}
-            </div>
+        <aside className={cn("flex flex-col p-3 h-full border-r border-framer-divider overflow-y-auto", className)}>
+            {isLoading ? (
+                <div className="flex items-center justify-center h-32 text-gray-500">Loading versions...</div>
+            ) : (
+                <>
+                    {currentVersion && (
+                        <CurrentVersion
+                            version={currentVersion}
+                            isSelected={currentVersion.id === selectedId}
+                            onSelect={onSelect}
+                        />
+                    )}
+                    {historicalVersions.length > 0 && (
+                        <>
+                            <hr className="h-px bg-framer-divider w-full my-3" />
+                            {historicalVersions.map(version => (
+                                <HistoricalVersion
+                                    key={version.id}
+                                    version={version}
+                                    isSelected={version.id === selectedId}
+                                    onSelect={onSelect}
+                                />
+                            ))}
+                        </>
+                    )}
+                </>
+            )}
         </aside>
     )
 }

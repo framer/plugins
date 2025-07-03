@@ -121,24 +121,20 @@ function ContentCell({ children, className = "text-gray-600" }: { children: Reac
 }
 
 function InlineDiffs({ parts, type }: { parts: readonly InlineDiff[]; type: "add" | "remove" }) {
-    return (
-        <>
-            {parts.map((part, i) =>
-                match([part, type] as const)
-                    .with([{ type: "add" }, "add"], ([part]) => (
-                        <mark key={i} className="bg-green-200 text-green-900">
-                            {part.value}
-                        </mark>
-                    ))
-                    .with([{ type: "remove" }, "remove"], ([part]) => (
-                        <mark key={i} className="bg-red-200 text-red-900">
-                            {part.value}
-                        </mark>
-                    ))
-                    .with([{ type: "unchanged" }, P._], ([part]) => <span key={i}>{part.value}</span>)
-                    .otherwise(() => null)
-            )}
-        </>
+    return parts.map((part, i) =>
+        match([part, type] as const)
+            .with([{ type: "add" }, "add"], ([part]) => (
+                <mark key={i} className="bg-green-200 text-green-900">
+                    {part.value}
+                </mark>
+            ))
+            .with([{ type: "remove" }, "remove"], ([part]) => (
+                <mark key={i} className="bg-red-200 text-red-900">
+                    {part.value}
+                </mark>
+            ))
+            .with([{ type: "unchanged" }, P._], ([part]) => <span key={i}>{part.value}</span>)
+            .otherwise(() => null)        
     )
 }
 

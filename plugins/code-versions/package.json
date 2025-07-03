@@ -11,7 +11,8 @@
         "preview": "run g:preview",
         "pack": "npx framer-plugin-tools@latest pack",
         "check-typescript": "run g:check-typescript",
-        "test": "vitest"
+        "test": "vitest run",
+        "test-watch": "vitest"
     },
     "dependencies": {
         "@radix-ui/react-tooltip": "^1.2.7",

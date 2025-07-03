@@ -9,7 +9,7 @@
         "plugins/*"
     ],
     "scripts": {
-        "check": "turbo run --continue check-biome check-eslint check-prettier check-svelte check-typescript",
+        "check": "turbo run --continue check-biome check-eslint check-prettier check-svelte check-typescript test",
         "dev": "turbo run dev --concurrency=40",
         "build": "turbo run build",
         "g:build": "cd $INIT_CWD && run g:vite build",

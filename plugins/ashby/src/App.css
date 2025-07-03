@@ -56,11 +56,11 @@ form {
 }
 
 .setup img {
-    height: 200px;
+    height: 180px;
     width: 100%;
     border-radius: 10px;
     background-color: #483FAC;
-    object-fit: contain;
+    object-fit: cover;
 }
 
 .setup button {
@@ -78,6 +78,7 @@ form {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    padding-left: 15px;
     width: 100%;
     height: 30px;
     color: var(--framer-color-text-secondary);

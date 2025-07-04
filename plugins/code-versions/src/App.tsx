@@ -46,7 +46,7 @@ export default function App() {
     }
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden">
+        <div className="h-screen flex flex-col overflow-hidden scheme-light dark:scheme-dark">
             <hr className="ms-3 border-t border-framer-divider" />
 
             {/* Error banner for versions loading error */}

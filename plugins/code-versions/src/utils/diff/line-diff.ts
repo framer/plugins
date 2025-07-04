@@ -61,6 +61,39 @@ export function getLineDiff(oldStr: string, newStr: string): LineDiff[] {
 }
 
 /**
+ * Generates a line-by-line diff between two strings with context limiting and dividers,
+ * and adds edge information to each line.
+ *
+ * @param oldStr - The original string to compare
+ * @param newStr - The revised string to compare against
+ * @returns An array of LineDiff objects representing the differences with edge information
+ */
+export function getLineDiffWithEdges(oldStr: string, newStr: string): LineDiff[] {
+    const lines = getLineDiff(oldStr, newStr)
+    return lines.map((line, i, arr) => {
+        switch (line.type) {
+            case "add":
+            case "remove":
+                return {
+                    ...line,
+                    isTopEdge: isTopEdge(arr, i, line.type),
+                    isBottomEdge: isBottomEdge(arr, i, line.type),
+                }
+            case "change":
+                return {
+                    ...line,
+                    removeIsTopEdge: isTopEdge(arr, i, "remove"),
+                    removeIsBottomEdge: isBottomEdge(arr, i, "remove"),
+                    addIsTopEdge: isTopEdge(arr, i, "add"),
+                    addIsBottomEdge: isBottomEdge(arr, i, "add"),
+                }
+            default:
+                return line
+        }
+    })
+}
+
+/**
  * Diff block processing for converting raw diff output into structured LineDiff objects.
  */
 
@@ -143,4 +176,27 @@ function convertDiffBlockToLineDiffs(
     const lines = splitLinesAndRemoveTrailingEmpty(cur.value)
     const diffs = lines.map(line => createContextLine(line, oldLine++, newLine++))
     return { diffs, oldLine, newLine, skipNext: false }
+}
+
+function isTopEdge(arr: LineDiff[], i: number, type: LineDiff["type"]): boolean {
+    const prev = arr[i - 1]
+    if (!prev) return true
+    if (type === "add" && prev.type === "change") return false
+    if (type === "remove" && prev.type === "change") return false
+    return prev.type !== type
+}
+
+function isBottomEdge(arr: LineDiff[], i: number, type: LineDiff["type"]): boolean {
+    const next = arr[i + 1]
+    if (!next) return true
+    switch (type) {
+        case "remove":
+            if (next.type === "change") return false
+            return next.type !== "remove"
+        case "add":
+            if (next.type === "change") return true
+            return next.type !== "add"
+        default:
+            return next.type !== type
+    }
 }

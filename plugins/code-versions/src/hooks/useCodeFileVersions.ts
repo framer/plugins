@@ -131,6 +131,12 @@ export enum LoadingState {
     Refreshing,
 }
 
+export enum MutationState {
+    Idle,
+    Mutating,
+    Done,
+}
+
 // Use event-based naming for actions
 // Do: VERSIONS_LOADED, VERSION_SELECTED, LOADING_STARTED
 // Don't: SET_VERSIONS, SELECT_VERSION, SET_LOADING
@@ -158,7 +164,7 @@ interface VersionsState {
     versionContent: string | undefined
     versionsLoading: LoadingState
     contentLoading: LoadingState
-    restoreLoading: LoadingState
+    restoreLoading: MutationState
     restoreCompleted: boolean
     errors: {
         versions?: string
@@ -195,6 +201,7 @@ export interface CodeFileVersionsState {
 
 function versionsReducer(state: VersionsState, action: VersionsAction): VersionsState {
     return match(action)
+        .returnType<VersionsState>()
         .with({ type: VersionsActionType.CodeFileSelected }, ({ payload }) => {
             if (state.codeFile?.id !== payload.codeFile.id) {
                 // A different code file is being selected
@@ -206,7 +213,7 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
                     versionContent: undefined,
                     versionsLoading: LoadingState.Initial,
                     contentLoading: LoadingState.Initial,
-                    restoreLoading: LoadingState.Idle,
+                    restoreLoading: MutationState.Idle,
                     errors: {},
                 }
             } else {
@@ -234,7 +241,7 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
         .with({ type: VersionsActionType.VersionSelected }, ({ payload }) => ({
             ...state,
             selectedVersionId: payload.versionId,
-            versionContent: undefined,
+            versionContent: state.selectedVersionId === payload.versionId ? state.versionContent : undefined,
             errors: { ...state.errors, content: undefined },
         }))
         .with({ type: VersionsActionType.ContentLoadStarted }, () => ({
@@ -260,17 +267,17 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
         }))
         .with({ type: VersionsActionType.RestoreStarted }, () => ({
             ...state,
-            restoreLoading: LoadingState.Initial,
+            restoreLoading: MutationState.Mutating,
             errors: { ...state.errors, restore: undefined },
         }))
         .with({ type: VersionsActionType.RestoreCompleted }, () => ({
             ...state,
-            restoreLoading: LoadingState.Idle,
+            restoreLoading: MutationState.Done,
             restoreCompleted: true,
         }))
         .with({ type: VersionsActionType.RestoreError }, ({ payload }) => ({
             ...state,
-            restoreLoading: LoadingState.Idle,
+            restoreLoading: MutationState.Done,
             errors: { ...state.errors, restore: payload.error },
         }))
         .with({ type: VersionsActionType.ErrorsCleared }, () => ({
@@ -360,7 +367,7 @@ const initialState: VersionsState = {
     versionContent: undefined,
     versionsLoading: LoadingState.Idle,
     contentLoading: LoadingState.Idle,
-    restoreLoading: LoadingState.Idle,
+    restoreLoading: MutationState.Idle,
     restoreCompleted: false,
     errors: {},
 }

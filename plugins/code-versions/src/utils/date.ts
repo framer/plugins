@@ -6,7 +6,7 @@ export function formatRelative(from: Date, to: Date, locales?: Intl.LocalesArgum
     const diff = from.getTime() - to.getTime()
 
     const seconds = Math.floor(diff / 1000)
-    if (seconds < 60) return "now"
+    if (seconds < 60) return "Just now"
 
     const minutes = Math.floor(seconds / 60)
     if (minutes < 60) return `${Math.abs(minutes)}m ago`
@@ -18,25 +18,4 @@ export function formatRelative(from: Date, to: Date, locales?: Intl.LocalesArgum
     if (days < 7) return `${Math.abs(days)}d ago`
 
     return to.toLocaleDateString(locales)
-}
-
-/**
- * Formats a date in a full format (e.g., "23/12/25 • 2:30pm")
- */
-export function formatFull(date: Date | string, locales?: Intl.LocalesArgument): string {
-    const dateObj = typeof date === "string" ? new Date(date) : date
-
-    const datePart = dateObj.toLocaleDateString(locales, {
-        year: "2-digit",
-        month: "2-digit",
-        day: "2-digit",
-    })
-    const timePart = dateObj
-        .toLocaleTimeString(locales, {
-            hour: "2-digit",
-            minute: "2-digit",
-        })
-        .toLowerCase()
-
-    return `${datePart} \u2022 ${timePart}`
 }

@@ -2,6 +2,11 @@ import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
 import FileDiff from "./FileDiff"
 
+const ADDED_CLASS_NAME = "bg-diff-add-bg/10"
+const REMOVED_CLASS_NAME = "bg-diff-remove-bg/10"
+const ADDED_ROW_CLASS_NAME = "bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10"
+const REMOVED_ROW_CLASS_NAME = "bg-gradient-to-r from-transparent from-0% to-[35px] to-diff-remove/10"
+
 describe("FileDiff", () => {
     describe("when content is identical", () => {
         it("shows unchanged content without highlighting", () => {
@@ -23,8 +28,8 @@ describe("FileDiff", () => {
             render(<FileDiff original={oldContent} revised={newContent} />)
             expect(screen.getByText("line2")).toBeInTheDocument()
             const addedLineRow = screen.getByText("line2").closest("tr")
-            expect(addedLineRow).toHaveClass("bg-green-50")
-            expect(screen.getByText("+ 2")).toBeInTheDocument()
+            expect(addedLineRow).toHaveClass(ADDED_ROW_CLASS_NAME)
+            expect(screen.getByText("+2")).toBeInTheDocument()
         })
     })
 
@@ -35,8 +40,8 @@ describe("FileDiff", () => {
             render(<FileDiff original={oldContent} revised={newContent} />)
             expect(screen.getByText("line2")).toBeInTheDocument()
             const removedLineRow = screen.getByText("line2").closest("tr")
-            expect(removedLineRow).toHaveClass("bg-red-50")
-            expect(screen.getByText("- 2")).toBeInTheDocument()
+            expect(removedLineRow).toHaveClass(REMOVED_ROW_CLASS_NAME)
+            expect(screen.getByText("-2")).toBeInTheDocument()
         })
     })
 
@@ -53,10 +58,10 @@ describe("FileDiff", () => {
             const newWord = screen.getByText("new").closest("mark")
             const falseWord = screen.getByText("false").closest("mark")
             const trueWord = screen.getByText("true").closest("mark")
-            expect(oldWord).toHaveClass("bg-red-200")
-            expect(newWord).toHaveClass("bg-green-200")
-            expect(falseWord).toHaveClass("bg-red-200")
-            expect(trueWord).toHaveClass("bg-green-200")
+            expect(oldWord).toHaveClass(REMOVED_CLASS_NAME)
+            expect(newWord).toHaveClass(ADDED_CLASS_NAME)
+            expect(falseWord).toHaveClass(REMOVED_CLASS_NAME)
+            expect(trueWord).toHaveClass(ADDED_CLASS_NAME)
         })
     })
 
@@ -67,7 +72,7 @@ describe("FileDiff", () => {
             render(<FileDiff original={oldContent} revised={newContent} />)
             const addedWord = screen.getByText("Doe")
             expect(addedWord).toBeInTheDocument()
-            expect(addedWord.closest("mark")).toHaveClass("bg-green-200")
+            expect(addedWord.closest("mark")).toHaveClass(ADDED_CLASS_NAME)
         })
     })
 
@@ -78,7 +83,7 @@ describe("FileDiff", () => {
             render(<FileDiff original={oldContent} revised={newContent} />)
             const removedWord = screen.getByText("Doe")
             expect(removedWord).toBeInTheDocument()
-            expect(removedWord.closest("mark")).toHaveClass("bg-red-200")
+            expect(removedWord.closest("mark")).toHaveClass(REMOVED_CLASS_NAME)
         })
     })
 
@@ -94,8 +99,43 @@ describe("FileDiff", () => {
             render(<FileDiff original={oldContent} revised={newContent} />)
             expect(screen.getByText("a")).toBeInTheDocument()
             expect(screen.getByText("b")).toBeInTheDocument()
-            expect(screen.getByText("a").closest("mark")).toHaveClass("bg-red-200")
-            expect(screen.getByText("b").closest("mark")).toHaveClass("bg-green-200")
+            expect(screen.getByText("a").closest("mark")).toHaveClass(REMOVED_CLASS_NAME)
+            expect(screen.getByText("b").closest("mark")).toHaveClass(ADDED_CLASS_NAME)
+        })
+    })
+
+    describe("FileDiff integration edge cases", () => {
+        it("renders correct borders for a simple remove", () => {
+            render(<FileDiff original={"a\nb\nc"} revised={"a\nc"} />)
+            const removedRow = screen.getByText("b").closest("tr")
+            const removedTd = removedRow?.querySelector("td")
+            expect(removedTd).toHaveClass("border-t")
+            expect(removedTd).toHaveClass("border-b")
+        })
+
+        it("renders correct borders for a simple add", () => {
+            render(<FileDiff original={"a\nc"} revised={"a\nb\nc"} />)
+            const addedRow = screen.getByText("b").closest("tr")
+            const addedTd = addedRow?.querySelector("td")
+            expect(addedTd).toHaveClass("border-t")
+            expect(addedTd).toHaveClass("border-b")
+        })
+
+        it("renders correct borders for remove followed by change", () => {
+            render(<FileDiff original={"a\nb\nc\nd"} revised={"a\nB\nd"} />)
+            const changeRow = screen.getByText("b").closest("tr")
+            const changeRemoveTd = changeRow?.querySelector("td")
+            expect(changeRemoveTd).toHaveClass("border-t")
+            const removeRow = screen.getByText("c").closest("tr")
+            const removeTd = removeRow?.querySelector("td")
+            expect(removeTd).not.toHaveClass("border-t")
+        })
+
+        it("renders correct borders for change followed by add", () => {
+            render(<FileDiff original={"a\nb"} revised={"a\nB\nc\nd"} />)
+            const addRow = screen.getByText("c").closest("tr")
+            const addTd = addRow?.querySelector("td")
+            expect(addTd).not.toHaveClass("border-t")
         })
     })
 })

@@ -24,3 +24,21 @@ it("handles completely different strings", () => {
     expect(result[0]).toEqual({ type: "remove", value: "old" })
     expect(result[1]).toEqual({ type: "add", value: "new" })
 })
+
+it("does not highlight leading or trailing whitespace", () => {
+    const result = getInlineDiff("  old line  ", "  new line  ")
+    expect(result).toHaveLength(5)
+    expect(result[0]).toEqual({ type: "unchanged", value: "  " })
+    expect(result[1]).toEqual({ type: "remove", value: "old" })
+    expect(result[2]).toEqual({ type: "add", value: "new" })
+    expect(result[3]).toEqual({ type: "unchanged", value: " line" })
+    expect(result[4]).toEqual({ type: "unchanged", value: "  " })
+})
+
+it("handles only whitespace changes as unchanged", () => {
+    const result = getInlineDiff("  foo  ", "  foo  ")
+    expect(result).toHaveLength(3)
+    expect(result[0]).toEqual({ type: "unchanged", value: "  " })
+    expect(result[1]).toEqual({ type: "unchanged", value: "foo" })
+    expect(result[2]).toEqual({ type: "unchanged", value: "  " })
+})

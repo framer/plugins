@@ -41,9 +41,9 @@ export function createChangeLine(oldContent: string, newContent: string, oldLine
     }
 }
 
-export function createDividerLine(betweenLines: [number, number]): LineDiff {
+export function createDividerLine(line: number): LineDiff {
     return {
         type: "divider",
-        betweenLines,
+        line,
     }
 }

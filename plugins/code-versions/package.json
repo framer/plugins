@@ -11,7 +11,8 @@
         "preview": "run g:preview",
         "pack": "npx framer-plugin-tools@latest pack",
         "check-typescript": "run g:check-typescript",
-        "test": "vitest"
+        "test": "vitest run",
+        "test-watch": "vitest"
     },
     "dependencies": {
         "@radix-ui/react-tooltip": "^1.2.7",
@@ -21,7 +22,7 @@
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "tailwind-merge": "^3.3.1",
-        "ts-pattern": "^5.0.5"
+        "ts-pattern": "^5.7.1"
     },
     "devDependencies": {
         "@testing-library/dom": "^10.4.0",

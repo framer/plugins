@@ -24,7 +24,7 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 onSelect={selectVersion}
                 isLoading={state.versionsLoading === LoadingState.Initial}
             />
-            <div className="bg-[#FDFDFD] dark:bg-[#141414] overflow-hidden relative">
+            <div className="bg-[#FDFDFD] dark:bg-[#141414] overflow-auto relative">
                 {state.contentLoading === LoadingState.Initial ||
                 state.versionContent === undefined ||
                 currentContent === undefined ? null : (

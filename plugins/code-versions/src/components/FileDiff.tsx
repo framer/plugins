@@ -23,7 +23,7 @@ export default function FileDiff({ original, revised }: FileDiffProps) {
     )
 
     return (
-        <div className="absolute inset-0 ms-3 me-4 mt-3 overflow-auto ">
+        <div className="absolute inset-0 ms-3 me-4 mt-3">
             <table className="font-mono text-sm border-separate border-spacing-0 w-full">
                 <tbody>{rows}</tbody>
             </table>

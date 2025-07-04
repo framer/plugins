@@ -36,7 +36,7 @@
     --spacing: 5px;
 
     /* App specific tokens */
-    --width-versions: calc(var(--spacing) * 44);
+    --width-versions: calc(var(--spacing) * 48);
 
     /* FileDiff colors */
     --color-diff-add: #00b87a;

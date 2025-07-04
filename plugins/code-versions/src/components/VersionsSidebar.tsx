@@ -90,28 +90,28 @@ export default function VersionsSidebar({
             {isLoading ? (
                 <div className="flex items-center justify-center h-32 text-gray-500">Loading versions...</div>
             ) : (
-                <div className="overflow-y-auto h-full p-3">
+                <>
                     {currentVersion && (
-                        <CurrentVersion
-                            version={currentVersion}
-                            isSelected={currentVersion.id === selectedId}
-                            onSelect={onSelect}
-                        />
+                        <div className="px-3 pt-3 space-y-3">
+                            <CurrentVersion
+                                version={currentVersion}
+                                isSelected={currentVersion.id === selectedId}
+                                onSelect={onSelect}
+                            />
+                            <hr className="h-px bg-framer-divider w-full" />
+                        </div>
                     )}
-                    {historicalVersions.length > 0 && (
-                        <>
-                            <hr className="h-px bg-framer-divider w-full my-3" />
-                            {historicalVersions.map(version => (
-                                <HistoricalVersion
-                                    key={version.id}
-                                    version={version}
-                                    isSelected={version.id === selectedId}
-                                    onSelect={onSelect}
-                                />
-                            ))}
-                        </>
-                    )}
-                </div>
+                    <div className="overflow-y-auto h-full flex-1 px-3 pt-3">
+                        {historicalVersions.map(version => (
+                            <HistoricalVersion
+                                key={version.id}
+                                version={version}
+                                isSelected={version.id === selectedId}
+                                onSelect={onSelect}
+                            />
+                        ))}
+                    </div>
+                </>
             )}
         </aside>
     )

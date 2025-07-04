@@ -28,8 +28,9 @@ void framer.showUI({
     position: "top right",
     width: minWindowWidth,
     minWidth: minWindowWidth,
+    maxWidth: 750,
     minHeight: 400,
-    resizable: false,
+    resizable: true,
 })
 
 export function App() {

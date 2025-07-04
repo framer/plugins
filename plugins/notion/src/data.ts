@@ -19,6 +19,7 @@ import {
     isUnchangedSinceLastSync,
     PLUGIN_KEYS,
     pageContentProperty,
+    pageCoverProperty,
     richTextToPlainText,
 } from "./api"
 import { richTextToHtml } from "./blocksToHtml"
@@ -144,6 +145,20 @@ export async function syncCollection(
                 fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
             }
 
+            if (fieldsById.has(pageCoverProperty.id)) {
+                let coverValue: string | null = null
+
+                if (item.cover) {
+                    if (item.cover.type === "external") {
+                        coverValue = item.cover.external.url
+                    } else if (item.cover.type === "file") {
+                        coverValue = item.cover.file.url
+                    }
+                }
+
+                fieldData[pageCoverProperty.id] = { type: "image", value: coverValue }
+            }
+
             return {
                 id: item.id,
                 slug: slugValue,
@@ -241,6 +256,14 @@ export async function fieldsInfoToCollectionFields(
         if (fieldInfo.id === pageContentProperty.id) {
             fields.push({
                 type: "formattedText",
+                id: fieldInfo.id,
+                name: fieldName,
+                userEditable: false,
+            })
+            continue
+        } else if (fieldInfo.id === pageCoverProperty.id) {
+            fields.push({
+                type: "image",
                 id: fieldInfo.id,
                 name: fieldName,
                 userEditable: false,

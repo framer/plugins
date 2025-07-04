@@ -419,6 +419,17 @@ export function getFieldDataEntryForProperty(
 
             return { type: field.type, value: property.email ?? "" }
         }
+        case "phone_number": {
+            if (field.type !== "string" && field.type !== "link") return null
+
+            const phoneNumber = property.phone_number ?? ""
+
+            if (field.type === "link") {
+                return { type: "link", value: phoneNumber ? `tel:${phoneNumber}` : null }
+            }
+
+            return { type: "string", value: phoneNumber }
+        }
     }
 
     return null

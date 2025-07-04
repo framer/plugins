@@ -24,11 +24,9 @@ function Version({
 
     return (
         <button
-            className={cn(
-                "h-[34px] px-3 cursor-pointer select-none relative w-full font-medium transition-colors text-left",
-                isSelected ? "bg-framer-bg-tertiary rounded-lg" : "bg-transparent"
-            )}
+            className="h-[34px] px-3 select-none relative w-full font-medium transition-colors text-left aria-selected:bg-framer-bg-secondary rounded-lg bg-transparent cursor-pointer aria-selected:cursor-default"
             onClick={() => onSelect(version.id)}
+            aria-selected={isSelected}
         >
             <span className="sr-only">
                 Select this version, published on {createdAt.toLocaleDateString()} by {name}, to compare

@@ -32,23 +32,25 @@ export default function App() {
     // Handle error states
     if (fileStatus.type === StatusTypes.ERROR) {
         return (
-            <div className="flex items-center justify-center h-full p-6">
+            <Layout>
                 <div className="text-center">
                     <h2 className="text-lg font-semibold mb-2 text-red-600">Error</h2>
                     <p className="text-sm text-gray-600 mb-4">{fileStatus.error}</p>
                 </div>
-            </div>
+            </Layout>
         )
     }
 
     if (!state.codeFile) {
-        return <EmptyState />
+        return (
+            <Layout>
+                <EmptyState />
+            </Layout>
+        )
     }
 
     return (
-        <div className="h-screen flex flex-col overflow-hidden scheme-light dark:scheme-dark">
-            <hr className="ms-3 border-t border-framer-divider" />
-
+        <Layout>
             {/* Error banner for versions loading error */}
             {state.errors.versions && (
                 <div className="sticky top-0 bg-white border-b border-framer-divider p-3">
@@ -113,7 +115,7 @@ export default function App() {
             <div className="flex-1">
                 <CodeFileView state={state} selectVersion={selectVersion} restoreVersion={restoreVersion} />
             </div>
-        </div>
+        </Layout>
     )
 }
 
@@ -127,6 +129,15 @@ function EmptyState() {
                     Select a Code Component to restore previous versions.
                 </p>
             </div>
+        </div>
+    )
+}
+
+function Layout({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="h-screen flex flex-col overflow-hidden scheme-light dark:scheme-dark">
+            <hr className="ms-3 border-t border-framer-divider" />
+            {children}
         </div>
     )
 }

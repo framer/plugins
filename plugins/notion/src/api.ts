@@ -55,8 +55,8 @@ export const pageContentProperty: FieldInfo = {
 export const pageCoverProperty: FieldInfo = {
     id: "page-cover",
     type: "image",
-    name: "Cover Image",
-    originalName: "Cover Image",
+    name: "Cover",
+    originalName: "Cover",
     allowedTypes: ["image"],
     notionProperty: null,
 }

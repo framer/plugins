@@ -87,9 +87,7 @@ export default function VersionsSidebar({
                 className
             )}
         >
-            {isLoading ? (
-                <div className="flex items-center justify-center h-32 text-gray-500">Loading versions...</div>
-            ) : (
+            {isLoading ? null : (
                 <>
                     {currentVersion && (
                         <div className="px-3 pt-3 space-y-3">

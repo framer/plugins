@@ -24,7 +24,9 @@ export default function App() {
     // Close plugin when restore is completed successfully
     useEffect(() => {
         if (state.restoreCompleted) {
-            framer.closePlugin()
+            framer.closePlugin("Code version restored", {
+                variant: "success",
+            })
         }
     }, [state.restoreCompleted])
 

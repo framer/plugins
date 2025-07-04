@@ -101,7 +101,7 @@ export default function VersionsSidebar({
                             <hr className="h-px bg-framer-divider w-full" />
                         </div>
                     )}
-                    <div className="overflow-y-auto h-full flex-1 px-3 pt-3">
+                    <div className="overflow-y-auto h-full flex-1 px-3 pt-3 scrollbar-hidden">
                         {historicalVersions.map(version => (
                             <HistoricalVersion
                                 key={version.id}

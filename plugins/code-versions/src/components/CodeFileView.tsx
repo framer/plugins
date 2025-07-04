@@ -24,13 +24,16 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 onSelect={selectVersion}
                 isLoading={state.versionsLoading === LoadingState.Initial}
             />
-            <div className="bg-code-area-light dark:bg-code-area-dark overflow-auto relative">
+            <div className="bg-code-area-light dark:bg-code-area-dark overflow-y-auto relative scrollbar-hidden">
                 <div className="absolute inset-0 ms-3 me-4 mt-3">
-                    {state.contentLoading === LoadingState.Initial ||
-                    state.versionContent === undefined ||
-                    currentContent === undefined ? null : (
-                        <FileDiff original={state.versionContent} revised={currentContent} />
-                    )}
+                    {/* The overflow-x-auto here ensures scrollbars appear in the correct position when enabled by user styles */}
+                    <div className="overflow-x-auto scrollbar-hidden">
+                        {state.contentLoading === LoadingState.Initial ||
+                        state.versionContent === undefined ||
+                        currentContent === undefined ? null : (
+                            <FileDiff original={state.versionContent} revised={currentContent} />
+                        )}
+                    </div>
                 </div>
             </div>
             {!isCurrentVersion && canRestoreVersion ? (

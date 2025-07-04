@@ -60,3 +60,11 @@
         padding: initial;
     }
 }
+
+@utility scrollbar-hidden {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}

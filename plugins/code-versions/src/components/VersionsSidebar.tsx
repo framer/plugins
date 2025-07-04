@@ -82,7 +82,7 @@ export default function VersionsSidebar({
     return (
         <aside
             className={cn(
-                "relative flex flex-col p-3 pb-0 h-full border-r border-framer-divider",
+                "relative flex flex-col h-full border-r border-framer-divider",
                 "after:absolute after:inset-x-0 w-versions after:bottom-0 after:h-6 after:pointer-events-none after:bg-gradient-to-t after:from-framer-bg-base after:to-transparent",
                 className
             )}
@@ -90,7 +90,7 @@ export default function VersionsSidebar({
             {isLoading ? (
                 <div className="flex items-center justify-center h-32 text-gray-500">Loading versions...</div>
             ) : (
-                <div className="overflow-y-auto h-full">
+                <div className="overflow-y-auto h-full p-3">
                     {currentVersion && (
                         <CurrentVersion
                             version={currentVersion}

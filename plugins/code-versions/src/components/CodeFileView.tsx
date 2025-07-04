@@ -36,7 +36,7 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
             {!isCurrentVersion && canRestoreVersion ? (
                 <div className="border-t border-framer-divider p-3">
                     <button
-                        className="px-6 py-2 rounded-lg bg-tint text-framer-text-primary font-medium disabled:cursor-not-allowed w-full"
+                        className="px-6 py-2 rounded-lg bg-tint text-framer-text-primary font-medium disabled:cursor-not-allowed w-full hover:bg-framer-button-hover-light dark:hover:bg-framer-button-hover-dark"
                         onClick={restoreVersion}
                         disabled={state.restoreLoading === LoadingState.Initial}
                     >

@@ -123,7 +123,7 @@ export default function App() {
 function EmptyState() {
     return (
         <div className="flex flex-col items-center justify-center h-full space-y-3">
-            <img src="/public/logo.svg" className="rounded-lg" />
+            <img src="/logo.svg" className="rounded-lg" />
 
             <div className="space-y-2 text-center max-w-36">
                 <h2 className="font-semibold text-framer-text-primary text-xs leading-[1.2]">Code Versions</h2>

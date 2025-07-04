@@ -423,7 +423,18 @@ export function getFieldDataEntryForProperty(
             return { type: "link", value: property.url ?? "" }
         }
         case "unique_id": {
-            return { type: "string", value: property.unique_id.number?.toString() ?? "" }
+            if (field.type !== "string" && field.type !== "number") return null
+
+            if (field.type === "string") {
+                return {
+                    type: "string",
+                    value: property.unique_id.prefix
+                        ? `${property.unique_id.prefix}-${property.unique_id.number}`
+                        : String(property.unique_id.number),
+                }
+            }
+
+            return { type: "number", value: property.unique_id.number ?? 0 }
         }
         case "date": {
             return { type: "date", value: property.date?.start ?? null }

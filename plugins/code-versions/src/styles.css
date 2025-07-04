@@ -26,7 +26,7 @@
     /* Text colors */
     --color-framer-text-base: var(--framer-color-text, light-dark(#333333, #ffffff));
     --color-framer-text-primary: var(--framer-color-text, light-dark(#333333, #ffffff));
-    --color-framer-text-secondary: var(--framer-color-text-secondary, light-dark(#666666, #cccccc));
+    --color-framer-text-secondary: #999999; /* For this plugin, we use a fixed secondary color. Normally, this should be var(--framer-color-text-secondary). */
     --color-framer-text-tertiary: var(--framer-color-text-tertiary, light-dark(#999999, #777777));
     --color-framer-text-inverted: var(--framer-color-text-reversed, light-dark(#ffffff, #ffffff));
 

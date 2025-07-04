@@ -39,6 +39,8 @@
     --width-versions: calc(var(--spacing) * 48);
 
     /* FileDiff colors */
+    --color-code-area-light: #fdfdfd;
+    --color-code-area-dark: #141414;
     --color-diff-add: #00b87a;
     --color-diff-add-bg: #00cc88;
     --color-diff-remove: #ff3366;

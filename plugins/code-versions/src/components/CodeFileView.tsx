@@ -24,12 +24,14 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 onSelect={selectVersion}
                 isLoading={state.versionsLoading === LoadingState.Initial}
             />
-            <div className="bg-[#FDFDFD] dark:bg-[#141414] overflow-auto relative">
-                {state.contentLoading === LoadingState.Initial ||
-                state.versionContent === undefined ||
-                currentContent === undefined ? null : (
-                    <FileDiff original={state.versionContent} revised={currentContent} />
-                )}
+            <div className="bg-code-area-light dark:bg-code-area-dark overflow-auto relative">
+                <div className="absolute inset-0 ms-3 me-4 mt-3">
+                    {state.contentLoading === LoadingState.Initial ||
+                    state.versionContent === undefined ||
+                    currentContent === undefined ? null : (
+                        <FileDiff original={state.versionContent} revised={currentContent} />
+                    )}
+                </div>
             </div>
             {!isCurrentVersion && canRestoreVersion ? (
                 <div className="m-3">

@@ -50,6 +50,17 @@ export const pageContentProperty: FieldInfo = {
     notionProperty: null,
 }
 
+// Every page can have a cover image. We add it as a property so it displays
+// in the list where you can configure properties to be synced with the CMS
+export const pageCoverProperty: FieldInfo = {
+    id: "page-cover",
+    type: "image",
+    name: "Cover Image",
+    originalName: "Cover Image",
+    allowedTypes: ["image"],
+    notionProperty: null,
+}
+
 // The valid field types that can be used as a slug, in order of preference
 const slugFieldTypes: NotionProperty["type"][] = ["title", "rich_text"]
 
@@ -165,8 +176,8 @@ function isSupportedPropertyType(type: string): type is keyof typeof supportedCM
 export function getDatabaseFieldsInfo(database: GetDatabaseResponse, databaseIdMap: DatabaseIdMap) {
     const result: FieldInfo[] = []
 
-    // This property is always there but not included in `"database.properties"
-    result.push(pageContentProperty)
+    // These properties are always there but not included in `"database.properties"
+    result.push(pageCoverProperty, pageContentProperty)
 
     const supported: FieldInfo[] = []
     const unsupported: FieldInfo[] = []

@@ -1,37 +1,312 @@
 /* Your Plugin CSS */
 
+[data-framer-theme="light"] #root {
+    --framer-color-tint: #000;
+    --framer-color-tint-dark: #262626;
+    --framer-color-tint-extra-dark: #333333;
+}
+
+[data-framer-theme="dark"] #root {
+    --framer-color-tint: #fff;
+    --framer-color-tint-dark: #e3e3e3;
+    --framer-color-tint-extra-dark: #c3c3c3;
+    --framer-color-text-reversed: #000;
+}
+
+[data-framer-theme="dark"] input[type="checkbox"]:checked {
+    /* Copy of the checkbox SVG from the built-in Framer CSS, but with a black stroke color instead of white. */
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHBhdGggZD0iTTMgNmwyIDIgNC00IiBmaWxsPSJ0cmFuc3BhcmVudCIgc3Ryb2tlPSIjMDAwMDAwIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtZGFzaGFycmF5PSI4LjUiIHN0cm9rZS1kYXNob2Zmc2V0PSIwIj48L3BhdGg+PHBhdGggZD0iTTMgNmw2IDAiIGZpbGw9InRyYW5zcGFyZW50IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtZGFzaGFycmF5PSI2IiBzdHJva2UtZGFzaG9mZnNldD0iNiIgPjwvcGF0aD48L3N2Zz4=) !important;
+}
+
 main {
     display: flex;
     flex-direction: column;
     align-items: start;
-    padding: 0 15px 15px 15px;
+    padding: 0 15px 15px;
     height: 100%;
+    gap: 15px;
+
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+}
+
+.sticky-divider {
+    position: sticky;
+    top: 0;
+}
+
+.field-input {
+    width: 100%;
+    flex-shrink: 1;
+}
+
+.field-input[disabled] {
+    opacity: 0.5;
+}
+
+.fields-column {
+    grid-column: span 2 / span 2;
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.logo {
+    color: var(--framer-color-text-tertiary);
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+}
+
+.setup {
+    align-items: center;
+}
+
+.setup select {
+    font-weight: 600;
+}
+
+.intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    flex: 1;
+    text-align: left;
     gap: 15px;
 }
 
-/* I know this is not good but I didn't have time to fight with Tailwind. */
-[data-framer-theme="light"] .tailwind-hell-escape-hatch-checkbox[type="checkbox"]:not(:checked) {
-    background: rgba(0, 0, 0, 0.1);
+.intro p {
+    color: var(--framer-color-text-tertiary);
 }
 
-[data-framer-theme="dark"] .tailwind-hell-escape-hatch-checkbox[type="checkbox"]:not(:checked) {
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.tailwind-hell-escape-hatch-gradient-top {
-    background: linear-gradient(var(--framer-color-bg), color-mix(in srgb, transparent, var(--framer-color-bg) 0%));
-    position: fixed;
-    left: 15px;
-    right: 15px;
-    height: 15px;
-    top: 0;
-}
-
-.tailwind-hell-escape-hatch-gradient-bottom {
-    background: linear-gradient(color-mix(in srgb, transparent, var(--framer-color-bg) 0%), var(--framer-color-bg));
-    position: absolute;
+.intro img {
     width: 100%;
+    border-radius: 8px;
+}
+
+.setup label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     height: 30px;
-    top: 0;
-    transform: translateY(calc(-100% - 1px));
+    width: 100%;
+    justify-content: space-between;
+    color: var(--framer-color-text-secondary);
+}
+
+.setup select {
+    width: 100%;
+}
+
+.mapping {
+    padding-bottom: 0;
+}
+
+.mapping form {
+    height: 100%;
+}
+
+.mapping .fields {
+    display: grid;
+    grid-template-columns: 1fr 8px 1fr 1fr;
+    gap: 10px;
+    margin-bottom: auto;
+    padding-bottom: 10px;
+    align-items: center;
+    color: var(--framer-color-text-tertiary);
+}
+
+.mapping .slug-field {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--framer-color-text-tertiary);
+    padding-bottom: 10px;
+}
+
+.mapping .source-field {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+    white-space: nowrap;
+    font-weight: 500;
+    background-color: var(--framer-color-bg-tertiary);
+    gap: 8px;
+}
+
+.mapping .source-field.unsupported {
+    pointer-events: none;
+}
+
+.mapping .source-field[aria-disabled="true"] {
+    opacity: 0.5;
+}
+
+.mapping .source-field:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--framer-color-tint);
+}
+
+.mapping .source-field input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.mapping .source-field input[type="checkbox"]:focus {
+    box-shadow: none;
+}
+
+.mapping .unsupported-field {
+    grid-column: span 2;
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    padding: 0px 10px;
+    height: 30px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    opacity: 0.5;
+    color: var(--framer-color-text-secondary);
+}
+
+[data-framer-theme="light"] .mapping .source-field input[type="checkbox"]:not(:checked) {
+    background: #ccc;
+}
+
+[data-framer-theme="dark"] .mapping .source-field input[type="checkbox"]:not(:checked) {
+    background: #666;
+}
+
+.mapping .field-type {
+    width: 100%;
+}
+
+.mapping .heading-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.mapping .heading-link {
+    width: fit-content;
+    max-width: 50%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+}
+
+.mapping .heading-link:hover {
+    text-decoration: underline;
+}
+
+.mapping footer {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--framer-color-bg);
+    margin-top: auto;
+    padding-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.mapping footer::before {
+    content: "";
+    position: absolute;
+    top: -45px;
+    left: 0;
+    width: 100%;
+    height: 45px;
+    background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
+    pointer-events: none;
+}
+
+select:disabled {
+    opacity: 0.5;
+}
+
+select:not(:disabled) {
+    cursor: pointer;
+}
+
+/* Login */
+
+.login {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    padding: 0px 15px 15px 15px;
+    gap: 15px;
+}
+
+.login-image {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.login-steps {
+    list-style-type: decimal;
+    list-style-position: inside;
+}
+
+.login-steps {
+    margin: 0;
+    list-style-position: outside;
+    padding-left: 1.2em;
+    text-wrap: balance;
+    color: var(--framer-color-text-tertiary);
+    letter-spacing: normal;
+    flex: 1;
+}
+
+.login-steps li:not(:first-child) {
+    padding-top: 0.4em;
+}
+
+.login-steps li::marker {
+    color: var(--framer-color-text-secondary);
+}
+
+/* No Access */
+
+.no-access-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    padding: 0 15px 15px;
+}
+
+.actions {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    width: 100%;
+}
+
+.action-button {
+    flex: 1;
+    width: 100%;
 }

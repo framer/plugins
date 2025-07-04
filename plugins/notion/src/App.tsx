@@ -1,88 +1,136 @@
-import type { GetDatabaseResponse } from "@notionhq/client/build/src/api-endpoints"
-import { framer } from "framer-plugin"
-import { useEffect, useState } from "react"
 import "./App.css"
-import { Authentication } from "./Authenticate"
-import { logSyncResult } from "./debug"
-import { MapDatabaseFields } from "./MapFields"
-import {
-    type PluginContext,
-    type PluginContextNew,
-    type PluginContextUpdate,
-    useSynchronizeDatabaseMutation,
-} from "./notion"
-import { SelectDatabase } from "./SelectDatabase"
+
+import { APIErrorCode } from "@notionhq/client"
+import { framer, type ManagedCollection } from "framer-plugin"
+import { useEffect, useLayoutEffect, useMemo, useState } from "react"
+import { type DatabaseIdMap, type DataSource, getDataSource } from "./data"
+import { FieldMapping } from "./FieldMapping"
+import { NoTableAccess } from "./NoAccess"
+import { SelectDataSource } from "./SelectDataSource"
 
 interface AppProps {
-    context: PluginContext
+    collection: ManagedCollection
+    previousDatabaseId: string | null
+    previousSlugFieldId: string | null
+    previousLastSynced: string | null
+    previousIgnoredFieldIds: string | null
+    previousDatabaseName: string | null
+    existingCollectionDatabaseIdMap: DatabaseIdMap
 }
 
-interface AuthenticatedAppProps {
-    context: PluginContextNew | PluginContextUpdate
-}
+export function App({
+    collection,
+    previousDatabaseId,
+    previousSlugFieldId,
+    previousLastSynced,
+    previousIgnoredFieldIds,
+    previousDatabaseName,
+    existingCollectionDatabaseIdMap,
+}: AppProps) {
+    const [dataSource, setDataSource] = useState<DataSource | null>(null)
+    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDatabaseId))
+    const [hasAccessError, setHasAccessError] = useState(false)
 
-export function AuthenticatedApp({ context }: AuthenticatedAppProps) {
-    const [databaseConfig, setDatabaseConfig] = useState<GetDatabaseResponse | null>(
-        context.type === "update" ? context.database : null
-    )
+    // Support self-referencing databases by allowing the current collection to be referenced.
+    const databaseIdMap = useMemo(() => {
+        if (dataSource?.database.id) {
+            return new Map(existingCollectionDatabaseIdMap).set(dataSource.database.id, collection.id)
+        }
+        return existingCollectionDatabaseIdMap
+    }, [existingCollectionDatabaseIdMap, dataSource?.database.id, collection.id])
+
+    useLayoutEffect(() => {
+        if (hasAccessError) {
+            framer.showUI({
+                width: 280,
+                height: 114,
+                resizable: false,
+            })
+        } else if (dataSource || isLoadingDataSource) {
+            framer.showUI({
+                width: 425,
+                height: 425,
+                minWidth: 360,
+                minHeight: 425,
+                resizable: true,
+            })
+        } else {
+            framer.showUI({
+                width: 260,
+                height: 345,
+                minWidth: 260,
+                minHeight: 345,
+                resizable: false,
+            })
+        }
+    }, [dataSource, isLoadingDataSource, hasAccessError])
 
     useEffect(() => {
-        const width = databaseConfig ? 360 : 325
-        const height = databaseConfig ? 425 : 370
-        framer.showUI({
-            width,
-            height,
-            minWidth: width,
-            minHeight: height,
-            // Only allow resizing when mapping fields as the default size could not be enough.
-            // This will keep the given dimensions in the Splash Screen.
-            resizable: Boolean(databaseConfig),
-        })
-    }, [databaseConfig])
+        if (!previousDatabaseId) {
+            return
+        }
 
-    const synchronizeMutation = useSynchronizeDatabaseMutation(databaseConfig, {
-        onError(error) {
-            framer.notify(error.message, { variant: "error" })
-        },
-        onSuccess(result) {
-            logSyncResult(result)
+        const abortController = new AbortController()
 
-            if (result.status === "success") {
-                framer.closePlugin("Synchronization successful")
-                return
-            }
-        },
-    })
+        setIsLoadingDataSource(true)
+        getDataSource(previousDatabaseId, abortController.signal)
+            .then(setDataSource)
+            .catch(error => {
+                if (abortController.signal.aborted) return
 
-    const handleDatabaseSelected = (database: GetDatabaseResponse) => {
-        context.databaseIdMap.set(database.id, context.collection.id)
-        setDatabaseConfig(database)
+                console.error(error)
+
+                // Check for Notion API error codes
+                if (
+                    error.code === APIErrorCode.RestrictedResource ||
+                    error.code === APIErrorCode.ObjectNotFound ||
+                    error.code === APIErrorCode.Unauthorized ||
+                    error.status === 403
+                ) {
+                    setHasAccessError(true)
+                } else {
+                    framer.notify(
+                        `Error loading previously configured database "${previousDatabaseName || previousDatabaseId}". Check the logs for more details.`,
+                        { variant: "error" }
+                    )
+                }
+            })
+            .finally(() => {
+                if (abortController.signal.aborted) return
+
+                setIsLoadingDataSource(false)
+            })
+
+        return () => {
+            abortController.abort()
+        }
+    }, [previousDatabaseId, previousDatabaseName])
+
+    if (isLoadingDataSource) {
+        return (
+            <main className="loading">
+                <div className="framer-spinner" />
+                <p>Loading {previousDatabaseName || "database"}...</p>
+            </main>
+        )
     }
 
-    if (!databaseConfig) {
-        return <SelectDatabase onDatabaseSelected={handleDatabaseSelected} />
+    if (hasAccessError) {
+        return <NoTableAccess previousDatabaseId={previousDatabaseId} />
+    }
+
+    if (!dataSource) {
+        return <SelectDataSource onSelectDataSource={setDataSource} />
     }
 
     return (
-        <MapDatabaseFields
-            database={databaseConfig}
-            pluginContext={context}
-            onSubmit={synchronizeMutation.mutate}
-            isLoading={synchronizeMutation.isPending}
+        <FieldMapping
+            collection={collection}
+            dataSource={dataSource}
+            initialSlugFieldId={previousSlugFieldId}
+            previousLastSynced={previousLastSynced}
+            previousIgnoredFieldIds={previousIgnoredFieldIds}
+            databaseIdMap={databaseIdMap}
         />
     )
-}
-
-export function App({ context }: AppProps) {
-    const [pluginContext, setPluginContext] = useState(context)
-
-    const handleAuthenticated = (authenticatedContext: PluginContext) => {
-        setPluginContext(authenticatedContext)
-    }
-
-    if (!pluginContext.isAuthenticated) {
-        return <Authentication context={pluginContext} onAuthenticated={handleAuthenticated} />
-    }
-
-    return <AuthenticatedApp context={pluginContext} />
 }

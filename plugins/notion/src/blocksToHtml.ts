@@ -1,7 +1,7 @@
 import type { BlockObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
 import { assert } from "./utils"
 
-export function richTextToHTML(texts: RichTextItemResponse[]) {
+export function richTextToHtml(texts: RichTextItemResponse[]) {
     return texts
         .map(({ plain_text, annotations, href }) => {
             let html = plain_text
@@ -48,22 +48,22 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
 
         switch (block.type) {
             case "paragraph":
-                htmlContent += `<p>${richTextToHTML(block.paragraph.rich_text)}</p>`
+                htmlContent += `<p>${richTextToHtml(block.paragraph.rich_text)}</p>`
                 break
             case "heading_1":
-                htmlContent += `<h1>${richTextToHTML(block.heading_1.rich_text)}</h1>`
+                htmlContent += `<h1>${richTextToHtml(block.heading_1.rich_text)}</h1>`
                 break
             case "heading_2":
-                htmlContent += `<h2>${richTextToHTML(block.heading_2.rich_text)}</h2>`
+                htmlContent += `<h2>${richTextToHtml(block.heading_2.rich_text)}</h2>`
                 break
             case "heading_3":
-                htmlContent += `<h3>${richTextToHTML(block.heading_3.rich_text)}</h3>`
+                htmlContent += `<h3>${richTextToHtml(block.heading_3.rich_text)}</h3>`
                 break
             case "divider":
                 htmlContent += "<hr >"
                 break
             case "quote":
-                htmlContent += `<blockquote>${richTextToHTML(block.quote.rich_text)}</blockquote>`
+                htmlContent += `<blockquote>${richTextToHtml(block.quote.rich_text)}</blockquote>`
                 break
             case "image":
                 switch (block.image.type) {
@@ -83,10 +83,10 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 if (i === 0 || blocks.at(i - 1)?.type !== block.type) htmlContent += `<${tag}>`
 
                 if (block.type === "bulleted_list_item") {
-                    htmlContent += `<li>${richTextToHTML(block.bulleted_list_item.rich_text)}</li>`
+                    htmlContent += `<li>${richTextToHtml(block.bulleted_list_item.rich_text)}</li>`
                 } else {
                     // Add the list item
-                    htmlContent += `<li>${richTextToHTML(block.numbered_list_item.rich_text)}</li>`
+                    htmlContent += `<li>${richTextToHtml(block.numbered_list_item.rich_text)}</li>`
                 }
 
                 // If next block is not the same type, close the list
@@ -96,7 +96,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
             }
             case "code":
-                htmlContent += `<pre><code class="language-${block.code.language.replace(" ", "-")}">${richTextToHTML(block.code.rich_text)}</code></pre>`
+                htmlContent += `<pre><code class="language-${block.code.language.replace(" ", "-")}">${richTextToHtml(block.code.rich_text)}</code></pre>`
                 break
             case "table":
                 htmlContent += `<table>`
@@ -105,13 +105,13 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 if (blocks[i - 1]?.type === "table") {
                     htmlContent += `<thead><tr>`
                     block.table_row.cells.forEach(cell => {
-                        htmlContent += `<th>${richTextToHTML(cell)}</th>`
+                        htmlContent += `<th>${richTextToHtml(cell)}</th>`
                     })
                     htmlContent += `</tr></thead><tbody>`
                 } else {
                     htmlContent += `<tr>`
                     block.table_row.cells.forEach(cell => {
-                        htmlContent += `<td>${richTextToHTML(cell)}</td>`
+                        htmlContent += `<td>${richTextToHtml(cell)}</td>`
                     })
                     htmlContent += `</tr>`
                 }
@@ -138,5 +138,6 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
         }
     }
+
     return htmlContent
 }

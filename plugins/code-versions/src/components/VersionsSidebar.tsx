@@ -1,8 +1,7 @@
 import type { CodeFileVersion } from "framer-plugin"
 import { useMemo } from "react"
-import { Tooltip } from "../components/Tooltip"
+
 import { cn } from "../utils"
-import { formatFull } from "../utils/date"
 import { FormatFromNow } from "./FormatFromNow"
 
 interface VersionProps {
@@ -24,7 +23,6 @@ function Version({
     const createdAt = useMemo(() => new Date(version.createdAt), [version.createdAt])
 
     return (
-        <Tooltip content={formatFull(createdAt)} side="bottom" align="center">
             <button
                 className={cn(
                     "h-[34px] px-3 cursor-pointer select-none relative w-full font-medium transition-colors text-left",
@@ -41,7 +39,6 @@ function Version({
                     <span className="flex-1 min-w-0 truncate">{name}</span>
                 </span>
             </button>
-        </Tooltip>
     )
 }
 

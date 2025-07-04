@@ -11,8 +11,6 @@ export default function App() {
             height: 480,
             minWidth: 600,
             minHeight: 360,
-            maxWidth: 1200,
-            maxHeight: 800,
             resizable: true,
             position: "bottom right",
         })

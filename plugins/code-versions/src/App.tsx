@@ -1,7 +1,7 @@
 import { framer } from "framer-plugin"
 import { useEffect } from "react"
 import CodeFileView from "./components/CodeFileView"
-import { useCodeFileVersions } from "./hooks/useCodeFileVersions"
+import { MutationState, useCodeFileVersions } from "./hooks/useCodeFileVersions"
 import { StatusTypes, useSelectedCodeFile } from "./hooks/useSelectedCodeFile"
 
 export default function App() {
@@ -27,6 +27,12 @@ export default function App() {
             })
         }
     }, [state.restoreCompleted])
+
+    useEffect(() => {
+        if (state.restoreLoading === MutationState.Mutating) {
+            framer.hideUI()
+        }
+    }, [state.restoreLoading])
 
     // Handle error states
     if (fileStatus.type === StatusTypes.ERROR) {

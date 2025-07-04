@@ -1,5 +1,9 @@
-import type { CodeFileVersionsState } from "../hooks/useCodeFileVersions"
-import { LoadingState, useCanRestoreVersion } from "../hooks/useCodeFileVersions"
+import {
+    type CodeFileVersionsState,
+    LoadingState,
+    MutationState,
+    useCanRestoreVersion,
+} from "../hooks/useCodeFileVersions"
 import FileDiff from "./FileDiff"
 import VersionsSidebar from "./VersionsSidebar"
 
@@ -41,9 +45,10 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                     <button
                         className="px-6 py-2 rounded-lg bg-tint text-framer-text-primary font-medium disabled:cursor-not-allowed w-full hover:bg-framer-button-hover-light dark:hover:bg-framer-button-hover-dark"
                         onClick={restoreVersion}
-                        disabled={state.restoreLoading === LoadingState.Initial}
+                        // We hide the plugin when we restore, this is just a safety measure
+                        disabled={state.restoreLoading === MutationState.Mutating}
                     >
-                        {state.restoreLoading === LoadingState.Initial ? "Restoring…" : "Restore"}
+                        Restore
                     </button>
                 </div>
             ) : null}

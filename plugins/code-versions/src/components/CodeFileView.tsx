@@ -34,7 +34,7 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 </div>
             </div>
             {!isCurrentVersion && canRestoreVersion ? (
-                <div className="m-3">
+                <div className="border-t border-framer-divider p-3">
                     <button
                         className="px-6 py-2 rounded-lg bg-tint text-framer-text-primary font-medium disabled:cursor-not-allowed w-full"
                         onClick={restoreVersion}

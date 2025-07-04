@@ -15,6 +15,7 @@ import {
 } from "@notionhq/client/build/src/api-endpoints"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import {
+    type ArrayItemInput,
     type FieldDataEntryInput,
     type FieldDataInput,
     framer,
@@ -25,7 +26,7 @@ import {
 } from "framer-plugin"
 import pLimit from "p-limit"
 import { blocksToHtml, richTextToHTML } from "./blocksToHTML"
-import { assert, assertNever, formatDate, isDefined, isString, slugify } from "./utils"
+import { assert, assertNever, formatDate, generateRandomId, isDefined, isString, slugify } from "./utils"
 
 export type FieldId = string
 
@@ -215,7 +216,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     status: ["enum"],
     url: ["link"],
     email: ["formattedText", "string"],
-    files: ["file", "image"],
+    files: ["file", "image", "array"],
     relation: ["multiCollectionReference"],
 } satisfies Record<SupportedPropertyType, ReadonlyArray<ManagedCollectionField["type"]>>
 
@@ -357,6 +358,16 @@ export function getCollectionFieldForProperty<
                 }
             }
 
+            if (fieldType === "array") {
+                return {
+                    type: fieldType,
+                    id: property.id,
+                    name: property.name,
+                    userEditable: false,
+                    fields: [{ id: `${property.id}-image`, type: "image", name: "Image" }],
+                }
+            }
+
             return {
                 type: fieldType,
                 id: property.id,
@@ -396,7 +407,7 @@ export function richTextToPlainText(richText: RichTextItemResponse[]) {
 
 export function getFieldDataEntryInput(
     property: PageObjectResponse["properties"][string],
-    fieldType: ManagedCollectionField["type"]
+    field: ManagedCollectionFieldInput | "slug"
 ): FieldDataEntryInput | undefined {
     switch (property.type) {
         case "checkbox": {
@@ -418,7 +429,7 @@ export function getFieldDataEntryInput(
             }
         }
         case "rich_text": {
-            if (fieldType === "formattedText") {
+            if (field !== "slug" && field.type === "formattedText") {
                 return {
                     type: "formattedText",
                     value: richTextToHTML(property.rich_text),
@@ -439,7 +450,7 @@ export function getFieldDataEntryInput(
             }
         }
         case "title":
-            if (fieldType === "formattedText") {
+            if (field !== "slug" && field.type === "formattedText") {
                 return {
                     type: "formattedText",
                     value: richTextToHTML(property.title),
@@ -486,8 +497,42 @@ export function getFieldDataEntryInput(
             }
         }
         case "files": {
+            if (field !== "slug" && field.type === "array") {
+                const imageField = field.fields[0]
+
+                return {
+                    type: "array",
+                    value: property.files
+                        .map((file): ArrayItemInput | undefined => {
+                            switch (file?.type) {
+                                case "external":
+                                    return {
+                                        id: file.name,
+                                        fieldData: {
+                                            [imageField.id]: {
+                                                type: "image",
+                                                value: file.external.url,
+                                            },
+                                        },
+                                    }
+                                case "file":
+                                    return {
+                                        id: file.name,
+                                        fieldData: {
+                                            [imageField.id]: {
+                                                type: "image",
+                                                value: file.file.url,
+                                            },
+                                        },
+                                    }
+                            }
+                        })
+                        .filter(file => file !== undefined),
+                }
+            }
+
             const firstFile = property.files[0]
-            const type = fieldType === "image" ? "image" : "file"
+            const type = field !== "slug" && field.type === "image" ? "image" : "file"
 
             switch (firstFile?.type) {
                 case "external":
@@ -586,7 +631,7 @@ async function processItem(
         assert(property)
 
         if (property.id === slugFieldId) {
-            const resolvedSlug = getFieldDataEntryInput(property, "string")
+            const resolvedSlug = getFieldDataEntryInput(property, "slug")
             assert(typeof resolvedSlug?.value === "string", "Slug value is not a string")
             slugValue = slugify(resolvedSlug.value as string)
         }
@@ -598,7 +643,7 @@ async function processItem(
             continue
         }
 
-        const fieldDataEntry = getFieldDataEntryInput(property, field.type)
+        const fieldDataEntry = getFieldDataEntryInput(property, field)
         if (!fieldDataEntry) {
             status.warnings.push({
                 url: item.url,

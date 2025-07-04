@@ -188,5 +188,5 @@ const getRowKey = (line: LineDiff) =>
         .with({ type: "context" }, line => `context-${line.oldLine}-${line.newLine}`)
         .with({ type: "add" }, line => `add-${line.newLine}`)
         .with({ type: "remove" }, line => `remove-${line.oldLine}`)
-        .with({ type: "divider" }, line => `divider-${line.betweenLines?.join("-")}`)
+        .with({ type: "divider" }, line => `divider-${line.line}`)
         .exhaustive()

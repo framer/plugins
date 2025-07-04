@@ -1,3 +1,8 @@
+export interface Divider {
+    type: "divider"
+    line: number
+}
+
 /**
  * line-level difference
  */
@@ -17,7 +22,7 @@ export type LineDiff =
           addIsTopEdge?: boolean
           addIsBottomEdge?: boolean
       }
-    | { type: "divider"; betweenLines: [number, number] }
+    | Divider
 
 /**
  * word-level difference within a single line.
@@ -26,3 +31,5 @@ export interface InlineDiff {
     type: "unchanged" | "add" | "remove"
     value: string
 }
+
+export const isDivider = (diff: LineDiff | undefined | null): diff is Divider => diff?.type === "divider"

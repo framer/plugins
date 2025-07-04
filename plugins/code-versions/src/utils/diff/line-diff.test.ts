@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { getLineDiff, getLineDiffWithEdges } from "./line-diff"
+import { isDivider } from "./types"
 
 describe("core functionality", () => {
     it("returns context lines for unchanged content", () => {
@@ -104,6 +105,77 @@ describe("whitespace handling", () => {
             expect(result[1].oldContent).toContain("line2")
             expect(result[1].newContent).toContain("line2")
         }
+    })
+})
+
+describe("divider generation", () => {
+    it("generates dividers when changes are far apart", () => {
+        const original = "line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10"
+        const revised = "LINE1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nLINE10"
+
+        const result = getLineDiffWithEdges(original, revised)
+
+        const dividers = result.filter(isDivider)
+        const changes = result.filter(l => l.type === "change")
+
+        expect(dividers).toHaveLength(1)
+        expect(changes).toHaveLength(2)
+
+        expect(dividers[0]?.line).toEqual(6)
+    })
+
+    it("does not generate dividers for small changes with sufficient context", () => {
+        const original = "line1\nline2\nline3\nline4\nline5"
+        const revised = "line1\nline2\nLINE3\nline4\nline5"
+
+        const result = getLineDiffWithEdges(original, revised)
+
+        const dividers = result.filter(isDivider)
+        expect(dividers).toHaveLength(0)
+    })
+
+    it("does not generate dividers for consecutive changes", () => {
+        const original = "line1\nline2\nline3\nline4\nline5"
+        const revised = "line1\nLINE2\nLINE3\nline4\nline5"
+
+        const result = getLineDiffWithEdges(original, revised)
+
+        const dividers = result.filter(isDivider)
+        expect(dividers).toHaveLength(0)
+    })
+
+    it("handles mixed change types with dividers", () => {
+        const original = "line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nline10"
+        const revised = "line1\nLINE2\nline3\nline4\nline5\nline6\nline7\nline8\nLINE9\nline10"
+
+        const result = getLineDiffWithEdges(original, revised)
+
+        const dividers = result.filter(isDivider)
+        const changes = result.filter(l => l.type === "change")
+
+        expect(dividers).toHaveLength(1)
+        expect(changes).toHaveLength(2)
+    })
+
+    it("generates dividers for large files with scattered changes", () => {
+        const original = Array.from({ length: 50 }, (_, i) => `line${i + 1}`).join("\n")
+        const revised = original
+            .split("\n")
+            .map((line, i) => {
+                if (i === 5 || i === 25 || i === 45) {
+                    return line.toUpperCase()
+                }
+                return line
+            })
+            .join("\n")
+
+        const result = getLineDiffWithEdges(original, revised)
+
+        const dividers = result.filter(l => l.type === "divider")
+        const changes = result.filter(l => l.type === "change")
+
+        expect(dividers.length).toEqual(2)
+        expect(changes.length).toEqual(3)
     })
 })
 

@@ -275,6 +275,7 @@ const GridItem = memo(function GridItem({
                     type: "image",
                     image: photo.urls.full,
                     previewImage: photo.urls.thumb,
+                    name: photo.alt_description ?? photo.description ?? "Unsplash Image",
                     altText: photo.alt_description ?? photo.description ?? undefined,
                 }}
             >

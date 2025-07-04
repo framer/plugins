@@ -82,11 +82,17 @@ export default function VersionsSidebar({
     const [currentVersion, ...historicalVersions] = versions
 
     return (
-        <aside className={cn("flex flex-col p-3 h-full border-r border-framer-divider overflow-y-auto", className)}>
+        <aside
+            className={cn(
+                "relative flex flex-col p-3 pb-0 h-full border-r border-framer-divider",
+                "after:absolute after:inset-x-0 w-versions after:bottom-0 after:h-6 after:pointer-events-none after:bg-gradient-to-t after:from-framer-bg-base after:to-transparent",
+                className
+            )}
+        >
             {isLoading ? (
                 <div className="flex items-center justify-center h-32 text-gray-500">Loading versions...</div>
             ) : (
-                <>
+                <div className="overflow-y-auto h-full">
                     {currentVersion && (
                         <CurrentVersion
                             version={currentVersion}
@@ -107,7 +113,7 @@ export default function VersionsSidebar({
                             ))}
                         </>
                     )}
-                </>
+                </div>
             )}
         </aside>
     )

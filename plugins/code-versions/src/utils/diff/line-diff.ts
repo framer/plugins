@@ -178,7 +178,7 @@ function convertDiffBlockToLineDiffs(
     return { diffs, oldLine, newLine, skipNext: false }
 }
 
-function isTopEdge(arr: LineDiff[], i: number, type: string): boolean {
+function isTopEdge(arr: LineDiff[], i: number, type: LineDiff["type"]): boolean {
     const prev = arr[i - 1]
     if (!prev) return true
     if (type === "add" && prev.type === "change") return false
@@ -186,7 +186,7 @@ function isTopEdge(arr: LineDiff[], i: number, type: string): boolean {
     return prev.type !== type
 }
 
-function isBottomEdge(arr: LineDiff[], i: number, type: string): boolean {
+function isBottomEdge(arr: LineDiff[], i: number, type: LineDiff["type"]): boolean {
     const next = arr[i + 1]
     if (!next) return true
     switch (type) {

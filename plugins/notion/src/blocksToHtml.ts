@@ -96,7 +96,8 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
             }
             case "code":
-                htmlContent += `<pre><code class="language-${block.code.language.replace(" ", "-")}">${richTextToHtml(block.code.rich_text)}</code></pre>`
+                const language = block.code.language ? CODE_LANGUAGE_MAP[block.code.language] : null
+                htmlContent += `<pre data-language="${language ?? "Markdown"}"><code>${richTextToHtml(block.code.rich_text)}</code></pre>`
                 break
             case "table":
                 htmlContent += `<table>`
@@ -140,4 +141,79 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
     }
 
     return htmlContent
+}
+
+const CODE_LANGUAGE_MAP: Record<string, string | null> = {
+    abap: null,
+    arduino: null,
+    bash: "Shell",
+    basic: null,
+    c: "C",
+    clojure: null,
+    coffeescript: null,
+    "c++": "C++",
+    "c#": "C#",
+    css: "CSS",
+    dart: null,
+    diff: null,
+    docker: null,
+    elixir: null,
+    elm: null,
+    erlang: null,
+    flow: null,
+    fortran: null,
+    "f#": null,
+    gherkin: null,
+    glsl: null,
+    go: "Go",
+    graphql: null,
+    groovy: null,
+    haskell: "Haskell",
+    html: "HTML",
+    java: "Java",
+    javascript: "JavaScript",
+    json: "JavaScript",
+    julia: "Julia",
+    kotlin: "Kotlin",
+    latex: null,
+    less: "Less",
+    lisp: null,
+    livescript: null,
+    lua: "Lua",
+    makefile: null,
+    markdown: "Markdown",
+    markup: null,
+    matlab: "MATLAB",
+    mermaid: null,
+    nix: null,
+    "objective-c": "Objective-C",
+    ocaml: null,
+    pascal: null,
+    perl: "Perl",
+    php: "PHP",
+    "plain text": null,
+    powershell: null,
+    prolog: null,
+    protobuf: null,
+    python: "Python",
+    r: null,
+    reason: null,
+    ruby: "Ruby",
+    rust: "Rust",
+    sass: null,
+    scala: "Scala",
+    scheme: null,
+    scss: "SCSS",
+    shell: "Shell",
+    sql: "SQL",
+    swift: "Swift",
+    typescript: "TypeScript",
+    "vb.net": null,
+    verilog: null,
+    vhdl: null,
+    "visual basic": null,
+    webassembly: null,
+    xml: null,
+    yaml: "YAML",
+    "java/c/c++/c#": null,
 }

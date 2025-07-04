@@ -354,8 +354,8 @@ const Placeholders = ({ index }: { index: number }) => {
     const heights = placeholderHeights[index % placeholderHeights.length]
     if (!heights) return null
 
-    return heights.map(height => (
-        <div key={height} className="animate-pulse">
+    return heights.map((height, heightIndex) => (
+        <div key={heightIndex} className="animate-pulse">
             <div className="bg-secondary rounded-md" style={{ height }} />
             <div className="mt-1 bg-secondary rounded-md h-[8px]" />
         </div>

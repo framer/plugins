@@ -6,7 +6,7 @@ export function formatRelative(from: Date, to: Date, locales?: Intl.LocalesArgum
     const diff = from.getTime() - to.getTime()
 
     const seconds = Math.floor(diff / 1000)
-    if (seconds < 60) return "now"
+    if (seconds < 60) return "Just now"
 
     const minutes = Math.floor(seconds / 60)
     if (minutes < 60) return `${Math.abs(minutes)}m ago`

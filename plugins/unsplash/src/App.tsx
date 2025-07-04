@@ -125,6 +125,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
                 await framer.addImage({
                     image: photo.urls.full,
                     name: photo.alt_description ?? photo.description ?? "Unsplash Image",
+                    altText: photo.alt_description ?? photo.description ?? undefined,
                 })
 
                 return
@@ -133,6 +134,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
             await framer.setImage({
                 image: photo.urls.full,
                 name: photo.alt_description ?? photo.description ?? "Unsplash Image",
+                altText: photo.alt_description ?? photo.description ?? undefined,
             })
 
             await framer.closePlugin()
@@ -268,26 +270,27 @@ const GridItem = memo(function GridItem({
 
     return (
         <div key={photo.id} className="flex flex-col gap-[5px]">
-            <button
-                onClick={() => {
-                    if (!isAllowedToUpsertImage) return
-                    handleClick()
+            <Draggable
+                data={{
+                    type: "image",
+                    image: photo.urls.full,
+                    previewImage: photo.urls.thumb,
+                    altText: photo.alt_description ?? photo.description ?? undefined,
                 }}
-                className="cursor-pointer bg-cover relative rounded-lg"
-                style={{
-                    height,
-                    backgroundImage: `url(${photo.urls.thumb})`,
-                    backgroundColor: photo.color,
-                }}
-                disabled={!isAllowedToUpsertImage}
-                title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
             >
-                <Draggable
-                    data={{
-                        type: "image",
-                        image: photo.urls.full,
-                        previewImage: photo.urls.thumb,
+                <button
+                    onClick={() => {
+                        if (!isAllowedToUpsertImage) return
+                        handleClick()
                     }}
+                    className="cursor-pointer bg-cover relative rounded-lg"
+                    style={{
+                        height,
+                        backgroundImage: `url(${photo.urls.thumb})`,
+                        backgroundColor: photo.color,
+                    }}
+                    disabled={!isAllowedToUpsertImage}
+                    title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
                 >
                     <>
                         <div
@@ -304,8 +307,8 @@ const GridItem = memo(function GridItem({
                             </div>
                         )}
                     </>
-                </Draggable>
-            </button>
+                </button>
+            </Draggable>
             <a
                 target="_blank"
                 href={photo.user.links.html}

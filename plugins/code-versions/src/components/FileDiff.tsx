@@ -95,7 +95,7 @@ function DividerRow() {
     return (
         <tr className="h-[19px]">
             <td colSpan={3}>
-                <div className="border-b-2 border-dashed border-gray-300" />
+                <div className="border-t border-framer-divider my-2" />
             </td>
         </tr>
     )

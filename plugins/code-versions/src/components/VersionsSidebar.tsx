@@ -23,22 +23,22 @@ function Version({
     const createdAt = useMemo(() => new Date(version.createdAt), [version.createdAt])
 
     return (
-            <button
-                className={cn(
-                    "h-[34px] px-3 cursor-pointer select-none relative w-full font-medium transition-colors text-left",
-                    isSelected ? "bg-framer-bg-tertiary rounded-lg" : "bg-transparent"
-                )}
-                onClick={() => onSelect(version.id)}
-            >
-                <span className="sr-only">
-                    Select this version, published on {createdAt.toLocaleDateString()} by {name}, to compare
-                </span>
-                <span className="font-semibold text-framer-text-primary tabular-nums">{timestamp}</span>
-                <span className="text-framer-text-secondary contents">
-                    <span className="mx-1">&middot;</span>
-                    <span className="flex-1 min-w-0 truncate">{name}</span>
-                </span>
-            </button>
+        <button
+            className={cn(
+                "h-[34px] px-3 cursor-pointer select-none relative w-full font-medium transition-colors text-left",
+                isSelected ? "bg-framer-bg-tertiary rounded-lg" : "bg-transparent"
+            )}
+            onClick={() => onSelect(version.id)}
+        >
+            <span className="sr-only">
+                Select this version, published on {createdAt.toLocaleDateString()} by {name}, to compare
+            </span>
+            <span className="font-semibold text-framer-text-primary tabular-nums">{timestamp}</span>
+            <span className="text-framer-text-secondary contents">
+                <span className="mx-1">&middot;</span>
+                <span className="flex-1 min-w-0 truncate">{name}</span>
+            </span>
+        </button>
     )
 }
 

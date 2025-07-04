@@ -1,6 +1,6 @@
 import { match, P } from "ts-pattern"
 import { cn } from "../utils"
-import { getLineDiff } from "../utils/diff/line-diff"
+import { getLineDiffWithEdges } from "../utils/diff/line-diff"
 import type { InlineDiff, LineDiff } from "../utils/diff/types"
 
 interface FileDiffProps {
@@ -9,7 +9,7 @@ interface FileDiffProps {
 }
 
 export default function FileDiff({ original, revised }: FileDiffProps) {
-    const lines = getLineDiff(original, revised)
+    const lines = getLineDiffWithEdges(original, revised)
 
     const rows = lines.map(line =>
         match(line)
@@ -32,19 +32,22 @@ export default function FileDiff({ original, revised }: FileDiffProps) {
 }
 
 function ChangeRow({ line }: { line: LineDiff & { type: "change" } }) {
+    const removeBorderClass = getEdgeBorderClass("remove", line.removeIsTopEdge, line.removeIsBottomEdge)
+    const addBorderClass = getEdgeBorderClass("add", line.addIsTopEdge, line.addIsBottomEdge)
+
     return (
         <>
             <tr className="bg-gradient-to-r from-transparent from-0%  to-diff-remove/10 to-[35px] h-[19px] leading-[19px]">
-                <RemoveRowLineNumberCell lineNumber={line.oldLine} className="ms-1" />
-                <LineNumberCell lineNumber={undefined} />
-                <ContentCell className="text-diff-remove dark:text-diff-remove">
+                <RemoveRowLineNumberCell lineNumber={line.oldLine} className={removeBorderClass} />
+                <LineNumberCell lineNumber={undefined} className={removeBorderClass} />
+                <ContentCell className={cn("text-diff-remove dark:text-diff-remove", removeBorderClass)}>
                     <InlineDiffs parts={line.inlineDiffs} type="remove" />
                 </ContentCell>
             </tr>
-            <tr className="bg-gradient-to-r from-transparent from-0% to-[35px] to-diff-add-bg/10  h-[19px] leading-[19px]">
-                <LineNumberCell lineNumber={undefined} />
-                <AddRowLineNumberCell lineNumber={line.newLine} className="ms-1" />
-                <ContentCell className="text-diff-add dark:text-diff-add">
+            <tr className="bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10  h-[19px] leading-[19px]">
+                <LineNumberCell lineNumber={undefined} className={addBorderClass} />
+                <AddRowLineNumberCell lineNumber={line.newLine} className={cn("ms-1", addBorderClass)} />
+                <ContentCell className={cn("text-diff-add dark:text-diff-add", addBorderClass)}>
                     <InlineDiffs parts={line.inlineDiffs} type="add" />
                 </ContentCell>
             </tr>
@@ -63,21 +66,27 @@ function ContextRow({ line }: { line: LineDiff & { type: "context" } }) {
 }
 
 function AddRow({ line }: { line: LineDiff & { type: "add" } }) {
+    const borderClass = getEdgeBorderClass("add", line.isTopEdge, line.isBottomEdge)
+
     return (
         <tr className="bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10  h-[19px] leading-[19px]">
-            <LineNumberCell lineNumber={undefined} />
-            <AddRowLineNumberCell lineNumber={line.newLine} />
-            <ContentCell className="text-diff-add dark:text-diff-add">{line.content}</ContentCell>
+            <LineNumberCell lineNumber={undefined} className={borderClass} />
+            <AddRowLineNumberCell lineNumber={line.newLine} className={borderClass} />
+            <ContentCell className={cn("text-diff-add dark:text-diff-add", borderClass)}>{line.content}</ContentCell>
         </tr>
     )
 }
 
 function RemoveRow({ line }: { line: LineDiff & { type: "remove" } }) {
+    const borderClass = getEdgeBorderClass("remove", !!line.isTopEdge, !!line.isBottomEdge)
+
     return (
         <tr className="bg-gradient-to-r from-transparent from-0% to-[35px] to-diff-remove/10  h-[19px] leading-[19px]">
-            <RemoveRowLineNumberCell lineNumber={line.oldLine} />
-            <LineNumberCell lineNumber={undefined} />
-            <ContentCell className="text-diff-remove dark:text-diff-remove">{line.content}</ContentCell>
+            <RemoveRowLineNumberCell lineNumber={line.oldLine} className={borderClass} />
+            <LineNumberCell lineNumber={undefined} className={borderClass} />
+            <ContentCell className={cn("text-diff-remove dark:text-diff-remove", borderClass)}>
+                {line.content}
+            </ContentCell>
         </tr>
     )
 }
@@ -139,6 +148,15 @@ function ContentCell({ children, className }: { children: React.ReactNode; class
             {children}
         </td>
     )
+}
+
+function getEdgeBorderClass(type: "add" | "remove", isTopEdge = false, isBottomEdge = false): string {
+    return cn({
+        "border-diff-add/10": type === "add",
+        "border-diff-remove/10": type === "remove",
+        "border-t": isTopEdge,
+        "border-b": isBottomEdge,
+    })
 }
 
 function Mark({ children, className }: { children: React.ReactNode; className?: string }) {

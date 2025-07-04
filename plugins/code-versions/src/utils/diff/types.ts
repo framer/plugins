@@ -3,8 +3,8 @@
  */
 export type LineDiff =
     | { type: "context"; content: string; oldLine: number; newLine: number }
-    | { type: "add"; content: string; oldLine: null; newLine: number }
-    | { type: "remove"; content: string; oldLine: number; newLine: null }
+    | { type: "add"; content: string; oldLine: null; newLine: number; isTopEdge?: boolean; isBottomEdge?: boolean }
+    | { type: "remove"; content: string; oldLine: number; newLine: null; isTopEdge?: boolean; isBottomEdge?: boolean }
     | {
           type: "change"
           oldLine: number
@@ -12,6 +12,10 @@ export type LineDiff =
           oldContent: string
           newContent: string
           inlineDiffs: InlineDiff[]
+          removeIsTopEdge?: boolean
+          removeIsBottomEdge?: boolean
+          addIsTopEdge?: boolean
+          addIsBottomEdge?: boolean
       }
     | { type: "divider"; betweenLines: [number, number] }
 

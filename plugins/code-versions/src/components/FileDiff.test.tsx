@@ -103,4 +103,39 @@ describe("FileDiff", () => {
             expect(screen.getByText("b").closest("mark")).toHaveClass(ADDED_CLASS_NAME)
         })
     })
+
+    describe("FileDiff integration edge cases", () => {
+        it("renders correct borders for a simple remove", () => {
+            render(<FileDiff original={"a\nb\nc"} revised={"a\nc"} />)
+            const removedRow = screen.getByText("b").closest("tr")
+            const removedTd = removedRow?.querySelector("td")
+            expect(removedTd).toHaveClass("border-t")
+            expect(removedTd).toHaveClass("border-b")
+        })
+
+        it("renders correct borders for a simple add", () => {
+            render(<FileDiff original={"a\nc"} revised={"a\nb\nc"} />)
+            const addedRow = screen.getByText("b").closest("tr")
+            const addedTd = addedRow?.querySelector("td")
+            expect(addedTd).toHaveClass("border-t")
+            expect(addedTd).toHaveClass("border-b")
+        })
+
+        it("renders correct borders for remove followed by change", () => {
+            render(<FileDiff original={"a\nb\nc\nd"} revised={"a\nB\nd"} />)
+            const changeRow = screen.getByText("b").closest("tr")
+            const changeRemoveTd = changeRow?.querySelector("td")
+            expect(changeRemoveTd).toHaveClass("border-t")
+            const removeRow = screen.getByText("c").closest("tr")
+            const removeTd = removeRow?.querySelector("td")
+            expect(removeTd).not.toHaveClass("border-t")
+        })
+
+        it("renders correct borders for change followed by add", () => {
+            render(<FileDiff original={"a\nb"} revised={"a\nB\nc\nd"} />)
+            const addRow = screen.getByText("c").closest("tr")
+            const addTd = addRow?.querySelector("td")
+            expect(addTd).not.toHaveClass("border-t")
+        })
+    })
 })

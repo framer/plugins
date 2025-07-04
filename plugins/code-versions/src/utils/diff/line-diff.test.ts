@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { getLineDiff } from "./line-diff"
+import { getLineDiff, getLineDiffWithEdges } from "./line-diff"
 
 describe("core functionality", () => {
     it("returns context lines for unchanged content", () => {
@@ -104,5 +104,78 @@ describe("whitespace handling", () => {
             expect(result[1].oldContent).toContain("line2")
             expect(result[1].newContent).toContain("line2")
         }
+    })
+})
+
+describe("getLineDiffWithEdges", () => {
+    it("sets isTopEdge and isBottomEdge for single add", () => {
+        const result = getLineDiffWithEdges("", "a\nb\nc")
+        const adds = result.filter(l => l.type === "add")
+        expect(adds.at(0)?.isTopEdge).toBe(true)
+        expect(adds.at(-1)?.isBottomEdge).toBe(true)
+    })
+
+    it("sets only edges for consecutive adds", () => {
+        const result = getLineDiffWithEdges("x\ny", "a\nb\nc\nx\ny")
+        const adds = result.filter(l => l.type === "add")
+        expect(adds.length).toBe(3)
+        expect(adds[0]?.isTopEdge).toBe(true)
+        expect(adds[0]?.isBottomEdge).toBe(false)
+        expect(adds[1]?.isTopEdge).toBe(false)
+        expect(adds[1]?.isBottomEdge).toBe(false)
+        expect(adds[2]?.isTopEdge).toBe(false)
+        expect(adds[2]?.isBottomEdge).toBe(true)
+    })
+
+    it("sets only edges for consecutive removes", () => {
+        const result = getLineDiffWithEdges("a\nb\nc\nx\ny", "x\ny")
+        const removes = result.filter(l => l.type === "remove")
+        expect(removes.length).toBe(3)
+        expect(removes[0]?.isTopEdge).toBe(true)
+        expect(removes[0]?.isBottomEdge).toBe(false)
+        expect(removes[1]?.isTopEdge).toBe(false)
+        expect(removes[1]?.isBottomEdge).toBe(false)
+        expect(removes[2]?.isTopEdge).toBe(false)
+        expect(removes[2]?.isBottomEdge).toBe(true)
+    })
+
+    it("sets edges for change blocks", () => {
+        const result = getLineDiffWithEdges("a\nb\nc", "a\nB\nc")
+        const change = result.find(l => l.type === "change")
+        expect(change?.removeIsTopEdge).toBe(true)
+        expect(change?.removeIsBottomEdge).toBe(true)
+        expect(change?.addIsTopEdge).toBe(true)
+        expect(change?.addIsBottomEdge).toBe(true)
+    })
+
+    it("does not set edge props for context lines", () => {
+        const result = getLineDiffWithEdges("a\nb", "a\nb")
+        const context = result.find(l => l.type === "context")
+        expect(context).not.toHaveProperty("isTopEdge")
+        expect(context).not.toHaveProperty("isBottomEdge")
+    })
+
+    it("does not add border between remove and change blocks", () => {
+        const result = getLineDiffWithEdges("a\nb\nc\nd", "a\nB\nd")
+        const removeLines = result.filter(l => l.type === "remove")
+        expect(removeLines.length).toBe(1)
+        expect(removeLines[0]?.isTopEdge).toBe(false)
+    })
+
+    it("does not add border between change and add blocks", () => {
+        const result = getLineDiffWithEdges("a\nb", "a\nB\nc\nd")
+        const addLines = result.filter(l => l.type === "add")
+        expect(addLines.length).toBe(2)
+        expect(addLines[0]?.isTopEdge).toBe(false)
+    })
+
+    it("sets correct edges when a change block follows a change block", () => {
+        // old: a\nb\nc\nd, new: a\nB\nC\nd
+        const result = getLineDiffWithEdges("a\nb\nc\nd", "a\nB\nC\nd")
+        const changes = result.filter(l => l.type === "change")
+        expect(changes.length).toBe(2)
+
+        expect(changes[0]?.addIsTopEdge).toBe(true)
+        expect(changes[0]?.addIsBottomEdge).toBe(true)
     })
 })

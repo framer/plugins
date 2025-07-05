@@ -48,6 +48,7 @@ export function App() {
                 await framer.addImage({
                     image: randomPhoto.urls.full,
                     name: randomPhoto.alt_description ?? randomPhoto.description ?? "Unsplash Image",
+                    altText: randomPhoto.alt_description ?? randomPhoto.description ?? undefined,
                 })
                 return
             }
@@ -55,6 +56,7 @@ export function App() {
             await framer.setImage({
                 image: randomPhoto.urls.full,
                 name: randomPhoto.alt_description ?? randomPhoto.description ?? "Unsplash Image",
+                altText: randomPhoto.alt_description ?? randomPhoto.description ?? undefined,
             })
 
             await framer.closePlugin()

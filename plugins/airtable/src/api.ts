@@ -54,7 +54,6 @@ type CountValue = number
 type DateValue = string
 type DateTimeValue = string
 type PhoneNumberValue = string
-type LookupValue = Array<string | number | boolean>
 type SingleSelectValue = string | Choice
 type MultipleSelectsValue = string[] | Choice[]
 type SingleCollaboratorValue = CollaboratorValue
@@ -104,7 +103,6 @@ export type AirtableFieldValues = {
     createdTime: CreatedTimeValue
     rollup: RollupValue
     count: CountValue
-    lookup: LookupValue
     multipleLookupValues: MultipleLookupValuesValue
     autoNumber: AutoNumberValue
     barcode: BarcodeValue
@@ -197,7 +195,10 @@ interface FormulaOption {
 interface RollupOption {
     fieldIdInLinkedTable?: string
     recordLinkFieldId?: string
-    result?: AirtableFieldType | null
+    result?: {
+        type: AirtableFieldType
+        options?: AirtableFieldOptions[AirtableFieldType]
+    } | null
     referencedFieldIds?: string[]
 }
 
@@ -206,10 +207,13 @@ interface CountOption {
     recordLinkFieldId?: string | null
 }
 
-interface LookupOption {
+interface MultipleLookupValuesOption {
     fieldIdInLinkedTable: string | null
     recordLinkFieldId: string | null
-    result: AirtableFieldType | null
+    result: {
+        type: AirtableFieldType
+        options?: AirtableFieldOptions[AirtableFieldType]
+    } | null
 }
 
 interface RatingOption {
@@ -265,8 +269,7 @@ type AirtableFieldOptions = {
     createdTime: Record<string, never>
     rollup: RollupOption
     count: CountOption
-    lookup: LookupOption
-    multipleLookupValues: LookupOption
+    multipleLookupValues: MultipleLookupValuesOption
     autoNumber: Record<string, never>
     barcode: Record<string, never>
     rating: RatingOption
@@ -309,7 +312,6 @@ export type AirtableFieldSchema = AirtableBaseEntity & { description?: string } 
         | { type: "createdTime"; options: AirtableFieldOptions["createdTime"] }
         | { type: "rollup"; options: AirtableFieldOptions["rollup"] }
         | { type: "count"; options: AirtableFieldOptions["count"] }
-        | { type: "lookup"; options: AirtableFieldOptions["lookup"] }
         | { type: "multipleLookupValues"; options: AirtableFieldOptions["multipleLookupValues"] }
         | { type: "autoNumber"; options: AirtableFieldOptions["autoNumber"] }
         | { type: "barcode"; options: AirtableFieldOptions["barcode"] }

@@ -1,4 +1,5 @@
-import "./global.css"
+import "framer-plugin/framer.css"
+import "./App.css"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import React from "react"

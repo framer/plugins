@@ -15,13 +15,12 @@ import { Blurhash } from "react-blurhash"
 import { ErrorBoundary } from "react-error-boundary"
 import { getRandomPhoto, type UnsplashPhoto, useListPhotosInfinite } from "./api"
 import { SearchIcon } from "./icons"
-import { Spinner } from "./Spinner"
 
 const mode = framer.mode
 
 const minWindowWidth = mode === "canvas" ? 260 : 600
 const minColumnWidth = 100
-const columnGap = 5
+const columnGap = 8
 const sidePadding = 15 * 2
 
 void framer.showUI({
@@ -62,27 +61,24 @@ export function App() {
     })
 
     return (
-        <div className="flex flex-col gap-0 pb-4 h-full">
-            <div className="bg-primary mb-[15px] z-10 relative px-[15px]">
+        <div className="container">
+            <div className="search-bar">
                 <input
                     type="text"
                     placeholder="Search…"
                     value={query}
-                    className="w-full pl-[33px] pr-8"
                     autoFocus
-                    style={{ paddingLeft: 30 }}
                     onChange={e => setQuery(e.target.value)}
                 />
-                <div className="flex items-center justify-center absolute left-[25px] top-0 bottom-0 text-tertiary">
+                <div className="search-icon">
                     <SearchIcon />
                 </div>
             </div>
             <AppErrorBoundary>
                 <PhotosList query={debouncedQuery} />
             </AppErrorBoundary>
-            <div className="mt-[15px] px-[15px]">
+            <div className="random-button-container">
                 <button
-                    className="items-center flex justify-center relative"
                     onClick={() => {
                         if (!isAllowedToUpsertImage) return
                         addRandomMutation.mutate(query)
@@ -90,7 +86,7 @@ export function App() {
                     disabled={!isAllowedToUpsertImage}
                     title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
                 >
-                    {addRandomMutation.isPending ? <Spinner size="normal" inheritColor /> : "Random Image"}
+                    {addRandomMutation.isPending ? <div className="framer-spinner" /> : "Random Image"}
                 </button>
             </div>
         </div>
@@ -203,23 +199,15 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
     const isLoadingVisible = isLoading || isFetchingNextPage
 
     if (!isLoadingVisible && photosColumns[0]?.length === 0) {
-        return <div className="flex-1 flex items-center justify-center text-tertiary">No photos found</div>
+        return <div className="empty-state">No photos found</div>
     }
 
     return (
-        <div
-            className="overflow-auto relative flex-1 rounded-[8px] mx-[15px] no-scrollbar"
-            ref={scrollRef}
-            onScroll={handleScroll}
-        >
+        <div className="photos-list no-scrollbar" ref={scrollRef} onScroll={handleScroll}>
             <div className="relative">
-                <div className="flex gap-[5px]">
+                <div className="photos-list-column-container">
                     {photosColumns.map((photos, i) => (
-                        <div
-                            key={`column-${i}`}
-                            className="shrink-0 flex flex-col gap-[5px]"
-                            style={{ width: columnWidth }}
-                        >
+                        <div key={`column-${i}`} className="photos-list-column" style={{ width: columnWidth }}>
                             {photos.map(photo => (
                                 <GridItem
                                     key={photo.id}
@@ -267,13 +255,12 @@ const GridItem = memo(function GridItem({
     }, [photo.urls.thumb])
 
     return (
-        <div key={photo.id} className="flex flex-col gap-[5px]">
+        <div key={photo.id} className="grid-item">
             <button
                 onClick={() => {
                     if (!isAllowedToUpsertImage) return
                     handleClick()
                 }}
-                className="cursor-pointer bg-cover relative rounded-lg"
                 style={{
                     height,
                     backgroundImage: `url(${photo.urls.thumb})`,
@@ -290,27 +277,18 @@ const GridItem = memo(function GridItem({
                     }}
                 >
                     <>
-                        <div
-                            className={cx(
-                                "absolute top-0 right-0 left-0 bottom-0 rounded-lg flex items-center justify-center transition-all pointer-events-none",
-                                loading && "bg-black-dimmed"
-                            )}
-                        >
-                            {loading && <Spinner size="medium" />}
+                        <div className={cx("grid-item-overlay", loading && "loading")}>
+                            {loading && <div className="framer-spinner" />}
                         </div>
                         {!imageLoaded && photo.blur_hash && (
-                            <div className="absolute top-0 left-0">
+                            <div className="blur-hash-container">
                                 <Blurhash hash={photo.blur_hash} width={width} height={height} />
                             </div>
                         )}
                     </>
                 </Draggable>
             </button>
-            <a
-                target="_blank"
-                href={photo.user.links.html}
-                className="text-2xs text-tertiary whitespace-nowrap overflow-hidden text-ellipsis"
-            >
+            <a target="_blank" href={photo.user.links.html} className="grid-item-author">
                 {photo.user.name}
             </a>
         </div>
@@ -323,14 +301,9 @@ const AppErrorBoundary = ({ children }: PropsWithChildren<object>) => (
             <ErrorBoundary
                 onReset={reset}
                 fallbackRender={({ resetErrorBoundary }) => (
-                    <div className="flex flex-1 items-center justify-center flex-col max-w-[200px] m-auto text-tertiary">
+                    <div className="error-state">
                         Could not load photos
-                        <button
-                            className="bg-transparent hover:bg-transparent active:bg-transparent text-blue-600 outline-hidden"
-                            onClick={() => resetErrorBoundary()}
-                        >
-                            Try again
-                        </button>
+                        <button onClick={() => resetErrorBoundary()}>Try again</button>
                     </div>
                 )}
             >
@@ -351,10 +324,10 @@ const Placeholders = ({ index }: { index: number }) => {
     const heights = placeholderHeights[index % placeholderHeights.length]
     if (!heights) return null
 
-    return heights.map(height => (
-        <div key={height} className="animate-pulse">
-            <div className="bg-secondary rounded-md" style={{ height }} />
-            <div className="mt-1 bg-secondary rounded-md h-[8px]" />
+    return heights.map((height, heightIndex) => (
+        <div key={heightIndex} className="animate-pulse">
+            <div className="placeholder-image" style={{ height }} />
+            <div className="placeholder-author" />
         </div>
     ))
 }

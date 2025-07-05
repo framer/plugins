@@ -50,14 +50,14 @@
 
 .photos-list-column-container {
     display: flex;
-    gap: 8px;
+    gap: 5px;
 }
 
 .photos-list-column {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 5px;
 }
 
 .grid-item {

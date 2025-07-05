@@ -20,7 +20,7 @@ const mode = framer.mode
 
 const minWindowWidth = mode === "canvas" ? 260 : 600
 const minColumnWidth = 100
-const columnGap = 8
+const columnGap = 5
 const sidePadding = 15 * 2
 
 void framer.showUI({

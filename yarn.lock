@@ -7162,7 +7162,6 @@ __metadata:
     react-blurhash: "npm:^0.3.0"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
-    tailwindcss: "npm:^4.1.11"
     valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft

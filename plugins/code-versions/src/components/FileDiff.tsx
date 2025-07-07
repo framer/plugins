@@ -2,6 +2,7 @@ import { match, P } from "ts-pattern"
 import { cn } from "../utils"
 import { getLineDiffWithEdges } from "../utils/diff/line-diff"
 import type { InlineDiff, LineDiff } from "../utils/diff/types"
+import { fadeInAnimationClassName } from "../utils/shared-styles"
 
 interface FileDiffProps {
     original: string
@@ -23,7 +24,9 @@ export default function FileDiff({ original, revised }: FileDiffProps) {
     )
 
     return (
-        <table className="font-mono text-[11px] border-separate border-spacing-0 w-full">
+        <table
+            className={cn("font-mono text-[11px] border-separate border-spacing-0 w-full ", fadeInAnimationClassName)}
+        >
             <tbody>{rows}</tbody>
         </table>
     )

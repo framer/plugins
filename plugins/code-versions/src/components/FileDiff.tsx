@@ -103,13 +103,17 @@ function LineNumberCell({
     variant,
     lineNumber,
     className,
-    prefix = "",
 }: {
     variant: "add" | "remove" | "context"
     lineNumber: number | undefined
     className?: string
-    prefix?: string
 }) {
+    const prefix = {
+        add: "+",
+        remove: "-",
+        context: "",
+    }[variant]
+
     return (
         <td
             className={cn(

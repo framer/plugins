@@ -1,5 +1,6 @@
 import type { DatabaseObjectResponse, PageObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import {
+    type ArrayItemInput,
     type FieldDataEntryInput,
     type FieldDataInput,
     framer,
@@ -338,6 +339,16 @@ export async function fieldsInfoToCollectionFields(
                 })
                 break
             }
+            case "array": {
+                fields.push({
+                    type: fieldType,
+                    id: property.id,
+                    name: property.name,
+                    userEditable: false,
+                    fields: [{ id: `${property.id}-image`, type: "image", name: "Image" }],
+                })
+                break
+            }
             case "multiCollectionReference": {
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
@@ -443,6 +454,40 @@ export function getFieldDataEntryForProperty(
             return { type: "multiCollectionReference", value: property.relation.map(({ id }) => id) }
         }
         case "files": {
+            if (field.type === "array") {
+                const imageField = field.fields[0]
+
+                return {
+                    type: "array",
+                    value: property.files
+                        .map((file): ArrayItemInput | undefined => {
+                            switch (file?.type) {
+                                case "external":
+                                    return {
+                                        id: file.name,
+                                        fieldData: {
+                                            [imageField.id]: {
+                                                type: "image",
+                                                value: file.external.url,
+                                            },
+                                        },
+                                    }
+                                case "file":
+                                    return {
+                                        id: file.name,
+                                        fieldData: {
+                                            [imageField.id]: {
+                                                type: "image",
+                                                value: file.file.url,
+                                            },
+                                        },
+                                    }
+                            }
+                        })
+                        .filter(file => file !== undefined),
+                }
+            }
+
             if (field.type !== "file" && field.type !== "image") return null
 
             const firstFile = property.files[0]

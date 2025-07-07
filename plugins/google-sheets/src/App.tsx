@@ -10,13 +10,26 @@ import { useSheetQuery } from "./sheets"
 interface AppProps {
     collection: ManagedCollection
     collectionFields: ManagedCollectionFieldInput[]
-    previousDataSourceId: string | null
+    previousSpreadsheetId: string | null
+    previousSheetId: string | null
     previousSlugFieldId: string | null
+    previousLastSynced: string | null
+    previousIgnoredColumns: string | null
+    previousSheetHeaderRowHash: string | null
 }
 
-export function App({ collection, collectionFields, previousDataSourceId, previousSlugFieldId }: AppProps) {
+export function App({
+    collection,
+    collectionFields,
+    previousSpreadsheetId,
+    previousSheetId,
+    previousSlugFieldId,
+    previousLastSynced,
+    previousIgnoredColumns,
+    previousSheetHeaderRowHash,
+}: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
-    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDataSourceId))
+    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousSheetId && previousSpreadsheetId))
 
     const { data: sheet, isPending: isSheetPending } = useSheetQuery(dataSource?.id ?? "", dataSource?.sheetTitle ?? "")
 
@@ -43,25 +56,20 @@ export function App({ collection, collectionFields, previousDataSourceId, previo
     }, [dataSource])
 
     useEffect(() => {
-        if (!previousDataSourceId) {
+        if (!previousSpreadsheetId || !previousSheetId) {
             return
         }
 
         const abortController = new AbortController()
 
         setIsLoadingDataSource(true)
-        getDataSource(previousDataSourceId, abortController.signal)
+        getDataSource(previousSpreadsheetId, previousSheetId)
             .then(setDataSource)
             .catch(error => {
                 if (abortController.signal.aborted) return
 
                 console.error(error)
-                framer.notify(
-                    `Error loading previously configured data source “${previousDataSourceId}”. Check the logs for more details.`,
-                    {
-                        variant: "error",
-                    }
-                )
+                framer.notify(`Error loading previously sheet. Check the logs for more details.`, { variant: "error" })
             })
             .finally(() => {
                 if (abortController.signal.aborted) return
@@ -70,7 +78,7 @@ export function App({ collection, collectionFields, previousDataSourceId, previo
             })
 
         return () => abortController.abort()
-    }, [previousDataSourceId])
+    }, [previousSpreadsheetId, previousSheetId])
 
     if (isLoadingDataSource) {
         return (

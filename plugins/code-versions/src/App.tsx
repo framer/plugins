@@ -12,7 +12,7 @@ export default function App() {
             minWidth: 600,
             minHeight: 360,
             resizable: true,
-            position: "bottom right",
+            position: "center",
         })
     }, [])
 

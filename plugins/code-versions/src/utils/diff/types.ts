@@ -31,5 +31,3 @@ export interface InlineDiff {
     type: "unchanged" | "add" | "remove"
     value: string
 }
-
-export const isDivider = (diff: LineDiff | undefined | null): diff is Divider => diff?.type === "divider"

@@ -1,5 +1,6 @@
 import { createDividerLine } from "./line-creators"
-import { isDivider, type LineDiff } from "./types"
+import { isDivider } from "./typeChecks.ts"
+import { type LineDiff } from "./types"
 
 const CONTEXT_LINES = 2
 

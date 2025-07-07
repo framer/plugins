@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { getLineDiff, getLineDiffWithEdges } from "./line-diff"
-import { isDivider } from "./types"
+import { isDivider } from "./typeChecks.ts"
 
 describe("core functionality", () => {
     it("returns context lines for unchanged content", () => {

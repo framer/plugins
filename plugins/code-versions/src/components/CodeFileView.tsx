@@ -1,12 +1,14 @@
+import { lazy, Suspense } from "react"
 import {
     type CodeFileVersionsState,
     LoadingState,
     MutationState,
     useCanRestoreVersion,
 } from "../hooks/useCodeFileVersions"
-import CurrentCode from "./CurrentCode"
 import FileDiff from "./FileDiff"
 import VersionsSidebar from "./VersionsSidebar"
+
+const CurrentCode = lazy(() => import("./CurrentCode").then(module => ({ default: module.default })))
 
 interface CodeFileViewProps {
     state: CodeFileVersionsState["state"]
@@ -70,7 +72,12 @@ function Code({
     isCurrentVersion: boolean
 }) {
     if (isCurrentVersion || original === revised) {
-        return <CurrentCode code={original} />
+        return (
+            // It will fade in once loaded
+            <Suspense fallback={null}>
+                <CurrentCode code={original} />
+            </Suspense>
+        )
     }
 
     return <FileDiff original={original} revised={revised} />

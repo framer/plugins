@@ -3,6 +3,8 @@ import { useEffect } from "react"
 import CodeFileView from "./components/CodeFileView"
 import { MutationState, useCodeFileVersions } from "./hooks/useCodeFileVersions"
 import { StatusTypes, useSelectedCodeFile } from "./hooks/useSelectedCodeFile"
+import { cn } from "./utils"
+import { fadeInAnimationClassName } from "./utils/shared-styles"
 
 export default function App() {
     useEffect(() => {
@@ -33,6 +35,15 @@ export default function App() {
             framer.hideUI()
         }
     }, [state.restoreLoading])
+
+    // FIXME: not sure this is what we want now, but debugging
+    useEffect(() => {
+        if (state.errors.restore) {
+            framer.notify(`Failed to restore version: ${state.errors.restore}`, {
+                variant: "error",
+            })
+        }
+    }, [state.errors.restore])
 
     // Handle error states
     if (fileStatus.type === StatusTypes.ERROR) {
@@ -126,8 +137,8 @@ export default function App() {
 
 function EmptyState() {
     return (
-        <div className="flex flex-col items-center justify-center h-full space-y-3">
-            <img src="/logo.svg" className="rounded-lg" />
+        <div className={cn("flex flex-col items-center justify-center h-full space-y-3", fadeInAnimationClassName)}>
+            <img src="/logo.svg" className="rounded-lg size-6" />
 
             <div className="space-y-2 text-center max-w-36">
                 <h2 className="font-semibold text-framer-text-primary text-xs leading-[1.2]">Code Versions</h2>
@@ -141,7 +152,7 @@ function EmptyState() {
 
 function Layout({ children }: { children: React.ReactNode }) {
     return (
-        <div className="h-screen flex flex-col overflow-hidden scheme-light dark:scheme-dark">
+        <div className="h-screen w-screen flex flex-col overflow-hidden scheme-light dark:scheme-dark">
             <hr className="ms-3 border-t border-framer-divider" />
             {children}
         </div>

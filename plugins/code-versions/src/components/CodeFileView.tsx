@@ -27,7 +27,7 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 versions={state.versions}
                 selectedId={state.selectedVersionId}
                 onSelect={selectVersion}
-                isLoading={state.versionsLoading === LoadingState.Initial}
+                isLoading={state.versions.length === 0}
             />
             <div className="bg-code-area-light dark:bg-code-area-dark overflow-y-auto relative scrollbar-hidden">
                 <div className="absolute inset-0 ms-3 me-4 mt-3">

@@ -1,4 +1,5 @@
 import { diffWords } from "diff"
+import { match } from "ts-pattern"
 import type { InlineDiff } from "./types"
 
 /**
@@ -12,11 +13,11 @@ export function getInlineDiff(originalLine: string, revisedLine: string): Inline
     if (leading) result.push({ type: "unchanged" as const, value: leading })
     result.push(
         ...diffWords(originalCore, revisedCore).map(part =>
-            part.added
-                ? { type: "add" as const, value: part.value }
-                : part.removed
-                  ? { type: "remove" as const, value: part.value }
-                  : { type: "unchanged" as const, value: part.value }
+            match(part)
+                .returnType<InlineDiff>()
+                .with({ added: true }, () => ({ type: "add", value: part.value }))
+                .with({ removed: true }, () => ({ type: "remove", value: part.value }))
+                .otherwise(() => ({ type: "unchanged", value: part.value }))
         )
     )
     if (trailing) result.push({ type: "unchanged" as const, value: trailing })

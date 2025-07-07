@@ -51,6 +51,9 @@
     --color-code-secondary: light-dark(#66666699, #eeeeee99); /* 60% opacity */
     --font-size-code: 11px;
     --color-line-number: light-dark(#bbbbbb, #555555);
+
+    --color-selection-bg: light-dark(#222222, #ffffff);
+    --color-selection-text: light-dark(#ffffff, #222222);
 }
 
 @layer base {
@@ -61,6 +64,11 @@
     textarea,
     select {
         padding: initial;
+    }
+
+    ::selection {
+        background-color: var(--color-selection-bg);
+        color: var(--color-selection-text);
     }
 }
 

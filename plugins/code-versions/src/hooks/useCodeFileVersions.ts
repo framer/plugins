@@ -46,8 +46,9 @@ export function useCodeFileVersions(): CodeFileVersionsState {
 
         // Cleanup function
         return () => {
+            abortController.abort()
+            // Only clear the ref if it still points to this controller
             if (versionsAbortControllerRef.current === abortController) {
-                abortController.abort()
                 versionsAbortControllerRef.current = null
             }
         }
@@ -71,8 +72,9 @@ export function useCodeFileVersions(): CodeFileVersionsState {
 
         // Cleanup function
         return () => {
+            abortController.abort()
+            // Only clear the ref if it still points to this controller
             if (contentAbortControllerRef.current === abortController) {
-                abortController.abort()
                 contentAbortControllerRef.current = null
             }
         }

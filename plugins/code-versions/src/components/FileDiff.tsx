@@ -24,9 +24,7 @@ export default function FileDiff({ original, revised }: FileDiffProps) {
     )
 
     return (
-        <table
-            className={cn("font-mono text-[11px] border-separate border-spacing-0 w-full ", fadeInAnimationClassName)}
-        >
+        <table className={cn("font-mono text-code border-separate border-spacing-0 w-full ", fadeInAnimationClassName)}>
             <tbody>{rows}</tbody>
         </table>
     )
@@ -45,7 +43,7 @@ function ChangeRow({ line }: { line: LineDiff & { type: "change" } }) {
                     <InlineDiffs parts={line.inlineDiffs} type="remove" />
                 </ContentCell>
             </tr>
-            <tr className="bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10  h-(--code-row-height) leading-(--code-row-height)">
+            <tr className="bg-gradient-to-r from-transparent from-0% to-[35px] to-diff-add-bg/10  h-(--code-row-height) leading-(--code-row-height)">
                 <LineNumberCell variant="context" lineNumber={undefined} className={addBorderClass} />
                 <LineNumberCell variant="add" lineNumber={line.newLine} className={cn("ms-1", addBorderClass)} />
                 <ContentCell className={cn("text-diff-add dark:text-diff-add", addBorderClass)}>
@@ -70,7 +68,7 @@ function AddRow({ line }: { line: LineDiff & { type: "add" } }) {
     const borderClass = getEdgeBorderClass("add", line.isTopEdge, line.isBottomEdge)
 
     return (
-        <tr className="bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10  h-(--code-row-height) leading-(--code-row-height)">
+        <tr className="bg-gradient-to-r from-transparent from-0% to-[35px] to-diff-add-bg/10  h-(--code-row-height) leading-(--code-row-height)">
             <td className={borderClass} />
             <LineNumberCell variant="add" lineNumber={line.newLine} className={borderClass} />
             <ContentCell className={cn("text-diff-add dark:text-diff-add", borderClass)}>{line.content}</ContentCell>
@@ -139,7 +137,7 @@ function LineNumberCell({
 }
 
 function ContentCell({ children, className }: { children: React.ReactNode; className?: string }) {
-    return <td className={cn("whitespace-pre text-[#666666] dark:text-[#EEEEEE] w-full", className)}>{children}</td>
+    return <td className={cn("whitespace-pre text-code-primary w-full", className)}>{children}</td>
 }
 
 function getEdgeBorderClass(type: "add" | "remove", isTopEdge = false, isBottomEdge = false): string {

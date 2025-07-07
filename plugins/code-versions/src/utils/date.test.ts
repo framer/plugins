@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest"
-import { formatFull, formatRelative } from "./date"
+import { formatRelative } from "./date"
 
 describe("formatRelative", () => {
     it("formats seconds ago", () => {
         const now = new Date()
         const date = new Date(now.getTime() - 30 * 1000)
-        expect(formatRelative(now, date, "en-GB")).toEqual("now")
+        expect(formatRelative(now, date, "en-GB")).toEqual("Just now")
     })
 
     it("formats 1 second ago", () => {
         const now = new Date()
         const date = new Date(now.getTime() - 1000)
-        expect(formatRelative(now, date, "en-GB")).toEqual("now")
+        expect(formatRelative(now, date, "en-GB")).toEqual("Just now")
     })
 
     it("formats minutes ago", () => {
@@ -55,40 +55,5 @@ describe("formatRelative", () => {
         const date = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000)
         const result = formatRelative(now, date, "en-GB")
         expect(result).toEqual("22/06/2025")
-    })
-})
-
-describe("formatFull", () => {
-    it("formats date with time correctly", () => {
-        expect(formatFull("2025-07-02T14:30:00", "en-GB")).toEqual("02/07/25 • 14:30")
-    })
-
-    it("accepts a string date", () => {
-        expect(formatFull("2025-07-02T14:30:00", "en-GB")).toEqual("02/07/25 • 14:30")
-    })
-
-    it("handles single digit month and day", () => {
-        expect(formatFull("2025-07-02T09:05:00", "en-GB")).toEqual("02/07/25 • 09:05")
-    })
-
-    it("handles different years", () => {
-        expect(formatFull("2024-06-15T16:45:00", "en-GB")).toEqual("15/06/24 • 16:45")
-    })
-
-    it("handles midnight", () => {
-        expect(formatFull("2025-07-02T00:00:00", "en-GB")).toEqual("02/07/25 • 00:00")
-    })
-
-    it("handles noon", () => {
-        expect(formatFull("2025-07-02T12:00:00", "en-GB")).toEqual("02/07/25 • 12:00")
-    })
-
-    it("handles end of year", () => {
-        expect(formatFull("2025-07-02T23:59:00", "en-GB")).toEqual("02/07/25 • 23:59")
-    })
-
-    it("formats with en-US locale", () => {
-        // puts the month first, day second, year last
-        expect(formatFull("2025-07-02T14:30:00", "en-US")).toEqual("07/02/25 • 02:30 pm")
     })
 })

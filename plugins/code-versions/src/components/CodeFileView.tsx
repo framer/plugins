@@ -1,5 +1,10 @@
-import type { CodeFileVersionsState } from "../hooks/useCodeFileVersions"
-import { LoadingState, useCanRestoreVersion } from "../hooks/useCodeFileVersions"
+import {
+    type CodeFileVersionsState,
+    LoadingState,
+    MutationState,
+    useCanRestoreVersion,
+} from "../hooks/useCodeFileVersions"
+import CurrentCode from "./CurrentCode"
 import FileDiff from "./FileDiff"
 import VersionsSidebar from "./VersionsSidebar"
 
@@ -24,20 +29,50 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 onSelect={selectVersion}
                 isLoading={state.versionsLoading === LoadingState.Initial}
             />
-            <div className="bg-bg-secondary overflow-hidden relative">
-                {state.contentLoading === LoadingState.Initial ? null : (
-                    <FileDiff original={state.versionContent ?? ""} revised={currentContent ?? ""} />
-                )}
+            <div className="bg-code-area-light dark:bg-code-area-dark overflow-y-auto relative scrollbar-hidden">
+                <div className="absolute inset-0 ms-3 me-4 mt-3">
+                    {/* The overflow-x-auto here ensures scrollbars appear in the correct position when enabled by user styles */}
+                    <div className="overflow-x-auto scrollbar-hidden">
+                        {state.contentLoading === LoadingState.Initial ||
+                        state.versionContent === undefined ||
+                        currentContent === undefined ? null : (
+                            <Code
+                                original={state.versionContent}
+                                revised={currentContent}
+                                isCurrentVersion={isCurrentVersion}
+                            />
+                        )}
+                    </div>
+                </div>
             </div>
             {!isCurrentVersion && canRestoreVersion ? (
-                <button
-                    className="px-6 py-2 rounded bg-tint text-black font-semibold hover:bg-tint-dark transition disabled:opacity-50 disabled:cursor-not-allowed m-3 w-full"
-                    onClick={restoreVersion}
-                    disabled={state.restoreLoading === LoadingState.Initial}
-                >
-                    {state.restoreLoading === LoadingState.Initial ? "Restoring…" : "Restore"}
-                </button>
+                <div className="border-t border-framer-divider p-3">
+                    <button
+                        className="px-6 py-2 rounded-lg bg-tint text-framer-text-primary font-medium disabled:cursor-not-allowed w-full hover:bg-framer-button-hover-light dark:hover:bg-framer-button-hover-dark"
+                        onClick={restoreVersion}
+                        // We hide the plugin when we restore, this is just a safety measure
+                        disabled={state.restoreLoading === MutationState.Mutating}
+                    >
+                        Restore
+                    </button>
+                </div>
             ) : null}
         </div>
     )
+}
+
+function Code({
+    original,
+    revised,
+    isCurrentVersion,
+}: {
+    original: string
+    revised: string
+    isCurrentVersion: boolean
+}) {
+    if (isCurrentVersion || original === revised) {
+        return <CurrentCode code={original} />
+    }
+
+    return <FileDiff original={original} revised={revised} />
 }

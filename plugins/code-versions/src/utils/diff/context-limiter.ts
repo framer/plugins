@@ -13,7 +13,7 @@ export function addContextLimitingAndDividers(diffs: LineDiff[]): LineDiff[] {
 
     const result = markIncludedLines(diffs, changeIndices, CONTEXT_LINES)
         // looping over the diffs multiple times is not ideal, but here, it's a trade-off between performance and readability
-        // and we're going for readability here
+        // and we're going for readability in this particular case
         // In many other cases, we'd want to use a more performant approach.
         .map((include, lineIndex) => {
             if (!include) return createDividerLine(lineIndex)
@@ -23,15 +23,17 @@ export function addContextLimitingAndDividers(diffs: LineDiff[]): LineDiff[] {
         })
         .filter((diff, index, array): diff is LineDiff => {
             if (!diff) return false
+
+            const isFirstElement = index === 0
+            const isLastElement = index === array.length - 1
+            if (isDivider(diff) && (isFirstElement || isLastElement)) return false
+
+            // Skip consecutive dividers
             const next = array[index + 1]
             if (!next) return true
             if (isDivider(diff) && isDivider(next)) return false
             return true
         })
-
-    // remove a divider if it's the first or last item
-    if (isDivider(result[0])) result.shift()
-    if (isDivider(result[result.length - 1])) result.pop()
 
     return result
 }

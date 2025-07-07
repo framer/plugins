@@ -1,7 +1,6 @@
 import type { CodeFileVersion } from "framer-plugin"
 import { useMemo } from "react"
 import { cn } from "../utils"
-import { fadeInAnimationClassName } from "../utils/shared-styles"
 import { FormatFromNow } from "./FormatFromNow"
 
 interface VersionProps {
@@ -98,7 +97,7 @@ function VersionsList({ versions, selectedId, onSelect }: VersionsListProps) {
     const [currentVersion, ...historicalVersions] = versions
 
     return (
-        <div className={fadeInAnimationClassName}>
+        <div className="animate-(--fade-in-animation)">
             {currentVersion && (
                 <div className="px-3 pt-3 space-y-3">
                     <CurrentVersion

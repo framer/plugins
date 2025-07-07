@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react"
 import "prismjs/components/prism-typescript"
 import "prismjs/components/prism-jsx"
 import "prismjs/components/prism-tsx"
+import "prismjs/plugins/line-numbers/prism-line-numbers"
 import "./CurrentCode.css"
 
 interface CurrentCodeProps {
@@ -23,10 +24,12 @@ export default function CurrentCode({ code }: CurrentCodeProps) {
     }, [code])
 
     return (
-        <pre className="current-code font-mono text-code-size">
-            <code ref={codeRef} className="language-tsx">
-                {code}
-            </code>
-        </pre>
+        <div className="current-code line-numbers">
+            <pre className="font-mono text-code-size">
+                <code ref={codeRef} className="language-tsx">
+                    {code}
+                </code>
+            </pre>
+        </div>
     )
 }

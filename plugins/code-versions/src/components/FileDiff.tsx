@@ -109,12 +109,7 @@ function LineNumberCell({
     prefix?: string
 }) {
     return (
-        <td
-            className={cn(
-                "text-right select-none text-[#BBBBBB] dark:text-[#555555] pe-3 w-min",
-                className
-            )}
-        >
+        <td className={cn("text-right select-none text-line-number pe-3 w-min", className)}>
             {lineNumber !== undefined ? `${prefix}${lineNumber}` : ""}
         </td>
     )
@@ -141,11 +136,7 @@ function RemoveRowLineNumberCell({ lineNumber, className }: { lineNumber: number
 }
 
 function ContentCell({ children, className }: { children: React.ReactNode; className?: string }) {
-    return (
-        <td className={cn("whitespace-pre text-[#666666] dark:text-[#EEEEEE] w-full", className)}>
-            {children}
-        </td>
-    )
+    return <td className={cn("whitespace-pre text-[#666666] dark:text-[#EEEEEE] w-full", className)}>{children}</td>
 }
 
 function getEdgeBorderClass(type: "add" | "remove", isTopEdge = false, isBottomEdge = false): string {

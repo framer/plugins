@@ -50,6 +50,7 @@
     --color-code-primary: light-dark(#666666, #eeeeee);
     --color-code-secondary: light-dark(#66666699, #eeeeee99); /* 60% opacity */
     --font-size-code: 11px;
+    --color-line-number: light-dark(#bbbbbb, #555555);
 }
 
 @layer base {

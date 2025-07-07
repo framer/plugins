@@ -1,6 +1,6 @@
-@import "tailwindcss";
 @import url("https://use.typekit.net/dba5ktr.css"); /* input mono */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
+@import "tailwindcss";
 
 @custom-variant dark (&:where([data-framer-theme="dark"], [data-framer-theme="dark"] *));
 

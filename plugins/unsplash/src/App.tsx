@@ -108,18 +108,39 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
     const { data, fetchNextPage, isFetchingNextPage, isLoading, hasNextPage } = useListPhotosInfinite(query)
     const scrollRef = useRef<HTMLDivElement>(null)
-    const [windowSize, setWindowSize] = useState(window.innerWidth)
-    const deferredWindowSize = useDeferredValue(windowSize)
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+    const deferredWindowWidth = useDeferredValue(windowWidth)
+    const previousWindowHeightRef = useRef(window.innerHeight)
+
+    const handleScroll = useCallback(() => {
+        if (isFetchingNextPage || isLoading) return
+
+        const scrollElement = scrollRef.current
+        if (!scrollElement) return
+
+        const distanceToEnd = scrollElement.scrollHeight - (scrollElement.clientHeight + scrollElement.scrollTop)
+
+        if (distanceToEnd > 150) return
+
+        fetchNextPage()
+    }, [isFetchingNextPage, isLoading, fetchNextPage])
 
     useEffect(() => {
         const handleResize = () => {
-            setWindowSize(window.innerWidth)
+            setWindowWidth(window.innerWidth)
+
+            // Handle vertical window resize
+            if (window.innerHeight > previousWindowHeightRef.current) {
+                handleScroll()
+            }
+
+            previousWindowHeightRef.current = window.innerHeight
         }
 
         handleResize()
         window.addEventListener("resize", handleResize)
         return () => window.removeEventListener("resize", handleResize)
-    }, [])
+    }, [handleScroll])
 
     const addPhotoMutation = useMutation({
         mutationFn: async (photo: UnsplashPhoto) => {
@@ -160,12 +181,12 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
         if (isScrollable || !hasNextPage) return
 
         fetchNextPage()
-    }, [data, hasNextPage, fetchNextPage, deferredWindowSize, isLoading])
+    }, [data, hasNextPage, fetchNextPage, deferredWindowWidth, isLoading])
 
     const [photosColumns, columnWidth] = useMemo(() => {
-        const adjustedWindowSize = deferredWindowSize - sidePadding
-        const columnCount = Math.max(1, Math.floor((adjustedWindowSize + columnGap) / (minColumnWidth + columnGap)))
-        const columnWidth = (adjustedWindowSize - (columnCount - 1) * columnGap) / columnCount
+        const adjustedWindowWidth = deferredWindowWidth - sidePadding
+        const columnCount = Math.max(1, Math.floor((adjustedWindowWidth + columnGap) / (minColumnWidth + columnGap)))
+        const columnWidth = (adjustedWindowWidth - (columnCount - 1) * columnGap) / columnCount
         const heightPerColumn = Array(columnCount).fill(0)
 
         const seenPhotos = new Set<PhotoId>()
@@ -191,20 +212,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
             }
         }
         return [columns, columnWidth] as const
-    }, [data, deferredWindowSize])
-
-    const handleScroll = () => {
-        if (isFetchingNextPage || isLoading) return
-
-        const scrollElement = scrollRef.current
-        if (!scrollElement) return
-
-        const distanceToEnd = scrollElement.scrollHeight - (scrollElement.clientHeight + scrollElement.scrollTop)
-
-        if (distanceToEnd > 150) return
-
-        fetchNextPage()
-    }
+    }, [data, deferredWindowWidth])
 
     const isLoadingVisible = isLoading || isFetchingNextPage
 

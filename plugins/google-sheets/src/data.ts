@@ -1,12 +1,10 @@
 import {
     type ManagedCollectionFieldInput,
-    type FieldDataInput,
     framer,
     type ManagedCollection,
     type ManagedCollectionItemInput,
-    type ProtectedMethod,
 } from "framer-plugin"
-import { assert } from "./utils"
+import { assert, syncMethods } from "./utils"
 import { fetchSpreadsheetInfo, fetchSheetWithClient, generateHeaderRowHash, processSheet } from "./sheets"
 import { generateUniqueNames } from "./utils"
 
@@ -90,12 +88,6 @@ export async function syncCollection(
         collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
     ])
 }
-
-export const syncMethods = [
-    "ManagedCollection.removeItems",
-    "ManagedCollection.addItems",
-    "ManagedCollection.setPluginData",
-] as const satisfies ProtectedMethod[]
 
 export async function syncExistingCollection(
     collection: ManagedCollection,

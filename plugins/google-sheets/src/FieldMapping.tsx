@@ -1,6 +1,7 @@
 import { framer, useIsAllowedTo, type ManagedCollectionFieldInput, type ManagedCollection } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { type DataSource, mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
+import { type DataSource, mergeFieldsWithExistingFields, syncCollection } from "./data"
+import { syncMethods } from "./utils"
 import { getFields } from "./sheets"
 
 type CollectionFieldType = ManagedCollectionFieldInput["type"]

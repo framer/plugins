@@ -70,10 +70,9 @@ function Code({
     revised: string
     isCurrentVersion: boolean
 }) {
-    if (original === revised) {
-        // Show the full file if there are no changes
+    if (isCurrentVersion || original === revised) {
         return <CurrentCode code={original} />
     }
 
-    return isCurrentVersion ? <CurrentCode code={original} /> : <FileDiff original={original} revised={revised} />
+    return <FileDiff original={original} revised={revised} />
 }

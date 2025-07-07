@@ -1,7 +1,7 @@
 import type { CodeFileVersion } from "framer-plugin"
 import { useMemo } from "react"
-
 import { cn } from "../utils"
+import { fadeInAnimationClassName } from "../utils/shared-styles"
 import { FormatFromNow } from "./FormatFromNow"
 
 interface VersionProps {
@@ -69,48 +69,56 @@ export default function VersionsSidebar({
     versions,
     selectedId,
     onSelect,
-    isLoading,
-}: {
+}: VersionsListProps & {
     className?: string
-    versions: readonly CodeFileVersion[]
-    selectedId?: string
-    onSelect: (id: string) => void
-    isLoading?: boolean
 }) {
-    const [currentVersion, ...historicalVersions] = versions
-
     return (
         <aside
             className={cn(
                 "relative flex flex-col h-full border-r border-framer-divider",
                 "after:absolute after:inset-x-0 w-versions after:bottom-0 after:h-6 after:pointer-events-none after:bg-gradient-to-t after:from-framer-bg-base after:to-transparent",
+
                 className
             )}
         >
-            {isLoading ? null : (
-                <>
-                    {currentVersion && (
-                        <div className="px-3 pt-3 space-y-3">
-                            <CurrentVersion
-                                version={currentVersion}
-                                isSelected={currentVersion.id === selectedId}
-                                onSelect={onSelect}
-                            />
-                            <hr className="h-px bg-framer-divider w-full" />
-                        </div>
-                    )}
-                    <div className="overflow-y-auto h-full flex-1 px-3 pt-3 scrollbar-hidden">
-                        {historicalVersions.map(version => (
-                            <HistoricalVersion
-                                key={version.id}
-                                version={version}
-                                isSelected={version.id === selectedId}
-                                onSelect={onSelect}
-                            />
-                        ))}
-                    </div>
-                </>
-            )}
+            <VersionsList versions={versions} selectedId={selectedId} onSelect={onSelect} />
         </aside>
+    )
+}
+
+interface VersionsListProps {
+    versions: readonly CodeFileVersion[]
+    selectedId: string | undefined
+    onSelect: (id: string) => void
+}
+
+function VersionsList({ versions, selectedId, onSelect }: VersionsListProps) {
+    if (versions.length === 0) return null
+
+    const [currentVersion, ...historicalVersions] = versions
+
+    return (
+        <div className={fadeInAnimationClassName}>
+            {currentVersion && (
+                <div className="px-3 pt-3 space-y-3">
+                    <CurrentVersion
+                        version={currentVersion}
+                        isSelected={currentVersion.id === selectedId}
+                        onSelect={onSelect}
+                    />
+                    <hr className="h-px bg-framer-divider w-full" />
+                </div>
+            )}
+            <div className="overflow-y-auto h-full flex-1 px-3 pt-3 scrollbar-hidden">
+                {historicalVersions.map(version => (
+                    <HistoricalVersion
+                        key={version.id}
+                        version={version}
+                        isSelected={version.id === selectedId}
+                        onSelect={onSelect}
+                    />
+                ))}
+            </div>
+        </div>
     )
 }

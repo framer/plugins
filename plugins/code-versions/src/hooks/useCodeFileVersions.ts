@@ -46,8 +46,9 @@ export function useCodeFileVersions(): CodeFileVersionsState {
 
         // Cleanup function
         return () => {
+            abortController.abort()
+            // Only clear the ref if it still points to this controller
             if (versionsAbortControllerRef.current === abortController) {
-                abortController.abort()
                 versionsAbortControllerRef.current = null
             }
         }
@@ -71,8 +72,9 @@ export function useCodeFileVersions(): CodeFileVersionsState {
 
         // Cleanup function
         return () => {
+            abortController.abort()
+            // Only clear the ref if it still points to this controller
             if (contentAbortControllerRef.current === abortController) {
-                abortController.abort()
                 contentAbortControllerRef.current = null
             }
         }
@@ -107,7 +109,6 @@ export function useCodeFileVersions(): CodeFileVersionsState {
             versions: state.versions,
             selectedVersionId: state.selectedVersionId,
             versionContent: state.versionContent,
-            versionsLoading: state.versionsLoading,
             contentLoading: state.contentLoading,
             restoreLoading: state.restoreLoading,
             restoreCompleted: state.restoreCompleted,
@@ -162,7 +163,6 @@ interface VersionsState {
     versions: readonly CodeFileVersion[]
     selectedVersionId: string | undefined
     versionContent: string | undefined
-    versionsLoading: LoadingState
     contentLoading: LoadingState
     restoreLoading: MutationState
     restoreCompleted: boolean
@@ -211,7 +211,6 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
                     versions: [],
                     selectedVersionId: undefined,
                     versionContent: undefined,
-                    versionsLoading: LoadingState.Initial,
                     contentLoading: LoadingState.Initial,
                     restoreLoading: MutationState.Idle,
                     errors: {},
@@ -226,13 +225,11 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
         })
         .with({ type: VersionsActionType.VersionsLoadStarted }, () => ({
             ...state,
-            versionsLoading: state.versions.length === 0 ? LoadingState.Initial : LoadingState.Refreshing,
             errors: { ...state.errors, versions: undefined },
         }))
         .with({ type: VersionsActionType.VersionsLoaded }, ({ payload }) => ({
             ...state,
             versions: payload.versions,
-            versionsLoading: LoadingState.Idle,
             selectedVersionId: !state.selectedVersionId
                 ? getDefaultSelectedVersionId(payload.versions)
                 : state.selectedVersionId,
@@ -257,7 +254,6 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
         }))
         .with({ type: VersionsActionType.VersionsError }, ({ payload }) => ({
             ...state,
-            versionsLoading: LoadingState.Idle,
             errors: { ...state.errors, versions: payload.error },
         }))
         .with({ type: VersionsActionType.ContentError }, ({ payload }) => ({
@@ -287,7 +283,6 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
         .with({ type: VersionsActionType.StateResetCompleted }, () => initialState)
         .with({ type: VersionsActionType.OperationCancelled }, ({ payload }) => ({
             ...state,
-            versionsLoading: payload.operation === "versions" ? LoadingState.Idle : state.versionsLoading,
             contentLoading: payload.operation === "content" ? LoadingState.Idle : state.contentLoading,
         }))
         .exhaustive()
@@ -365,7 +360,6 @@ const initialState: VersionsState = {
     versions: [],
     selectedVersionId: undefined,
     versionContent: undefined,
-    versionsLoading: LoadingState.Idle,
     contentLoading: LoadingState.Idle,
     restoreLoading: MutationState.Idle,
     restoreCompleted: false,

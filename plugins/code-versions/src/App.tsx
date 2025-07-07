@@ -3,6 +3,8 @@ import { useEffect } from "react"
 import CodeFileView from "./components/CodeFileView"
 import { MutationState, useCodeFileVersions } from "./hooks/useCodeFileVersions"
 import { StatusTypes, useSelectedCodeFile } from "./hooks/useSelectedCodeFile"
+import { cn } from "./utils"
+import { fadeInAnimationClassName } from "./utils/shared-styles"
 
 export default function App() {
     useEffect(() => {
@@ -12,7 +14,7 @@ export default function App() {
             minWidth: 600,
             minHeight: 360,
             resizable: true,
-            position: "bottom right",
+            position: "center",
         })
     }, [])
 
@@ -126,7 +128,12 @@ export default function App() {
 
 function EmptyState() {
     return (
-        <div className="flex flex-col items-center justify-center h-full space-y-3">
+        <div
+            className={cn(
+                "flex flex-col items-center justify-center space-y-3 h-screen w-screen",
+                fadeInAnimationClassName
+            )}
+        >
             <img src="/logo.svg" className="rounded-lg" />
 
             <div className="space-y-2 text-center max-w-36">

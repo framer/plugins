@@ -24,16 +24,17 @@ export function addContextLimitingAndDividers(diffs: LineDiff[]): LineDiff[] {
         .filter((diff, index, array): diff is LineDiff => {
             if (!diff) return false
 
-            const isFirstElement = index === 0
-            const isLastElement = index === array.length - 1
-            if (isDivider(diff) && (isFirstElement || isLastElement)) return false
-
             // Skip consecutive dividers
             const next = array[index + 1]
             if (!next) return true
             if (isDivider(diff) && isDivider(next)) return false
             return true
         })
+
+    // after filtering, the first or last item should never be a divider
+    // it has to happen here, because we're filtering out dividers, which changes what the last item could be
+    if (isDivider(result[0])) result.shift()
+    if (isDivider(result[result.length - 1])) result.pop()
 
     return result
 }

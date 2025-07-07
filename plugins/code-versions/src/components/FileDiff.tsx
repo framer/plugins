@@ -23,7 +23,7 @@ export default function FileDiff({ original, revised }: FileDiffProps) {
     )
 
     return (
-        <table className="font-mono text-sm border-separate border-spacing-0 w-full">
+        <table className="font-mono text-[11px] border-separate border-spacing-0 w-full">
             <tbody>{rows}</tbody>
         </table>
     )
@@ -111,7 +111,7 @@ function LineNumberCell({
     return (
         <td
             className={cn(
-                "text-right select-none text-[#BBBBBB] dark:text-[#555555] text-[11px] pe-3 w-min",
+                "text-right select-none text-[#BBBBBB] dark:text-[#555555] pe-3 w-min",
                 className
             )}
         >
@@ -142,7 +142,7 @@ function RemoveRowLineNumberCell({ lineNumber, className }: { lineNumber: number
 
 function ContentCell({ children, className }: { children: React.ReactNode; className?: string }) {
     return (
-        <td className={cn("whitespace-pre text-[#666666] dark:text-[#EEEEEE] text-[11px] w-full", className)}>
+        <td className={cn("whitespace-pre text-[#666666] dark:text-[#EEEEEE] w-full", className)}>
             {children}
         </td>
     )

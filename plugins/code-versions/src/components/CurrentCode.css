@@ -1,0 +1,36 @@
+/* Custom two-color theme for Prism syntax highlighting */
+.current-code {
+    color: var(--color-code-primary);
+
+    .token.comment,
+    .token.prolog,
+    .token.doctype,
+    .token.cdata,
+    .token.punctuation,
+    .token.namespace,
+    .token.property,
+    .token.boolean,
+    .token.number,
+    .token.constant,
+    .token.symbol,
+    .token.deleted,
+    .token.selector,
+    .token.char,
+    .token.builtin,
+    .token.inserted,
+    .token.operator,
+    .token.entity,
+    .token.url,
+    .token.variable,
+    .token.atrule,
+    .token.attr-value,
+    .token.class-name,
+    .token.keyword,
+    .token.regex,
+    .token.important,
+    .token.important,
+    .token.bold,
+    .token.italic {
+        color: var(--color-code-secondary);
+    }
+}

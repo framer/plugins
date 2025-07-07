@@ -4,6 +4,7 @@ import {
     MutationState,
     useCanRestoreVersion,
 } from "../hooks/useCodeFileVersions"
+import CurrentCode from "./CurrentCode"
 import FileDiff from "./FileDiff"
 import VersionsSidebar from "./VersionsSidebar"
 
@@ -35,7 +36,11 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                         {state.contentLoading === LoadingState.Initial ||
                         state.versionContent === undefined ||
                         currentContent === undefined ? null : (
-                            <FileDiff original={state.versionContent} revised={currentContent} />
+                            <Code
+                                original={state.versionContent}
+                                revised={currentContent}
+                                isCurrentVersion={isCurrentVersion}
+                            />
                         )}
                     </div>
                 </div>
@@ -54,4 +59,16 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
             ) : null}
         </div>
     )
+}
+
+function Code({
+    original,
+    revised,
+    isCurrentVersion,
+}: {
+    original: string
+    revised: string
+    isCurrentVersion: boolean
+}) {
+    return isCurrentVersion ? <CurrentCode code={original} /> : <FileDiff original={original} revised={revised} />
 }

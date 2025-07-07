@@ -29,7 +29,6 @@
     .token.keyword,
     .token.regex,
     .token.important,
-    .token.important,
     .token.bold,
     .token.italic {
         color: var(--color-code-secondary);

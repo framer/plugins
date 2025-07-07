@@ -56,6 +56,7 @@
     --color-selection-bg: light-dark(#0000000f, #ffffff14);
     --color-selection-text: light-dark(#ffffff, #222222);
     --code-row-height: 19px;
+    --text-code: 11px;
 }
 
 @layer base {

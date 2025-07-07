@@ -27,7 +27,7 @@ export default function CurrentCode({ code }: CurrentCodeProps) {
 
     return (
         <div className={cn("current-code line-numbers", fadeInAnimationClassName)}>
-            <pre className="font-mono text-code-size">
+            <pre className="font-mono text-code">
                 <code ref={codeRef} className="language-tsx">
                     {code}
                 </code>

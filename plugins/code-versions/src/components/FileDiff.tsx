@@ -109,8 +109,14 @@ function LineNumberCell({
     prefix?: string
 }) {
     return (
-        <td className={cn("text-right select-none text-line-number pe-3 w-min", className)}>
-            {lineNumber !== undefined ? `${prefix}${lineNumber}` : ""}
+        <td className={cn("text-right select-none text-line-number pe-3", className)}>
+            {  /* 
+            min-w-7 is enough for stable three digits, after it pushes to the side. 
+            This is to avoid the line number from being different between files
+            */}
+            <span className="min-w-7 inline-block">
+                {lineNumber !== undefined ? `${prefix}${lineNumber}` : ""}
+            </span>
         </td>
     )
 }

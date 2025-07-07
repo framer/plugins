@@ -42,10 +42,10 @@
 
 /* Line Numbers Plugin Styles */
 .line-numbers {
-    --line-number-width: calc(var(--spacing) * 4); /* enough for stable three digits, after it pushes to the side */
+    --line-number-width: calc(var(--spacing) * 7); /* enough for stable three digits, after it pushes to the side */
     --padding-between-line-number-and-code: calc(var(--spacing) * 3);
     position: relative;
-    padding-left: calc(var(--line-number-width) + var(--padding-between-line-number-and-code));
+    padding-left: var(--line-number-width);
     counter-reset: linenumber;
 
     .line-numbers-rows {
@@ -62,7 +62,7 @@
 
             &:before {
                 content: counter(linenumber);
-                color: var(--color-code-secondary);
+                color: var(--color-line-number);
                 display: block;
                 text-align: right;
             }

@@ -35,14 +35,14 @@ function ChangeRow({ line }: { line: LineDiff & { type: "change" } }) {
 
     return (
         <>
-            <tr className="bg-gradient-to-r from-transparent from-0%  to-diff-remove/10 to-[35px] h-[19px] leading-[19px]">
+            <tr className="bg-gradient-to-r from-transparent from-0%  to-diff-remove/10 to-[35px] h-(--code-row-height) leading-(--code-row-height)">
                 <RemoveRowLineNumberCell lineNumber={line.oldLine} className={removeBorderClass} />
                 <LineNumberCell lineNumber={undefined} className={removeBorderClass} />
                 <ContentCell className={cn("text-diff-remove dark:text-diff-remove", removeBorderClass)}>
                     <InlineDiffs parts={line.inlineDiffs} type="remove" />
                 </ContentCell>
             </tr>
-            <tr className="bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10  h-[19px] leading-[19px]">
+            <tr className="bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10  h-(--code-row-height) leading-(--code-row-height)">
                 <LineNumberCell lineNumber={undefined} className={addBorderClass} />
                 <AddRowLineNumberCell lineNumber={line.newLine} className={cn("ms-1", addBorderClass)} />
                 <ContentCell className={cn("text-diff-add dark:text-diff-add", addBorderClass)}>
@@ -55,7 +55,7 @@ function ChangeRow({ line }: { line: LineDiff & { type: "change" } }) {
 
 function ContextRow({ line }: { line: LineDiff & { type: "context" } }) {
     return (
-        <tr className="h-[19px] leading-[19px]">
+        <tr className="h-(--code-row-height) leading-(--code-row-height)">
             <LineNumberCell lineNumber={line.oldLine} />
             <LineNumberCell lineNumber={line.newLine} />
             <ContentCell>{line.content}</ContentCell>
@@ -67,7 +67,7 @@ function AddRow({ line }: { line: LineDiff & { type: "add" } }) {
     const borderClass = getEdgeBorderClass("add", line.isTopEdge, line.isBottomEdge)
 
     return (
-        <tr className="bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10  h-[19px] leading-[19px]">
+        <tr className="bg-gradient-to-r from-transparent from-0% to-[60px] to-diff-add-bg/10  h-(--code-row-height) leading-(--code-row-height)">
             <LineNumberCell lineNumber={undefined} className={borderClass} />
             <AddRowLineNumberCell lineNumber={line.newLine} className={borderClass} />
             <ContentCell className={cn("text-diff-add dark:text-diff-add", borderClass)}>{line.content}</ContentCell>
@@ -79,7 +79,7 @@ function RemoveRow({ line }: { line: LineDiff & { type: "remove" } }) {
     const borderClass = getEdgeBorderClass("remove", !!line.isTopEdge, !!line.isBottomEdge)
 
     return (
-        <tr className="bg-gradient-to-r from-transparent from-0% to-[35px] to-diff-remove/10  h-[19px] leading-[19px]">
+        <tr className="bg-gradient-to-r from-transparent from-0% to-[35px] to-diff-remove/10  h-(--code-row-height) leading-(--code-row-height)">
             <RemoveRowLineNumberCell lineNumber={line.oldLine} className={borderClass} />
             <LineNumberCell lineNumber={undefined} className={borderClass} />
             <ContentCell className={cn("text-diff-remove dark:text-diff-remove", borderClass)}>
@@ -91,7 +91,7 @@ function RemoveRow({ line }: { line: LineDiff & { type: "remove" } }) {
 
 function DividerRow() {
     return (
-        <tr className="h-[19px]">
+        <tr className="h-(--code-row-height)">
             <td colSpan={3}>
                 <div className="border-t border-framer-divider my-2" />
             </td>
@@ -110,13 +110,11 @@ function LineNumberCell({
 }) {
     return (
         <td className={cn("text-right select-none text-line-number pe-3", className)}>
-            {  /* 
+            {/* 
             min-w-7 is enough for stable three digits, after it pushes to the side. 
             This is to avoid the line number from being different between files
             */}
-            <span className="min-w-7 inline-block">
-                {lineNumber !== undefined ? `${prefix}${lineNumber}` : ""}
-            </span>
+            <span className="min-w-7 inline-block">{lineNumber !== undefined ? `${prefix}${lineNumber}` : ""}</span>
         </td>
     )
 }
@@ -155,7 +153,7 @@ function getEdgeBorderClass(type: "add" | "remove", isTopEdge = false, isBottomE
 }
 
 function Mark({ children, className }: { children: React.ReactNode; className?: string }) {
-    return <mark className={cn("h-[19px] inline-block", className)}>{children}</mark>
+    return <mark className={cn("h-(--code-row-height) inline-block", className)}>{children}</mark>
 }
 
 function InlineDiffs({ parts, type }: { parts: readonly InlineDiff[]; type: "add" | "remove" }) {

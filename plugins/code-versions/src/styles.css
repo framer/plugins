@@ -39,7 +39,7 @@
     /* App specific tokens */
     --width-versions: calc(var(--spacing) * 48);
 
-    /* FileDiff colors */
+    /* FileDiff and Code colors */
     --color-code-area-light: #fdfdfd;
     --color-code-area-dark: #141414;
     --color-diff-add: #00b87a;
@@ -51,9 +51,9 @@
     --color-code-secondary: light-dark(#66666699, #eeeeee99); /* 60% opacity */
     --font-size-code: 11px;
     --color-line-number: light-dark(#bbbbbb, #555555);
-
     --color-selection-bg: light-dark(#222222, #ffffff);
     --color-selection-text: light-dark(#ffffff, #222222);
+    --code-row-height: 19px;
 }
 
 @layer base {

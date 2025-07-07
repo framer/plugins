@@ -1,7 +1,7 @@
 /* Custom two-color theme for Prism syntax highlighting */
 .current-code {
     color: var(--color-code-primary);
-    line-height: 1.7;
+    line-height: var(--code-row-height);
 
     .token.comment,
     .token.prolog,

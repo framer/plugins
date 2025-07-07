@@ -23,6 +23,7 @@ const minWindowWidth = mode === "canvas" ? 260 : 600
 const minColumnWidth = 100
 const columnGap = 5
 const sidePadding = 15 * 2
+const resizable = framer.mode === "canvas"
 
 void framer.showUI({
     position: "top right",
@@ -30,7 +31,7 @@ void framer.showUI({
     minWidth: minWindowWidth,
     maxWidth: 750,
     minHeight: 400,
-    resizable: true,
+    resizable,
 })
 
 export function App() {

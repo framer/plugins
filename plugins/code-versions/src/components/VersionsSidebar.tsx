@@ -69,7 +69,6 @@ export default function VersionsSidebar({
     versions,
     selectedId,
     onSelect,
-    isLoading,
 }: VersionsListProps & {
     className?: string
 }) {
@@ -82,7 +81,7 @@ export default function VersionsSidebar({
                 className
             )}
         >
-            <VersionsList versions={versions} selectedId={selectedId} onSelect={onSelect} isLoading={isLoading} />
+            <VersionsList versions={versions} selectedId={selectedId} onSelect={onSelect} />
         </aside>
     )
 }
@@ -91,11 +90,10 @@ interface VersionsListProps {
     versions: readonly CodeFileVersion[]
     selectedId: string | undefined
     onSelect: (id: string) => void
-    isLoading: boolean
 }
 
-function VersionsList({ versions, selectedId, onSelect, isLoading }: VersionsListProps) {
-    if (isLoading) return null
+function VersionsList({ versions, selectedId, onSelect }: VersionsListProps) {
+    if (versions.length === 0) return null
 
     const [currentVersion, ...historicalVersions] = versions
 

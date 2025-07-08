@@ -32,7 +32,7 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
             />
             <div className="bg-code-area-light dark:bg-code-area-dark relative overflow-hidden">
                 <div className="absolute inset-0 mx-3 mt-3">
-                    <div className="overflow-auto scrollbar-hidden h-full">
+                    <div className="overflow-auto scrollbar-hidden h-full pb-3">
                         {state.contentLoading === LoadingState.Initial ||
                         state.versionContent === undefined ||
                         currentContent === undefined ? null : (

@@ -130,23 +130,21 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
         case "string":
             switch (fieldSchema.airtableType) {
                 case "barcode": {
-                    if (!value || typeof value !== "object" || !("text" in value) || typeof value.text !== "string")
-                        return null
+                    if (!isBarcodeValue(value)) return null
                     return {
                         value: value.text,
                         type: "string",
                     }
                 }
                 case "aiText": {
-                    if (!value || typeof value !== "object" || !("value" in value) || typeof value.value !== "string")
-                        return null
+                    if (!isAiTextValue(value)) return null
                     return {
                         value: value.value,
                         type: "string",
                     }
                 }
                 case "duration": {
-                    if (typeof value !== "number" || Number.isNaN(value)) return null
+                    if (!isDurationValue(value)) return null
 
                     const hours = Math.floor(value / 3600)
                     const minutes = Math.floor((value % 3600) / 60)
@@ -187,8 +185,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 case "singleCollaborator":
                 case "createdBy":
                 case "lastModifiedBy": {
-                    if (!value || typeof value !== "object" || !("name" in value) || typeof value.name !== "string")
-                        return null
+                    if (!isCollaboratorValue(value)) return null
                     return {
                         value: value.name,
                         type: "string",
@@ -464,4 +461,20 @@ export async function syncExistingCollection(
         })
         return { didSync: false }
     }
+}
+
+function isBarcodeValue(value: unknown): value is { text: string } {
+    return !!(value && typeof value === "object" && "text" in value && typeof value.text === "string")
+}
+
+function isAiTextValue(value: unknown): value is { value: string } {
+    return !!(value && typeof value === "object" && "value" in value && typeof value.value === "string")
+}
+
+function isDurationValue(value: unknown): value is number {
+    return typeof value === "number" && !Number.isNaN(value)
+}
+
+function isCollaboratorValue(value: unknown): value is { name: string } {
+    return !!(value && typeof value === "object" && "name" in value && typeof value.name === "string")
 }

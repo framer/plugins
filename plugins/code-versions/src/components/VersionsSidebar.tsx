@@ -97,7 +97,7 @@ function VersionsList({ versions, selectedId, onSelect }: VersionsListProps) {
     const [currentVersion, ...historicalVersions] = versions
 
     return (
-        <div className="animate-(--fade-in-animation)">
+        <div className="animate-(--fade-in-animation) flex flex-col overflow-hidden">
             {currentVersion && (
                 <div className="px-3 pt-3 space-y-3">
                     <CurrentVersion
@@ -108,7 +108,7 @@ function VersionsList({ versions, selectedId, onSelect }: VersionsListProps) {
                     <hr className="h-px bg-framer-divider w-full" />
                 </div>
             )}
-            <div className="overflow-y-auto h-full flex-1 px-3 pt-3 scrollbar-hidden">
+            <div className="overflow-y-auto h-full flex-1 px-3 pt-3 scrollbar-hidden pb-6">
                 {historicalVersions.map(version => (
                     <HistoricalVersion
                         key={version.id}

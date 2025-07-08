@@ -1,4 +1,5 @@
 import type {
+    ArrayItemInput,
     FieldDataEntryInput,
     FieldDataInput,
     ManagedCollection,
@@ -104,7 +105,6 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 return null
             }
 
-            // TODO: When we add support for gallery fields, we'll need to return an array of URLs.
             return {
                 value: value[0].url,
                 type: fieldSchema.type,
@@ -240,6 +240,31 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 type: "number",
             }
 
+        case "array":
+            if (!Array.isArray(value) || value.length === 0) {
+                return null
+            }
+
+            const imageField = fieldSchema.fields[0]
+            const arrayItems: ArrayItemInput[] = []
+
+            for (const item of value) {
+                arrayItems.push({
+                    id: item.id,
+                    fieldData: {
+                        [imageField.id]: {
+                            value: item.url,
+                            type: "image",
+                        },
+                    },
+                })
+            }
+
+            return {
+                value: arrayItems,
+                type: fieldSchema.type,
+            }
+
         default:
             return null
     }
@@ -332,6 +357,12 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                         fieldData[field.id] = {
                             value: null,
                             type: field.type,
+                        }
+                        break
+                    case "array":
+                        fieldData[field.id] = {
+                            value: [],
+                            type: "array",
                         }
                         break
                     default:

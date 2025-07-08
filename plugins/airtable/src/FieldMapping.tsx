@@ -33,6 +33,7 @@ const fieldTypeOptions: { type: Field["type"]; label: string }[] = [
     { type: "number", label: "Number" },
     { type: "enum", label: "Option" },
     { type: "file", label: "File" },
+    { type: "array", label: "Gallery" },
 ]
 
 interface FieldMappingRowProps {
@@ -250,6 +251,12 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         return { ...field, type: "date" } as PossibleField
                     case "enum":
                         return { ...field, type: "enum" } as PossibleField
+                    case "array":
+                        return {
+                            ...field,
+                            type: "array",
+                            fields: [{ id: `${field.id}-image`, type: "image", name: "Image" }],
+                        } as PossibleField
                     default:
                         return field
                 }

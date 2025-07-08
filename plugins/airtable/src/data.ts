@@ -438,13 +438,20 @@ export async function syncExistingCollection(
         const inferredFields = await inferFields(collection, table)
 
         // Filter fields to match the format expected by syncCollection
-        const fieldsToSync = inferredFields.filter(
-            field =>
-                existingFields.find(existingField => existingField.id === field.id) &&
-                field.type !== "unsupported" &&
-                ((field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
-                    field.collectionId !== "")
-        )
+        const fieldsToSync = inferredFields.filter(field => {
+            // Only include fields that exist in the current collection
+            const existsInCollection = existingFields.some(existingField => existingField.id === field.id)
+
+            // Exclude unsupported fields
+            const isSupportedType = field.type !== "unsupported"
+
+            // For collection references, ensure collectionId is not empty
+            const isValidCollectionReference =
+                (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
+                field.collectionId !== ""
+
+            return existsInCollection && isSupportedType && isValidCollectionReference
+        })
 
         const dataSource: DataSource = {
             baseId: previousBaseId,

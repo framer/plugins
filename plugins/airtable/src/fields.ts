@@ -233,19 +233,16 @@ async function inferLookupField(
         return createUnsupportedField(fieldSchema)
     }
 
-    // Use the result object as the field schema for recursive inference
     const resultSchema = {
-        type: options.result.type as AirtableFieldSchema["type"],
+        type: options.result.type,
         id: fieldSchema.id,
         name: fieldSchema.name,
-        options: options.result.options as AirtableFieldSchema["options"],
+        options: options.result.options,
     } as AirtableFieldSchema
 
-    // Use the helper functions to infer the appropriate type based on the result
     const inferredField = await inferFieldByType(resultSchema, collection, tableIdBeingLinkedTo, 1)
 
-    // Return the inferred field with the lookup field metadata
-    return { ...inferredField, originalAirtableType: "multipleLookupValues" } as PossibleField
+    return { ...inferredField, originalAirtableType: "multipleLookupValues" }
 }
 
 async function inferRollupField(
@@ -260,19 +257,16 @@ async function inferRollupField(
         return createUnsupportedField(fieldSchema)
     }
 
-    // Create a temporary schema with the result type for recursive inference
     const resultSchema = {
         id: fieldSchema.id,
         name: fieldSchema.name,
-        type: options.result.type as AirtableFieldSchema["type"],
-        options: options.result.options as AirtableFieldSchema["options"],
+        type: options.result.type,
+        options: options.result.options,
     } as AirtableFieldSchema
 
-    // Use the helper functions to infer the appropriate type based on the result
     const inferredField = await inferFieldByType(resultSchema, collection, tableIdBeingLinkedTo, 1)
 
-    // Return the inferred field with the rollup field metadata
-    return { ...inferredField, originalAirtableType: "rollup" } as PossibleField
+    return { ...inferredField, originalAirtableType: "rollup" }
 }
 
 async function inferRecordLinksField(

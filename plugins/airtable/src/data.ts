@@ -168,7 +168,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 type: "number",
             }
 
-        case "array":
+        case "array": {
             if (!Array.isArray(value) || value.length === 0) {
                 return null
             }
@@ -197,6 +197,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 value: arrayItems,
                 type: fieldSchema.type,
             }
+        }
 
         default:
             return null

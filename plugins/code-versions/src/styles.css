@@ -40,6 +40,7 @@
 
     /* App specific tokens */
     --width-versions: calc(var(--spacing) * 48);
+    --fade-in-animation: fadeIn 150ms forwards;
 
     /* FileDiff and Code colors */
     --color-code-area-light: #fdfdfd;
@@ -56,6 +57,7 @@
     --color-selection-bg: light-dark(#0000000f, #ffffff14);
     --color-selection-text: light-dark(#ffffff, #222222);
     --code-row-height: 19px;
+    --text-code: 11px;
 }
 
 @layer base {

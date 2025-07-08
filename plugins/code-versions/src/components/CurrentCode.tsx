@@ -5,8 +5,6 @@ import "prismjs/components/prism-jsx"
 import "prismjs/components/prism-tsx"
 import "prismjs/plugins/line-numbers/prism-line-numbers"
 import "./CurrentCode.css"
-import { cn } from "../utils"
-import { fadeInAnimationClassName } from "../utils/shared-styles"
 
 interface CurrentCodeProps {
     code: string
@@ -26,8 +24,8 @@ export default function CurrentCode({ code }: CurrentCodeProps) {
     }, [code])
 
     return (
-        <div className={cn("current-code line-numbers", fadeInAnimationClassName)}>
-            <pre className="font-mono text-code-size">
+        <div className="current-code line-numbers animate-(--fade-in-animation)">
+            <pre className="font-mono text-code">
                 <code ref={codeRef} className="language-tsx">
                     {code}
                 </code>

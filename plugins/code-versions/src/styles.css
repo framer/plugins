@@ -98,5 +98,10 @@
 }
 
 @utility animation-delay-* {
-    animation-delay: --value(--animation-delay-*);
+    /*
+        biome fails currently in `*`
+        as a workaround, escape the * with \* works for now and tailwind handles it correctly as well
+        https://github.com/biomejs/biome/discussions/3195
+     */
+    animation-delay: --value(--animation-delay-\*);
 }

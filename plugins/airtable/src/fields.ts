@@ -144,7 +144,7 @@ function inferAttachmentsField(fieldSchema: AirtableFieldSchema & { type: "multi
         userEditable: false,
         airtableType: fieldSchema.type,
         type: "image",
-        allowedTypes: ["image", "file", "link"],
+        allowedTypes: ["image", "file", "array"],
     }
 }
 
@@ -314,7 +314,7 @@ async function inferFormulaField(
             userEditable: false,
             type: "file",
             allowedFileTypes: ALLOWED_FILE_TYPES,
-            allowedTypes: ["file", "image", "link"],
+            allowedTypes: ["file", "image", "array"],
         }
     }
 

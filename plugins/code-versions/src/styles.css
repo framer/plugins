@@ -40,7 +40,7 @@
 
     /* App specific tokens */
     --width-versions: calc(var(--spacing) * 48);
-    --fade-in-animation: fadeIn 150ms forwards;
+    --fade-in-animation: 150ms fadeIn forwards;
 
     /* FileDiff and Code colors */
     --color-code-area-light: #fdfdfd;
@@ -58,6 +58,9 @@
     --color-selection-text: light-dark(#ffffff, #222222);
     --code-row-height: 19px;
     --text-code: 11px;
+    --animation-delay-0: 0ms;
+    --animation-delay-100: 100ms;
+    --animation-delay-200: 200ms;
 }
 
 @layer base {
@@ -92,4 +95,8 @@
         opacity: 1;
         animation-timing-function: bezier(0.5, 0, 0.5, 1);
     }
+}
+
+@utility animation-delay-* {
+    animation-delay: --value(--animation-delay-*);
 }

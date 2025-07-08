@@ -1,6 +1,6 @@
 export function EmptyState() {
     return (
-        <div className="flex flex-col items-center justify-center space-y-3 h-screen w-screen animate-(--fade-in-animation) animation-delay-200 opacity-0">
+        <div className="flex flex-col items-center justify-center space-y-3 h-screen w-screen animate-(--fade-in-animation) opacity-0">
             <img src="/logo.svg" className="rounded-lg" />
 
             <div className="space-y-2 text-center max-w-36">

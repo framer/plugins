@@ -5,15 +5,6 @@ import { StatusTypes, useSelectedCodeFile } from "../hooks/useSelectedCodeFile"
 import CodeFileView from "./CodeFileView"
 import { EmptyState } from "./EmptyState"
 
-framer.showUI({
-    width: 760,
-    height: 480,
-    minWidth: 600,
-    minHeight: 360,
-    resizable: true,
-    position: "center",
-})
-
 export default function App() {
     const { state: fileStatus } = useSelectedCodeFile()
     const { state, selectVersion, restoreVersion, clearErrors } = useCodeFileVersions()

@@ -29,6 +29,8 @@ export const PLUGIN_KEYS = {
     SLUG_FIELD_ID: "airtablePluginSlugId",
 } as const
 
+const IMAGE_FILE_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/apng", "image/webp", "image/svg+xml"]
+
 export interface AirtableBase {
     id: string
     name: string
@@ -105,8 +107,15 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 return null
             }
 
+            const firstItem = value[0]
+
+            // Filter out non-image files
+            if (fieldSchema.type === "image" && firstItem.type && !IMAGE_FILE_MIME_TYPES.includes(firstItem.type)) {
+                return null
+            }
+
             return {
-                value: value[0].url,
+                value: firstItem.url,
                 type: fieldSchema.type,
             }
         }
@@ -249,6 +258,11 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
             const arrayItems: ArrayItemInput[] = []
 
             for (const item of value) {
+                // Filter out non-image files
+                if (item.type && !IMAGE_FILE_MIME_TYPES.includes(item.type)) {
+                    continue
+                }
+
                 arrayItems.push({
                     id: item.id,
                     fieldData: {

@@ -28,10 +28,9 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 selectedId={state.selectedVersionId}
                 onSelect={selectVersion}
             />
-            <div className="bg-code-area-light dark:bg-code-area-dark overflow-y-auto relative scrollbar-hidden">
-                <div className="absolute inset-0 ms-3 me-4 mt-3">
-                    {/* The overflow-x-auto here ensures scrollbars appear in the correct position when enabled by user styles */}
-                    <div className="overflow-x-auto scrollbar-hidden">
+            <div className="bg-code-area-light dark:bg-code-area-dark relative overflow-hidden">
+                <div className="absolute inset-0 mx-3 mt-3">
+                    <div className="overflow-auto scrollbar-hidden h-full pb-3">
                         {state.contentLoading === LoadingState.Initial ||
                         state.versionContent === undefined ||
                         currentContent === undefined ? null : (

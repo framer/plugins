@@ -3275,13 +3275,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"assertion-error@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "assertion-error@npm:2.0.1"
-  checksum: 10/a0789dd882211b87116e81e2648ccb7f60340b34f19877dd020b39ebb4714e475eb943e14ba3e22201c221ef6645b7bfe10297e76b6ac95b48a9898c1211ce66
-  languageName: node
-  linkType: hard
-  
 "ashby@workspace:plugins/ashby":
   version: 0.0.0-use.local
   resolution: "ashby@workspace:plugins/ashby"
@@ -3293,6 +3286,13 @@ __metadata:
     react-dom: "npm:^18.3.1"
   languageName: unknown
   linkType: soft
+
+"assertion-error@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "assertion-error@npm:2.0.1"
+  checksum: 10/a0789dd882211b87116e81e2648ccb7f60340b34f19877dd020b39ebb4714e475eb943e14ba3e22201c221ef6645b7bfe10297e76b6ac95b48a9898c1211ce66
+  languageName: node
+  linkType: hard
 
 "asynckit@npm:^0.4.0":
   version: 0.4.0

@@ -149,10 +149,15 @@ export async function syncCollection(
                 let coverValue: string | null = null
 
                 if (item.cover) {
-                    if (item.cover.type === "external") {
-                        coverValue = item.cover.external.url
-                    } else if (item.cover.type === "file") {
-                        coverValue = item.cover.file.url
+                    switch (item.cover.type) {
+                        case "external":
+                            coverValue = item.cover.external.url
+                            break
+                        case "file":
+                            coverValue = item.cover.file.url
+                            break
+                        default:
+                            item.cover satisfies never
                     }
                 }
 

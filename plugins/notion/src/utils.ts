@@ -22,6 +22,13 @@ export function assert(condition: unknown, ...msg: unknown[]): asserts condition
     throw e
 }
 
+/**
+ * For example, sometimes something that should never happen is expected to
+ * happen, like during a rollback. To prevent unwanted crashers use
+ * `shouldBeNever` instead of `assertNever`.
+ */
+export function shouldBeNever(_: never) {}
+
 export function isNotNull<T>(value: T): value is NonNullable<T> {
     return value !== null
 }

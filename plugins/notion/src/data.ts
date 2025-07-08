@@ -24,7 +24,7 @@ import {
     richTextToPlainText,
 } from "./api"
 import { richTextToHtml } from "./blocksToHtml"
-import { formatDate, isNotNull, slugify, syncMethods } from "./utils"
+import { formatDate, isNotNull, shouldBeNever, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -461,7 +461,7 @@ export function getFieldDataEntryForProperty(
                     type: "array",
                     value: property.files
                         .map((file): ArrayItemInput | undefined => {
-                            switch (file?.type) {
+                            switch (file.type) {
                                 case "external":
                                     return {
                                         id: file.name,
@@ -482,6 +482,10 @@ export function getFieldDataEntryForProperty(
                                             },
                                         },
                                     }
+                                case undefined:
+                                    return
+                                default:
+                                    shouldBeNever(file)
                             }
                         })
                         .filter(file => file !== undefined),

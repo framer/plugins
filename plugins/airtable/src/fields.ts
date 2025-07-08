@@ -205,33 +205,9 @@ function inferDateField(
     }
 }
 
-function inferBarcodeField(fieldSchema: AirtableFieldSchema & { type: "barcode" }): PossibleField {
-    return {
-        id: fieldSchema.id,
-        name: fieldSchema.name,
-        userEditable: false,
-        airtableType: fieldSchema.type,
-        type: "string",
-        allowedTypes: ["string"],
-        ...createFieldMetadata(fieldSchema),
-    }
-}
-
-function inferAiTextField(fieldSchema: AirtableFieldSchema & { type: "aiText" }): PossibleField {
-    return {
-        id: fieldSchema.id,
-        name: fieldSchema.name,
-        userEditable: false,
-        airtableType: fieldSchema.type,
-        type: "string",
-        allowedTypes: ["string"],
-        ...createFieldMetadata(fieldSchema),
-    }
-}
-
-function inferCollaboratorField(
+function inferStringBasedField(
     fieldSchema: AirtableFieldSchema & {
-        type: "singleCollaborator" | "createdBy" | "lastModifiedBy"
+        type: "barcode" | "aiText" | "singleCollaborator" | "createdBy" | "lastModifiedBy"
     }
 ): PossibleField {
     return {
@@ -421,15 +397,11 @@ async function inferFieldByType(
             return await inferFormulaField(fieldSchema, collection, tableIdBeingLinkedTo, depth)
 
         case "barcode":
-            return inferBarcodeField(fieldSchema)
-
         case "aiText":
-            return inferAiTextField(fieldSchema)
-
         case "singleCollaborator":
         case "createdBy":
         case "lastModifiedBy":
-            return inferCollaboratorField(fieldSchema)
+            return inferStringBasedField(fieldSchema)
 
         case "duration":
             return inferDurationField(fieldSchema)

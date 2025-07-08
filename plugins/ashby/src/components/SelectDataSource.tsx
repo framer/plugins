@@ -18,9 +18,7 @@ export function SelectDataSource({
     onSelectDataSource,
 }: SelectDataSourceProps) {
     const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
-    const [selectedDataSourceId] = useState<string>(
-        previousDataSourceId ?? dataSources[0]?.id ?? ""
-    )
+    const [selectedDataSourceId] = useState<string>(previousDataSourceId ?? dataSources[0]?.id ?? "")
     const [isLoading, setIsLoading] = useState(false)
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
@@ -66,7 +64,7 @@ export function SelectDataSource({
                         value={boardToken}
                         onChange={event => setBoardToken(event.target.value)}
                     />
-                </div> 
+                </div>
                 <button disabled={isButtonDisabled}>{isLoading ? <div className="framer-spinner" /> : "Next"}</button>
             </form>
         </main>

@@ -137,6 +137,8 @@ function inferUrlField(fieldSchema: AirtableFieldSchema & { type: "url" }): Poss
     }
 }
 
+// "link" type is not supported on attachments because file URLs expire after 2 hours.
+// See https://airtable.com/developers/web/api/field-model#multipleattachment
 function inferAttachmentsField(fieldSchema: AirtableFieldSchema & { type: "multipleAttachments" }): PossibleField {
     return {
         id: fieldSchema.id,

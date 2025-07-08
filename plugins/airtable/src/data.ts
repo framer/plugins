@@ -409,16 +409,32 @@ export function mergeFieldsWithExistingFields(
     return sourceFields.map(sourceField => {
         const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
         if (existingField) {
-            if (existingField.type === "collectionReference" || existingField.type === "multiCollectionReference") {
-                return {
-                    ...sourceField,
-                    type: existingField.type,
-                    name: existingField.name,
-                    collectionId: existingField.collectionId,
-                } as PossibleField
-            }
+            const field = {
+                ...sourceField,
+                type: existingField.type,
+                name: existingField.name,
+            } as PossibleField
 
-            return { ...sourceField, type: existingField.type, name: existingField.name } as PossibleField
+            switch (existingField.type) {
+                case "collectionReference":
+                case "multiCollectionReference":
+                    return {
+                        ...field,
+                        collectionId: existingField.collectionId,
+                    }
+                case "file":
+                    return {
+                        ...field,
+                        allowedFileTypes: existingField.allowedFileTypes,
+                    }
+                case "array":
+                    return {
+                        ...field,
+                        fields: existingField.fields,
+                    }
+                default:
+                    return field
+            }
         }
         return sourceField
     })

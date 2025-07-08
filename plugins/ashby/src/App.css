@@ -133,7 +133,7 @@ form {
     gap: 8px;
 }
 
-.mapping .source-field span { 
+.mapping .source-field span {
     overflow: hidden;
     text-overflow: ellipsis;
 }

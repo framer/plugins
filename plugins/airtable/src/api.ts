@@ -118,8 +118,11 @@ export type AirtableFieldValues = {
 }
 
 export type AirtableFieldType = keyof AirtableFieldValues
-
 export type AirtableFieldValue = AirtableFieldValues[AirtableFieldType]
+export type AirtableField<T extends AirtableFieldType> = Extract<AirtableFieldSchema, { type: T }>
+export type AirtableFieldResult = {
+    [K in AirtableFieldType]: Pick<AirtableField<K>, "type" | "options">
+}[AirtableFieldType]
 
 interface NumberOption {
     precision: number
@@ -195,10 +198,7 @@ interface FormulaOption {
 interface RollupOption {
     fieldIdInLinkedTable?: string
     recordLinkFieldId?: string
-    result?: {
-        type: AirtableFieldType
-        options?: AirtableFieldOptions[AirtableFieldType]
-    } | null
+    result: AirtableFieldResult | null
     referencedFieldIds?: string[]
 }
 
@@ -210,10 +210,7 @@ interface CountOption {
 interface MultipleLookupValuesOption {
     fieldIdInLinkedTable: string | null
     recordLinkFieldId: string | null
-    result: {
-        type: AirtableFieldType
-        options?: AirtableFieldOptions[AirtableFieldType]
-    } | null
+    result: AirtableFieldResult | null
 }
 
 interface RatingOption {
@@ -511,7 +508,6 @@ export const fetchAllBases = async () => {
 
     return allBases
 }
-
 
 export function isBarcodeValue(value: unknown): value is BarcodeValue {
     return !!(value && typeof value === "object" && "text" in value && typeof value.text === "string")

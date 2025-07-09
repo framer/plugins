@@ -4,6 +4,7 @@ import { MutationState, useCodeFileVersions } from "../hooks/useCodeFileVersions
 import { StatusTypes, useSelectedCodeFile } from "../hooks/useSelectedCodeFile"
 import CodeFileView from "./CodeFileView"
 import { EmptyState } from "./EmptyState"
+import ErrorMessage from "./ErrorMessage"
 
 export default function App() {
     const { state: fileStatus } = useSelectedCodeFile()
@@ -33,10 +34,15 @@ export default function App() {
     if (fileStatus.type === StatusTypes.ERROR) {
         return (
             <Layout>
-                <div className="text-center">
-                    <h2 className="text-lg font-semibold mb-2 text-red-600">Error</h2>
-                    <p className="text-sm text-gray-600 mb-4">{fileStatus.error}</p>
-                </div>
+                <ErrorMessage errorMessage={fileStatus.error} onRetryButtonClick={undefined} />
+            </Layout>
+        )
+    }
+
+    if (state.errors.versions) {
+        return (
+            <Layout>
+                <ErrorMessage errorMessage={state.errors.versions} onRetryButtonClick={clearErrors} />
             </Layout>
         )
     }
@@ -51,50 +57,12 @@ export default function App() {
 
     return (
         <Layout>
-            {/* Error banner for versions loading error */}
-            {state.errors.versions && (
-                <div className="sticky top-0 bg-white border-b border-framer-divider p-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <span className="text-framer-text-primary text-sm font-medium">
-                                Failed to load versions:
-                            </span>
-                            <span className="text-framer-text-secondary text-sm ml-2">{state.errors.versions}</span>
-                        </div>
-                        <button
-                            onClick={clearErrors}
-                            className="text-framer-text-primary hover:text-framer-text-base text-sm font-medium w-min px-2"
-                        >
-                            Dismiss
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Error banner for content loading error */}
-            {state.errors.content && (
-                <div className="border-b border-framer-divider p-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <span className="text-framer-text-primary text-sm font-medium">
-                                Failed to load content:
-                            </span>
-                            <span className="text-framer-text-secondary text-sm ml-2">{state.errors.content}</span>
-                        </div>
-                        <button
-                            onClick={clearErrors}
-                            className="text-framer-text-primary hover:text-framer-text-base text-sm font-medium px-2"
-                        >
-                            Dismiss
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Main content */}
-            <div className="flex-1">
-                <CodeFileView state={state} selectVersion={selectVersion} restoreVersion={restoreVersion} />
-            </div>
+            <CodeFileView
+                state={state}
+                selectVersion={selectVersion}
+                restoreVersion={restoreVersion}
+                clearErrors={clearErrors}
+            />
         </Layout>
     )
 }

@@ -6,6 +6,7 @@ import { PLUGIN_KEYS } from "./data"
 import { ALLOWED_FILE_TYPES } from "./utils"
 
 type AllowedType = ManagedCollectionFieldInput["type"] | "unsupported"
+type FieldSchema<T extends AirtableFieldSchema["type"]> = Extract<AirtableFieldSchema, { type: T }>
 
 interface InferredField {
     /**
@@ -69,7 +70,7 @@ function createFieldMetadata(fieldSchema: AirtableFieldSchema) {
     }
 }
 
-function inferBooleanField(fieldSchema: AirtableFieldSchema & { type: "checkbox" }): PossibleField {
+function inferBooleanField(fieldSchema: FieldSchema<"checkbox">): PossibleField {
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
@@ -81,7 +82,7 @@ function inferBooleanField(fieldSchema: AirtableFieldSchema & { type: "checkbox"
     }
 }
 
-function inferEnumField(fieldSchema: AirtableFieldSchema & { type: "singleSelect" }): PossibleField {
+function inferEnumField(fieldSchema: FieldSchema<"singleSelect">): PossibleField {
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
@@ -102,9 +103,7 @@ function inferEnumField(fieldSchema: AirtableFieldSchema & { type: "singleSelect
 }
 
 function inferNumberField(
-    fieldSchema: AirtableFieldSchema & {
-        type: "number" | "percent" | "currency" | "autoNumber" | "rating" | "count"
-    }
+    fieldSchema: FieldSchema<"number" | "percent" | "currency" | "autoNumber" | "rating" | "count">
 ): PossibleField {
     return {
         id: fieldSchema.id,
@@ -117,7 +116,7 @@ function inferNumberField(
     }
 }
 
-function inferDurationField(fieldSchema: AirtableFieldSchema & { type: "duration" }): PossibleField {
+function inferDurationField(fieldSchema: FieldSchema<"duration">): PossibleField {
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
@@ -129,7 +128,7 @@ function inferDurationField(fieldSchema: AirtableFieldSchema & { type: "duration
     }
 }
 
-function inferStringField(fieldSchema: AirtableFieldSchema & { type: "singleLineText" }): PossibleField {
+function inferStringField(fieldSchema: FieldSchema<"singleLineText">): PossibleField {
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
@@ -141,7 +140,7 @@ function inferStringField(fieldSchema: AirtableFieldSchema & { type: "singleLine
     }
 }
 
-function inferEmailOrPhoneField(fieldSchema: AirtableFieldSchema & { type: "email" | "phoneNumber" }): PossibleField {
+function inferEmailOrPhoneField(fieldSchema: FieldSchema<"email" | "phoneNumber">): PossibleField {
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
@@ -153,7 +152,7 @@ function inferEmailOrPhoneField(fieldSchema: AirtableFieldSchema & { type: "emai
     }
 }
 
-function inferTextField(fieldSchema: AirtableFieldSchema & { type: "multilineText" | "richText" }): PossibleField {
+function inferTextField(fieldSchema: FieldSchema<"multilineText" | "richText">): PossibleField {
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
@@ -165,7 +164,7 @@ function inferTextField(fieldSchema: AirtableFieldSchema & { type: "multilineTex
     }
 }
 
-function inferUrlField(fieldSchema: AirtableFieldSchema & { type: "url" }): PossibleField {
+function inferUrlField(fieldSchema: FieldSchema<"url">): PossibleField {
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
@@ -177,7 +176,7 @@ function inferUrlField(fieldSchema: AirtableFieldSchema & { type: "url" }): Poss
     }
 }
 
-function inferAttachmentsField(fieldSchema: AirtableFieldSchema & { type: "multipleAttachments" }): PossibleField {
+function inferAttachmentsField(fieldSchema: FieldSchema<"multipleAttachments">): PossibleField {
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
@@ -190,9 +189,7 @@ function inferAttachmentsField(fieldSchema: AirtableFieldSchema & { type: "multi
 }
 
 function inferDateField(
-    fieldSchema: AirtableFieldSchema & {
-        type: "date" | "dateTime" | "createdTime" | "lastModifiedTime"
-    }
+    fieldSchema: FieldSchema<"date" | "dateTime" | "createdTime" | "lastModifiedTime">
 ): PossibleField {
     return {
         id: fieldSchema.id,
@@ -206,9 +203,7 @@ function inferDateField(
 }
 
 function inferStringBasedField(
-    fieldSchema: AirtableFieldSchema & {
-        type: "barcode" | "aiText" | "singleCollaborator" | "createdBy" | "lastModifiedBy"
-    }
+    fieldSchema: FieldSchema<"barcode" | "aiText" | "singleCollaborator" | "createdBy" | "lastModifiedBy">
 ): PossibleField {
     return {
         id: fieldSchema.id,
@@ -222,7 +217,7 @@ function inferStringBasedField(
 }
 
 async function inferLookupField(
-    fieldSchema: AirtableFieldSchema & { type: "multipleLookupValues" },
+    fieldSchema: FieldSchema<"multipleLookupValues">,
     collection: ManagedCollection,
     tableIdBeingLinkedTo: string
 ): Promise<PossibleField> {
@@ -246,7 +241,7 @@ async function inferLookupField(
 }
 
 async function inferRollupField(
-    fieldSchema: AirtableFieldSchema & { type: "rollup" },
+    fieldSchema: FieldSchema<"rollup">,
     collection: ManagedCollection,
     tableIdBeingLinkedTo: string
 ): Promise<PossibleField> {
@@ -270,7 +265,7 @@ async function inferRollupField(
 }
 
 async function inferRecordLinksField(
-    fieldSchema: AirtableFieldSchema & { type: "multipleRecordLinks" },
+    fieldSchema: FieldSchema<"multipleRecordLinks">,
     collection: ManagedCollection,
     tableIdBeingLinkedTo: string
 ): Promise<PossibleField> {
@@ -412,7 +407,7 @@ async function inferFieldByType(
 }
 
 async function inferFormulaField(
-    fieldSchema: AirtableFieldSchema & { type: "formula" },
+    fieldSchema: FieldSchema<"formula">,
     collection: ManagedCollection,
     tableIdBeingLinkedTo: string,
     depth = 0
@@ -451,7 +446,7 @@ async function inferFormulaField(
         return depth > 1
             ? createUnsupportedField(fieldSchema)
             : await inferFormulaField(
-                  resultSchema as AirtableFieldSchema & { type: "formula" },
+                  resultSchema as FieldSchema<"formula">,
                   collection,
                   tableIdBeingLinkedTo,
                   depth + 1

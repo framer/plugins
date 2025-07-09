@@ -129,9 +129,53 @@ export async function syncCollection(
                 if (fieldEntry) {
                     fieldData[field.id] = fieldEntry
                 } else {
-                    console.warn(
-                        `Skipping item at index ${index} because it doesn't have a valid value for field ${field.name}`
-                    )
+                    switch (field.type) {
+                        case "string":
+                        case "formattedText":
+                            fieldData[field.id] = {
+                                value: "",
+                                type: field.type,
+                            }
+                            break
+                        case "enum": {
+                            const firstCase = field.cases[0]
+                            if (!firstCase) {
+                                console.warn(
+                                    `Skipping item “${item.id}” because enum field “${field.name}” has no cases.`
+                                )
+                                continue
+                            }
+                            fieldData[field.id] = {
+                                value: firstCase.id,
+                                type: "enum",
+                            }
+                            break
+                        }
+                        case "boolean":
+                            fieldData[field.id] = {
+                                value: false,
+                                type: "boolean",
+                            }
+                            break
+                        case "number":
+                            fieldData[field.id] = {
+                                value: 0,
+                                type: "number",
+                            }
+                            break
+                        case "image":
+                        case "file":
+                        case "link":
+                        case "date":
+                        case "color":
+                        case "collectionReference":
+                        case "multiCollectionReference":
+                            fieldData[field.id] = {
+                                value: null,
+                                type: field.type,
+                            }
+                            break
+                    }
                 }
             }
 
@@ -471,6 +515,63 @@ export function getFieldDataEntryForProperty(
             }
 
             return { type: "string", value: phoneNumber }
+        }
+        case "formula": {
+            const formula = property.formula
+
+            if (!formula) return null
+
+            let value = null
+            switch (formula.type) {
+                case "string":
+                    value = formula.string
+                    break
+                case "number":
+                    value = formula.number
+                    break
+                case "boolean":
+                    value = formula.boolean
+                    break
+                case "date":
+                    value = formula.date
+                    break
+            }
+
+            if (value === null) return null
+
+            switch (field.type) {
+                case "string":
+                case "color":
+                case "link":
+                    return {
+                        type: field.type,
+                        value: String(value),
+                    }
+                case "number":
+                    const number = Number(value)
+                    if (isNaN(number)) return null
+
+                    return {
+                        type: "number",
+                        value: number,
+                    }
+                case "date":
+                    if (formula.type !== "date" || !formula.date || !formula.date.start) return null
+
+                    const date = new Date(formula.date.start)
+
+                    return {
+                        type: "date",
+                        value: date.toISOString(),
+                    }
+                case "boolean":
+                    return {
+                        type: "boolean",
+                        value: Boolean(value),
+                    }
+                default:
+                    return null
+            }
         }
     }
 

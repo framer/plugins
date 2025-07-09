@@ -76,6 +76,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     status: ["enum"],
     url: ["link"],
     email: ["formattedText", "string"],
+    phone_number: ["string", "link"],
     files: ["file", "image"],
     relation: ["multiCollectionReference"],
 } satisfies Partial<Record<NotionProperty["type"], ReadonlyArray<ManagedCollectionField["type"]>>>

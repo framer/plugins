@@ -1,4 +1,8 @@
-import type { BlockObjectResponse, RichTextItemResponse } from "@notionhq/client/build/src/api-endpoints"
+import type {
+    BlockObjectResponse,
+    CodeBlockObjectResponse,
+    RichTextItemResponse,
+} from "@notionhq/client/build/src/api-endpoints"
 import { assert } from "./utils"
 
 export function richTextToHtml(texts: RichTextItemResponse[]) {
@@ -95,9 +99,11 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 }
                 break
             }
-            case "code":
-                htmlContent += `<pre><code class="language-${block.code.language.replace(" ", "-")}">${richTextToHtml(block.code.rich_text)}</code></pre>`
+            case "code": {
+                const language = block.code.language ? CODE_LANGUAGE_MAP[block.code.language] : null
+                htmlContent += `<pre data-language="${language ?? "Markdown"}"><code>${richTextToHtml(block.code.rich_text)}</code></pre>`
                 break
+            }
             case "table":
                 htmlContent += `<table>`
                 break
@@ -140,4 +146,97 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
     }
 
     return htmlContent
+}
+
+type NotionCodeLanguage = CodeBlockObjectResponse["code"]["language"]
+const CODE_LANGUAGE_MAP: Record<NotionCodeLanguage, string | null> = {
+    abap: null,
+    agda: null,
+    arduino: null,
+    "ascii art": null,
+    assembly: null,
+    bash: "Shell",
+    basic: null,
+    bnf: null,
+    c: "C",
+    "c#": "C#",
+    "c++": "C++",
+    clojure: null,
+    coffeescript: null,
+    coq: null,
+    css: "CSS",
+    dart: null,
+    dhall: null,
+    diff: null,
+    docker: null,
+    ebnf: null,
+    elixir: null,
+    elm: null,
+    erlang: null,
+    "f#": null,
+    flow: null,
+    fortran: null,
+    gherkin: null,
+    glsl: null,
+    go: "Go",
+    graphql: null,
+    groovy: null,
+    haskell: "Haskell",
+    hcl: null,
+    html: "HTML",
+    idris: null,
+    java: "Java",
+    javascript: "JavaScript",
+    json: "JavaScript",
+    julia: "Julia",
+    kotlin: "Kotlin",
+    latex: null,
+    less: "Less",
+    lisp: null,
+    livescript: null,
+    "llvm ir": null,
+    lua: "Lua",
+    makefile: null,
+    markdown: "Markdown",
+    markup: null,
+    matlab: "MATLAB",
+    mathematica: null,
+    mermaid: null,
+    nix: null,
+    "notion formula": null,
+    "objective-c": "Objective-C",
+    ocaml: null,
+    pascal: null,
+    perl: "Perl",
+    php: "PHP",
+    "plain text": null,
+    powershell: null,
+    prolog: null,
+    protobuf: null,
+    purescript: null,
+    python: "Python",
+    r: null,
+    racket: null,
+    reason: null,
+    ruby: "Ruby",
+    rust: "Rust",
+    sass: null,
+    scala: "Scala",
+    scheme: null,
+    scss: "SCSS",
+    shell: "Shell",
+    smalltalk: null,
+    solidity: null,
+    sql: "SQL",
+    swift: "Swift",
+    toml: null,
+    typescript: "TypeScript",
+    "vb.net": null,
+    verilog: null,
+    vhdl: null,
+    "visual basic": null,
+    webassembly: null,
+    xml: null,
+    yaml: "YAML",
+    "java/c/c++/c#": null,
 }

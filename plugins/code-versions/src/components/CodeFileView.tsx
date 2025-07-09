@@ -5,6 +5,7 @@ import {
     useCanRestoreVersion,
 } from "../hooks/useCodeFileVersions"
 import CurrentCode from "./CurrentCode"
+import ErrorMessage from "./ErrorMessage"
 import FileDiff from "./FileDiff"
 import VersionsSidebar from "./VersionsSidebar"
 
@@ -12,14 +13,10 @@ interface CodeFileViewProps {
     state: CodeFileVersionsState["state"]
     selectVersion: CodeFileVersionsState["selectVersion"]
     restoreVersion: CodeFileVersionsState["restoreVersion"]
+    clearErrors: CodeFileVersionsState["clearErrors"]
 }
 
-export default function CodeFileView({ state, selectVersion, restoreVersion }: CodeFileViewProps) {
-    const currentContent = state.codeFile?.content
-
-    const isCurrentVersion = state.codeFile?.versionId === state.selectedVersionId
-    const canRestoreVersion = useCanRestoreVersion()
-
+export default function CodeFileView({ state, selectVersion, restoreVersion, clearErrors }: CodeFileViewProps) {
     return (
         <div className="grid grid-cols-[var(--width-versions)_1fr] grid-rows-[1fr_auto] h-screen bg-bg-base text-text-base">
             <VersionsSidebar
@@ -28,6 +25,34 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                 selectedId={state.selectedVersionId}
                 onSelect={selectVersion}
             />
+            <VersionColumn state={state} clearErrors={clearErrors} restoreVersion={restoreVersion} />
+        </div>
+    )
+}
+
+function VersionColumn({
+    state,
+    clearErrors,
+    restoreVersion,
+}: {
+    state: CodeFileVersionsState["state"]
+    clearErrors: CodeFileVersionsState["clearErrors"]
+    restoreVersion: CodeFileVersionsState["restoreVersion"]
+}) {
+    const canRestoreVersion = useCanRestoreVersion()
+    if (state.errors.content) {
+        return (
+            <div className="bg-code-area-light dark:bg-code-area-dark relative overflow-hidden">
+                <ErrorMessage errorMessage={state.errors.content} onRetryButtonClick={clearErrors} />
+            </div>
+        )
+    }
+
+    const currentContent = state.codeFile?.content
+    const isCurrentVersion = state.codeFile?.versionId === state.selectedVersionId
+
+    return (
+        <>
             <div className="bg-code-area-light dark:bg-code-area-dark relative overflow-hidden">
                 <div className="absolute inset-0 mx-3 mt-3">
                     <div className="overflow-auto scrollbar-hidden h-full pb-3">
@@ -55,7 +80,7 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                     </button>
                 </div>
             ) : null}
-        </div>
+        </>
     )
 }
 

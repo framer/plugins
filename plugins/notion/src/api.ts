@@ -62,7 +62,7 @@ export const pageCoverProperty: FieldInfo = {
 }
 
 // The valid field types that can be used as a slug, in order of preference
-const slugFieldTypes: NotionProperty["type"][] = ["title", "rich_text"]
+const slugFieldTypes: NotionProperty["type"][] = ["title", "rich_text", "unique_id"]
 
 export const supportedCMSTypeByNotionPropertyType = {
     checkbox: ["boolean"],
@@ -79,6 +79,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     phone_number: ["string", "link"],
     files: ["file", "image"],
     relation: ["multiCollectionReference"],
+    unique_id: ["string", "number"],
 } satisfies Partial<Record<NotionProperty["type"], ReadonlyArray<ManagedCollectionField["type"]>>>
 
 // Naive implementation to be authenticated, a token could be expired.
@@ -256,6 +257,10 @@ export function getSlugValue(property: PageObjectResponse["properties"][string])
             return richTextToPlainText(property.title)
         case "rich_text":
             return richTextToPlainText(property.rich_text)
+        case "unique_id":
+            return property.unique_id.prefix
+                ? `${property.unique_id.prefix}-${property.unique_id.number}`
+                : String(property.unique_id.number)
         default:
             return null
     }

@@ -16,7 +16,12 @@ export default function App() {
                 variant: "success",
             })
         }
-    }, [state.restoreCompleted])
+        if (state.errors.restore) {
+            framer.closePlugin("Couldn't restore version", {
+                variant: "error",
+            })
+        }
+    }, [state.restoreCompleted, state.errors.restore])
 
     useEffect(() => {
         if (state.restoreLoading === MutationState.Mutating) {
@@ -75,26 +80,6 @@ export default function App() {
                                 Failed to load content:
                             </span>
                             <span className="text-framer-text-secondary text-sm ml-2">{state.errors.content}</span>
-                        </div>
-                        <button
-                            onClick={clearErrors}
-                            className="text-framer-text-primary hover:text-framer-text-base text-sm font-medium px-2"
-                        >
-                            Dismiss
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Error banner for restore error */}
-            {state.errors.restore && (
-                <div className="border-b border-framer-divider p-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <span className="text-framer-text-primary text-sm font-medium">
-                                Failed to restore version:
-                            </span>
-                            <span className="text-framer-text-secondary text-sm ml-2">{state.errors.restore}</span>
                         </div>
                         <button
                             onClick={clearErrors}

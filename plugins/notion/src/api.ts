@@ -69,7 +69,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     date: ["date"],
     number: ["number"],
     title: ["string"],
-    rich_text: ["formattedText", "string"],
+    rich_text: ["formattedText", "string", "color"],
     created_time: ["date"],
     last_edited_time: ["date"],
     select: ["enum"],

@@ -285,7 +285,8 @@ export async function fieldsInfoToCollectionFields(
             case "string":
             case "formattedText":
             case "link":
-            case "image": {
+            case "image":
+            case "color": {
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
                 fields.push({
                     type: fieldType,
@@ -382,6 +383,8 @@ export function getFieldDataEntryForProperty(
         case "rich_text": {
             if (field.type === "formattedText") {
                 return { type: "formattedText", value: richTextToHtml(property.rich_text) }
+            } else if (field.type === "color") {
+                return { type: "color", value: richTextToPlainText(property.rich_text) || null }
             }
 
             return { type: "string", value: richTextToPlainText(property.rich_text) }

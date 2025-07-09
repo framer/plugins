@@ -511,3 +511,16 @@ export const fetchAllBases = async () => {
 
     return allBases
 }
+
+
+export function isBarcodeValue(value: unknown): value is BarcodeValue {
+    return !!(value && typeof value === "object" && "text" in value && typeof value.text === "string")
+}
+
+export function isAiTextValue(value: unknown): value is AiTextValue {
+    return !!(value && typeof value === "object" && "value" in value && typeof value.value === "string")
+}
+
+export function isCollaboratorValue(value: unknown): value is CollaboratorValue {
+    return !!(value && typeof value === "object" && "name" in value && typeof value.name === "string")
+}

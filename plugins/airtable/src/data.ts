@@ -7,7 +7,16 @@ import type {
     ProtectedMethod,
 } from "framer-plugin"
 import { framer } from "framer-plugin"
-import { type AirtableFieldSchema, fetchAllBases, fetchRecords, fetchTable, fetchTables } from "./api"
+import {
+    type AirtableFieldSchema,
+    fetchAllBases,
+    fetchRecords,
+    fetchTable,
+    fetchTables,
+    isAiTextValue,
+    isBarcodeValue,
+    isCollaboratorValue,
+} from "./api"
 import type { PossibleField } from "./fields"
 import { inferFields } from "./fields"
 import { richTextToHTML } from "./utils"
@@ -139,12 +148,12 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 case "aiText": {
                     if (!isAiTextValue(value)) return null
                     return {
-                        value: value.value,
+                        value: value.value ?? "",
                         type: "string",
                     }
                 }
                 case "duration": {
-                    if (!isDurationValue(value)) return null
+                    if (typeof value !== "number" || Number.isNaN(value)) return null
 
                     const hours = Math.floor(value / 3600)
                     const minutes = Math.floor((value % 3600) / 60)
@@ -468,20 +477,4 @@ export async function syncExistingCollection(
         })
         return { didSync: false }
     }
-}
-
-function isBarcodeValue(value: unknown): value is { text: string } {
-    return !!(value && typeof value === "object" && "text" in value && typeof value.text === "string")
-}
-
-function isAiTextValue(value: unknown): value is { value: string } {
-    return !!(value && typeof value === "object" && "value" in value && typeof value.value === "string")
-}
-
-function isDurationValue(value: unknown): value is number {
-    return typeof value === "number" && !Number.isNaN(value)
-}
-
-function isCollaboratorValue(value: unknown): value is { name: string } {
-    return !!(value && typeof value === "object" && "name" in value && typeof value.name === "string")
 }

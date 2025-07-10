@@ -539,7 +539,7 @@ export function getFieldDataEntryForProperty(
                         type: field.type,
                         value: String(value),
                     }
-                case "number":
+                case "number": {
                     const number = Number(value)
                     if (isNaN(number)) return null
 
@@ -547,7 +547,8 @@ export function getFieldDataEntryForProperty(
                         type: "number",
                         value: number,
                     }
-                case "date":
+                }
+                case "date": {
                     if (formula.type !== "date" || !formula.date || !formula.date.start) return null
 
                     const date = new Date(formula.date.start)
@@ -556,6 +557,7 @@ export function getFieldDataEntryForProperty(
                         type: "date",
                         value: date.toISOString(),
                     }
+                }
                 case "boolean":
                     return {
                         type: "boolean",

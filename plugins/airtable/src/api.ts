@@ -54,7 +54,6 @@ type CountValue = number
 type DateValue = string
 type DateTimeValue = string
 type PhoneNumberValue = string
-type LookupValue = Array<string | number | boolean>
 type SingleSelectValue = string | Choice
 type MultipleSelectsValue = string[] | Choice[]
 type SingleCollaboratorValue = CollaboratorValue
@@ -104,7 +103,6 @@ export type AirtableFieldValues = {
     createdTime: CreatedTimeValue
     rollup: RollupValue
     count: CountValue
-    lookup: LookupValue
     multipleLookupValues: MultipleLookupValuesValue
     autoNumber: AutoNumberValue
     barcode: BarcodeValue
@@ -120,8 +118,11 @@ export type AirtableFieldValues = {
 }
 
 export type AirtableFieldType = keyof AirtableFieldValues
-
 export type AirtableFieldValue = AirtableFieldValues[AirtableFieldType]
+export type AirtableField<T extends AirtableFieldType> = Extract<AirtableFieldSchema, { type: T }>
+export type AirtableFieldResult = {
+    [K in AirtableFieldType]: Pick<AirtableField<K>, "type" | "options">
+}[AirtableFieldType]
 
 interface NumberOption {
     precision: number
@@ -197,7 +198,7 @@ interface FormulaOption {
 interface RollupOption {
     fieldIdInLinkedTable?: string
     recordLinkFieldId?: string
-    result?: AirtableFieldType | null
+    result: AirtableFieldResult | null
     referencedFieldIds?: string[]
 }
 
@@ -206,10 +207,10 @@ interface CountOption {
     recordLinkFieldId?: string | null
 }
 
-interface LookupOption {
+interface MultipleLookupValuesOption {
     fieldIdInLinkedTable: string | null
     recordLinkFieldId: string | null
-    result: AirtableFieldType | null
+    result: AirtableFieldResult | null
 }
 
 interface RatingOption {
@@ -265,8 +266,7 @@ type AirtableFieldOptions = {
     createdTime: Record<string, never>
     rollup: RollupOption
     count: CountOption
-    lookup: LookupOption
-    multipleLookupValues: LookupOption
+    multipleLookupValues: MultipleLookupValuesOption
     autoNumber: Record<string, never>
     barcode: Record<string, never>
     rating: RatingOption
@@ -309,7 +309,6 @@ export type AirtableFieldSchema = AirtableBaseEntity & { description?: string } 
         | { type: "createdTime"; options: AirtableFieldOptions["createdTime"] }
         | { type: "rollup"; options: AirtableFieldOptions["rollup"] }
         | { type: "count"; options: AirtableFieldOptions["count"] }
-        | { type: "lookup"; options: AirtableFieldOptions["lookup"] }
         | { type: "multipleLookupValues"; options: AirtableFieldOptions["multipleLookupValues"] }
         | { type: "autoNumber"; options: AirtableFieldOptions["autoNumber"] }
         | { type: "barcode"; options: AirtableFieldOptions["barcode"] }
@@ -508,4 +507,16 @@ export const fetchAllBases = async () => {
     } while (currentOffset)
 
     return allBases
+}
+
+export function isBarcodeValue(value: unknown): value is BarcodeValue {
+    return !!(value && typeof value === "object" && "text" in value && typeof value.text === "string")
+}
+
+export function isAiTextValue(value: unknown): value is AiTextValue {
+    return !!(value && typeof value === "object" && "value" in value && typeof value.value === "string")
+}
+
+export function isCollaboratorValue(value: unknown): value is CollaboratorValue {
+    return !!(value && typeof value === "object" && "name" in value && typeof value.name === "string")
 }

@@ -1,6 +1,6 @@
 import type { Field, ManagedCollection, ManagedCollectionFieldInput } from "framer-plugin"
 import { framer, useIsAllowedTo } from "framer-plugin"
-import { memo, useEffect, useState } from "react"
+import { memo, useEffect, useMemo, useState } from "react"
 import type { DataSource } from "./data"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 import type { PossibleField } from "./fields"
@@ -164,6 +164,12 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const [fields, setFields] = useState(initialManagedCollectionFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
+    // Create a map of field IDs to names for efficient lookup
+    const originalFieldNameMap = useMemo(
+        () => new Map(dataSource.fields.map(field => [field.id, field.name])),
+        [dataSource.fields]
+    )
+
     useEffect(() => {
         const abortController = new AbortController()
 
@@ -234,8 +240,16 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         return { ...field, type: "string" } as PossibleField
                     case "formattedText":
                         return { ...field, type: "formattedText" } as PossibleField
+                    case "number":
+                        return { ...field, type: "number" } as PossibleField
+                    case "boolean":
+                        return { ...field, type: "boolean" } as PossibleField
                     case "color":
                         return { ...field, type: "color" } as PossibleField
+                    case "date":
+                        return { ...field, type: "date" } as PossibleField
+                    case "enum":
+                        return { ...field, type: "enum" } as PossibleField
                     default:
                         return field
                 }
@@ -274,10 +288,13 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
             const fieldsToSync = fields
                 .filter(field => !ignoredFieldIds.has(field.id))
-                .map(field => ({
-                    ...field,
-                    name: field.name.trim() || field.id,
-                }))
+                .map(field => {
+                    const originalFieldName = originalFieldNameMap.get(field.id)
+                    return {
+                        ...field,
+                        name: field.name.trim() || originalFieldName || field.id,
+                    }
+                })
                 .filter(field => field.type !== "unsupported")
                 .filter(
                     field =>
@@ -359,7 +376,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         <FieldMappingRow
                             key={`field-${field.id}`}
                             field={field}
-                            originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
+                            originalFieldName={originalFieldNameMap.get(field.id)}
                             isIgnored={ignoredFieldIds.has(field.id)}
                             disabled={!isAllowedToManage}
                             onToggleIgnored={toggleFieldIgnoredState}
@@ -372,7 +389,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         key={`field-${field.id}`}
                         field={field}
                         missingCollection
-                        originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
+                        originalFieldName={originalFieldNameMap.get(field.id)}
                         isIgnored={true}
                         disabled={!isAllowedToManage}
                     />
@@ -384,7 +401,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             key={`field-${field.id}`}
                             field={field}
                             unsupported
-                            originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
+                            originalFieldName={originalFieldNameMap.get(field.id)}
                             isIgnored={true}
                             disabled={!isAllowedToManage}
                         />
@@ -399,13 +416,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     tabIndex={0}
                     title={isAllowedToManage ? undefined : "Insufficient permissions"}
                 >
-                    {isSyncing ? (
-                        <div className="framer-spinner" />
-                    ) : (
-                        <span>
-                            Import <span style={{ textTransform: "capitalize" }}>{dataSource.tableName}</span>
-                        </span>
-                    )}
+                    {isSyncing ? <div className="framer-spinner" /> : <span>Import {dataSource.tableName}</span>}
                 </button>
             </footer>
         </form>

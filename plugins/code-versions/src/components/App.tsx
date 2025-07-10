@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import { useEffect } from "react"
-import { MutationState, useCodeFileVersions } from "../hooks/useCodeFileVersions"
+import { RestoreState, useCodeFileVersions } from "../hooks/useCodeFileVersions"
 import { StatusTypes, useSelectedCodeFile } from "../hooks/useSelectedCodeFile"
 import CodeFileView from "./CodeFileView"
 import { EmptyState } from "./EmptyState"
@@ -10,25 +10,23 @@ export default function App() {
     const { state: fileStatus } = useSelectedCodeFile()
     const { state, selectVersion, restoreVersion, clearErrors } = useCodeFileVersions()
 
-    // Close plugin when restore is completed successfully
     useEffect(() => {
-        if (state.restoreCompleted) {
-            framer.closePlugin("Code version restored", {
-                variant: "success",
-            })
+        switch (state.restore.status) {
+            case RestoreState.Succeeded:
+                framer.closePlugin("Code version restored", {
+                    variant: "success",
+                })
+                return
+            case RestoreState.Failed:
+                framer.closePlugin("Couldn't restore version", {
+                    variant: "error",
+                })
+                return
+            case RestoreState.Mutating:
+                framer.hideUI()
+                return
         }
-        if (state.errors.restore) {
-            framer.closePlugin("Couldn't restore version", {
-                variant: "error",
-            })
-        }
-    }, [state.restoreCompleted, state.errors.restore])
-
-    useEffect(() => {
-        if (state.restoreLoading === MutationState.Mutating) {
-            framer.hideUI()
-        }
-    }, [state.restoreLoading])
+    }, [state.restore.status])
 
     // Handle error states
     if (fileStatus.type === StatusTypes.ERROR) {
@@ -39,10 +37,10 @@ export default function App() {
         )
     }
 
-    if (state.errors.versions) {
+    if (state.versions.error) {
         return (
             <Layout>
-                <ErrorMessage errorMessage={state.errors.versions} onRetryButtonClick={clearErrors} />
+                <ErrorMessage errorMessage={state.versions.error} onRetryButtonClick={clearErrors} />
             </Layout>
         )
     }

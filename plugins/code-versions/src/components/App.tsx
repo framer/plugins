@@ -1,37 +1,46 @@
 import { framer } from "framer-plugin"
 import { useEffect } from "react"
-import { MutationState, useCodeFileVersions } from "../hooks/useCodeFileVersions"
+import { RestoreState, useCodeFileVersions } from "../hooks/useCodeFileVersions"
 import { StatusTypes, useSelectedCodeFile } from "../hooks/useSelectedCodeFile"
 import CodeFileView from "./CodeFileView"
 import { EmptyState } from "./EmptyState"
+import ErrorMessage from "./ErrorMessage"
 
 export default function App() {
     const { state: fileStatus } = useSelectedCodeFile()
     const { state, selectVersion, restoreVersion, clearErrors } = useCodeFileVersions()
 
-    // Close plugin when restore is completed successfully
     useEffect(() => {
-        if (state.restoreCompleted) {
-            framer.closePlugin("Code version restored", {
-                variant: "success",
-            })
+        switch (state.restore.status) {
+            case RestoreState.Succeeded:
+                framer.closePlugin("Code version restored", {
+                    variant: "success",
+                })
+                return
+            case RestoreState.Failed:
+                framer.closePlugin("Couldn't restore version", {
+                    variant: "error",
+                })
+                return
+            case RestoreState.Mutating:
+                framer.hideUI()
+                return
         }
-    }, [state.restoreCompleted])
-
-    useEffect(() => {
-        if (state.restoreLoading === MutationState.Mutating) {
-            framer.hideUI()
-        }
-    }, [state.restoreLoading])
+    }, [state.restore.status])
 
     // Handle error states
     if (fileStatus.type === StatusTypes.ERROR) {
         return (
             <Layout>
-                <div className="text-center">
-                    <h2 className="text-lg font-semibold mb-2 text-red-600">Error</h2>
-                    <p className="text-sm text-gray-600 mb-4">{fileStatus.error}</p>
-                </div>
+                <ErrorMessage errorMessage={fileStatus.error} onRetryButtonClick={undefined} />
+            </Layout>
+        )
+    }
+
+    if (state.versions.error) {
+        return (
+            <Layout>
+                <ErrorMessage errorMessage={state.versions.error} onRetryButtonClick={clearErrors} />
             </Layout>
         )
     }
@@ -46,70 +55,12 @@ export default function App() {
 
     return (
         <Layout>
-            {/* Error banner for versions loading error */}
-            {state.errors.versions && (
-                <div className="sticky top-0 bg-white border-b border-framer-divider p-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <span className="text-framer-text-primary text-sm font-medium">
-                                Failed to load versions:
-                            </span>
-                            <span className="text-framer-text-secondary text-sm ml-2">{state.errors.versions}</span>
-                        </div>
-                        <button
-                            onClick={clearErrors}
-                            className="text-framer-text-primary hover:text-framer-text-base text-sm font-medium w-min px-2"
-                        >
-                            Dismiss
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Error banner for content loading error */}
-            {state.errors.content && (
-                <div className="border-b border-framer-divider p-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <span className="text-framer-text-primary text-sm font-medium">
-                                Failed to load content:
-                            </span>
-                            <span className="text-framer-text-secondary text-sm ml-2">{state.errors.content}</span>
-                        </div>
-                        <button
-                            onClick={clearErrors}
-                            className="text-framer-text-primary hover:text-framer-text-base text-sm font-medium px-2"
-                        >
-                            Dismiss
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Error banner for restore error */}
-            {state.errors.restore && (
-                <div className="border-b border-framer-divider p-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                            <span className="text-framer-text-primary text-sm font-medium">
-                                Failed to restore version:
-                            </span>
-                            <span className="text-framer-text-secondary text-sm ml-2">{state.errors.restore}</span>
-                        </div>
-                        <button
-                            onClick={clearErrors}
-                            className="text-framer-text-primary hover:text-framer-text-base text-sm font-medium px-2"
-                        >
-                            Dismiss
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Main content */}
-            <div className="flex-1">
-                <CodeFileView state={state} selectVersion={selectVersion} restoreVersion={restoreVersion} />
-            </div>
+            <CodeFileView
+                state={state}
+                selectVersion={selectVersion}
+                restoreVersion={restoreVersion}
+                clearErrors={clearErrors}
+            />
         </Layout>
     )
 }

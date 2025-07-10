@@ -1,10 +1,11 @@
 import {
     type CodeFileVersionsState,
     LoadingState,
-    MutationState,
+    RestoreState,
     useCanRestoreVersion,
 } from "../hooks/useCodeFileVersions"
 import CurrentCode from "./CurrentCode"
+import ErrorMessage from "./ErrorMessage"
 import FileDiff from "./FileDiff"
 import VersionsSidebar from "./VersionsSidebar"
 
@@ -12,30 +13,54 @@ interface CodeFileViewProps {
     state: CodeFileVersionsState["state"]
     selectVersion: CodeFileVersionsState["selectVersion"]
     restoreVersion: CodeFileVersionsState["restoreVersion"]
+    clearErrors: CodeFileVersionsState["clearErrors"]
 }
 
-export default function CodeFileView({ state, selectVersion, restoreVersion }: CodeFileViewProps) {
-    const currentContent = state.codeFile?.content
-
-    const isCurrentVersion = state.codeFile?.versionId === state.selectedVersionId
-    const canRestoreVersion = useCanRestoreVersion()
-
+export default function CodeFileView({ state, selectVersion, restoreVersion, clearErrors }: CodeFileViewProps) {
     return (
         <div className="grid grid-cols-[var(--width-versions)_1fr] grid-rows-[1fr_auto] h-screen bg-bg-base text-text-base">
             <VersionsSidebar
                 className="row-span-2"
-                versions={state.versions}
+                versions={state.versions.data}
                 selectedId={state.selectedVersionId}
                 onSelect={selectVersion}
             />
+            <VersionColumn state={state} clearErrors={clearErrors} restoreVersion={restoreVersion} />
+        </div>
+    )
+}
+
+function VersionColumn({
+    state,
+    clearErrors,
+    restoreVersion,
+}: {
+    state: CodeFileVersionsState["state"]
+    clearErrors: CodeFileVersionsState["clearErrors"]
+    restoreVersion: CodeFileVersionsState["restoreVersion"]
+}) {
+    const canRestoreVersion = useCanRestoreVersion()
+    if (state.content.error) {
+        return (
+            <div className="bg-code-area-light dark:bg-code-area-dark relative overflow-hidden">
+                <ErrorMessage errorMessage={state.content.error} onRetryButtonClick={clearErrors} />
+            </div>
+        )
+    }
+
+    const currentContent = state.codeFile?.content
+    const isCurrentVersion = state.codeFile?.versionId === state.selectedVersionId
+
+    return (
+        <>
             <div className="bg-code-area-light dark:bg-code-area-dark relative overflow-hidden">
                 <div className="absolute inset-0 mx-3 mt-3">
                     <div className="overflow-auto scrollbar-hidden h-full pb-3">
-                        {state.contentLoading === LoadingState.Initial ||
-                        state.versionContent === undefined ||
+                        {state.content.status === LoadingState.Initial ||
+                        state.content.data === undefined ||
                         currentContent === undefined ? null : (
                             <Code
-                                original={state.versionContent}
+                                original={state.content.data}
                                 revised={currentContent}
                                 isCurrentVersion={isCurrentVersion}
                             />
@@ -49,13 +74,13 @@ export default function CodeFileView({ state, selectVersion, restoreVersion }: C
                         className="px-6 py-2 rounded-lg bg-tint text-framer-text-primary font-medium disabled:cursor-not-allowed w-full hover:bg-framer-button-hover-light dark:hover:bg-framer-button-hover-dark"
                         onClick={restoreVersion}
                         // We hide the plugin when we restore, this is just a safety measure
-                        disabled={state.restoreLoading === MutationState.Mutating}
+                        disabled={state.restore.status === RestoreState.Mutating}
                     >
                         Restore
                     </button>
                 </div>
             ) : null}
-        </div>
+        </>
     )
 }
 

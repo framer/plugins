@@ -446,21 +446,13 @@ export function getFieldDataEntryForProperty(
         }
         case "select": {
             if (field.type !== "enum") return null
-
-            if (!property.select) {
-                const firstCase = field.cases?.[0]?.id
-                return firstCase ? { type: "enum", value: firstCase } : null
-            }
+            if (!property.select) return null
 
             return { type: "enum", value: property.select.id }
         }
         case "status": {
             if (field.type !== "enum") return null
-
-            if (!property.status) {
-                const firstCase = field.cases?.[0]?.id
-                return firstCase ? { type: "enum", value: firstCase } : null
-            }
+            if (!property.status) return null
 
             return { type: "enum", value: property.status.id }
         }

@@ -101,8 +101,26 @@ export function useCodeFileVersions(): CodeFileVersionsState {
     }, [state.versionContent, state.codeFile])
 
     const clearErrors = useCallback(() => {
+        versionsAbortControllerRef.current?.abort()
+        contentAbortControllerRef.current?.abort()
+
+        const abortController = new AbortController()
+        versionsAbortControllerRef.current = abortController
+        contentAbortControllerRef.current = abortController
+
+        if (state.codeFile) {
+            loadVersions(dispatch, state.codeFile, abortController)
+        }
+
+        if (selectedVersion) {
+            loadVersionContent(dispatch, selectedVersion, abortController)
+        }
         dispatch({ type: VersionsActionType.ErrorsCleared })
-    }, [])
+
+        return () => {
+            abortController.abort()
+        }
+    }, [state.codeFile, selectedVersion])
 
     return {
         state: {
@@ -251,7 +269,7 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
             ...state,
             versionContent: payload.content,
             contentLoading: LoadingState.Idle,
-            errors: { ...state.errors, content: undefined },
+            errors: { ...state.errors, content: "Failed to load version content" },
         }))
         .with({ type: VersionsActionType.VersionsError }, ({ payload }) => ({
             ...state,

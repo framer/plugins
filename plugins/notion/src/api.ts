@@ -80,6 +80,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     files: ["file", "image"],
     relation: ["multiCollectionReference"],
     unique_id: ["string", "number"],
+    formula: ["string", "number", "boolean", "date", "link", "color"],
 } satisfies Partial<Record<NotionProperty["type"], ReadonlyArray<ManagedCollectionField["type"]>>>
 
 // Naive implementation to be authenticated, a token could be expired.

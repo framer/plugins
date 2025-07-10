@@ -1,4 +1,5 @@
 import { type CodeFile, type CodeFileVersion, useIsAllowedTo } from "framer-plugin"
+import retry from "p-retry"
 import { useCallback, useEffect, useReducer, useRef } from "react"
 import { match } from "ts-pattern"
 import { StatusTypes, useSelectedCodeFile } from "./useSelectedCodeFile"
@@ -296,7 +297,12 @@ function getDefaultSelectedVersionId(versions: readonly CodeFileVersion[]): stri
     return versions[1]?.id // Second version (index 1) is the n-1 version
 }
 
-// Helper function to load versions with abort controller
+const RETRY_OPTIONS = {
+    retries: 3,
+    minTimeout: 250,
+}
+
+// Helper function to load versions with abort controller and retry logic
 async function loadVersions(
     dispatch: React.Dispatch<VersionsAction>,
     codeFile: CodeFile,
@@ -304,52 +310,47 @@ async function loadVersions(
 ) {
     dispatch({ type: VersionsActionType.VersionsLoadStarted })
     try {
-        const versions = await codeFile.getVersions()
-
-        // Check if operation was cancelled
+        const versions = await retry(() => codeFile.getVersions(), {
+            ...RETRY_OPTIONS,
+            signal: abortController.signal,
+        })
         if (abortController.signal.aborted) {
             dispatch({ type: VersionsActionType.OperationCancelled, payload: { operation: "versions" } })
             return
         }
-
         dispatch({ type: VersionsActionType.VersionsLoaded, payload: { versions } })
     } catch (error) {
-        // Don't dispatch error if operation was cancelled
         if (abortController.signal.aborted) {
             dispatch({ type: VersionsActionType.OperationCancelled, payload: { operation: "versions" } })
             return
         }
-
         const errorMessage = error instanceof Error ? error.message : "Failed to load versions"
         dispatch({ type: VersionsActionType.VersionsError, payload: { error: errorMessage } })
     }
 }
 
-// Helper function to load version content with abort controller
+// Helper function to load version content with abort controller and retry logic
 async function loadVersionContent(
     dispatch: React.Dispatch<VersionsAction>,
     version: CodeFileVersion,
     abortController: AbortController
 ) {
     dispatch({ type: VersionsActionType.ContentLoadStarted })
-
     try {
-        const content = await version.getContent()
-
-        // Check if operation was cancelled
+        const content = await retry(() => version.getContent(), {
+            ...RETRY_OPTIONS,
+            signal: abortController.signal,
+        })
         if (abortController.signal.aborted) {
             dispatch({ type: VersionsActionType.OperationCancelled, payload: { operation: "content" } })
             return
         }
-
         dispatch({ type: VersionsActionType.VersionContentLoaded, payload: { content } })
     } catch (error) {
-        // Don't dispatch error if operation was cancelled
         if (abortController.signal.aborted) {
             dispatch({ type: VersionsActionType.OperationCancelled, payload: { operation: "content" } })
             return
         }
-
         const errorMessage = error instanceof Error ? error.message : "Failed to load version content"
         dispatch({ type: VersionsActionType.ContentError, payload: { error: errorMessage } })
     }

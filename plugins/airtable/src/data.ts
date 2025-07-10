@@ -62,6 +62,7 @@ const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
 const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
 
 function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
+    // If the field is a lookup field, only use the first value from the array.
     if (fieldSchema.originalAirtableType === "multipleLookupValues") {
         if (!Array.isArray(value)) return null
         if (value.length === 0) return null

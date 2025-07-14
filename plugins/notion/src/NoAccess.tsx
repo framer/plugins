@@ -15,9 +15,8 @@ export function NoTableAccess({ previousDatabaseId }: { previousDatabaseId: stri
             })
     }
 
-    const handleLogout = () => {
-        auth.logout()
-        window.location.reload()
+    const handleLogout = async () => {
+        await auth.logout()
     }
 
     return (

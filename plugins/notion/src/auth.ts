@@ -1,5 +1,7 @@
 import * as v from "valibot"
+import { framer } from "framer-plugin"
 import { API_BASE_URL, PLUGIN_KEYS } from "./api"
+import { showLoginUI } from "./ui"
 import { generateRandomId } from "./utils"
 
 const TokensSchema = v.object({
@@ -20,8 +22,11 @@ class Auth {
     private readonly NOTION_CLIENT_ID = "3504c5a7-9f75-4f87-aa1b-b735f8480432"
     storedTokens?: StoredTokens | null
 
-    logout() {
+    async logout() {
         this.tokens.clear()
+        await framer.setMenu([])
+        await showLoginUI()
+        window.location.reload()
     }
 
     getTokens() {

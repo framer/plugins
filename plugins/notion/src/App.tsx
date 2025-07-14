@@ -3,10 +3,12 @@ import "./App.css"
 import { APIErrorCode, APIResponseError } from "@notionhq/client"
 import { framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useLayoutEffect, useMemo, useState } from "react"
+import auth from "./auth"
 import { type DatabaseIdMap, type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { NoTableAccess } from "./NoAccess"
 import { SelectDataSource } from "./SelectDataSource"
+import { showAccessErrorUI, showFieldMappingUI, showLoginUI } from "./ui"
 
 interface AppProps {
     collection: ManagedCollection
@@ -40,29 +42,22 @@ export function App({
     }, [existingCollectionDatabaseIdMap, dataSource?.database.id, collection.id])
 
     useLayoutEffect(() => {
-        if (hasAccessError) {
-            void framer.showUI({
-                width: 280,
-                height: 114,
-                resizable: false,
-            })
-        } else if (dataSource || isLoadingDataSource) {
-            void framer.showUI({
-                width: 425,
-                height: 425,
-                minWidth: 360,
-                minHeight: 425,
-                resizable: true,
-            })
-        } else {
-            void framer.showUI({
-                width: 260,
-                height: 345,
-                minWidth: 260,
-                minHeight: 345,
-                resizable: false,
-            })
+        const showUI = async () => {
+            try {
+                if (hasAccessError) {
+                    await showAccessErrorUI()
+                } else if (dataSource || isLoadingDataSource) {
+                    await showFieldMappingUI()
+                } else {
+                    await showLoginUI()
+                }
+            } catch (error) {
+                console.error(error)
+                framer.notify(`Error opening plugin. Check the logs for more details.`, { variant: "error" })
+            }
         }
+
+        void showUI()
     }, [dataSource, isLoadingDataSource, hasAccessError])
 
     useEffect(() => {
@@ -106,6 +101,26 @@ export function App({
             abortController.abort()
         }
     }, [previousDatabaseId, previousDatabaseName])
+
+    useEffect(() => {
+        void framer.setMenu([
+            {
+                label: `View ${dataSource?.name ?? ""} in Notion`,
+                visible: Boolean(dataSource?.database.url),
+                onAction: () => {
+                    if (!dataSource?.database) return
+                    window.open(dataSource.database.url, "_blank")
+                },
+            },
+            { type: "separator" },
+            {
+                label: "Log Out",
+                onAction: () => {
+                    void auth.logout()
+                },
+            },
+        ])
+    }, [dataSource])
 
     if (isLoadingDataSource) {
         return (

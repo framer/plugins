@@ -259,7 +259,7 @@ export function FieldMapping({
                     ignoredFieldIds,
                     previousLastSynced
                 )
-                await framer.closePlugin("Synchronization successful", { variant: "success" })
+                void framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
                 console.error(error)
                 framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
@@ -286,14 +286,7 @@ export function FieldMapping({
             <hr className="sticky-divider" />
             <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
-                    <div className="heading-row">
-                        <span>Slug Field</span>
-                        {database.url && (
-                            <a href={database.url} target="_blank" className="heading-link">
-                                View in Notion
-                            </a>
-                        )}
-                    </div>
+                    <span>Slug Field</span>
                     <select
                         required
                         name="slugField"

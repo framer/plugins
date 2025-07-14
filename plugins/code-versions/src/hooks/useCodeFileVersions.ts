@@ -14,7 +14,7 @@ export function useCodeFileVersions(): CodeFileVersionsState {
 
     // Derived state
     // this happens on every render, but should be fast enough, as useMemo isn't free either
-    const selectedVersion = state.versions.find(version => version.id === state.selectedVersionId)
+    const selectedVersion = state.versions.data.find(version => version.id === state.selectedVersionId)
 
     // Handle file selection changes
     useEffect(() => {
@@ -87,34 +87,39 @@ export function useCodeFileVersions(): CodeFileVersionsState {
     }, [])
 
     const restoreVersion = useCallback(async () => {
-        if (!state.versionContent || !state.codeFile) return
+        if (!state.content.data || !state.codeFile) return
 
         dispatch({ type: VersionsActionType.RestoreStarted })
 
         try {
-            await state.codeFile.setFileContent(state.versionContent)
+            await state.codeFile.setFileContent(state.content.data)
             dispatch({ type: VersionsActionType.RestoreCompleted })
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "Failed to restore version"
             dispatch({ type: VersionsActionType.RestoreError, payload: { error: errorMessage } })
         }
-    }, [state.versionContent, state.codeFile])
+    }, [state.content.data, state.codeFile])
 
     const clearErrors = useCallback(() => {
+        versionsAbortControllerRef.current?.abort()
+        contentAbortControllerRef.current?.abort()
+
+        const abortController = new AbortController()
+        versionsAbortControllerRef.current = abortController
+        contentAbortControllerRef.current = abortController
+
+        if (state.codeFile) {
+            loadVersions(dispatch, state.codeFile, abortController)
+        }
+
+        if (selectedVersion) {
+            loadVersionContent(dispatch, selectedVersion, abortController)
+        }
         dispatch({ type: VersionsActionType.ErrorsCleared })
-    }, [])
+    }, [state.codeFile, selectedVersion])
 
     return {
-        state: {
-            codeFile: state.codeFile,
-            versions: state.versions,
-            selectedVersionId: state.selectedVersionId,
-            versionContent: state.versionContent,
-            contentLoading: state.contentLoading,
-            restoreLoading: state.restoreLoading,
-            restoreCompleted: state.restoreCompleted,
-            errors: state.errors,
-        },
+        state,
 
         // Actions
         selectVersion,
@@ -133,10 +138,11 @@ export enum LoadingState {
     Refreshing,
 }
 
-export enum MutationState {
+export enum RestoreState {
     Idle,
     Mutating,
-    Done,
+    Succeeded,
+    Failed,
 }
 
 // Use event-based naming for actions
@@ -161,16 +167,23 @@ export enum VersionsActionType {
 
 interface VersionsState {
     codeFile: CodeFile | undefined
-    versions: readonly CodeFileVersion[]
     selectedVersionId: string | undefined
-    versionContent: string | undefined
-    contentLoading: LoadingState
-    restoreLoading: MutationState
-    restoreCompleted: boolean
-    errors: {
-        versions?: string
-        content?: string
-        restore?: string
+
+    versions: {
+        data: readonly CodeFileVersion[]
+        status: LoadingState
+        error?: string
+    }
+
+    content: {
+        data: string | undefined
+        status: LoadingState
+        error?: string
+    }
+
+    restore: {
+        status: RestoreState
+        error?: string
     }
 }
 
@@ -209,12 +222,21 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
                 return {
                     ...state,
                     codeFile: payload.codeFile,
-                    versions: [],
+                    versions: {
+                        data: [],
+                        status: LoadingState.Initial,
+                        error: undefined,
+                    },
                     selectedVersionId: undefined,
-                    versionContent: undefined,
-                    contentLoading: LoadingState.Initial,
-                    restoreLoading: MutationState.Idle,
-                    errors: {},
+                    content: {
+                        data: undefined,
+                        status: LoadingState.Initial,
+                        error: undefined,
+                    },
+                    restore: {
+                        status: RestoreState.Idle,
+                        error: undefined,
+                    },
                 }
             } else {
                 // Only update the codeFile reference
@@ -226,65 +248,111 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
         })
         .with({ type: VersionsActionType.VersionsLoadStarted }, () => ({
             ...state,
-            errors: { ...state.errors, versions: undefined },
+            versions: {
+                ...state.versions,
+                status: LoadingState.Initial,
+                error: undefined,
+            },
         }))
         .with({ type: VersionsActionType.VersionsLoaded }, ({ payload }) => ({
             ...state,
-            versions: payload.versions,
+            versions: {
+                ...state.versions,
+                data: payload.versions,
+                status: LoadingState.Idle,
+                error: undefined,
+            },
             selectedVersionId: !state.selectedVersionId
                 ? getDefaultSelectedVersionId(payload.versions)
                 : state.selectedVersionId,
-            errors: { ...state.errors, versions: undefined },
         }))
         .with({ type: VersionsActionType.VersionSelected }, ({ payload }) => ({
             ...state,
             selectedVersionId: payload.versionId,
-            versionContent: state.selectedVersionId === payload.versionId ? state.versionContent : undefined,
-            errors: { ...state.errors, content: undefined },
+            content: {
+                ...state.content,
+                data: state.selectedVersionId === payload.versionId ? state.content.data : undefined,
+                error: undefined,
+            },
         }))
         .with({ type: VersionsActionType.ContentLoadStarted }, () => ({
             ...state,
-            contentLoading: state.versionContent == null ? LoadingState.Initial : LoadingState.Refreshing,
-            errors: { ...state.errors, content: undefined },
+            content: {
+                ...state.content,
+                status: state.content.data == null ? LoadingState.Initial : LoadingState.Refreshing,
+                error: undefined,
+            },
         }))
         .with({ type: VersionsActionType.VersionContentLoaded }, ({ payload }) => ({
             ...state,
-            versionContent: payload.content,
-            contentLoading: LoadingState.Idle,
-            errors: { ...state.errors, content: undefined },
+            content: {
+                ...state.content,
+                data: payload.content,
+                status: LoadingState.Idle,
+                error: undefined,
+            },
         }))
         .with({ type: VersionsActionType.VersionsError }, ({ payload }) => ({
             ...state,
-            errors: { ...state.errors, versions: payload.error },
+            versions: {
+                ...state.versions,
+                status: LoadingState.Idle,
+                error: payload.error,
+            },
         }))
         .with({ type: VersionsActionType.ContentError }, ({ payload }) => ({
             ...state,
-            contentLoading: LoadingState.Idle,
-            errors: { ...state.errors, content: payload.error },
+            content: {
+                ...state.content,
+                status: LoadingState.Idle,
+                error: payload.error,
+            },
         }))
         .with({ type: VersionsActionType.RestoreStarted }, () => ({
             ...state,
-            restoreLoading: MutationState.Mutating,
-            errors: { ...state.errors, restore: undefined },
+            restore: {
+                ...state.restore,
+                status: RestoreState.Mutating,
+                error: undefined,
+            },
         }))
         .with({ type: VersionsActionType.RestoreCompleted }, () => ({
             ...state,
-            restoreLoading: MutationState.Done,
-            restoreCompleted: true,
+            restore: {
+                ...state.restore,
+                status: RestoreState.Succeeded,
+            },
         }))
         .with({ type: VersionsActionType.RestoreError }, ({ payload }) => ({
             ...state,
-            restoreLoading: MutationState.Done,
-            errors: { ...state.errors, restore: payload.error },
+            restore: {
+                ...state.restore,
+                status: RestoreState.Failed,
+                error: payload.error,
+            },
         }))
         .with({ type: VersionsActionType.ErrorsCleared }, () => ({
             ...state,
-            errors: {},
+            versions: {
+                ...state.versions,
+                error: undefined,
+            },
+            content: {
+                ...state.content,
+                error: undefined,
+            },
+            restore: {
+                ...state.restore,
+                error: undefined,
+            },
         }))
         .with({ type: VersionsActionType.StateResetCompleted }, () => initialState)
         .with({ type: VersionsActionType.OperationCancelled }, ({ payload }) => ({
             ...state,
-            contentLoading: payload.operation === "content" ? LoadingState.Idle : state.contentLoading,
+            content: {
+                ...state.content,
+                status: payload.operation === "content" ? LoadingState.Idle : state.content.status,
+            },
         }))
         .exhaustive()
 }
@@ -302,7 +370,7 @@ const RETRY_OPTIONS = {
     minTimeout: 250,
 }
 
-// Helper function to load versions with abort controller and retry logic
+// Helper function to load versions with abort controller and retry logic and retry logic
 async function loadVersions(
     dispatch: React.Dispatch<VersionsAction>,
     codeFile: CodeFile,
@@ -358,11 +426,19 @@ async function loadVersionContent(
 
 const initialState: VersionsState = {
     codeFile: undefined,
-    versions: [],
     selectedVersionId: undefined,
-    versionContent: undefined,
-    contentLoading: LoadingState.Idle,
-    restoreLoading: MutationState.Idle,
-    restoreCompleted: false,
-    errors: {},
+    versions: {
+        data: [],
+        status: LoadingState.Idle,
+        error: undefined,
+    },
+    content: {
+        data: undefined,
+        status: LoadingState.Idle,
+        error: undefined,
+    },
+    restore: {
+        status: RestoreState.Idle,
+        error: undefined,
+    },
 }

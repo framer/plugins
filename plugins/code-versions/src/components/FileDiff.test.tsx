@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import FileDiff from "./FileDiff"
+import { FileDiff } from "./FileDiff"
 
 const ADDED_CLASS_NAME = "bg-diff-add-bg/10"
 const REMOVED_CLASS_NAME = "bg-diff-remove-bg/10"

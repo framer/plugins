@@ -165,6 +165,16 @@ export enum VersionsActionType {
     OperationCancelled = "OPERATION_CANCELLED",
 }
 
+interface DataState<T> {
+    data: T | undefined
+    status: LoadingState
+    error?: string
+}
+
+export const isInitialLoading = <T>(state: DataState<T>) => {
+    return state.status === LoadingState.Initial
+}
+
 interface VersionsState {
     codeFile: CodeFile | undefined
     selectedVersionId: string | undefined

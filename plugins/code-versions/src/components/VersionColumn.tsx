@@ -1,44 +1,14 @@
-import {
-    type CodeFileVersionsState,
-    LoadingState,
-    RestoreState,
-    useCanRestoreVersion,
-} from "../hooks/useCodeFileVersions"
-import CurrentCode from "./CurrentCode"
-import ErrorMessage from "./ErrorMessage"
-import FileDiff from "./FileDiff"
-import VersionsSidebar from "./VersionsSidebar"
+import { type CodeFileVersionsState, RestoreState, useCanRestoreVersion } from "../hooks/useCodeFileVersions"
+import { Code } from "./Code"
+import { ErrorMessage } from "./ErrorMessage"
 
-interface CodeFileViewProps {
-    state: CodeFileVersionsState["state"]
-    selectVersion: CodeFileVersionsState["selectVersion"]
-    restoreVersion: CodeFileVersionsState["restoreVersion"]
-    clearErrors: CodeFileVersionsState["clearErrors"]
-}
-
-export default function CodeFileView({ state, selectVersion, restoreVersion, clearErrors }: CodeFileViewProps) {
-    return (
-        <div className="grid grid-cols-[var(--width-versions)_1fr] grid-rows-[1fr_auto] h-screen bg-bg-base text-text-base">
-            <VersionsSidebar
-                className="row-span-2"
-                versions={state.versions.data}
-                selectedId={state.selectedVersionId}
-                onSelect={selectVersion}
-            />
-            <VersionColumn state={state} clearErrors={clearErrors} restoreVersion={restoreVersion} />
-        </div>
-    )
-}
-
-function VersionColumn({
-    state,
-    clearErrors,
-    restoreVersion,
-}: {
+interface VersionColumnProps {
     state: CodeFileVersionsState["state"]
     clearErrors: CodeFileVersionsState["clearErrors"]
     restoreVersion: CodeFileVersionsState["restoreVersion"]
-}) {
+}
+
+export function VersionColumn({ state, clearErrors, restoreVersion }: VersionColumnProps) {
     const canRestoreVersion = useCanRestoreVersion()
     if (state.content.error) {
         return (
@@ -56,9 +26,7 @@ function VersionColumn({
             <div className="bg-code-area-light dark:bg-code-area-dark relative overflow-hidden">
                 <div className="absolute inset-0 mx-3 mt-3">
                     <div className="overflow-auto scrollbar-hidden h-full pb-3">
-                        {state.content.status === LoadingState.Initial ||
-                        state.content.data === undefined ||
-                        currentContent === undefined ? null : (
+                        {state.content.data === undefined || currentContent === undefined ? null : (
                             <Code
                                 original={state.content.data}
                                 revised={currentContent}
@@ -82,20 +50,4 @@ function VersionColumn({
             ) : null}
         </>
     )
-}
-
-function Code({
-    original,
-    revised,
-    isCurrentVersion,
-}: {
-    original: string
-    revised: string
-    isCurrentVersion: boolean
-}) {
-    if (isCurrentVersion || original === revised) {
-        return <CurrentCode code={original} />
-    }
-
-    return <FileDiff original={original} revised={revised} />
 }

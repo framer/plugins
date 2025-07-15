@@ -4,41 +4,16 @@ import {
     RestoreState,
     useCanRestoreVersion,
 } from "../hooks/useCodeFileVersions"
-import CurrentCode from "./CurrentCode"
+import { Code } from "./Code"
 import ErrorMessage from "./ErrorMessage"
-import FileDiff from "./FileDiff"
-import VersionsSidebar from "./VersionsSidebar"
 
-interface CodeFileViewProps {
-    state: CodeFileVersionsState["state"]
-    selectVersion: CodeFileVersionsState["selectVersion"]
-    restoreVersion: CodeFileVersionsState["restoreVersion"]
-    clearErrors: CodeFileVersionsState["clearErrors"]
-}
-
-export default function CodeFileView({ state, selectVersion, restoreVersion, clearErrors }: CodeFileViewProps) {
-    return (
-        <div className="grid grid-cols-[var(--width-versions)_1fr] grid-rows-[1fr_auto] h-screen bg-bg-base text-text-base">
-            <VersionsSidebar
-                className="row-span-2"
-                versions={state.versions.data}
-                selectedId={state.selectedVersionId}
-                onSelect={selectVersion}
-            />
-            <VersionColumn state={state} clearErrors={clearErrors} restoreVersion={restoreVersion} />
-        </div>
-    )
-}
-
-function VersionColumn({
-    state,
-    clearErrors,
-    restoreVersion,
-}: {
+interface VersionColumnProps {
     state: CodeFileVersionsState["state"]
     clearErrors: CodeFileVersionsState["clearErrors"]
     restoreVersion: CodeFileVersionsState["restoreVersion"]
-}) {
+}
+
+export function VersionColumn({ state, clearErrors, restoreVersion }: VersionColumnProps) {
     const canRestoreVersion = useCanRestoreVersion()
     if (state.content.error) {
         return (
@@ -82,20 +57,4 @@ function VersionColumn({
             ) : null}
         </>
     )
-}
-
-function Code({
-    original,
-    revised,
-    isCurrentVersion,
-}: {
-    original: string
-    revised: string
-    isCurrentVersion: boolean
-}) {
-    if (isCurrentVersion || original === revised) {
-        return <CurrentCode code={original} />
-    }
-
-    return <FileDiff original={original} revised={revised} />
 }

@@ -1,10 +1,12 @@
 import { framer } from "framer-plugin"
 import { useEffect } from "react"
-import { RestoreState, useCodeFileVersions } from "../hooks/useCodeFileVersions"
+import { isInitialLoading, RestoreState, useCodeFileVersions } from "../hooks/useCodeFileVersions"
 import { StatusTypes, useSelectedCodeFile } from "../hooks/useSelectedCodeFile"
-import CodeFileView from "./CodeFileView"
 import { EmptyState } from "./EmptyState"
 import ErrorMessage from "./ErrorMessage"
+import { Spinner } from "./Spinner"
+import { VersionColumn } from "./VersionColumn"
+import VersionsSidebar from "./VersionsSidebar"
 
 export default function App() {
     const { state: fileStatus } = useSelectedCodeFile()
@@ -31,45 +33,57 @@ export default function App() {
     // Handle error states
     if (fileStatus.type === StatusTypes.ERROR) {
         return (
-            <Layout>
+            <AppLayout>
                 <ErrorMessage errorMessage={fileStatus.error} onRetryButtonClick={undefined} />
-            </Layout>
+            </AppLayout>
         )
     }
 
     if (state.versions.error) {
         return (
-            <Layout>
+            <AppLayout>
                 <ErrorMessage errorMessage={state.versions.error} onRetryButtonClick={clearErrors} />
-            </Layout>
+            </AppLayout>
         )
     }
 
     if (!state.codeFile) {
         return (
-            <Layout>
+            <AppLayout>
                 <EmptyState />
-            </Layout>
+            </AppLayout>
         )
     }
 
     return (
-        <Layout>
-            <CodeFileView
-                state={state}
-                selectVersion={selectVersion}
-                restoreVersion={restoreVersion}
-                clearErrors={clearErrors}
-            />
-        </Layout>
+        <AppLayout>
+            {isInitialLoading(state.versions) ? (
+                <Spinner className="row-span-2" />
+            ) : (
+                <VersionsSidebar
+                    className="row-span-2"
+                    versions={state.versions.data}
+                    selectedId={state.selectedVersionId}
+                    onSelect={selectVersion}
+                />
+            )}
+
+            {isInitialLoading(state.content) ? (
+                <Spinner />
+            ) : (
+                <VersionColumn state={state} clearErrors={clearErrors} restoreVersion={restoreVersion} />
+            )}
+        </AppLayout>
     )
 }
 
-function Layout({ children }: { children: React.ReactNode }) {
+function AppLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="h-screen flex flex-col overflow-hidden scheme-light dark:scheme-dark">
             <hr className="ms-3 border-t border-framer-divider" />
-            {children}
+            <div className="grid grid-cols-[var(--width-versions)_1fr] grid-rows-[1fr_auto] h-screen bg-bg-base text-text-base">
+                {children}
+            </div>
         </div>
     )
 }

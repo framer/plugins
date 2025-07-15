@@ -13,12 +13,12 @@ export default function App() {
     useEffect(() => {
         switch (state.restore.status) {
             case RestoreState.Succeeded:
-                framer.closePlugin("Code version restored", {
+                framer.closePlugin("Code Version has been restored", {
                     variant: "success",
                 })
                 return
             case RestoreState.Failed:
-                framer.closePlugin("Couldn't restore version", {
+                framer.closePlugin("Couldn't restore Code Version", {
                     variant: "error",
                 })
                 return

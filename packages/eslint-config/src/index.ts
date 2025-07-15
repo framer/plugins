@@ -65,15 +65,6 @@ export default tseslint.config(
             "@typescript-eslint/restrict-template-expressions": 0,
             "@typescript-eslint/unbound-method": 0,
             "@typescript-eslint/use-unknown-in-catch-callback-variable": 0,
-
-            // TODO: Enable, 1-2 occurrences
-            "@typescript-eslint/await-thenable": 0,
-            "@typescript-eslint/consistent-generic-constructors": 0,
-            "@typescript-eslint/no-base-to-string": 0,
-            "@typescript-eslint/no-empty-function": 0,
-            "@typescript-eslint/no-meaningless-void-operator": 0,
-            "@typescript-eslint/prefer-for-of": 0,
-            "@typescript-eslint/prefer-promise-reject-errors": 0,
         },
     },
 

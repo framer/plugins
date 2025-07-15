@@ -103,7 +103,7 @@ async function getItems(
 
     const dataItems = await dataSource.fetch(boardToken)
 
-    const itemIdBySlug: Map<string, string> = new Map()
+    const itemIdBySlug = new Map<string, string>()
     const idField = fieldsToSync[0]
     if (!idField) {
         throw new Error("No ID field found in data source.")
@@ -126,7 +126,7 @@ async function getItems(
         itemIdBySlug.set(uniqueSlug, id)
     }
 
-    const slugByItemId: Map<string, string> = new Map()
+    const slugByItemId = new Map<string, string>()
     for (const [slug, itemId] of itemIdBySlug.entries()) {
         slugByItemId.set(itemId, slug)
     }

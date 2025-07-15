@@ -626,8 +626,8 @@ export async function getPluginContext(): Promise<PluginContext> {
     if (storedSheetHeaderRowHash && collectionFields.length > 0) {
         const reorderedCollectionFields = []
 
-        for (let i = 0; i < sheetHeaderRow.length; i++) {
-            const field = collectionFields.find(field => field.id === sheetHeaderRow[i])
+        for (const fieldId of sheetHeaderRow) {
+            const field = collectionFields.find(field => field.id === fieldId)
 
             if (field) {
                 reorderedCollectionFields.push(field)

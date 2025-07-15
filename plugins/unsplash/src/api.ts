@@ -69,7 +69,7 @@ export async function fetchUnsplash<TSchema extends v.GenericSchema>(
     const result = v.safeParse(schema, json)
 
     if (result.issues) {
-        throw new Error("Failed to parse Unsplash API response: " + result.issues)
+        throw new Error(`Failed to parse Unsplash API response: ${JSON.stringify(result.issues)}`)
     }
 
     return result.output

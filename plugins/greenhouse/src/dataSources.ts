@@ -51,7 +51,7 @@ export type GreenhouseField = ManagedCollectionFieldInput &
         | {
               type: Exclude<ManagedCollectionFieldInput["type"], "collectionReference" | "multiCollectionReference">
               /** Used to transform the value of the field. Sometimes the value is inside an object, so we need to extract it. */
-              getValue?: <T>(value: T) => unknown
+              getValue?: (value: unknown) => unknown
               canBeUsedAsSlug?: boolean
           }
         | {

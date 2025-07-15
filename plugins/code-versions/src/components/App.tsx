@@ -55,9 +55,12 @@ export function App() {
         )
     }
 
+    const isLoadingVersions = isInitialLoading(state.versions)
+    const isLoadingContent = isLoadingVersions || isInitialLoading(state.content)
+
     return (
         <AppLayout>
-            {isInitialLoading(state.versions) ? (
+            {isLoadingVersions ? (
                 <Spinner className="row-span-2" />
             ) : (
                 <VersionsSidebar
@@ -68,7 +71,7 @@ export function App() {
                 />
             )}
 
-            {isInitialLoading(state.content) ? (
+            {isLoadingContent ? (
                 <Spinner />
             ) : (
                 <VersionColumn state={state} clearErrors={clearErrors} restoreVersion={restoreVersion} />

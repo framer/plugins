@@ -31,9 +31,7 @@ export function VersionColumn({ state, clearErrors, restoreVersion }: VersionCol
             <div className="bg-code-area-light dark:bg-code-area-dark relative overflow-hidden">
                 <div className="absolute inset-0 mx-3 mt-3">
                     <div className="overflow-auto scrollbar-hidden h-full pb-3">
-                        {state.content.status === LoadingState.Initial ||
-                        state.content.data === undefined ||
-                        currentContent === undefined ? null : (
+                        {state.content.data === undefined || currentContent === undefined ? null : (
                             <Code
                                 original={state.content.data}
                                 revised={currentContent}

@@ -1,5 +1,5 @@
-import CurrentCode from "./CurrentCode"
-import FileDiff from "./FileDiff"
+import { CurrentCode } from "./CurrentCode"
+import { FileDiff } from "./FileDiff"
 
 interface CodeProps {
     original: string

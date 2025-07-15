@@ -5,7 +5,7 @@ import {
     useCanRestoreVersion,
 } from "../hooks/useCodeFileVersions"
 import { Code } from "./Code"
-import ErrorMessage from "./ErrorMessage"
+import { ErrorMessage } from "./ErrorMessage"
 
 interface VersionColumnProps {
     state: CodeFileVersionsState["state"]

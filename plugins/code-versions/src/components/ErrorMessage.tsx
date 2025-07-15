@@ -3,7 +3,7 @@ interface ErrorMessageProps {
     onRetryButtonClick: (() => void) | undefined
 }
 
-export default function ErrorMessage({ errorMessage, onRetryButtonClick }: ErrorMessageProps) {
+export function ErrorMessage({ errorMessage, onRetryButtonClick }: ErrorMessageProps) {
     return (
         <div className="h-full w-full flex flex-col items-center justify-center">
             <h2 className="mb-2 text-framer-text-primary font-semibold max-w-48">Cannot Load Data</h2>

@@ -3,12 +3,12 @@ import { useEffect } from "react"
 import { isInitialLoading, RestoreState, useCodeFileVersions } from "../hooks/useCodeFileVersions"
 import { StatusTypes, useSelectedCodeFile } from "../hooks/useSelectedCodeFile"
 import { EmptyState } from "./EmptyState"
-import ErrorMessage from "./ErrorMessage"
+import { ErrorMessage } from "./ErrorMessage"
 import { Spinner } from "./Spinner"
 import { VersionColumn } from "./VersionColumn"
-import VersionsSidebar from "./VersionsSidebar"
+import { VersionsSidebar } from "./VersionsSidebar"
 
-export default function App() {
+export function App() {
     const { state: fileStatus } = useSelectedCodeFile()
     const { state, selectVersion, restoreVersion, clearErrors } = useCodeFileVersions()
 

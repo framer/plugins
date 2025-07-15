@@ -63,7 +63,7 @@ function HistoricalVersion({ version, isSelected, onSelect }: VersionProps) {
     )
 }
 
-export default function VersionsSidebar({
+export function VersionsSidebar({
     className,
     versions,
     selectedId,

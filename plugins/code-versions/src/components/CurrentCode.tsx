@@ -14,7 +14,7 @@ interface CurrentCodeProps {
  * Code List of the current version, where no diff is shown
  * It shows all lines of the current version, and the one row of line numbers are shown on the left
  */
-export default function CurrentCode({ code }: CurrentCodeProps) {
+export function CurrentCode({ code }: CurrentCodeProps) {
     const codeRef = useRef<HTMLElement>(null)
 
     useEffect(() => {

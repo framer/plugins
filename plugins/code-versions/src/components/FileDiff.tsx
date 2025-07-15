@@ -8,7 +8,7 @@ interface FileDiffProps {
     revised: string
 }
 
-export default function FileDiff({ original, revised }: FileDiffProps) {
+export function FileDiff({ original, revised }: FileDiffProps) {
     const lines = getLineDiffWithEdges(original, revised)
 
     const rows = lines.map(line =>

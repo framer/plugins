@@ -4673,13 +4673,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-plugin@npm:^3.4.0-alpha.0":
-  version: 3.4.0-alpha.0
-  resolution: "framer-plugin@npm:3.4.0-alpha.0"
+"framer-plugin@npm:^3.4.0":
+  version: 3.4.0
+  resolution: "framer-plugin@npm:3.4.0"
   peerDependencies:
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 10/7e014b435cb98ce9bdea56ffaed61cb178514d5760d7d9cb56ed17568625772899b35504508f6f46ba7091c5a7c72a617fccc2c834257e9af74860884c87d6f4
+  checksum: 10/3ba06eb482b992af0a548b7541dda36c59481e0252d1c822b712cc6e480f4a71b8b67080669abff452cb6e3d2ea33c531c59c58c0b2ab80c8382750f0d3e1104
   languageName: node
   linkType: hard
 
@@ -5699,7 +5699,7 @@ __metadata:
     "@notionhq/client": "npm:^3.1.3"
     "@types/react": "npm:^18.3.18"
     "@types/react-dom": "npm:^18.3.5"
-    framer-plugin: "npm:^3.4.0-alpha.0"
+    framer-plugin: "npm:^3.4.0"
     framer-plugin-tools: "npm:^1.0.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"

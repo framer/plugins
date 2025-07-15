@@ -41,7 +41,9 @@ function usePublishedSite() {
 
     const fetchGoogleSites = useCallback(
         async (token: string): Promise<Array<GoogleSite>> => {
-            const result = await googleApiCall<{ siteEntry: Array<GoogleSite> }>(`/webmasters/v3/sites`, token, refresh)
+            const result = (await googleApiCall(`/webmasters/v3/sites`, token, refresh)) as {
+                siteEntry: Array<GoogleSite>
+            } | null
 
             return result?.siteEntry || []
         },

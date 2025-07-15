@@ -33,13 +33,13 @@ export default function SiteView({ site, logout }: SiteViewProps) {
 
     const fetchGoogleSitemaps = useCallback(
         async (siteUrl: string, token: string) => {
-            const result = await googleApiCall<{ sitemap: GoogleSitemap[] }>(
+            const result = (await googleApiCall(
                 `/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/sitemaps`,
                 token,
                 refresh
-            )
+            )) as { sitemap: GoogleSitemap[] } | null
 
-            return (result?.sitemap as GoogleSitemap[]) || []
+            return result?.sitemap || []
         },
         [refresh]
     )

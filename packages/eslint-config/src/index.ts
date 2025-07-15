@@ -72,7 +72,6 @@ export default tseslint.config(
             "@typescript-eslint/no-base-to-string": 0,
             "@typescript-eslint/no-empty-function": 0,
             "@typescript-eslint/no-meaningless-void-operator": 0,
-            "@typescript-eslint/no-unnecessary-type-parameters": 0,
             "@typescript-eslint/prefer-for-of": 0,
             "@typescript-eslint/prefer-promise-reject-errors": 0,
         },

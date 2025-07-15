@@ -1,7 +1,7 @@
 import type { ManagedCollection, ManagedCollectionFieldInput } from "framer-plugin"
 
 import { framer } from "framer-plugin"
-import type { AirtableFieldSchema } from "./api"
+import type { AirtableFieldResult, AirtableFieldSchema } from "./api"
 import { PLUGIN_KEYS } from "./data"
 import { ALLOWED_FILE_TYPES } from "./utils"
 
@@ -224,16 +224,15 @@ async function inferLookupField(
     const { options } = fieldSchema
 
     // If the lookup field doesn't have a result type, treat as unsupported
-    if (!options.result || typeof options.result !== "object" || !options.result.type) {
+    if (!hasOptions(options.result)) {
         return createUnsupportedField(fieldSchema)
     }
 
-    const resultSchema = {
-        type: options.result.type,
+    const resultSchema: AirtableFieldSchema = {
+        ...options.result,
         id: fieldSchema.id,
         name: fieldSchema.name,
-        options: options.result.options,
-    } as AirtableFieldSchema
+    }
 
     const inferredField = await inferFieldByType(resultSchema, collection, tableIdBeingLinkedTo, 1)
 
@@ -248,16 +247,15 @@ async function inferRollupField(
     const { options } = fieldSchema
 
     // If the rollup field doesn't have a result type, treat as unsupported
-    if (!options.result || typeof options.result !== "object" || !options.result.type) {
+    if (!hasOptions(options.result)) {
         return createUnsupportedField(fieldSchema)
     }
 
-    const resultSchema = {
+    const resultSchema: AirtableFieldSchema = {
+        ...options.result,
         id: fieldSchema.id,
         name: fieldSchema.name,
-        type: options.result.type,
-        options: options.result.options,
-    } as AirtableFieldSchema
+    }
 
     const inferredField = await inferFieldByType(resultSchema, collection, tableIdBeingLinkedTo, 1)
 
@@ -478,6 +476,12 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
     }
 
     return fields
+}
+
+function hasOptions(
+    result: AirtableFieldResult | null
+): result is AirtableFieldResult & { options: NonNullable<AirtableFieldResult["options"]> } {
+    return result !== null && result !== undefined && result.options !== undefined && result.options !== null
 }
 
 export interface AirtableTable {

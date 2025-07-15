@@ -30,6 +30,7 @@ const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
     string: "Plain Text",
     collectionReference: "Reference",
     multiCollectionReference: "Multi-Reference",
+    array: "Gallery",
 }
 
 interface FieldMappingRowProps {

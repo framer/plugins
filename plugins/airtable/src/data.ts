@@ -1,4 +1,5 @@
 import type {
+    ArrayItemInput,
     FieldDataEntryInput,
     FieldDataInput,
     ManagedCollection,
@@ -27,6 +28,8 @@ export const PLUGIN_KEYS = {
     TABLE_NAME: "airtablePluginTableName",
     SLUG_FIELD_ID: "airtablePluginSlugId",
 } as const
+
+const IMAGE_FILE_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/apng", "image/webp", "image/svg+xml"]
 
 export interface AirtableBase {
     id: string
@@ -104,9 +107,18 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 return null
             }
 
-            // TODO: When we add support for gallery fields, we'll need to return an array of URLs.
+            let selectedItem = value[0]
+
+            // For image fields, find the first image file in the array
+            if (fieldSchema.type === "image") {
+                const imageItem = value.find(item => !item.type || IMAGE_FILE_MIME_TYPES.includes(item.type))
+                if (!imageItem) return null
+
+                selectedItem = imageItem
+            }
+
             return {
-                value: value[0].url,
+                value: selectedItem.url,
                 type: fieldSchema.type,
             }
         }
@@ -240,6 +252,37 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 type: "number",
             }
 
+        case "array": {
+            if (!Array.isArray(value) || value.length === 0) {
+                return null
+            }
+
+            const imageField = fieldSchema.fields[0]
+            const arrayItems: ArrayItemInput[] = []
+
+            for (const item of value) {
+                // Filter out non-image files
+                if (item.type && !IMAGE_FILE_MIME_TYPES.includes(item.type)) {
+                    continue
+                }
+
+                arrayItems.push({
+                    id: item.id,
+                    fieldData: {
+                        [imageField.id]: {
+                            value: item.url,
+                            type: "image",
+                        },
+                    },
+                })
+            }
+
+            return {
+                value: arrayItems,
+                type: fieldSchema.type,
+            }
+        }
+
         default:
             return null
     }
@@ -334,6 +377,12 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                             type: field.type,
                         }
                         break
+                    case "array":
+                        fieldData[field.id] = {
+                            value: [],
+                            type: "array",
+                        }
+                        break
                     default:
                         console.warn(
                             `Missing value for field “${field.name}” on item “${item.id}”, it will be set to the default value for its type.`
@@ -363,16 +412,32 @@ export function mergeFieldsWithExistingFields(
     return sourceFields.map(sourceField => {
         const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
         if (existingField) {
-            if (existingField.type === "collectionReference" || existingField.type === "multiCollectionReference") {
-                return {
-                    ...sourceField,
-                    type: existingField.type,
-                    name: existingField.name,
-                    collectionId: existingField.collectionId,
-                } as PossibleField
-            }
+            const field = {
+                ...sourceField,
+                type: existingField.type,
+                name: existingField.name,
+            } as PossibleField
 
-            return { ...sourceField, type: existingField.type, name: existingField.name } as PossibleField
+            switch (existingField.type) {
+                case "collectionReference":
+                case "multiCollectionReference":
+                    return {
+                        ...field,
+                        collectionId: existingField.collectionId,
+                    }
+                case "file":
+                    return {
+                        ...field,
+                        allowedFileTypes: existingField.allowedFileTypes,
+                    }
+                case "array":
+                    return {
+                        ...field,
+                        fields: existingField.fields,
+                    }
+                default:
+                    return field
+            }
         }
         return sourceField
     })

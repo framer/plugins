@@ -107,15 +107,18 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 return null
             }
 
-            const firstItem = value[0]
+            let selectedItem = value[0]
 
-            // Filter out non-image files
-            if (fieldSchema.type === "image" && firstItem.type && !IMAGE_FILE_MIME_TYPES.includes(firstItem.type)) {
-                return null
+            // For image fields, find the first image file in the array
+            if (fieldSchema.type === "image") {
+                const imageItem = value.find(item => !item.type || IMAGE_FILE_MIME_TYPES.includes(item.type))
+                if (!imageItem) return null
+
+                selectedItem = imageItem
             }
 
             return {
-                value: firstItem.url,
+                value: selectedItem.url,
                 type: fieldSchema.type,
             }
         }

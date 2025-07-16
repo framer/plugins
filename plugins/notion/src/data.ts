@@ -8,6 +8,7 @@ import {
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import pLimit from "p-limit"
+import * as v from "valibot"
 import {
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
@@ -197,6 +198,8 @@ export async function syncCollection(
     ])
 }
 
+export const IgnoredFieldIdsSchema = v.array(v.string())
+
 export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDatabaseId: string | null,
@@ -227,9 +230,9 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        const ignoredFieldIds: Set<string> = previousIgnoredFieldIds
-            ? new Set(JSON.parse(previousIgnoredFieldIds))
-            : new Set()
+        const ignoredFieldIds = previousIgnoredFieldIds
+            ? new Set(v.parse(IgnoredFieldIdsSchema, JSON.parse(previousIgnoredFieldIds)))
+            : new Set<string>()
 
         const fieldsToSync = fields.filter(
             field =>

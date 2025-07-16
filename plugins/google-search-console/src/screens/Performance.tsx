@@ -26,7 +26,7 @@ interface QueriesTableProps {
     queries: GoogleQueryResult
 }
 
-const CustomYAxisTick = ({ x, y, payload }: { x: any; y: any; payload: any }) => {
+const CustomYAxisTick = ({ x, y, payload }: { x: number; y: number; payload: { value: number } }) => {
     return (
         <g transform={`translate(${x},${y})`}>
             <text x={0} y={0} textAnchor="start" fill="#666">

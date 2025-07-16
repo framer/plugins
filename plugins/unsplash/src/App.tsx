@@ -187,7 +187,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
         const adjustedWindowWidth = deferredWindowWidth - sidePadding
         const columnCount = Math.max(1, Math.floor((adjustedWindowWidth + columnGap) / (minColumnWidth + columnGap)))
         const columnWidth = (adjustedWindowWidth - (columnCount - 1) * columnGap) / columnCount
-        const heightPerColumn = Array(columnCount).fill(0)
+        const heightPerColumn = Array<number>(columnCount).fill(0)
 
         const seenPhotos = new Set<PhotoId>()
         const columns = Array.from({ length: columnCount }, (): UnsplashPhoto[] => [])
@@ -208,6 +208,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
                 if (minColumnIndex === -1) continue
 
                 columns[minColumnIndex]?.push(photo)
+                if (heightPerColumn[minColumnIndex] === undefined) throw new Error("Logic error")
                 heightPerColumn[minColumnIndex] += itemHeight
             }
         }

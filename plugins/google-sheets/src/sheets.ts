@@ -7,8 +7,9 @@ import {
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import auth from "./auth"
-import { logSyncResult } from "./debug.ts"
-import { queryClient } from "./main.tsx"
+import { type DataSource } from "./data"
+import { logSyncResult } from "./debug"
+import { queryClient } from "./main"
 import {
     assert,
     columnToLetter,
@@ -66,7 +67,7 @@ interface SpreadsheetInfo {
     sheets: SpreadsheetInfoSheet[]
 }
 
-export type CellValue = string | number | boolean
+export type CellValue = string | number | boolean | undefined
 
 export type Row = CellValue[]
 
@@ -157,7 +158,7 @@ function fetchUserInfo() {
     })
 }
 
-function fetchSpreadsheetInfo(spreadsheetId: string) {
+export function fetchSpreadsheetInfo(spreadsheetId: string) {
     return request<SpreadsheetInfo>({
         path: `/spreadsheets/${spreadsheetId}`,
         query: {
@@ -201,7 +202,7 @@ export const useSheetQuery = (spreadsheetId: string, sheetTitle: string, range?:
     })
 }
 
-function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?: string) {
+export function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?: string) {
     return queryClient.fetchQuery({
         queryKey: ["sheet", spreadsheetId, sheetTitle, range],
         queryFn: () => fetchSheet(spreadsheetId, sheetTitle, range),
@@ -209,44 +210,6 @@ function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?:
 }
 
 export type CollectionFieldType = ManagedCollectionFieldInput["type"]
-
-export interface PluginContextNew {
-    type: "new"
-    collection: ManagedCollection
-    isAuthenticated: boolean
-}
-
-export interface PluginContextUpdate {
-    type: "update"
-    spreadsheetId: string
-    sheetTitle: string
-    collectionFields: ManagedCollectionFieldInput[]
-    collection: ManagedCollection
-    hasChangedFields: boolean
-    ignoredColumns: string[]
-    slugColumn: string | null
-    isAuthenticated: boolean
-    sheet: Sheet
-    lastSyncedTime: string
-    sheetHeaderRow: string[]
-}
-
-export interface PluginContextNoSheetAccess {
-    type: "no-sheet-access"
-    spreadsheetId: string
-}
-
-export interface PluginContextSheetByTitleMissing {
-    type: "sheet-by-title-missing"
-    spreadsheetId: string
-    title: string
-}
-
-export type PluginContext =
-    | PluginContextNew
-    | PluginContextUpdate
-    | PluginContextNoSheetAccess
-    | PluginContextSheetByTitleMissing
 
 interface ItemResult {
     rowIndex?: number
@@ -264,11 +227,11 @@ export interface SyncResult extends SyncStatus {
 }
 
 interface ProcessSheetRowParams {
-    fieldTypes: CollectionFieldType[]
+    fieldTypes: Record<string, CollectionFieldType>
     row: Row
     rowIndex: number
     uniqueHeaderRowNames: string[]
-    unsyncedRowIds: Set<string>
+    unsyncedItemIds: Set<string>
     slugFieldColumnIndex: number
     ignoredFieldColumnIndexes: number[]
     status: SyncStatus
@@ -320,7 +283,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
             return { type, value: num }
         }
         case "boolean": {
-            return { type, value: CELL_BOOLEAN_VALUES.includes(cellValue) }
+            return { type, value: CELL_BOOLEAN_VALUES.includes(cellValue as string | number | boolean) }
         }
         case "date": {
             if (typeof cellValue !== "number") return null
@@ -347,7 +310,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
 function processSheetRow({
     row,
     rowIndex,
-    unsyncedRowIds,
+    unsyncedItemIds,
     uniqueHeaderRowNames,
     ignoredFieldColumnIndexes,
     slugFieldColumnIndex,
@@ -358,13 +321,25 @@ function processSheetRow({
     let slugValue: string | null = null
     let itemId: string | null = null
 
+    const slugCellValue = row[slugFieldColumnIndex]
+    if (slugCellValue) {
+        slugValue = slugify(String(slugCellValue))
+        itemId = generateHashId(slugValue)
+
+        // Mark row as seen
+        unsyncedItemIds.delete(itemId)
+    }
+
     for (const [colIndex, cell] of row.entries()) {
         if (ignoredFieldColumnIndexes.includes(colIndex)) continue
 
         // +1 as zero-indexed, another +1 to account for header row
         const location = columnToLetter(colIndex + 1) + (rowIndex + 2)
 
-        const fieldType = fieldTypes[colIndex]
+        const currentFieldName = uniqueHeaderRowNames[colIndex]
+        assert(isDefined(currentFieldName), "Field name must be defined")
+
+        const fieldType = fieldTypes[currentFieldName]
         assert(isDefined(fieldType), "Field type must be defined")
 
         const fieldDataEntryInput = getFieldDataEntryInput(fieldType, cell)
@@ -375,18 +350,6 @@ function processSheetRow({
                 message: `Invalid cell value at ${location}.`,
             })
             continue
-        }
-
-        if (colIndex === slugFieldColumnIndex) {
-            if (typeof fieldDataEntryInput.value !== "string") {
-                continue
-            }
-
-            slugValue = slugify(fieldDataEntryInput.value)
-            itemId = generateHashId(fieldDataEntryInput.value)
-
-            // Mark row as seen
-            unsyncedRowIds.delete(itemId)
         }
 
         const fieldName = uniqueHeaderRowNames[colIndex]
@@ -411,7 +374,7 @@ function processSheetRow({
     }
 }
 
-function processSheet(
+export function processSheet(
     rows: Row[],
     processRowParams: Omit<ProcessSheetRowParams, "row" | "rowIndex" | "status" | "fieldType">
 ) {
@@ -436,7 +399,7 @@ function processSheet(
     }
 }
 
-function generateHeaderRowHash(headerRow: HeaderRow, ignoredColumns: string[]) {
+export function generateHeaderRowHash(headerRow: HeaderRow, ignoredColumns: string[]) {
     return generateHashId(
         [...headerRow]
             .filter(field => !ignoredColumns.includes(field))
@@ -445,233 +408,86 @@ function generateHeaderRowHash(headerRow: HeaderRow, ignoredColumns: string[]) {
     )
 }
 
-export async function syncSheet({
-    fetchedSheet,
-    spreadsheetId,
-    sheetTitle,
-    fields,
-    ignoredColumns,
-    slugColumn,
-    colFieldTypes,
-}: SyncMutationOptions) {
-    if (fields.length === 0) {
-        throw new Error("Expected to have at least one field selected to sync.")
+const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
+    if (typeof cellValue === "boolean") return "boolean"
+    if (typeof cellValue === "number") return "number"
+
+    if (typeof cellValue === "string") {
+        const cellValueTrimmed = cellValue.trim()
+        const cellValueLowered = cellValueTrimmed.toLowerCase()
+
+        // If the cell value contains a newline, it's probably a formatted text field
+        if (cellValueLowered.includes("\n")) return "formattedText"
+        if (/<[a-z][\s\S]*>/.test(cellValueLowered)) return "formattedText"
+
+        // Check if the string is an ISO date
+        // Accepts formats like 2023-01-01, 2023-01-01T12:34:56Z, 2023-01-01T12:34:56.789+02:00, etc.
+        if (/^\d{4}-\d{2}-\d{2}(?:[Tt ][\d:.+-Zz]*)?$/.test(cellValueTrimmed) && !isNaN(Date.parse(cellValueTrimmed))) {
+            return "date"
+        }
+
+        // Detect hex, rgb(), and rgba() CSS color formats
+        if (
+            /^#[0-9a-f]{6}$/.test(cellValueLowered) ||
+            /^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+(?:\s*,\s*(?:\d*\.?\d+|\d+%))?\s*\)$/i.test(cellValueTrimmed)
+        ) {
+            return "color"
+        }
+
+        try {
+            new URL(cellValueLowered)
+
+            if (/\.(gif|jpe?g|png|apng|svg|webp)$/i.test(cellValueLowered)) return "image"
+
+            return "link"
+        } catch (e) {
+            return "string"
+        }
     }
 
-    const collection = await framer.getActiveManagedCollection()
+    return "string"
+}
 
-    const unsyncedItemIds = new Set(await collection.getItemIds())
+const getFieldType = (
+    collectionFields: ManagedCollectionFieldInput[],
+    columnId: string,
+    cellValue?: CellValue
+): CollectionFieldType => {
+    // Determine if the field type is already configured
+    if (collectionFields.length > 0) {
+        const field = collectionFields.find(field => field.id === columnId)
+        return field?.type ?? "string"
+    }
 
-    const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
-    const [headerRow, ...rows] = sheet.values
+    // Otherwise, infer the field type from the cell value
+    return cellValue !== undefined ? inferFieldType(cellValue) : "string"
+}
 
-    const uniqueHeaderRowNames = generateUniqueNames(headerRow)
-    const headerRowHash = generateHeaderRowHash(headerRow, ignoredColumns)
+export function getFields(dataSource: DataSource, collectionFields: ManagedCollectionFieldInput[]) {
+    const [headerRow, ...rows] = dataSource.sheetRows || []
+    const row = rows[0]
 
-    const { collectionItems, status } = processSheet(rows, {
-        uniqueHeaderRowNames,
-        unsyncedRowIds: unsyncedItemIds,
-        fieldTypes: colFieldTypes,
-        ignoredFieldColumnIndexes: ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col)),
-        slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
+    if (!headerRow) {
+        return []
+    }
+
+    const nameCount = new Map<string, number>()
+    const uniqueColumnNames = headerRow.map(nameValue => {
+        const name = String(nameValue)
+        const count = nameCount.get(name) || 0
+        nameCount.set(name, count + 1)
+
+        return count > 0 ? `${name} ${count + 1}` : name
     })
 
-    await collection.addItems(collectionItems)
+    return headerRow.map((_, columnIndex) => {
+        const sanitizedName = uniqueColumnNames[columnIndex]
+        assert(sanitizedName, "Sanitized name is undefined")
 
-    const itemsToDelete = Array.from(unsyncedItemIds)
-    await collection.removeItems(itemsToDelete)
-    await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
-
-    const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
-    const sheetId = spreadsheetInfo.sheets.find(x => x.properties.title === sheetTitle)?.properties.sheetId
-    assert(sheetId !== undefined, "Expected sheet ID to be defined")
-
-    await Promise.all([
-        collection.setPluginData(PLUGIN_SPREADSHEET_ID_KEY, spreadsheetId),
-        collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId.toString()),
-        collection.setPluginData(PLUGIN_IGNORED_COLUMNS_KEY, JSON.stringify(ignoredColumns)),
-        collection.setPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY, headerRowHash),
-        collection.setPluginData(PLUGIN_SLUG_COLUMN_KEY, slugColumn),
-        collection.setPluginData(PLUGIN_LAST_SYNCED_KEY, new Date().toISOString()),
-    ])
-
-    const result: SyncResult = {
-        status: status.errors.length === 0 ? "success" : "completed_with_errors",
-        errors: status.errors,
-        info: status.info,
-        warnings: status.warnings,
-    }
-
-    logSyncResult(result, collectionItems)
-
-    return result
-}
-
-export async function getPluginContext(): Promise<PluginContext> {
-    const collection = await framer.getActiveManagedCollection()
-    let collectionFields = await collection.getFields()
-
-    const tokens = await auth.getTokens()
-    const isAuthenticated = !!tokens
-
-    const spreadsheetId = await collection.getPluginData(PLUGIN_SPREADSHEET_ID_KEY)
-    const storedSheetId = await collection.getPluginData(PLUGIN_SHEET_ID_KEY)
-    const storedSheetTitle = await collection.getPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY)
-
-    if (!spreadsheetId || (storedSheetTitle === null && storedSheetId === null) || !isAuthenticated) {
         return {
-            type: "new",
-            collection,
-            isAuthenticated,
-        }
-    }
-
-    // Fetch both new and legacy data
-    const [
-        rawIgnoredColumns,
-        rawSheetHeaderRowHash,
-        storedSlugColumn,
-        lastSyncedTime,
-        legacyIgnoredIndexes,
-        legacySlugIndex,
-    ] = await Promise.all([
-        collection.getPluginData(PLUGIN_IGNORED_COLUMNS_KEY),
-        collection.getPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY),
-        collection.getPluginData(PLUGIN_SLUG_COLUMN_KEY),
-        collection.getPluginData(PLUGIN_LAST_SYNCED_KEY),
-        collection.getPluginData(DO_NOT_USE_ME_PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY),
-        collection.getPluginData(DO_NOT_USE_ME_PLUGIN_SLUG_INDEX_COLUMN_KEY),
-    ])
-
-    let spreadsheetInfo
-
-    try {
-        spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
-    } catch (error) {
-        return { type: "no-sheet-access", spreadsheetId }
-    }
-
-    const sheetId =
-        storedSheetId === null
-            ? spreadsheetInfo.sheets.find(x => x.properties.title === storedSheetTitle)?.properties.sheetId
-            : parseInt(storedSheetId)
-
-    if (sheetId === undefined) {
-        // Shouldn't be able to get here if storedSheetId isn't null
-        assert(storedSheetTitle !== null, "Expected stored sheet title to be defined")
-        return { type: "sheet-by-title-missing", spreadsheetId, title: storedSheetTitle }
-    }
-
-    const sheetTitle = spreadsheetInfo.sheets.find(x => x.properties.sheetId === sheetId)?.properties.title
-    assert(sheetTitle !== undefined, "Expected sheet title to be defined")
-
-    const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle)
-    assert(lastSyncedTime, "Expected last synced time to be set")
-
-    if (storedSheetTitle !== null) {
-        // If we're here it means that we recovered sheet ID from its title. Now
-        // that we have the ID, get rid of the title, as to reduce the potential
-        // for confusion/bugs. Done sequantially as to ensure that we don't
-        // delete the title and then fail to save the ID.
-
-        await collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId.toString())
-        await collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY, null)
-    }
-
-    // Sheet ID never leaves here because Google offers slightly better API
-    // ergonomics when you refer to sheets by their titles, so that's what we
-    // do. This plugin doesn't remain open for long, so it's unlikely that
-    // somebody renames their sheet during that short window. If that assumption
-    // turns out to be false too often - switch to batchGetByDataFilter +
-    // GridRange and drop titles altogether.
-
-    const sheetHeaderRow = sheet.values[0]
-
-    let slugColumn: string | null = null
-    let ignoredColumns: string[] = []
-
-    // If we don't have ignored columns or slug column, we need to update the
-    // collection fields and plugin data.
-    if (!rawIgnoredColumns || !storedSlugColumn) {
-        const uniqueHeaderRowNames = generateUniqueNames(sheetHeaderRow)
-
-        ignoredColumns =
-            parseStringToArray<number>(legacyIgnoredIndexes, "number")
-                ?.map(idx => uniqueHeaderRowNames[idx])
-                .filter(isDefined) ?? []
-
-        slugColumn = legacySlugIndex ? (uniqueHeaderRowNames[parseInt(legacySlugIndex)] ?? null) : null
-
-        collectionFields = collectionFields.map((field, index) => ({
-            ...field,
-            id: uniqueHeaderRowNames.find(name => name === field.name) ?? uniqueHeaderRowNames[index] ?? field.name,
-        }))
-
-        await Promise.all([
-            collection.setPluginData(DO_NOT_USE_ME_PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY, null),
-            collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SLUG_INDEX_COLUMN_KEY, null),
-            collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_HEADER_ROW_KEY, null),
-        ])
-    } else {
-        ignoredColumns = parseStringToArray<string>(rawIgnoredColumns, "string")
-        slugColumn = storedSlugColumn
-    }
-
-    // We should not hash ignored fields since they are not synced to Framer,
-    // and we don't want to trigger a re-sync of the sheet.
-    const currentSheetHeaderRowHash = generateHeaderRowHash(sheetHeaderRow, ignoredColumns)
-    const storedSheetHeaderRowHash = rawSheetHeaderRowHash ?? ""
-
-    // If the order of the columns has changed, we need to reorder the collection fields
-    if (storedSheetHeaderRowHash && collectionFields.length > 0) {
-        const reorderedCollectionFields = []
-
-        for (let i = 0; i < sheetHeaderRow.length; i++) {
-            const field = collectionFields.find(field => field.id === sheetHeaderRow[i])
-
-            if (field) {
-                reorderedCollectionFields.push(field)
-            }
-        }
-
-        collectionFields = reorderedCollectionFields
-    }
-
-    // If the stored slug column is not in the spreadsheet header row, we need to update it
-    if (slugColumn && !sheetHeaderRow.includes(slugColumn)) {
-        slugColumn = null
-    }
-
-    return {
-        type: "update",
-        isAuthenticated,
-        spreadsheetId,
-        sheetTitle,
-        collection,
-        slugColumn,
-        sheet,
-        lastSyncedTime,
-        collectionFields,
-        sheetHeaderRow,
-        ignoredColumns,
-        hasChangedFields: storedSheetHeaderRowHash !== currentSheetHeaderRowHash,
-    }
-}
-
-export const useSyncSheetMutation = ({
-    onSuccess,
-    onError,
-}: {
-    onSuccess?: (result: SyncResult) => void
-    onError?: (e: Error) => void
-}) => {
-    return useMutation({
-        mutationFn: async (args: SyncMutationOptions) => {
-            const collection = await framer.getActiveManagedCollection()
-            await collection.setFields(args.fields)
-            return await syncSheet(args)
-        },
-        onSuccess,
-        onError,
+            id: sanitizedName,
+            name: sanitizedName,
+            type: getFieldType(collectionFields, sanitizedName, row?.[columnIndex] ?? undefined),
+        } as ManagedCollectionFieldInput
     })
 }

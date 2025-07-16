@@ -118,7 +118,10 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
     const [fields, setFields] = useState<ManagedCollectionFieldInput[]>(originalFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
-    const possibleSlugFields = useMemo(() => fields.filter(field => field.type === "string"), [fields])
+    const possibleSlugFields = useMemo(
+        () => fields.filter(field => field.type === "string" || field.type === "number"),
+        [fields]
+    )
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null

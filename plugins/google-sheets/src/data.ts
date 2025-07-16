@@ -59,8 +59,8 @@ export async function syncCollection(
 
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
-        unsyncedRowIds: unsyncedItemIds,
-        fieldTypes: fields.map(field => field.type),
+        unsyncedItemIds,
+        fieldTypes: Object.fromEntries(fields.map(field => [field.id, field.type])),
         ignoredFieldColumnIndexes: Array.from(ignoredFieldIds).map(col => uniqueHeaderRowNames.indexOf(col)),
         slugFieldColumnIndex: slugField ? uniqueHeaderRowNames.indexOf(slugField.id) : -1,
     })
@@ -106,9 +106,9 @@ export async function syncExistingCollection(
     }
 
     try {
-        const fields = await getFields(previousSpreadsheetId, previousSheetId)
         const dataSource = await getDataSource(previousSpreadsheetId, previousSheetId)
         const existingFields = await collection.getFields()
+        const fields = getFields(dataSource, existingFields)
 
         const slugField = fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {

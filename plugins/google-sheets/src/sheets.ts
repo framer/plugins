@@ -227,11 +227,11 @@ export interface SyncResult extends SyncStatus {
 }
 
 interface ProcessSheetRowParams {
-    fieldTypes: CollectionFieldType[]
+    fieldTypes: Record<string, CollectionFieldType>
     row: Row
     rowIndex: number
     uniqueHeaderRowNames: string[]
-    unsyncedRowIds: Set<string>
+    unsyncedItemIds: Set<string>
     slugFieldColumnIndex: number
     ignoredFieldColumnIndexes: number[]
     status: SyncStatus
@@ -310,7 +310,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
 function processSheetRow({
     row,
     rowIndex,
-    unsyncedRowIds,
+    unsyncedItemIds,
     uniqueHeaderRowNames,
     ignoredFieldColumnIndexes,
     slugFieldColumnIndex,
@@ -327,7 +327,10 @@ function processSheetRow({
         // +1 as zero-indexed, another +1 to account for header row
         const location = columnToLetter(colIndex + 1) + (rowIndex + 2)
 
-        const fieldType = fieldTypes[colIndex]
+        const currentFieldName = uniqueHeaderRowNames[colIndex]
+        assert(isDefined(currentFieldName), "Field name must be defined")
+
+        const fieldType = fieldTypes[currentFieldName]
         assert(isDefined(fieldType), "Field type must be defined")
 
         const fieldDataEntryInput = getFieldDataEntryInput(fieldType, cell)
@@ -349,7 +352,7 @@ function processSheetRow({
             itemId = generateHashId(fieldDataEntryInput.value)
 
             // Mark row as seen
-            unsyncedRowIds.delete(itemId)
+            unsyncedItemIds.delete(itemId)
         }
 
         const fieldName = uniqueHeaderRowNames[colIndex]
@@ -487,7 +490,7 @@ export function getFields(dataSource: DataSource, collectionFields: ManagedColle
         return {
             id: sanitizedName,
             name: sanitizedName,
-            type: getFieldType(collectionFields, sanitizedName, row?.[columnIndex]),
+            type: getFieldType(collectionFields, sanitizedName, row?.[columnIndex] ?? undefined),
         } as ManagedCollectionFieldInput
     })
 }

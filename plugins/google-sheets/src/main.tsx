@@ -28,8 +28,10 @@ const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
 
 if (!tokens) {
+    const reactRoot = createRoot(root)
+
     await new Promise<void>(resolve => {
-        createRoot(root).render(
+        reactRoot.render(
             <StrictMode>
                 <QueryClientProvider client={queryClient}>
                     <Authenticate onAuthenticated={resolve} />
@@ -37,6 +39,8 @@ if (!tokens) {
             </StrictMode>
         )
     })
+
+    reactRoot.unmount()
 }
 
 const [

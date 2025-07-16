@@ -17,10 +17,12 @@ export const PLUGIN_KEYS = {
     SLUG_COLUMN: "sheetsPluginSlugColumn",
 } as const
 
+type CellValue = string | number | boolean | null
+
 export interface DataSource {
     id: string
     sheetTitle: string
-    sheetRows: any[][]
+    sheetRows: CellValue[][]
 }
 
 /* Retrieve data and process it into a structured format. */
@@ -52,7 +54,6 @@ export async function syncCollection(
     ignoredFieldIds: Set<string>,
     slugField: ManagedCollectionFieldInput
 ) {
-    const items: ManagedCollectionItemInput[] = []
     const unsyncedItemIds = new Set(await collection.getItemIds())
     const { id: spreadsheetId, sheetTitle } = dataSource
 
@@ -128,7 +129,7 @@ export async function syncExistingCollection(
         return { didSync: true }
     } catch (error) {
         console.error(error)
-        framer.notify(`Failed to sync collection “${previousDataSourceId}”. Check browser console for more details.`, {
+        framer.notify(`Failed to sync collection “${previousSheetId}”. Check browser console for more details.`, {
             variant: "error",
         })
         return { didSync: false }

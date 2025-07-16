@@ -67,7 +67,7 @@ interface SpreadsheetInfo {
     sheets: SpreadsheetInfoSheet[]
 }
 
-export type CellValue = string | number | boolean
+export type CellValue = string | number | boolean | undefined
 
 export type Row = CellValue[]
 
@@ -597,24 +597,6 @@ export async function getPluginContext(): Promise<PluginContext> {
     }
 }
 
-export const useSyncSheetMutation = ({
-    onSuccess,
-    onError,
-}: {
-    onSuccess?: (result: SyncResult) => void
-    onError?: (e: Error) => void
-}) => {
-    return useMutation({
-        mutationFn: async (args: SyncMutationOptions) => {
-            const collection = await framer.getActiveManagedCollection()
-            await collection.setFields(args.fields)
-            return await syncSheet(args)
-        },
-        onSuccess,
-        onError,
-    })
-}
-
 const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
     if (typeof cellValue === "boolean") return "boolean"
     if (typeof cellValue === "number") return "number"
@@ -679,7 +661,8 @@ export function getFields(dataSource: DataSource, collectionFields: ManagedColle
     }
 
     const nameCount = new Map<string, number>()
-    const uniqueColumnNames = headerRow.map(name => {
+    const uniqueColumnNames = headerRow.map(nameValue => {
+        const name = String(nameValue)
         const count = nameCount.get(name) || 0
         nameCount.set(name, count + 1)
 

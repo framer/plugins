@@ -283,7 +283,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
             return { type, value: num }
         }
         case "boolean": {
-            return { type, value: CELL_BOOLEAN_VALUES.includes(cellValue) }
+            return { type, value: CELL_BOOLEAN_VALUES.includes(cellValue as string | number | boolean) }
         }
         case "date": {
             if (typeof cellValue !== "number") return null
@@ -321,6 +321,15 @@ function processSheetRow({
     let slugValue: string | null = null
     let itemId: string | null = null
 
+    const slugCellValue = row[slugFieldColumnIndex]
+    if (slugCellValue) {
+        slugValue = slugify(String(slugCellValue))
+        itemId = generateHashId(slugValue)
+
+        // Mark row as seen
+        unsyncedItemIds.delete(itemId)
+    }
+
     for (const [colIndex, cell] of row.entries()) {
         if (ignoredFieldColumnIndexes.includes(colIndex)) continue
 
@@ -341,18 +350,6 @@ function processSheetRow({
                 message: `Invalid cell value at ${location}.`,
             })
             continue
-        }
-
-        if (colIndex === slugFieldColumnIndex) {
-            if (typeof fieldDataEntryInput.value !== "string") {
-                continue
-            }
-
-            slugValue = slugify(fieldDataEntryInput.value)
-            itemId = generateHashId(fieldDataEntryInput.value)
-
-            // Mark row as seen
-            unsyncedItemIds.delete(itemId)
         }
 
         const fieldName = uniqueHeaderRowNames[colIndex]

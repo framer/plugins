@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
+import * as v from "valibot"
 import { AuthContext, useGoogleToken } from "./auth"
 import type { GoogleInspectionResult, GoogleQueryResult, GoogleToken } from "./types"
 import { batchGoogleApiCall, googleApiCall, isDefined } from "./utils"
@@ -141,15 +142,18 @@ function randomIntFromInterval(min: number, max: number) {
     return Math.floor(min + Math.random() * (max - min + 1))
 }
 
+const RandomDataSchema = v.array(v.array(v.number()))
+type RandomData = v.InferOutput<typeof RandomDataSchema>
+
 export function useMockPerformanceResults(): {
     dailyPerformance: GoogleQueryResult
     queryPerformance: GoogleQueryResult
 } {
-    const getRandomData = (): number[][] => {
-        const savedData = window.localStorage.getItem("searchConsoleRandomChartData") as string
+    const getRandomData = (): RandomData => {
+        const savedData = window.localStorage.getItem("searchConsoleRandomChartData")
 
         if (savedData) {
-            return JSON.parse(savedData)
+            return v.parse(RandomDataSchema, JSON.parse(savedData))
         }
 
         const randomDataGen = []

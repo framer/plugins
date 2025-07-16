@@ -8,7 +8,6 @@ import { MapSheetFieldsPage } from "./pages/MapSheetFields"
 import { Problem } from "./pages/Problem"
 import { SelectSheetPage } from "./pages/SelectSheet"
 import {
-    getPluginContext,
     type PluginContext,
     type PluginContextUpdate,
     syncSheet,
@@ -16,7 +15,7 @@ import {
     useSheetQuery,
     useSyncSheetMutation,
 } from "./sheets"
-import { showAccessErrorUI, showFieldMappingUI, showLoginUI } from "./ui"
+import { showFieldMappingUI, showLoginUI } from "./ui"
 import { assert, syncMethods } from "./utils"
 
 interface AppProps {

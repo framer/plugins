@@ -11,8 +11,8 @@
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
-        "@tanstack/react-query": "^5.81.2",
-        "framer-plugin": "^3.3.2",
+        "@tanstack/react-query": "^5.81.5",
+        "framer-plugin": "^3.4.0",
         "react": "^18",
         "react-dom": "^18"
     },

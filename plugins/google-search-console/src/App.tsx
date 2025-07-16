@@ -2,6 +2,7 @@ import { framer, type PublishInfo } from "framer-plugin"
 import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { ErrorBoundary, useErrorBoundary } from "react-error-boundary"
 import "./App.css"
+import * as v from "valibot"
 import { AuthContext, useGoogleToken } from "./auth"
 import Loading from "./components/Loading"
 import { LARGE_HEIGHT, PLUGIN_WIDTH, SMALL_HEIGHT } from "./constants"
@@ -136,15 +137,13 @@ export function App() {
     return (
         <main key={tokens?.access_token || "logout"} ref={ref}>
             <ErrorBoundary
-                FallbackComponent={e => {
-                    return (
-                        <GoogleLogin
-                            loading={loading}
-                            hasError
-                            errorMessage={e.error.name !== "GoogleError" ? e.error.message || "" : ""}
-                            login={login}
-                        />
-                    )
+                FallbackComponent={({ error }: { error: unknown }) => {
+                    const errorMessage =
+                        v.is(v.object({ name: v.string(), message: v.string() }), error) && error.name !== "GoogleError"
+                            ? error.message
+                            : ""
+
+                    return <GoogleLogin loading={loading} hasError errorMessage={errorMessage} login={login} />
                 }}
                 resetKeys={[tokens?.access_token]}
             >

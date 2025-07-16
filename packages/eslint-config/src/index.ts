@@ -50,7 +50,6 @@ export default tseslint.config(
             "@typescript-eslint/no-unnecessary-template-expression": 0,
             "@typescript-eslint/no-unnecessary-type-assertion": 0,
             "@typescript-eslint/no-unsafe-argument": 0,
-            "@typescript-eslint/no-unsafe-assignment": 0,
             "@typescript-eslint/no-unsafe-call": 0,
             "@typescript-eslint/no-unsafe-enum-comparison": 0,
             "@typescript-eslint/no-unsafe-member-access": 0,
@@ -71,5 +70,13 @@ export default tseslint.config(
     {
         files: [JS_GLOB],
         extends: [tseslint.configs.disableTypeChecked],
+    },
+
+    {
+        files: ["**/greenhouse/**/*"],
+        rules: {
+            // TODO: Enable
+            "@typescript-eslint/no-unsafe-assignment": 0,
+        },
     }
 )

@@ -333,6 +333,11 @@ export interface AirtableRecord {
     fields: Record<FieldId, AirtableFieldValue>
 }
 
+interface AirtableRecordsResponse {
+    records: AirtableRecord[]
+    offset?: string
+}
+
 export interface AirtableTableSchema extends AirtableBaseEntity {
     description?: string
     primaryFieldId: string
@@ -373,7 +378,7 @@ const calculateBackoffDelay = (numAttempts: number): number => {
     return Math.random() * clippedBackoffTime
 }
 
-const request = async ({ path, method, query, body, signal }: RequestOptions, numAttempts = 0) => {
+const request = async ({ path, method, query, body, signal }: RequestOptions, numAttempts = 0): Promise<unknown> => {
     const tokens = await auth.getTokens()
 
     if (!tokens) {
@@ -405,7 +410,7 @@ const request = async ({ path, method, query, body, signal }: RequestOptions, nu
         signal,
     })
 
-    const json = await res.json()
+    const json = (await res.json()) as unknown
 
     if (res.status === 429 && numAttempts < MAX_RETRY_ATTEMPTS) {
         const delay = calculateBackoffDelay(numAttempts)
@@ -414,7 +419,7 @@ const request = async ({ path, method, query, body, signal }: RequestOptions, nu
     }
 
     if (!res.ok) {
-        const errors = (json.errors as { error: string; message: string }[])?.map(
+        const errors = (json as { errors?: { error: string; message: string }[] })?.errors?.map(
             ({ error, message }, index) => `${index + 1}. ${error}: ${message}`
         )
         throw new Error(`Failed to fetch Airtable API:\n\n${errors?.join("\n")}`)
@@ -431,7 +436,7 @@ export const fetchTables = async (baseId: string, signal?: AbortSignal): Promise
         method: "get",
         path: `/meta/bases/${baseId}/tables`,
         signal,
-    })
+    }) as Promise<BaseSchemaResponse>
 }
 
 /**
@@ -469,7 +474,7 @@ export const fetchBases = (offset?: string): Promise<BasesResponse> => {
     return request({
         path: "/meta/bases",
         query,
-    })
+    }) as Promise<BasesResponse>
 }
 
 /**
@@ -480,14 +485,14 @@ export const fetchRecords = async (baseId: string, tableId: string): Promise<Air
     let offset: string | undefined
 
     do {
-        const data = await request({
+        const data = (await request({
             path: `/${baseId}/${tableId}`,
             method: "get",
             query: {
                 returnFieldsByFieldId: "true",
                 offset,
             },
-        })
+        })) as AirtableRecordsResponse
 
         records.push(...data.records)
         offset = data.offset

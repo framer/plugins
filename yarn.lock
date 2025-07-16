@@ -3171,6 +3171,7 @@ __metadata:
     framer-plugin: "npm:^3.4.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -3763,6 +3764,7 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -4797,6 +4799,7 @@ __metadata:
     react-feather: "npm:^2.0.10"
     react-is: "npm:^18.3.1"
     recharts: "npm:^3.0.2"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -4814,6 +4817,7 @@ __metadata:
     react-error-boundary: "npm:^6.0.0"
     react-intersection-observer: "npm:^9.16.0"
     tailwindcss: "npm:^4.1.11"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -4931,6 +4935,7 @@ __metadata:
     react-error-boundary: "npm:^6.0.0"
     tailwindcss: "npm:^4.1.11"
     usehooks-ts: "npm:^3.1.1"
+    valibot: "npm:^1.1.0"
     wouter: "npm:^3.7.1"
   languageName: unknown
   linkType: soft
@@ -5703,6 +5708,7 @@ __metadata:
     framer-plugin-tools: "npm:^1.0.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -6945,6 +6951,7 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 

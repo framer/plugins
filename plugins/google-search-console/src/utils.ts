@@ -97,7 +97,7 @@ ${JSON.stringify(part.body)}
                     const request = currParts[Number(indexId)]
                     if (!request) return null
 
-                    const response = JSON.parse(part.slice(part.indexOf("{")))
+                    const response = JSON.parse(part.slice(part.indexOf("{"))) as unknown
 
                     return { request, response }
                 } catch (e) {
@@ -157,7 +157,7 @@ export async function googleApiCall(
     }
 
     try {
-        const json = await result.json()
+        const json = (await result.json()) as unknown
 
         return json
     } catch (e) {

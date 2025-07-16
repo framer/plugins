@@ -6,18 +6,11 @@ import {
     ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
+import * as v from "valibot"
 import auth from "./auth"
 import { logSyncResult } from "./debug.ts"
 import { queryClient } from "./main.tsx"
-import {
-    assert,
-    columnToLetter,
-    generateHashId,
-    generateUniqueNames,
-    isDefined,
-    parseStringToArray,
-    slugify,
-} from "./utils"
+import { assert, columnToLetter, generateHashId, generateUniqueNames, isDefined, slugify } from "./utils"
 
 const USER_INFO_API_URL = "https://www.googleapis.com/oauth2/v1"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
@@ -88,7 +81,7 @@ interface RequestOptions {
     body?: Record<string, unknown>
 }
 
-const request = async <T = unknown>({ path, service = "sheets", method = "get", query, body }: RequestOptions) => {
+const request = async ({ path, service = "sheets", method = "get", query, body }: RequestOptions): Promise<unknown> => {
     const tokens = await auth.getTokens()
 
     if (!tokens) {
@@ -140,42 +133,42 @@ const request = async <T = unknown>({ path, service = "sheets", method = "get", 
         },
     })
 
-    const json = await res.json()
+    const json = (await res.json()) as unknown
 
     if (!res.ok) {
-        const errorMessage = json.error.message
+        const errorMessage = (json as { error: { message: string } }).error.message
         throw new Error("Failed to fetch Google Sheets API: " + errorMessage)
     }
 
-    return json as T
+    return json
 }
 
-function fetchUserInfo() {
-    return request<UserInfo>({
+async function fetchUserInfo(): Promise<UserInfo> {
+    return request({
         service: "oauth",
         path: `/userinfo`,
-    })
+    }) as Promise<UserInfo>
 }
 
-function fetchSpreadsheetInfo(spreadsheetId: string) {
-    return request<SpreadsheetInfo>({
+async function fetchSpreadsheetInfo(spreadsheetId: string): Promise<SpreadsheetInfo> {
+    return request({
         path: `/spreadsheets/${spreadsheetId}`,
         query: {
             includeGridData: "true",
             fields: "spreadsheetId,spreadsheetUrl,properties.title,sheets.properties.title,sheets.properties.sheetId",
         },
-    })
+    }) as Promise<SpreadsheetInfo>
 }
 
-function fetchSheet(spreadsheetId: string, sheetTitle: string, range?: string) {
-    return request<Sheet>({
+async function fetchSheet(spreadsheetId: string, sheetTitle: string, range?: string): Promise<Sheet> {
+    return request({
         path: `/spreadsheets/${spreadsheetId}/values/${sheetTitle}`,
         query: {
             range: range ?? sheetTitle,
             valueRenderOption: "UNFORMATTED_VALUE",
             dateTimeRenderOption: "SERIAL_NUMBER",
         },
-    })
+    }) as Promise<Sheet>
 }
 
 export const useFetchUserInfo = () => {
@@ -595,10 +588,10 @@ export async function getPluginContext(): Promise<PluginContext> {
     if (!rawIgnoredColumns || !storedSlugColumn) {
         const uniqueHeaderRowNames = generateUniqueNames(sheetHeaderRow)
 
-        ignoredColumns =
-            parseStringToArray<number>(legacyIgnoredIndexes, "number")
-                ?.map(idx => uniqueHeaderRowNames[idx])
-                .filter(isDefined) ?? []
+        ignoredColumns = v
+            .parse(v.array(v.number()), JSON.parse(legacyIgnoredIndexes ?? "[]"))
+            .map(idx => uniqueHeaderRowNames[idx])
+            .filter(isDefined)
 
         slugColumn = legacySlugIndex ? (uniqueHeaderRowNames[parseInt(legacySlugIndex)] ?? null) : null
 
@@ -613,7 +606,7 @@ export async function getPluginContext(): Promise<PluginContext> {
             collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_HEADER_ROW_KEY, null),
         ])
     } else {
-        ignoredColumns = parseStringToArray<string>(rawIgnoredColumns, "string")
+        ignoredColumns = v.parse(v.array(v.string()), JSON.parse(rawIgnoredColumns))
         slugColumn = storedSlugColumn
     }
 

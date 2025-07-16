@@ -24,11 +24,11 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             clearInterval(pollInterval.current)
         }
 
-        return new Promise(resolve => {
+        return new Promise<void>(resolve => {
             const fetchTokens = async () => {
-                const tokens = await auth.fetchTokens(readKey)
+                await auth.fetchTokens(readKey)
                 clearInterval(pollInterval.current)
-                resolve(tokens)
+                resolve()
             }
 
             // Start 2.5 second interval polling

@@ -8,6 +8,7 @@ import type {
     ProtectedMethod,
 } from "framer-plugin"
 import { framer } from "framer-plugin"
+import * as v from "valibot"
 import {
     type AirtableFieldSchema,
     fetchAllBases,
@@ -20,7 +21,7 @@ import {
 } from "./api"
 import type { PossibleField } from "./fields"
 import { inferFields } from "./fields"
-import { richTextToHTML } from "./utils"
+import { assert, richTextToHTML } from "./utils"
 
 export const PLUGIN_KEYS = {
     BASE_ID: "airtablePluginBaseId",
@@ -64,6 +65,11 @@ export async function getTables(baseId: string, signal: AbortSignal): Promise<Ai
 const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
 const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
 
+const ArrayLikeSchema = v.pipe(
+    v.array(v.object({ type: v.optional(v.string()), id: v.string(), url: v.string() })),
+    v.minLength(1)
+)
+
 function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
     // If the field is a lookup field, only use the first value from the array.
     if (fieldSchema.originalAirtableType === "multipleLookupValues") {
@@ -103,11 +109,10 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 }
             }
 
-            if (!Array.isArray(value) || value.length === 0) {
-                return null
-            }
+            if (!v.is(ArrayLikeSchema, value)) return null
 
             let selectedItem = value[0]
+            assert(selectedItem !== undefined)
 
             // For image fields, find the first image file in the array
             if (fieldSchema.type === "image") {
@@ -123,16 +128,18 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
             }
         }
 
-        case "collectionReference":
-            if (!Array.isArray(value)) return null
-            if (value.length === 0) return null
+        case "collectionReference": {
+            if (!v.is(v.pipe(v.array(v.string()), v.minLength(1)), value)) return null
+            const firstItem = value[0]
+            assert(firstItem !== undefined)
             return {
-                value: value[0],
+                value: firstItem,
                 type: "collectionReference",
             }
+        }
 
         case "multiCollectionReference":
-            if (!Array.isArray(value)) return null
+            if (!v.is(v.array(v.string()), value)) return null
             return {
                 value,
                 type: "multiCollectionReference",
@@ -253,9 +260,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
             }
 
         case "array": {
-            if (!Array.isArray(value) || value.length === 0) {
-                return null
-            }
+            if (!v.is(ArrayLikeSchema, value)) return null
 
             const imageField = fieldSchema.fields[0]
             const arrayItems: ArrayItemInput[] = []

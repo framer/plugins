@@ -152,12 +152,12 @@ export function useMockPerformanceResults(): {
             return JSON.parse(savedData)
         }
 
-        const randomDataGen = [...new Array(14)].map(() => {
+        const randomDataGen = []
+        for (let i = 0; i < 14; i++) {
             const clicks = randomIntFromInterval(1000, 3000)
             const impressions = clicks + randomIntFromInterval(1000, 3000)
-
-            return [clicks, impressions]
-        })
+            randomDataGen.push([clicks, impressions])
+        }
 
         window.localStorage.setItem("searchConsoleRandomChartData", JSON.stringify(randomDataGen))
 

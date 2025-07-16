@@ -4684,6 +4684,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"framer-plugin@npm:^3.5.0-beta.0":
+  version: 3.5.0-beta.0
+  resolution: "framer-plugin@npm:3.5.0-beta.0"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/788a8394aa03e61a2904847960b0c3b3c193d36ca12d74d9f709e02639d502c2c0d716557800cbb271f61c3dc5b93abe16b426c4b2a63d42db7482443e859fda
+  languageName: node
+  linkType: hard
+
 "fs-minipass@npm:^3.0.0":
   version: 3.0.3
   resolution: "fs-minipass@npm:3.0.3"
@@ -4808,7 +4818,7 @@ __metadata:
     "@tanstack/react-query": "npm:^5.81.5"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    framer-plugin: "npm:^3.4.0"
+    framer-plugin: "npm:^3.5.0-beta.0"
     react: "npm:^18"
     react-dom: "npm:^18"
   languageName: unknown

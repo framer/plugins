@@ -12,7 +12,7 @@
     },
     "dependencies": {
         "@tanstack/react-query": "^5.81.5",
-        "framer-plugin": "^3.4.0",
+        "framer-plugin": "^3.5.0-beta.0",
         "react": "^18",
         "react-dom": "^18"
     },

@@ -2,10 +2,12 @@ import "./App.css"
 
 import { framer, type ManagedCollection, type ManagedCollectionFieldInput } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
+import auth from "./auth"
 import { type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { SelectDataSource } from "./SelectDataSource"
-import { useSheetQuery, fetchSpreadsheetInfo } from "./sheets"
+import { fetchSpreadsheetInfo, useSheetQuery } from "./sheets"
+import { showAccessErrorUI, showFieldMappingUI, showLoginUI } from "./ui"
 
 interface AppProps {
     collection: ManagedCollection
@@ -36,23 +38,24 @@ export function App({
     const isSheetLoading = dataSource && isSheetPending
 
     useLayoutEffect(() => {
-        if (dataSource || isSheetLoading) {
-            framer.showUI({
-                width: 425,
-                height: 425,
-                minWidth: 360,
-                minHeight: 425,
-                resizable: true,
-            })
-        } else {
-            framer.showUI({
-                width: 320,
-                height: 345,
-                minWidth: 320,
-                minHeight: 345,
-                resizable: false,
-            })
+        const showUI = async () => {
+            const hasAccessError = false
+
+            try {
+                if (hasAccessError) {
+                    await showAccessErrorUI()
+                } else if (dataSource || isSheetLoading) {
+                    await showFieldMappingUI()
+                } else {
+                    await showLoginUI()
+                }
+            } catch (error) {
+                console.error(error)
+                framer.notify(`Error opening plugin. Check the logs for more details.`, { variant: "error" })
+            }
         }
+
+        showUI()
     }, [dataSource])
 
     useEffect(() => {
@@ -102,6 +105,26 @@ export function App({
 
         return () => abortController.abort()
     }, [previousSpreadsheetId, previousSheetId])
+
+    useEffect(() => {
+        framer.setMenu([
+            {
+                label: "View in Google Sheets",
+                visible: Boolean(dataSource?.id),
+                onAction: () => {
+                    if (!dataSource?.id) return
+                    window.open(`https://docs.google.com/spreadsheets/d/${dataSource.id}/edit`, "_blank")
+                },
+            },
+            { type: "separator" },
+            {
+                label: "Log Out",
+                onAction: async () => {
+                    await auth.logout()
+                },
+            },
+        ])
+    }, [dataSource])
 
     if (isLoadingDataSource) {
         return (

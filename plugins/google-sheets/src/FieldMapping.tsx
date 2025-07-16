@@ -250,16 +250,7 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
             <hr className="sticky-divider" />
             <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
-                    <div className="heading-row">
-                        <span>Slug Field</span>
-                        <a
-                            href={`https://docs.google.com/spreadsheets/d/${dataSource.id}/edit`}
-                            target="_blank"
-                            className="heading-link"
-                        >
-                            View in Google Sheets
-                        </a>
-                    </div>
+                    <span>Slug Field</span>
                     <select
                         required
                         name="slugField"

@@ -175,27 +175,6 @@ input[type="text"]:disabled,
     width: 100%;
 }
 
-.mapping .heading-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-}
-
-.mapping .heading-link {
-    width: fit-content;
-    max-width: 50%;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-}
-
-.mapping .heading-link:hover {
-    text-decoration: underline;
-}
-
 .mapping footer {
     position: sticky;
     bottom: 0;

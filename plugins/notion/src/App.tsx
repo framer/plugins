@@ -1,6 +1,6 @@
 import "./App.css"
 
-import { APIErrorCode } from "@notionhq/client"
+import { APIErrorCode, APIResponseError } from "@notionhq/client"
 import { framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useLayoutEffect, useMemo, useState } from "react"
 import { type DatabaseIdMap, type DataSource, getDataSource } from "./data"
@@ -75,17 +75,18 @@ export function App({
         setIsLoadingDataSource(true)
         getDataSource(previousDatabaseId, abortController.signal)
             .then(setDataSource)
-            .catch(error => {
+            .catch((error: APIResponseError | Error) => {
                 if (abortController.signal.aborted) return
 
                 console.error(error)
 
                 // Check for Notion API error codes
                 if (
-                    error.code === APIErrorCode.RestrictedResource ||
-                    error.code === APIErrorCode.ObjectNotFound ||
-                    error.code === APIErrorCode.Unauthorized ||
-                    error.status === 403
+                    "code" in error &&
+                    (error.code === APIErrorCode.RestrictedResource ||
+                        error.code === APIErrorCode.ObjectNotFound ||
+                        error.code === APIErrorCode.Unauthorized ||
+                        error.status === 403)
                 ) {
                     setHasAccessError(true)
                 } else {

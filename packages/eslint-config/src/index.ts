@@ -50,7 +50,6 @@ export default tseslint.config(
             "@typescript-eslint/no-unnecessary-template-expression": 0,
             "@typescript-eslint/no-unnecessary-type-assertion": 0,
             "@typescript-eslint/no-unsafe-enum-comparison": 0,
-            "@typescript-eslint/no-unsafe-member-access": 0,
             "@typescript-eslint/non-nullable-type-assertion-style": 0,
             "@typescript-eslint/only-throw-error": 0,
             "@typescript-eslint/prefer-nullish-coalescing": 0,
@@ -73,6 +72,7 @@ export default tseslint.config(
         files: ["**/greenhouse/**/*"],
         rules: {
             // TODO: Enable
+            "@typescript-eslint/no-unsafe-member-access": 0,
             "@typescript-eslint/no-unsafe-assignment": 0,
         },
     }

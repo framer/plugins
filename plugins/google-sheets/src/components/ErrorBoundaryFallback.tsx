@@ -1,6 +1,7 @@
 import { QueryErrorResetBoundary } from "@tanstack/react-query"
 import type { PropsWithChildren } from "react"
 import { ErrorBoundary } from "react-error-boundary"
+import * as v from "valibot"
 
 export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
     <QueryErrorResetBoundary>
@@ -9,7 +10,9 @@ export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
                 onReset={reset}
                 fallbackRender={({ resetErrorBoundary, error }) => (
                     <div className="flex flex-col w-full h-full gap-2 items-center justify-center">
-                        <p className="text-framer-red w-full line-clamp-6">{error.message}</p>
+                        <p className="text-framer-red w-full line-clamp-6">
+                            {v.is(v.object({ message: v.string() }), error) ? error.message : "Unknown error"}
+                        </p>
                         <button className="w-full" onClick={resetErrorBoundary}>
                             Try again
                         </button>

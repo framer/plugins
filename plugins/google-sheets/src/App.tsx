@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useState } from "react"
 import auth from "./auth"
 import { type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
+import { NoTableAccess } from "./NoAccess"
 import { SelectDataSource } from "./SelectDataSource"
 import { fetchSpreadsheetInfo, useSheetQuery } from "./sheets"
 import { showAccessErrorUI, showFieldMappingUI, showLoginUI } from "./ui"
@@ -32,6 +33,7 @@ export function App({
 }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousSheetId && previousSpreadsheetId))
+    const [hasAccessError, setHasAccessError] = useState(false)
 
     const { data: sheet, isPending: isSheetPending } = useSheetQuery(dataSource?.id ?? "", dataSource?.sheetTitle ?? "")
 
@@ -39,8 +41,6 @@ export function App({
 
     useLayoutEffect(() => {
         const showUI = async () => {
-            const hasAccessError = false
-
             try {
                 if (hasAccessError) {
                     await showAccessErrorUI()
@@ -56,7 +56,7 @@ export function App({
         }
 
         showUI()
-    }, [dataSource])
+    }, [dataSource, isSheetLoading, hasAccessError])
 
     useEffect(() => {
         if (!previousSpreadsheetId || !previousSheetId) {
@@ -95,7 +95,10 @@ export function App({
                 if (abortController.signal.aborted) return
 
                 console.error(error)
-                framer.notify(`Error loading previously sheet. Check the logs for more details.`, { variant: "error" })
+                setHasAccessError(true)
+                framer.notify(`Error loading previously synced sheet. Check the logs for more details.`, {
+                    variant: "error",
+                })
             })
             .finally(() => {
                 if (abortController.signal.aborted) return
@@ -132,6 +135,10 @@ export function App({
                 <div className="framer-spinner" />
             </main>
         )
+    }
+
+    if (hasAccessError) {
+        return <NoTableAccess previousSpreadsheetId={previousSpreadsheetId} />
     }
 
     if (!dataSource) {

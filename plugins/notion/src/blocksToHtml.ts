@@ -112,7 +112,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 tableHasRowHeader = block.table.has_row_header
                 tableHasColumnHeader = block.table.has_column_header
                 break
-            case "table_row":
+            case "table_row": {
                 // Check if this is the first row after a table block
                 const isFirstRow = blocks[i - 1]?.type === "table"
 
@@ -137,6 +137,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                     htmlContent += `</tbody></table>`
                 }
                 break
+            }
             case "video": {
                 if (block.video.type !== "external") {
                     break

@@ -1,8 +1,8 @@
-import { framer, useIsAllowedTo, type ManagedCollectionFieldInput, type ManagedCollection } from "framer-plugin"
+import { framer, type ManagedCollection, type ManagedCollectionFieldInput, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { type DataSource, mergeFieldsWithExistingFields, syncCollection } from "./data"
-import { syncMethods } from "./utils"
 import { getFields } from "./sheets"
+import { syncMethods } from "./utils"
 
 type CollectionFieldType = ManagedCollectionFieldInput["type"]
 
@@ -126,38 +126,40 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
 
     const dataSourceName = dataSource.sheetTitle || "Sheet"
 
-    // useEffect(() => {
-    //     const abortController = new AbortController()
+    useEffect(() => {
+        const abortController = new AbortController()
 
-    //     collection
-    //         .getFields()
-    //         .then(collectionFields => {
-    //             if (abortController.signal.aborted) return
+        collection
+            .getFields()
+            .then(async collectionFields => {
+                if (abortController.signal.aborted) return
 
-    //             setFields(mergeFieldsWithExistingFields(dataSource.fields, collectionFields))
+                const fields = await getFields(dataSource, collectionFields)
 
-    //             const existingFieldIds = new Set(collectionFields.map(field => field.id))
+                setFields(mergeFieldsWithExistingFields(fields, collectionFields))
 
-    //             if (initialSlugFieldId) {
-    //                 const ignoredIds = new Set<string>()
-    //                 for (const sourceField of dataSource.fields) {
-    //                     if (existingFieldIds.has(sourceField.id)) continue
-    //                     ignoredIds.add(sourceField.id)
-    //                 }
-    //                 setIgnoredFieldIds(ignoredIds)
-    //             }
+                const existingFieldIds = new Set(collectionFields.map(field => field.id))
 
-    //             setStatus("mapping-fields")
-    //         })
-    //         .catch(error => {
-    //             if (!abortController.signal.aborted) {
-    //                 console.error("Failed to fetch collection fields:", error)
-    //                 framer.notify("Failed to load collection fields", { variant: "error" })
-    //             }
-    //         })
+                if (initialSlugFieldId) {
+                    const ignoredIds = new Set<string>()
+                    for (const sourceField of fields) {
+                        if (existingFieldIds.has(sourceField.id)) continue
+                        ignoredIds.add(sourceField.id)
+                    }
+                    setIgnoredFieldIds(ignoredIds)
+                }
 
-    //     return () => abortController.abort()
-    // }, [initialSlugFieldId, dataSource, collection])
+                setStatus("mapping-fields")
+            })
+            .catch(error => {
+                if (!abortController.signal.aborted) {
+                    console.error("Failed to fetch collection fields:", error)
+                    framer.notify("Failed to load collection fields", { variant: "error" })
+                }
+            })
+
+        return () => abortController.abort()
+    }, [initialSlugFieldId, dataSource, collection])
 
     const changeFieldName = useCallback((fieldId: string, name: string) => {
         setFields(prevFields => {

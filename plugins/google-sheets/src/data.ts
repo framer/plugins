@@ -1,12 +1,6 @@
-import {
-    type ManagedCollectionFieldInput,
-    framer,
-    type ManagedCollection,
-    type ManagedCollectionItemInput,
-} from "framer-plugin"
-import { assert, syncMethods } from "./utils"
-import { fetchSpreadsheetInfo, fetchSheetWithClient, generateHeaderRowHash, processSheet } from "./sheets"
-import { generateUniqueNames } from "./utils"
+import { framer, type ManagedCollection, type ManagedCollectionFieldInput } from "framer-plugin"
+import { fetchSheetWithClient, fetchSpreadsheetInfo, generateHeaderRowHash, getFields, processSheet } from "./sheets"
+import { assert, generateUniqueNames, syncMethods } from "./utils"
 
 export const PLUGIN_KEYS = {
     SPREADSHEET_ID: "sheetsPluginSpreadsheetId",
@@ -112,10 +106,11 @@ export async function syncExistingCollection(
     }
 
     try {
+        const fields = await getFields(previousSpreadsheetId, previousSheetId)
         const dataSource = await getDataSource(previousSpreadsheetId, previousSheetId)
         const existingFields = await collection.getFields()
 
-        const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)
+        const slugField = fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
             framer.notify(`No field matches the slug field ID “${previousSlugFieldId}”. Sync will not be performed.`, {
                 variant: "error",

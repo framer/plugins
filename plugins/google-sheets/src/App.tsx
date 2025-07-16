@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useState } from "react"
 import { type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { SelectDataSource } from "./SelectDataSource"
-import { useSheetQuery } from "./sheets"
+import { useSheetQuery, fetchSpreadsheetInfo } from "./sheets"
 
 interface AppProps {
     collection: ManagedCollection
@@ -63,8 +63,31 @@ export function App({
         const abortController = new AbortController()
 
         setIsLoadingDataSource(true)
-        getDataSource(previousSpreadsheetId, previousSheetId)
-            .then(setDataSource)
+
+        // First fetch spreadsheet info to get the sheet title from the sheet ID
+        fetchSpreadsheetInfo(previousSpreadsheetId)
+            .then(spreadsheetInfo => {
+                if (abortController.signal.aborted) return
+
+                const sheetTitle = spreadsheetInfo.sheets.find(
+                    sheet => sheet.properties.sheetId === parseInt(previousSheetId)
+                )?.properties.title
+
+                if (!sheetTitle) {
+                    throw new Error(`Sheet with ID ${previousSheetId} not found in spreadsheet`)
+                }
+
+                return getDataSource(previousSpreadsheetId, sheetTitle)
+            })
+            .then(dataSource => {
+                if (abortController.signal.aborted) return
+
+                if (dataSource) {
+                    setDataSource(dataSource)
+                } else {
+                    throw new Error(`Sheet with ID ${previousSheetId} not found in spreadsheet`)
+                }
+            })
             .catch(error => {
                 if (abortController.signal.aborted) return
 
@@ -96,12 +119,12 @@ export function App({
         return (
             <main className="loading">
                 <div className="framer-spinner" />
-                <p>Loading {dataSource?.sheetTitle || "sheet"}...</p>
             </main>
         )
     }
 
     if (!sheet?.values || sheet.values.length === 0) {
+        framer.notify("Failed to load sheet. Check the logs for more details.", { variant: "error" })
         throw new Error("The provided sheet requires at least one row")
     }
 

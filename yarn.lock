@@ -2234,10 +2234,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/query-core@npm:5.81.2":
-  version: 5.81.2
-  resolution: "@tanstack/query-core@npm:5.81.2"
-  checksum: 10/6045477b63ab1e9779224488507ee3899fa511e979ed39909a9fe0fa42cfdc84a43c931a20c9bab7abebf13733d1228a1b89ab605e0f1e3ca3edacba19a1378a
+"@tanstack/query-core@npm:5.83.0":
+  version: 5.83.0
+  resolution: "@tanstack/query-core@npm:5.83.0"
+  checksum: 10/68d76438ad8b95dce07c848a29bac01144bddbad0a6a860569eae909ecf6ea0dda378b3c5f55c45a415a34af79c90917bb5055912d315307416ef2a28b449699
   languageName: node
   linkType: hard
 
@@ -2252,14 +2252,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:^5.81.2":
-  version: 5.81.2
-  resolution: "@tanstack/react-query@npm:5.81.2"
+"@tanstack/react-query@npm:^5.81.5":
+  version: 5.83.0
+  resolution: "@tanstack/react-query@npm:5.83.0"
   dependencies:
-    "@tanstack/query-core": "npm:5.81.2"
+    "@tanstack/query-core": "npm:5.83.0"
   peerDependencies:
     react: ^18 || ^19
-  checksum: 10/2bab43d904bf4aaf4ddb0e8db1925156aee1783da484d6c17c238054d1e27ff2cbfb1012ccb2ccef578bd3e5d096546648ec06b0bd1ad734c3c48a041d4b6020
+  checksum: 10/59609393109af3a50fbf5bc84491220b7e171b7e7f67cfc5792dd0c649b26606baf1663c045b531982e4aea7d96214fd6cdcb7d1cf5e14b4846073b46dcd3ac4
   languageName: node
   linkType: hard
 
@@ -4636,6 +4636,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"framer-plugin@npm:^3.4.0":
+  version: 3.4.0
+  resolution: "framer-plugin@npm:3.4.0"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/3ba06eb482b992af0a548b7541dda36c59481e0252d1c822b712cc6e480f4a71b8b67080669abff452cb6e3d2ea33c531c59c58c0b2ab80c8382750f0d3e1104
+  languageName: node
+  linkType: hard
+
 "fs-minipass@npm:^3.0.0":
   version: 3.0.3
   resolution: "fs-minipass@npm:3.0.3"
@@ -4785,10 +4795,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "google-sheets@workspace:plugins/google-sheets"
   dependencies:
-    "@tanstack/react-query": "npm:^5.81.2"
+    "@tanstack/react-query": "npm:^5.81.5"
     "@types/react": "npm:^18"
     "@types/react-dom": "npm:^18"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.4.0"
     react: "npm:^18"
     react-dom: "npm:^18"
   languageName: unknown

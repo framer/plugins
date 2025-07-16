@@ -6,7 +6,24 @@ import { NumberInput } from "../inputs/number-input"
 import { useGradientTexture } from "../use-gradient-texture"
 import { useImageTexture } from "../use-image-texture"
 
+interface Uniforms {
+    uTexture: { value: Texture }
+    uResolution: { value: Vec2 }
+    uDitherTexture: { value: Texture }
+    uPaletteTexture: { value: Texture }
+    uPixelSize: { value: number }
+    uColorMode: { value: number }
+    uQuantization: { value: number }
+    uRandom: { value: number }
+    uBrightness: { value: number }
+    uRed: { value: number }
+    uGreen: { value: number }
+    uBlue: { value: number }
+}
+
 export class OrderedDitherMaterial extends Program {
+    declare uniforms: Uniforms
+
     constructor(gl: OGLRenderingContext) {
         super(gl, {
             vertex: /*glsl*/ `#version 300 es
@@ -38,7 +55,6 @@ export class OrderedDitherMaterial extends Program {
                 uniform sampler2D uTexture;
                 uniform sampler2D uDitherTexture;
                 uniform sampler2D uPaletteTexture;
-                uniform int uMode;
                 uniform vec2 uResolution;
                 uniform float uPixelSize;
                 uniform int uColorMode;
@@ -121,17 +137,13 @@ export class OrderedDitherMaterial extends Program {
                 uRed: { value: 0.299 },
                 uGreen: { value: 0.587 },
                 uBlue: { value: 0.114 },
-            },
+            } satisfies Uniforms,
             transparent: true,
         })
     }
 
     setResolution(x: number, y: number) {
         this.uniforms.uResolution.value.set(Math.floor(x), Math.floor(y))
-    }
-
-    set mode(value: number) {
-        this.uniforms.uMode.value = value
     }
 
     set pixelSize(value: number) {

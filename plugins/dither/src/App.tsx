@@ -87,10 +87,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         if (!resolution[0] || !resolution[1]) return
 
         renderer.setSize(resolution[0], resolution[1])
-
-        // @ts-expect-error - TODO: fix this
-        program?.setResolution?.(resolution[0], resolution[1])
-    }, [renderer, program, resolution])
+    }, [renderer, resolution])
 
     useEffect(() => {
         if (!ditherRef.current) return

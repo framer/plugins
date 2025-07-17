@@ -35,6 +35,17 @@
                 "source.fixAll.biome": true,
                 "source.organizeImports.biome": true
             }
+        },
+        "CSS": {
+            "formatter": {
+                "language_server": {
+                    "name": "biome"
+                }
+            },
+            "code_actions_on_format": {
+                "source.fixAll.biome": true,
+                "source.organizeImports.biome": true
+            }
         }
     },
     "auto_install_extensions": {

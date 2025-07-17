@@ -29,7 +29,9 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
 
         getPluginContext()
             .then(setContext)
-            .finally(() => setIsRetrying(false))
+            .finally(() => {
+                setIsRetrying(false)
+            })
     }
 
     return (

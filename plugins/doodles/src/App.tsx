@@ -18,7 +18,9 @@ async function svgToBytes(svgText: string) {
     const blob = new Blob([svgText], { type: "image/svg+xml" })
     const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as ArrayBuffer)
+        reader.onload = () => {
+            resolve(reader.result as ArrayBuffer)
+        }
         reader.onerror = reject
         reader.readAsArrayBuffer(blob)
     })
@@ -131,7 +133,9 @@ export function App() {
                     strokeColor={`hsl(${strokeColor.h} ${strokeColor.s}% ${strokeColor.l}%)`}
                     canvasColor="transparent"
                     withTimestamp
-                    onChange={paths => setHistoryIndex(paths.length)}
+                    onChange={paths => {
+                        setHistoryIndex(paths.length)
+                    }}
                     onStroke={props => {
                         if (historyIndex < historySize) {
                             setHistorySize(historyIndex)

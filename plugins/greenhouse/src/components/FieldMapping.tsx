@@ -32,7 +32,9 @@ function FieldMappingRow({
                 type="button"
                 className={`source-field ${isMissingReference && "missing-reference"}`}
                 aria-disabled={isDisabled}
-                onClick={() => onToggleDisabled(field.id)}
+                onClick={() => {
+                    onToggleDisabled(field.id)
+                }}
                 tabIndex={0}
             >
                 <input type="checkbox" checked={!isDisabled} tabIndex={-1} readOnly />
@@ -44,7 +46,9 @@ function FieldMappingRow({
                     className="target-field"
                     disabled={isDisabled}
                     value={field.collectionId}
-                    onChange={event => onCollectionChange(field.id, event.target.value)}
+                    onChange={event => {
+                        onCollectionChange(field.id, event.target.value)
+                    }}
                 >
                     {field.supportedCollections?.length === 0 && (
                         <option value="" disabled>
@@ -64,7 +68,9 @@ function FieldMappingRow({
                     disabled={disabled} // IsDisabled doesn't make sense here since it's not a collection reference field
                     placeholder={originalFieldName}
                     value={field.name !== originalFieldName ? field.name : ""}
-                    onChange={event => onNameChange(field.id, event.target.value ?? originalFieldName ?? "")}
+                    onChange={event => {
+                        onNameChange(field.id, event.target.value ?? originalFieldName ?? "")
+                    }}
                 />
             )}
         </>

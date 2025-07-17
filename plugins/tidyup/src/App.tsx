@@ -353,7 +353,9 @@ export function App() {
     const previewSize = useElementSize({
         ref: previewElement,
         deps: [layout],
-        onChange: () => setTransitionEnabled(false),
+        onChange: () => {
+            setTransitionEnabled(false)
+        },
     })
 
     const [randomKey, randomize] = useReducer((state: number) => state + 1, 0)

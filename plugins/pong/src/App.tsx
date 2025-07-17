@@ -150,7 +150,12 @@ export function App() {
                 game.
             </p>
             {isGameRunning ? (
-                <button className="framer-button-primary" onClick={() => setIsGameRunning(false)}>
+                <button
+                    className="framer-button-primary"
+                    onClick={() => {
+                        setIsGameRunning(false)
+                    }}
+                >
                     Stop Game
                 </button>
             ) : (

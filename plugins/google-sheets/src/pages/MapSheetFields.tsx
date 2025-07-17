@@ -259,7 +259,9 @@ export function MapSheetFieldsPage({
                     <select
                         className={cx("w-full", !isAllowedToManage && "opacity-50")}
                         value={slugColumn}
-                        onChange={e => setSlugColumn(e.target.value)}
+                        onChange={e => {
+                            setSlugColumn(e.target.value)
+                        }}
                         required
                         disabled={!isAllowedToManage}
                         title={isAllowedToManage ? undefined : "Insufficient permissions"}
@@ -285,7 +287,9 @@ export function MapSheetFieldsPage({
                                 value={field.name}
                                 darken={isDisabled || !isAllowedToManage}
                                 checked={!isDisabled}
-                                onChange={() => handleFieldToggle(field.id)}
+                                onChange={() => {
+                                    handleFieldToggle(field.id)
+                                }}
                                 disabled={!isAllowedToManage}
                             />
                             <div className="flex items-center justify-center">
@@ -299,7 +303,9 @@ export function MapSheetFieldsPage({
                                 disabled={isDisabled || !isAllowedToManage}
                                 placeholder={field.name}
                                 value={fieldNameOverrides[field.id] ?? ""}
-                                onChange={e => handleFieldNameChange(field.id, e.target.value)}
+                                onChange={e => {
+                                    handleFieldNameChange(field.id, e.target.value)
+                                }}
                             />
                             <select
                                 className={cx("w-full", !isAllowedToManage && "opacity-50")}

@@ -146,7 +146,9 @@ export default function Performance({ performance }: PerformanceProps) {
                             style={{
                                 opacity: metricFocus && metricFocus !== "clicks" ? 0.5 : 1,
                             }}
-                            onClick={() => setMetricFocus(currFocus => (currFocus === "clicks" ? null : "clicks"))}
+                            onClick={() => {
+                                setMetricFocus(currFocus => (currFocus === "clicks" ? null : "clicks"))
+                            }}
                         >
                             <div>
                                 <FitText>{aveta(totalClicks)}</FitText>
@@ -159,9 +161,9 @@ export default function Performance({ performance }: PerformanceProps) {
                             style={{
                                 opacity: metricFocus && metricFocus !== "impressions" ? 0.5 : 1,
                             }}
-                            onClick={() =>
+                            onClick={() => {
                                 setMetricFocus(currFocus => (currFocus === "impressions" ? null : "impressions"))
-                            }
+                            }}
                         >
                             <div>
                                 <FitText>{aveta(totalImpressions)}</FitText>

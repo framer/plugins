@@ -103,7 +103,9 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     if (!spreadsheetId || sheetTitle === null) {
         return (
             <SelectSheetPage
-                onError={() => setIsSelectSheetError(true)}
+                onError={() => {
+                    setIsSelectSheetError(true)
+                }}
                 onSheetSelected={(selectedSpreadsheetId, selectedSheetTitle) => {
                     setSpreadsheetId(selectedSpreadsheetId)
                     setSheetTitle(selectedSheetTitle)

@@ -185,12 +185,16 @@ export function App() {
                     type="search"
                     placeholder="Search…"
                     className="search-input"
-                    onChange={e => setSearch(e.target.value)}
+                    onChange={e => {
+                        setSearch(e.target.value)
+                    }}
                     value={search}
                 />
                 <SegmentedControl
                     value={activeTab}
-                    onChange={value => setActiveTab(value)}
+                    onChange={value => {
+                        setActiveTab(value)
+                    }}
                     items={[
                         { value: "components", label: "Components" },
                         { value: "layouts", label: "Layouts" },

@@ -146,7 +146,9 @@ export function App() {
                     autoCorrect="off"
                     autoFocus
                     className="search-input"
-                    onChange={e => setSearchQuery(e.target.value)}
+                    onChange={e => {
+                        setSearchQuery(e.target.value)
+                    }}
                     placeholder="Search…"
                 />
                 <select

@@ -101,7 +101,7 @@ export default function ChatPage() {
                     name="enableWidgetCookieBanner"
                     id="enableWidgetCookieBanner"
                     value={JSON.stringify(settings.enableWidgetCookieBanner)}
-                    onChange={value =>
+                    onChange={value => {
                         setSettings({
                             ...settings,
                             enableWidgetCookieBanner: v.parse(
@@ -109,7 +109,7 @@ export default function ChatPage() {
                                 JSON.parse(value.target.value)
                             ),
                         })
-                    }
+                    }}
                     disabled={!isAllowedToSetCustomCode}
                     title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
                     className={isAllowedToSetCustomCode ? undefined : "opacity-50"}
@@ -129,12 +129,12 @@ export default function ChatPage() {
                         { value: "true", label: "Hide" },
                     ]}
                     value={JSON.stringify(settings.disableAttachment)}
-                    onValueChange={value =>
+                    onValueChange={value => {
                         setSettings({
                             ...settings,
                             disableAttachment: v.parse(DisableAttachmentSchema, JSON.parse(value)),
                         })
-                    }
+                    }}
                     disabled={!isAllowedToSetCustomCode}
                     title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
                 />

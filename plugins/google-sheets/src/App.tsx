@@ -107,7 +107,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     useEffect(() => {
         framer.setMenu([
             {
-                label: "View in Google Sheets",
+                label: `View ${sheetTitle} in Google Sheets`,
                 visible: Boolean(spreadsheetId),
                 onAction: () => {
                     if (!spreadsheetId) return

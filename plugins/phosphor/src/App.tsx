@@ -23,7 +23,10 @@ interface IconEntry {
     updated_in: number // 1.4
 }
 
-type WeightOption = { key: string; value: IconWeight }
+interface WeightOption {
+    key: string
+    value: IconWeight
+}
 
 const weightOptions: WeightOption[] = [
     {

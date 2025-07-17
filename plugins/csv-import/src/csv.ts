@@ -18,7 +18,7 @@ export type ImportResultItem = CollectionItemInput & {
     action: "add" | "conflict" | "onConflictUpdate" | "onConflictSkip"
 }
 
-export type ImportResult = {
+export interface ImportResult {
     warnings: {
         missingSlugCount: number
         doubleSlugCount: number

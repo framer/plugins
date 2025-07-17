@@ -1,7 +1,6 @@
 import classNames from "classnames"
 import { framer, type ManagedCollection, type ManagedCollectionField, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
-import * as v from "valibot"
 import {
     type FieldId,
     type FieldInfo,
@@ -13,8 +12,8 @@ import {
     type DatabaseIdMap,
     type DataSource,
     fieldsInfoToCollectionFields,
-    IgnoredFieldIdsSchema,
     mergeFieldsInfoWithExistingFields,
+    parseIgnoredFieldIds,
     syncCollection,
 } from "./data"
 import { assert, syncMethods } from "./utils"
@@ -163,11 +162,7 @@ export function FieldMapping({
     )
 
     const [fieldsInfo, setFieldsInfo] = useState(initialFieldsInfo)
-    const [ignoredFieldIds, setIgnoredFieldIds] = useState(
-        previousIgnoredFieldIds
-            ? new Set(v.parse(IgnoredFieldIdsSchema, JSON.parse(previousIgnoredFieldIds)))
-            : new Set<string>()
-    )
+    const [ignoredFieldIds, setIgnoredFieldIds] = useState(parseIgnoredFieldIds(previousIgnoredFieldIds))
 
     useEffect(() => {
         const abortController = new AbortController()

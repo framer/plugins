@@ -198,7 +198,13 @@ export async function syncCollection(
     ])
 }
 
-export const IgnoredFieldIdsSchema = v.array(v.string())
+const IgnoredFieldIdsSchema = v.array(v.string())
+
+export function parseIgnoredFieldIds(ignoredFieldIdsStringified: string | null): Set<string> {
+    return ignoredFieldIdsStringified
+        ? new Set(v.parse(IgnoredFieldIdsSchema, JSON.parse(ignoredFieldIdsStringified)))
+        : new Set<string>()
+}
 
 export async function syncExistingCollection(
     collection: ManagedCollection,
@@ -230,9 +236,7 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        const ignoredFieldIds = previousIgnoredFieldIds
-            ? new Set(v.parse(IgnoredFieldIdsSchema, JSON.parse(previousIgnoredFieldIds)))
-            : new Set<string>()
+        const ignoredFieldIds = parseIgnoredFieldIds(previousIgnoredFieldIds)
 
         const fieldsToSync = fields.filter(
             field =>

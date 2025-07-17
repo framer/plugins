@@ -121,6 +121,8 @@ function AppLoadSite({ login, logout }: AppLoadSiteProps) {
     )
 }
 
+const ErrorSchema = v.object({ name: v.string(), message: v.string() })
+
 export function App() {
     const { login, logout, tokens, isReady, loading } = useGoogleToken()
 
@@ -138,11 +140,7 @@ export function App() {
         <main key={tokens?.access_token || "logout"} ref={ref}>
             <ErrorBoundary
                 FallbackComponent={({ error }: { error: unknown }) => {
-                    const errorMessage =
-                        v.is(v.object({ name: v.string(), message: v.string() }), error) && error.name !== "GoogleError"
-                            ? error.message
-                            : ""
-
+                    const errorMessage = v.is(ErrorSchema, error) && error.name !== "GoogleError" ? error.message : ""
                     return <GoogleLogin loading={loading} hasError errorMessage={errorMessage} login={login} />
                 }}
                 resetKeys={[tokens?.access_token]}

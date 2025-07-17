@@ -65,10 +65,13 @@ export async function getTables(baseId: string, signal: AbortSignal): Promise<Ai
 const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
 const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
 
-const ArrayLikeSchema = v.pipe(
+const NonEmptyArrayOfAttachmentsSchema = v.pipe(
     v.array(v.object({ type: v.optional(v.string()), id: v.string(), url: v.string() })),
     v.minLength(1)
 )
+
+const ArrayOfStringsSchema = v.array(v.string())
+const NonEmptyArrayOfStringsSchema = v.pipe(ArrayOfStringsSchema, v.minLength(1))
 
 function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
     // If the field is a lookup field, only use the first value from the array.
@@ -109,7 +112,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 }
             }
 
-            if (!v.is(ArrayLikeSchema, value)) return null
+            if (!v.is(NonEmptyArrayOfAttachmentsSchema, value)) return null
 
             let selectedItem = value[0]
             assert(selectedItem !== undefined)
@@ -129,7 +132,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
         }
 
         case "collectionReference": {
-            if (!v.is(v.pipe(v.array(v.string()), v.minLength(1)), value)) return null
+            if (!v.is(NonEmptyArrayOfStringsSchema, value)) return null
             const firstItem = value[0]
             assert(firstItem !== undefined)
             return {
@@ -139,7 +142,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
         }
 
         case "multiCollectionReference":
-            if (!v.is(v.array(v.string()), value)) return null
+            if (!v.is(ArrayOfStringsSchema, value)) return null
             return {
                 value,
                 type: "multiCollectionReference",
@@ -260,7 +263,7 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
             }
 
         case "array": {
-            if (!v.is(ArrayLikeSchema, value)) return null
+            if (!v.is(NonEmptyArrayOfAttachmentsSchema, value)) return null
 
             const imageField = fieldSchema.fields[0]
             const arrayItems: ArrayItemInput[] = []

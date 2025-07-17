@@ -30,7 +30,7 @@
     "editor.codeActionsOnSave": {
         "source": "never",
         "source.addMissingImports.ts": "never",
-        "source.fixAll.eslint": "never",
+        "source.fixAll.eslint": "explicit",
         "source.fixAll.ts": "never",
         "source.fixAll.tsslint": "never",
         "source.organizeImports": "never",

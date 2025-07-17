@@ -1,6 +1,6 @@
-import { framer } from "framer-plugin"
 import { useLayoutEffect, useState } from "react"
 import auth from "./auth"
+import { showNoTableAccessUI } from "./ui"
 
 export function NoTableAccess({
     previousBaseId,
@@ -12,11 +12,7 @@ export function NoTableAccess({
     const [isRetrying, setIsRetrying] = useState(false)
 
     useLayoutEffect(() => {
-        framer.showUI({
-            height: 110,
-            width: 240,
-            resizable: false,
-        })
+        showNoTableAccessUI()
     }, [])
 
     const handleViewClick = () => {
@@ -39,7 +35,6 @@ export function NoTableAccess({
 
     const handleLogout = () => {
         auth.logout()
-        window.location.reload()
     }
 
     return (

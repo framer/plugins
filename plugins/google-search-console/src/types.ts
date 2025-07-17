@@ -1,11 +1,20 @@
-export interface GoogleToken {
-    access_token: string
-    expires_in: number
-    id_token: string
-    scope: string
-    token_type: string
-    refresh_token?: string
-}
+import * as v from "valibot"
+
+export const GoogleTokenSchema = v.object({
+    access_token: v.string(),
+    expires_in: v.number(),
+    id_token: v.string(),
+    scope: v.string(),
+    token_type: v.string(),
+    refresh_token: v.exactOptional(v.string()),
+})
+
+export type GoogleToken = v.InferOutput<typeof GoogleTokenSchema>
+
+export const AuthorizeSchema = v.object({
+    url: v.string(),
+    readKey: v.string(),
+})
 
 export interface GoogleSite {
     siteUrl: string

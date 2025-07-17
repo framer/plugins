@@ -6,7 +6,6 @@ import type {
     LocalizedValueStatus,
 } from "framer-plugin"
 import "./App.css"
-import { shouldBeNever } from "./assert"
 
 function escapeXml(unsafe: string): string {
     return unsafe
@@ -30,7 +29,7 @@ function statusToXliffState(status: LocalizedValueStatus): XliffState | undefine
         case "done":
             return "final"
         default:
-            shouldBeNever(status)
+            status satisfies never
             return
     }
 }
@@ -45,7 +44,7 @@ function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined
         case "final":
             return "done"
         default:
-            shouldBeNever(state)
+            state satisfies never
             return
     }
 }

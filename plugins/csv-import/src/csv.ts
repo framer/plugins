@@ -8,7 +8,11 @@ import {
     framer,
 } from "framer-plugin"
 
-type CSVRecord = Record<string, string>
+import * as v from "valibot"
+
+const CSVRecordSchema = v.record(v.string(), v.string())
+
+type CSVRecord = v.InferOutput<typeof CSVRecordSchema>
 
 export type ImportResultItem = CollectionItemInput & {
     action: "add" | "conflict" | "onConflictUpdate" | "onConflictSkip"
@@ -49,7 +53,7 @@ export async function parseCSV(data: string): Promise<CSVRecord[]> {
 
     for (const delimiter of delimiters) {
         try {
-            const parsed = parse(data, { ...options, delimiter })
+            const parsed = parse(data, { ...options, delimiter }) as unknown
 
             // It can happen that parsing succeeds with the wrong delimiter. For example, a tab separated file could be parsed
             // successfully with comma separators. If that's the case, we can find it by checking two things:
@@ -66,7 +70,7 @@ export async function parseCSV(data: string): Promise<CSVRecord[]> {
             }
 
             error = undefined
-            records = parsed
+            records = v.parse(v.array(CSVRecordSchema), parsed)
             break
         } catch (err) {
             error = err

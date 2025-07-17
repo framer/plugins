@@ -31,10 +31,49 @@ export default tseslint.config(
 
     {
         files: JS_AND_TS_GLOBS,
-        extends: [tseslint.configs.recommended],
+        extends: [tseslint.configs.strictTypeChecked, tseslint.configs.stylisticTypeChecked],
+        languageOptions: { parserOptions: { projectService: true } },
         rules: {
             // Covered by TypeScript
             "@typescript-eslint/no-unused-vars": 0,
+
+            // TODO: Enable
+            "@typescript-eslint/array-type": 0,
+            "@typescript-eslint/consistent-type-definitions": 0,
+            "@typescript-eslint/no-confusing-void-expression": 0,
+            "@typescript-eslint/no-deprecated": 0,
+            "@typescript-eslint/no-floating-promises": 0,
+            "@typescript-eslint/no-inferrable-types": 0,
+            "@typescript-eslint/no-misused-promises": 0,
+            "@typescript-eslint/no-non-null-assertion": 0,
+            "@typescript-eslint/no-unnecessary-condition": 0,
+            "@typescript-eslint/no-unnecessary-template-expression": 0,
+            "@typescript-eslint/no-unnecessary-type-assertion": 0,
+            "@typescript-eslint/no-unsafe-enum-comparison": 0,
+            "@typescript-eslint/non-nullable-type-assertion-style": 0,
+            "@typescript-eslint/only-throw-error": 0,
+            "@typescript-eslint/prefer-nullish-coalescing": 0,
+            "@typescript-eslint/prefer-optional-chain": 0,
+            "@typescript-eslint/prefer-regexp-exec": 0,
+            "@typescript-eslint/require-await": 0,
+            "@typescript-eslint/restrict-plus-operands": 0,
+            "@typescript-eslint/restrict-template-expressions": 0,
+            "@typescript-eslint/unbound-method": 0,
+            "@typescript-eslint/use-unknown-in-catch-callback-variable": 0,
+        },
+    },
+
+    {
+        files: [JS_GLOB],
+        extends: [tseslint.configs.disableTypeChecked],
+    },
+
+    {
+        files: ["**/greenhouse/**/*"],
+        rules: {
+            // TODO: Enable
+            "@typescript-eslint/no-unsafe-member-access": 0,
+            "@typescript-eslint/no-unsafe-assignment": 0,
         },
     }
 )

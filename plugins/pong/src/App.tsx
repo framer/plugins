@@ -126,7 +126,7 @@ export function App() {
 
         gameState.current.entities = []
 
-        for await (const node of selection) {
+        for (const node of selection) {
             const rect = await node.getRect()
             if (!rect) continue
 

@@ -131,7 +131,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
         (nextValue: number) => {
             startTransition(() => {
                 setThreshold(nextValue)
-                void updateCanvas(nextValue)
+                updateCanvas(nextValue)
             })
         },
         [updateCanvas]
@@ -139,7 +139,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
 
     useEffect(() => {
         // Start in the middle between 0-255
-        void updateCanvas(127)
+        updateCanvas(127)
     }, [image])
 
     return (

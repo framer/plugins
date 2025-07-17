@@ -8,6 +8,7 @@ import {
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import pLimit from "p-limit"
+import * as v from "valibot"
 import {
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
@@ -24,7 +25,7 @@ import {
     richTextToPlainText,
 } from "./api"
 import { richTextToHtml } from "./blocksToHtml"
-import { formatDate, isNotNull, shouldBeNever, slugify, syncMethods } from "./utils"
+import { formatDate, isNotNull, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -197,6 +198,14 @@ export async function syncCollection(
     ])
 }
 
+const IgnoredFieldIdsSchema = v.array(v.string())
+
+export function parseIgnoredFieldIds(ignoredFieldIdsStringified: string | null): Set<string> {
+    return ignoredFieldIdsStringified
+        ? new Set(v.parse(IgnoredFieldIdsSchema, JSON.parse(ignoredFieldIdsStringified)))
+        : new Set<string>()
+}
+
 export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDatabaseId: string | null,
@@ -227,9 +236,7 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        const ignoredFieldIds: Set<string> = previousIgnoredFieldIds
-            ? new Set(JSON.parse(previousIgnoredFieldIds))
-            : new Set()
+        const ignoredFieldIds = parseIgnoredFieldIds(previousIgnoredFieldIds)
 
         const fieldsToSync = fields.filter(
             field =>
@@ -485,7 +492,7 @@ export function getFieldDataEntryForProperty(
                                 case undefined:
                                     return
                                 default:
-                                    shouldBeNever(file)
+                                    file satisfies never
                             }
                         })
                         .filter(file => file !== undefined),

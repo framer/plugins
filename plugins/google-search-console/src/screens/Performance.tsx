@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import aveta from "aveta"
 import { type CSSProperties, useMemo, useState } from "react"
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts"
+import { Area, AreaChart, ResponsiveContainer, Tooltip, type TooltipContentProps, XAxis } from "recharts"
+import type { NameType, Payload, ValueType } from "recharts/types/component/DefaultTooltipContent"
 import FitText from "../components/FitText"
 import Loading from "../components/Loading"
 import type { GoogleQueryResult } from "../types"
@@ -25,7 +25,7 @@ interface QueriesTableProps {
     queries: GoogleQueryResult
 }
 
-const CustomYAxisTick = ({ x, y, payload }: { x: any; y: any; payload: any }) => {
+const CustomYAxisTick = ({ x, y, payload }: { x: number; y: number; payload: { value: number } }) => {
     return (
         <g transform={`translate(${x},${y})`}>
             <text x={0} y={0} textAnchor="start" fill="#666">
@@ -72,23 +72,31 @@ const uppercase = (str: string) => {
     return `${str.slice(0, 1).toLocaleUpperCase()}${str.slice(1)}`
 }
 
-const CustomTooltip = ({ active, payload, label }: { active: any; payload: any; label: any }) => {
-    if (active && payload && payload.length) {
-        return (
-            <div className="chart-tooltip-wrapper">
-                <p className="chart-tooltip-label">{dateFormatter(label as number)}</p>
-                <div>
-                    {[...payload].reverse().map(pld => (
+const CustomTooltip = ({
+    active,
+    payload,
+    label,
+}: Omit<TooltipContentProps<ValueType, NameType>, "payload"> & { payload: Payload<ValueType, NameType>[] }) => {
+    if (!active) return null
+
+    return (
+        <div className="chart-tooltip-wrapper">
+            <p className="chart-tooltip-label">{dateFormatter(label as number)}</p>
+            <div>
+                {payload.toReversed().map(pld => {
+                    if (typeof pld.dataKey !== "string" || pld.value === undefined) {
+                        throw new Error(`Bad custom tooltip payload: ${JSON.stringify(pld)}`)
+                    }
+
+                    return (
                         <div className={`chart-tooltip--${pld.dataKey}`}>
                             {uppercase(pld.dataKey)}: {pld.value.toLocaleString()}
                         </div>
-                    ))}
-                </div>
+                    )
+                })}
             </div>
-        )
-    }
-
-    return null
+        </div>
+    )
 }
 
 const lineType = "monotone"
@@ -189,8 +197,7 @@ export default function Performance({ performance }: PerformanceProps) {
                                         minTickGap={10}
                                     />
                                     <Tooltip
-                                        // @ts-expect-error Props are added to component clone
-                                        content={<CustomTooltip />}
+                                        content={CustomTooltip}
                                         cursor={false}
                                         wrapperClassName="chart-tooltip-wrapper"
                                         labelFormatter={value => dateFormatter(value as number)}

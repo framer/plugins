@@ -13,6 +13,7 @@ import {
     type DataSource,
     fieldsInfoToCollectionFields,
     mergeFieldsInfoWithExistingFields,
+    parseIgnoredFieldIds,
     syncCollection,
 } from "./data"
 import { assert, syncMethods } from "./utils"
@@ -161,9 +162,7 @@ export function FieldMapping({
     )
 
     const [fieldsInfo, setFieldsInfo] = useState(initialFieldsInfo)
-    const [ignoredFieldIds, setIgnoredFieldIds] = useState<Set<string>>(
-        previousIgnoredFieldIds ? new Set(JSON.parse(previousIgnoredFieldIds)) : new Set()
-    )
+    const [ignoredFieldIds, setIgnoredFieldIds] = useState(parseIgnoredFieldIds(previousIgnoredFieldIds))
 
     useEffect(() => {
         const abortController = new AbortController()

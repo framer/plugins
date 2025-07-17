@@ -1,10 +1,10 @@
 import cn from "clsx"
 import { framer, ImageAsset, useIsAllowedTo } from "framer-plugin"
-import { Camera, Mesh, Plane, Program, Renderer, Transform } from "ogl"
+import { Camera, Mesh, Plane, Renderer, Transform } from "ogl"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { Upload } from "./dropzone/drag-and-drop"
-import { OrderedDither, type OrderedDitherRef } from "./materials/ordered"
+import { OrderedDither, OrderedDitherMaterial, type OrderedDitherRef } from "./materials/ordered"
 import { useImageTexture } from "./use-image-texture"
 import { assert, bytesFromCanvas, getPermissionTitle } from "./utils"
 
@@ -77,17 +77,18 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     const [scene] = useState(() => new Transform())
     const [geometry] = useState(() => new Plane(gl))
 
-    const [program, setProgram] = useState(() => new Program(gl, {}))
+    const [program, setProgram] = useState<OrderedDitherMaterial | undefined>()
 
     const [mesh] = useState(() => new Mesh(gl, { geometry, program }))
 
     const [resolution, setResolution] = useState([DEFAULT_WIDTH, DEFAULT_WIDTH])
 
     useEffect(() => {
+        if (!program) return
         if (!resolution[0] || !resolution[1]) return
-
         renderer.setSize(resolution[0], resolution[1])
-    }, [renderer, resolution])
+        program.setResolution(resolution[0], resolution[1])
+    }, [renderer, program, resolution])
 
     useEffect(() => {
         if (!ditherRef.current) return
@@ -104,7 +105,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         droppedAsset?.src || image?.url,
         texture => {
             if (!program) return
-            // @ts-expect-error - TODO: not sure why this is needed
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },

@@ -22,6 +22,7 @@ export async function showDataSourceSelectionUI() {
     framer.showUI({
         width: 320,
         height: 345,
+        resizable: false,
     })
 }
 
@@ -29,5 +30,6 @@ export async function showLoginUI() {
     framer.showUI({
         width: 320,
         height: 340,
+        resizable: false,
     })
 }

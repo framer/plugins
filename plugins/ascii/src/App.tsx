@@ -159,7 +159,9 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
         resizeObserver.observe(containerRef.current)
 
-        return () => resizeObserver.disconnect()
+        return () => {
+            resizeObserver.disconnect()
+        }
     }, [])
 
     return (
@@ -252,7 +254,12 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     }}
                 />
                 {droppedAsset && (
-                    <button className="clear" onClick={() => setDroppedAsset(null)}>
+                    <button
+                        className="clear"
+                        onClick={() => {
+                            setDroppedAsset(null)
+                        }}
+                    >
                         Clear
                     </button>
                 )}

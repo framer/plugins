@@ -86,7 +86,9 @@ export function useOGLPipeline() {
 
         raf = requestAnimationFrame(update)
 
-        return () => cancelAnimationFrame(raf)
+        return () => {
+            cancelAnimationFrame(raf)
+        }
     }, [render])
 
     return {

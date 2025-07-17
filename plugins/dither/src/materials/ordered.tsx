@@ -409,7 +409,9 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                 <label className="gui-label">Pixelation</label>
                 <NumberInput
                     value={pixelSize}
-                    onValueChange={value => setPixelSize(Number(value))}
+                    onValueChange={value => {
+                        setPixelSize(Number(value))
+                    }}
                     min={1}
                     max={50}
                     step={1}
@@ -431,7 +433,9 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                 <label className="gui-label">Quantization</label>
                 <NumberInput
                     value={quantization}
-                    onValueChange={value => setQuantization(Number(value))}
+                    onValueChange={value => {
+                        setQuantization(Number(value))
+                    }}
                     min={2}
                     max={8}
                     step={1}

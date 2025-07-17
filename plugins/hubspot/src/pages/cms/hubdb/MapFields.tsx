@@ -109,7 +109,9 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
                 <select
                     className="w-full"
                     value={slugFieldId ?? ""}
-                    onChange={e => setSlugFieldId(e.target.value)}
+                    onChange={e => {
+                        setSlugFieldId(e.target.value)
+                    }}
                     id="slugField"
                     required
                     disabled={!isAllowedToManage}

@@ -541,7 +541,9 @@ export function useGLBTexture(
 
     const addToScene = useCallback(
         (gltf: GLTF) => {
-            scene.children.forEach(child => child.setParent(null))
+            scene.children.forEach(child => {
+                child.setParent(null)
+            })
 
             const s = gltf.scene || gltf.scenes[0]
             s.forEach(root => {

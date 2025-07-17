@@ -129,7 +129,9 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
     useEffect(() => {
         const raf = requestAnimationFrame(render)
 
-        return () => cancelAnimationFrame(raf)
+        return () => {
+            cancelAnimationFrame(raf)
+        }
     }, [render])
 
     const toBytes = useCallback(async () => {
@@ -205,7 +207,9 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         if (!containerRef.current) return
         resizeObserver.observe(containerRef.current)
 
-        return () => resizeObserver.disconnect()
+        return () => {
+            resizeObserver.disconnect()
+        }
     }, [renderer, camera])
 
     const disabled = !(droppedAsset?.src || image)
@@ -312,7 +316,12 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     }}
                 />
                 {droppedAsset && (
-                    <button className="clear" onClick={() => setDroppedAsset(null)}>
+                    <button
+                        className="clear"
+                        onClick={() => {
+                            setDroppedAsset(null)
+                        }}
+                    >
                         Clear
                     </button>
                 )}

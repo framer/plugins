@@ -268,7 +268,9 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     className="gui-input"
                     type="text"
                     value={characters}
-                    onChange={e => setCharacters(e.target.value)}
+                    onChange={e => {
+                        setCharacters(e.target.value)
+                    }}
                 />
             </div>
             <div className="gui-row">

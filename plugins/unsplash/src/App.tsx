@@ -75,7 +75,9 @@ export function App() {
                     className="w-full pl-[33px] pr-8"
                     autoFocus
                     style={{ paddingLeft: 30 }}
-                    onChange={e => setQuery(e.target.value)}
+                    onChange={e => {
+                        setQuery(e.target.value)
+                    }}
                 />
                 <div className="flex items-center justify-center absolute left-[25px] top-0 bottom-0 text-tertiary">
                     <SearchIcon />
@@ -139,7 +141,9 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
         handleResize()
         window.addEventListener("resize", handleResize)
-        return () => window.removeEventListener("resize", handleResize)
+        return () => {
+            window.removeEventListener("resize", handleResize)
+        }
     }, [handleScroll])
 
     const addPhotoMutation = useMutation({
@@ -272,13 +276,17 @@ const GridItem = memo(function GridItem({
     onSelect,
     isAllowedToUpsertImage,
 }: GridItemProps) {
-    const handleClick = useCallback(() => onSelect(photo), [onSelect, photo])
+    const handleClick = useCallback(() => {
+        onSelect(photo)
+    }, [onSelect, photo])
     const [imageLoaded, setImageLoaded] = useState(false)
 
     useEffect(() => {
         const img = new Image()
         img.src = photo.urls.thumb
-        img.onload = () => setImageLoaded(true)
+        img.onload = () => {
+            setImageLoaded(true)
+        }
     }, [photo.urls.thumb])
 
     return (
@@ -344,7 +352,9 @@ const AppErrorBoundary = ({ children }: PropsWithChildren<object>) => (
                         Could not load photos
                         <button
                             className="bg-transparent hover:bg-transparent active:bg-transparent text-blue-600 outline-hidden"
-                            onClick={() => resetErrorBoundary()}
+                            onClick={() => {
+                                resetErrorBoundary()
+                            }}
                         >
                             Try again
                         </button>
@@ -385,7 +395,9 @@ function useDebounce<T>(value: T, delay: number) {
     const [debouncedValue, setDebouncedValue] = useState<T>(value)
 
     useEffect(() => {
-        const debounce = setTimeout(() => setDebouncedValue(value), delay)
+        const debounce = setTimeout(() => {
+            setDebouncedValue(value)
+        }, delay)
 
         return () => {
             clearTimeout(debounce)

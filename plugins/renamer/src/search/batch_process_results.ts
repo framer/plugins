@@ -29,7 +29,8 @@ export class BatchProcessResults {
         return new Promise(resolve => {
             const poll = () => {
                 if (this.ready) {
-                    return resolve()
+                    resolve()
+                    return
                 }
 
                 setTimeout(poll, 500)

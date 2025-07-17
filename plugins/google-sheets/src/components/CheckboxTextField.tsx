@@ -29,7 +29,9 @@ export function CheckboxTextfield({ value, darken, checked, onChange, disabled }
                 type="checkbox"
                 checked={checked}
                 onChange={handleCheckboxChange}
-                onClick={e => e.stopPropagation()}
+                onClick={e => {
+                    e.stopPropagation()
+                }}
                 className="checked:bg-sheets-green! focus:ring-1 focus:ring-sheets-green checked:border-none dark:bg-[#777]! bg-[#CCC]!"
                 disabled={disabled}
             />

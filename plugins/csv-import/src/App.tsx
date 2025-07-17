@@ -97,7 +97,9 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
                         type="checkbox"
                         id="apply-to-all"
                         checked={applyToAll}
-                        onChange={event => setApplyToAll(event.currentTarget.checked)}
+                        onChange={event => {
+                            setApplyToAll(event.currentTarget.checked)
+                        }}
                     />
                     Apply to all
                 </label>

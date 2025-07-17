@@ -74,7 +74,9 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 <label htmlFor="collection">
                     <select
                         id="collection"
-                        onChange={event => setSelectedDatabaseId(event.target.value)}
+                        onChange={event => {
+                            setSelectedDatabaseId(event.target.value)
+                        }}
                         value={selectedDatabaseId ?? ""}
                         disabled={status === Status.Loading}
                     >

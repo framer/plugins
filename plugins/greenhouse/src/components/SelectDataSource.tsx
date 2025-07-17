@@ -64,7 +64,9 @@ export function SelectDataSource({
                         required
                         placeholder="Enter Board Token…"
                         value={boardToken}
-                        onChange={event => setBoardToken(event.target.value)}
+                        onChange={event => {
+                            setBoardToken(event.target.value)
+                        }}
                     />
                 </label>
                 <label>
@@ -72,7 +74,9 @@ export function SelectDataSource({
                     <select
                         id="collection"
                         required
-                        onChange={event => setSelectedDataSourceId(event.target.value)}
+                        onChange={event => {
+                            setSelectedDataSourceId(event.target.value)
+                        }}
                         value={selectedDataSourceId}
                         disabled={!boardToken}
                     >

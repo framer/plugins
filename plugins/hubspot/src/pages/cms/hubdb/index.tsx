@@ -57,7 +57,9 @@ export default function HubDBPage() {
                     name="table"
                     id="table"
                     value={selectedTableId}
-                    onChange={e => setSelectedTableId(e.target.value)}
+                    onChange={e => {
+                        setSelectedTableId(e.target.value)
+                    }}
                     className="w-[144px]"
                 >
                     <option value="" disabled>

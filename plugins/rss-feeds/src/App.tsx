@@ -52,7 +52,9 @@ export function App({ collection, initialRssSourceId }: Props) {
                     id="selectSource"
                     className="select"
                     value={selectedSourceId}
-                    onChange={e => setSelectedSourceId(e.target.value)}
+                    onChange={e => {
+                        setSelectedSourceId(e.target.value)
+                    }}
                 >
                     {rssSources.map(source => (
                         <option value={source.id} key={source.id}>

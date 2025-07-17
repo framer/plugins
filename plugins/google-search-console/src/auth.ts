@@ -1,6 +1,10 @@
 import { createContext, useCallback, useEffect, useRef, useState } from "react"
 import type { GoogleToken } from "./types"
 
+const oauthUrl = import.meta.env.VITE_LOCAL_OAUTH
+    ? "https://localhost:8787"
+    : "https://oauth.framer.wtf/google-search-console-plugin"
+
 export const AuthContext = createContext<GoogleToken | null>(null)
 
 const STORAGE_KEY = "framer-search-console-tokens"
@@ -32,7 +36,7 @@ export function useGoogleToken() {
             window.setTimeout(reject, 60_000) // Timeout after 60 seconds
 
             pollInterval.current = setInterval(async () => {
-                const response = await fetch(`${import.meta.env.VITE_OAUTH_API_DOMAIN}/poll?readKey=${readKey}`, {
+                const response = await fetch(`${oauthUrl}/poll?readKey=${readKey}`, {
                     method: "POST",
                 })
 
@@ -66,7 +70,7 @@ export function useGoogleToken() {
             setLoading(true)
 
             // Retrieve the authorization URL & set of unique read/write keys
-            const response = await fetch(`${import.meta.env.VITE_OAUTH_API_DOMAIN}/authorize`, {
+            const response = await fetch(`${oauthUrl}/authorize`, {
                 method: "POST",
             })
             if (response.status !== 200) return
@@ -100,12 +104,9 @@ export function useGoogleToken() {
             }
 
             // Retrieve the authorization URL & set of unique read/write keys
-            const response = await fetch(
-                `${import.meta.env.VITE_OAUTH_API_DOMAIN}/refresh?code=${encodeURIComponent(refreshToken)}`,
-                {
-                    method: "POST",
-                }
-            )
+            const response = await fetch(`${oauthUrl}/refresh?code=${encodeURIComponent(refreshToken)}`, {
+                method: "POST",
+            })
 
             const tokens = await response.json()
 

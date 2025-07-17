@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import aveta from "aveta"
 import { type CSSProperties, useMemo, useState } from "react"
 import { Area, AreaChart, ResponsiveContainer, Tooltip, type TooltipContentProps, XAxis } from "recharts"

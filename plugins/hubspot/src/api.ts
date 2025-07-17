@@ -93,8 +93,7 @@ interface RequestOptions {
     path: string
     method?: string
     query?: Record<string, string | number | string[]> | URLSearchParams
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    body?: any
+    body?: unknown
 }
 
 const PROXY_URL = "https://framer-cors-proxy.framer-team.workers.dev/?"

@@ -14,7 +14,7 @@
         "build": "turbo run build",
         "g:build": "cd $INIT_CWD && run g:vite build",
         "g:check-biome": "biome check $INIT_CWD",
-        "g:check-eslint": "cd $INIT_CWD && DEBUG='eslint:eslint' eslint .",
+        "g:check-eslint": "cd $INIT_CWD && DEBUG='eslint:eslint' eslint --report-unused-disable-directives-severity error .",
         "g:check-typescript": "tsc --project $INIT_CWD",
         "g:dev": "cd $INIT_CWD && run g:vite",
         "g:preview": "cd $INIT_CWD && run g:vite preview",

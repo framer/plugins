@@ -1,6 +1,6 @@
 import cx from "classnames"
 import { type ManagedCollectionFieldInput } from "framer-plugin"
-import { Fragment, useMemo } from "react"
+import { Fragment, useMemo, useRef } from "react"
 import { assert } from "../utils"
 import { CheckboxTextfield } from "./CheckboxTextField"
 import { IconChevron } from "./Icons"
@@ -55,10 +55,13 @@ export const FieldMapper = ({
     className,
     disabled,
 }: FieldMapperProps) => {
-    // We only want to sort on initial render
+    // This is a way to tell React that this isn't a reactive dependency
+    const isFieldSelectedRef = useRef(isFieldSelected)
+    isFieldSelectedRef.current = isFieldSelected
+
+    // We only want to sort on initial render, to keep it stable
     const sortedCollectionFieldConfig = useMemo(
-        () => getInitialSortedFields(collectionFieldConfig, isFieldSelected),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        () => getInitialSortedFields(collectionFieldConfig, isFieldSelectedRef.current),
         [collectionFieldConfig]
     )
 

@@ -116,6 +116,7 @@ export default function ChatPage() {
                 >
                     <option value="true">Enabled</option>
                     <option value="false">Disabled</option>
+                    {/* The double quotes are intentional, as these values are the output of JSON.stringify */}
                     <option value='"ON_EXIT_INTENT"'>On Exit Intent</option>
                 </select>
             </div>

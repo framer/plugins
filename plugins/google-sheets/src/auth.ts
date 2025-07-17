@@ -31,7 +31,9 @@ class Auth {
     storedTokens?: StoredTokens | null
 
     constructor() {
-        this.AUTH_URI = "https://oauth.framer.wtf/google-sheets-plugin"
+        this.AUTH_URI = location.hostname.includes("localhost")
+            ? "https://localhost:8787"
+            : "https://oauth.framer.wtf/google-sheets-plugin"
     }
 
     async logout() {

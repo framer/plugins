@@ -184,7 +184,7 @@ export class ASCIIMaterial extends Program {
 
 const FONTS = ["Roboto Mono", "Fragment Mono", "Martian Mono", "Space Mono", "Courier Prime"]
 
-export type ASCIIRef = {
+export interface ASCIIRef {
     program: ASCIIMaterial
     setPixelSize: (value: number) => void
 }

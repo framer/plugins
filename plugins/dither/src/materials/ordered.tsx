@@ -238,7 +238,7 @@ const MATRICES = [
 
 const SHOW_DEV_TOOLS = false
 
-export type OrderedDitherRef = {
+export interface OrderedDitherRef {
     program: OrderedDitherMaterial
     setPixelSize: (value: number) => void
 }

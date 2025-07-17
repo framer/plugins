@@ -58,11 +58,11 @@ export interface GoogleInspectionResult {
 
 export interface GoogleQueryResult {
     responseAggregationType: "byProperty"
-    rows?: Array<{
+    rows?: {
         clicks: number
         ctr: number
         impressions: number
         keys: string[]
         position: number
-    }>
+    }[]
 }

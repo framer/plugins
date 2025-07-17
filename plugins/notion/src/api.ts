@@ -80,7 +80,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     files: ["file", "image", "array"],
     relation: ["multiCollectionReference"],
     unique_id: ["string", "number"],
-} satisfies Partial<Record<NotionProperty["type"], ReadonlyArray<ManagedCollectionField["type"]>>>
+} satisfies Partial<Record<NotionProperty["type"], readonly ManagedCollectionField["type"][]>>
 
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.

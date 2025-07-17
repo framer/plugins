@@ -4,7 +4,7 @@ import "./segmented-control.css"
 export function SegmentedControl(props: {
     value: string
     onChange: (value: string) => void
-    items: Array<{ value: string; label: string }>
+    items: { value: string; label: string }[]
 }) {
     const { value, onChange, items } = props
     return (

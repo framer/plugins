@@ -52,7 +52,7 @@ const weightOptions: WeightOption[] = [
     },
 ]
 
-const icons: ReadonlyArray<IconEntry> = iconData.map(entry => ({
+const icons: readonly IconEntry[] = iconData.map(entry => ({
     ...entry,
     Icon: Icons[entry.pascal_name as keyof typeof Icons] as Icons.Icon,
 }))

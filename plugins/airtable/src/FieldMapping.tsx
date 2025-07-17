@@ -312,7 +312,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
                 await collection.setFields(fieldsToSync)
                 await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField.id)
-                await framer.closePlugin("Synchronization successful", {
+                framer.closePlugin("Synchronization successful", {
                     variant: "success",
                 })
             } catch (error) {
@@ -343,16 +343,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             <hr className="sticky-top" />
 
             <label className="slug-field" htmlFor="slugField">
-                <div className="heading-row">
-                    <span>Slug Field</span>
-                    <a
-                        href={`https://airtable.com/${dataSource.baseId}/${dataSource.tableId}`}
-                        target="_blank"
-                        className="heading-link"
-                    >
-                        View in Airtable
-                    </a>
-                </div>
+                <span>Slug Field</span>
                 <select
                     required
                     name="slugField"

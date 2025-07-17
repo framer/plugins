@@ -4,11 +4,13 @@ import type { ManagedCollection } from "framer-plugin"
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
 import { fetchTable } from "./api"
+import auth from "./auth"
 import type { DataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { inferFields } from "./fields"
 import { NoTableAccess } from "./NoAccess"
 import { SelectDataSource } from "./SelectDataSource"
+import { showDataSourceSelectionUI, showFieldMappingUI } from "./ui"
 
 interface AppProps {
     collection: ManagedCollection
@@ -23,15 +25,11 @@ export function App({ collection, previousBaseId, previousTableId, previousSlugF
     const [noTableAccess, setNoTableAccess] = useState(false)
 
     useLayoutEffect(() => {
-        const hasDataSourceSelected = Boolean(dataSource)
-
-        void framer.showUI({
-            width: hasDataSourceSelected ? 425 : 320,
-            height: hasDataSourceSelected ? 425 : 345,
-            minWidth: hasDataSourceSelected ? 360 : undefined,
-            minHeight: hasDataSourceSelected ? 425 : undefined,
-            resizable: hasDataSourceSelected,
-        })
+        if (dataSource) {
+            void showFieldMappingUI()
+        } else {
+            void showDataSourceSelectionUI()
+        }
     }, [dataSource])
 
     useEffect(() => {
@@ -62,6 +60,26 @@ export function App({ collection, previousBaseId, previousTableId, previousSlugF
                 setIsLoadingDataSource(false)
             })
     }, [collection, previousBaseId, previousTableId])
+
+    useEffect(() => {
+        void framer.setMenu([
+            {
+                label: `View ${dataSource?.tableName ?? "Table"} in Airtable`,
+                visible: Boolean(dataSource),
+                onAction: () => {
+                    if (!dataSource) return
+                    window.open(`https://airtable.com/${dataSource.baseId}/${dataSource.tableId}`, "_blank")
+                },
+            },
+            { type: "separator" },
+            {
+                label: "Log Out",
+                onAction: () => {
+                    void auth.logout()
+                },
+            },
+        ])
+    }, [dataSource])
 
     if (isLoadingDataSource) {
         return (

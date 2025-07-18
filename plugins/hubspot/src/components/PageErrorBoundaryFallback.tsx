@@ -32,7 +32,7 @@ export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
                                             void framer.closePlugin()
                                         }}
                                     >
-                                        logout
+                                        log out
                                     </a>
                                     .
                                 </span>

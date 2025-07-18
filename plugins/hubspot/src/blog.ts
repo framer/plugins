@@ -140,7 +140,8 @@ function getFieldDataEntryInput(field: ManagedCollectionFieldInput, value: unkno
         }
 
         case "collectionReference":
-        case "multiCollectionReference": {
+        case "multiCollectionReference":
+        case "array": {
             // TODO: Implement
             return undefined
         }

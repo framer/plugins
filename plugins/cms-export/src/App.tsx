@@ -38,17 +38,7 @@ export function App() {
         const csv = await convertCollectionToCSV(selectedCollection)
 
         try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(csv)
-            } else {
-                // Fallback method for browsers that don't support clipboard.writeText
-                const textArea = document.createElement("textarea")
-                textArea.value = csv
-                document.body.appendChild(textArea)
-                textArea.select()
-                document.execCommand("copy")
-                document.body.removeChild(textArea)
-            }
+            await navigator.clipboard.writeText(csv)
             framer.notify("CSV copied to clipboard", { variant: "success" })
         } catch (error) {
             console.error("Failed to copy CSV:", error)

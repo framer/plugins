@@ -38,7 +38,6 @@ export default tseslint.config(
             "@typescript-eslint/no-unused-vars": 0,
 
             // TODO: Enable
-            "@typescript-eslint/no-deprecated": 0,
             "@typescript-eslint/no-floating-promises": 0,
             "@typescript-eslint/no-inferrable-types": 0,
             "@typescript-eslint/no-misused-promises": 0,

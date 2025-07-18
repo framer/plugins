@@ -8,7 +8,7 @@ function handleFocus(event: React.FocusEvent<HTMLInputElement>) {
     event.target.select()
 }
 
-function calculateRadius(derivedFromOuterValue: boolean, value: number = 20, childRect: Rect) {
+function calculateRadius(derivedFromOuterValue: boolean, value = 20, childRect: Rect) {
     if (!childRect) return
 
     const smallestValue = Math.max(childRect.x, childRect.y)

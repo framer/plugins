@@ -58,7 +58,7 @@ export function replaceRange(text: string, replacement: string, start: number, e
 
 export function replaceAllRanges(text: string, replacement: string, ranges: Range[], preserveCase?: boolean) {
     let result: string = text
-    let offset: number = 0
+    let offset = 0
 
     for (const [start, end] of ranges) {
         const previousLength = result.length

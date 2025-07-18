@@ -7,7 +7,7 @@ import { downloadBlob, importFileAsText } from "./files"
 import { IconGlobe } from "./IconGlobe"
 import { createValuesBySourceFromXliff, generateXliff, parseXliff } from "./xliff"
 
-framer.showUI({
+void framer.showUI({
     width: 260,
     height: 350,
 })
@@ -69,10 +69,10 @@ export function App() {
             }
         }
 
-        loadLocales()
+        void loadLocales()
     }, [])
 
-    async function handleExport() {
+    function handleExport() {
         if (!selectedLocaleId || !defaultLocale) return
 
         const targetLocale = locales.find(locale => locale.id === selectedLocaleId)
@@ -80,7 +80,7 @@ export function App() {
             throw new Error(`Could not find locale with id ${selectedLocaleId}`)
         }
 
-        exportXliff(defaultLocale, targetLocale)
+        void exportXliff(defaultLocale, targetLocale)
     }
 
     return (
@@ -100,7 +100,7 @@ export function App() {
                     type="button"
                     onClick={() => {
                         if (!isAllowedToSetLocalizationData) return
-                        importXliff()
+                        void importXliff()
                     }}
                     disabled={!isAllowedToSetLocalizationData}
                     title={isAllowedToSetLocalizationData ? undefined : "Insufficient permissions"}

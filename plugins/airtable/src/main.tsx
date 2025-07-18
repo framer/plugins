@@ -13,7 +13,7 @@ const activeCollection = await framer.getActiveManagedCollection()
 
 const isWorkerAlive = await auth.isWorkerAlive()
 if (!isWorkerAlive) {
-    framer.closePlugin("OAuth worker is not available, please try again.", {
+    await framer.closePlugin("OAuth worker is not available, please try again.", {
         variant: "error",
     })
 }

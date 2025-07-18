@@ -14,7 +14,7 @@ import sectionTextImageImage from "./assets/TextImage.png"
 import "./App.css"
 import { SegmentedControl } from "./components/SegmentedControl"
 
-framer.showUI({
+void framer.showUI({
     position: "top right",
     width: 320,
     height: 500,
@@ -155,11 +155,11 @@ export function App() {
                 const existingStyle = colorStyles.find(style => style.name === color.title)
 
                 if (existingStyle) {
-                    existingStyle.setAttributes({
+                    void existingStyle.setAttributes({
                         light: color.color,
                     })
                 } else {
-                    framer.createColorStyle({
+                    void framer.createColorStyle({
                         name: color.title,
                         light: color.color,
                     })
@@ -223,7 +223,7 @@ export function App() {
                                     }
                                     onClick={() => {
                                         if (!isAllowedToAddDetachedComponentLayers) return
-                                        framer.addDetachedComponentLayers({
+                                        void framer.addDetachedComponentLayers({
                                             url: section.url,
                                             layout: true,
                                         })
@@ -259,7 +259,7 @@ export function App() {
                                 title={isAllowedToAddDetachedComponentLayers ? undefined : "Insufficient permissions"}
                                 onClick={() => {
                                     if (!isAllowedToAddDetachedComponentLayers) return
-                                    framer.addDetachedComponentLayers({
+                                    void framer.addDetachedComponentLayers({
                                         url: section.url,
                                         layout: true,
                                     })
@@ -299,7 +299,7 @@ export function App() {
                                     disabled={!isAllowedToUpsertColorStyle}
                                     title={getPermissionTitle(isAllowedToUpsertColorStyle)}
                                     onClick={() => {
-                                        handleAddColors([color])
+                                        void handleAddColors([color])
                                     }}
                                 >
                                     Add
@@ -311,7 +311,7 @@ export function App() {
                             disabled={!isAllowedToUpsertColorStyle}
                             title={getPermissionTitle(isAllowedToUpsertColorStyle)}
                             onClick={() => {
-                                handleAddColors(filteredColorItems)
+                                void handleAddColors(filteredColorItems)
                             }}
                         >
                             Add to Project

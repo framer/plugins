@@ -32,7 +32,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
             }
         }
 
-        fetchDataSources()
+        void fetchDataSources()
     }, [])
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {

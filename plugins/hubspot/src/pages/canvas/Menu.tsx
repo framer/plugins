@@ -56,7 +56,7 @@ export default function MenuPage() {
     useEffect(() => {
         const pageQuery = queries[location]
         if (pageQuery && pageQuery.shouldRefetch) {
-            pageQuery.query.refetch()
+            void pageQuery.query.refetch()
         }
     }, [location, queries])
 

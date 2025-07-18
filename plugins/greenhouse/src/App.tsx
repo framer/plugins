@@ -23,7 +23,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
     useLayoutEffect(() => {
         const hasDataSourceSelected = Boolean(dataSource)
 
-        framer.showUI({
+        void framer.showUI({
             width: hasDataSourceSelected ? 400 : 320,
             height: hasDataSourceSelected ? 427 : 325,
             minHeight: hasDataSourceSelected ? 427 : undefined,
@@ -54,7 +54,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
         if (boardToken === previousBoardToken) return
 
         if (framer.isAllowedTo("setPluginData")) {
-            framer.setPluginData(spaceIdPluginKey, boardToken)
+            void framer.setPluginData(spaceIdPluginKey, boardToken)
         }
     }, [boardToken, previousBoardToken])
 

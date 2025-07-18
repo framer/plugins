@@ -649,6 +649,6 @@ export function useGLBTexture(
             onUpdate(target.texture)
         }
 
-        task()
+        void task()
     }, [src, target, scene, type, ...deps])
 }

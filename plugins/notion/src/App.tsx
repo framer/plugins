@@ -41,13 +41,13 @@ export function App({
 
     useLayoutEffect(() => {
         if (hasAccessError) {
-            framer.showUI({
+            void framer.showUI({
                 width: 280,
                 height: 114,
                 resizable: false,
             })
         } else if (dataSource || isLoadingDataSource) {
-            framer.showUI({
+            void framer.showUI({
                 width: 425,
                 height: 425,
                 minWidth: 360,
@@ -55,7 +55,7 @@ export function App({
                 resizable: true,
             })
         } else {
-            framer.showUI({
+            void framer.showUI({
                 width: 260,
                 height: 345,
                 minWidth: 260,

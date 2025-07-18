@@ -15,17 +15,17 @@ export function App() {
     useEffect(() => {
         switch (state.restore.status) {
             case RestoreState.Succeeded:
-                framer.closePlugin("Code Version has been restored", {
+                void framer.closePlugin("Code Version has been restored", {
                     variant: "success",
                 })
                 return
             case RestoreState.Failed:
-                framer.closePlugin("Couldn't restore Code Version", {
+                void framer.closePlugin("Couldn't restore Code Version", {
                     variant: "error",
                 })
                 return
             case RestoreState.Mutating:
-                framer.hideUI()
+                void framer.hideUI()
                 return
         }
     }, [state.restore.status])

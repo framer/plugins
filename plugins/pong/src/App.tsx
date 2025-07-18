@@ -49,7 +49,7 @@ export function App() {
                 // Read in paddle positions from the canvas.
                 for (const entity of entities) {
                     if (entity.type === "paddle") {
-                        framer.getRect(entity.id).then(rect => {
+                        void framer.getRect(entity.id).then(rect => {
                             if (!rect) return
                             entity.rect = new Rect2(rect.x, rect.y, rect.width, rect.height)
                         })
@@ -97,7 +97,7 @@ export function App() {
                 // Update ball positions on the canvas.
                 for (const entity of entities) {
                     if (entity.type === "ball") {
-                        framer.setAttributes(entity.id, {
+                        void framer.setAttributes(entity.id, {
                             left: `${entity.rect.position.x}px`,
                             top: `${entity.rect.position.y}px`,
                             right: null,
@@ -163,7 +163,7 @@ export function App() {
                     className="framer-button-primary"
                     onClick={() => {
                         if (!isAllowedToSetAttributes) return
-                        setupFromSelection()
+                        void setupFromSelection()
                     }}
                     disabled={!isAllowedToSetAttributes}
                     title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}

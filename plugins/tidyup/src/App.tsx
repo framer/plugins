@@ -14,7 +14,7 @@ import * as v from "valibot"
 import { isNumber } from "./isNumber"
 import { Stepper } from "./Stepper"
 
-framer.showUI({
+void framer.showUI({
     position: "top right",
     width: 260,
     height: 350,
@@ -125,7 +125,7 @@ function useGroundNodeRects() {
             setRects(current => (isDeepEqual(current, result) ? current : result))
         }
 
-        getRects()
+        void getRects()
 
         return () => {
             active = false
@@ -534,7 +534,7 @@ export function App() {
                         const node = await framer.getNode(rect.id)
                         if (!node || !supportsPins(node)) continue
 
-                        node.setAttributes({
+                        void node.setAttributes({
                             left: `${rect.x + rawBoundingBox.x}px`,
                             top: `${rect.y + rawBoundingBox.y}px`,
                         })

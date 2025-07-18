@@ -69,10 +69,10 @@ export function App() {
         }
 
         let active = true
-        const children = parentNode.getChildren()
-        const parentRect = parentNode.getRect()
 
-        Promise.all([children, parentRect]).then(([children, parentRect]) => {
+        const task = async () => {
+            const [children, parentRect] = await Promise.all([parentNode.getChildren(), parentNode.getRect()])
+
             if (!active) return
             if (children.length !== 1 || !parentRect) {
                 setState(null)
@@ -85,39 +85,41 @@ export function App() {
                 return
             }
 
-            childNode.getRect().then(childRect => {
-                if (!active) return
-                if (!childRect) {
-                    setState(null)
-                    return
-                }
+            const childRect = await childNode.getRect()
 
-                setState({
-                    parentNode,
-                    childNode,
-                    parentRect,
-                    childRect,
-                })
+            if (!active) return
+            if (!childRect) {
+                setState(null)
+                return
+            }
 
-                if (!supportsBorderRadius(parentNode)) return
-                const selectionParentRadius =
-                    parentNode.borderRadius !== null ? Number.parseInt(parentNode.borderRadius) : 0
-
-                if (!supportsBorderRadius(childNode)) return
-                const selectionChildRadius =
-                    childNode.borderRadius !== null
-                        ? Number.parseInt(childNode.borderRadius) > 0
-                            ? Number.parseInt(childNode.borderRadius)
-                            : 0
-                        : 0
-
-                setOuterValue(selectionParentRadius)
-                setOuterInputValue(selectionParentRadius.toString())
-
-                setInnerValue(selectionChildRadius)
-                setInnerInputValue(selectionChildRadius.toString())
+            setState({
+                parentNode,
+                childNode,
+                parentRect,
+                childRect,
             })
-        })
+
+            if (!supportsBorderRadius(parentNode)) return
+            const selectionParentRadius =
+                parentNode.borderRadius !== null ? Number.parseInt(parentNode.borderRadius) : 0
+
+            if (!supportsBorderRadius(childNode)) return
+            const selectionChildRadius =
+                childNode.borderRadius !== null
+                    ? Number.parseInt(childNode.borderRadius) > 0
+                        ? Number.parseInt(childNode.borderRadius)
+                        : 0
+                    : 0
+
+            setOuterValue(selectionParentRadius)
+            setOuterInputValue(selectionParentRadius.toString())
+
+            setInnerValue(selectionChildRadius)
+            setInnerInputValue(selectionChildRadius.toString())
+        }
+
+        void task()
 
         return () => {
             active = false
@@ -128,10 +130,10 @@ export function App() {
         if (!isAllowedToSetAttributes) return
 
         if (state) {
-            framer.setAttributes(state.parentNode.id, {
+            void framer.setAttributes(state.parentNode.id, {
                 borderRadius: `${outerValue}px`,
             })
-            framer.setAttributes(state.childNode.id, {
+            void framer.setAttributes(state.childNode.id, {
                 borderRadius: `${innerValue}px`,
             })
         }

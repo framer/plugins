@@ -15,7 +15,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     useLayoutEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 320,
             height: 345,
         })

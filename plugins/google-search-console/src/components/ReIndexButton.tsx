@@ -22,16 +22,15 @@ export default function ReIndexButton({ urls = [] }: ReIndexButtonProps) {
                 className="reindex-button"
                 type="button"
                 disabled={reindexAllStatus.loading || reindexAllStatus.success}
-                onClickCapture={e => {
+                onClickCapture={async e => {
                     e.preventDefault()
 
                     setReindexAllStatus({ loading: true, success: false })
 
                     const promises = (urls || []).map(url => requestIndexing(url, authContext.access_token))
+                    await Promise.all(promises)
 
-                    Promise.all(promises).then(() => {
-                        setReindexAllStatus({ loading: false, success: true })
-                    })
+                    setReindexAllStatus({ loading: false, success: true })
                 }}
             >
                 {reindexAllStatus.loading ? (

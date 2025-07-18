@@ -39,7 +39,7 @@ export function useBatchIndexingResult(urls: string[] | null, googleSiteUrl: str
             setResult(urlsWithStatus)
         }
 
-        task()
+        void task()
     }, [authContext.access_token, googleSiteUrl, refresh, urls])
 
     return result
@@ -101,7 +101,7 @@ export function useIndexingResults(urls: string[] | null, currentPageUrl: string
                     )
                 }
 
-                currPageTask()
+                void currPageTask()
             }
 
             const promises = (urls || []).map(async url => {
@@ -132,7 +132,7 @@ export function useIndexingResults(urls: string[] | null, currentPageUrl: string
             }
         }
 
-        update()
+        void update()
     }, [authContext.access_token, currentPageUrl, googleSiteUrl, refresh, showBoundary, urls])
 
     return { currPageResult, result }
@@ -244,7 +244,7 @@ export function usePerformanceResults(siteUrl: string, dates: string[]) {
             }
         }
 
-        update()
+        void update()
     }, [authContext.access_token, dates, refresh, showBoundary, siteUrl])
 
     return data

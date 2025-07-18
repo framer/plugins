@@ -132,7 +132,7 @@ export function App({ collection }: { collection: Collection }) {
     const [isDragging, setIsDragging] = useState(false)
 
     useEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 260,
             height: 330,
             resizable: false,
@@ -144,7 +144,7 @@ export function App({ collection }: { collection: Collection }) {
             return
         }
 
-        framer.showUI({
+        void framer.showUI({
             width: 260,
             height: 165,
             resizable: false,
@@ -296,7 +296,7 @@ export function App({ collection }: { collection: Collection }) {
                         const resolvedItem = resolvedItems.find(resolved => resolved.slug === item.slug)
                         return resolvedItem || item
                     })
-                    importItems({ ...result, items: updatedItems })
+                    void importItems({ ...result, items: updatedItems })
                 }}
             />
         )

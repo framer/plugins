@@ -38,7 +38,7 @@ export default function ChatPage() {
             setHasSetExistingSettings(true)
         }
 
-        checkExistingSettings()
+        void checkExistingSettings()
     }, [])
 
     useEffect(() => {
@@ -60,7 +60,7 @@ export default function ChatPage() {
             }
         }
 
-        applySettings()
+        void applySettings()
     }, [settings, hasSetExistingSettings, isAllowedToSetCustomCode])
 
     if (isLoadingAccount || isLoadingInboxes) return <CenteredSpinner />

@@ -13,7 +13,7 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
     const [isRetrying, setIsRetrying] = useState(false)
 
     useLayoutEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 240,
             height,
             resizable: false,
@@ -24,14 +24,15 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
         window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`, "_blank")
     }
 
-    const handleRetryClick = () => {
+    const handleRetryClick = async () => {
         setIsRetrying(true)
 
-        getPluginContext()
-            .then(setContext)
-            .finally(() => {
-                setIsRetrying(false)
-            })
+        try {
+            const context = await getPluginContext()
+            setContext(context)
+        } finally {
+            setIsRetrying(false)
+        }
     }
 
     return (

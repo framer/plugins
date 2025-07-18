@@ -118,9 +118,12 @@ export default function SiteHasIndexedSitemap({ site, logout }: SiteHasIndexedSi
 
     useEffect(() => {
         async function update() {
-            if (SHOW_MOCK_SITEMAP_DATA) {
-                setUrls([...new Set(mockUrls)].sort())
-            } else {
+            try {
+                if (SHOW_MOCK_SITEMAP_DATA) {
+                    setUrls([...new Set(mockUrls)].sort())
+                    return
+                }
+
                 const sitemapResult = await fetch(`https://cors.farpace.workers.dev/${site.domain}/sitemap.xml`)
                 const sitemapText = await sitemapResult.text()
 
@@ -130,14 +133,12 @@ export default function SiteHasIndexedSitemap({ site, logout }: SiteHasIndexedSi
                     .get()
 
                 setUrls([...new Set(urls)].sort())
+            } catch (e) {
+                showBoundary(e)
             }
         }
 
-        try {
-            update()
-        } catch (e) {
-            showBoundary(e)
-        }
+        void update()
     }, [showBoundary, site.domain])
 
     const performance = usePerformanceResultsHook(site.googleSite.siteUrl, dates)

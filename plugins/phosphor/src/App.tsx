@@ -112,7 +112,7 @@ function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
                         className="icon-parent"
                         onClick={() => {
                             if (!isAllowedToAddSVG) return
-                            handleIconClick(entry)
+                            void handleIconClick(entry)
                         }}
                         disabled={!isAllowedToAddSVG}
                         title={isAllowedToAddSVG ? undefined : "Insufficient permissions"}

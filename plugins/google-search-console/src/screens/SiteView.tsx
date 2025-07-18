@@ -68,7 +68,7 @@ export default function SiteView({ site, logout }: SiteViewProps) {
     }, [authContext.access_token, currSitemapUrl, fetchGoogleSitemaps, site.googleSite])
 
     useEffect(() => {
-        update()
+        void update()
     }, [update])
 
     if (error) {

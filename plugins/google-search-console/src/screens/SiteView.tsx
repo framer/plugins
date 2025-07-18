@@ -52,14 +52,12 @@ export default function SiteView({ site, logout }: SiteViewProps) {
         }
 
         try {
-            if (site.googleSite) {
-                const sitemaps = await fetchGoogleSitemaps(site.googleSite.siteUrl, authContext.access_token)
-                const submittedSitemap = sitemaps?.find(currSitemap => currSitemap.path === currSitemapUrl)
+            const sitemaps = await fetchGoogleSitemaps(site.googleSite.siteUrl, authContext.access_token)
+            const submittedSitemap = sitemaps.find(currSitemap => currSitemap.path === currSitemapUrl)
 
-                setSitemapsState({ sitemaps, submitted: !!submittedSitemap })
-            }
+            setSitemapsState({ sitemaps, submitted: !!submittedSitemap })
         } catch (e) {
-            if (((e as GoogleError)?.cause as { status: number })?.status === 403) {
+            if (((e as GoogleError | undefined)?.cause as { status: number } | undefined)?.status === 403) {
                 setError({ level: "display", e: e as unknown as GoogleError })
             } else {
                 setError({ level: "throw", e: e as unknown as GoogleError })

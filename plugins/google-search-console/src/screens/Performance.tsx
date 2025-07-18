@@ -137,7 +137,7 @@ export default function Performance({ performance }: PerformanceProps) {
                 <section>
                     <p>Your site doesn’t have enough performance data to show yet.</p>
                 </section>
-            ) : performance?.dailyPerformance ? (
+            ) : (
                 <section>
                     <div className="stat-boxes">
                         <div
@@ -240,8 +240,8 @@ export default function Performance({ performance }: PerformanceProps) {
                         </div>
                     </div>
                 </section>
-            ) : null}
-            {performance?.queryPerformance?.rows?.length ? (
+            )}
+            {performance.queryPerformance.rows?.length ? (
                 <section>
                     <div className="section-title">Top Queries</div>
                     <QueriesTable queries={performance.queryPerformance} />

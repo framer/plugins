@@ -236,7 +236,7 @@ const MATRICES = [
     },
 ]
 
-const SHOW_DEV_TOOLS = false
+const SHOW_DEV_TOOLS = false as boolean
 
 export interface OrderedDitherRef {
     program: OrderedDitherMaterial

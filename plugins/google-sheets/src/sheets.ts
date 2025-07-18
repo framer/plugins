@@ -98,13 +98,7 @@ const request = async ({ path, service = "sheets", method = "get", query, body }
 
     if (query) {
         const queryParams = Object.entries(query)
-            .map(([key, value]) => {
-                if (value !== undefined) {
-                    return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
-                }
-
-                return ""
-            })
+            .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
             .filter(Boolean)
             .join("&")
 

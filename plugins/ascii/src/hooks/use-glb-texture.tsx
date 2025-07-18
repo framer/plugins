@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- ogl types are untrustworthy */
+
 import {
     Camera,
     Geometry,

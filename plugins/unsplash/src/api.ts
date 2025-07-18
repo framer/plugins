@@ -79,7 +79,7 @@ export function useListPhotosInfinite(query: string) {
         queryKey: ["photos", query],
         initialPageParam: 1,
         queryFn: async ({ pageParam, signal }) => {
-            const page = pageParam ?? 1
+            const page = pageParam
 
             if (query.length === 0) {
                 const photos = await fetchUnsplash(
@@ -99,7 +99,7 @@ export function useListPhotosInfinite(query: string) {
             }
 
             const result = await fetchUnsplash(
-                `/search/photos?query=${query}&page=${pageParam ?? 1}&per_page=${pageItemCount}`,
+                `/search/photos?query=${query}&page=${pageParam}&per_page=${pageItemCount}`,
                 listPhotosSchema,
                 { signal, method: "GET" }
             )

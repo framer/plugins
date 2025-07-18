@@ -63,7 +63,8 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
             }
 
             let current = currentRecord
-            do {
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional
+            while (true) {
                 setAction(current, action)
                 const next = recordsIterator.next()
                 if (next.done) {
@@ -71,7 +72,7 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
                     break
                 }
                 current = next.value
-            } while (current)
+            }
         },
         [currentRecord, applyToAll, setAction, moveToNextRecord, recordsIterator, onAllConflictsResolved]
     )
@@ -224,9 +225,9 @@ export function App({ collection }: { collection: Collection }) {
             form.current?.requestSubmit()
         }
 
-        form.current?.addEventListener("dragover", handleDragOver)
-        form.current?.addEventListener("dragleave", handleDragLeave)
-        form.current?.addEventListener("drop", handleDrop)
+        form.current.addEventListener("dragover", handleDragOver)
+        form.current.addEventListener("dragleave", handleDragLeave)
+        form.current.addEventListener("drop", handleDrop)
 
         return () => {
             form.current?.removeEventListener("dragover", handleDragOver)
@@ -325,7 +326,11 @@ export function App({ collection }: { collection: Collection }) {
                 }}
             />
 
-            {isDragging && <div className="dropzone dragging">{isDragging && <p>Drop CSV file to import</p>}</div>}
+            {isDragging && (
+                <div className="dropzone dragging">
+                    <p>Drop CSV file to import</p>
+                </div>
+            )}
 
             {!isDragging && (
                 <>

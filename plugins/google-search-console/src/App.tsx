@@ -11,7 +11,7 @@ import CriticalError from "./screens/CriticalError"
 import GoogleLogin from "./screens/GoogleLogin"
 import NeedsPublish from "./screens/NeedsPublish"
 import SiteView from "./screens/SiteView"
-import type { GoogleSite, GoogleToken, Site, SiteWithGoogleSite } from "./types"
+import { type GoogleSite, GoogleSiteSchema, type GoogleToken, type Site } from "./types"
 import { googleApiCall, stripTrailingSlash } from "./utils"
 
 void framer.showUI({
@@ -105,6 +105,8 @@ interface AppLoadSiteProps {
     logout: () => void
 }
 
+const WithGoogleSiteSchema = v.object({ googleSite: GoogleSiteSchema })
+
 function AppLoadSite({ login, logout }: AppLoadSiteProps) {
     const site = usePublishedSite()
 
@@ -114,8 +116,8 @@ function AppLoadSite({ login, logout }: AppLoadSiteProps) {
 
     return !site.siteInfo ? (
         <Loading />
-    ) : site.siteInfo && site.siteInfo.googleSite ? (
-        <SiteView site={site.siteInfo as SiteWithGoogleSite} logout={logout} />
+    ) : v.is(WithGoogleSiteSchema, site.siteInfo) ? (
+        <SiteView site={site.siteInfo} logout={logout} />
     ) : (
         <CriticalError site={site.siteInfo} logout={logout} />
     )

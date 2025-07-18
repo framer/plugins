@@ -24,7 +24,7 @@ export function useCharactersAtlasTexture(
         const context = canvas.getContext("2d")
         if (!context) return
 
-        context?.clearRect(0, 0, canvas.width, canvas.height)
+        context.clearRect(0, 0, canvas.width, canvas.height)
 
         canvas.width = size * characters.length
         canvas.height = size

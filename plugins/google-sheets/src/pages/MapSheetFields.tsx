@@ -89,7 +89,7 @@ const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
 const getFieldType = (context: PluginContext, columnId: string, cellValue?: CellValue): CollectionFieldType => {
     // Determine if the field type is already configured
     if ("collectionFields" in context) {
-        const field = context.collectionFields?.find(field => field.id === columnId)
+        const field = context.collectionFields.find(field => field.id === columnId)
         return field?.type ?? "string"
     }
 
@@ -241,7 +241,7 @@ export function MapSheetFieldsPage({
             fields: allFields,
             spreadsheetId,
             sheetTitle,
-            colFieldTypes: fieldConfig.map(field => field.type ?? "string"),
+            colFieldTypes: fieldConfig.map(field => field.type),
             ignoredColumns: Array.from(disabledColumns),
             slugColumn,
             lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),

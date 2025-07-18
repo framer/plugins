@@ -103,7 +103,7 @@ export function findRanges(text: string, query: string, isCaseSensitive: boolean
         const ranges: Range[] = []
 
         for (const match of matches) {
-            const start = match.index ?? 0
+            const start = match.index
             const end = start + match[0].length
 
             ranges.push([start, end])

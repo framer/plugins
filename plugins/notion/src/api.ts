@@ -380,7 +380,7 @@ export async function* iteratePaginatedAPI<Args extends PaginatedArgs, Item>(
 export function isMissingCollection(fieldInfo: FieldInfo, databaseIdMap: DatabaseIdMap): boolean {
     return Boolean(
         fieldInfo.notionProperty?.type === "relation" &&
-            fieldInfo.notionProperty.relation?.database_id &&
+            fieldInfo.notionProperty.relation.database_id &&
             !databaseIdMap.has(fieldInfo.notionProperty.relation.database_id)
     )
 }

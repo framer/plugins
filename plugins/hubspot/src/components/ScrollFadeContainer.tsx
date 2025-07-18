@@ -23,7 +23,6 @@ export const ScrollFadeContainer = ({ children, className, fadeHeight = 45, heig
 
         scrollTimeout.current = setTimeout(() => {
             requestAnimationFrame(() => {
-                if (!element) return
                 const { scrollTop, scrollHeight, clientHeight } = element
                 const scrollBottom = scrollHeight - scrollTop - clientHeight
 
@@ -38,7 +37,6 @@ export const ScrollFadeContainer = ({ children, className, fadeHeight = 45, heig
         if (!element) return
 
         requestAnimationFrame(() => {
-            if (!element) return
             const { scrollHeight, clientHeight } = element
             setShowBottomFade(scrollHeight > clientHeight)
             checkScroll()

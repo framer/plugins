@@ -96,7 +96,7 @@ export function useIndexingResults(urls: string[] | null, currentPageUrl: string
                     setCurrPageResult(
                         currInspection && {
                             url: currentPageUrl,
-                            inspection: currInspection?.inspectionResult,
+                            inspection: currInspection.inspectionResult,
                         }
                     )
                 }

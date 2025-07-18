@@ -69,7 +69,7 @@ function FieldMappingRow({
                     placeholder={originalFieldName}
                     value={field.name !== originalFieldName ? field.name : ""}
                     onChange={event => {
-                        onNameChange(field.id, event.target.value ?? originalFieldName ?? "")
+                        onNameChange(field.id, event.target.value)
                     }}
                 />
             )}

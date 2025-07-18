@@ -99,8 +99,6 @@ export async function syncCollection(
 
     const promises = databaseItems.map((item, index) =>
         limit(async () => {
-            if (!item) throw new Error("Logic error")
-
             seenItemIds.add(item.id)
 
             let skipContent = false
@@ -308,7 +306,7 @@ export async function fieldsInfoToCollectionFields(
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
                 let cases: Extract<ManagedCollectionFieldInput, { type: "enum" }>["cases"] | null = null
-                switch (property?.type) {
+                switch (property.type) {
                     case "select":
                         cases = property.select.options.map(option => ({
                             id: option.id,
@@ -360,8 +358,8 @@ export async function fieldsInfoToCollectionFields(
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
                 if (property.type === "relation") {
-                    const databaseId = property.relation?.database_id
-                    if (databaseId && databaseIdMap) {
+                    const databaseId = property.relation.database_id
+                    if (databaseId) {
                         const collectionId = databaseIdMap.get(databaseId)
                         if (collectionId) {
                             fields.push({
@@ -390,7 +388,7 @@ export function getFieldDataEntryForProperty(
 ): FieldDataEntryInput | null {
     switch (property.type) {
         case "checkbox": {
-            return { type: "boolean", value: property.checkbox ?? false }
+            return { type: "boolean", value: property.checkbox }
         }
         case "last_edited_time": {
             return { type: "date", value: property.last_edited_time }
@@ -411,7 +409,7 @@ export function getFieldDataEntryForProperty(
             if (field.type !== "enum") return null
 
             if (!property.select) {
-                const firstCase = field.cases?.[0]?.id
+                const firstCase = field.cases[0]?.id
                 return firstCase ? { type: "enum", value: firstCase } : null
             }
 
@@ -421,7 +419,7 @@ export function getFieldDataEntryForProperty(
             if (field.type !== "enum") return null
 
             if (!property.status) {
-                const firstCase = field.cases?.[0]?.id
+                const firstCase = field.cases[0]?.id
                 return firstCase ? { type: "enum", value: firstCase } : null
             }
 

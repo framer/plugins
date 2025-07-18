@@ -9,8 +9,6 @@ function handleFocus(event: React.FocusEvent<HTMLInputElement>) {
 }
 
 function calculateRadius(derivedFromOuterValue: boolean, value = 20, childRect: Rect) {
-    if (!childRect) return
-
     const smallestValue = Math.max(childRect.x, childRect.y)
 
     if (derivedFromOuterValue) {
@@ -87,6 +85,7 @@ export function App() {
 
             const childRect = await childNode.getRect()
 
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- https://github.com/typescript-eslint/typescript-eslint/issues/1459
             if (!active) return
             if (!childRect) {
                 setState(null)
@@ -141,28 +140,20 @@ export function App() {
 
     function handleOuterSliderChange(value: number[]) {
         if (!state) return
-        const radii = calculateRadius(true, value[0], state.childRect)
-
-        if (radii) {
-            const { outer, inner } = radii
-            setOuterValue(outer)
-            setInnerValue(inner)
-            setOuterInputValue(`${outer}`)
-            setInnerInputValue(`${inner > 0 ? inner : 0}`)
-        }
+        const { outer, inner } = calculateRadius(true, value[0], state.childRect)
+        setOuterValue(outer)
+        setInnerValue(inner)
+        setOuterInputValue(`${outer}`)
+        setInnerInputValue(`${inner > 0 ? inner : 0}`)
     }
 
     function handleInnerSliderChange(value: number[]) {
         if (!state) return
-        const radii = calculateRadius(false, value[0], state.childRect)
-
-        if (radii) {
-            const { outer, inner } = radii
-            setOuterValue(outer)
-            setInnerValue(inner)
-            setOuterInputValue(`${outer}`)
-            setInnerInputValue(`${inner > 0 ? inner : 0}`)
-        }
+        const { outer, inner } = calculateRadius(false, value[0], state.childRect)
+        setOuterValue(outer)
+        setInnerValue(inner)
+        setOuterInputValue(`${outer}`)
+        setInnerInputValue(`${inner > 0 ? inner : 0}`)
     }
 
     const handleOuterInput = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,15 +170,11 @@ export function App() {
         if (event.key === "Enter") {
             const newOuter = parseFloat(outerInputValue)
             if (!state) return
-            const radii = calculateRadius(true, newOuter, state.childRect)
-
-            if (radii) {
-                const { outer, inner } = radii
-                setOuterValue(outer)
-                setInnerValue(inner)
-                setOuterInputValue(`${outer}`)
-                setInnerInputValue(`${inner > 0 ? inner : 0}`)
-            }
+            const { outer, inner } = calculateRadius(true, newOuter, state.childRect)
+            setOuterValue(outer)
+            setInnerValue(inner)
+            setOuterInputValue(`${outer}`)
+            setInnerInputValue(`${inner > 0 ? inner : 0}`)
         }
     }
 
@@ -195,15 +182,11 @@ export function App() {
         if (event.key === "Enter") {
             const newInner = parseFloat(innerInputValue)
             if (!state) return
-            const radii = calculateRadius(false, newInner, state.childRect)
-
-            if (radii) {
-                const { outer, inner } = radii
-                setOuterValue(outer)
-                setInnerValue(inner)
-                setOuterInputValue(`${outer}`)
-                setInnerInputValue(`${inner > 0 ? inner : 0}`)
-            }
+            const { outer, inner } = calculateRadius(false, newInner, state.childRect)
+            setOuterValue(outer)
+            setInnerValue(inner)
+            setOuterInputValue(`${outer}`)
+            setInnerInputValue(`${inner > 0 ? inner : 0}`)
         }
     }
 

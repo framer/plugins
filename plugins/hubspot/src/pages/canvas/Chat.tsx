@@ -28,7 +28,7 @@ export default function ChatPage() {
     useEffect(() => {
         async function checkExistingSettings() {
             const customCode = await framer.getCustomCode()
-            const existingHTML = customCode?.bodyStart.html
+            const existingHTML = customCode.bodyStart.html
 
             const matches = (existingHTML ?? "").match(/window\.hsConversationsSettings\s*=\s*(\{.*?\});/)
             if (matches && matches[1]) {
@@ -46,13 +46,13 @@ export default function ChatPage() {
 
         async function applySettings() {
             const customCode = await framer.getCustomCode()
-            const existingHTML = customCode?.bodyStart.html
+            const existingHTML = customCode.bodyStart.html
 
-            if (!hasSetExistingSettings || existingHTML === undefined) return
+            if (!hasSetExistingSettings || existingHTML === null) return
 
             const settingsScript = `<script>window.hsConversationsSettings = ${JSON.stringify(settings)};</script>`
 
-            if (!existingHTML?.includes(settingsScript)) {
+            if (!existingHTML.includes(settingsScript)) {
                 await framer.setCustomCode({
                     html: settingsScript,
                     location: "bodyStart",

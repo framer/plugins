@@ -100,7 +100,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
             }
             case "code": {
-                const language = block.code.language ? CODE_LANGUAGE_MAP[block.code.language] : null
+                const language = CODE_LANGUAGE_MAP[block.code.language]
                 htmlContent += `<pre data-language="${language ?? "Markdown"}"><code>${richTextToHtml(block.code.rich_text)}</code></pre>`
                 break
             }

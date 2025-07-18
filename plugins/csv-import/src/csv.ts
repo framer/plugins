@@ -138,7 +138,7 @@ function getFieldDataEntryInputForField(
             if (Number.isNaN(number)) {
                 return new ConversionError(`Invalid value for field “${field.name}” expected a number`)
             }
-            return { type: "number", value: number ?? 0 }
+            return { type: "number", value: number }
         }
 
         case "boolean": {
@@ -357,9 +357,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
                 continue
             }
 
-            if (fieldDataEntry !== undefined) {
-                fieldData[field.id] = fieldDataEntry
-            }
+            fieldData[field.id] = fieldDataEntry
         }
 
         const item: ImportResultItem = {

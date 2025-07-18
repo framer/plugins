@@ -55,7 +55,7 @@ export class Indexer {
     private upsertEntries(entries: IndexEntry[]) {
         for (const entry of entries) {
             this.entries[entry.id] = entry
-            this.onUpsert?.(entry)
+            this.onUpsert(entry)
         }
     }
 
@@ -112,13 +112,13 @@ export class Indexer {
         const pages = await this.getPages()
 
         this.abortRequested = false
-        this.onStarted?.()
+        this.onStarted()
 
         for await (const batch of this.crawl(pages)) {
             this.upsertEntries(batch)
         }
 
-        this.onCompleted?.()
+        this.onCompleted()
     }
 
     async restart() {

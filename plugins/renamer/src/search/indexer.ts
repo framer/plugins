@@ -28,11 +28,11 @@ interface IndexerOptions {
 
 export class Indexer {
     private entries: Record<string, IndexEntry> = {}
-    private batchSize: number = 10
+    private batchSize = 10
     private scope: IndexerOptions["scope"] = "page"
     private includedNodeTypes: IndexerOptions["includedNodeTypes"]
     private includedAttributes: IncludedAttributes = ["text", "rect"]
-    private abortRequested: boolean = false
+    private abortRequested = false
     private onRestarted: IndexerOptions["onRestarted"]
     private onStarted: IndexerOptions["onStarted"]
     private onUpsert: IndexerOptions["onUpsert"]

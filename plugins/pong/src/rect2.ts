@@ -5,7 +5,7 @@ export class Rect2 {
     position: Vector2 = new Vector2()
     size: Vector2 = new Vector2()
 
-    constructor(x: number = 0, y: number = 0, width: number = 0, height: number = 0) {
+    constructor(x = 0, y = 0, width = 0, height = 0) {
         this.position = new Vector2(x, y)
         this.size = new Vector2(width, height)
     }

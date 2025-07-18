@@ -38,7 +38,6 @@ export default tseslint.config(
             "@typescript-eslint/no-unused-vars": 0,
 
             // TODO: Enable
-            "@typescript-eslint/no-inferrable-types": 0,
             "@typescript-eslint/no-misused-promises": 0,
             "@typescript-eslint/no-non-null-assertion": 0,
             "@typescript-eslint/no-unnecessary-condition": 0,

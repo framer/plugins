@@ -37,8 +37,8 @@ export function App() {
     }, [])
 
     useEffect(() => {
-        let frame: number = -1
-        let lastUpdateTime: number = 0
+        let frame = -1
+        let lastUpdateTime = 0
 
         const stage: Rect2 = new Rect2(0, 0, 1200, 1000)
 

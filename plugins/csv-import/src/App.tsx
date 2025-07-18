@@ -266,7 +266,9 @@ export function App({ collection }: { collection: Collection }) {
             if (!isAllowedToAddItems) return
             event.preventDefault()
 
-            const formData = new FormData(form.current!)
+            if (!form.current) throw new Error("Form ref not set")
+
+            const formData = new FormData(form.current)
             const fileValue = formData.get("file")
 
             if (!fileValue || typeof fileValue === "string") return

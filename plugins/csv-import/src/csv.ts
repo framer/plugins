@@ -392,19 +392,23 @@ export async function importCSV(collection: Collection, result: ImportResult) {
     await collection.addItems(
         result.items
             .filter(item => item.action !== "onConflictSkip")
-            .map(item =>
-                item.action === "add"
-                    ? {
-                          slug: item.slug!,
-                          fieldData: item.fieldData,
-                          draft: item.draft,
-                      }
-                    : {
-                          id: item.id!,
-                          fieldData: item.fieldData,
-                          draft: item.draft,
-                      }
-            )
+            .map(item => {
+                if (item.action === "add") {
+                    assert(item.slug !== undefined)
+                    return {
+                        slug: item.slug,
+                        fieldData: item.fieldData,
+                        draft: item.draft,
+                    }
+                }
+
+                assert(item.id !== undefined)
+                return {
+                    id: item.id,
+                    fieldData: item.fieldData,
+                    draft: item.draft,
+                }
+            })
     )
 
     const messages: string[] = []

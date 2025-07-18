@@ -65,11 +65,13 @@ function FieldMappingRow({
                 type="button"
                 className={classNames("source-field", isFieldUnavailable && "unsupported")}
                 aria-disabled={disabled}
-                onClick={() => onToggleIgnored(id)}
+                onClick={() => {
+                    onToggleIgnored(id)
+                }}
                 tabIndex={0}
             >
                 <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
-                <span>{originalName ?? id}</span>
+                <span>{originalName}</span>
             </button>
             <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -110,9 +112,11 @@ function FieldMappingRow({
                     <input
                         type="text"
                         disabled={disabled}
-                        placeholder={originalName ?? id}
+                        placeholder={originalName}
                         value={name}
-                        onChange={event => onNameChange(id, event.target.value)}
+                        onChange={event => {
+                            onNameChange(id, event.target.value)
+                        }}
                         onKeyDown={event => {
                             if (event.key === "Enter") {
                                 event.preventDefault()
@@ -273,7 +277,7 @@ export function FieldMapping({
                 <label className="slug-field" htmlFor="slugField">
                     <div className="heading-row">
                         <span>Slug Field</span>
-                        {database?.url && (
+                        {database.url && (
                             <a href={database.url} target="_blank" className="heading-link">
                                 View in Notion
                             </a>

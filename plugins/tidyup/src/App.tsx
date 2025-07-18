@@ -14,7 +14,7 @@ import * as v from "valibot"
 import { isNumber } from "./isNumber"
 import { Stepper } from "./Stepper"
 
-framer.showUI({
+void framer.showUI({
     position: "top right",
     width: 260,
     height: 350,
@@ -125,7 +125,7 @@ function useGroundNodeRects() {
             setRects(current => (isDeepEqual(current, result) ? current : result))
         }
 
-        getRects()
+        void getRects()
 
         return () => {
             active = false
@@ -295,6 +295,7 @@ function getRandomizedRects(rects: RectWithId[], gap: number): RectWithId[] {
     let canvasWidth = maxSize.width * 2
     let canvasHeight = maxSize.height * 2
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional
     while (true) {
         const randomRects = getRandomizeRectsForCanvas(rects, gap, canvasWidth, canvasHeight)
         if (randomRects) return randomRects
@@ -353,7 +354,9 @@ export function App() {
     const previewSize = useElementSize({
         ref: previewElement,
         deps: [layout],
-        onChange: () => setTransitionEnabled(false),
+        onChange: () => {
+            setTransitionEnabled(false)
+        },
     })
 
     const [randomKey, randomize] = useReducer((state: number) => state + 1, 0)
@@ -532,7 +535,7 @@ export function App() {
                         const node = await framer.getNode(rect.id)
                         if (!node || !supportsPins(node)) continue
 
-                        node.setAttributes({
+                        void node.setAttributes({
                             left: `${rect.x + rawBoundingBox.x}px`,
                             top: `${rect.y + rawBoundingBox.y}px`,
                         })

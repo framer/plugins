@@ -11,10 +11,10 @@ import CriticalError from "./screens/CriticalError"
 import GoogleLogin from "./screens/GoogleLogin"
 import NeedsPublish from "./screens/NeedsPublish"
 import SiteView from "./screens/SiteView"
-import type { GoogleSite, GoogleToken, Site, SiteWithGoogleSite } from "./types"
+import { type GoogleSite, GoogleSiteSchema, type GoogleToken, type Site } from "./types"
 import { googleApiCall, stripTrailingSlash } from "./utils"
 
-framer.showUI({
+void framer.showUI({
     position: "top right",
     width: PLUGIN_WIDTH,
     height: SMALL_HEIGHT,
@@ -41,9 +41,9 @@ function usePublishedSite() {
     const { refresh } = useGoogleToken()
 
     const fetchGoogleSites = useCallback(
-        async (token: string): Promise<Array<GoogleSite>> => {
+        async (token: string): Promise<GoogleSite[]> => {
             const result = (await googleApiCall(`/webmasters/v3/sites`, token, refresh)) as {
-                siteEntry: Array<GoogleSite>
+                siteEntry: GoogleSite[]
             } | null
 
             return result?.siteEntry || []
@@ -90,7 +90,7 @@ function usePublishedSite() {
             }
         }
 
-        update()
+        void update()
     }, [authContext.access_token, fetchGoogleSites, publishInfo, showBoundary])
 
     if (SHOW_MOCK_SITEMAP_DATA) {
@@ -105,6 +105,8 @@ interface AppLoadSiteProps {
     logout: () => void
 }
 
+const WithGoogleSiteSchema = v.object({ googleSite: GoogleSiteSchema })
+
 function AppLoadSite({ login, logout }: AppLoadSiteProps) {
     const site = usePublishedSite()
 
@@ -114,8 +116,8 @@ function AppLoadSite({ login, logout }: AppLoadSiteProps) {
 
     return !site.siteInfo ? (
         <Loading />
-    ) : site.siteInfo && site.siteInfo.googleSite ? (
-        <SiteView site={site.siteInfo as SiteWithGoogleSite} logout={logout} />
+    ) : v.is(WithGoogleSiteSchema, site.siteInfo) ? (
+        <SiteView site={site.siteInfo} logout={logout} />
     ) : (
         <CriticalError site={site.siteInfo} logout={logout} />
     )
@@ -130,9 +132,9 @@ export function App() {
 
     useEffect(() => {
         if (!tokens?.access_token) {
-            framer.showUI({ width: PLUGIN_WIDTH, height: SMALL_HEIGHT })
+            void framer.showUI({ width: PLUGIN_WIDTH, height: SMALL_HEIGHT })
         } else {
-            framer.showUI({ width: PLUGIN_WIDTH, height: LARGE_HEIGHT })
+            void framer.showUI({ width: PLUGIN_WIDTH, height: LARGE_HEIGHT })
         }
     }, [tokens?.access_token])
 

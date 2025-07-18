@@ -12,7 +12,7 @@ export function NoTableAccess({
     const [isRetrying, setIsRetrying] = useState(false)
 
     useLayoutEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             height: 110,
             width: 240,
             resizable: false,

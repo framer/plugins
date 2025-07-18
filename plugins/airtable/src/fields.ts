@@ -226,7 +226,7 @@ async function inferLookupField(
     const { options } = fieldSchema
 
     // If the lookup field doesn't have a result type, treat as unsupported
-    if (!hasOptions(options.result)) {
+    if (!options.result) {
         return createUnsupportedField(fieldSchema)
     }
 
@@ -249,7 +249,7 @@ async function inferRollupField(
     const { options } = fieldSchema
 
     // If the rollup field doesn't have a result type, treat as unsupported
-    if (!hasOptions(options.result)) {
+    if (!options.result) {
         return createUnsupportedField(fieldSchema)
     }
 
@@ -478,12 +478,6 @@ export async function inferFields(collection: ManagedCollection, table: Airtable
     }
 
     return fields
-}
-
-function hasOptions(
-    result: AirtableFieldResult | null
-): result is AirtableFieldResult & { options: NonNullable<AirtableFieldResult["options"]> } {
-    return result !== null && result !== undefined && result.options !== undefined && result.options !== null
 }
 
 export interface AirtableTable {

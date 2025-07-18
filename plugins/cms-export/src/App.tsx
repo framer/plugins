@@ -13,23 +13,29 @@ export function App() {
     const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
 
     useEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 340,
             height: 370,
             resizable: false,
         })
 
-        Promise.all([framer.getCollections(), framer.getActiveCollection()]).then(([collections, activeCollection]) => {
+        const task = async () => {
+            const [collections, activeCollection] = await Promise.all([
+                framer.getCollections(),
+                framer.getActiveCollection(),
+            ])
+
             setIsLoading(false)
             setCollections(collections)
             setSelectedCollection(activeCollection)
-        })
+        }
+
+        void task()
     }, [])
 
     const exportCSV = async () => {
         if (!selectedCollection) return
-
-        exportCollectionAsCSV(selectedCollection, selectedCollection.name)
+        await exportCollectionAsCSV(selectedCollection, selectedCollection.name)
     }
 
     const copyCSVtoClipboard = async () => {
@@ -38,17 +44,7 @@ export function App() {
         const csv = await convertCollectionToCSV(selectedCollection)
 
         try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(csv)
-            } else {
-                // Fallback method for browsers that don't support clipboard.writeText
-                const textArea = document.createElement("textarea")
-                textArea.value = csv
-                document.body.appendChild(textArea)
-                textArea.select()
-                document.execCommand("copy")
-                document.body.removeChild(textArea)
-            }
+            await navigator.clipboard.writeText(csv)
             framer.notify("CSV copied to clipboard", { variant: "success" })
         } catch (error) {
             console.error("Failed to copy CSV:", error)

@@ -18,7 +18,7 @@ export type ImportResultItem = CollectionItemInput & {
     action: "add" | "conflict" | "onConflictUpdate" | "onConflictSkip"
 }
 
-export type ImportResult = {
+export interface ImportResult {
     warnings: {
         missingSlugCount: number
         doubleSlugCount: number
@@ -138,7 +138,7 @@ function getFieldDataEntryInputForField(
             if (Number.isNaN(number)) {
                 return new ConversionError(`Invalid value for field “${field.name}” expected a number`)
             }
-            return { type: "number", value: number ?? 0 }
+            return { type: "number", value: number }
         }
 
         case "boolean": {
@@ -357,9 +357,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
                 continue
             }
 
-            if (fieldDataEntry !== undefined) {
-                fieldData[field.id] = fieldDataEntry
-            }
+            fieldData[field.id] = fieldDataEntry
         }
 
         const item: ImportResultItem = {
@@ -392,19 +390,23 @@ export async function importCSV(collection: Collection, result: ImportResult) {
     await collection.addItems(
         result.items
             .filter(item => item.action !== "onConflictSkip")
-            .map(item =>
-                item.action === "add"
-                    ? {
-                          slug: item.slug!,
-                          fieldData: item.fieldData,
-                          draft: item.draft,
-                      }
-                    : {
-                          id: item.id!,
-                          fieldData: item.fieldData,
-                          draft: item.draft,
-                      }
-            )
+            .map(item => {
+                if (item.action === "add") {
+                    assert(item.slug !== undefined)
+                    return {
+                        slug: item.slug,
+                        fieldData: item.fieldData,
+                        draft: item.draft,
+                    }
+                }
+
+                assert(item.id !== undefined)
+                return {
+                    id: item.id,
+                    fieldData: item.fieldData,
+                    draft: item.draft,
+                }
+            })
     )
 
     const messages: string[] = []

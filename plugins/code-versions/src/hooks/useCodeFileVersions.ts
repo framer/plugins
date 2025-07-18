@@ -43,7 +43,7 @@ export function useCodeFileVersions(): CodeFileVersionsState {
         const abortController = new AbortController()
         versionsAbortControllerRef.current = abortController
 
-        loadVersions(dispatch, state.codeFile, abortController)
+        void loadVersions(dispatch, state.codeFile, abortController)
 
         // Cleanup function
         return () => {
@@ -69,7 +69,7 @@ export function useCodeFileVersions(): CodeFileVersionsState {
         const abortController = new AbortController()
         contentAbortControllerRef.current = abortController
 
-        loadVersionContent(dispatch, selectedVersion, abortController)
+        void loadVersionContent(dispatch, selectedVersion, abortController)
 
         // Cleanup function
         return () => {
@@ -109,11 +109,11 @@ export function useCodeFileVersions(): CodeFileVersionsState {
         contentAbortControllerRef.current = abortController
 
         if (state.codeFile) {
-            loadVersions(dispatch, state.codeFile, abortController)
+            void loadVersions(dispatch, state.codeFile, abortController)
         }
 
         if (selectedVersion) {
-            loadVersionContent(dispatch, selectedVersion, abortController)
+            void loadVersionContent(dispatch, selectedVersion, abortController)
         }
         dispatch({ type: VersionsActionType.ErrorsCleared })
     }, [state.codeFile, selectedVersion])

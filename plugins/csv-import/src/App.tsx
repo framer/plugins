@@ -63,7 +63,8 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
             }
 
             let current = currentRecord
-            do {
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional
+            while (true) {
                 setAction(current, action)
                 const next = recordsIterator.next()
                 if (next.done) {
@@ -71,7 +72,7 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
                     break
                 }
                 current = next.value
-            } while (current)
+            }
         },
         [currentRecord, applyToAll, setAction, moveToNextRecord, recordsIterator, onAllConflictsResolved]
     )
@@ -97,7 +98,9 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
                         type="checkbox"
                         id="apply-to-all"
                         checked={applyToAll}
-                        onChange={event => setApplyToAll(event.currentTarget.checked)}
+                        onChange={event => {
+                            setApplyToAll(event.currentTarget.checked)
+                        }}
                     />
                     Apply to all
                 </label>
@@ -130,7 +133,7 @@ export function App({ collection }: { collection: Collection }) {
     const [isDragging, setIsDragging] = useState(false)
 
     useEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 260,
             height: 330,
             resizable: false,
@@ -142,7 +145,7 @@ export function App({ collection }: { collection: Collection }) {
             return
         }
 
-        framer.showUI({
+        void framer.showUI({
             width: 260,
             height: 165,
             resizable: false,
@@ -222,9 +225,9 @@ export function App({ collection }: { collection: Collection }) {
             form.current?.requestSubmit()
         }
 
-        form.current?.addEventListener("dragover", handleDragOver)
-        form.current?.addEventListener("dragleave", handleDragLeave)
-        form.current?.addEventListener("drop", handleDrop)
+        form.current.addEventListener("dragover", handleDragOver)
+        form.current.addEventListener("dragleave", handleDragLeave)
+        form.current.addEventListener("drop", handleDrop)
 
         return () => {
             form.current?.removeEventListener("dragover", handleDragOver)
@@ -264,7 +267,9 @@ export function App({ collection }: { collection: Collection }) {
             if (!isAllowedToAddItems) return
             event.preventDefault()
 
-            const formData = new FormData(form.current!)
+            if (!form.current) throw new Error("Form ref not set")
+
+            const formData = new FormData(form.current)
             const fileValue = formData.get("file")
 
             if (!fileValue || typeof fileValue === "string") return
@@ -294,7 +299,7 @@ export function App({ collection }: { collection: Collection }) {
                         const resolvedItem = resolvedItems.find(resolved => resolved.slug === item.slug)
                         return resolvedItem || item
                     })
-                    importItems({ ...result, items: updatedItems })
+                    void importItems({ ...result, items: updatedItems })
                 }}
             />
         )
@@ -321,7 +326,11 @@ export function App({ collection }: { collection: Collection }) {
                 }}
             />
 
-            {isDragging && <div className="dropzone dragging">{isDragging && <p>Drop CSV file to import</p>}</div>}
+            {isDragging && (
+                <div className="dropzone dragging">
+                    <p>Drop CSV file to import</p>
+                </div>
+            )}
 
             {!isDragging && (
                 <>

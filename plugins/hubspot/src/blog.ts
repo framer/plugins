@@ -60,7 +60,7 @@ export function shouldSyncBlogImmediately(pluginContext: BlogPluginContext): plu
 }
 
 export async function getBlogPluginContext(): Promise<BlogPluginContext> {
-    const collection = await framer.getManagedCollection()
+    const collection = await framer.getActiveManagedCollection()
     const collectionFields = await collection.getFields()
     const allPossibleFieldIds = HUBSPOT_BLOG_FIELDS.map(field => field.id)
     const rawIncludedFieldHash = await collection.getPluginData(PLUGIN_INCLUDED_FIELDS_HASH)

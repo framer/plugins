@@ -20,10 +20,14 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
 
     useEffect(() => {
         setStatus("loading-bases")
-        getUserBases().then(bases => {
+
+        const task = async () => {
+            const bases = await getUserBases()
             setBases(bases)
             setSelectedBaseId(bases[0]?.id ?? "")
-        })
+        }
+
+        void task()
     }, [])
 
     useEffect(() => {
@@ -33,16 +37,22 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
             setStatus("loading-tables")
             setTables([])
             setSelectedTableId("")
-            getTables(selectedBaseId, abortController.signal).then(tables => {
+
+            const task = async () => {
+                const tables = await getTables(selectedBaseId, abortController.signal)
                 if (abortController.signal.aborted) return
 
                 setTables(tables)
                 setStatus("ready")
                 setSelectedTableId(tables[0]?.id ?? "")
-            })
+            }
+
+            void task()
         }
 
-        return () => abortController.abort()
+        return () => {
+            abortController.abort()
+        }
     }, [selectedBaseId])
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -86,7 +96,9 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                 Base
                 <select
                     id="base"
-                    onChange={event => setSelectedBaseId(event.target.value)}
+                    onChange={event => {
+                        setSelectedBaseId(event.target.value)
+                    }}
                     value={selectedBaseId}
                     disabled={status === "loading-bases"}
                 >
@@ -105,7 +117,9 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                 Table
                 <select
                     id="table"
-                    onChange={event => setSelectedTableId(event.target.value)}
+                    onChange={event => {
+                        setSelectedTableId(event.target.value)
+                    }}
                     value={selectedTableId}
                     disabled={!selectedBaseId || status === "loading-tables"}
                 >

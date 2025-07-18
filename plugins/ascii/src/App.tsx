@@ -61,7 +61,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
     useImageTexture(
         gl,
-        droppedAsset?.src ? (droppedAsset?.type === "image" ? droppedAsset?.src : undefined) : framerCanvasImage?.url,
+        droppedAsset?.src ? (droppedAsset.type === "image" ? droppedAsset.src : undefined) : framerCanvasImage?.url,
         texture => {
             if (!program) return
             program.texture = texture
@@ -72,7 +72,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
     useVideoTexture(
         gl,
-        droppedAsset?.type === "video" ? droppedAsset?.src : undefined,
+        droppedAsset?.type === "video" ? droppedAsset.src : undefined,
         texture => {
             if (!program) return
             program.texture = texture
@@ -88,7 +88,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         isPlaceholder
             ? DEFAUL_ASSET.src
             : droppedAsset?.type === "glb" || droppedAsset?.type === "gltf"
-              ? droppedAsset?.src
+              ? droppedAsset.src
               : undefined,
         droppedAsset?.type,
         texture => {
@@ -159,7 +159,9 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
         resizeObserver.observe(containerRef.current)
 
-        return () => resizeObserver.disconnect()
+        return () => {
+            resizeObserver.disconnect()
+        }
     }, [])
 
     return (
@@ -219,7 +221,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     ref={node => {
                         if (!node) return
                         asciiRef.current = node
-                        setProgram(node?.program)
+                        setProgram(node.program)
                     }}
                     gl={gl}
                 />
@@ -252,7 +254,12 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     }}
                 />
                 {droppedAsset && (
-                    <button className="clear" onClick={() => setDroppedAsset(null)}>
+                    <button
+                        className="clear"
+                        onClick={() => {
+                            setDroppedAsset(null)
+                        }}
+                    >
                         Clear
                     </button>
                 )}

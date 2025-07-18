@@ -7,16 +7,16 @@ export enum StatusTypes {
     ERROR = "error",
 }
 
-type NoSelectionState = {
+interface NoSelectionState {
     type: StatusTypes.NO_SELECTION
 }
 
-type CodeFileState = {
+interface CodeFileState {
     type: StatusTypes.SELECTED_CODE_FILE
     codeFile: CodeFile
 }
 
-type ErrorState = {
+interface ErrorState {
     type: StatusTypes.ERROR
     error: string
 }

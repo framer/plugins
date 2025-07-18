@@ -39,7 +39,9 @@ const debounce = <T extends (...args: never[]) => void>(fn: T, ms = 300) => {
     let timeoutId: ReturnType<typeof setTimeout>
     return function (...args: Parameters<T>) {
         clearTimeout(timeoutId)
-        timeoutId = setTimeout(() => fn(...args), ms)
+        timeoutId = setTimeout(() => {
+            fn(...args)
+        }, ms)
     }
 }
 
@@ -64,7 +66,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
 
         const start = performance.now()
 
-        framer.hideUI()
+        void framer.hideUI()
         await framer.setImage({
             image: {
                 bytes: nextBytes,
@@ -114,7 +116,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
                 canvas.width = displayWidth
                 canvas.height = displayHeight
 
-                framer.showUI({
+                void framer.showUI({
                     position: "top right",
                     width: 280,
                     height: displayHeight + 95,
@@ -154,7 +156,9 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
                 min="0"
                 max="255"
                 value={threshold}
-                onChange={event => handleThresholdChange(Number(event.target.value))}
+                onChange={event => {
+                    handleThresholdChange(Number(event.target.value))
+                }}
             />
 
             <button

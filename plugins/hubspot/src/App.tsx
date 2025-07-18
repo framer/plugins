@@ -194,7 +194,9 @@ export function App() {
         }
 
         getContexts()
-            .then(() => setIsLoading(false))
+            .then(() => {
+                setIsLoading(false)
+            })
             .catch(e => framer.closePlugin(e instanceof Error ? e.message : "Unknown error", { variant: "error" }))
     }, [navigate, isAuthenticated])
 

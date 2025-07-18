@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- ogl types are untrustworthy */
+
 import {
     Camera,
     Geometry,
@@ -541,7 +543,9 @@ export function useGLBTexture(
 
     const addToScene = useCallback(
         (gltf: GLTF) => {
-            scene.children.forEach(child => child.setParent(null))
+            scene.children.forEach(child => {
+                child.setParent(null)
+            })
 
             const s = gltf.scene || gltf.scenes[0]
             s.forEach(root => {
@@ -647,6 +651,6 @@ export function useGLBTexture(
             onUpdate(target.texture)
         }
 
-        task()
+        void task()
     }, [src, target, scene, type, ...deps])
 }

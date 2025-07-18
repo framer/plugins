@@ -12,7 +12,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     useLayoutEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 320,
             height: 340,
         })
@@ -24,11 +24,10 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
         }
 
         return new Promise(resolve => {
-            pollInterval.current = setInterval(() => {
-                auth.fetchTokens(readKey).then(tokens => {
-                    clearInterval(pollInterval.current)
-                    resolve(tokens)
-                })
+            pollInterval.current = setInterval(async () => {
+                const tokens = await auth.fetchTokens(readKey)
+                clearInterval(pollInterval.current)
+                resolve(tokens)
             }, 2500)
         })
     }

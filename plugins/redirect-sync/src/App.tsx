@@ -7,7 +7,7 @@ import { IconRedirects } from "./IconRedirects"
 
 const learnMoreLink = "https://www.framer.com/help/articles/bulk-importing-exporting-redirects/"
 
-framer.showUI({
+void framer.showUI({
     width: 260,
     height: 370,
 })

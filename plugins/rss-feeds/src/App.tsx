@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function App({ collection, initialRssSourceId }: Props) {
-    const [selectedSourceId, setSelectedSourceId] = useState<string>(initialRssSourceId ?? rssSources[0]!.id)
+    const [selectedSourceId, setSelectedSourceId] = useState<string>(initialRssSourceId ?? rssSources[0].id)
     const [isSyncing, setIsSyncing] = useState(false)
 
     const selectedSource = rssSources.find(source => source.id === selectedSourceId)
@@ -52,7 +52,9 @@ export function App({ collection, initialRssSourceId }: Props) {
                     id="selectSource"
                     className="select"
                     value={selectedSourceId}
-                    onChange={e => setSelectedSourceId(e.target.value)}
+                    onChange={e => {
+                        setSelectedSourceId(e.target.value)
+                    }}
                 >
                     {rssSources.map(source => (
                         <option value={source.id} key={source.id}>

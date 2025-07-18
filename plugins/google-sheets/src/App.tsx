@@ -154,7 +154,6 @@ export function App({ pluginContext }: AppProps) {
 
     useLayoutEffect(() => {
         if (!shouldSyncOnly) return
-        assert(context.type === "update")
         assert(context.slugColumn !== null, "Expected slug column")
 
         void framer.hideUI()
@@ -181,7 +180,7 @@ export function App({ pluginContext }: AppProps) {
                 fields,
                 // Determine if the field type is already configured, otherwise default to "string"
                 colFieldTypes: headerRow.map(colName => {
-                    const field = fields.find(field => field?.name === colName)
+                    const field = fields.find(field => field.name === colName)
                     return field?.type ?? "string"
                 }),
             })

@@ -92,7 +92,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
 
     useEffect(() => {
         if (!ditherRef.current) return
-        ditherRef.current?.setPixelSize(exportSize * 0.008)
+        ditherRef.current.setPixelSize(exportSize * 0.008)
     }, [exportSize])
 
     useEffect(() => {
@@ -220,9 +220,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                 {!disabled ? (
                     <div
                         className="canvas"
-                        style={{
-                            display: disabled ? "none" : "block",
-                        }}
+                        style={{ display: "block" }}
                         ref={node => {
                             if (node) {
                                 node.appendChild(gl.canvas)
@@ -280,7 +278,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     ref={node => {
                         if (!node) return
                         ditherRef.current = node
-                        setProgram(node?.program)
+                        setProgram(node.program)
                     }}
                     gl={gl}
                 />

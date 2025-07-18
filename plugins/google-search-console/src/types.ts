@@ -16,10 +16,12 @@ export const AuthorizeSchema = v.object({
     readKey: v.string(),
 })
 
-export interface GoogleSite {
-    siteUrl: string
-    permissionLevel: string
-}
+export const GoogleSiteSchema = v.object({
+    siteUrl: v.string(),
+    permissionLevel: v.string(),
+})
+
+export type GoogleSite = v.InferOutput<typeof GoogleSiteSchema>
 
 export interface Site {
     url: string

@@ -245,7 +245,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
                                     photo={photo}
                                     height={heightForPhoto(photo, columnWidth)}
                                     width={columnWidth}
-                                    loading={addPhotoMutation.isPending && addPhotoMutation.variables?.id === photo.id}
+                                    loading={addPhotoMutation.isPending && addPhotoMutation.variables.id === photo.id}
                                     onSelect={addPhotoMutation.mutate}
                                     isAllowedToUpsertImage={isAllowedToUpsertImage}
                                 />

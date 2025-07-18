@@ -151,33 +151,29 @@ export default function SiteHasIndexedSitemap({ site, logout }: SiteHasIndexedSi
         }
     }, [resize, performance])
 
-    if (site.googleSite) {
-        return (
-            <div className="in-app">
-                <Performance siteUrl={site.googleSite.siteUrl} performance={performance} />
-                <section>
-                    <URLStatuses urls={urls} googleSiteUrl={site.googleSite.siteUrl} />
-                </section>
-                <section className="actions-footer">
-                    <button type="button" onClick={logout}>
-                        Log Out
-                    </button>
-                    <button
-                        type="button"
-                        className="framer-button-primary"
-                        onClick={() => {
-                            window.open(
-                                `https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(site.googleSite?.siteUrl || site.url)}`,
-                                "_blank"
-                            )
-                        }}
-                    >
-                        Dashboard
-                    </button>
-                </section>
-            </div>
-        )
-    }
-
-    return null
+    return (
+        <div className="in-app">
+            <Performance siteUrl={site.googleSite.siteUrl} performance={performance} />
+            <section>
+                <URLStatuses urls={urls} googleSiteUrl={site.googleSite.siteUrl} />
+            </section>
+            <section className="actions-footer">
+                <button type="button" onClick={logout}>
+                    Log Out
+                </button>
+                <button
+                    type="button"
+                    className="framer-button-primary"
+                    onClick={() => {
+                        window.open(
+                            `https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(site.googleSite.siteUrl || site.url)}`,
+                            "_blank"
+                        )
+                    }}
+                >
+                    Dashboard
+                </button>
+            </section>
+        </div>
+    )
 }

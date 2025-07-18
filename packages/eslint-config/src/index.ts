@@ -39,7 +39,6 @@ export default tseslint.config(
 
             // TODO: Enable
             "@typescript-eslint/no-misused-promises": 0,
-            "@typescript-eslint/no-unnecessary-condition": 0,
             "@typescript-eslint/no-unnecessary-template-expression": 0,
             "@typescript-eslint/no-unnecessary-type-assertion": 0,
             "@typescript-eslint/no-unsafe-enum-comparison": 0,

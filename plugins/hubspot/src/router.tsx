@@ -188,11 +188,9 @@ export function Router({ routes, hubDbPluginContext, blogPluginContext }: Router
     return (
         <div className="relative w-full h-full overflow-hidden">
             <AnimatePresence>
-                {page && (
-                    <SizePreserver size={size} key={location.pathname}>
-                        {cloneElement(page, { key: location.pathname })}
-                    </SizePreserver>
-                )}
+                <SizePreserver size={size} key={location.pathname}>
+                    {cloneElement(page, { key: location.pathname })}
+                </SizePreserver>
             </AnimatePresence>
         </div>
     )

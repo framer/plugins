@@ -29,8 +29,6 @@ export function PreviewTable({ collection }: Props) {
         })
 
         const load = async () => {
-            if (!collection) return
-
             const fields = await collection.getFields()
             const items = await collection.getItems()
 

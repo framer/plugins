@@ -66,14 +66,5 @@ export default tseslint.config(
     {
         files: [JS_GLOB],
         extends: [tseslint.configs.disableTypeChecked],
-    },
-
-    {
-        files: ["**/greenhouse/**/*"],
-        rules: {
-            // TODO: Enable
-            "@typescript-eslint/no-unsafe-member-access": 0,
-            "@typescript-eslint/no-unsafe-assignment": 0,
-        },
     }
 )

@@ -119,7 +119,7 @@ export function App() {
                         style={{ opacity: supportsGradient ? 1 : 0.5 }}
                         onClick={() => {
                             if (!currentSelection) return
-                            setAsGradient(currentSelection, colors)
+                            void setAsGradient(currentSelection, colors)
                         }}
                         title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}
                     >

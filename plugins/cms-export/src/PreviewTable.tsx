@@ -22,7 +22,7 @@ export function PreviewTable({ collection }: Props) {
     const [showGradient, setShowGradient] = useState(false)
 
     useEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 340,
             height: 370,
             resizable: false,
@@ -48,7 +48,7 @@ export function PreviewTable({ collection }: Props) {
 
         window.addEventListener("resize", resize)
 
-        load()
+        void load()
         resize()
 
         return () => {

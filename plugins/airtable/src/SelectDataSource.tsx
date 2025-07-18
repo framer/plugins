@@ -20,10 +20,14 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
 
     useEffect(() => {
         setStatus("loading-bases")
-        getUserBases().then(bases => {
+
+        const task = async () => {
+            const bases = await getUserBases()
             setBases(bases)
             setSelectedBaseId(bases[0]?.id ?? "")
-        })
+        }
+
+        void task()
     }, [])
 
     useEffect(() => {
@@ -33,13 +37,17 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
             setStatus("loading-tables")
             setTables([])
             setSelectedTableId("")
-            getTables(selectedBaseId, abortController.signal).then(tables => {
+
+            const task = async () => {
+                const tables = await getTables(selectedBaseId, abortController.signal)
                 if (abortController.signal.aborted) return
 
                 setTables(tables)
                 setStatus("ready")
                 setSelectedTableId(tables[0]?.id ?? "")
-            })
+            }
+
+            void task()
         }
 
         return () => {

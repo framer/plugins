@@ -14,7 +14,7 @@ import SiteView from "./screens/SiteView"
 import type { GoogleSite, GoogleToken, Site, SiteWithGoogleSite } from "./types"
 import { googleApiCall, stripTrailingSlash } from "./utils"
 
-framer.showUI({
+void framer.showUI({
     position: "top right",
     width: PLUGIN_WIDTH,
     height: SMALL_HEIGHT,
@@ -90,7 +90,7 @@ function usePublishedSite() {
             }
         }
 
-        update()
+        void update()
     }, [authContext.access_token, fetchGoogleSites, publishInfo, showBoundary])
 
     if (SHOW_MOCK_SITEMAP_DATA) {
@@ -130,9 +130,9 @@ export function App() {
 
     useEffect(() => {
         if (!tokens?.access_token) {
-            framer.showUI({ width: PLUGIN_WIDTH, height: SMALL_HEIGHT })
+            void framer.showUI({ width: PLUGIN_WIDTH, height: SMALL_HEIGHT })
         } else {
-            framer.showUI({ width: PLUGIN_WIDTH, height: LARGE_HEIGHT })
+            void framer.showUI({ width: PLUGIN_WIDTH, height: LARGE_HEIGHT })
         }
     }, [tokens?.access_token])
 

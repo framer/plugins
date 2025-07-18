@@ -124,7 +124,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
         if (distanceToEnd > 150) return
 
-        fetchNextPage()
+        void fetchNextPage()
     }, [isFetchingNextPage, isLoading, fetchNextPage])
 
     useEffect(() => {
@@ -184,7 +184,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
         if (isScrollable || !hasNextPage) return
 
-        fetchNextPage()
+        void fetchNextPage()
     }, [data, hasNextPage, fetchNextPage, deferredWindowWidth, isLoading])
 
     const [photosColumns, columnWidth] = useMemo(() => {

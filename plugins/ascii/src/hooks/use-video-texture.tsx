@@ -20,7 +20,7 @@ export function useVideoTexture(
         video.loop = true
         video.muted = true
         video.playsInline = true
-        video.play()
+        void video.play()
 
         video.addEventListener("loadeddata", () => {
             texture.image = video

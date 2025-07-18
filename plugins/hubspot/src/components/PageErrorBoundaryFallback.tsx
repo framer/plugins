@@ -29,7 +29,7 @@ export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
                                         onClick={e => {
                                             e.preventDefault()
                                             auth.logout()
-                                            framer.closePlugin()
+                                            void framer.closePlugin()
                                         }}
                                     >
                                         logout

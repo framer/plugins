@@ -66,7 +66,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
 
         const start = performance.now()
 
-        framer.hideUI()
+        void framer.hideUI()
         await framer.setImage({
             image: {
                 bytes: nextBytes,
@@ -116,7 +116,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
                 canvas.width = displayWidth
                 canvas.height = displayHeight
 
-                framer.showUI({
+                void framer.showUI({
                     position: "top right",
                     width: 280,
                     height: displayHeight + 95,

@@ -186,6 +186,19 @@ export function App() {
                 return
             }
 
+            framer.setMenu([
+                {
+                    label: "Log Out",
+                    visible: true,
+                    onAction: () => {
+                        auth.logout()
+                        framer.closePlugin(
+                            "Uninstall the Framer app from the HubSpot integrations dashboard to complete the removal"
+                        )
+                    },
+                },
+            ])
+
             if (isInCMSModes) {
                 return handleCMSModes()
             }

@@ -106,7 +106,7 @@ export async function syncCollection(
             let skipContent = false
             if (isUnchangedSinceLastSync(item.last_edited_time, lastSynced)) {
                 console.warn({
-                    message: `Skipping content update. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSynced!)}`,
+                    message: `Skipping content update. last updated: ${formatDate(item.last_edited_time)}, last synced: ${lastSynced ? formatDate(lastSynced) : "never"}`,
                     url: item.url,
                 })
                 skipContent = true

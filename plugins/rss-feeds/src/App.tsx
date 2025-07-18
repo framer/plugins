@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function App({ collection, initialRssSourceId }: Props) {
-    const [selectedSourceId, setSelectedSourceId] = useState<string>(initialRssSourceId ?? rssSources[0]!.id)
+    const [selectedSourceId, setSelectedSourceId] = useState<string>(initialRssSourceId ?? rssSources[0].id)
     const [isSyncing, setIsSyncing] = useState(false)
 
     const selectedSource = rssSources.find(source => source.id === selectedSourceId)

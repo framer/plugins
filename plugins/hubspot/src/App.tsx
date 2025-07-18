@@ -28,7 +28,7 @@ const routes: Route[] = [
         path: "/canvas",
         element: CanvasMenuPage,
         size: {
-            height: 546,
+            height: 561,
         },
         children: [
             {

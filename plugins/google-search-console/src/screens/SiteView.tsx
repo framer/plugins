@@ -59,9 +59,9 @@ export default function SiteView({ site, logout }: SiteViewProps) {
                 setSitemapsState({ sitemaps, submitted: !!submittedSitemap })
             } catch (e) {
                 if (((e as GoogleError | undefined)?.cause as { status: number } | undefined)?.status === 403) {
-                    setError({ level: "display", e: e as unknown as GoogleError })
+                    setError({ level: "display", e: e as GoogleError })
                 } else {
-                    setError({ level: "throw", e: e as unknown as GoogleError })
+                    setError({ level: "throw", e: e as GoogleError })
                 }
             }
         }

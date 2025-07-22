@@ -12,7 +12,7 @@ void framer.showUI({
     height: 350,
 })
 
-async function importXliff() {
+function importXliff() {
     importFileAsText(".xlf,.xliff", async (xliffText: string) => {
         try {
             const locales = await framer.getLocales()
@@ -100,7 +100,7 @@ export function App() {
                     type="button"
                     onClick={() => {
                         if (!isAllowedToSetLocalizationData) return
-                        void importXliff()
+                        importXliff()
                     }}
                     disabled={!isAllowedToSetLocalizationData}
                     title={isAllowedToSetLocalizationData ? undefined : "Insufficient permissions"}

@@ -38,7 +38,6 @@ export default tseslint.config(
             "@typescript-eslint/no-unused-vars": 0,
 
             // TODO: Enable
-            "@typescript-eslint/require-await": 0,
             "@typescript-eslint/restrict-plus-operands": 0,
             "@typescript-eslint/restrict-template-expressions": 0,
             "@typescript-eslint/unbound-method": 0,

@@ -53,7 +53,7 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
     )
 
     const applyAction = useCallback(
-        async (action: "onConflictUpdate" | "onConflictSkip") => {
+        (action: "onConflictUpdate" | "onConflictSkip") => {
             if (!currentRecord) return
 
             if (!applyToAll) {
@@ -83,7 +83,7 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
         <form
             onSubmit={event => {
                 event.preventDefault()
-                void applyAction("onConflictUpdate")
+                applyAction("onConflictUpdate")
             }}
             className="manage-conflicts"
         >
@@ -109,7 +109,12 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
             <hr />
 
             <div className="actions">
-                <button type="button" onClick={() => void applyAction("onConflictSkip")}>
+                <button
+                    type="button"
+                    onClick={() => {
+                        applyAction("onConflictSkip")
+                    }}
+                >
                     Skip Item
                 </button>
                 <button type="submit" className="framer-button-primary">

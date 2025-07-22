@@ -40,7 +40,7 @@ export class BatchProcessResults {
         })
     }
 
-    private async *batchProcess(results: Result[]): AsyncGenerator<Result[]> {
+    private *batchProcess(results: Result[]): Generator<Result[]> {
         let batch: Result[] = []
 
         for (const result of results) {
@@ -67,7 +67,7 @@ export class BatchProcessResults {
 
         let index = 0
 
-        for await (const batch of this.batchProcess(results)) {
+        for (const batch of this.batchProcess(results)) {
             for (const result of batch) {
                 const node = await framer.getNode(result.id)
                 if (!isCanvasNode(node)) continue

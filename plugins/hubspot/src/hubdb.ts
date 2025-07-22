@@ -9,7 +9,6 @@ import {
     ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
-import pLimit from "p-limit"
 import { fetchPublishedTable, fetchTableRows, type HubDBFile, type HubDBImage, type HubDBValueOption } from "./api"
 import {
     computeFieldSets,
@@ -26,9 +25,6 @@ import { assert, isDefined } from "./utils"
 const PLUGIN_TABLE_ID_KEY = "hubdbTableId"
 const PLUGIN_INCLUDED_FIELDS_HASH_KEY = "hubdbIncludedFieldHash"
 const PLUGIN_SLUG_FIELD_ID_KEY = "hubdbSlugFieldId"
-
-// Public HubSpot apps have a max of 100 requests / 10s
-const CONCURRENCY_LIMIT = 5
 
 export interface SyncMutationOptions {
     fields: ManagedCollectionFieldInput[]
@@ -241,7 +237,7 @@ function hasFieldConfigurationChanged(
     return false
 }
 
-async function processRow({ row, columns, fieldsById, slugFieldId, status, unsyncedItemIds }: ProcessRowParams) {
+function processRow({ row, columns, fieldsById, slugFieldId, status, unsyncedItemIds }: ProcessRowParams) {
     let slugValue: string | null = null
     const fieldData: FieldDataInput = {}
 
@@ -293,17 +289,14 @@ async function processRow({ row, columns, fieldsById, slugFieldId, status, unsyn
     }
 }
 
-async function processAllRows(rows: HubDbTableRowV3[], processRowParams: Omit<ProcessRowParams, "row" | "status">) {
-    const limit = pLimit(CONCURRENCY_LIMIT)
+function processAllRows(rows: HubDbTableRowV3[], processRowParams: Omit<ProcessRowParams, "row" | "status">) {
     const status: SyncStatus = {
         info: [],
         warnings: [],
         errors: [],
     }
 
-    const collectionItems = (
-        await Promise.all(rows.map(row => limit(() => processRow({ ...processRowParams, status, row }))))
-    ).filter(isDefined)
+    const collectionItems = rows.map(row => processRow({ ...processRowParams, status, row })).filter(isDefined)
 
     return {
         collectionItems,
@@ -327,7 +320,7 @@ export async function syncHubDBTable({ fields, tableId, slugFieldId, includedFie
 
     assert(table.columns)
 
-    const { collectionItems, status } = await processAllRows(rows, {
+    const { collectionItems, status } = processAllRows(rows, {
         unsyncedItemIds,
         columns: table.columns,
         slugFieldId,

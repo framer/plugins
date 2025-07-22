@@ -12,7 +12,7 @@ import { Authenticate } from "./Login.tsx"
 
 const activeCollection = await framer.getActiveManagedCollection()
 
-const tokens = await auth.getTokens()
+const tokens = auth.getTokens()
 
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")

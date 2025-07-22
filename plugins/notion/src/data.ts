@@ -224,7 +224,7 @@ export async function syncExistingCollection(
 
         const dataSourceFieldsInfo = getDatabaseFieldsInfo(dataSource.database, databaseIdMap)
         const fieldsInfo = mergeFieldsInfoWithExistingFields(dataSourceFieldsInfo, existingFields)
-        const fields = await fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
+        const fields = fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
 
         const slugField = fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
@@ -253,10 +253,10 @@ export async function syncExistingCollection(
     }
 }
 
-export async function fieldsInfoToCollectionFields(
+export function fieldsInfoToCollectionFields(
     fieldsInfo: FieldInfo[],
     databaseIdMap: DatabaseIdMap
-): Promise<ManagedCollectionFieldInput[]> {
+): ManagedCollectionFieldInput[] {
     const fields: ManagedCollectionFieldInput[] = []
 
     for (const fieldInfo of fieldsInfo) {

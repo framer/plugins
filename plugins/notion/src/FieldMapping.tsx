@@ -241,7 +241,7 @@ export function FieldMapping({
             try {
                 setStatus("syncing-collection")
 
-                const fields = await fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
+                const fields = fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
                 const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
                 const slugField = fields.find(field => field.id === selectedSlugFieldId)
 

@@ -120,7 +120,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
 
         collection
             .getFields()
-            .then(async collectionFields => {
+            .then(collectionFields => {
                 if (abortController.signal.aborted) return
 
                 setStatus("mapping-fields")

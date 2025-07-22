@@ -216,7 +216,7 @@ export function App({ collection }: { collection: Collection }) {
             setIsDragging(false)
 
             const file = event.dataTransfer?.files[0]
-            if (!file || !file.name.endsWith(".csv")) return
+            if (!file?.name.endsWith(".csv")) return
 
             const input = document.getElementById("file-input") as HTMLInputElement
             const dataTransfer = new DataTransfer()

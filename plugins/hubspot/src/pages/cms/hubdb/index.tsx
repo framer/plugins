@@ -17,7 +17,7 @@ export default function HubDBPage() {
     const [selectedTableId, setSelectedTableId] = useState("")
 
     useEffect(() => {
-        if (tables && tables[0]?.id) {
+        if (tables?.[0]?.id) {
             setSelectedTableId(tables[0].id)
         }
     }, [tables])

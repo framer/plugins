@@ -621,7 +621,7 @@ export function useGLBTexture(
     const [glb, setGlb] = useState<GLTF | null>(null)
 
     const render = useCallback(() => {
-        if (glb && glb.animations && glb.animations[0]) {
+        if (glb?.animations?.[0]) {
             const { animation } = glb.animations[0]
             animation.elapsed += 0.01
             animation.update()

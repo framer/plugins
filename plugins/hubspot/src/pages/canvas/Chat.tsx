@@ -31,7 +31,7 @@ export default function ChatPage() {
             const existingHTML = customCode.bodyStart.html
 
             const matches = (existingHTML ?? "").match(/window\.hsConversationsSettings\s*=\s*(\{.*?\});/)
-            if (matches && matches[1]) {
+            if (matches?.[1]) {
                 setSettings(v.parse(SettingsSchema, JSON.parse(matches[1])))
             }
 

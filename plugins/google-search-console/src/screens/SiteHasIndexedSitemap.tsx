@@ -65,7 +65,7 @@ function URLRow({ url, inspection }: URLRowProps) {
 
     return (
         <div className="url">
-            {inspection && inspection.inspectionResultLink ? (
+            {inspection?.inspectionResultLink ? (
                 <a href={inspection.inspectionResultLink} target="_blank" rel="noopener">
                     {row}
                 </a>

@@ -104,7 +104,7 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
                         continue
                     }
 
-                    columns.push(`${fieldData.value.url}`)
+                    columns.push(fieldData.value.url)
                     continue
                 }
 
@@ -114,17 +114,17 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
                         continue
                     }
 
-                    columns.push(`${fieldData.value.url}`, fieldData.value.altText ? `${fieldData.value.altText}` : "")
+                    columns.push(fieldData.value.url, fieldData.value.altText ? fieldData.value.altText : "")
                     continue
                 }
 
                 case "multiCollectionReference": {
-                    columns.push(`${fieldData.value.join(",")}`)
+                    columns.push(fieldData.value.join(","))
                     continue
                 }
 
                 case "enum": {
-                    columns.push(`${fieldData.value}`)
+                    columns.push(fieldData.value)
                     continue
                 }
 

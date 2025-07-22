@@ -49,9 +49,6 @@ export default tseslint.config(
                     allowRegExp: false,
                 },
             ],
-
-            // TODO: Enable
-            "@typescript-eslint/use-unknown-in-catch-callback-variable": 0,
         },
     },
 

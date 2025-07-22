@@ -137,7 +137,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
                     setIgnoredFieldIds(ignoredIds)
                 }
             })
-            .catch(error => {
+            .catch((error: unknown) => {
                 if (!abortController.signal.aborted) {
                     console.error("Failed to fetch collection fields:", error)
                     framer.notify("Failed to load collection fields", { variant: "error" })

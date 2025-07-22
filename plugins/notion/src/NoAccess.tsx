@@ -7,7 +7,7 @@ export function NoTableAccess({ previousDatabaseId }: { previousDatabaseId: stri
     const handleRetryClick = () => {
         setIsRetrying(true)
         auth.authorize()
-            .catch(error => {
+            .catch((error: unknown) => {
                 console.error(error)
             })
             .finally(() => {

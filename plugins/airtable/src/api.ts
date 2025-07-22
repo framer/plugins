@@ -455,7 +455,7 @@ export const fetchTables = async (baseId: string, signal?: AbortSignal): Promise
  * Fetches the schema of a table.
  */
 export const fetchTable = async (baseId: string, tableId: string) => {
-    const bases = await fetchTables(baseId).catch(error => {
+    const bases = await fetchTables(baseId).catch((error: unknown) => {
         if (error instanceof Error && error.name === "AbortError") {
             return null
         }

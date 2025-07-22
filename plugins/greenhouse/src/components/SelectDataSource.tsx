@@ -36,7 +36,7 @@ export function SelectDataSource({
                     onSelectDataSource(dataSource)
                     onSelectBoardToken(boardToken)
                 })
-                .catch(error => {
+                .catch((error: unknown) => {
                     console.error(error)
                     framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
                         variant: "error",

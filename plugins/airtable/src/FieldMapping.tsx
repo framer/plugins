@@ -190,7 +190,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
                 setStatus("mapping-fields")
             })
-            .catch(error => {
+            .catch((error: unknown) => {
                 if (!abortController.signal.aborted) {
                     console.error("Failed to fetch collection fields:", error)
                     framer.notify("Failed to load collection fields", { variant: "error" })

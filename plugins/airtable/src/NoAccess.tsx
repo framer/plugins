@@ -27,7 +27,7 @@ export function NoTableAccess({
             .then(() => {
                 setIsRetrying(false)
             })
-            .catch(error => {
+            .catch((error: unknown) => {
                 console.error(error)
                 setIsRetrying(false)
             })

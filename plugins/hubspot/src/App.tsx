@@ -197,7 +197,9 @@ export function App() {
             .then(() => {
                 setIsLoading(false)
             })
-            .catch(e => framer.closePlugin(e instanceof Error ? e.message : "Unknown error", { variant: "error" }))
+            .catch((error: unknown) =>
+                framer.closePlugin(error instanceof Error ? error.message : "Unknown error", { variant: "error" })
+            )
     }, [navigate, isAuthenticated])
 
     if (isLoading) return null

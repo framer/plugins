@@ -38,7 +38,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
         setIsLoading(true)
         getDataSource(previousBoardToken, previousDataSourceId)
             .then(setDataSource)
-            .catch(error => {
+            .catch((error: unknown) => {
                 console.error(`Error loading previously configured data source “${previousDataSourceId}”.`, error)
                 framer.notify(`Error loading previously configured data source “${previousDataSourceId}”.`, {
                     variant: "error",

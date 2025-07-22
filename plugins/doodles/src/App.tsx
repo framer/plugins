@@ -343,7 +343,7 @@ export function App() {
                         void canvasRef.current
                             .exportSvg()
                             .then(handleAddSvg)
-                            .catch(error => {
+                            .catch((error: unknown) => {
                                 console.log(error)
                             })
                     }}

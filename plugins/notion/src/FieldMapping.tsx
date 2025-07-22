@@ -179,7 +179,7 @@ export function FieldMapping({
                 setFieldsInfo(mergeFieldsInfoWithExistingFields(initialFieldsInfo, collectionFields))
                 setStatus("mapping-fields")
             })
-            .catch(error => {
+            .catch((error: unknown) => {
                 if (abortController.signal.aborted) return
 
                 console.error("Failed to fetch collection fields:", error)

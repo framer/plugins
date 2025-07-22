@@ -75,14 +75,14 @@ export function App({
         setIsLoadingDataSource(true)
         getDataSource(previousDatabaseId, abortController.signal)
             .then(setDataSource)
-            .catch((error: APIResponseError | Error) => {
+            .catch((error: unknown) => {
                 if (abortController.signal.aborted) return
 
                 console.error(error)
 
                 // Check for Notion API error codes
                 if (
-                    "code" in error &&
+                    error instanceof APIResponseError &&
                     (error.code === APIErrorCode.RestrictedResource ||
                         error.code === APIErrorCode.ObjectNotFound ||
                         error.code === APIErrorCode.Unauthorized ||

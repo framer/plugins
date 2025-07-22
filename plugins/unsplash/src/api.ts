@@ -60,7 +60,7 @@ export async function fetchUnsplash<TSchema extends v.GenericSchema>(
     })
 
     if (!response.ok) {
-        throw new Error("Failed to fetch Unsplash API:" + response.status)
+        throw new Error(`Failed to fetch Unsplash API: ${response.status}`)
     }
 
     const json = (await response.json()) as unknown

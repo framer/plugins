@@ -340,7 +340,7 @@ function processSheetRow({
         if (ignoredFieldColumnIndexes.includes(colIndex)) continue
 
         // +1 as zero-indexed, another +1 to account for header row
-        const location = columnToLetter(colIndex + 1) + (rowIndex + 2)
+        const location = `${columnToLetter(colIndex + 1)}${rowIndex + 2}`
 
         const fieldType = fieldTypes[colIndex]
         assert(isDefined(fieldType), "Field type must be defined")

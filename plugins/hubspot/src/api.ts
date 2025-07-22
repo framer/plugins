@@ -147,7 +147,7 @@ const request = async ({ path, method, query, body }: RequestOptions): Promise<u
         }
 
         if (!res.ok) {
-            throw new PluginError("Fetch Failed", "Failed to fetch HubSpot API: " + res.status)
+            throw new PluginError("Fetch Failed", `Failed to fetch HubSpot API: ${res.status}`)
         }
 
         return await res.json()

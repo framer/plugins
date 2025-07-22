@@ -102,7 +102,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
 
     useImageTexture(
         gl,
-        droppedAsset?.src || image?.url,
+        droppedAsset?.src ?? image?.url,
         texture => {
             if (!program) return
             program.texture = texture
@@ -216,7 +216,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         }
     }, [renderer, camera])
 
-    const disabled = !(droppedAsset?.src || image)
+    const disabled = !(droppedAsset?.src ?? image)
 
     const uploadRef = useRef<HTMLDivElement>(null)
 

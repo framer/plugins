@@ -296,10 +296,9 @@ export function App({ collection }: { collection: Collection }) {
             <ManageConflicts
                 records={itemsWithConflict}
                 onAllConflictsResolved={resolvedItems => {
-                    const updatedItems = result.items.map(item => {
-                        const resolvedItem = resolvedItems.find(resolved => resolved.slug === item.slug)
-                        return resolvedItem || item
-                    })
+                    const updatedItems = result.items.map(
+                        item => resolvedItems.find(resolved => resolved.slug === item.slug) ?? item
+                    )
                     void importItems({ ...result, items: updatedItems })
                 }}
             />

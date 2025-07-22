@@ -46,7 +46,7 @@ function usePublishedSite() {
                 siteEntry: GoogleSite[]
             } | null
 
-            return result?.siteEntry || []
+            return result?.siteEntry ?? []
         },
         [refresh]
     )
@@ -66,13 +66,10 @@ function usePublishedSite() {
 
                         const url = stripTrailingSlash(publishInfo.production.url)
 
-                        let googleSite =
-                            googleSites.find(currSite => currSite.siteUrl === `sc-domain:${domain}`) || null
-
-                        if (!googleSite) {
-                            googleSite =
-                                googleSites.find(currSite => stripTrailingSlash(currSite.siteUrl) === url) || null
-                        }
+                        const googleSite =
+                            googleSites.find(currSite => currSite.siteUrl === `sc-domain:${domain}`) ??
+                            googleSites.find(currSite => stripTrailingSlash(currSite.siteUrl) === url) ??
+                            null
 
                         setSiteInfo({
                             url,
@@ -139,7 +136,7 @@ export function App() {
     }, [tokens?.access_token])
 
     return (
-        <main key={tokens?.access_token || "logout"} ref={ref}>
+        <main key={tokens?.access_token ?? "logout"} ref={ref}>
             <ErrorBoundary
                 FallbackComponent={({ error }: { error: unknown }) => {
                     const errorMessage = v.is(ErrorSchema, error) && error.name !== "GoogleError" ? error.message : ""

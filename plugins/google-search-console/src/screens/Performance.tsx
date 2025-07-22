@@ -59,7 +59,7 @@ function QueriesTable({ queries }: QueriesTableProps) {
 }
 
 const mapPerfToChart = (performance: GoogleQueryResult) => {
-    return (performance.rows || []).map(row => {
+    return (performance.rows ?? []).map(row => {
         return {
             date: new Date(row.keys[0] ?? "").getTime() / 1000,
             clicks: row.clicks,

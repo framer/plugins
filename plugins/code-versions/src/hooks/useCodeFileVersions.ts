@@ -276,9 +276,7 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
                 status: LoadingState.Idle,
                 error: undefined,
             },
-            selectedVersionId: !state.selectedVersionId
-                ? getDefaultSelectedVersionId(payload.versions)
-                : state.selectedVersionId,
+            selectedVersionId: state.selectedVersionId ?? getDefaultSelectedVersionId(payload.versions),
         }))
         .with({ type: VersionsActionType.VersionSelected }, ({ payload }) => ({
             ...state,

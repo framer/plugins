@@ -2,7 +2,7 @@ import * as Slider from "@radix-ui/react-slider"
 import { useEffect, useState } from "react"
 
 function numDigitsAfterDecimal(x: number) {
-    const afterDecimalStr = x.toString().split(".")[1] || ""
+    const afterDecimalStr = x.toString().split(".")[1] ?? ""
     return afterDecimalStr.length
 }
 

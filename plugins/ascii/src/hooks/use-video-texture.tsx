@@ -34,7 +34,7 @@ export function useVideoTexture(
 
         function update() {
             if (video.readyState >= video.HAVE_ENOUGH_DATA) {
-                if (!texture.image) texture.image = video
+                texture.image ??= video
                 texture.needsUpdate = true
             }
             raf = requestAnimationFrame(update)

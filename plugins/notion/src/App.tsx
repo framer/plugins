@@ -91,7 +91,7 @@ export function App({
                     setHasAccessError(true)
                 } else {
                     framer.notify(
-                        `Error loading previously configured database "${previousDatabaseName || previousDatabaseId}". Check the logs for more details.`,
+                        `Error loading previously configured database "${previousDatabaseName ?? previousDatabaseId}". Check the logs for more details.`,
                         { variant: "error" }
                     )
                 }
@@ -111,7 +111,7 @@ export function App({
         return (
             <main className="loading">
                 <div className="framer-spinner" />
-                <p>Loading {previousDatabaseName || "database"}...</p>
+                <p>Loading {previousDatabaseName ?? "database"}...</p>
             </main>
         )
     }

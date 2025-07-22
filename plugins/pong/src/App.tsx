@@ -120,10 +120,7 @@ export function App() {
     }, [isGameRunning])
 
     const setupFromSelection = async () => {
-        if (!gameState.current) {
-            gameState.current = { entities: [] }
-        }
-
+        gameState.current ??= { entities: [] }
         gameState.current.entities = []
 
         for (const node of selection) {

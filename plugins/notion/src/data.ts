@@ -246,7 +246,7 @@ export async function syncExistingCollection(
     } catch (error) {
         console.error(error)
         framer.notify(
-            `Failed to sync database “${previousDatabaseName || previousDatabaseId}”. Check browser console for more details.`,
+            `Failed to sync database “${previousDatabaseName ?? previousDatabaseId}”. Check browser console for more details.`,
             { variant: "error" }
         )
         return { didSync: false }

@@ -59,7 +59,7 @@ const FieldMappingRow = memo(
         originalFieldName,
         isIgnored,
         disabled,
-        unsupported,
+        unsupported = false,
         missingCollection,
         onToggleIgnored,
         onNameChange,
@@ -300,7 +300,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         const originalFieldName = originalFieldNameMap.get(field.id)
                         return {
                             ...field,
-                            name: field.name.trim() || originalFieldName || field.id,
+                            name: (field.name.trim() || originalFieldName) ?? field.id,
                         }
                     })
                     .filter(field => field.type !== "unsupported")

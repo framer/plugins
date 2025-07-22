@@ -111,9 +111,7 @@ export function useGoogleToken() {
             const tokens = v.parse(GoogleTokenSchema, await response.json())
 
             if (response.ok) {
-                if (!tokens.refresh_token) {
-                    tokens.refresh_token = refreshToken
-                }
+                tokens.refresh_token ??= refreshToken
 
                 window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens))
 

@@ -39,7 +39,7 @@ export default function SiteView({ site, logout }: SiteViewProps) {
                 refresh
             )) as { sitemap: GoogleSitemap[] } | null
 
-            return result?.sitemap || []
+            return result?.sitemap ?? []
         },
         [refresh]
     )

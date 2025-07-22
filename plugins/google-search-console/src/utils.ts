@@ -72,7 +72,7 @@ ${JSON.stringify(part.body)}
                 method: "POST",
             })
 
-        let result = await attempt(initialToken?.access_token || token)
+        let result = await attempt(initialToken?.access_token ?? token)
 
         if (!result.ok) {
             const newToken = await refresh()
@@ -140,7 +140,7 @@ export async function googleApiCall(
             ...(opts.method !== "GET" ? opts : {}),
         })
 
-    let result = await attempt(initialToken?.access_token || token)
+    let result = await attempt(initialToken?.access_token ?? token)
 
     if (!result.ok) {
         const newToken = await refresh()

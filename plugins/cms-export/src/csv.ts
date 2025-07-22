@@ -114,7 +114,7 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
                         continue
                     }
 
-                    columns.push(fieldData.value.url, fieldData.value.altText ? fieldData.value.altText : "")
+                    columns.push(fieldData.value.url, fieldData.value.altText ?? "")
                     continue
                 }
 

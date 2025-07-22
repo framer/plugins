@@ -16,7 +16,7 @@ export function useBatchIndexingResult(urls: string[] | null, googleSiteUrl: str
             const batchResponse = await batchGoogleApiCall(
                 accessToken,
                 refresh,
-                (urls || []).map(url => ({
+                (urls ?? []).map(url => ({
                     apiPath: "/v1/urlInspection/index:inspect",
                     method: "POST",
                     body: {
@@ -104,7 +104,7 @@ export function useIndexingResults(urls: string[] | null, currentPageUrl: string
                 void currPageTask()
             }
 
-            const promises = (urls || []).map(async url => {
+            const promises = (urls ?? []).map(async url => {
                 const inspection = (await googleApiCall("/v1/urlInspection/index:inspect", accessToken, refresh, {
                     method: "POST",
                     body: JSON.stringify({
@@ -171,8 +171,8 @@ export function useMockPerformanceResults(): {
 
         return {
             keys: [date.toISOString()],
-            clicks: row[0] || 0,
-            impressions: row[1] || 0,
+            clicks: row[0] ?? 0,
+            impressions: row[1] ?? 0,
             ctr: 0,
             position: 0,
         }

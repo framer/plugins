@@ -41,8 +41,8 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
     const searchParams = useSearchParams()
     const tableId = searchParams.get("tableId")
 
-    const { data: table, isLoading: isLoadingTable } = usePublishedTable(tableId || "")
-    const slugFields = useMemo(() => getPossibleSlugFields(table?.columns || []), [table])
+    const { data: table, isLoading: isLoadingTable } = usePublishedTable(tableId ?? "")
+    const slugFields = useMemo(() => getPossibleSlugFields(table?.columns ?? []), [table])
     const [slugFieldId, setSlugFieldId] = useState<string | null>(null)
     const [collectionFieldConfig, setCollectionFieldConfig] = useState<ManagedCollectionFieldConfig[]>([])
     const [includedFieldIds, setIncludedFieldIds] = useState(new Set<string>())

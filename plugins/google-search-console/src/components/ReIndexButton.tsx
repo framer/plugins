@@ -26,7 +26,7 @@ export default function ReIndexButton({ urls = [] }: ReIndexButtonProps) {
 
                     setReindexAllStatus({ loading: true, success: false })
 
-                    const promises = (urls || []).map(url => requestIndexing(url, accessToken))
+                    const promises = (urls ?? []).map(url => requestIndexing(url, accessToken))
                     void Promise.all(promises).then(() => {
                         setReindexAllStatus({ loading: false, success: true })
                     })

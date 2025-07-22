@@ -460,7 +460,7 @@ export function useGLBTexture(
         (
             node: Transform & { geometry?: Geometry; boneTexture?: Texture; program: { gltfMaterial?: GLTFMaterial } }
         ) => {
-            const gltf = node.program.gltfMaterial || ({} as GLTFMaterial)
+            const gltf = node.program.gltfMaterial ?? ({} as GLTFMaterial)
             let { vertex, fragment } = shader
 
             const vertexPrefix = gl.renderer.isWebgl2
@@ -509,8 +509,8 @@ export function useGLBTexture(
                     tRM: {
                         value: gltf.metallicRoughnessTexture ? gltf.metallicRoughnessTexture.texture : null,
                     },
-                    uRoughness: { value: gltf.roughnessFactor !== undefined ? gltf.roughnessFactor : 1 },
-                    uMetallic: { value: gltf.metallicFactor !== undefined ? gltf.metallicFactor : 1 },
+                    uRoughness: { value: gltf.roughnessFactor ?? 1 },
+                    uMetallic: { value: gltf.metallicFactor ?? 1 },
 
                     tNormal: { value: gltf.normalTexture ? gltf.normalTexture.texture : null },
                     uNormalScale: { value: gltf.normalTexture ? gltf.normalTexture.scale || 1 : 1 },

@@ -40,7 +40,7 @@ export async function parseCSV(data: string): Promise<CSVRecord[]> {
     const { parse } = await import("csv-parse/browser/esm/sync")
 
     let records: CSVRecord[] = []
-    let error: unknown
+    let error
 
     // Delimiters to try
     // ,  = pretty much the default
@@ -64,7 +64,7 @@ export async function parseCSV(data: string): Promise<CSVRecord[]> {
             if (firstItemKeys.length < 2) {
                 const delimiterInKey = delimiters.some(del => firstItemKeys[0]?.includes(del))
                 if (delimiterInKey) {
-                    error = "Parsed with incorrect delimiter"
+                    error = new Error("Parsed with incorrect delimiter")
                     continue
                 }
             }
@@ -72,8 +72,8 @@ export async function parseCSV(data: string): Promise<CSVRecord[]> {
             error = undefined
             records = v.parse(v.array(CSVRecordSchema), parsed)
             break
-        } catch (err) {
-            error = err
+        } catch (innerError) {
+            error = innerError instanceof Error ? innerError : new Error(String(innerError))
         }
     }
 

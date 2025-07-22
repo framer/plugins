@@ -38,7 +38,6 @@ export default tseslint.config(
             "@typescript-eslint/no-unused-vars": 0,
 
             // TODO: Enable
-            "@typescript-eslint/only-throw-error": 0,
             "@typescript-eslint/prefer-nullish-coalescing": 0,
             "@typescript-eslint/prefer-optional-chain": 0,
             "@typescript-eslint/prefer-regexp-exec": 0,

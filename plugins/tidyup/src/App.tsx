@@ -526,20 +526,24 @@ export function App() {
             )}
             <button
                 disabled={!isAllowedToSetAttributes || !isEnabled}
-                onClick={async () => {
+                onClick={() => {
                     if (!isAllowedToSetAttributes || !isEnabled) return
 
                     const rawBoundingBox = getBoundingBox(Object.values(rects).filter(isRect))
 
-                    for (const rect of sortedRects) {
-                        const node = await framer.getNode(rect.id)
-                        if (!node || !supportsPins(node)) continue
+                    const task = async () => {
+                        for (const rect of sortedRects) {
+                            const node = await framer.getNode(rect.id)
+                            if (!node || !supportsPins(node)) continue
 
-                        void node.setAttributes({
-                            left: `${rect.x + rawBoundingBox.x}px`,
-                            top: `${rect.y + rawBoundingBox.y}px`,
-                        })
+                            void node.setAttributes({
+                                left: `${rect.x + rawBoundingBox.x}px`,
+                                top: `${rect.y + rawBoundingBox.y}px`,
+                            })
+                        }
                     }
+
+                    void task()
                 }}
                 title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}
             >

@@ -24,15 +24,19 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
         window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}`, "_blank")
     }
 
-    const handleRetryClick = async () => {
+    const handleRetryClick = () => {
         setIsRetrying(true)
 
-        try {
-            const context = await getPluginContext()
-            setContext(context)
-        } finally {
-            setIsRetrying(false)
+        const task = async () => {
+            try {
+                const context = await getPluginContext()
+                setContext(context)
+            } finally {
+                setIsRetrying(false)
+            }
         }
+
+        void task()
     }
 
     return (

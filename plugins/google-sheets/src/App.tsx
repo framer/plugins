@@ -202,10 +202,9 @@ export function App({ pluginContext }: AppProps) {
                     <a
                         href="#"
                         className="text-sheets-green"
-                        onClick={async () => {
+                        onClick={() => {
                             auth.logout()
-                            const context = await getPluginContext()
-                            setContext(context)
+                            void getPluginContext().then(setContext)
                         }}
                     >
                         log out
@@ -224,10 +223,11 @@ export function App({ pluginContext }: AppProps) {
                     <div
                         className="my-1 font-black truncate cursor-pointer"
                         title="Click to copy"
-                        onClick={async () => {
-                            await navigator.clipboard.writeText(context.title)
-                            framer.notify("Sheet title copied")
-                        }}
+                        onClick={() =>
+                            void navigator.clipboard.writeText(context.title).then(() => {
+                                framer.notify("Sheet title copied")
+                            })
+                        }
                     >
                         {context.title}
                     </div>{" "}

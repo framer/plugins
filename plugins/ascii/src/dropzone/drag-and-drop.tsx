@@ -22,7 +22,7 @@ export function Upload({
                 "model/gltf+json": [".gltf"],
                 "model/gltf-binary": [".glb"],
             }}
-            onDrop={async acceptedFiles => {
+            onDrop={acceptedFiles => {
                 const file = acceptedFiles[0]
                 if (!file) return
 

@@ -21,26 +21,30 @@ export default function SiteHasUnindexedSitemap({ site }: SiteHasUnindexedSitema
 
     const { refresh } = useGoogleToken()
 
-    const submit = useCallback(async () => {
-        try {
-            const currSitemapUrl = sitemapUrl(site.url)
-            if (site.googleSite.siteUrl) {
-                setStatus("loading")
+    const submit = useCallback(() => {
+        const task = async () => {
+            try {
+                const currSitemapUrl = sitemapUrl(site.url)
+                if (site.googleSite.siteUrl) {
+                    setStatus("loading")
 
-                await googleApiCall(
-                    `/webmasters/v3/sites/${encodeURIComponent(site.googleSite.siteUrl)}/sitemaps/${encodeURIComponent(currSitemapUrl)}`,
-                    authContext.access_token,
-                    refresh,
-                    {
-                        method: "PUT",
-                    }
-                )
+                    await googleApiCall(
+                        `/webmasters/v3/sites/${encodeURIComponent(site.googleSite.siteUrl)}/sitemaps/${encodeURIComponent(currSitemapUrl)}`,
+                        authContext.access_token,
+                        refresh,
+                        {
+                            method: "PUT",
+                        }
+                    )
 
-                setStatus("success")
+                    setStatus("success")
+                }
+            } catch (e) {
+                showBoundary(e)
             }
-        } catch (e) {
-            showBoundary(e)
         }
+
+        void task()
     }, [authContext.access_token, refresh, showBoundary, site.googleSite.siteUrl, site.url])
 
     if (status === "loading") {

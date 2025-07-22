@@ -226,7 +226,7 @@ export function FieldMapping({
         })
     }
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         if (!selectedSlugFieldId) {
@@ -237,29 +237,40 @@ export function FieldMapping({
             return
         }
 
-        try {
-            setStatus("syncing-collection")
+        const task = async () => {
+            try {
+                setStatus("syncing-collection")
 
-            const fields = await fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
-            const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
-            const slugField = fields.find(field => field.id === selectedSlugFieldId)
+                const fields = await fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
+                const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
+                const slugField = fields.find(field => field.id === selectedSlugFieldId)
 
-            if (!slugField) {
-                framer.notify("Selected slug field not found. Sync will not be performed.", { variant: "error" })
-                return
+                if (!slugField) {
+                    framer.notify("Selected slug field not found. Sync will not be performed.", { variant: "error" })
+                    return
+                }
+
+                await collection.setFields(fieldsToSync)
+                await syncCollection(
+                    collection,
+                    dataSource,
+                    fieldsToSync,
+                    slugField,
+                    ignoredFieldIds,
+                    previousLastSynced
+                )
+                await framer.closePlugin("Synchronization successful", { variant: "success" })
+            } catch (error) {
+                console.error(error)
+                framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
+                    variant: "error",
+                })
+            } finally {
+                setStatus("mapping-fields")
             }
-
-            await collection.setFields(fieldsToSync)
-            await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds, previousLastSynced)
-            await framer.closePlugin("Synchronization successful", { variant: "success" })
-        } catch (error) {
-            console.error(error)
-            framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
-                variant: "error",
-            })
-        } finally {
-            setStatus("mapping-fields")
         }
+
+        void task()
     }
 
     if (isLoadingFields) {

@@ -81,9 +81,9 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
 
     return (
         <form
-            onSubmit={async event => {
+            onSubmit={event => {
                 event.preventDefault()
-                await applyAction("onConflictUpdate")
+                void applyAction("onConflictUpdate")
             }}
             className="manage-conflicts"
         >
@@ -109,7 +109,7 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
             <hr />
 
             <div className="actions">
-                <button type="button" onClick={async () => applyAction("onConflictSkip")}>
+                <button type="button" onClick={() => void applyAction("onConflictSkip")}>
                     Skip Item
                 </button>
                 <button type="submit" className="framer-button-primary">
@@ -211,7 +211,7 @@ export function App({ collection }: { collection: Collection }) {
             }
         }
 
-        const handleDrop = async (event: DragEvent) => {
+        const handleDrop = (event: DragEvent) => {
             event.preventDefault()
             setIsDragging(false)
 
@@ -239,20 +239,23 @@ export function App({ collection }: { collection: Collection }) {
     useEffect(() => {
         if (!isAllowedToAddItems) return
 
-        const handlePaste = async (event: ClipboardEvent) => {
-            if (!event.clipboardData) return
+        const handlePaste = ({ clipboardData }: ClipboardEvent) => {
+            if (!clipboardData) return
 
-            try {
-                const csv = event.clipboardData.getData("text/plain")
-                if (!csv) return
-
-                await processAndImport(csv)
-            } catch (error) {
-                console.error("Error accessing clipboard data:", error)
-                framer.notify("Unable to access clipboard content", {
-                    variant: "error",
-                })
+            const task = async () => {
+                try {
+                    const csv = clipboardData.getData("text/plain")
+                    if (!csv) return
+                    await processAndImport(csv)
+                } catch (error) {
+                    console.error("Error accessing clipboard data:", error)
+                    framer.notify("Unable to access clipboard content", {
+                        variant: "error",
+                    })
+                }
             }
+
+            void task()
         }
 
         window.addEventListener("paste", handlePaste)
@@ -263,7 +266,7 @@ export function App({ collection }: { collection: Collection }) {
     }, [isAllowedToAddItems, processAndImport])
 
     const handleSubmit = useCallback(
-        async (event: React.FormEvent<HTMLFormElement>) => {
+        (event: React.FormEvent<HTMLFormElement>) => {
             if (!isAllowedToAddItems) return
             event.preventDefault()
 
@@ -276,9 +279,7 @@ export function App({ collection }: { collection: Collection }) {
 
             const file = fileValue
 
-            const csv = await file.text()
-
-            await processAndImport(csv)
+            void file.text().then(processAndImport)
         },
         [isAllowedToAddItems, processAndImport]
     )

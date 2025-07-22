@@ -19,7 +19,7 @@ export default function AuthPage() {
             resolve =>
                 (pollInterval.current = setInterval(
                     () =>
-                        auth.fetchTokens(readKey).then(() => {
+                        void auth.fetchTokens(readKey).then(() => {
                             clearInterval(pollInterval.current)
                             resolve()
                         }),
@@ -28,25 +28,29 @@ export default function AuthPage() {
         )
     }
 
-    const login = async () => {
+    const login = () => {
         setIsLoading(true)
 
-        try {
-            // Retrieve the auth URL and a set of read and write keys
-            const authorization = await auth.authorize()
+        const task = async () => {
+            try {
+                // Retrieve the auth URL and a set of read and write keys
+                const authorization = await auth.authorize()
 
-            // Open up the HubSpot authorization window
-            window.open(authorization.url)
+                // Open up the HubSpot authorization window
+                window.open(authorization.url)
 
-            // Poll the auth server and wait for tokens
-            await pollForTokens(authorization.readKey)
+                // Poll the auth server and wait for tokens
+                await pollForTokens(authorization.readKey)
 
-            navigate(framer.mode === "canvas" ? "/canvas" : "/cms")
-        } catch (e) {
-            framer.notify(e instanceof Error ? e.message : "An unknown error occurred.", { variant: "error" })
-        } finally {
-            setIsLoading(false)
+                navigate(framer.mode === "canvas" ? "/canvas" : "/cms")
+            } catch (e) {
+                framer.notify(e instanceof Error ? e.message : "An unknown error occurred.", { variant: "error" })
+            } finally {
+                setIsLoading(false)
+            }
         }
+
+        void task()
     }
 
     return (

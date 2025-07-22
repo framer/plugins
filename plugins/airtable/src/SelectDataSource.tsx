@@ -55,7 +55,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
         }
     }, [selectedBaseId])
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         if (!selectedBaseId || !selectedTableId) {
@@ -63,27 +63,31 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
             return
         }
 
-        try {
-            setIsLoading(true)
+        const task = async () => {
+            try {
+                setIsLoading(true)
 
-            const selectedTable = tables.find(table => table.id === selectedTableId)
-            if (!selectedTable) {
-                framer.notify("Table not found", { variant: "error" })
-                return
+                const selectedTable = tables.find(table => table.id === selectedTableId)
+                if (!selectedTable) {
+                    framer.notify("Table not found", { variant: "error" })
+                    return
+                }
+                const fields = await inferFields(collection, selectedTable)
+                onSelectDataSource({
+                    baseId: selectedBaseId,
+                    tableId: selectedTableId,
+                    tableName: selectedTable.name,
+                    fields,
+                })
+            } catch (error) {
+                console.error(error)
+                framer.notify("Failed to load data source. Check the logs for more details.", { variant: "error" })
+            } finally {
+                setIsLoading(false)
             }
-            const fields = await inferFields(collection, selectedTable)
-            onSelectDataSource({
-                baseId: selectedBaseId,
-                tableId: selectedTableId,
-                tableName: selectedTable.name,
-                fields,
-            })
-        } catch (error) {
-            console.error(error)
-            framer.notify("Failed to load data source. Check the logs for more details.", { variant: "error" })
-        } finally {
-            setIsLoading(false)
         }
+
+        void task()
     }
 
     return (

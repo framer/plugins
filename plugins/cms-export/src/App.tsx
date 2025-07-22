@@ -33,23 +33,27 @@ export function App() {
         void task()
     }, [])
 
-    const exportCSV = async () => {
+    const exportCSV = () => {
         if (!selectedCollection) return
-        await exportCollectionAsCSV(selectedCollection, selectedCollection.name)
+        void exportCollectionAsCSV(selectedCollection, selectedCollection.name)
     }
 
-    const copyCSVtoClipboard = async () => {
+    const copyCSVtoClipboard = () => {
         if (!selectedCollection) return
 
-        const csv = await convertCollectionToCSV(selectedCollection)
+        const task = async () => {
+            const csv = await convertCollectionToCSV(selectedCollection)
 
-        try {
-            await navigator.clipboard.writeText(csv)
-            framer.notify("CSV copied to clipboard", { variant: "success" })
-        } catch (error) {
-            console.error("Failed to copy CSV:", error)
-            framer.notify("Failed to copy CSV to clipboard", { variant: "error" })
+            try {
+                await navigator.clipboard.writeText(csv)
+                framer.notify("CSV copied to clipboard", { variant: "success" })
+            } catch (error) {
+                console.error("Failed to copy CSV:", error)
+                framer.notify("Failed to copy CSV to clipboard", { variant: "error" })
+            }
         }
+
+        void task()
     }
 
     const selectCollection = (event: ChangeEvent<HTMLSelectElement>) => {

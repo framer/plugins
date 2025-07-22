@@ -114,35 +114,39 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         setResolution([exportSize, exportSize / assetAspect])
     }, [exportSize, assetResolution])
 
-    const saveEffect = useCallback(async () => {
+    const saveEffect = useCallback(() => {
         if (!isAllowedToUpsertImage) return
 
-        const bytes = await toBytes()
+        const task = async () => {
+            const bytes = await toBytes()
 
-        setSavingInAction(true)
+            setSavingInAction(true)
 
-        if (droppedAsset || isPlaceholder) {
-            await framer.addImage({
-                image: {
-                    type: "bytes",
-                    bytes: bytes,
-                    mimeType: "image/png",
-                },
-            })
-        } else {
-            if (!framerCanvasImage) return
+            if (droppedAsset || isPlaceholder) {
+                await framer.addImage({
+                    image: {
+                        type: "bytes",
+                        bytes: bytes,
+                        mimeType: "image/png",
+                    },
+                })
+            } else {
+                if (!framerCanvasImage) return
 
-            const originalImage = await framerCanvasImage.getData()
+                const originalImage = await framerCanvasImage.getData()
 
-            await framer.setImage({
-                image: {
-                    bytes,
-                    mimeType: originalImage.mimeType,
-                },
-            })
+                await framer.setImage({
+                    image: {
+                        bytes,
+                        mimeType: originalImage.mimeType,
+                    },
+                })
+            }
+
+            setSavingInAction(false)
         }
 
-        setSavingInAction(false)
+        void task()
     }, [toBytes, framerCanvasImage, droppedAsset, isPlaceholder, isAllowedToUpsertImage])
 
     // resize observer

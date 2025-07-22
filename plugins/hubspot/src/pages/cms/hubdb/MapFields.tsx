@@ -49,7 +49,7 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
 
     const { mutate: sync, isPending: isSyncing } = useSyncHubDBTableMutation({
         onError: e => framer.notify(e.message, { variant: "error" }),
-        onSuccess: () => framer.closePlugin("Synchronization successful"),
+        onSuccess: () => void framer.closePlugin("Synchronization successful"),
     })
 
     useEffect(() => {

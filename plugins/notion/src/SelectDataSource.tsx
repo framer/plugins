@@ -35,7 +35,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
         void fetchDataSources()
     }, [])
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         if (!selectedDatabaseId) return

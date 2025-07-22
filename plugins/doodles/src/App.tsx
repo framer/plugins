@@ -337,15 +337,15 @@ export function App() {
                 <button
                     disabled={!isAllowedToAddImage}
                     title={isAllowedToAddImage ? undefined : "Insufficient permissions"}
-                    onClick={async () => {
+                    onClick={() => {
                         if (!isAllowedToAddImage) return
                         if (!canvasRef.current) return
-                        try {
-                            const data = await canvasRef.current.exportSvg()
-                            await handleAddSvg(data)
-                        } catch (error) {
-                            console.log(error)
-                        }
+                        void canvasRef.current
+                            .exportSvg()
+                            .then(handleAddSvg)
+                            .catch(error => {
+                                console.log(error)
+                            })
                     }}
                 >
                     Add

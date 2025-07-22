@@ -44,29 +44,33 @@ export default function SiteView({ site, logout }: SiteViewProps) {
         [refresh]
     )
 
-    const update = useCallback(async () => {
+    const update = useCallback(() => {
         setError(null)
 
         if (SHOW_MOCK_SITEMAP_DATA) {
             return
         }
 
-        try {
-            const sitemaps = await fetchGoogleSitemaps(site.googleSite.siteUrl, authContext.access_token)
-            const submittedSitemap = sitemaps.find(currSitemap => currSitemap.path === currSitemapUrl)
+        const task = async () => {
+            try {
+                const sitemaps = await fetchGoogleSitemaps(site.googleSite.siteUrl, authContext.access_token)
+                const submittedSitemap = sitemaps.find(currSitemap => currSitemap.path === currSitemapUrl)
 
-            setSitemapsState({ sitemaps, submitted: !!submittedSitemap })
-        } catch (e) {
-            if (((e as GoogleError | undefined)?.cause as { status: number } | undefined)?.status === 403) {
-                setError({ level: "display", e: e as unknown as GoogleError })
-            } else {
-                setError({ level: "throw", e: e as unknown as GoogleError })
+                setSitemapsState({ sitemaps, submitted: !!submittedSitemap })
+            } catch (e) {
+                if (((e as GoogleError | undefined)?.cause as { status: number } | undefined)?.status === 403) {
+                    setError({ level: "display", e: e as unknown as GoogleError })
+                } else {
+                    setError({ level: "throw", e: e as unknown as GoogleError })
+                }
             }
         }
+
+        void task()
     }, [authContext.access_token, currSitemapUrl, fetchGoogleSitemaps, site.googleSite])
 
     useEffect(() => {
-        void update()
+        update()
     }, [update])
 
     if (error) {

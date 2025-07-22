@@ -52,31 +52,35 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [hasPainted, setHasPainted] = useState(false)
 
-    const handleSaveImage = useCallback(async () => {
+    const handleSaveImage = useCallback(() => {
         if (!isAllowedToUpsertImage) return
 
         const ctx = canvasRef.current?.getContext("2d")
         assert(ctx)
 
-        const originalImage = await image.getData()
+        const task = async () => {
+            const originalImage = await image.getData()
 
-        assert(canvasRef.current)
-        const nextBytes = await bytesFromCanvas(canvasRef.current)
-        assert(nextBytes)
+            assert(canvasRef.current)
+            const nextBytes = await bytesFromCanvas(canvasRef.current)
+            assert(nextBytes)
 
-        const start = performance.now()
+            const start = performance.now()
 
-        void framer.hideUI()
-        await framer.setImage({
-            image: {
-                bytes: nextBytes,
-                mimeType: originalImage.mimeType,
-            },
-        })
+            void framer.hideUI()
+            await framer.setImage({
+                image: {
+                    bytes: nextBytes,
+                    mimeType: originalImage.mimeType,
+                },
+            })
 
-        void framer.closePlugin("Image saved...")
+            void framer.closePlugin("Image saved...")
 
-        console.log("total duration", performance.now() - start)
+            console.log("total duration", performance.now() - start)
+        }
+
+        void task()
     }, [isAllowedToUpsertImage, image])
 
     const updateCanvas = useMemo(

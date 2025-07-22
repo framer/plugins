@@ -31,12 +31,11 @@ export const ToggleTrackingButton = ({ className }: { className?: string }) => {
         setIsTrackingEnabled(!!isEnabled)
     }, [customCode, user, trackingScript])
 
-    const toggleTracking = () => {
-        return framer.setCustomCode({
+    const toggleTracking = () =>
+        void framer.setCustomCode({
             location: "bodyEnd",
             html: isTrackingEnabled ? null : trackingScript,
         })
-    }
 
     const isAllowedToSetCustomCode = useIsAllowedTo("setCustomCode")
 

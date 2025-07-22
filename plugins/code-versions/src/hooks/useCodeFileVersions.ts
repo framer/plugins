@@ -86,18 +86,22 @@ export function useCodeFileVersions(): CodeFileVersionsState {
         dispatch({ type: VersionsActionType.VersionSelected, payload: { versionId: id } })
     }, [])
 
-    const restoreVersion = useCallback(async () => {
-        if (!state.content.data || !state.codeFile) return
+    const restoreVersion = useCallback(() => {
+        const task = async () => {
+            if (!state.content.data || !state.codeFile) return
 
-        dispatch({ type: VersionsActionType.RestoreStarted })
+            dispatch({ type: VersionsActionType.RestoreStarted })
 
-        try {
-            await state.codeFile.setFileContent(state.content.data)
-            dispatch({ type: VersionsActionType.RestoreCompleted })
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : "Failed to restore version"
-            dispatch({ type: VersionsActionType.RestoreError, payload: { error: errorMessage } })
+            try {
+                await state.codeFile.setFileContent(state.content.data)
+                dispatch({ type: VersionsActionType.RestoreCompleted })
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : "Failed to restore version"
+                dispatch({ type: VersionsActionType.RestoreError, payload: { error: errorMessage } })
+            }
         }
+
+        void task()
     }, [state.content.data, state.codeFile])
 
     const clearErrors = useCallback(() => {
@@ -219,7 +223,7 @@ export interface CodeFileVersionsState {
 
     // Actions
     selectVersion: (id: string) => void
-    restoreVersion: () => Promise<void>
+    restoreVersion: () => void
     clearErrors: () => void
 }
 

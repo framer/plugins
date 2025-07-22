@@ -16,7 +16,7 @@ export const ComponentInsert = ({ url, image, children, attributes, className }:
         <button
             className={cx("w-full h-full max-h-[32px] p-0 m-0 bg-transparent border-none cursor-pointer", className)}
             onClick={() =>
-                framer.addComponentInstance({
+                void framer.addComponentInstance({
                     url,
                     attributes,
                 })

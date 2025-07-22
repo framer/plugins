@@ -145,36 +145,40 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         return bytes
     }, [renderer, scene, camera, gl, resolution])
 
-    const saveEffect = useCallback(async () => {
+    const saveEffect = useCallback(() => {
         if (!isAllowedToUpsertImage) return
 
-        const bytes = await toBytes()
+        const task = async () => {
+            const bytes = await toBytes()
 
-        setSavingInAction(true)
+            setSavingInAction(true)
 
-        if (droppedAsset) {
-            await framer.addImage({
-                image: {
-                    type: "bytes",
-                    bytes: bytes,
-                    mimeType: "image/png",
-                },
-                preferredImageRendering: "pixelated",
-            })
-        } else {
-            if (!image) return
-            const originalImage = await image.getData()
+            if (droppedAsset) {
+                await framer.addImage({
+                    image: {
+                        type: "bytes",
+                        bytes: bytes,
+                        mimeType: "image/png",
+                    },
+                    preferredImageRendering: "pixelated",
+                })
+            } else {
+                if (!image) return
+                const originalImage = await image.getData()
 
-            await framer.setImage({
-                image: {
-                    bytes,
-                    mimeType: originalImage.mimeType,
-                },
-                preferredImageRendering: "pixelated",
-            })
+                await framer.setImage({
+                    image: {
+                        bytes,
+                        mimeType: originalImage.mimeType,
+                    },
+                    preferredImageRendering: "pixelated",
+                })
+            }
+
+            setSavingInAction(false)
         }
 
-        setSavingInAction(false)
+        void task()
     }, [toBytes, image, droppedAsset, isAllowedToUpsertImage])
 
     const containerRef = useRef<HTMLDivElement>(null)

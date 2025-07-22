@@ -23,18 +23,22 @@ export function App({ collection, initialRssSourceId }: Props) {
         "ManagedCollection.setPluginData"
     )
 
-    const handleImport = useCallback(async () => {
+    const handleImport = useCallback(() => {
         if (!isAllowedToImportData) return
         if (!selectedSource) return
 
         setIsSyncing(true)
 
-        try {
-            await importData(collection, selectedSourceId)
-            await framer.closePlugin()
-        } finally {
-            setIsSyncing(false)
+        const task = async () => {
+            try {
+                await importData(collection, selectedSourceId)
+                await framer.closePlugin()
+            } finally {
+                setIsSyncing(false)
+            }
         }
+
+        void task()
     }, [isAllowedToImportData, selectedSource, collection, selectedSourceId])
 
     return (

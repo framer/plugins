@@ -157,6 +157,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     bytes: bytes,
                     mimeType: "image/png",
                 },
+                preferredImageRendering: "pixelated",
             })
         } else {
             if (!image) return
@@ -167,6 +168,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     bytes,
                     mimeType: originalImage.mimeType,
                 },
+                preferredImageRendering: "pixelated",
             })
         }
 

@@ -445,7 +445,7 @@ export function getFieldDataEntryForProperty(
                 return {
                     type: "string",
                     value: property.unique_id.prefix
-                        ? `${property.unique_id.prefix}-${property.unique_id.number}`
+                        ? `${property.unique_id.prefix}-${String(property.unique_id.number)}`
                         : String(property.unique_id.number),
                 }
             }

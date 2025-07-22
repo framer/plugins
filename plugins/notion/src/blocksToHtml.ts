@@ -72,10 +72,10 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
             case "image":
                 switch (block.image.type) {
                     case "external":
-                        htmlContent += `<img src="${block.image.external.url}" alt="${block.image.caption[0]?.plain_text}" />`
+                        htmlContent += `<img src="${block.image.external.url}" alt="${block.image.caption[0]?.plain_text ?? ""}" />`
                         break
                     case "file":
-                        htmlContent += `<img src="${block.image.file.url}" alt="${block.image.caption[0]?.plain_text}" />`
+                        htmlContent += `<img src="${block.image.file.url}" alt="${block.image.caption[0]?.plain_text ?? ""}" />`
                         break
                 }
                 break

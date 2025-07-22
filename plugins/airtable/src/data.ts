@@ -514,7 +514,7 @@ export async function syncExistingCollection(
         const existingFields = await collection.getFields()
         const table = await fetchTable(previousBaseId, previousTableId)
         if (!table) {
-            throw new Error(`Table “${previousTableName}” not found`)
+            throw new Error(`Table “${previousTableName ?? "NULL"}” not found`)
         }
 
         // Use properly inferred fields instead of existing collection fields
@@ -546,9 +546,10 @@ export async function syncExistingCollection(
         return { didSync: true }
     } catch (error) {
         console.error(error)
-        framer.notify(`Failed to sync collection “${previousTableName}”. Check browser console for more details.`, {
-            variant: "error",
-        })
+        framer.notify(
+            `Failed to sync collection “${previousTableName ?? "NULL"}”. Check browser console for more details.`,
+            { variant: "error" }
+        )
         return { didSync: false }
     }
 }

@@ -259,7 +259,7 @@ export function getSlugValue(property: PageObjectResponse["properties"][string])
             return richTextToPlainText(property.rich_text)
         case "unique_id":
             return property.unique_id.prefix
-                ? `${property.unique_id.prefix}-${property.unique_id.number}`
+                ? `${property.unique_id.prefix}-${String(property.unique_id.number)}`
                 : String(property.unique_id.number)
         default:
             return null

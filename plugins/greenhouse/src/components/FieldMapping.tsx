@@ -30,7 +30,7 @@ function FieldMappingRow({
         <>
             <button
                 type="button"
-                className={`source-field ${isMissingReference && "missing-reference"}`}
+                className={`source-field ${isMissingReference ? "missing-reference" : ""}`}
                 aria-disabled={isDisabled}
                 onClick={() => {
                     onToggleDisabled(field.id)

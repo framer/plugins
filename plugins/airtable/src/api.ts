@@ -434,7 +434,7 @@ const request = async ({ path, method, query, body, signal }: RequestOptions, nu
         const errors = (json as { errors?: { error: string; message: string }[] } | undefined)?.errors?.map(
             ({ error, message }, index) => `${index + 1}. ${error}: ${message}`
         )
-        throw new Error(`Failed to fetch Airtable API:\n\n${errors?.join("\n")}`)
+        throw new Error(`Failed to fetch Airtable API:\n\n${errors?.join("\n") ?? String(json)}`)
     }
 
     return json

@@ -19,7 +19,7 @@ function escapeXml(unsafe: string): string {
 /** See http://docs.oasis-open.org/xliff/xliff-core/v2.0/os/xliff-core-v2.0-os.html#state */
 type XliffState = "initial" | "translated" | "reviewed" | "final"
 
-function statusToXliffState(status: LocalizedValueStatus): XliffState | undefined {
+function statusToXliffState(status: LocalizedValueStatus): XliffState {
     switch (status) {
         case "new":
             return "initial"
@@ -28,13 +28,10 @@ function statusToXliffState(status: LocalizedValueStatus): XliffState | undefine
         case "warning":
         case "done":
             return "final"
-        default:
-            status satisfies never
-            return
     }
 }
 
-function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined {
+function xliffStateToStatus(state: XliffState): LocalizedValueStatus {
     switch (state) {
         case "initial":
             return "new"
@@ -43,9 +40,6 @@ function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined
         case "reviewed":
         case "final":
             return "done"
-        default:
-            state satisfies never
-            return
     }
 }
 
@@ -68,7 +62,7 @@ function generateUnit(source: LocalizationSource, targetLocale: Locale) {
 
     if (localeData.status !== "new") {
         notes.push(`<note category="lastEdited">${localeData.lastEdited}</note>`)
-        notes.push(`<note category="readonly">${localeData.readonly}</note>`)
+        notes.push(`<note category="readonly">${localeData.readonly.toString()}</note>`)
     }
 
     return `            <unit id="${source.id}">
@@ -89,7 +83,7 @@ export function generateGroup(localizationGroup: LocalizationGroup, targetLocale
             <notes>
                 <note category="type">${localizationGroup.type}</note>
                 <note category="name">${escapeXml(localizationGroup.name)}</note>
-                <note category="supportsExcludedStatus">${localizationGroup.supportsExcludedStatus}</note>
+                <note category="supportsExcludedStatus">${localizationGroup.supportsExcludedStatus.toString()}</note>
             </notes>
 ${units.join("\n")}
         </group>`

@@ -145,7 +145,7 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
                 case "date":
                 case "link":
                 case "number": {
-                    columns.push(`${fieldData.value ?? ""}`)
+                    columns.push(fieldData.value === undefined ? "" : fieldData.value.toString())
                     continue
                 }
 

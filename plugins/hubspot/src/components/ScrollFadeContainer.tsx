@@ -55,7 +55,7 @@ export const ScrollFadeContainer = ({ children, className, fadeHeight = 45, heig
 
     return (
         <div className="relative w-full" style={{ height: `${height}px`, minHeight: `${height}px` }}>
-            <div ref={containerRef} className={`h-full w-full overflow-y-auto no-scrollbar ${className}`}>
+            <div ref={containerRef} className={`h-full w-full overflow-y-auto no-scrollbar ${className ?? ""}`}>
                 {children}
             </div>
             <div

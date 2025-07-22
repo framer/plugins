@@ -567,7 +567,7 @@ function assert(condition: unknown, message?: string): asserts condition {
 }
 
 function assertNever(condition: never): never {
-    throw Error(`Should never happen: ${condition}`)
+    throw Error(`Should never happen: ${String(condition)}`)
 }
 
 function uppercaseFirstCharacter(value: string) {

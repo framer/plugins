@@ -40,7 +40,7 @@ class Auth {
     async refreshTokens() {
         try {
             const tokens = this.tokens.get()
-            if (!tokens) {
+            if (!tokens?.refreshToken) {
                 throw new Error("Refresh attempted with no stored tokens.")
             }
 

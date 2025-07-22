@@ -12,7 +12,7 @@ export function useCharactersAtlasTexture(
         characters: string
         size?: number
         debug?: boolean
-        font?: string
+        font: string
     }
 ) {
     const [texture] = useState(() => new Texture(gl, { minFilter: gl.LINEAR, magFilter: gl.LINEAR }))

@@ -37,8 +37,20 @@ export default tseslint.config(
             // Covered by TypeScript
             "@typescript-eslint/no-unused-vars": 0,
 
+            // Enabled in strictTypeChecked, but goes a little too far
+            "@typescript-eslint/restrict-template-expressions": [
+                "error",
+                {
+                    allowAny: false,
+                    allowBoolean: false,
+                    allowNever: false,
+                    allowNullish: false,
+                    allowNumber: true, // Ruins `${number}px`
+                    allowRegExp: false,
+                },
+            ],
+
             // TODO: Enable
-            "@typescript-eslint/restrict-template-expressions": 0,
             "@typescript-eslint/unbound-method": 0,
             "@typescript-eslint/use-unknown-in-catch-callback-variable": 0,
         },

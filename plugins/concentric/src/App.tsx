@@ -205,7 +205,7 @@ export function App() {
     return (
         <main>
             <div className="flex">
-                <div className={`row ${(!state || !isAllowedToSetAttributes) && "disable"}`}>
+                <div className={`row ${!state || !isAllowedToSetAttributes ? "disable" : ""}`}>
                     <p>Outer</p>
                     <input
                         type="number"
@@ -233,7 +233,7 @@ export function App() {
                         <Slider.Thumb className="SliderThumb" />
                     </Slider.Root>
                 </div>
-                <div className={`row ${(!state || !isAllowedToSetAttributes) && "disable"}`}>
+                <div className={`row ${!state || !isAllowedToSetAttributes ? "disable" : ""}`}>
                     <p>Inner</p>
 
                     <input

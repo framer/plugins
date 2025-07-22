@@ -1,8 +1,8 @@
 import { useCallback, useContext, useEffect, useState } from "react"
-import { AuthContext, useGoogleToken } from "../auth"
+import { AccessTokenContext, useGoogleToken } from "../auth"
 import Loading from "../components/Loading"
 import { GoogleError } from "../errors"
-import type { GoogleSitemap, GoogleToken, SiteWithGoogleSite } from "../types"
+import type { GoogleSitemap, SiteWithGoogleSite } from "../types"
 import { googleApiCall, sitemapUrl } from "../utils"
 import NeedsVerify from "./NeedsVerify"
 import SiteHasIndexedSitemap from "./SiteHasIndexedSitemap"
@@ -27,7 +27,7 @@ export default function SiteView({ site, logout }: SiteViewProps) {
         e: Error
     } | null>(null)
 
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     const { refresh } = useGoogleToken()
 
@@ -53,7 +53,7 @@ export default function SiteView({ site, logout }: SiteViewProps) {
 
         const task = async () => {
             try {
-                const sitemaps = await fetchGoogleSitemaps(site.googleSite.siteUrl, authContext.access_token)
+                const sitemaps = await fetchGoogleSitemaps(site.googleSite.siteUrl, accessToken)
                 const submittedSitemap = sitemaps.find(currSitemap => currSitemap.path === currSitemapUrl)
 
                 setSitemapsState({ sitemaps, submitted: !!submittedSitemap })
@@ -67,7 +67,7 @@ export default function SiteView({ site, logout }: SiteViewProps) {
         }
 
         void task()
-    }, [authContext.access_token, currSitemapUrl, fetchGoogleSitemaps, site.googleSite])
+    }, [accessToken, currSitemapUrl, fetchGoogleSitemaps, site.googleSite])
 
     useEffect(() => {
         update()

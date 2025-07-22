@@ -1,5 +1,6 @@
 import { type Column, ColumnTypeEnum } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/Column"
 import type { HubDbTableRowV3 } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/HubDbTableRowV3"
+import type { Option } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/Option"
 import { useMutation } from "@tanstack/react-query"
 import {
     type FieldDataEntryInput,
@@ -159,8 +160,8 @@ export function getCollectionFieldForHubDBColumn(column: Column): ManagedCollect
 
         case ColumnTypeEnum.Select: {
             const cases = column.options
-                ?.filter(opt => opt.label && opt.name)
-                .map(opt => ({ name: opt.label as string, id: opt.name }))
+                ?.filter((opt): opt is Option & { label: string } => opt.label !== undefined && opt.name !== "")
+                .map(opt => ({ name: opt.label, id: opt.name }))
 
             if (!cases) return null
 

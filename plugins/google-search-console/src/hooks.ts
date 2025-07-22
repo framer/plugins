@@ -1,12 +1,12 @@
 import { useContext, useEffect, useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
 import * as v from "valibot"
-import { AuthContext, useGoogleToken } from "./auth"
-import type { GoogleInspectionResult, GoogleQueryResult, GoogleToken } from "./types"
+import { AccessTokenContext, useGoogleToken } from "./auth"
+import type { GoogleInspectionResult, GoogleQueryResult } from "./types"
 import { batchGoogleApiCall, googleApiCall, isDefined } from "./utils"
 
 export function useBatchIndexingResult(urls: string[] | null, googleSiteUrl: string) {
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
     const [result, setResult] = useState<Record<string, GoogleInspectionResult> | null>(null)
 
     const { refresh } = useGoogleToken()
@@ -14,7 +14,7 @@ export function useBatchIndexingResult(urls: string[] | null, googleSiteUrl: str
     useEffect(() => {
         const task = async () => {
             const batchResponse = await batchGoogleApiCall(
-                authContext.access_token,
+                accessToken,
                 refresh,
                 (urls || []).map(url => ({
                     apiPath: "/v1/urlInspection/index:inspect",
@@ -40,7 +40,7 @@ export function useBatchIndexingResult(urls: string[] | null, googleSiteUrl: str
         }
 
         void task()
-    }, [authContext.access_token, googleSiteUrl, refresh, urls])
+    }, [accessToken, googleSiteUrl, refresh, urls])
 
     return result
 }
@@ -48,7 +48,7 @@ export function useBatchIndexingResult(urls: string[] | null, googleSiteUrl: str
 export function useIndexingResults(urls: string[] | null, currentPageUrl: string | undefined, googleSiteUrl?: string) {
     const { showBoundary } = useErrorBoundary()
 
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     const [result, setResult] = useState<{
         progress: number
@@ -81,7 +81,7 @@ export function useIndexingResults(urls: string[] | null, currentPageUrl: string
                 const currPageTask = async () => {
                     const currInspection = (await googleApiCall(
                         "/v1/urlInspection/index:inspect",
-                        authContext.access_token,
+                        accessToken,
                         refresh,
                         {
                             method: "POST",
@@ -105,19 +105,14 @@ export function useIndexingResults(urls: string[] | null, currentPageUrl: string
             }
 
             const promises = (urls || []).map(async url => {
-                const inspection = (await googleApiCall(
-                    "/v1/urlInspection/index:inspect",
-                    authContext.access_token,
-                    refresh,
-                    {
-                        method: "POST",
-                        body: JSON.stringify({
-                            inspectionUrl: url,
-                            siteUrl: googleSiteUrl,
-                            languageCode: window.navigator.language,
-                        }),
-                    }
-                )) as { inspectionResult: GoogleInspectionResult } | null
+                const inspection = (await googleApiCall("/v1/urlInspection/index:inspect", accessToken, refresh, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        inspectionUrl: url,
+                        siteUrl: googleSiteUrl,
+                        languageCode: window.navigator.language,
+                    }),
+                })) as { inspectionResult: GoogleInspectionResult } | null
 
                 incrementProgress()
 
@@ -133,7 +128,7 @@ export function useIndexingResults(urls: string[] | null, currentPageUrl: string
         }
 
         void update()
-    }, [authContext.access_token, currentPageUrl, googleSiteUrl, refresh, showBoundary, urls])
+    }, [accessToken, currentPageUrl, googleSiteUrl, refresh, showBoundary, urls])
 
     return { currPageResult, result }
 }
@@ -202,7 +197,7 @@ export function usePerformanceResults(siteUrl: string, dates: string[]) {
 
     const { showBoundary } = useErrorBoundary()
 
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     const { refresh } = useGoogleToken()
 
@@ -211,7 +206,7 @@ export function usePerformanceResults(siteUrl: string, dates: string[]) {
             try {
                 const dailyPerformance = (await googleApiCall(
                     `/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
-                    authContext.access_token,
+                    accessToken,
                     refresh,
                     {
                         method: "POST",
@@ -225,7 +220,7 @@ export function usePerformanceResults(siteUrl: string, dates: string[]) {
 
                 const queryPerformance = (await googleApiCall(
                     `/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
-                    authContext.access_token,
+                    accessToken,
                     refresh,
                     {
                         method: "POST",
@@ -245,7 +240,7 @@ export function usePerformanceResults(siteUrl: string, dates: string[]) {
         }
 
         void update()
-    }, [authContext.access_token, dates, refresh, showBoundary, siteUrl])
+    }, [accessToken, dates, refresh, showBoundary, siteUrl])
 
     return data
 }

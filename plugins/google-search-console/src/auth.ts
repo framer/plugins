@@ -2,7 +2,7 @@ import { createContext, useCallback, useEffect, useRef, useState } from "react"
 import * as v from "valibot"
 import { AuthorizeSchema, type GoogleToken, GoogleTokenSchema } from "./types"
 
-export const AuthContext = createContext<GoogleToken | null>(null)
+export const AccessTokenContext = createContext<string>("NO_ACCESS_TOKEN")
 
 const STORAGE_KEY = "framer-search-console-tokens"
 

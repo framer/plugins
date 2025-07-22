@@ -3,7 +3,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { ErrorBoundary, useErrorBoundary } from "react-error-boundary"
 import "./App.css"
 import * as v from "valibot"
-import { AuthContext, useGoogleToken } from "./auth"
+import { AccessTokenContext, useGoogleToken } from "./auth"
 import Loading from "./components/Loading"
 import { LARGE_HEIGHT, PLUGIN_WIDTH, SMALL_HEIGHT } from "./constants"
 import { mockSiteInfo } from "./mocks"
@@ -11,7 +11,7 @@ import CriticalError from "./screens/CriticalError"
 import GoogleLogin from "./screens/GoogleLogin"
 import NeedsPublish from "./screens/NeedsPublish"
 import SiteView from "./screens/SiteView"
-import { type GoogleSite, GoogleSiteSchema, type GoogleToken, type Site } from "./types"
+import { type GoogleSite, GoogleSiteSchema, type Site } from "./types"
 import { googleApiCall, stripTrailingSlash } from "./utils"
 
 void framer.showUI({
@@ -32,7 +32,7 @@ function usePublishedSite() {
 
     const [needsPublish, setNeedsPublish] = useState(false)
 
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     useEffect(() => {
         return framer.subscribeToPublishInfo(setPublishInfo)
@@ -62,7 +62,7 @@ function usePublishedSite() {
                     if (publishInfo.production?.url) {
                         const domain = new URL(publishInfo.production.url).hostname
 
-                        const googleSites = await fetchGoogleSites(authContext.access_token)
+                        const googleSites = await fetchGoogleSites(accessToken)
 
                         const url = stripTrailingSlash(publishInfo.production.url)
 
@@ -91,7 +91,7 @@ function usePublishedSite() {
         }
 
         void update()
-    }, [authContext.access_token, fetchGoogleSites, publishInfo, showBoundary])
+    }, [accessToken, fetchGoogleSites, publishInfo, showBoundary])
 
     if (SHOW_MOCK_SITEMAP_DATA) {
         return mockSiteInfo
@@ -147,15 +147,15 @@ export function App() {
                 }}
                 resetKeys={[tokens?.access_token]}
             >
-                <AuthContext.Provider value={tokens}>
-                    {isReady ? (
-                        tokens?.access_token ? (
+                {isReady ? (
+                    tokens?.access_token ? (
+                        <AccessTokenContext.Provider value={tokens.access_token}>
                             <AppLoadSite key={tokens.access_token} login={login} logout={logout} />
-                        ) : (
-                            <GoogleLogin login={login} loading={loading} />
-                        )
-                    ) : null}
-                </AuthContext.Provider>
+                        </AccessTokenContext.Provider>
+                    ) : (
+                        <GoogleLogin login={login} loading={loading} />
+                    )
+                ) : null}
             </ErrorBoundary>
         </main>
     )

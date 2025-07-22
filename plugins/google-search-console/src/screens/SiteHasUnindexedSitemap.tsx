@@ -1,10 +1,10 @@
 import { useCallback, useContext, useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
-import { AuthContext, useGoogleToken } from "../auth"
+import { AccessTokenContext, useGoogleToken } from "../auth"
 import Loading from "../components/Loading"
 import confirmation from "../images/Confirmation@2x.png"
 import sitemap from "../images/Sitemap@2x.png"
-import type { GoogleToken, SiteWithGoogleSite } from "../types"
+import type { SiteWithGoogleSite } from "../types"
 import { googleApiCall, sitemapUrl } from "../utils"
 
 interface SiteHasUnindexedSitemapProps {
@@ -15,7 +15,7 @@ interface SiteHasUnindexedSitemapProps {
 export default function SiteHasUnindexedSitemap({ site }: SiteHasUnindexedSitemapProps) {
     const { showBoundary } = useErrorBoundary()
 
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     const [status, setStatus] = useState<"pending" | "loading" | "success" | "fail">("pending")
 
@@ -30,7 +30,7 @@ export default function SiteHasUnindexedSitemap({ site }: SiteHasUnindexedSitema
 
                     await googleApiCall(
                         `/webmasters/v3/sites/${encodeURIComponent(site.googleSite.siteUrl)}/sitemaps/${encodeURIComponent(currSitemapUrl)}`,
-                        authContext.access_token,
+                        accessToken,
                         refresh,
                         {
                             method: "PUT",
@@ -45,7 +45,7 @@ export default function SiteHasUnindexedSitemap({ site }: SiteHasUnindexedSitema
         }
 
         void task()
-    }, [authContext.access_token, refresh, showBoundary, site.googleSite.siteUrl, site.url])
+    }, [accessToken, refresh, showBoundary, site.googleSite.siteUrl, site.url])
 
     if (status === "loading") {
         return <Loading />

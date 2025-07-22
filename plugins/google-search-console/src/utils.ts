@@ -91,7 +91,7 @@ ${JSON.stringify(part.body)}
 
             const textParts = text.split("--batch_").map(part => {
                 try {
-                    const indexId = part.match(/<response-request-([0-9]+)>/)?.[1]
+                    const indexId = /<response-request-([0-9]+)>/.exec(part)?.[1]
                     if (!indexId) return null
 
                     const request = currParts[Number(indexId)]

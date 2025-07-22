@@ -132,7 +132,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 }
 
                 const videoUrl = block.video.external.url
-                const videoId = videoUrl.match(YOUTUBE_ID_REGEX)?.groups?.videoId
+                const videoId = YOUTUBE_ID_REGEX.exec(videoUrl)?.groups?.videoId
                 if (videoId) {
                     // Framer styles and modifies the YouTube iframe automatically
                     htmlContent += `<iframe src="https://www.youtube.com/embed/${videoId}"></iframe>`

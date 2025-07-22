@@ -30,7 +30,7 @@ export default function ChatPage() {
             const customCode = await framer.getCustomCode()
             const existingHTML = customCode.bodyStart.html
 
-            const matches = (existingHTML ?? "").match(/window\.hsConversationsSettings\s*=\s*(\{.*?\});/)
+            const matches = /window\.hsConversationsSettings\s*=\s*(\{.*?\});/.exec(existingHTML ?? "")
             if (matches?.[1]) {
                 setSettings(v.parse(SettingsSchema, JSON.parse(matches[1])))
             }

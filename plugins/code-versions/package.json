@@ -1,0 +1,40 @@
+{
+    "name": "code-versions",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "run g:dev",
+        "build": "run g:build",
+        "check-biome": "run g:check-biome",
+        "check-eslint": "run g:check-eslint",
+        "preview": "run g:preview",
+        "pack": "npx framer-plugin-tools@latest pack",
+        "check-typescript": "run g:check-typescript",
+        "test": "vitest run",
+        "test-watch": "vitest"
+    },
+    "dependencies": {
+        "clsx": "^2.1.1",
+        "diff": "^8.0.2",
+        "framer-plugin": "^3.3.3-alpha.2",
+        "p-retry": "^6.2.1",
+        "prismjs": "^1.30.0",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "tailwind-merge": "^3.3.1",
+        "ts-pattern": "^5.7.1"
+    },
+    "devDependencies": {
+        "@testing-library/dom": "^10.4.0",
+        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/react": "^16.3.0",
+        "@testing-library/user-event": "^14.6.1",
+        "@types/prismjs": "^1",
+        "@types/react": "^18.3.23",
+        "@types/react-dom": "^18.3.7",
+        "@vitest/ui": "^3.2.4",
+        "happy-dom": "^18.0.1",
+        "vitest": "^3.2.4"
+    }
+}

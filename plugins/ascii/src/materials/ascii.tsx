@@ -6,7 +6,23 @@ import { GLSL } from "../glsl"
 import { useCharactersAtlasTexture } from "../hooks/use-characters-atlas-texture"
 import { NumberInput } from "../number-input"
 
+interface Uniforms {
+    uTexture: { value: Texture }
+    uResolution: { value: Vec2 }
+    uCharactersAtlasTexture: { value: Texture }
+    uCharactersAtlasTextureSize: { value: Vec2 }
+    uPixelSize: { value: number }
+    uColorMode: { value: number }
+    uBackgroundColor: { value: Color }
+    uIsTransparent: { value: boolean }
+    uBrightness: { value: number }
+    uIsFilled: { value: boolean }
+    uTextColor: { value: Color }
+}
+
 export class ASCIIMaterial extends Program {
+    declare uniforms: Uniforms
+
     constructor(gl: OGLRenderingContext) {
         super(gl, {
             vertex: /*glsl*/ `#version 300 es
@@ -115,7 +131,7 @@ export class ASCIIMaterial extends Program {
                 uBrightness: { value: 0 },
                 uIsFilled: { value: false },
                 uTextColor: { value: new Color("#ffffff") },
-            },
+            } satisfies Uniforms,
             transparent: true,
         })
     }
@@ -135,10 +151,6 @@ export class ASCIIMaterial extends Program {
 
     set charatersAtlasTexture(value: Texture) {
         this.uniforms.uCharactersAtlasTexture.value = value
-    }
-
-    set mode(value: number) {
-        this.uniforms.uMode.value = value
     }
 
     set pixelSize(value: number) {

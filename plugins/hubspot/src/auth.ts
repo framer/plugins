@@ -1,36 +1,43 @@
+import * as v from "valibot"
 import { PluginError } from "./PluginError"
 
-export interface Tokens {
-    access_token: string
-    refresh_token: string
-    expires_in: number
-    scope: string
-    token_type: "Bearer"
-}
+const TokensSchema = v.object({
+    access_token: v.string(),
+    refresh_token: v.string(),
+    expires_in: v.number(),
+    scope: v.string(),
+    token_type: v.literal("Bearer"),
+})
 
-export interface StoredTokens {
-    createdAt: number
-    expiredIn: number
-    accessToken: string
-    refreshToken: string
-}
+type Tokens = v.InferOutput<typeof TokensSchema>
 
-export interface Authorize {
-    url: string
-    writeKey: string
-    readKey: string
-}
+const StoredTokensSchema = v.object({
+    createdAt: v.number(),
+    expiredIn: v.number(),
+    accessToken: v.string(),
+    refreshToken: v.string(),
+})
+
+type StoredTokens = v.InferOutput<typeof StoredTokensSchema>
+
+const AuthorizeSchema = v.object({
+    url: v.string(),
+    writeKey: v.string(),
+    readKey: v.string(),
+})
+
+type Authorize = v.InferOutput<typeof AuthorizeSchema>
 
 const pluginTokensKey = "hubspotTokens"
 
 const isLocal = () => window.location.hostname.includes("localhost")
 
-export const AUTH_URI = isLocal() ? "https://localhost:8787" : "https://oauth.fetch.tools/hubspot-plugin"
+const AUTH_URI = isLocal() ? "https://localhost:8787" : "https://oauth.framer.wtf/hubspot-plugin"
 
 class Auth {
     storedTokens?: StoredTokens | null
 
-    async refreshTokens() {
+    async refreshTokens(): Promise<StoredTokens> {
         try {
             const tokens = this.tokens.getOrThrow()
 
@@ -43,17 +50,14 @@ class Auth {
                 throw new PluginError("Refresh Failed", "Failed to refresh tokens.")
             }
 
-            const json = await res.json()
-            const newTokens = json as Tokens
-
-            return this.tokens.save(newTokens)
+            return this.tokens.save(v.parse(TokensSchema, await res.json()))
         } catch (e) {
             this.tokens.clear()
             throw e
         }
     }
 
-    async fetchTokens(readKey: string) {
+    async fetchTokens(readKey: string): Promise<StoredTokens> {
         const res = await fetch(`${AUTH_URI}/poll?readKey=${readKey}`, {
             method: "POST",
         })
@@ -62,14 +66,10 @@ class Auth {
             throw new Error("Something went wrong polling for tokens.")
         }
 
-        const tokens = (await res.json()) as Tokens
-
-        this.tokens.save(tokens)
-
-        return tokens
+        return this.tokens.save(v.parse(TokensSchema, await res.json()))
     }
 
-    async authorize() {
+    async authorize(): Promise<Authorize> {
         const response = await fetch(`${AUTH_URI}/authorize`, {
             method: "POST",
         })
@@ -78,9 +78,7 @@ class Auth {
             throw new Error("Failed to generate OAuth URL.")
         }
 
-        const authorize = (await response.json()) as Authorize
-
-        return authorize
+        return v.parse(AuthorizeSchema, await response.json())
     }
 
     isTokensExpired() {
@@ -106,17 +104,16 @@ class Auth {
 
     public readonly tokens = {
         save: (tokens: Tokens) => {
-            const storedTokens: StoredTokens = {
+            this.storedTokens = {
                 createdAt: Date.now(),
                 expiredIn: tokens.expires_in,
                 accessToken: tokens.access_token,
                 refreshToken: tokens.refresh_token,
             }
 
-            this.storedTokens = storedTokens
-            window.localStorage.setItem(pluginTokensKey, JSON.stringify(storedTokens))
+            window.localStorage.setItem(pluginTokensKey, JSON.stringify(this.storedTokens))
 
-            return storedTokens
+            return this.storedTokens
         },
         get: (): StoredTokens | null => {
             if (this.storedTokens) return this.storedTokens
@@ -124,10 +121,9 @@ class Auth {
             const serializedTokens = window.localStorage.getItem(pluginTokensKey)
             if (!serializedTokens) return null
 
-            const storedTokens = JSON.parse(serializedTokens) as StoredTokens
-            this.storedTokens = storedTokens
+            this.storedTokens = v.parse(StoredTokensSchema, JSON.parse(serializedTokens))
 
-            return storedTokens
+            return this.storedTokens
         },
         getOrThrow: (): StoredTokens => {
             const tokens = this.tokens.get()

@@ -10,6 +10,7 @@ import {
 } from "framer-plugin"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react"
 import "./App.css"
+import * as v from "valibot"
 import { isNumber } from "./isNumber"
 import { Stepper } from "./Stepper"
 
@@ -323,9 +324,16 @@ function getBoundingBox(rects: Rect[]): Rect {
     }
 }
 
-type Layout = "horizontal" | "grid" | "random"
+const allLayouts = ["horizontal", "grid", "random"] as const
+const LayoutSchema = v.union(allLayouts.map(layout => v.literal(layout)))
+type Layout = v.InferOutput<typeof LayoutSchema>
 
-type Sorting = "position" | "width" | "height" | "area"
+const allSortings = ["position", "width", "height", "area"] as const
+const SortingSchema = v.union(allSortings.map(sorting => v.literal(sorting)))
+type Sorting = v.InferOutput<typeof SortingSchema>
+
+const ColumnCountSchema = v.pipe(v.number(), v.integer(), v.minValue(1))
+const GapSchema = v.pipe(v.number(), v.integer(), v.minValue(0), v.multipleOf(10))
 
 export function App() {
     const isAllowedToSetAttributes = useIsAllowedTo("setAttributes")
@@ -335,15 +343,11 @@ export function App() {
 
     const [transitionEnabled, setTransitionEnabled] = useState(false)
 
-    const [layout, setLayout] = useLocaleStorageState<Layout>("layout", "horizontal", isLayout)
-
-    const [sorting, setSorting] = useLocaleStorageState<Sorting>("sorting", "position", isSorting)
-
-    const [columnCount, setColumnCount] = useLocaleStorageState("columnCount", 3, isRoundedNumberWithMinimumOfOne)
-
-    const [columnGap, setColumnGap] = useLocaleStorageState("columnGap", 100, isNumber)
-
-    const [rowGap, setRowGap] = useLocaleStorageState("rowGap", 100, isNumber)
+    const [layout, setLayout] = useLocaleStorageState("layout", "horizontal", LayoutSchema)
+    const [sorting, setSorting] = useLocaleStorageState("sorting", "position", SortingSchema)
+    const [columnCount, setColumnCount] = useLocaleStorageState("columnCount", 3, ColumnCountSchema)
+    const [columnGap, setColumnGap] = useLocaleStorageState("columnGap", 100, GapSchema)
+    const [rowGap, setRowGap] = useLocaleStorageState("rowGap", 100, GapSchema)
 
     const previewElement = useRef<HTMLDivElement | null>(null)
     const previewSize = useElementSize({
@@ -449,7 +453,7 @@ export function App() {
                 <select
                     value={layout}
                     onChange={event => {
-                        assert(isLayout(event.target.value))
+                        assert(v.is(LayoutSchema, event.target.value))
                         setLayout(event.target.value)
                         setTransitionEnabled(false)
                     }}
@@ -466,7 +470,7 @@ export function App() {
                     <select
                         value={sorting}
                         onChange={event => {
-                            assert(isSorting(event.target.value))
+                            assert(v.is(SortingSchema, event.target.value))
                             setSorting(event.target.value)
                             setTransitionEnabled(true)
                         }}
@@ -485,6 +489,7 @@ export function App() {
                         value={columnCount}
                         min={1}
                         onChange={value => {
+                            assert(v.is(ColumnCountSchema, value))
                             setColumnCount(value)
                         }}
                     />
@@ -496,6 +501,7 @@ export function App() {
                     min={0}
                     step={10}
                     onChange={value => {
+                        assert(v.is(GapSchema, value))
                         setColumnGap(value)
                         setTransitionEnabled(true)
                     }}
@@ -508,6 +514,7 @@ export function App() {
                         min={0}
                         step={10}
                         onChange={value => {
+                            assert(v.is(GapSchema, value))
                             setRowGap(value)
                             setTransitionEnabled(true)
                         }}
@@ -568,53 +575,24 @@ function isObject(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !isArray(value)
 }
 
-function isString(value: unknown): value is string {
-    return typeof value === "string"
-}
-
-function isRoundedNumberWithMinimumOfOne(value: unknown): value is number {
-    return isNumber(value) && value >= 1 && value === Math.round(value)
-}
-
-const allLayouts: Record<Layout, true> = {
-    horizontal: true,
-    grid: true,
-    random: true,
-}
-
-function isLayout(value: unknown): value is Layout {
-    return isString(value) && value in allLayouts
-}
-
-const allSortings: Record<Sorting, true> = {
-    position: true,
-    width: true,
-    height: true,
-    area: true,
-}
-
-function isSorting(value: unknown): value is Sorting {
-    return isString(value) && value in allSortings
-}
-
-function useLocaleStorageState<T>(
+function useLocaleStorageState<const TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
     key: string,
-    defaultValue: T,
-    isValidValue: (value: unknown) => value is T
-): [T, (value: T) => void] {
-    const [value, setValue] = useState<T>(() => {
+    defaultValue: v.InferOutput<TSchema>,
+    schema: TSchema
+): [v.InferOutput<TSchema>, (value: v.InferOutput<TSchema>) => void] {
+    const [value, setValue] = useState<v.InferOutput<TSchema>>(() => {
         try {
             const storedValue = localStorage.getItem(key)
             if (!storedValue) return defaultValue
 
-            const parsed = JSON.parse(storedValue)
-            return isValidValue(parsed) ? parsed : defaultValue
+            const parsed = JSON.parse(storedValue) as unknown
+            return v.is(schema, parsed) ? parsed : defaultValue
         } catch {
             return defaultValue
         }
     })
 
-    const setValueAndStore = (value: T) => {
+    const setValueAndStore = (value: v.InferOutput<TSchema>) => {
         setValue(value)
         localStorage.setItem(key, JSON.stringify(value))
     }

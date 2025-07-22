@@ -1,27 +1,22 @@
 import { createContext, useCallback, useEffect, useRef, useState } from "react"
-import type { GoogleToken } from "./types"
+import * as v from "valibot"
+import { AuthorizeSchema, type GoogleToken, GoogleTokenSchema } from "./types"
 
 export const AuthContext = createContext<GoogleToken | null>(null)
 
 const STORAGE_KEY = "framer-search-console-tokens"
 
-export function getLocalStorageTokens() {
+export function getLocalStorageTokens(): GoogleToken | null {
     const serializedTokens = window.localStorage.getItem(STORAGE_KEY)
-
-    if (serializedTokens) {
-        const tokens = JSON.parse(serializedTokens)
-
-        return tokens as GoogleToken
-    }
-
-    return null
+    if (!serializedTokens) return null
+    return v.parse(GoogleTokenSchema, JSON.parse(serializedTokens))
 }
 
 export function useGoogleToken() {
     const [loading, setLoading] = useState(false)
     const pollInterval = useRef<ReturnType<typeof setInterval>>()
 
-    const pollForTokens = (readKey: string) => {
+    const pollForTokens = (readKey: string): Promise<GoogleToken> => {
         // Clear any previous interval timers, one may already exist
         // if this function was invoked multiple times.
         if (pollInterval.current) {
@@ -37,7 +32,7 @@ export function useGoogleToken() {
                 })
 
                 if (response.status === 200) {
-                    const tokens = await response.json()
+                    const tokens = v.parse(GoogleTokenSchema, await response.json())
 
                     clearInterval(pollInterval.current)
                     resolve(tokens)
@@ -54,7 +49,7 @@ export function useGoogleToken() {
         const serializedTokens = window.localStorage.getItem(STORAGE_KEY)
 
         if (serializedTokens) {
-            const tokens = JSON.parse(serializedTokens)
+            const tokens = v.parse(GoogleTokenSchema, JSON.parse(serializedTokens))
             setTokens(tokens)
         }
 
@@ -71,7 +66,7 @@ export function useGoogleToken() {
             })
             if (response.status !== 200) return
 
-            const authorize = await response.json()
+            const authorize = v.parse(AuthorizeSchema, await response.json())
 
             // Open up the provider's login window.
             window.open(authorize.url)
@@ -84,7 +79,7 @@ export function useGoogleToken() {
             window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens))
 
             // Update the component state.
-            setTokens(tokens as GoogleToken)
+            setTokens(tokens)
         } finally {
             setLoading(false)
         }
@@ -107,7 +102,7 @@ export function useGoogleToken() {
                 }
             )
 
-            const tokens = await response.json()
+            const tokens = v.parse(GoogleTokenSchema, await response.json())
 
             if (response.ok) {
                 if (!tokens.refresh_token) {
@@ -116,7 +111,7 @@ export function useGoogleToken() {
 
                 window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens))
 
-                setTokens(tokens as GoogleToken)
+                setTokens(tokens)
 
                 return tokens
             } else {

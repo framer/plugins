@@ -1,7 +1,6 @@
 import type { Collection, CollectionItem, Field } from "framer-plugin"
 
 import { isColorStyle } from "framer-plugin"
-import { shouldBeNever } from "./assert"
 
 function downloadFile(file: File) {
     const filename = file.name
@@ -50,7 +49,7 @@ function isFieldSupported(field: Field): field is SupportedField {
             return false
 
         default:
-            shouldBeNever(field)
+            field satisfies never
             return false
     }
 }
@@ -151,7 +150,7 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
                 }
 
                 default: {
-                    shouldBeNever(fieldData)
+                    fieldData satisfies never
                 }
             }
         }

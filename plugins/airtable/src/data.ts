@@ -1,16 +1,27 @@
 import type {
+    ArrayItemInput,
     FieldDataEntryInput,
     FieldDataInput,
     ManagedCollection,
     ManagedCollectionField,
-    ManagedCollectionFieldInput,
     ManagedCollectionItemInput,
     ProtectedMethod,
 } from "framer-plugin"
 import { framer } from "framer-plugin"
-import { type AirtableFieldSchema, fetchAllBases, fetchRecords, fetchTable, fetchTables } from "./api"
+import * as v from "valibot"
+import {
+    type AirtableFieldSchema,
+    fetchAllBases,
+    fetchRecords,
+    fetchTable,
+    fetchTables,
+    isAiTextValue,
+    isBarcodeValue,
+    isCollaboratorValue,
+} from "./api"
 import type { PossibleField } from "./fields"
-import { richTextToHTML } from "./utils"
+import { inferFields } from "./fields"
+import { assert, richTextToHTML } from "./utils"
 
 export const PLUGIN_KEYS = {
     BASE_ID: "airtablePluginBaseId",
@@ -18,6 +29,8 @@ export const PLUGIN_KEYS = {
     TABLE_NAME: "airtablePluginTableName",
     SLUG_FIELD_ID: "airtablePluginSlugId",
 } as const
+
+const IMAGE_FILE_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/apng", "image/webp", "image/svg+xml"]
 
 export interface AirtableBase {
     id: string
@@ -52,7 +65,22 @@ export async function getTables(baseId: string, signal: AbortSignal): Promise<Ai
 const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
 const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
 
+const NonEmptyArrayOfAttachmentsSchema = v.pipe(
+    v.array(v.object({ type: v.optional(v.string()), id: v.string(), url: v.string() })),
+    v.minLength(1)
+)
+
+const ArrayOfStringsSchema = v.array(v.string())
+const NonEmptyArrayOfStringsSchema = v.pipe(ArrayOfStringsSchema, v.minLength(1))
+
 function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
+    // If the field is a lookup field, only use the first value from the array.
+    if (fieldSchema.originalAirtableType === "multipleLookupValues") {
+        if (!Array.isArray(value)) return null
+        if (value.length === 0) return null
+        value = value[0]
+    }
+
     switch (fieldSchema.type) {
         case "boolean":
             return {
@@ -84,27 +112,37 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 }
             }
 
-            if (!Array.isArray(value) || value.length === 0) {
-                return null
+            if (!v.is(NonEmptyArrayOfAttachmentsSchema, value)) return null
+
+            let selectedItem = value[0]
+            assert(selectedItem !== undefined)
+
+            // For image fields, find the first image file in the array
+            if (fieldSchema.type === "image") {
+                const imageItem = value.find(item => !item.type || IMAGE_FILE_MIME_TYPES.includes(item.type))
+                if (!imageItem) return null
+
+                selectedItem = imageItem
             }
 
-            // TODO: When we add support for gallery fields, we'll need to return an array of URLs.
             return {
-                value: value[0].url,
+                value: selectedItem.url,
                 type: fieldSchema.type,
             }
         }
 
-        case "collectionReference":
-            if (!Array.isArray(value)) return null
-            if (value.length === 0) return null
+        case "collectionReference": {
+            if (!v.is(NonEmptyArrayOfStringsSchema, value)) return null
+            const firstItem = value[0]
+            assert(firstItem !== undefined)
             return {
-                value: value[0],
+                value: firstItem,
                 type: "collectionReference",
             }
+        }
 
         case "multiCollectionReference":
-            if (!Array.isArray(value)) return null
+            if (!v.is(ArrayOfStringsSchema, value)) return null
             return {
                 value,
                 type: "multiCollectionReference",
@@ -122,6 +160,71 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
             return null
 
         case "string":
+            switch (fieldSchema.airtableType) {
+                case "barcode": {
+                    if (!isBarcodeValue(value)) return null
+                    return {
+                        value: value.text,
+                        type: "string",
+                    }
+                }
+                case "aiText": {
+                    if (!isAiTextValue(value)) return null
+                    return {
+                        value: value.value ?? "",
+                        type: "string",
+                    }
+                }
+                case "duration": {
+                    if (typeof value !== "number" || Number.isNaN(value)) return null
+
+                    const hours = Math.floor(value / 3600)
+                    const minutes = Math.floor((value % 3600) / 60)
+                    const remainingSeconds = value % 60
+                    const seconds = Math.floor(remainingSeconds).toString().padStart(2, "0")
+
+                    let result = ""
+                    result += hours.toString()
+                    result += ":" + minutes.toString().padStart(2, "0")
+
+                    // Handle seconds and milliseconds based on format
+                    const durationOptions = fieldSchema.airtableOptions as { durationFormat?: string } | undefined
+                    switch (durationOptions?.durationFormat) {
+                        case "h:mm":
+                            break
+                        case "h:mm:ss":
+                            result += ":" + seconds
+                            break
+                        case "h:mm:ss.S":
+                            result += ":" + seconds
+                            result += "." + (remainingSeconds % 1).toFixed(1).substring(2)
+                            break
+                        case "h:mm:ss.SS":
+                            result += ":" + seconds
+                            result += "." + (remainingSeconds % 1).toFixed(2).substring(2)
+                            break
+                        case "h:mm:ss.SSS":
+                            result += ":" + seconds
+                            result += "." + (remainingSeconds % 1).toFixed(3).substring(2)
+                            break
+                    }
+
+                    return {
+                        value: result,
+                        type: "string",
+                    }
+                }
+                case "singleCollaborator":
+                case "createdBy":
+                case "lastModifiedBy": {
+                    if (!isCollaboratorValue(value)) return null
+                    return {
+                        value: value.name,
+                        type: "string",
+                    }
+                }
+            }
+
             if (typeof value !== "string") return null
             return {
                 value,
@@ -158,6 +261,35 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
                 value,
                 type: "number",
             }
+
+        case "array": {
+            if (!v.is(NonEmptyArrayOfAttachmentsSchema, value)) return null
+
+            const imageField = fieldSchema.fields[0]
+            const arrayItems: ArrayItemInput[] = []
+
+            for (const item of value) {
+                // Filter out non-image files
+                if (item.type && !IMAGE_FILE_MIME_TYPES.includes(item.type)) {
+                    continue
+                }
+
+                arrayItems.push({
+                    id: item.id,
+                    fieldData: {
+                        [imageField.id]: {
+                            value: item.url,
+                            type: "image",
+                        },
+                    },
+                })
+            }
+
+            return {
+                value: arrayItems,
+                type: fieldSchema.type,
+            }
+        }
 
         default:
             return null
@@ -235,6 +367,12 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                             type: "boolean",
                         }
                         break
+                    case "number":
+                        fieldData[field.id] = {
+                            value: 0,
+                            type: "number",
+                        }
+                        break
                     case "image":
                     case "file":
                     case "link":
@@ -245,6 +383,12 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
                         fieldData[field.id] = {
                             value: null,
                             type: field.type,
+                        }
+                        break
+                    case "array":
+                        fieldData[field.id] = {
+                            value: [],
+                            type: "array",
                         }
                         break
                     default:
@@ -276,16 +420,32 @@ export function mergeFieldsWithExistingFields(
     return sourceFields.map(sourceField => {
         const existingField = existingFields.find(existingField => existingField.id === sourceField.id)
         if (existingField) {
-            if (existingField.type === "collectionReference" || existingField.type === "multiCollectionReference") {
-                return {
-                    ...sourceField,
-                    type: existingField.type,
-                    name: existingField.name,
-                    collectionId: existingField.collectionId,
-                } as PossibleField
-            }
+            const field = {
+                ...sourceField,
+                type: existingField.type,
+                name: existingField.name,
+            } as PossibleField
 
-            return { ...sourceField, type: existingField.type, name: existingField.name } as PossibleField
+            switch (existingField.type) {
+                case "collectionReference":
+                case "multiCollectionReference":
+                    return {
+                        ...field,
+                        collectionId: existingField.collectionId,
+                    }
+                case "file":
+                    return {
+                        ...field,
+                        allowedFileTypes: existingField.allowedFileTypes,
+                    }
+                case "array":
+                    return {
+                        ...field,
+                        fields: existingField.fields,
+                    }
+                default:
+                    return field
+            }
         }
         return sourceField
     })
@@ -294,7 +454,7 @@ export function mergeFieldsWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: readonly ManagedCollectionFieldInput[],
+    fields: readonly PossibleField[],
     slugFieldId: string
 ) {
     const dataSourceItems = await getItems({ ...dataSource, fields }, slugFieldId)
@@ -356,13 +516,33 @@ export async function syncExistingCollection(
         if (!table) {
             throw new Error(`Table “${previousTableName}” not found`)
         }
+
+        // Use properly inferred fields instead of existing collection fields
+        const inferredFields = await inferFields(collection, table)
+
+        // Filter fields to match the format expected by syncCollection
+        const fieldsToSync = inferredFields.filter(field => {
+            // Only include fields that exist in the current collection
+            const existsInCollection = existingFields.some(existingField => existingField.id === field.id)
+
+            // Exclude unsupported fields
+            const isSupportedType = field.type !== "unsupported"
+
+            // For collection references, ensure collectionId is not empty
+            const isValidCollectionReference =
+                (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
+                field.collectionId !== ""
+
+            return existsInCollection && isSupportedType && isValidCollectionReference
+        })
+
         const dataSource: DataSource = {
             baseId: previousBaseId,
             tableId: previousTableId,
             tableName: table.name,
-            fields: existingFields,
+            fields: inferredFields,
         }
-        await syncCollection(collection, dataSource, existingFields, previousSlugFieldId)
+        await syncCollection(collection, dataSource, fieldsToSync, previousSlugFieldId)
         return { didSync: true }
     } catch (error) {
         console.error(error)

@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "run g:dev",
-        "build": "VITE_OAUTH_API_DOMAIN=https://oauth.fetch.tools/google-search-console-plugin run g:build",
+        "build": "VITE_OAUTH_API_DOMAIN=https://oauth.framer.wtf/google-search-console-plugin run g:build",
         "check-biome": "run g:check-biome",
         "check-eslint": "run g:check-eslint",
         "pack": "npx framer-plugin-tools@latest pack",
@@ -22,7 +22,8 @@
         "react-error-boundary": "^6.0.0",
         "react-feather": "^2.0.10",
         "react-is": "^18.3.1",
-        "recharts": "^3.0.0"
+        "recharts": "^3.0.2",
+        "valibot": "^1.1.0"
     },
     "devDependencies": {
         "@types/react": "^18.3.23",

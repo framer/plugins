@@ -1,0 +1,70 @@
+/* Custom two-color theme for Prism syntax highlighting */
+.current-code {
+    color: var(--color-code-primary);
+    line-height: var(--code-row-height);
+
+    .token.comment,
+    .token.prolog,
+    .token.doctype,
+    .token.cdata,
+    .token.punctuation,
+    .token.namespace,
+    .token.property,
+    .token.boolean,
+    .token.number,
+    .token.constant,
+    .token.symbol,
+    .token.deleted,
+    .token.selector,
+    .token.char,
+    .token.builtin,
+    .token.inserted,
+    .token.operator,
+    .token.entity,
+    .token.url,
+    .token.variable,
+    .token.atrule,
+    .token.attr-value,
+    .token.class-name,
+    .token.keyword,
+    .token.regex,
+    .token.important,
+    .token.bold,
+    .token.italic {
+        color: var(--color-code-secondary);
+    }
+
+    pre.line-numbers {
+        padding-left: var(--padding-between-line-number-and-code);
+    }
+}
+
+/* Line Numbers Plugin Styles */
+.line-numbers {
+    --line-number-width: calc(var(--spacing) * 7); /* enough for stable three digits, after it pushes to the side */
+    --padding-between-line-number-and-code: calc(var(--spacing) * 3);
+    position: relative;
+    padding-left: var(--line-number-width);
+    counter-reset: linenumber;
+
+    .line-numbers-rows {
+        position: absolute;
+        pointer-events: none;
+        top: 0;
+        left: calc(var(--line-number-width) * -1);
+        width: var(--line-number-width);
+        user-select: none;
+
+        > span {
+            display: block;
+            counter-increment: linenumber;
+
+            &:before {
+                content: counter(linenumber);
+                color: var(--color-line-number);
+                display: block;
+                text-align: right;
+            }
+        }
+    }
+}

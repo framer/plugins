@@ -1,0 +1,95 @@
+@import url("https://use.typekit.net/dba5ktr.css"); /* input mono */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-framer-theme="dark"], [data-framer-theme="dark"] *));
+
+@theme inline {
+    /* Fonts */
+    --font-mono: "input-mono", ui-monospace, monospace;
+    --font-sans: var(--framer-font-family);
+
+    /* Backgrounds */
+    --color-framer-bg-base: var(--framer-color-bg, light-dark(#ffffff, #111111));
+    --color-framer-bg-primary: var(--framer-color-bg-primary, var(--framer-color-bg, light-dark(#ffffff, #111111)));
+    --color-framer-bg-secondary: var(--framer-color-bg-secondary, light-dark(#eeeeee, #1d1d1d));
+    --color-framer-bg-tertiary: var(--framer-color-bg-tertiary, light-dark(#f3f3f3, #2b2b2b));
+    --color-framer-divider: var(--framer-color-divider, light-dark(#eeeeee, #252525));
+    --color-framer-tint: var(--framer-color-tint, light-dark(#0099ff, #0099ff));
+    --color-framer-tint-dimmed: var(
+        --framer-color-tint-dimmed,
+        light-dark(rgba(0, 153, 255, 0.1), rgba(0, 153, 255, 0.15))
+    );
+    --color-framer-tint-dark: var(--framer-color-tint-dark, light-dark(#0088ff, #0088ff));
+    --color-framer-black-dimmed: rgba(0, 0, 0, 0.5);
+
+    /* Text colors */
+    --color-framer-text-base: var(--framer-color-text, light-dark(#333333, #ffffff));
+    --color-framer-text-primary: var(--framer-color-text, light-dark(#333333, #ffffff));
+    --color-framer-text-secondary: #999999; /* For this plugin, we use a fixed secondary color. Normally, this should be var(--framer-color-text-secondary). */
+    --color-framer-text-tertiary: var(--framer-color-text-tertiary, light-dark(#999999, #777777));
+    --color-framer-text-inverted: var(--framer-color-text-reversed, light-dark(#ffffff, #ffffff));
+
+    /* Borders */
+    --border-color-divider: var(--framer-color-divider, light-dark(#eeeeee, #252525));
+
+    --spacing: 5px;
+
+    --color-framer-button-hover-light: #eeeeee;
+    --color-framer-button-hover-dark: #282828;
+
+    /* App specific tokens */
+    --width-versions: calc(var(--spacing) * 48);
+    --fade-in-animation: 150ms fadeIn forwards;
+
+    /* FileDiff and Code colors */
+    --color-code-area-light: #fdfdfd;
+    --color-code-area-dark: #141414;
+    --color-diff-add: #00b87a;
+    --color-diff-add-bg: #00cc88;
+    --color-diff-remove: #ff3366;
+    --color-diff-remove-bg: #ff015e;
+
+    --color-code-primary: light-dark(#666666, #eeeeee);
+    --color-code-secondary: light-dark(#66666699, #eeeeee99); /* 60% opacity */
+    --font-size-code: 11px;
+    --color-line-number: light-dark(#bbbbbb, #555555);
+    --color-selection-bg: light-dark(#0000000f, #ffffff14);
+    --color-selection-text: light-dark(#ffffff, #222222);
+    --code-row-height: 19px;
+    --text-code: 11px;
+}
+
+@layer base {
+    @import "framer-plugin/framer.css";
+
+    input,
+    button,
+    textarea,
+    select {
+        padding: initial;
+    }
+
+    ::selection {
+        background-color: var(--color-selection-bg);
+    }
+}
+
+@utility scrollbar-hidden {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        animation-timing-function: bezier(0.5, 0, 0.5, 1);
+    }
+    to {
+        opacity: 1;
+        animation-timing-function: bezier(0.5, 0, 0.5, 1);
+    }
+}

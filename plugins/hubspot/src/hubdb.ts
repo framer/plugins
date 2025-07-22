@@ -11,7 +11,6 @@ import {
     type Column,
     fetchPublishedTable,
     fetchTableRows,
-    type HubDBCellValue,
     type HubDBFile,
     type HubDBImage,
     type HubDBValueOption,
@@ -74,7 +73,7 @@ export type HubDBPluginContext = HubDBPluginContextNew | HubDBPluginContextUpdat
 /**
  * Get the value of a HubDB cell in a format compatible with a collection field.
  */
-function getFieldValue(column: Column, cellValue: HubDBCellValue): FieldDataEntryInput | undefined {
+function getFieldValue(column: Column, cellValue: unknown): FieldDataEntryInput | undefined {
     switch (column.type) {
         case "TEXT": {
             if (typeof cellValue !== "string") return undefined

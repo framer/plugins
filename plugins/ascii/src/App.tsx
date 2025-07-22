@@ -63,7 +63,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         gl,
         droppedAsset?.src ? (droppedAsset?.type === "image" ? droppedAsset?.src : undefined) : framerCanvasImage?.url,
         texture => {
-            // @ts-expect-error - TODO: not sure why this is needed
+            if (!program) return
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },
@@ -74,7 +74,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         gl,
         droppedAsset?.type === "video" ? droppedAsset?.src : undefined,
         texture => {
-            // @ts-expect-error - TODO: not sure why this is needed
+            if (!program) return
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },
@@ -92,7 +92,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
               : undefined,
         droppedAsset?.type,
         texture => {
-            // @ts-expect-error - TODO: not sure why this is needed
+            if (!program) return
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },

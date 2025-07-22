@@ -30,7 +30,7 @@ class Auth {
     constructor() {
         this.AUTH_URI = location.hostname.includes("localhost")
             ? "https://localhost:8787"
-            : "https://oauth.fetch.tools/google-sheets-plugin"
+            : "https://oauth.framer.wtf/google-sheets-plugin"
     }
 
     logout() {

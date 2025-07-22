@@ -45,9 +45,8 @@ const UNSPLASH_BASE_URL = "https://unsplash-plugin.framer-team.workers.dev"
 
 const pageItemCount = 20
 
-interface FetchOptions extends Omit<RequestInit, "headers"> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    body?: any
+interface FetchOptions extends Omit<RequestInit, "headers" | "body"> {
+    body?: unknown
 }
 
 export async function fetchUnsplash<TSchema extends v.GenericSchema>(
@@ -69,7 +68,7 @@ export async function fetchUnsplash<TSchema extends v.GenericSchema>(
     const result = v.safeParse(schema, json)
 
     if (result.issues) {
-        throw new Error("Failed to parse Unsplash API response: " + result.issues)
+        throw new Error(`Failed to parse Unsplash API response: ${JSON.stringify(result.issues)}`)
     }
 
     return result.output

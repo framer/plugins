@@ -27,7 +27,7 @@ export default function SiteHasUnindexedSitemap({ site }: SiteHasUnindexedSitema
             if (site.googleSite.siteUrl) {
                 setStatus("loading")
 
-                await googleApiCall<null>(
+                await googleApiCall(
                     `/webmasters/v3/sites/${encodeURIComponent(site.googleSite.siteUrl)}/sitemaps/${encodeURIComponent(currSitemapUrl)}`,
                     authContext.access_token,
                     refresh,

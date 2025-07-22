@@ -1,94 +1,78 @@
-import "./globals.css"
 import "framer-plugin/framer.css"
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { framer } from "framer-plugin"
-import React, { type ReactNode, Suspense } from "react"
+import React from "react"
 import ReactDOM from "react-dom/client"
-import { ErrorBoundary } from "react-error-boundary"
-import { App } from "./App"
-import { CenteredSpinner } from "./components/CenteredSpinner"
-import { ErrorBoundaryFallback } from "./components/ErrorBoundaryFallback"
-import { logSyncResult } from "./debug.ts"
-import { getPluginContext, type PluginContext, type PluginContextUpdate, synchronizeDatabase } from "./notion"
-import { assert, syncMethods } from "./utils.ts"
+
+import { App } from "./App.tsx"
+import { PLUGIN_KEYS } from "./api"
+import auth from "./auth"
+import { getExistingCollectionDatabaseIdMap, syncExistingCollection } from "./data"
+import { Authenticate } from "./Login.tsx"
+
+const activeCollection = await framer.getActiveManagedCollection()
+
+const tokens = await auth.getTokens()
 
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
 
-const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            retry: false,
-        },
-    },
-})
+if (!tokens) {
+    const reactRoot = ReactDOM.createRoot(root)
 
-function shouldSyncImmediately(pluginContext: PluginContext): pluginContext is PluginContextUpdate {
-    if (pluginContext.type !== "update") return false
-
-    if (!pluginContext.database) return false
-    if (!pluginContext.slugFieldId) return false
-    if (pluginContext.hasChangedFields) return false
-
-    return true
-}
-
-function renderPlugin(app: ReactNode) {
-    const root = document.getElementById("root")
-    if (!root) throw new Error("Root element not found")
-
-    framer.showUI({
-        width: 320,
-        height: 345,
+    await new Promise<void>(resolve => {
+        reactRoot.render(
+            <React.StrictMode>
+                <Authenticate onAuthenticated={resolve} />
+            </React.StrictMode>
+        )
     })
 
+    reactRoot.unmount()
+}
+
+const [
+    previousDatabaseId,
+    previousSlugFieldId,
+    previousLastSynced,
+    previousIgnoredFieldIds,
+    previousDatabaseName,
+    existingCollectionDatabaseIdMap,
+] = await Promise.all([
+    activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
+    activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS),
+    activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_NAME),
+    getExistingCollectionDatabaseIdMap(),
+])
+
+const { didSync } = await syncExistingCollection(
+    activeCollection,
+    previousDatabaseId,
+    previousSlugFieldId,
+    previousIgnoredFieldIds,
+    previousLastSynced,
+    previousDatabaseName,
+    existingCollectionDatabaseIdMap
+)
+
+if (didSync) {
+    await framer.closePlugin("Synchronization successful", {
+        variant: "success",
+    })
+} else {
     ReactDOM.createRoot(root).render(
         <React.StrictMode>
-            <QueryClientProvider client={queryClient}>
-                <div className="px-4 w-full flex flex-col overflow-auto flex-1">
-                    <ErrorBoundary FallbackComponent={ErrorBoundaryFallback}>
-                        <Suspense fallback={<CenteredSpinner />}>{app}</Suspense>
-                    </ErrorBoundary>
-                </div>
-            </QueryClientProvider>
+            <App
+                collection={activeCollection}
+                previousDatabaseId={previousDatabaseId}
+                previousSlugFieldId={previousSlugFieldId}
+                previousLastSynced={previousLastSynced}
+                previousIgnoredFieldIds={previousIgnoredFieldIds}
+                previousDatabaseName={previousDatabaseName}
+                existingCollectionDatabaseIdMap={existingCollectionDatabaseIdMap}
+            />
         </React.StrictMode>
     )
 }
-
-async function runPlugin() {
-    try {
-        const pluginContext = await getPluginContext()
-        const mode = framer.mode
-
-        const isAllowedToSync = framer.isAllowedTo(...syncMethods)
-
-        if (mode === "syncManagedCollection" && shouldSyncImmediately(pluginContext) && isAllowedToSync) {
-            assert(pluginContext.slugFieldId)
-
-            const result = await synchronizeDatabase(pluginContext.database, {
-                onProgress: () => {
-                    // TODO: Progress indicator.
-                },
-                fields: pluginContext.collectionFields,
-                ignoredFieldIds: pluginContext.ignoredFieldIds,
-                lastSyncedTime: pluginContext.lastSyncedTime,
-                slugFieldId: pluginContext.slugFieldId,
-            })
-
-            logSyncResult(result)
-
-            await framer.closePlugin()
-            return
-        }
-
-        renderPlugin(<App context={pluginContext} />)
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        framer.closePlugin("An unexpected error ocurred: " + message, {
-            variant: "error",
-        })
-    }
-}
-
-runPlugin()

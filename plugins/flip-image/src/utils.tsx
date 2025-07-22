@@ -31,7 +31,7 @@ export async function loadBitmap(bytes: Uint8Array): Promise<ImageBitmap> {
     const image = await new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image()
         img.onload = () => resolve(img)
-        img.onerror = () => reject()
+        img.onerror = () => reject(new Error("Could not load image"))
         img.src = url
     })
 

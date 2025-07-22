@@ -15,13 +15,13 @@ export default function AuthPage() {
             clearInterval(pollInterval.current)
         }
 
-        return new Promise(
+        return new Promise<void>(
             resolve =>
                 (pollInterval.current = setInterval(
                     () =>
-                        auth.fetchTokens(readKey).then(tokens => {
+                        auth.fetchTokens(readKey).then(() => {
                             clearInterval(pollInterval.current)
-                            resolve(tokens)
+                            resolve()
                         }),
                     1500
                 ))

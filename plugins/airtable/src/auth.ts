@@ -27,7 +27,7 @@ class Auth {
     constructor() {
         this.AUTH_URI = location.hostname.includes("localhost")
             ? "https://localhost:8787"
-            : "https://oauth.fetch.tools/airtable-plugin"
+            : "https://oauth.framer.wtf/airtable-plugin"
     }
 
     logout() {

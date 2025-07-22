@@ -6,7 +6,6 @@
 dist
 node_modules
 npm-debug.log*
-p
 plugin.zip
 
 # Yarn v2 with Zero Installs (https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored)

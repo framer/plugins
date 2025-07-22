@@ -39,16 +39,6 @@ export function isDefined<T>(value: T): value is NonNullable<T> {
     return value !== undefined && value !== null
 }
 
-export function parseStringToArray<T>(rawStr: string | null, type: "string" | "number"): T[] {
-    if (!rawStr) return []
-
-    const parsed = JSON.parse(rawStr)
-    if (!Array.isArray(parsed)) return []
-    if (!parsed.every(val => typeof val === type)) return []
-
-    return parsed
-}
-
 export function capitalize(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1)
 }

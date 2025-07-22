@@ -1,3 +1,5 @@
+import { type Column, ColumnTypeEnum } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/Column"
+import type { HubDbTableRowV3 } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/HubDbTableRowV3"
 import { useMutation } from "@tanstack/react-query"
 import {
     type FieldDataEntryInput,
@@ -7,15 +9,7 @@ import {
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import pLimit from "p-limit"
-import {
-    type Column,
-    fetchPublishedTable,
-    fetchTableRows,
-    type HubDBFile,
-    type HubDBImage,
-    type HubDBValueOption,
-    type HubDbTableRowV3,
-} from "./api"
+import { fetchPublishedTable, fetchTableRows, type HubDBFile, type HubDBImage, type HubDBValueOption } from "./api"
 import {
     computeFieldSets,
     createFieldSetHash,
@@ -75,46 +69,46 @@ export type HubDBPluginContext = HubDBPluginContextNew | HubDBPluginContextUpdat
  */
 function getFieldValue(column: Column, cellValue: unknown): FieldDataEntryInput | undefined {
     switch (column.type) {
-        case "TEXT": {
+        case ColumnTypeEnum.Text: {
             if (typeof cellValue !== "string") return undefined
             return { type: "string", value: cellValue }
         }
 
-        case "URL": {
+        case ColumnTypeEnum.Url: {
             if (typeof cellValue !== "string") return undefined
             return { type: "link", value: cellValue }
         }
 
-        case "RICHTEXT": {
+        case ColumnTypeEnum.Richtext: {
             if (typeof cellValue !== "string") return undefined
             return { type: "formattedText", value: cellValue }
         }
 
-        case "CURRENCY":
-        case "NUMBER": {
+        case ColumnTypeEnum.Currency:
+        case ColumnTypeEnum.Number: {
             if (typeof cellValue !== "number") return undefined
             return { type: "number", value: cellValue }
         }
 
-        case "DATE":
-        case "DATETIME": {
+        case ColumnTypeEnum.Date:
+        case ColumnTypeEnum.Datetime: {
             if (typeof cellValue !== "number") return undefined
             return { type: "date", value: new Date(cellValue).toUTCString() }
         }
 
-        case "BOOLEAN": {
+        case ColumnTypeEnum.Boolean: {
             return { type: "boolean", value: cellValue === 1 }
         }
 
-        case "SELECT": {
+        case ColumnTypeEnum.Select: {
             return { type: "enum", value: (cellValue as HubDBValueOption).name }
         }
 
-        case "IMAGE": {
+        case ColumnTypeEnum.Image: {
             return { type: "image", value: (cellValue as HubDBImage).url }
         }
 
-        case "FILE": {
+        case ColumnTypeEnum.File: {
             return { type: "file", value: (cellValue as HubDBFile).url }
         }
 
@@ -137,33 +131,33 @@ export function getCollectionFieldForHubDBColumn(column: Column): ManagedCollect
     }
 
     switch (column.type) {
-        case "TEXT":
+        case ColumnTypeEnum.Text:
             return { ...fieldMetadata, type: "string" }
 
-        case "CURRENCY":
-        case "NUMBER":
+        case ColumnTypeEnum.Currency:
+        case ColumnTypeEnum.Number:
             return { ...fieldMetadata, type: "number" }
 
-        case "DATE":
-        case "DATETIME":
+        case ColumnTypeEnum.Date:
+        case ColumnTypeEnum.Datetime:
             return { ...fieldMetadata, type: "date" }
 
-        case "URL":
+        case ColumnTypeEnum.Url:
             return { ...fieldMetadata, type: "link" }
 
-        case "RICHTEXT":
+        case ColumnTypeEnum.Richtext:
             return { ...fieldMetadata, type: "formattedText" }
 
-        case "BOOLEAN":
+        case ColumnTypeEnum.Boolean:
             return { ...fieldMetadata, type: "boolean" }
 
-        case "IMAGE":
+        case ColumnTypeEnum.Image:
             return { ...fieldMetadata, type: "image" }
 
-        case "FILE":
+        case ColumnTypeEnum.File:
             return { ...fieldMetadata, type: "file", allowedFileTypes: [] }
 
-        case "SELECT": {
+        case ColumnTypeEnum.Select: {
             const cases = column.options
                 ?.filter(opt => opt.label && opt.name)
                 .map(opt => ({ name: opt.label as string, id: opt.name }))
@@ -178,7 +172,7 @@ export function getCollectionFieldForHubDBColumn(column: Column): ManagedCollect
         }
 
         // TODO: Implement collection references
-        case "FOREIGN_ID":
+        case ColumnTypeEnum.ForeignId:
         default:
             return null
     }
@@ -193,7 +187,7 @@ export function getPossibleSlugFields(columns: Column[]) {
 
     for (const col of columns) {
         switch (col.type) {
-            case "TEXT":
+            case ColumnTypeEnum.Text:
                 options.push(col)
                 break
         }

@@ -1,5 +1,4 @@
 import { BlogPost } from "@hubspot/api-client/lib/codegen/cms/blogs/blog_posts/models/BlogPost"
-import { Column, ColumnTypeEnum } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/Column"
 import { HubDbTableRowV3 } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/HubDbTableRowV3"
 import { HubDbTableV3 } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/HubDbTableV3"
 import { useQuery } from "@tanstack/react-query"
@@ -286,5 +285,3 @@ export const useMeetingsQuery = () => {
         select: data => data.results,
     })
 }
-
-export { BlogPost, Column, ColumnTypeEnum, HubDbTableRowV3 }

@@ -1,6 +1,7 @@
+import { Column, ColumnTypeEnum } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/Column"
 import { framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
-import { type Column, usePublishedTable } from "../../../api"
+import { usePublishedTable } from "../../../api"
 import { useLoggingToggle } from "../../../cms"
 import { Button } from "../../../components/Button"
 import { CenteredSpinner } from "../../../components/CenteredSpinner"
@@ -18,7 +19,7 @@ import { assert, isDefined, syncMethods } from "../../../utils"
 const getInitialSlugFieldId = (context: HubDBPluginContext, columns: Column[]): string | null => {
     if (context.type === "update" && context.slugFieldId) return context.slugFieldId
 
-    const textColumns = columns.filter(col => col.type === "TEXT")
+    const textColumns = columns.filter(col => col.type === ColumnTypeEnum.Text)
     return textColumns[0]?.id ?? null
 }
 

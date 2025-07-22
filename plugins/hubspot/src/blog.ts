@@ -1,3 +1,4 @@
+import type { BlogPost } from "@hubspot/api-client/lib/codegen/cms/blogs/blog_posts/models/BlogPost"
 import { useMutation } from "@tanstack/react-query"
 import {
     type FieldDataEntryInput,
@@ -6,7 +7,7 @@ import {
     ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
-import { BlogPost, fetchAllBlogPosts } from "./api"
+import { fetchAllBlogPosts } from "./api"
 import {
     computeFieldSets,
     createFieldSetHash,

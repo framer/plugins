@@ -51,7 +51,6 @@ export default tseslint.config(
             ],
 
             // TODO: Enable
-            "@typescript-eslint/unbound-method": 0,
             "@typescript-eslint/use-unknown-in-catch-callback-variable": 0,
         },
     },

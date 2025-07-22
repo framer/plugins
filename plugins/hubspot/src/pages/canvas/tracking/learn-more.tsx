@@ -1,6 +1,7 @@
+import type { PageProps } from "../../../router"
 import { ToggleTrackingButton } from "./components/ToggleTrackingButton"
 
-export default function LearnMoreTrackingPage() {
+export default function LearnMoreTrackingPage({ goBack }: PageProps) {
     return (
         <main>
             <p>
@@ -13,7 +14,7 @@ export default function LearnMoreTrackingPage() {
                 .
             </p>
             <div className="row">
-                <button className="flex-1" onClick={history.back}>
+                <button className="flex-1" onClick={goBack}>
                     Back
                 </button>
                 <ToggleTrackingButton className="flex-1" />

@@ -1,5 +1,6 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
-import { type AshbyItem, validateJobs } from "./api-types"
+import * as v from "valibot"
+import { type AshbyItem, type Job, JobSchema } from "./api-types"
 
 export interface AshbyDataSource {
     id: string
@@ -11,21 +12,15 @@ export interface AshbyDataSource {
      * The rest of the fields are the fields of the data source.
      */
     fields: readonly AshbyField[]
-    apiPath: string
     fetch: (boardToken: string) => Promise<AshbyItem[]>
 }
 
-async function fetchAshbyData(url: string, itemsKey: string): Promise<unknown[]> {
+async function fetchAshbyData(url: string): Promise<unknown> {
     try {
         const response = await fetch(url)
-        const data = await response.json()
-        const items = data[itemsKey]
+        const data = (await response.json()) as unknown
 
-        // console.log(items)
-
-        // await new Promise(resolve => setTimeout(resolve, 1000000))
-
-        return items
+        return data
     } catch (error) {
         console.error("Error fetching Ashby data:", error)
         throw error
@@ -37,7 +32,7 @@ export type AshbyField = ManagedCollectionFieldInput &
         | {
               type: Exclude<ManagedCollectionFieldInput["type"], "collectionReference" | "multiCollectionReference">
               /** Used to transform the value of the field. Sometimes the value is inside an object, so we need to extract it. */
-              getValue?: <T>(value: T) => unknown
+              getValue?: (value: unknown) => unknown
               canBeUsedAsSlug?: boolean
           }
         | {
@@ -48,15 +43,23 @@ export type AshbyField = ManagedCollectionFieldInput &
           }
     )
 
+const JobApiResponseSchema = v.object({ jobs: v.array(JobSchema) })
+
 const jobsDataSource = createDataSource(
     {
         name: "Jobs",
-        apiPath: "job-board",
-        fetch: async (boardToken: string) => {
+        fetch: async (boardToken: string): Promise<Job[]> => {
             const url = `https://api.ashbyhq.com/posting-api/job-board/${boardToken}?includeCompensation=true`
-            const items = await fetchAshbyData(url, "jobs")
-            validateJobs(items)
-            return items
+
+            // use safeParse to log the issues
+            const data = v.safeParse(JobApiResponseSchema, await fetchAshbyData(url))
+
+            if (!data.success) {
+                console.log("Error parsing Ashby data:", data.issues)
+                throw new Error("Error parsing Ashby data")
+            }
+
+            return data.output.jobs
         },
     },
     [
@@ -92,46 +95,6 @@ const jobsDataSource = createDataSource(
                 }
 
                 return null
-
-                // const parts = []
-
-                // // Add string fields if they exist and aren't empty
-                // if (
-                //     "compensationTierSummary" in value &&
-                //     typeof value.compensationTierSummary === "string" &&
-                //     value.compensationTierSummary.trim()
-                // ) {
-                //     parts.push(value.compensationTierSummary.trim())
-                // }
-                // if (
-                //     "scrapeableCompensationSalarySummary" in value &&
-                //     typeof value.scrapeableCompensationSalarySummary === "string" &&
-                //     value.scrapeableCompensationSalarySummary.trim()
-                // ) {
-                //     parts.push(value.scrapeableCompensationSalarySummary.trim())
-                // }
-
-                // // Add compensation tiers
-                // if ("compensationTiers" in value && Array.isArray(value.compensationTiers)) {
-                //     const tierSummaries = value.compensationTiers
-                //         .map(tier => (typeof tier.tierSummary === "string" ? tier.tierSummary.trim() : ""))
-                //         .filter(Boolean)
-                //     if (tierSummaries.length) parts.push(tierSummaries.join(", "))
-                // }
-
-                // // Add summary components
-                // if ("summaryComponents" in value && Array.isArray(value.summaryComponents)) {
-                //     const componentSummaries = value.summaryComponents.map(component => {
-                //         const range =
-                //             component.minValue === component.maxValue
-                //                 ? `${component.currencyCode}${component.minValue.toLocaleString()}`
-                //                 : `${component.currencyCode}${component.minValue.toLocaleString()}-${component.maxValue.toLocaleString()}`
-                //         return `${component.compensationType} (${component.interval}): ${range}`
-                //     })
-                //     parts.push(componentSummaries.join(", "))
-                // }
-
-                // return parts.length ? parts.join(" | ") : null
             },
         },
         {
@@ -165,11 +128,9 @@ export const dataSources = [jobsDataSource] satisfies AshbyDataSource[]
 function createDataSource(
     {
         name,
-        apiPath,
         fetch,
     }: {
         name: string
-        apiPath: string
         fetch: (boardToken: string) => Promise<AshbyItem[]>
     },
     [idField, slugField, ...fields]: [AshbyField, AshbyField, ...AshbyField[]]
@@ -177,7 +138,6 @@ function createDataSource(
     return {
         id: name,
         name,
-        apiPath,
         fields: [idField, slugField, ...fields],
         fetch,
     }

@@ -1,104 +1,74 @@
-export interface Address {
-    addressLocality: string
-    addressRegion: string
-    addressCountry: string
-}
+import * as v from "valibot"
 
-export interface CompensationComponent {
-    id: string
-    summary: string
-    compensationType: string
-    interval: string
-    currencyCode: string | null
-    minValue: number | null
-    maxValue: number | null
-}
+const AddressSchema = v.object({
+    addressLocality: v.optional(v.string()),
+    addressRegion: v.optional(v.string()),
+    addressCountry: v.optional(v.string()),
+})
 
-export interface CompensationTiers {
-    id: string
-    tierSummary: string
-    title: string
-    additionalInformation: string | null
-    components: CompensationComponent[]
-}
+const CompensationComponentSchema = v.object({
+    id: v.optional(v.string()),
+    summary: v.optional(v.string()),
+    compensationType: v.string(),
+    interval: v.string(),
+    currencyCode: v.nullable(v.string()),
+    minValue: v.nullable(v.number()),
+    maxValue: v.nullable(v.number()),
+})
+
+const CompensationTiersSchema = v.object({
+    id: v.string(),
+    tierSummary: v.string(),
+    title: v.nullable(v.string()),
+    additionalInformation: v.nullable(v.string()),
+    components: v.array(CompensationComponentSchema),
+})
+
+const JobAddressSchema = v.object({
+    postalAddress: AddressSchema,
+})
+
+const SecondaryLocationSchema = v.object({
+    location: v.string(),
+    address: JobAddressSchema,
+})
+
+const CompensationSchema = v.object({
+    compensationTierSummary: v.nullable(v.string()),
+    scrapeableCompensationSalarySummary: v.nullable(v.string()),
+    compensationTiers: v.array(CompensationTiersSchema),
+    summaryComponents: v.array(CompensationComponentSchema),
+})
 
 // https://developers.ashbyhq.com/docs/public-job-posting-api
+export const JobSchema = v.object({
+    id: v.string(),
+    title: v.string(),
+    location: v.string(),
+    secondaryLocations: v.array(SecondaryLocationSchema), // allow empty array
+    department: v.nullable(v.string()),
+    team: v.nullable(v.string()),
+    isListed: v.boolean(),
+    isRemote: v.nullable(v.boolean()),
+    descriptionHtml: v.string(),
+    descriptionPlain: v.string(),
+    publishedAt: v.string(),
+    employmentType: v.string(),
+    address: JobAddressSchema,
+    jobUrl: v.string(),
+    applyUrl: v.string(),
+    compensation: CompensationSchema,
+    shouldDisplayCompensationOnJobPostings: v.boolean(),
+})
 
-export interface Job {
-    id: string
-    title: string
-    location: string
-    secondaryLocations: {
-        location: string
-        address: Address
-    }[]
-    department: string | null
-    team: string | null
-    isListed: boolean
-    isRemote: boolean
-    descriptionHtml: string
-    descriptionPlain: string
-    publishedAt: string
-    employmentType: string
-    address: {
-        postalAddress: Address
-    }
-    jobUrl: string
-    applyUrl: string
-    compensation: {
-        compensationTierSummary: string
-        scrapeableCompensationSalarySummary: string
-        compensationTiers: CompensationTiers[]
-        summaryComponents: CompensationComponent[]
-    }
-    shouldDisplayCompensationOnJobPostings: boolean
-}
+export type Job = v.InferOutput<typeof JobSchema>
+export type Address = v.InferOutput<typeof AddressSchema>
+export type CompensationComponent = v.InferOutput<typeof CompensationComponentSchema>
+export type CompensationTiers = v.InferOutput<typeof CompensationTiersSchema>
 
 export type AshbyItem = Job
 
 export function isAshbyItemField<T extends AshbyItem>(field: unknown, itemType: T): field is keyof T {
     if (typeof field !== "string" || field === "") return false
     return Object.prototype.hasOwnProperty.call(itemType, field)
-}
-
-export function validateJobs(data: unknown): asserts data is Job[] {
-    if (!Array.isArray(data)) {
-        throw new Error("Expected jobs data to be an array")
-    }
-
-    for (const item of data) {
-        if (typeof item !== "object" || item === null) {
-            throw new Error("Expected job item to be an object")
-        }
-        if (typeof item.id !== "string") {
-            throw new Error("Expected job to have string id")
-        }
-        if (typeof item.title !== "string") {
-            throw new Error("Expected job to have a string 'title'")
-        }
-        if (typeof item.jobUrl !== "string") {
-            throw new Error("Expected job to have a string 'jobUrl'")
-        }
-        if (typeof item.isListed !== "boolean") {
-            throw new Error("Expected job to have a boolean 'isListed'")
-        }
-        if (typeof item.address !== "object" || item.address === null) {
-            throw new Error("Expected job to have an 'address' object")
-        }
-        if (typeof item.address.postalAddress !== "object" || item.address.postalAddress === null) {
-            throw new Error("Expected job address to have a 'postalAddress' object")
-        }
-        if (typeof item.compensation !== "object" || item.compensation === null) {
-            throw new Error("Expected job to have a 'compensation' object")
-        }
-        if (!Array.isArray(item.compensation.compensationTiers)) {
-            throw new Error("Expected job to have an array 'compensation.compensationTiers'")
-        }
-        if (!Array.isArray(item.compensation.summaryComponents)) {
-            throw new Error("Expected job to have an array 'compensation.summaryComponents'")
-        }
-        if (typeof item.shouldDisplayCompensationOnJobPostings !== "boolean") {
-            throw new Error("Expected job to have a boolean 'shouldDisplayCompensationOnJobPostings'")
-        }
-    }
 }

@@ -15,8 +15,6 @@ export interface RecruiteeDataSource {
     fetch: (boardToken: string, companyId: string) => Promise<RecruiteeItem[]>
 }
 
-const PaginationDataSchema = v.object({ meta: v.object({ total_count: v.number(), per_page: v.number() }) })
-
 async function fetchRecruiteeData(url: string, boardToken: string): Promise<unknown[]> {
     try {
         const response = await fetch(url, {
@@ -24,23 +22,9 @@ async function fetchRecruiteeData(url: string, boardToken: string): Promise<unkn
                 Authorization: "Bearer " + boardToken,
             }),
         })
-        const data = (await response.json()) as unknown
-        const pages = []
-        if (v.is(PaginationDataSchema, data)) {
-            const numberOfPages = Math.ceil(data.meta.total_count / data.meta.per_page)
-            for (let i = 1; i <= numberOfPages; i += 1) {
-                const response = await fetch(`${url}?page=${i}`, {
-                    headers: new Headers({
-                        Authorization: "Bearer " + boardToken,
-                    }),
-                })
-                const pageData = (await response.json()) as unknown
-                pages.push(pageData)
-            }
-        } else {
-            pages.push(data)
-        }
-        return pages
+        const items = []
+        items.push((await response.json()) as unknown)
+        return items
     } catch (error) {
         console.error("Error fetching Recruitee data:", error)
         throw error
@@ -52,7 +36,7 @@ export type RecruiteeField = ManagedCollectionFieldInput &
         | {
               type: Exclude<ManagedCollectionFieldInput["type"], "collectionReference" | "multiCollectionReference">
               /** Used to transform the value of the field. Sometimes the value is inside an object, so we need to extract it. */
-              getValue?: <T>(value: T) => unknown
+              getValue?: (value: unknown) => unknown
               canBeUsedAsSlug?: boolean
           }
         | {

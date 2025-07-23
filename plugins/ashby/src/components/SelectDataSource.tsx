@@ -51,7 +51,7 @@ export function SelectDataSource({
 
     return (
         <main className="framer-hide-scrollbar setup">
-            <img src={hero} alt="Greenhouse Hero" />
+            <img src={hero} alt="Ashby Hero" />
 
             <form onSubmit={handleSubmit}>
                 <div>

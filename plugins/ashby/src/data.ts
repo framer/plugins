@@ -6,6 +6,7 @@ import {
     type ManagedCollectionItemInput,
     type ProtectedMethod,
 } from "framer-plugin"
+import * as v from "valibot"
 import { isAshbyItemField } from "./api-types"
 import { type AshbyDataSource, type AshbyField, dataSources } from "./dataSources"
 import { assertNever, decodeHtml, isCollectionReference } from "./utils"
@@ -94,6 +95,9 @@ export function mergeFieldsWithExistingFields(
     })
 }
 
+const StringifiableSchema = v.union([v.string(), v.number(), v.boolean()])
+const ArrayWithIdsSchema = v.array(v.object({ id: v.number() }))
+
 async function getItems(
     dataSource: AshbyDataSource,
     fieldsToSync: readonly ManagedCollectionFieldInput[],
@@ -103,7 +107,7 @@ async function getItems(
 
     const dataItems = await dataSource.fetch(boardToken)
 
-    const itemIdBySlug: Map<string, string> = new Map()
+    const itemIdBySlug = new Map<string, string>()
     const idField = fieldsToSync[0]
     if (!idField) {
         throw new Error("No ID field found in data source.")
@@ -115,7 +119,13 @@ async function getItems(
         }
 
         const id = String(item.id)
-        const slug = String(item[slugFieldId]).trim()
+        const slugValue = item[slugFieldId]
+        const slug = typeof slugValue === "string" ? slugValue.trim() : null
+
+        if (!slug) {
+            console.warn("No slug found for item", item)
+            continue
+        }
 
         if (!itemIdBySlug.has(slug)) {
             itemIdBySlug.set(slug, id)
@@ -126,7 +136,7 @@ async function getItems(
         itemIdBySlug.set(uniqueSlug, id)
     }
 
-    const slugByItemId: Map<string, string> = new Map()
+    const slugByItemId = new Map<string, string>()
     for (const [slug, itemId] of itemIdBySlug.entries()) {
         slugByItemId.set(itemId, slug)
     }
@@ -139,7 +149,7 @@ async function getItems(
         }
 
         const fieldData: FieldDataInput = {}
-        for (const [fieldName, rawValue] of Object.entries(item)) {
+        for (const [fieldName, rawValue] of Object.entries(item) as [string, unknown][]) {
             const isFieldIgnored = !fieldsToSync.find(field => field.id === fieldName)
             const field = dataSource.fields.find(field => field.id === fieldName)
 
@@ -152,7 +162,7 @@ async function getItems(
             switch (field.type) {
                 case "string":
                     fieldData[field.id] = {
-                        value: value ? String(value) : "",
+                        value: v.is(StringifiableSchema, value) ? String(value) : "",
                         type: "string",
                     }
                     break
@@ -164,7 +174,7 @@ async function getItems(
                     break
                 case "formattedText":
                     fieldData[field.id] = {
-                        value: decodeHtml(value ? String(value) : ""),
+                        value: decodeHtml(v.is(StringifiableSchema, value) ? String(value) : ""),
                         type: "formattedText",
                     }
                     break
@@ -172,13 +182,13 @@ async function getItems(
                 case "date":
                 case "link":
                     fieldData[field.id] = {
-                        value: value ? String(value) : null,
+                        value: v.is(StringifiableSchema, value) ? String(value) : null,
                         type: field.type,
                     }
                     break
                 case "multiCollectionReference": {
                     const ids: string[] = []
-                    if (Array.isArray(value)) {
+                    if (v.is(ArrayWithIdsSchema, value)) {
                         ids.push(...value.map(item => String(item.id)))
                     }
 

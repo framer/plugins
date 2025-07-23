@@ -10,6 +10,10 @@ main {
 
     user-select: none;
     -webkit-user-select: none;
+
+    --framer-color-tint: #493fac;
+    --framer-color-tint-dark: #493fac;
+    --framer-color-tint-extra-dark: #493fac;
 }
 
 form {

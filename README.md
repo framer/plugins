@@ -20,12 +20,13 @@ Check out [our documentation](https://www.framer.com/developers/plugins-introduc
 ### 🎛️ Get Started
 
 - To set up this repository for local development, clone the repo, [install Yarn](https://yarnpkg.com/getting-started/install), and run `yarn` in the root.
-- Run a specific plugin by entering the directory with `cd plugins/[plugin-name]` and running `yarn dev`.
+- Serve a specific plugin by running `yarn dev --filter=[plugin-name]`.
 - In Framer, enable "Developer Tools" via the Plugin sub-menu in the Main Menu.
 
 ### 🛠️ Contribute
 
 - Have a polished Plugin you’d like to share with others? Contributions are welcome.
+- Make sure `yarn check --filter=[plugin-name]` passes without errors.
 
 ### 🔮 Feedback
 

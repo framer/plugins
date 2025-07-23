@@ -1,11 +1,6 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
-import {
-    type RecruiteeItem,
-    validateCandidates,
-    validateDepartments,
-    validateLocations,
-    validateOffers,
-} from "./api-types"
+import * as v from "valibot"
+import { CandidateSchema, DepartmentSchema, LocationSchema, OfferSchema, type RecruiteeItem } from "./api-types"
 
 export interface RecruiteeDataSource {
     id: string
@@ -17,27 +12,35 @@ export interface RecruiteeDataSource {
      * The rest of the fields are the fields of the data source.
      */
     fields: readonly RecruiteeField[]
-    apiPath: string
     fetch: (boardToken: string, companyId: string) => Promise<RecruiteeItem[]>
 }
 
-async function fetchRecruiteeData(url: string, boardToken: string, itemsKey: string): Promise<unknown[]> {
+const PaginationDataSchema = v.object({ meta: v.object({ total_count: v.number(), per_page: v.number() }) })
+
+async function fetchRecruiteeData(url: string, boardToken: string): Promise<unknown[]> {
     try {
         const response = await fetch(url, {
             headers: new Headers({
                 Authorization: "Bearer " + boardToken,
             }),
         })
-
-        if (response.status !== 200) {
-            const error = await response.json()
-            throw new Error(`${error.error}`)
+        const data = (await response.json()) as unknown
+        const pages = []
+        if (v.is(PaginationDataSchema, data)) {
+            const numberOfPages = Math.ceil(data.meta.total_count / data.meta.per_page)
+            for (let i = 1; i <= numberOfPages; i += 1) {
+                const response = await fetch(`${url}?page=${i}`, {
+                    headers: new Headers({
+                        Authorization: "Bearer " + boardToken,
+                    }),
+                })
+                const pageData = (await response.json()) as unknown
+                pages.push(pageData)
+            }
+        } else {
+            pages.push(data)
         }
-
-        const data = await response.json()
-        const items = data[itemsKey]
-
-        return items
+        return pages
     } catch (error) {
         console.error("Error fetching Recruitee data:", error)
         throw error
@@ -60,15 +63,14 @@ export type RecruiteeField = ManagedCollectionFieldInput &
           }
     )
 
+const locationsSchema = v.array(v.object({ locations: v.array(LocationSchema) }))
 const locationDataSource = createDataSource(
     {
         name: "Locations",
-        apiPath: "locations",
         fetch: async (boardToken: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/locations`
-            const items = await fetchRecruiteeData(url, boardToken, "locations")
-            validateLocations(items)
-            return items
+            const items = v.parse(locationsSchema, await fetchRecruiteeData(url, boardToken))
+            return items.flatMap(page => page.locations)
         },
     },
     [
@@ -90,15 +92,14 @@ const locationDataSource = createDataSource(
     ]
 )
 
+const offersSchema = v.array(v.object({ offers: v.array(OfferSchema) }))
 const offersDataSource = createDataSource(
     {
         name: "Offers",
-        apiPath: "offers",
         fetch: async (boardToken: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/offers`
-            const items = await fetchRecruiteeData(url, boardToken, "offers")
-            validateOffers(items)
-            return items
+            const items = v.parse(offersSchema, await fetchRecruiteeData(url, boardToken))
+            return items.flatMap(page => page.offers)
         },
     },
     [
@@ -165,16 +166,14 @@ const offersDataSource = createDataSource(
         },
     ]
 )
-
+const departmentsSchema = v.array(v.object({ departments: v.array(DepartmentSchema) }))
 const departmentsDataSource = createDataSource(
     {
         name: "Departments",
-        apiPath: "departments",
         fetch: async (boardToken: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/departments`
-            const items = await fetchRecruiteeData(url, boardToken, "departments")
-            validateDepartments(items)
-            return items
+            const items = v.parse(departmentsSchema, await fetchRecruiteeData(url, boardToken))
+            return items.flatMap(page => page.departments)
         },
     },
     [
@@ -186,15 +185,14 @@ const departmentsDataSource = createDataSource(
     ]
 )
 
+const candidatesSchema = v.array(v.object({ candidates: v.array(CandidateSchema) }))
 const candidatesDataSource = createDataSource(
     {
         name: "Candidates",
-        apiPath: "candidates",
         fetch: async (boardToken: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/candidates`
-            const items = await fetchRecruiteeData(url, boardToken, "candidates")
-            validateCandidates(items)
-            return items
+            const items = v.parse(candidatesSchema, await fetchRecruiteeData(url, boardToken))
+            return items.flatMap(page => page.candidates)
         },
     },
     [
@@ -202,9 +200,33 @@ const candidatesDataSource = createDataSource(
         { id: "initials", name: "Initials", type: "string" },
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
         { id: "example", name: "Example", type: "boolean" },
-        { id: "emails", name: "Emails", type: "string" },
+        {
+            id: "emails",
+            name: "Emails",
+            type: "string",
+            getValue: value => {
+                if (typeof value === "object" && value !== null) {
+                    return Object.entries(value)
+                        .map(([, val]) => `${val}`)
+                        .join(", ")
+                }
+                return null
+            },
+        },
         { id: "invalid_emails", name: "Invalid Emails", type: "string" },
-        { id: "phones", name: "Phones", type: "string" },
+        {
+            id: "phones",
+            name: "Phones",
+            type: "string",
+            getValue: value => {
+                if (typeof value === "object" && value !== null) {
+                    return Object.entries(value)
+                        .map(([, val]) => `${val}`)
+                        .join(", ")
+                }
+                return null
+            },
+        },
         { id: "positive_ratings", name: "Ratings", type: "number" },
         { id: "photo_thumb_url", name: "Photo Thumb Url", type: "string" },
         { id: "has_avatar", name: "Has Avatar", type: "boolean" },
@@ -242,11 +264,9 @@ export const dataSources = [
 function createDataSource(
     {
         name,
-        apiPath,
         fetch,
     }: {
         name: string
-        apiPath: string
         fetch: (boardToken: string, companyId: string) => Promise<RecruiteeItem[]>
     },
     [idField, slugField, ...fields]: [RecruiteeField, RecruiteeField, ...RecruiteeField[]]
@@ -254,7 +274,6 @@ function createDataSource(
     return {
         id: name,
         name,
-        apiPath,
         fields: [idField, slugField, ...fields],
         fetch,
     }

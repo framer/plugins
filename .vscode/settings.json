@@ -21,6 +21,9 @@
     "[jsonc]": {
         "editor.defaultFormatter": "biomejs.biome"
     },
+    "[css]": {
+        "editor.defaultFormatter": "biomejs.biome"
+    },
     "search.exclude": {
         "**/.turbo": true,
         "**/.yarn": true,
@@ -42,5 +45,8 @@
 
         "source.fixAll.biome": "explicit",
         "source.organizeImports.biome": "explicit"
+    },
+    "workbench.editorAssociations": {
+        "*.svg": "default"
     }
 }

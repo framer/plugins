@@ -47,6 +47,7 @@ export function Stepper({ value = 0, min = 0, step: stepAmount = 1, onChange }: 
                 type="number"
                 value={value}
                 min={min}
+                step={stepAmount}
                 onChange={event => {
                     const numberValue = event.currentTarget.valueAsNumber
                     const value = isNumber(numberValue) ? numberValue : 0

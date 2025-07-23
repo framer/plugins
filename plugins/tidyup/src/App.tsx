@@ -461,7 +461,7 @@ export function App() {
                         setTransitionEnabled(false)
                     }}
                 >
-                    {Object.keys(allLayouts).map(layout => (
+                    {allLayouts.map(layout => (
                         <option key={layout} value={layout}>
                             {uppercaseFirstCharacter(layout)}
                         </option>
@@ -478,7 +478,7 @@ export function App() {
                             setTransitionEnabled(true)
                         }}
                     >
-                        {Object.keys(allSortings).map(sorting => (
+                        {allSortings.map(sorting => (
                             <option key={sorting} value={sorting}>
                                 {uppercaseFirstCharacter(sorting)}
                             </option>
@@ -487,7 +487,7 @@ export function App() {
                 </Row>
             )}
             {layout === "grid" && (
-                <Row title={"Columns"}>
+                <Row title="Columns">
                     <Stepper
                         value={columnCount}
                         min={1}
@@ -511,7 +511,7 @@ export function App() {
                 />
             </Row>
             {layout === "grid" && (
-                <Row title={"Row Gap"}>
+                <Row title="Row Gap">
                     <Stepper
                         value={rowGap}
                         min={0}

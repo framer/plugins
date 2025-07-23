@@ -392,7 +392,7 @@ export async function importCSV(collection: Collection, result: ImportResult) {
             .filter(item => item.action !== "onConflictSkip")
             .map(item => {
                 if (item.action === "add") {
-                    assert(item.slug !== undefined)
+                    assert(item.slug !== undefined, "Item requires a slug")
                     return {
                         slug: item.slug,
                         fieldData: item.fieldData,
@@ -400,7 +400,7 @@ export async function importCSV(collection: Collection, result: ImportResult) {
                     }
                 }
 
-                assert(item.id !== undefined)
+                assert(item.id !== undefined, "Item requires an id")
                 return {
                     id: item.id,
                     fieldData: item.fieldData,

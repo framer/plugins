@@ -19,7 +19,10 @@ function escapeXml(unsafe: string): string {
 /** See http://docs.oasis-open.org/xliff/xliff-core/v2.0/os/xliff-core-v2.0-os.html#state */
 type XliffState = "initial" | "translated" | "reviewed" | "final"
 
-function statusToXliffState(status: LocalizedValueStatus): XliffState {
+// The two functions below have `undefined` in their return types as to future-proof against LocalizedValueStatus and
+// XliffState unions being expanded in minor releases.
+
+function statusToXliffState(status: LocalizedValueStatus): XliffState | undefined {
     switch (status) {
         case "new":
             return "initial"
@@ -28,10 +31,12 @@ function statusToXliffState(status: LocalizedValueStatus): XliffState {
         case "warning":
         case "done":
             return "final"
+        default:
+            status satisfies never
     }
 }
 
-function xliffStateToStatus(state: XliffState): LocalizedValueStatus {
+function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined {
     switch (state) {
         case "initial":
             return "new"
@@ -40,6 +45,8 @@ function xliffStateToStatus(state: XliffState): LocalizedValueStatus {
         case "reviewed":
         case "final":
             return "done"
+        default:
+            state satisfies never
     }
 }
 
@@ -69,7 +76,7 @@ function generateUnit(source: LocalizationSource, targetLocale: Locale) {
                 <notes>
                     ${notes.join("\n                    ")}
                 </notes>
-                <segment state="${state}"${localeData.status === "warning" ? ` subState="framer:warning"` : ""}>
+                <segment state="${state ?? ""}"${localeData.status === "warning" ? ` subState="framer:warning"` : ""}>
                     <source>${sourceValue}</source>
                     <target>${targetValue}</target>
                 </segment>

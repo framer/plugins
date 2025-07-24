@@ -194,8 +194,12 @@ export function App() {
         }
 
         getContexts()
-            .then(() => setIsLoading(false))
-            .catch(e => framer.closePlugin(e instanceof Error ? e.message : "Unknown error", { variant: "error" }))
+            .then(() => {
+                setIsLoading(false)
+            })
+            .catch((error: unknown) =>
+                framer.closePlugin(error instanceof Error ? error.message : "Unknown error", { variant: "error" })
+            )
     }, [navigate, isAuthenticated])
 
     if (isLoading) return null

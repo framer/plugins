@@ -22,7 +22,7 @@ export function Upload({
                 "model/gltf+json": [".gltf"],
                 "model/gltf-binary": [".glb"],
             }}
-            onDrop={async acceptedFiles => {
+            onDrop={acceptedFiles => {
                 const file = acceptedFiles[0]
                 if (!file) return
 
@@ -32,9 +32,9 @@ export function Upload({
                     setDroppedAsset({ type: "image", src: url })
                 } else if (file.type.includes("video")) {
                     setDroppedAsset({ type: "video", src: url })
-                } else if (file.name.match(/\.glb$/)) {
+                } else if (/\.glb$/.exec(file.name)) {
                     setDroppedAsset({ type: "glb", src: url })
-                } else if (file.name.match(/\.gltf$/)) {
+                } else if (/\.gltf$/.exec(file.name)) {
                     setDroppedAsset({ type: "gltf", src: url })
                 }
             }}

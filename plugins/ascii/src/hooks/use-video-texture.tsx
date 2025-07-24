@@ -20,7 +20,7 @@ export function useVideoTexture(
         video.loop = true
         video.muted = true
         video.playsInline = true
-        video.play()
+        void video.play()
 
         video.addEventListener("loadeddata", () => {
             texture.image = video
@@ -34,7 +34,7 @@ export function useVideoTexture(
 
         function update() {
             if (video.readyState >= video.HAVE_ENOUGH_DATA) {
-                if (!texture.image) texture.image = video
+                texture.image ??= video
                 texture.needsUpdate = true
             }
             raf = requestAnimationFrame(update)

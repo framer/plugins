@@ -25,7 +25,7 @@ export function App({ collection, previousBaseId, previousTableId, previousSlugF
     useLayoutEffect(() => {
         const hasDataSourceSelected = Boolean(dataSource)
 
-        framer.showUI({
+        void framer.showUI({
             width: hasDataSourceSelected ? 425 : 320,
             height: hasDataSourceSelected ? 425 : 345,
             minWidth: hasDataSourceSelected ? 360 : undefined,

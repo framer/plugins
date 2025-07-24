@@ -72,10 +72,10 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
             case "image":
                 switch (block.image.type) {
                     case "external":
-                        htmlContent += `<img src="${block.image.external.url}" alt="${block.image.caption[0]?.plain_text}" />`
+                        htmlContent += `<img src="${block.image.external.url}" alt="${block.image.caption[0]?.plain_text ?? ""}" />`
                         break
                     case "file":
-                        htmlContent += `<img src="${block.image.file.url}" alt="${block.image.caption[0]?.plain_text}" />`
+                        htmlContent += `<img src="${block.image.file.url}" alt="${block.image.caption[0]?.plain_text ?? ""}" />`
                         break
                 }
                 break
@@ -100,7 +100,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 break
             }
             case "code": {
-                const language = block.code.language ? CODE_LANGUAGE_MAP[block.code.language] : null
+                const language = CODE_LANGUAGE_MAP[block.code.language]
                 htmlContent += `<pre data-language="${language ?? "Markdown"}"><code>${richTextToHtml(block.code.rich_text)}</code></pre>`
                 break
             }
@@ -132,7 +132,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
                 }
 
                 const videoUrl = block.video.external.url
-                const videoId = videoUrl.match(YOUTUBE_ID_REGEX)?.groups?.videoId
+                const videoId = YOUTUBE_ID_REGEX.exec(videoUrl)?.groups?.videoId
                 if (videoId) {
                     // Framer styles and modifies the YouTube iframe automatically
                     htmlContent += `<iframe src="https://www.youtube.com/embed/${videoId}"></iframe>`

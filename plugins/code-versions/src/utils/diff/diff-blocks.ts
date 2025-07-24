@@ -62,7 +62,7 @@ export function convertDiffBlockToLineDiffs(
     oldLine: number,
     newLine: number
 ): UnprocessedDiffBlockResult {
-    if (cur.removed && next && next.added) {
+    if (cur.removed && next?.added) {
         const {
             diffs,
             oldLine: newOldLine,

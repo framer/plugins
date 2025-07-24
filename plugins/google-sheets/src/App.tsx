@@ -69,7 +69,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
             logSyncResult(result)
 
             if (result.status === "success") {
-                framer.closePlugin("Synchronization successful")
+                void framer.closePlugin("Synchronization successful")
                 return
             }
         },
@@ -89,7 +89,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
         const width = sheetTitle !== null ? 360 : 320
         const height = sheetTitle !== null ? 425 : 345
 
-        framer.showUI({
+        void framer.showUI({
             width,
             height,
             minWidth: width,
@@ -103,7 +103,9 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     if (!spreadsheetId || sheetTitle === null) {
         return (
             <SelectSheetPage
-                onError={() => setIsSelectSheetError(true)}
+                onError={() => {
+                    setIsSelectSheetError(true)
+                }}
                 onSheetSelected={(selectedSpreadsheetId, selectedSheetTitle) => {
                     setSpreadsheetId(selectedSpreadsheetId)
                     setSheetTitle(selectedSheetTitle)
@@ -152,10 +154,9 @@ export function App({ pluginContext }: AppProps) {
 
     useLayoutEffect(() => {
         if (!shouldSyncOnly) return
-        assert(context.type === "update")
         assert(context.slugColumn !== null, "Expected slug column")
 
-        framer.hideUI()
+        void framer.hideUI()
 
         const {
             spreadsheetId,
@@ -168,20 +169,26 @@ export function App({ pluginContext }: AppProps) {
         } = context
         const [headerRow] = sheet.values
 
-        syncSheet({
-            ignoredColumns,
-            slugColumn,
-            fetchedSheet: sheet,
-            lastSyncedTime,
-            spreadsheetId,
-            sheetTitle,
-            fields,
-            // Determine if the field type is already configured, otherwise default to "string"
-            colFieldTypes: headerRow.map(colName => {
-                const field = fields.find(field => field?.name === colName)
-                return field?.type ?? "string"
-            }),
-        }).then(() => framer.closePlugin())
+        const task = async () => {
+            await syncSheet({
+                ignoredColumns,
+                slugColumn,
+                fetchedSheet: sheet,
+                lastSyncedTime,
+                spreadsheetId,
+                sheetTitle,
+                fields,
+                // Determine if the field type is already configured, otherwise default to "string"
+                colFieldTypes: headerRow.map(colName => {
+                    const field = fields.find(field => field.name === colName)
+                    return field?.type ?? "string"
+                }),
+            })
+
+            await framer.closePlugin()
+        }
+
+        void task()
     }, [context, shouldSyncOnly])
 
     if (shouldSyncOnly) return null
@@ -197,7 +204,7 @@ export function App({ pluginContext }: AppProps) {
                         className="text-sheets-green"
                         onClick={() => {
                             auth.logout()
-                            getPluginContext().then(setContext)
+                            void getPluginContext().then(setContext)
                         }}
                     >
                         log out
@@ -216,10 +223,11 @@ export function App({ pluginContext }: AppProps) {
                     <div
                         className="my-1 font-black truncate cursor-pointer"
                         title="Click to copy"
-                        onClick={() => {
-                            navigator.clipboard.writeText(context.title)
-                            framer.notify("Sheet title copied")
-                        }}
+                        onClick={() =>
+                            void navigator.clipboard.writeText(context.title).then(() => {
+                                framer.notify("Sheet title copied")
+                            })
+                        }
                     >
                         {context.title}
                     </div>{" "}

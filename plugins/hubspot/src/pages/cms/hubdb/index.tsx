@@ -17,7 +17,7 @@ export default function HubDBPage() {
     const [selectedTableId, setSelectedTableId] = useState("")
 
     useEffect(() => {
-        if (tables && tables[0]?.id) {
+        if (tables?.[0]?.id) {
             setSelectedTableId(tables[0].id)
         }
     }, [tables])
@@ -57,7 +57,9 @@ export default function HubDBPage() {
                     name="table"
                     id="table"
                     value={selectedTableId}
-                    onChange={e => setSelectedTableId(e.target.value)}
+                    onChange={e => {
+                        setSelectedTableId(e.target.value)
+                    }}
                     className="w-[144px]"
                 >
                     <option value="" disabled>

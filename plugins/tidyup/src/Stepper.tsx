@@ -36,7 +36,9 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function Stepper({ value = 0, min = 0, step: stepAmount = 1, onChange }: Props) {
-    const step = (direction: -1 | 1) => onChange(clamp(value + stepAmount * direction, 0, Infinity))
+    const step = (direction: -1 | 1) => {
+        onChange(clamp(value + stepAmount * direction, 0, Infinity))
+    }
 
     return (
         <div className="stepper">
@@ -45,6 +47,7 @@ export function Stepper({ value = 0, min = 0, step: stepAmount = 1, onChange }: 
                 type="number"
                 value={value}
                 min={min}
+                step={stepAmount}
                 onChange={event => {
                     const numberValue = event.currentTarget.valueAsNumber
                     const value = isNumber(numberValue) ? numberValue : 0
@@ -54,13 +57,23 @@ export function Stepper({ value = 0, min = 0, step: stepAmount = 1, onChange }: 
             />
 
             <div className="stepper-controls">
-                <button className="stepper-button" onClick={() => step(-1)}>
+                <button
+                    className="stepper-button"
+                    onClick={() => {
+                        step(-1)
+                    }}
+                >
                     <IconMinus />
                 </button>
 
                 <div className="stepper-divider" />
 
-                <button className="stepper-button" onClick={() => step(1)}>
+                <button
+                    className="stepper-button"
+                    onClick={() => {
+                        step(1)
+                    }}
+                >
                     <IconPlus />
                 </button>
             </div>

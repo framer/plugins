@@ -59,7 +59,7 @@ function QueriesTable({ queries }: QueriesTableProps) {
 }
 
 const mapPerfToChart = (performance: GoogleQueryResult) => {
-    return (performance.rows || []).map(row => {
+    return (performance.rows ?? []).map(row => {
         return {
             date: new Date(row.keys[0] ?? "").getTime() / 1000,
             clicks: row.clicks,
@@ -137,7 +137,7 @@ export default function Performance({ performance }: PerformanceProps) {
                 <section>
                     <p>Your site doesn’t have enough performance data to show yet.</p>
                 </section>
-            ) : performance?.dailyPerformance ? (
+            ) : (
                 <section>
                     <div className="stat-boxes">
                         <div
@@ -146,7 +146,9 @@ export default function Performance({ performance }: PerformanceProps) {
                             style={{
                                 opacity: metricFocus && metricFocus !== "clicks" ? 0.5 : 1,
                             }}
-                            onClick={() => setMetricFocus(currFocus => (currFocus === "clicks" ? null : "clicks"))}
+                            onClick={() => {
+                                setMetricFocus(currFocus => (currFocus === "clicks" ? null : "clicks"))
+                            }}
                         >
                             <div>
                                 <FitText>{aveta(totalClicks)}</FitText>
@@ -159,9 +161,9 @@ export default function Performance({ performance }: PerformanceProps) {
                             style={{
                                 opacity: metricFocus && metricFocus !== "impressions" ? 0.5 : 1,
                             }}
-                            onClick={() =>
+                            onClick={() => {
                                 setMetricFocus(currFocus => (currFocus === "impressions" ? null : "impressions"))
-                            }
+                            }}
                         >
                             <div>
                                 <FitText>{aveta(totalImpressions)}</FitText>
@@ -238,8 +240,8 @@ export default function Performance({ performance }: PerformanceProps) {
                         </div>
                     </div>
                 </section>
-            ) : null}
-            {performance?.queryPerformance?.rows?.length ? (
+            )}
+            {performance.queryPerformance.rows?.length ? (
                 <section>
                     <div className="section-title">Top Queries</div>
                     <QueriesTable queries={performance.queryPerformance} />

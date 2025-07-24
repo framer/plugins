@@ -30,9 +30,11 @@ function FieldMappingRow({
         <>
             <button
                 type="button"
-                className={`source-field ${isMissingReference && "missing-reference"}`}
+                className={`source-field ${isMissingReference ? "missing-reference" : ""}`}
                 aria-disabled={isDisabled}
-                onClick={() => onToggleDisabled(field.id)}
+                onClick={() => {
+                    onToggleDisabled(field.id)
+                }}
                 tabIndex={0}
             >
                 <input type="checkbox" checked={!isDisabled} tabIndex={-1} readOnly />
@@ -44,7 +46,9 @@ function FieldMappingRow({
                     className="target-field"
                     disabled={isDisabled}
                     value={field.collectionId}
-                    onChange={event => onCollectionChange(field.id, event.target.value)}
+                    onChange={event => {
+                        onCollectionChange(field.id, event.target.value)
+                    }}
                 >
                     {field.supportedCollections?.length === 0 && (
                         <option value="" disabled>
@@ -64,7 +68,9 @@ function FieldMappingRow({
                     disabled={disabled} // IsDisabled doesn't make sense here since it's not a collection reference field
                     placeholder={originalFieldName}
                     value={field.name !== originalFieldName ? field.name : ""}
-                    onChange={event => onNameChange(field.id, event.target.value ?? originalFieldName ?? "")}
+                    onChange={event => {
+                        onNameChange(field.id, event.target.value)
+                    }}
                 />
             )}
         </>
@@ -114,7 +120,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
 
         collection
             .getFields()
-            .then(async collectionFields => {
+            .then(collectionFields => {
                 if (abortController.signal.aborted) return
 
                 setStatus("mapping-fields")
@@ -131,7 +137,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
                     setIgnoredFieldIds(ignoredIds)
                 }
             })
-            .catch(error => {
+            .catch((error: unknown) => {
                 if (!abortController.signal.aborted) {
                     console.error("Failed to fetch collection fields:", error)
                     framer.notify("Failed to load collection fields", { variant: "error" })
@@ -177,7 +183,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         if (!selectedSlugField) {
@@ -188,30 +194,34 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
             return
         }
 
-        try {
-            setStatus("syncing-collection")
+        const task = async () => {
+            try {
+                setStatus("syncing-collection")
 
-            const fieldsToSync: GreenhouseField[] = []
+                const fieldsToSync: GreenhouseField[] = []
 
-            for (const field of fields) {
-                if (ignoredFieldIds.has(field.id) || isMissingReferenceField(field)) continue
-                fieldsToSync.push({
-                    ...field,
-                    name: field.name.trim() || field.id,
+                for (const field of fields) {
+                    if (ignoredFieldIds.has(field.id) || isMissingReferenceField(field)) continue
+                    fieldsToSync.push({
+                        ...field,
+                        name: field.name.trim() || field.id,
+                    })
+                }
+
+                await collection.setFields(removeGreenhouseKeys(fieldsToSync))
+                await syncCollection(boardToken, collection, dataSource, fieldsToSync, selectedSlugField)
+                await framer.closePlugin("Synchronization successful", { variant: "success" })
+            } catch (error) {
+                console.error(error)
+                framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
+                    variant: "error",
                 })
+            } finally {
+                setStatus("mapping-fields")
             }
-
-            await collection.setFields(removeGreenhouseKeys(fieldsToSync))
-            await syncCollection(boardToken, collection, dataSource, fieldsToSync, selectedSlugField)
-            await framer.closePlugin("Synchronization successful", { variant: "success" })
-        } catch (error) {
-            console.error(error)
-            framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
-                variant: "error",
-            })
-        } finally {
-            setStatus("mapping-fields")
         }
+
+        void task()
     }
 
     if (isLoadingFields) {

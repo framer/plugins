@@ -15,7 +15,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     useLayoutEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 320,
             height: 345,
         })
@@ -26,44 +26,46 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             clearInterval(pollInterval.current)
         }
 
-        return new Promise(
-            (resolve, reject) =>
-                (pollInterval.current = setInterval(
-                    () =>
-                        auth
-                            .fetchTokens(readKey)
-                            .then(tokens => {
-                                // Tokens have no been received yet.
-                                if (!tokens) return
+        return new Promise((resolve, reject) => {
+            const task = async () => {
+                try {
+                    const tokens = await auth.fetchTokens(readKey)
+                    // Tokens have no been received yet.
+                    if (!tokens) return
+                    clearInterval(pollInterval.current)
+                    resolve(tokens)
+                } catch (error) {
+                    reject(error as Error) // Just forwarding
+                }
+            }
 
-                                clearInterval(pollInterval.current)
-                                resolve(tokens)
-                            })
-                            .catch(reject),
-                    1500
-                ))
-        )
+            pollInterval.current = setInterval(() => void task(), 1500)
+        })
     }
 
-    const login = async () => {
+    const login = () => {
         setIsLoading(true)
 
-        try {
-            // Retrieve the auth URL and a set of read and write keys
-            const authorization = await auth.authorize()
+        const task = async () => {
+            try {
+                // Retrieve the auth URL and a set of read and write keys
+                const authorization = await auth.authorize()
 
-            // Open up the Google authorization window
-            window.open(authorization.url)
+                // Open up the Google authorization window
+                window.open(authorization.url)
 
-            // Poll the auth server and wait for tokens
-            await pollForTokens(authorization.readKey)
+                // Poll the auth server and wait for tokens
+                await pollForTokens(authorization.readKey)
 
-            onAuthenticated(await getPluginContext())
-        } catch (e) {
-            framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
-        } finally {
-            setIsLoading(false)
+                onAuthenticated(await getPluginContext())
+            } catch (e) {
+                framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
+            } finally {
+                setIsLoading(false)
+            }
         }
+
+        void task()
     }
 
     return (

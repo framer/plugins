@@ -18,8 +18,7 @@ void framer.showUI({
     resizable: true,
 })
 
-const app = mount(App, {
-    target: document.getElementById("app")!,
-})
+const target = document.getElementById("app")
+if (!target) throw new Error("#app element not found")
 
-export default app
+export default mount(App, { target })

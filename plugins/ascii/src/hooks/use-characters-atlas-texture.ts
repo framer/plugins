@@ -12,7 +12,7 @@ export function useCharactersAtlasTexture(
         characters: string
         size?: number
         debug?: boolean
-        font?: string
+        font: string
     }
 ) {
     const [texture] = useState(() => new Texture(gl, { minFilter: gl.LINEAR, magFilter: gl.LINEAR }))
@@ -24,7 +24,7 @@ export function useCharactersAtlasTexture(
         const context = canvas.getContext("2d")
         if (!context) return
 
-        context?.clearRect(0, 0, canvas.width, canvas.height)
+        context.clearRect(0, 0, canvas.width, canvas.height)
 
         canvas.width = size * characters.length
         canvas.height = size

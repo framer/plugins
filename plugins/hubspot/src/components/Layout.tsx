@@ -12,13 +12,14 @@ const PageDivider = () => (
 interface TitleProps {
     title: string
     animateForward?: boolean
+    goBack: () => void
 }
 
-const Title = ({ title, animateForward }: TitleProps) => (
+const Title = ({ title, animateForward, goBack }: TitleProps) => (
     <React.Fragment>
         <PageDivider />
         <div className="flex gap-[5px] items-center overflow-hidden min-h-10">
-            <div onClick={history.back} className="flex items-center pl-[15px] cursor-pointer">
+            <div onClick={goBack} className="flex items-center pl-[15px] cursor-pointer">
                 <CaretLeftIcon />
             </div>
             <motion.div
@@ -48,11 +49,12 @@ interface Props {
     title?: string
     animateForward?: boolean
     showTopDivider?: boolean
+    goBack: () => void
 }
 
-export const Layout = ({ children, className, title, showTopDivider = true, animateForward }: Props) => (
+export const Layout = ({ children, className, title, showTopDivider = true, animateForward, goBack }: Props) => (
     <div className={cx("flex flex-col w-full h-full", className)}>
-        {title && <Title title={title} animateForward={animateForward} />}
+        {title && <Title title={title} animateForward={animateForward} goBack={goBack} />}
         {showTopDivider && <PageDivider />}
         <div className="col-lg w-full h-full">{children}</div>
     </div>

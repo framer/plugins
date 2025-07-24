@@ -32,10 +32,10 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
             }
         }
 
-        fetchDataSources()
+        void fetchDataSources()
     }, [])
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         if (!selectedDatabaseId) return
@@ -74,7 +74,9 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 <label htmlFor="collection">
                     <select
                         id="collection"
-                        onChange={event => setSelectedDatabaseId(event.target.value)}
+                        onChange={event => {
+                            setSelectedDatabaseId(event.target.value)
+                        }}
                         value={selectedDatabaseId ?? ""}
                         disabled={status === Status.Loading}
                     >

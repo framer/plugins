@@ -41,13 +41,13 @@ export function App({
 
     useLayoutEffect(() => {
         if (hasAccessError) {
-            framer.showUI({
+            void framer.showUI({
                 width: 280,
                 height: 114,
                 resizable: false,
             })
         } else if (dataSource || isLoadingDataSource) {
-            framer.showUI({
+            void framer.showUI({
                 width: 425,
                 height: 425,
                 minWidth: 360,
@@ -55,7 +55,7 @@ export function App({
                 resizable: true,
             })
         } else {
-            framer.showUI({
+            void framer.showUI({
                 width: 260,
                 height: 345,
                 minWidth: 260,
@@ -75,14 +75,14 @@ export function App({
         setIsLoadingDataSource(true)
         getDataSource(previousDatabaseId, abortController.signal)
             .then(setDataSource)
-            .catch((error: APIResponseError | Error) => {
+            .catch((error: unknown) => {
                 if (abortController.signal.aborted) return
 
                 console.error(error)
 
                 // Check for Notion API error codes
                 if (
-                    "code" in error &&
+                    error instanceof APIResponseError &&
                     (error.code === APIErrorCode.RestrictedResource ||
                         error.code === APIErrorCode.ObjectNotFound ||
                         error.code === APIErrorCode.Unauthorized ||
@@ -91,7 +91,7 @@ export function App({
                     setHasAccessError(true)
                 } else {
                     framer.notify(
-                        `Error loading previously configured database "${previousDatabaseName || previousDatabaseId}". Check the logs for more details.`,
+                        `Error loading previously configured database "${previousDatabaseName ?? previousDatabaseId}". Check the logs for more details.`,
                         { variant: "error" }
                     )
                 }
@@ -111,7 +111,7 @@ export function App({
         return (
             <main className="loading">
                 <div className="framer-spinner" />
-                <p>Loading {previousDatabaseName || "database"}...</p>
+                <p>Loading {previousDatabaseName ?? "database"}...</p>
             </main>
         )
     }

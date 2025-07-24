@@ -2,7 +2,7 @@ import * as Slider from "@radix-ui/react-slider"
 import { useEffect, useState } from "react"
 
 function numDigitsAfterDecimal(x: number) {
-    const afterDecimalStr = x.toString().split(".")[1] || ""
+    const afterDecimalStr = x.toString().split(".")[1] ?? ""
     return afterDecimalStr.length
 }
 
@@ -46,7 +46,9 @@ export function NumberInput({
                 onChange={e => {
                     setCurrentValue(e.target.value)
                 }}
-                onFocus={e => e.target.select()}
+                onFocus={e => {
+                    e.target.select()
+                }}
                 onBlur={e => {
                     const value = sanitize(e.target.value)
 

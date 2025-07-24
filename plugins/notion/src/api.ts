@@ -80,7 +80,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     files: ["file", "image", "array"],
     relation: ["multiCollectionReference"],
     unique_id: ["string", "number"],
-} satisfies Partial<Record<NotionProperty["type"], ReadonlyArray<ManagedCollectionField["type"]>>>
+} satisfies Partial<Record<NotionProperty["type"], readonly ManagedCollectionField["type"][]>>
 
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.
@@ -259,7 +259,7 @@ export function getSlugValue(property: PageObjectResponse["properties"][string])
             return richTextToPlainText(property.rich_text)
         case "unique_id":
             return property.unique_id.prefix
-                ? `${property.unique_id.prefix}-${property.unique_id.number}`
+                ? `${property.unique_id.prefix}-${String(property.unique_id.number)}`
                 : String(property.unique_id.number)
         default:
             return null
@@ -380,7 +380,7 @@ export async function* iteratePaginatedAPI<Args extends PaginatedArgs, Item>(
 export function isMissingCollection(fieldInfo: FieldInfo, databaseIdMap: DatabaseIdMap): boolean {
     return Boolean(
         fieldInfo.notionProperty?.type === "relation" &&
-            fieldInfo.notionProperty.relation?.database_id &&
+            fieldInfo.notionProperty.relation.database_id &&
             !databaseIdMap.has(fieldInfo.notionProperty.relation.database_id)
     )
 }

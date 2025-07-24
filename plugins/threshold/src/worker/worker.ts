@@ -28,9 +28,6 @@ export class CanvasWorker {
         ctx.drawImage(bitmap, 0, 0)
 
         const imageData = ctx.getImageData(0, 0, width, height)
-
-        if (!imageData) return
-
         const imgData = imageData.data
 
         for (let i = 0; i < imgData.length; i += 4) {

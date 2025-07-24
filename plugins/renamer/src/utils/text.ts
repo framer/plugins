@@ -58,7 +58,7 @@ export function replaceRange(text: string, replacement: string, start: number, e
 
 export function replaceAllRanges(text: string, replacement: string, ranges: Range[], preserveCase?: boolean) {
     let result: string = text
-    let offset: number = 0
+    let offset = 0
 
     for (const [start, end] of ranges) {
         const previousLength = result.length
@@ -103,7 +103,7 @@ export function findRanges(text: string, query: string, isCaseSensitive: boolean
         const ranges: Range[] = []
 
         for (const match of matches) {
-            const start = match.index ?? 0
+            const start = match.index
             const end = start + match[0].length
 
             ranges.push([start, end])

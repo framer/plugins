@@ -10,9 +10,9 @@ interface BatchProcessResultsOptions {
 }
 
 export class BatchProcessResults {
-    private ready: boolean = false
-    private started: boolean = false
-    private batchSize: number = 10
+    private ready = false
+    private started = false
+    private batchSize = 10
     private process: BatchProcessResultsOptions["process"]
     private onStarted: BatchProcessResultsOptions["onStarted"]
     private onProgress: BatchProcessResultsOptions["onProgress"]
@@ -29,7 +29,8 @@ export class BatchProcessResults {
         return new Promise(resolve => {
             const poll = () => {
                 if (this.ready) {
-                    return resolve()
+                    resolve()
+                    return
                 }
 
                 setTimeout(poll, 500)
@@ -39,7 +40,7 @@ export class BatchProcessResults {
         })
     }
 
-    private async *batchProcess(results: Result[]): AsyncGenerator<Result[]> {
+    private *batchProcess(results: Result[]): Generator<Result[]> {
         let batch: Result[] = []
 
         for (const result of results) {
@@ -64,9 +65,9 @@ export class BatchProcessResults {
 
         await this.waitForReady()
 
-        let index: number = 0
+        let index = 0
 
-        for await (const batch of this.batchProcess(results)) {
+        for (const batch of this.batchProcess(results)) {
             for (const result of batch) {
                 const node = await framer.getNode(result.id)
                 if (!isCanvasNode(node)) continue

@@ -24,7 +24,7 @@ class Auth {
         this.tokens.clear()
     }
 
-    async getTokens() {
+    getTokens() {
         const tokens = this.tokens.get()
         if (!tokens) return null
 

@@ -11,6 +11,8 @@
     "scripts": {
         "check": "turbo run --continue check-biome check-eslint check-prettier check-svelte check-typescript test",
         "dev": "turbo run dev --concurrency=40",
+        "fix-biome": "turbo run --continue check-biome -- --write",
+        "fix-eslint": "turbo run --continue check-eslint -- --fix",
         "build": "turbo run build",
         "g:build": "cd $INIT_CWD && run g:vite build",
         "g:check-biome": "biome check $INIT_CWD",

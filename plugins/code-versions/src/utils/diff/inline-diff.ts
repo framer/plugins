@@ -58,11 +58,11 @@ function getCommonTrailingWhitespace(original: string, revised: string): string 
 }
 
 function getLeadingWhitespace(str: string): string {
-    return str.match(/^\s*/)?.[0] ?? ""
+    return /^\s*/.exec(str)?.[0] ?? ""
 }
 
 function getTrailingWhitespace(str: string): string {
-    return str.match(/\s*$/)?.[0] ?? ""
+    return /\s*$/.exec(str)?.[0] ?? ""
 }
 
 function countCommonLeadingLength(a: string, b: string): number {

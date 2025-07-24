@@ -1,6 +1,6 @@
 interface Tokens {
     access_token: string
-    refresh_token: string
+    refresh_token?: string
     expires_in: number
     scope: string
     token_type: "Bearer"
@@ -40,7 +40,7 @@ class Auth {
     async refreshTokens() {
         try {
             const tokens = this.tokens.get()
-            if (!tokens) {
+            if (!tokens?.refreshToken) {
                 throw new Error("Refresh attempted with no stored tokens.")
             }
 

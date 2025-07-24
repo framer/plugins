@@ -24,7 +24,9 @@ function Version({
     return (
         <button
             className="h-[34px] px-2 select-none relative w-full font-medium transition-colors text-left aria-selected:bg-framer-bg-tertiary rounded-lg bg-transparent cursor-pointer aria-selected:cursor-default"
-            onClick={() => onSelect(version.id)}
+            onClick={() => {
+                onSelect(version.id)
+            }}
             aria-selected={isSelected}
         >
             <span className="sr-only">

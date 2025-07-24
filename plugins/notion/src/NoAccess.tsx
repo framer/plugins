@@ -7,7 +7,7 @@ export function NoTableAccess({ previousDatabaseId }: { previousDatabaseId: stri
     const handleRetryClick = () => {
         setIsRetrying(true)
         auth.authorize()
-            .catch(error => {
+            .catch((error: unknown) => {
                 console.error(error)
             })
             .finally(() => {
@@ -31,7 +31,7 @@ export function NoTableAccess({ previousDatabaseId }: { previousDatabaseId: stri
                     {isRetrying ? <div className="framer-spinner" /> : "Retry"}
                 </button>
                 {previousDatabaseId && (
-                    <a href={`https://notion.so/${previousDatabaseId?.replace(/-/g, "")}`} target="_blank">
+                    <a href={`https://notion.so/${previousDatabaseId.replace(/-/g, "")}`} target="_blank">
                         <button className="action-button framer-button-primary">View Database</button>
                     </a>
                 )}

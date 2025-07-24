@@ -267,10 +267,8 @@ export async function syncExistingCollection(
     }
 
     if (!framer.isAllowedTo(...syncMethods)) {
-        framer.closePlugin("You are not allowed to sync this collection.", {
-            variant: "error",
-        })
-        return { didSync: false }
+        await framer.closePlugin("You are not allowed to sync this collection.", { variant: "error" })
+        throw new Error("Unreachable")
     }
 
     try {

@@ -59,7 +59,7 @@ const FieldMappingRow = memo(
         originalFieldName,
         isIgnored,
         disabled,
-        unsupported,
+        unsupported = false,
         missingCollection,
         onToggleIgnored,
         onNameChange,
@@ -190,7 +190,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
                 setStatus("mapping-fields")
             })
-            .catch(error => {
+            .catch((error: unknown) => {
                 if (!abortController.signal.aborted) {
                     console.error("Failed to fetch collection fields:", error)
                     framer.notify("Failed to load collection fields", { variant: "error" })
@@ -279,7 +279,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         })
     }
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         if (!selectedSlugField) {
@@ -290,38 +290,42 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             return
         }
 
-        try {
-            setStatus("syncing-collection")
+        const task = async () => {
+            try {
+                setStatus("syncing-collection")
 
-            const fieldsToSync = fields
-                .filter(field => !ignoredFieldIds.has(field.id))
-                .map(field => {
-                    const originalFieldName = originalFieldNameMap.get(field.id)
-                    return {
-                        ...field,
-                        name: field.name.trim() || originalFieldName || field.id,
-                    }
+                const fieldsToSync = fields
+                    .filter(field => !ignoredFieldIds.has(field.id))
+                    .map(field => {
+                        const originalFieldName = originalFieldNameMap.get(field.id)
+                        return {
+                            ...field,
+                            name: (field.name.trim() || originalFieldName) ?? field.id,
+                        }
+                    })
+                    .filter(field => field.type !== "unsupported")
+                    .filter(
+                        field =>
+                            (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
+                            field.collectionId !== ""
+                    )
+
+                await collection.setFields(fieldsToSync)
+                await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField.id)
+                await framer.closePlugin("Synchronization successful", {
+                    variant: "success",
                 })
-                .filter(field => field.type !== "unsupported")
-                .filter(
-                    field =>
-                        (field.type !== "collectionReference" && field.type !== "multiCollectionReference") ||
-                        field.collectionId !== ""
-                )
-
-            await collection.setFields(fieldsToSync)
-            await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField.id)
-            await framer.closePlugin("Synchronization successful", {
-                variant: "success",
-            })
-        } catch (error) {
-            console.error(error)
-            framer.notify(`Failed to sync collection "${dataSource.tableName}". Check the logs for more details.`, {
-                variant: "error",
-            })
-        } finally {
-            setStatus("mapping-fields")
+            } catch (error) {
+                console.error(error)
+                framer.notify(`Failed to sync collection "${dataSource.tableName}". Check the logs for more details.`, {
+                    variant: "error",
+                })
+            } finally {
+                setStatus("mapping-fields")
+            }
         }
+
+        void task()
     }
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)

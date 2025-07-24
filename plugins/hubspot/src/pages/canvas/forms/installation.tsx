@@ -1,4 +1,6 @@
-export default function FormsInstallationPage() {
+import type { PageProps } from "../../../router"
+
+export default function FormsInstallationPage({ goBack }: PageProps) {
     return (
         <main>
             <span>There are two ways to use HubSpot forms with Framer:</span>
@@ -10,7 +12,7 @@ export default function FormsInstallationPage() {
                 </li>
             </ol>
             <div className="row">
-                <button className="flex-1" onClick={history.back}>
+                <button className="flex-1" onClick={goBack}>
                     Back
                 </button>
                 <button

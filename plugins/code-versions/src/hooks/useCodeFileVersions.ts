@@ -43,7 +43,7 @@ export function useCodeFileVersions(): CodeFileVersionsState {
         const abortController = new AbortController()
         versionsAbortControllerRef.current = abortController
 
-        loadVersions(dispatch, state.codeFile, abortController)
+        void loadVersions(dispatch, state.codeFile, abortController)
 
         // Cleanup function
         return () => {
@@ -69,7 +69,7 @@ export function useCodeFileVersions(): CodeFileVersionsState {
         const abortController = new AbortController()
         contentAbortControllerRef.current = abortController
 
-        loadVersionContent(dispatch, selectedVersion, abortController)
+        void loadVersionContent(dispatch, selectedVersion, abortController)
 
         // Cleanup function
         return () => {
@@ -86,18 +86,22 @@ export function useCodeFileVersions(): CodeFileVersionsState {
         dispatch({ type: VersionsActionType.VersionSelected, payload: { versionId: id } })
     }, [])
 
-    const restoreVersion = useCallback(async () => {
-        if (!state.content.data || !state.codeFile) return
+    const restoreVersion = useCallback(() => {
+        const task = async () => {
+            if (!state.content.data || !state.codeFile) return
 
-        dispatch({ type: VersionsActionType.RestoreStarted })
+            dispatch({ type: VersionsActionType.RestoreStarted })
 
-        try {
-            await state.codeFile.setFileContent(state.content.data)
-            dispatch({ type: VersionsActionType.RestoreCompleted })
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : "Failed to restore version"
-            dispatch({ type: VersionsActionType.RestoreError, payload: { error: errorMessage } })
+            try {
+                await state.codeFile.setFileContent(state.content.data)
+                dispatch({ type: VersionsActionType.RestoreCompleted })
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : "Failed to restore version"
+                dispatch({ type: VersionsActionType.RestoreError, payload: { error: errorMessage } })
+            }
         }
+
+        void task()
     }, [state.content.data, state.codeFile])
 
     const clearErrors = useCallback(() => {
@@ -109,11 +113,11 @@ export function useCodeFileVersions(): CodeFileVersionsState {
         contentAbortControllerRef.current = abortController
 
         if (state.codeFile) {
-            loadVersions(dispatch, state.codeFile, abortController)
+            void loadVersions(dispatch, state.codeFile, abortController)
         }
 
         if (selectedVersion) {
-            loadVersionContent(dispatch, selectedVersion, abortController)
+            void loadVersionContent(dispatch, selectedVersion, abortController)
         }
         dispatch({ type: VersionsActionType.ErrorsCleared })
     }, [state.codeFile, selectedVersion])
@@ -219,7 +223,7 @@ export interface CodeFileVersionsState {
 
     // Actions
     selectVersion: (id: string) => void
-    restoreVersion: () => Promise<void>
+    restoreVersion: () => void
     clearErrors: () => void
 }
 
@@ -272,9 +276,7 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
                 status: LoadingState.Idle,
                 error: undefined,
             },
-            selectedVersionId: !state.selectedVersionId
-                ? getDefaultSelectedVersionId(payload.versions)
-                : state.selectedVersionId,
+            selectedVersionId: state.selectedVersionId ?? getDefaultSelectedVersionId(payload.versions),
         }))
         .with({ type: VersionsActionType.VersionSelected }, ({ payload }) => ({
             ...state,

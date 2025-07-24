@@ -12,16 +12,12 @@ export function NoTableAccess({
     const [isRetrying, setIsRetrying] = useState(false)
 
     useLayoutEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             height: 110,
             width: 240,
             resizable: false,
         })
     }, [])
-
-    const handleViewClick = () => {
-        window.open(`https://airtable.com/${previousBaseId}/${previousTableId}`, "_blank")
-    }
 
     const handleRetryClick = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -31,7 +27,7 @@ export function NoTableAccess({
             .then(() => {
                 setIsRetrying(false)
             })
-            .catch(error => {
+            .catch((error: unknown) => {
                 console.error(error)
                 setIsRetrying(false)
             })
@@ -56,14 +52,18 @@ export function NoTableAccess({
                 <button type="submit" className="action-button">
                     {isRetrying ? <div className="framer-spinner" /> : "Retry"}
                 </button>
-                <button
-                    type="button"
-                    className="action-button"
-                    style={{ color: "white", background: "#1D9CE7" }}
-                    onClick={handleViewClick}
-                >
-                    View Table
-                </button>
+                {previousBaseId && previousTableId && (
+                    <button
+                        type="button"
+                        className="action-button"
+                        style={{ color: "white", background: "#1D9CE7" }}
+                        onClick={() => {
+                            window.open(`https://airtable.com/${previousBaseId}/${previousTableId}`, "_blank")
+                        }}
+                    >
+                        View Table
+                    </button>
+                )}
             </div>
         </form>
     )

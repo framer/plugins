@@ -3,6 +3,6 @@ export function assert(condition: unknown, ...message: unknown[]): asserts condi
     throw Error(`Assertion error: ${message.join(", ")}`)
 }
 
-export function assertNever(x: never, error?: unknown): never {
-    throw error || new Error((x as unknown) ? `Unexpected value: ${x}` : "Application entered invalid state")
+export function assertNever(x: never): never {
+    throw new Error(`Unexpected value: ${String(x)}`)
 }

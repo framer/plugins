@@ -14,7 +14,7 @@ import * as v from "valibot"
 import { isNumber } from "./isNumber"
 import { Stepper } from "./Stepper"
 
-framer.showUI({
+void framer.showUI({
     position: "top right",
     width: 260,
     height: 350,
@@ -125,7 +125,7 @@ function useGroundNodeRects() {
             setRects(current => (isDeepEqual(current, result) ? current : result))
         }
 
-        getRects()
+        void getRects()
 
         return () => {
             active = false
@@ -295,6 +295,7 @@ function getRandomizedRects(rects: RectWithId[], gap: number): RectWithId[] {
     let canvasWidth = maxSize.width * 2
     let canvasHeight = maxSize.height * 2
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional
     while (true) {
         const randomRects = getRandomizeRectsForCanvas(rects, gap, canvasWidth, canvasHeight)
         if (randomRects) return randomRects
@@ -353,7 +354,9 @@ export function App() {
     const previewSize = useElementSize({
         ref: previewElement,
         deps: [layout],
-        onChange: () => setTransitionEnabled(false),
+        onChange: () => {
+            setTransitionEnabled(false)
+        },
     })
 
     const [randomKey, randomize] = useReducer((state: number) => state + 1, 0)
@@ -458,7 +461,7 @@ export function App() {
                         setTransitionEnabled(false)
                     }}
                 >
-                    {Object.keys(allLayouts).map(layout => (
+                    {allLayouts.map(layout => (
                         <option key={layout} value={layout}>
                             {uppercaseFirstCharacter(layout)}
                         </option>
@@ -475,7 +478,7 @@ export function App() {
                             setTransitionEnabled(true)
                         }}
                     >
-                        {Object.keys(allSortings).map(sorting => (
+                        {allSortings.map(sorting => (
                             <option key={sorting} value={sorting}>
                                 {uppercaseFirstCharacter(sorting)}
                             </option>
@@ -484,7 +487,7 @@ export function App() {
                 </Row>
             )}
             {layout === "grid" && (
-                <Row title={"Columns"}>
+                <Row title="Columns">
                     <Stepper
                         value={columnCount}
                         min={1}
@@ -508,7 +511,7 @@ export function App() {
                 />
             </Row>
             {layout === "grid" && (
-                <Row title={"Row Gap"}>
+                <Row title="Row Gap">
                     <Stepper
                         value={rowGap}
                         min={0}
@@ -523,20 +526,24 @@ export function App() {
             )}
             <button
                 disabled={!isAllowedToSetAttributes || !isEnabled}
-                onClick={async () => {
+                onClick={() => {
                     if (!isAllowedToSetAttributes || !isEnabled) return
 
                     const rawBoundingBox = getBoundingBox(Object.values(rects).filter(isRect))
 
-                    for (const rect of sortedRects) {
-                        const node = await framer.getNode(rect.id)
-                        if (!node || !supportsPins(node)) continue
+                    const task = async () => {
+                        for (const rect of sortedRects) {
+                            const node = await framer.getNode(rect.id)
+                            if (!node || !supportsPins(node)) continue
 
-                        node.setAttributes({
-                            left: `${rect.x + rawBoundingBox.x}px`,
-                            top: `${rect.y + rawBoundingBox.y}px`,
-                        })
+                            void node.setAttributes({
+                                left: `${rect.x + rawBoundingBox.x}px`,
+                                top: `${rect.y + rawBoundingBox.y}px`,
+                            })
+                        }
                     }
+
+                    void task()
                 }}
                 title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}
             >
@@ -560,7 +567,7 @@ function assert(condition: unknown, message?: string): asserts condition {
 }
 
 function assertNever(condition: never): never {
-    throw Error(`Should never happen: ${condition}`)
+    throw Error(`Should never happen: ${String(condition)}`)
 }
 
 function uppercaseFirstCharacter(value: string) {

@@ -65,11 +65,13 @@ function FieldMappingRow({
                 type="button"
                 className={classNames("source-field", isFieldUnavailable && "unsupported")}
                 aria-disabled={disabled}
-                onClick={() => onToggleIgnored(id)}
+                onClick={() => {
+                    onToggleIgnored(id)
+                }}
                 tabIndex={0}
             >
                 <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
-                <span>{originalName ?? id}</span>
+                <span>{originalName}</span>
             </button>
             <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -110,9 +112,11 @@ function FieldMappingRow({
                     <input
                         type="text"
                         disabled={disabled}
-                        placeholder={originalName ?? id}
+                        placeholder={originalName}
                         value={name}
-                        onChange={event => onNameChange(id, event.target.value)}
+                        onChange={event => {
+                            onNameChange(id, event.target.value)
+                        }}
                         onKeyDown={event => {
                             if (event.key === "Enter") {
                                 event.preventDefault()
@@ -175,7 +179,7 @@ export function FieldMapping({
                 setFieldsInfo(mergeFieldsInfoWithExistingFields(initialFieldsInfo, collectionFields))
                 setStatus("mapping-fields")
             })
-            .catch(error => {
+            .catch((error: unknown) => {
                 if (abortController.signal.aborted) return
 
                 console.error("Failed to fetch collection fields:", error)
@@ -222,7 +226,7 @@ export function FieldMapping({
         })
     }
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         if (!selectedSlugFieldId) {
@@ -233,29 +237,40 @@ export function FieldMapping({
             return
         }
 
-        try {
-            setStatus("syncing-collection")
+        const task = async () => {
+            try {
+                setStatus("syncing-collection")
 
-            const fields = await fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
-            const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
-            const slugField = fields.find(field => field.id === selectedSlugFieldId)
+                const fields = fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
+                const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
+                const slugField = fields.find(field => field.id === selectedSlugFieldId)
 
-            if (!slugField) {
-                framer.notify("Selected slug field not found. Sync will not be performed.", { variant: "error" })
-                return
+                if (!slugField) {
+                    framer.notify("Selected slug field not found. Sync will not be performed.", { variant: "error" })
+                    return
+                }
+
+                await collection.setFields(fieldsToSync)
+                await syncCollection(
+                    collection,
+                    dataSource,
+                    fieldsToSync,
+                    slugField,
+                    ignoredFieldIds,
+                    previousLastSynced
+                )
+                await framer.closePlugin("Synchronization successful", { variant: "success" })
+            } catch (error) {
+                console.error(error)
+                framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
+                    variant: "error",
+                })
+            } finally {
+                setStatus("mapping-fields")
             }
-
-            await collection.setFields(fieldsToSync)
-            await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds, previousLastSynced)
-            await framer.closePlugin("Synchronization successful", { variant: "success" })
-        } catch (error) {
-            console.error(error)
-            framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
-                variant: "error",
-            })
-        } finally {
-            setStatus("mapping-fields")
         }
+
+        void task()
     }
 
     if (isLoadingFields) {
@@ -273,7 +288,7 @@ export function FieldMapping({
                 <label className="slug-field" htmlFor="slugField">
                     <div className="heading-row">
                         <span>Slug Field</span>
-                        {database?.url && (
+                        {database.url && (
                             <a href={database.url} target="_blank" className="heading-link">
                                 View in Notion
                             </a>

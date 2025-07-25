@@ -1,5 +1,5 @@
-import * as v from "valibot"
 import { framer } from "framer-plugin"
+import * as v from "valibot"
 import { API_BASE_URL, PLUGIN_KEYS } from "./api"
 import { showLoginUI } from "./ui"
 import { generateRandomId } from "./utils"

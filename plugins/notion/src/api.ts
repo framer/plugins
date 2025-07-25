@@ -110,7 +110,7 @@ export function getNotionClient(): Client {
                 // TODO: Improve this flow in the plugin.
                 if (resp.status === 401) {
                     localStorage.removeItem(PLUGIN_KEYS.BEARER_TOKEN)
-                    await framer.closePlugin("Notion Authorization Failed. Re-open the plugin to re-authorize.", {
+                    void framer.closePlugin("Notion Authorization Failed. Re-open the plugin to re-authorize.", {
                         variant: "error",
                     })
                     return resp

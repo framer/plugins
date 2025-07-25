@@ -264,7 +264,7 @@ function versionsReducer(state: VersionsState, action: VersionsAction): Versions
             ...state,
             versions: {
                 ...state.versions,
-                status: LoadingState.Initial,
+                status: state.versions.status === LoadingState.Initial ? LoadingState.Initial : LoadingState.Refreshing,
                 error: undefined,
             },
         }))

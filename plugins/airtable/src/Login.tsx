@@ -3,6 +3,7 @@ import "./App.css"
 import { framer } from "framer-plugin"
 import { useLayoutEffect, useRef } from "react"
 import auth from "./auth"
+import { showLoginUI } from "./ui"
 
 interface AuthenticationProps {
     onAuthenticated: () => void
@@ -12,10 +13,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     useLayoutEffect(() => {
-        void framer.showUI({
-            width: 320,
-            height: 340,
-        })
+        void showLoginUI()
     }, [])
 
     const pollForTokens = (readKey: string) => {

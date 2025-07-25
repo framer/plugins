@@ -13,7 +13,7 @@ const activeCollection = await framer.getActiveManagedCollection()
 
 const isWorkerAlive = await auth.isWorkerAlive()
 if (!isWorkerAlive) {
-    await framer.closePlugin("OAuth worker is not available, please try again.", {
+    framer.closePlugin("OAuth worker is not available, please try again.", {
         variant: "error",
     })
 }
@@ -49,7 +49,7 @@ const { didSync } = await syncExistingCollection(
 )
 
 if (didSync) {
-    await framer.closePlugin("Synchronization successful", {
+    framer.closePlugin("Synchronization successful", {
         variant: "success",
     })
 } else {

@@ -1,3 +1,6 @@
+import { framer } from "framer-plugin"
+import { showLoginUI } from "./ui"
+
 interface Tokens {
     access_token: string
     refresh_token: string
@@ -30,8 +33,11 @@ class Auth {
             : "https://oauth.framer.wtf/airtable-plugin"
     }
 
-    logout() {
+    async logout() {
         this.tokens.clear()
+        await framer.setMenu([])
+        await showLoginUI()
+        window.location.reload()
     }
 
     async refreshTokens() {

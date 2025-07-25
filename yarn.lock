@@ -4685,6 +4685,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"framer-plugin@npm:^3.5.2":
+  version: 3.5.2
+  resolution: "framer-plugin@npm:3.5.2"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/4f2ad2e782b3a18bb827b809366bd5e0c9250917155ba4db762e65e404dff61bb3729f8ffc892bbb7a355c3c82ed7438a0d4b381228b01df47e9c76ad3a80124
+  languageName: node
+  linkType: hard
+
 "fs-minipass@npm:^3.0.0":
   version: 3.0.3
   resolution: "fs-minipass@npm:3.0.3"
@@ -5704,7 +5714,7 @@ __metadata:
     "@notionhq/client": "npm:^3.1.3"
     "@types/react": "npm:^18.3.18"
     "@types/react-dom": "npm:^18.3.5"
-    framer-plugin: "npm:^3.4.0"
+    framer-plugin: "npm:^3.5.2"
     framer-plugin-tools: "npm:^1.0.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"

@@ -15,16 +15,15 @@ export function NoTableAccess({ previousDatabaseId }: { previousDatabaseId: stri
             })
     }
 
-    const handleLogout = () => {
-        auth.logout()
-        window.location.reload()
+    const handleLogout = async () => {
+        await auth.logout()
     }
 
     return (
         <div className="no-access-container">
             <p>
                 Your Notion account does not have access to the synced database. Retry or{" "}
-                <a onClick={handleLogout}>log out</a> of the Notion plugin.
+                <a onClick={() => void handleLogout()}>log out</a> of the Notion plugin.
             </p>
             <div className="actions">
                 <button className="action-button" onClick={handleRetryClick}>

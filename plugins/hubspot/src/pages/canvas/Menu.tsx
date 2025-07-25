@@ -62,7 +62,7 @@ export default function MenuPage() {
 
     return (
         <main>
-            <div className="col-lg items-center pt-[30px] pb-15">
+            <div className="col-lg items-center py-[30px]">
                 <Logo />
                 <div className="col items-center">
                     <h6>Welcome to HubSpot</h6>

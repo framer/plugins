@@ -29,7 +29,7 @@ export default function AccountPage() {
                 <p>{user.hub_id}</p>
             </div>
             <button className="framer-button-destructive w-full" onClick={handleLogout}>
-                Logout
+                Log Out
             </button>
         </main>
     )

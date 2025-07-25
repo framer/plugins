@@ -101,28 +101,32 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
             }
         }
 
-        showUI()
+        void showUI()
     }, [sheetTitle, hasSheet, isSheetPending])
 
     useEffect(() => {
-        framer.setMenu([
-            {
-                label: `View ${sheetTitle} in Google Sheets`,
-                visible: Boolean(spreadsheetId),
-                onAction: () => {
-                    if (!spreadsheetId) return
-                    window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`, "_blank")
+        framer
+            .setMenu([
+                {
+                    label: `View ${sheetTitle ?? ""} in Google Sheets`,
+                    visible: Boolean(spreadsheetId),
+                    onAction: () => {
+                        if (!spreadsheetId) return
+                        window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`, "_blank")
+                    },
                 },
-            },
-            { type: "separator" },
-            {
-                label: "Log Out",
-                onAction: async () => {
-                    await auth.logout()
+                { type: "separator" },
+                {
+                    label: "Log Out",
+                    onAction: () => {
+                        void auth.logout()
+                    },
                 },
-            },
-        ])
-    }, [spreadsheetId])
+            ])
+            .catch((e: unknown) => {
+                console.error(e)
+            })
+    }, [sheetTitle, spreadsheetId])
 
     if (!spreadsheetId || sheetTitle === null) {
         return (
@@ -209,7 +213,7 @@ export function App({ pluginContext }: AppProps) {
                 }),
             })
 
-            await framer.closePlugin()
+            void framer.closePlugin()
         }
 
         void task()

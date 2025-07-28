@@ -8,7 +8,6 @@ import { MapSheetFieldsPage } from "./pages/MapSheetFields"
 import { Problem } from "./pages/Problem"
 import { SelectSheetPage } from "./pages/SelectSheet"
 import {
-    getPluginContext,
     type PluginContext,
     type PluginContextUpdate,
     syncSheet,
@@ -16,6 +15,7 @@ import {
     useSheetQuery,
     useSyncSheetMutation,
 } from "./sheets"
+import { showFieldMappingUI, showLoginUI } from "./ui"
 import { assert, syncMethods } from "./utils"
 
 interface AppProps {
@@ -64,6 +64,8 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
 
     const { data: sheet, isPending: isSheetPending } = useSheetQuery(spreadsheetId ?? "", sheetTitle ?? "")
 
+    const hasSheet = Boolean(spreadsheetId && sheetTitle)
+
     const syncMutation = useSyncSheetMutation({
         onSuccess: result => {
             logSyncResult(result)
@@ -86,19 +88,45 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     }, [isUserInfoError, isSelectSheetError, setContext])
 
     useLayoutEffect(() => {
-        const width = sheetTitle !== null ? 360 : 320
-        const height = sheetTitle !== null ? 425 : 345
+        const showUI = async () => {
+            try {
+                if (hasSheet) {
+                    await showFieldMappingUI()
+                } else {
+                    await showLoginUI()
+                }
+            } catch (error) {
+                console.error(error)
+                framer.notify("Failed to open plugin. Check the logs for more details.", { variant: "error" })
+            }
+        }
 
-        void framer.showUI({
-            width,
-            height,
-            minWidth: width,
-            minHeight: height,
-            // Only allow resizing when mapping fields as the default size could not be enough.
-            // This will keep the given dimensions in the Select Sheet Screen.
-            resizable: sheetTitle !== null,
-        })
-    }, [sheetTitle])
+        void showUI()
+    }, [sheetTitle, hasSheet, isSheetPending])
+
+    useEffect(() => {
+        framer
+            .setMenu([
+                {
+                    label: `View ${sheetTitle ?? ""} in Google Sheets`,
+                    visible: Boolean(spreadsheetId),
+                    onAction: () => {
+                        if (!spreadsheetId) return
+                        window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`, "_blank")
+                    },
+                },
+                { type: "separator" },
+                {
+                    label: "Log Out",
+                    onAction: () => {
+                        void auth.logout()
+                    },
+                },
+            ])
+            .catch((e: unknown) => {
+                console.error(e)
+            })
+    }, [sheetTitle, spreadsheetId])
 
     if (!spreadsheetId || sheetTitle === null) {
         return (
@@ -185,7 +213,7 @@ export function App({ pluginContext }: AppProps) {
                 }),
             })
 
-            await framer.closePlugin()
+            void framer.closePlugin()
         }
 
         void task()
@@ -199,14 +227,7 @@ export function App({ pluginContext }: AppProps) {
                 <p className="text-content">
                     Your Google Account does not have access to the synced spreadsheet. Check your access and try again
                     or{" "}
-                    <a
-                        href="#"
-                        className="text-sheets-green"
-                        onClick={() => {
-                            auth.logout()
-                            void getPluginContext().then(setContext)
-                        }}
-                    >
+                    <a href="#" className="text-sheets-green" onClick={() => void auth.logout()}>
                         log out
                     </a>{" "}
                     and try a different account.

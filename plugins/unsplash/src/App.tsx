@@ -65,8 +65,21 @@ export function App() {
         },
     })
 
+    useEffect(() => {
+        framer.setMenu([
+            {
+                label: "Random Image",
+                enabled: isAllowedToUpsertImage,
+                onAction: () => {
+                    if (!isAllowedToUpsertImage) return
+                    addRandomMutation.mutate(query)
+                },
+            },
+        ])
+    }, [isAllowedToUpsertImage, addRandomMutation, query])
+
     return (
-        <div className="flex flex-col gap-0 pb-4 h-full">
+        <div className="flex flex-col gap-0 h-full">
             <div className="bg-primary mb-[15px] z-10 relative px-[15px]">
                 <input
                     type="text"
@@ -86,19 +99,6 @@ export function App() {
             <AppErrorBoundary>
                 <PhotosList query={debouncedQuery} />
             </AppErrorBoundary>
-            <div className="mt-[15px] px-[15px]">
-                <button
-                    className="items-center flex justify-center relative"
-                    onClick={() => {
-                        if (!isAllowedToUpsertImage) return
-                        addRandomMutation.mutate(query)
-                    }}
-                    disabled={!isAllowedToUpsertImage}
-                    title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
-                >
-                    {addRandomMutation.isPending ? <Spinner size="normal" inheritColor /> : "Random Image"}
-                </button>
-            </div>
         </div>
     )
 }
@@ -227,7 +227,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
     return (
         <div
-            className="overflow-auto relative flex-1 rounded-[8px] mx-[15px] no-scrollbar"
+            className="overflow-auto relative flex-1 rounded-t-[8px] mx-[15px] no-scrollbar"
             ref={scrollRef}
             onScroll={handleScroll}
         >

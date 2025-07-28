@@ -61,12 +61,12 @@ export function App() {
                 altText: randomPhoto.alt_description ?? randomPhoto.description ?? undefined,
             })
 
-            await framer.closePlugin()
+            framer.closePlugin()
         },
     })
 
     useEffect(() => {
-        framer.setMenu([
+        void framer.setMenu([
             {
                 label: "Random Image",
                 enabled: isAllowedToUpsertImage,
@@ -166,7 +166,7 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
                 altText: photo.alt_description ?? photo.description ?? undefined,
             })
 
-            await framer.closePlugin()
+            framer.closePlugin()
         },
     })
 

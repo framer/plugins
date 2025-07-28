@@ -28,7 +28,7 @@ const routes: Route[] = [
         path: "/canvas",
         element: CanvasMenuPage,
         size: {
-            height: 546,
+            height: 561,
         },
         children: [
             {
@@ -185,6 +185,19 @@ export function App() {
                 navigate("/")
                 return
             }
+
+            void framer.setMenu([
+                {
+                    label: "Log Out",
+                    visible: true,
+                    onAction: () => {
+                        auth.logout()
+                        framer.closePlugin(
+                            "To fully remove the integration, uninstall the Framer app from the HubSpot integrations dashboard."
+                        )
+                    },
+                },
+            ])
 
             if (isInCMSModes) {
                 return handleCMSModes()

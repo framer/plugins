@@ -9,7 +9,7 @@ import {
 import * as v from "valibot"
 import { isAshbyItemField } from "./api-types"
 import { type AshbyDataSource, type AshbyField, dataSources } from "./dataSources"
-import { assertNever, decodeHtml, isCollectionReference } from "./utils"
+import { assertNever, isCollectionReference } from "./utils"
 
 export const dataSourceIdPluginKey = "dataSourceId"
 export const slugFieldIdPluginKey = "slugFieldId"
@@ -174,7 +174,7 @@ async function getItems(
                     break
                 case "formattedText":
                     fieldData[field.id] = {
-                        value: decodeHtml(v.is(StringifiableSchema, value) ? String(value) : ""),
+                        value: v.is(StringifiableSchema, value) ? String(value) : "",
                         type: "formattedText",
                     }
                     break
@@ -212,9 +212,13 @@ async function getItems(
                 case "image":
                 case "file":
                 case "enum":
+                case "array":
                     throw new Error(`${field.type} field is not supported.`)
                 default:
-                    assertNever(field)
+                    assertNever(
+                        field,
+                        new Error(`Unsupported field type: ${(field as unknown as { type: string }).type}`)
+                    )
             }
         }
 

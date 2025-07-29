@@ -1,11 +1,5 @@
 import type { AshbyField } from "./dataSources"
 
-export function decodeHtml(html: string): string {
-    const textarea = document.createElement("textarea")
-    textarea.innerHTML = html
-    return textarea.value
-}
-
 export function isCollectionReference(
     field: AshbyField
 ): field is Extract<AshbyField, { type: "collectionReference" | "multiCollectionReference" }> {

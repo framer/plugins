@@ -61,10 +61,10 @@ function FieldMappingRow({
                 <input
                     type="text"
                     className="target-field"
-                    disabled={disabled} // IsDisabled doesn't make sense here since it's not a collection reference field
+                    disabled={isDisabled} // Use isDisabled consistently for clarity
                     placeholder={originalFieldName}
                     value={field.name !== originalFieldName ? field.name : ""}
-                    onChange={event => onNameChange(field.id, event.target.value ?? originalFieldName ?? "")}
+                    onChange={event => onNameChange(field.id, event.target.value || originalFieldName || "")}
                 />
             )}
         </>
@@ -203,7 +203,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
 
             await collection.setFields(removeAshbyKeys(fieldsToSync))
             await syncCollection(boardToken, collection, dataSource, fieldsToSync, selectedSlugField)
-            await framer.closePlugin("Synchronization successful", { variant: "success" })
+            framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)
             framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {

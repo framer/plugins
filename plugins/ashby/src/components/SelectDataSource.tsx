@@ -34,7 +34,7 @@ export function SelectDataSource({
                     onSelectDataSource(dataSource)
                     onSelectBoardToken(boardToken)
                 })
-                .catch(error => {
+                .catch((error: unknown) => {
                     console.error(error)
                     framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
                         variant: "error",
@@ -62,7 +62,9 @@ export function SelectDataSource({
                         required
                         placeholder="Enter Board Token…"
                         value={boardToken}
-                        onChange={event => setBoardToken(event.target.value)}
+                        onChange={event => {
+                            setBoardToken(event.target.value)
+                        }}
                     />
                 </div>
                 <button disabled={isButtonDisabled}>{isLoading ? <div className="framer-spinner" /> : "Next"}</button>

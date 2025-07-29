@@ -1,6 +1,6 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
 import * as v from "valibot"
-import { type AshbyItem, type Job, JobSchema } from "./api-types"
+import { type AshbyItem, type Job, JobAddressSchema, JobSchema } from "./api-types"
 
 export interface AshbyDataSource {
     id: string
@@ -101,23 +101,17 @@ const jobsDataSource = createDataSource(
             id: "address",
             name: "Address",
             type: "string",
-            getValue: value => {
-                if (typeof value === "object" && value !== null && "postalAddress" in value) {
-                    const address = (
-                        value as {
-                            postalAddress: { addressLocality: string; addressRegion: string; addressCountry: string }
-                        }
-                    ).postalAddress
-                    const parts = [
-                        address?.addressLocality?.trim(),
-                        address?.addressRegion?.trim(),
-                        address?.addressCountry?.trim(),
-                    ].filter(Boolean)
+            getValue: (value: unknown) => {
+                const address = v.parse(JobAddressSchema, value).postalAddress
 
-                    return parts.length > 0 ? parts.join(", ") : null
-                }
+                const parts = [
+                    address.addressLocality?.trim(),
+                    address.addressRegion?.trim(),
+                    address.addressCountry?.trim(),
+                ].filter(Boolean)
 
-                return null
+                // use Set to remove duplicates (e.g. "San Francisco, CA, CA")
+                return parts.length > 0 ? [...new Set(parts)].join(", ") : null
             },
         },
     ]

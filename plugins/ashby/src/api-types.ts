@@ -24,7 +24,7 @@ const CompensationTiersSchema = v.object({
     components: v.array(CompensationComponentSchema),
 })
 
-const JobAddressSchema = v.object({
+export const JobAddressSchema = v.object({
     postalAddress: AddressSchema,
 })
 

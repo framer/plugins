@@ -15,5 +15,5 @@ export function isMissingReferenceField(field: AshbyField): boolean {
 }
 
 export function assertNever(x: never, error?: unknown): never {
-    throw error || new Error((x as unknown) ? `Unexpected value: ${x}` : "Application entered invalid state")
+    throw error instanceof Error ? error : new Error(`Unexpected value: ${String(x)}`)
 }

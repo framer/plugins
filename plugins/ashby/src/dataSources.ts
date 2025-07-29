@@ -151,8 +151,8 @@ function createDataSource(
  */
 export function removeAshbyKeys(fields: AshbyField[]): ManagedCollectionFieldInput[] {
     return fields.map(originalField => {
-        const field = { ...originalField }
-        delete field.getValue
+        const { getValue, ...field } = originalField
+
         return field
     })
 }

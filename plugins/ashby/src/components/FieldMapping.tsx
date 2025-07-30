@@ -81,13 +81,13 @@ function FieldMappingRow({
 const emptyArray: AshbyField[] = []
 
 interface FieldMappingProps {
-    boardToken: string
+    jobBoardName: string
     collection: ManagedCollection
     dataSource: AshbyDataSource
     initialSlugFieldId: string | null
 }
 
-export function FieldMapping({ boardToken, collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
+export function FieldMapping({ jobBoardName, collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
     )
@@ -209,7 +209,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
             }
 
             await collection.setFields(removeAshbyKeys(fieldsToSync))
-            await syncCollection(boardToken, collection, dataSource, fieldsToSync, selectedSlugField)
+            await syncCollection(jobBoardName, collection, dataSource, fieldsToSync, selectedSlugField)
             framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)

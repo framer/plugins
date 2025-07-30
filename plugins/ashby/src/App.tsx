@@ -5,18 +5,18 @@ import { useEffect, useLayoutEffect, useState } from "react"
 import { FieldMapping } from "./components/FieldMapping"
 import { Loading } from "./components/Loading"
 import { SelectDataSource } from "./components/SelectDataSource"
-import { getDataSource, spaceIdPluginKey } from "./data"
+import { getDataSource, jobBoardNamePluginKey } from "./data"
 import type { AshbyDataSource } from "./dataSources"
 
 interface AppProps {
     collection: ManagedCollection
     previousDataSourceId: string | null
     previousSlugFieldId: string | null
-    previousBoardToken: string | null
+    previousJobBoardName: string | null
 }
 
-export function App({ collection, previousDataSourceId, previousSlugFieldId, previousBoardToken }: AppProps) {
-    const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
+export function App({ collection, previousDataSourceId, previousSlugFieldId, previousJobBoardName }: AppProps) {
+    const [jobBoardName, setJobBoardName] = useState<string>(previousJobBoardName ?? "")
     const [dataSource, setDataSource] = useState<AshbyDataSource | null>(null)
     const [isLoading, setIsLoading] = useState(false)
 
@@ -33,10 +33,10 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
     }, [dataSource])
 
     useEffect(() => {
-        if (!previousBoardToken || !previousDataSourceId) return
+        if (!previousJobBoardName || !previousDataSourceId) return
 
         setIsLoading(true)
-        getDataSource(previousBoardToken, previousDataSourceId)
+        getDataSource(previousJobBoardName, previousDataSourceId)
             .then(setDataSource)
             .catch((error: unknown) => {
                 console.error(`Error loading previously configured data source “${previousDataSourceId}”.`, error)
@@ -47,28 +47,28 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
             .finally(() => {
                 setIsLoading(false)
             })
-    }, [previousDataSourceId, previousBoardToken])
+    }, [previousDataSourceId, previousJobBoardName])
 
     useEffect(() => {
-        if (!boardToken) return
-        if (boardToken === previousBoardToken) return
+        if (!jobBoardName) return
+        if (jobBoardName === previousJobBoardName) return
 
         if (framer.isAllowedTo("setPluginData")) {
-            void framer.setPluginData(spaceIdPluginKey, boardToken)
+            void framer.setPluginData(jobBoardNamePluginKey, jobBoardName)
         }
-    }, [boardToken, previousBoardToken])
+    }, [jobBoardName, previousJobBoardName])
 
     if (isLoading) {
         return <Loading />
     }
 
-    if (!boardToken || !dataSource) {
+    if (!jobBoardName || !dataSource) {
         return (
             <SelectDataSource
-                onSelectBoardToken={setBoardToken}
+                onSelectJobBoardName={setJobBoardName}
                 onSelectDataSource={setDataSource}
                 previousDataSourceId={previousDataSourceId}
-                previousBoardToken={previousBoardToken}
+                previousJobBoardName={previousJobBoardName}
             />
         )
     }
@@ -76,7 +76,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
     return (
         <FieldMapping
             collection={collection}
-            boardToken={boardToken}
+            jobBoardName={jobBoardName}
             dataSource={dataSource}
             initialSlugFieldId={previousSlugFieldId}
         />

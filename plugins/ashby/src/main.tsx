@@ -4,25 +4,25 @@ import { framer } from "framer-plugin"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { App } from "./App.tsx"
-import { dataSourceIdPluginKey, slugFieldIdPluginKey, spaceIdPluginKey, syncExistingCollection } from "./data.ts"
+import { dataSourceIdPluginKey, jobBoardNamePluginKey, slugFieldIdPluginKey, syncExistingCollection } from "./data.ts"
 
-const lastUsedBoardToken = await framer.getPluginData(spaceIdPluginKey)
+const lastUsedJobBoardName = await framer.getPluginData(jobBoardNamePluginKey)
 
 const activeCollection = await framer.getActiveManagedCollection()
 
-const [previousDataSourceId, previousSlugFieldId, previousCollectionBoardToken] = await Promise.all([
+const [previousDataSourceId, previousSlugFieldId, previousCollectionJobBoardName] = await Promise.all([
     activeCollection.getPluginData(dataSourceIdPluginKey),
     activeCollection.getPluginData(slugFieldIdPluginKey),
-    activeCollection.getPluginData(spaceIdPluginKey),
+    activeCollection.getPluginData(jobBoardNamePluginKey),
 ])
 
-const previousBoardToken = previousCollectionBoardToken ?? lastUsedBoardToken
+const previousJobBoardName = previousCollectionJobBoardName ?? lastUsedJobBoardName
 
 const { didSync } = await syncExistingCollection(
     activeCollection,
     previousDataSourceId,
     previousSlugFieldId,
-    previousBoardToken
+    previousJobBoardName
 )
 
 if (didSync) {
@@ -39,7 +39,7 @@ if (didSync) {
                 collection={activeCollection}
                 previousDataSourceId={previousDataSourceId}
                 previousSlugFieldId={previousSlugFieldId}
-                previousBoardToken={previousBoardToken}
+                previousJobBoardName={previousJobBoardName}
             />
         </StrictMode>
     )

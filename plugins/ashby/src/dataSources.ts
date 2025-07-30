@@ -12,7 +12,7 @@ export interface AshbyDataSource {
      * The rest of the fields are the fields of the data source.
      */
     fields: readonly AshbyField[]
-    fetch: (boardToken: string) => Promise<Job[]>
+    fetch: (jobBoardName: string) => Promise<Job[]>
 }
 
 async function fetchAshbyData(url: string): Promise<unknown> {
@@ -48,8 +48,8 @@ const JobApiResponseSchema = v.object({ jobs: v.array(JobSchema) })
 const jobsDataSource = createDataSource(
     {
         name: "Jobs",
-        fetch: async (boardToken: string): Promise<Job[]> => {
-            const url = `https://api.ashbyhq.com/posting-api/job-board/${boardToken}?includeCompensation=true`
+        fetch: async (jobBoardName: string): Promise<Job[]> => {
+            const url = `https://api.ashbyhq.com/posting-api/job-board/${jobBoardName}?includeCompensation=true`
 
             // use safeParse to log the issues
             const data = v.safeParse(JobApiResponseSchema, await fetchAshbyData(url))
@@ -125,7 +125,7 @@ function createDataSource(
         fetch,
     }: {
         name: string
-        fetch: (boardToken: string) => Promise<Job[]>
+        fetch: (jobBoardName: string) => Promise<Job[]>
     },
     [idField, slugField, ...fields]: [AshbyField, AshbyField, ...AshbyField[]]
 ): AshbyDataSource {

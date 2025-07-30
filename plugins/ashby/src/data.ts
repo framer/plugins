@@ -13,7 +13,7 @@ import { assertNever, isCollectionReference } from "./utils"
 
 export const dataSourceIdPluginKey = "dataSourceId"
 export const slugFieldIdPluginKey = "slugFieldId"
-export const spaceIdPluginKey = "spaceId"
+export const jobBoardNamePluginKey = "jobBoardName"
 
 function replaceSupportedCollections(
     dataSource: AshbyDataSource,
@@ -38,8 +38,8 @@ function replaceSupportedCollections(
     return { ...dataSource, fields }
 }
 
-export async function getDataSource(boardToken: string, dataSourceId: string): Promise<AshbyDataSource> {
-    if (!boardToken) {
+export async function getDataSource(jobBoardName: string, dataSourceId: string): Promise<AshbyDataSource> {
+    if (!jobBoardName) {
         throw new Error("No Board Token found. Please select a board.")
     }
 
@@ -53,8 +53,8 @@ export async function getDataSource(boardToken: string, dataSourceId: string): P
 
     const managedCollections = await framer.getManagedCollections()
     for (const collection of managedCollections) {
-        const collectionBoardToken = await collection.getPluginData(spaceIdPluginKey)
-        if (collectionBoardToken !== boardToken) {
+        const collectionJobBoardName = await collection.getPluginData(jobBoardNamePluginKey)
+        if (collectionJobBoardName !== jobBoardName) {
             continue
         }
 
@@ -101,11 +101,11 @@ const ArrayWithIdsSchema = v.array(v.object({ id: v.number() }))
 async function getItems(
     dataSource: AshbyDataSource,
     fieldsToSync: readonly ManagedCollectionFieldInput[],
-    { boardToken, slugFieldId }: { boardToken: string; slugFieldId: string }
+    { jobBoardName, slugFieldId }: { jobBoardName: string; slugFieldId: string }
 ): Promise<ManagedCollectionItemInput[]> {
     const items: ManagedCollectionItemInput[] = []
 
-    const dataItems = await dataSource.fetch(boardToken)
+    const dataItems = await dataSource.fetch(jobBoardName)
 
     const itemIdBySlug = new Map<string, string>()
     const idField = fieldsToSync[0]
@@ -234,7 +234,7 @@ async function getItems(
 }
 
 export async function syncCollection(
-    boardToken: string,
+    jobBoardName: string,
     collection: ManagedCollection,
     dataSource: AshbyDataSource,
     fields: readonly ManagedCollectionFieldInput[],
@@ -242,7 +242,7 @@ export async function syncCollection(
 ): Promise<void> {
     const existingItemsIds = await collection.getItemIds()
     const items = await getItems(dataSource, fields, {
-        boardToken,
+        jobBoardName,
         slugFieldId: slugField.id,
     })
     const itemIds = new Set(items.map(item => item.id))
@@ -251,7 +251,7 @@ export async function syncCollection(
     await collection.removeItems(unsyncedItemsIds)
     await collection.addItems(items)
 
-    await collection.setPluginData(spaceIdPluginKey, boardToken)
+    await collection.setPluginData(jobBoardNamePluginKey, jobBoardName)
     await collection.setPluginData(dataSourceIdPluginKey, dataSource.id)
     await collection.setPluginData(slugFieldIdPluginKey, slugField.id)
 }
@@ -266,9 +266,9 @@ export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDataSourceId: string | null,
     previousSlugFieldId: string | null,
-    previousBoardToken: string | null
+    previousJobBoardName: string | null
 ): Promise<{ didSync: boolean }> {
-    if (!previousDataSourceId || !previousBoardToken) {
+    if (!previousDataSourceId || !previousJobBoardName) {
         return { didSync: false }
     }
 
@@ -284,7 +284,7 @@ export async function syncExistingCollection(
     }
 
     try {
-        const dataSource = await getDataSource(previousBoardToken, previousDataSourceId)
+        const dataSource = await getDataSource(previousJobBoardName, previousDataSourceId)
         const existingFields = await collection.getFields()
 
         const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)
@@ -295,7 +295,7 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        await syncCollection(previousBoardToken, collection, dataSource, existingFields, slugField)
+        await syncCollection(previousJobBoardName, collection, dataSource, existingFields, slugField)
         return { didSync: true }
     } catch (error) {
         console.error(error)

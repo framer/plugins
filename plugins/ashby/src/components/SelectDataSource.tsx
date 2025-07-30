@@ -5,19 +5,19 @@ import { getDataSource, syncMethods } from "../data"
 import { type AshbyDataSource, dataSources } from "../dataSources"
 
 interface SelectDataSourceProps {
-    previousBoardToken?: string | null
-    onSelectBoardToken: (boardToken: string) => void
+    previousJobBoardName?: string | null
+    onSelectJobBoardName: (jobBoardName: string) => void
     previousDataSourceId?: string | null
     onSelectDataSource: (dataSource: AshbyDataSource) => void
 }
 
 export function SelectDataSource({
-    previousBoardToken,
-    onSelectBoardToken,
+    previousJobBoardName,
+    onSelectJobBoardName,
     previousDataSourceId,
     onSelectDataSource,
 }: SelectDataSourceProps) {
-    const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
+    const [jobBoardName, setJobBoardName] = useState<string>(previousJobBoardName ?? "")
     const [selectedDataSourceId] = useState<string>(previousDataSourceId ?? dataSources[0]?.id ?? "")
     const [isLoading, setIsLoading] = useState(false)
 
@@ -29,10 +29,10 @@ export function SelectDataSource({
 
             setIsLoading(true)
 
-            getDataSource(boardToken, selectedDataSourceId)
+            getDataSource(jobBoardName, selectedDataSourceId)
                 .then(dataSource => {
                     onSelectDataSource(dataSource)
-                    onSelectBoardToken(boardToken)
+                    onSelectJobBoardName(jobBoardName)
                 })
                 .catch((error: unknown) => {
                     console.error(error)
@@ -44,10 +44,10 @@ export function SelectDataSource({
                     setIsLoading(false)
                 })
         },
-        [boardToken, selectedDataSourceId, onSelectDataSource, onSelectBoardToken]
+        [jobBoardName, selectedDataSourceId, onSelectDataSource, onSelectJobBoardName]
     )
 
-    const isButtonDisabled = !boardToken || !selectedDataSourceId || isLoading || !isAllowedToManage
+    const isButtonDisabled = !jobBoardName || !selectedDataSourceId || isLoading || !isAllowedToManage
 
     return (
         <main className="framer-hide-scrollbar setup">
@@ -57,13 +57,13 @@ export function SelectDataSource({
                 <div>
                     <p>Board Token</p>
                     <input
-                        id="boardToken"
+                        id="jobBoardName"
                         type="text"
                         required
                         placeholder="Enter Board Token…"
-                        value={boardToken}
+                        value={jobBoardName}
                         onChange={event => {
-                            setBoardToken(event.target.value)
+                            setJobBoardName(event.target.value)
                         }}
                     />
                 </div>

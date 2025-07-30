@@ -549,8 +549,28 @@ export async function getPluginContext(): Promise<PluginContext> {
             id: uniqueHeaderRowNames.find(name => name === field.name) ?? uniqueHeaderRowNames[index] ?? field.name,
         }))
     } else {
-        ignoredColumns = v.parse(v.array(v.string()), JSON.parse(rawIgnoredColumns))
         slugColumn = storedSlugColumn
+        const result = v.safeParse(v.pipe(v.string(), v.parseJson(), v.array(v.string())), rawIgnoredColumns)
+
+        if (result.success) {
+            ignoredColumns = result.output
+        } else if (framer.isAllowedTo("ManagedCollection.setPluginData")) {
+            ignoredColumns = await salvageIgnoredColumns(rawIgnoredColumns, ignoredColumns =>
+                collection.setPluginData(PLUGIN_IGNORED_COLUMNS_KEY, JSON.stringify(ignoredColumns))
+            )
+
+            // Notify the user to be sure they're aware of the issue, to be sure they acknowledge it make it persistent
+            framer.notify("Some columns couldn’t be restored. Please review your ignored columns in Manage.", {
+                variant: "warning",
+                durationMs: Infinity,
+            })
+        } else {
+            ignoredColumns = []
+
+            framer.notify("Configuration of ignored columns is invalid. You need write permissions to fix it.", {
+                variant: "error",
+            })
+        }
     }
 
     // We should not hash ignored fields since they are not synced to Framer,
@@ -610,4 +630,23 @@ export const useSyncSheetMutation = ({
         onSuccess,
         onError,
     })
+}
+
+async function salvageIgnoredColumns(
+    rawIgnoredColumns: unknown,
+    setIgnoredColumns: (ignoredColumns: string[]) => Promise<void>
+): Promise<string[]> {
+    let result: string[]
+
+    const atLeastAnArrayResult = v.safeParse(v.pipe(v.string(), v.parseJson(), v.array(v.unknown())), rawIgnoredColumns)
+
+    if (atLeastAnArrayResult.success) {
+        result = atLeastAnArrayResult.output.filter(i => typeof i === "string")
+    } else {
+        result = []
+    }
+
+    await setIgnoredColumns(result)
+
+    return result
 }

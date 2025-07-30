@@ -55,12 +55,12 @@ export function SelectDataSource({
 
             <form onSubmit={handleSubmit}>
                 <div>
-                    <p>Board Token</p>
+                    <p>Job Board Name</p>
                     <input
                         id="jobBoardName"
                         type="text"
                         required
-                        placeholder="Enter Board Token…"
+                        placeholder="Enter Job Board Name…"
                         value={jobBoardName}
                         onChange={event => {
                             setJobBoardName(event.target.value)

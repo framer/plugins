@@ -229,7 +229,6 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
         <main className="framer-hide-scrollbar mapping">
             <form
                 onSubmit={event => {
-                    event.preventDefault()
                     void handleSubmit(event)
                 }}
             >

@@ -10,9 +10,11 @@ const lastUsedBoardToken = await framer.getPluginData(spaceIdPluginKey)
 
 const activeCollection = await framer.getActiveManagedCollection()
 
-const previousDataSourceId = await activeCollection.getPluginData(dataSourceIdPluginKey)
-const previousSlugFieldId = await activeCollection.getPluginData(slugFieldIdPluginKey)
-const previousCollectionBoardToken = await activeCollection.getPluginData(spaceIdPluginKey)
+const [previousDataSourceId, previousSlugFieldId, previousCollectionBoardToken] = await Promise.all([
+    activeCollection.getPluginData(dataSourceIdPluginKey),
+    activeCollection.getPluginData(slugFieldIdPluginKey),
+    activeCollection.getPluginData(spaceIdPluginKey),
+])
 
 const previousBoardToken = previousCollectionBoardToken ?? lastUsedBoardToken
 

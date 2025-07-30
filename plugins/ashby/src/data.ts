@@ -7,7 +7,7 @@ import {
     type ProtectedMethod,
 } from "framer-plugin"
 import * as v from "valibot"
-import { isAshbyItemField } from "./api-types"
+import { hasOwnProperty } from "./api-types"
 import { type AshbyDataSource, type AshbyField, dataSources } from "./dataSources"
 import { assertNever, isCollectionReference } from "./utils"
 
@@ -114,7 +114,7 @@ async function getItems(
     }
 
     for (const item of dataItems) {
-        if (!isAshbyItemField(slugFieldId, item)) {
+        if (!hasOwnProperty(item, slugFieldId)) {
             throw new Error(`No slug field found in data source.`)
         }
 

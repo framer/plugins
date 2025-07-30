@@ -1,6 +1,6 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
 import * as v from "valibot"
-import { type AshbyItem, type Job, JobAddressSchema, JobSchema } from "./api-types"
+import { type Job, JobAddressSchema, JobSchema } from "./api-types"
 
 export interface AshbyDataSource {
     id: string
@@ -12,7 +12,7 @@ export interface AshbyDataSource {
      * The rest of the fields are the fields of the data source.
      */
     fields: readonly AshbyField[]
-    fetch: (boardToken: string) => Promise<AshbyItem[]>
+    fetch: (boardToken: string) => Promise<Job[]>
 }
 
 async function fetchAshbyData(url: string): Promise<unknown> {
@@ -125,7 +125,7 @@ function createDataSource(
         fetch,
     }: {
         name: string
-        fetch: (boardToken: string) => Promise<AshbyItem[]>
+        fetch: (boardToken: string) => Promise<Job[]>
     },
     [idField, slugField, ...fields]: [AshbyField, AshbyField, ...AshbyField[]]
 ): AshbyDataSource {

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "../data"
 import { type AshbyDataSource, type AshbyField, removeAshbyKeys } from "../dataSources"
 import { isCollectionReference, isMissingReferenceField } from "../utils"
-import { ChevronIcon } from "./Icons"
+import { ChevronIcon } from "./ChevronIcon"
 import { Loading } from "./Loading"
 
 interface FieldMappingRowProps {
@@ -65,7 +65,7 @@ function FieldMappingRow({
                 <input
                     type="text"
                     className="target-field"
-                    disabled={isDisabled} // Use isDisabled consistently for clarity
+                    disabled={isDisabled}
                     placeholder={originalFieldName}
                     value={field.name !== originalFieldName ? field.name : ""}
                     onChange={event => {

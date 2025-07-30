@@ -40,7 +40,7 @@ function replaceSupportedCollections(
 
 export async function getDataSource(jobBoardName: string, dataSourceId: string): Promise<AshbyDataSource> {
     if (!jobBoardName) {
-        throw new Error("No Board Token found. Please select a board.")
+        throw new Error("No Job Board Name found. Please select a board.")
     }
 
     const dataSource = dataSources.find(option => option.id === dataSourceId)

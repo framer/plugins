@@ -66,9 +66,9 @@ export type Address = v.InferOutput<typeof AddressSchema>
 export type CompensationComponent = v.InferOutput<typeof CompensationComponentSchema>
 export type CompensationTiers = v.InferOutput<typeof CompensationTiersSchema>
 
-export type AshbyItem = Job
-
-export function isAshbyItemField<T extends AshbyItem>(field: unknown, itemType: T): field is keyof T {
-    if (typeof field !== "string" || field === "") return false
-    return Object.prototype.hasOwnProperty.call(itemType, field)
+export function hasOwnProperty<T extends object, Key extends PropertyKey>(
+    object: T,
+    key: Key
+): object is T & Record<Key, unknown> {
+    return Object.hasOwn(object, key)
 }

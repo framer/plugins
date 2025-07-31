@@ -211,6 +211,7 @@ const candidatesDataSource = createDataSource(
                 return null
             },
         },
+
         { id: "positive_ratings", name: "Ratings", type: "number" },
         { id: "photo_thumb_url", name: "Photo Thumb Url", type: "string" },
         { id: "has_avatar", name: "Has Avatar", type: "boolean" },
@@ -271,8 +272,7 @@ function createDataSource(
  */
 export function removeRecruiteeKeys(fields: RecruiteeField[]): ManagedCollectionFieldInput[] {
     return fields.map(originalField => {
-        const field = { ...originalField }
-        delete field.getValue
+        const { getValue, ...field } = originalField
         return field
     })
 }

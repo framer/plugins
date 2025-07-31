@@ -31,7 +31,7 @@ export function App({
     useLayoutEffect(() => {
         const hasDataSourceSelected = Boolean(dataSource)
 
-        framer.showUI({
+        void framer.showUI({
             width: hasDataSourceSelected ? 400 : 320,
             height: hasDataSourceSelected ? 427 : 335,
             minHeight: hasDataSourceSelected ? 427 : undefined,
@@ -46,7 +46,7 @@ export function App({
         setIsLoading(true)
         getDataSource(previousCompanyId, previousBoardToken, previousDataSourceId)
             .then(setDataSource)
-            .catch(error => {
+            .catch((error: unknown) => {
                 console.error(`Error loading previously configured data source “${previousDataSourceId}”.`, error)
                 framer.notify(`Error loading previously configured data source “${previousDataSourceId}”.`, {
                     variant: "error",
@@ -62,7 +62,7 @@ export function App({
         if (boardToken === previousBoardToken) return
 
         if (framer.isAllowedTo("setPluginData")) {
-            framer.setPluginData(spaceIdPluginKey, boardToken)
+            void framer.setPluginData(spaceIdPluginKey, boardToken)
         }
     }, [boardToken, previousBoardToken])
 
@@ -71,7 +71,7 @@ export function App({
         if (companyId === previousCompanyId) return
 
         if (framer.isAllowedTo("setPluginData")) {
-            framer.setPluginData(companyIdPluginKey, companyId)
+            void framer.setPluginData(companyIdPluginKey, companyId)
         }
     }, [companyId, previousCompanyId])
 

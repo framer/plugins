@@ -18,7 +18,9 @@ export function bytesFromCanvas(canvas: HTMLCanvasElement): Promise<Uint8Array |
 
                 resolve(new Uint8Array(reader.result as ArrayBuffer))
             }
-            reader.onerror = () => reject(new Error("Could not read from blob"))
+            reader.onerror = () => {
+                reject(new Error("Could not read from blob"))
+            }
             reader.readAsArrayBuffer(blob)
         })
     })

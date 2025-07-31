@@ -1,10 +1,11 @@
-/* eslint-disable -- TODO: fix this */
-// @ts-nocheck - TODO: fix this
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- ogl types are untrustworthy */
 
 import {
     Camera,
-    type GLTFDescription,
+    Geometry,
+    type GLTF,
     GLTFLoader,
+    type GLTFMaterial,
     type OGLRenderingContext,
     Orbit,
     Program,
@@ -422,6 +423,12 @@ function useFBO(gl: OGLRenderingContext, { width = 1024, height = 1024 }: { widt
     return { scene, target, camera, controls }
 }
 
+function hasProgram(
+    node: Transform & { program?: { gltfMaterial?: GLTFMaterial } }
+): node is Transform & { program: { gltfMaterial?: GLTFMaterial } } {
+    return Boolean(node.program)
+}
+
 export function useGLBTexture(
     gl: OGLRenderingContext,
     src: string | undefined,
@@ -450,8 +457,10 @@ export function useGLBTexture(
     controls.enabled = !!src
 
     const createProgram = useCallback(
-        node => {
-            const gltf = node.program.gltfMaterial || {}
+        (
+            node: Transform & { geometry?: Geometry; boneTexture?: Texture; program: { gltfMaterial?: GLTFMaterial } }
+        ) => {
+            const gltf = node.program.gltfMaterial ?? ({} as GLTFMaterial)
             let { vertex, fragment } = shader
 
             const vertexPrefix = gl.renderer.isWebgl2
@@ -475,9 +484,9 @@ export function useGLBTexture(
                     `
 
             const defines = `
-                        ${node.geometry.attributes.uv ? `#define UV` : ``}
-                        ${node.geometry.attributes.normal ? `#define NORMAL` : ``}
-                        ${node.geometry.isInstanced ? `#define INSTANCED` : ``}
+                        ${node.geometry?.attributes.uv ? `#define UV` : ``}
+                        ${node.geometry?.attributes.normal ? `#define NORMAL` : ``}
+                        ${node.geometry?.isInstanced ? `#define INSTANCED` : ``}
                         ${node.boneTexture ? `#define SKINNING` : ``}
                         ${gltf.alphaMode === "MASK" ? `#define ALPHA_MASK` : ``}
                         ${gltf.baseColorTexture ? `#define COLOR_MAP` : ``}
@@ -500,8 +509,8 @@ export function useGLBTexture(
                     tRM: {
                         value: gltf.metallicRoughnessTexture ? gltf.metallicRoughnessTexture.texture : null,
                     },
-                    uRoughness: { value: gltf.roughnessFactor !== undefined ? gltf.roughnessFactor : 1 },
-                    uMetallic: { value: gltf.metallicFactor !== undefined ? gltf.metallicFactor : 1 },
+                    uRoughness: { value: gltf.roughnessFactor ?? 1 },
+                    uMetallic: { value: gltf.metallicFactor ?? 1 },
 
                     tNormal: { value: gltf.normalTexture ? gltf.normalTexture.texture : null },
                     uNormalScale: { value: gltf.normalTexture ? gltf.normalTexture.scale || 1 : 1 },
@@ -533,14 +542,16 @@ export function useGLBTexture(
     )
 
     const addToScene = useCallback(
-        (gltf: GLTFDescription) => {
-            scene.children.forEach(child => child.setParent(null))
+        (gltf: GLTF) => {
+            scene.children.forEach(child => {
+                child.setParent(null)
+            })
 
             const s = gltf.scene || gltf.scenes[0]
             s.forEach(root => {
                 root.setParent(scene)
-                root.traverse(node => {
-                    if (node.program) {
+                root.traverse((node: Transform & { program?: Program & { gltfMaterial?: GLTFMaterial } }) => {
+                    if (hasProgram(node)) {
                         node.program = createProgram(node)
                     }
                 })
@@ -572,21 +583,25 @@ export function useGLBTexture(
 
                     // Get max world scale axis
                     mesh.worldMatrix.getScaling(boundsScale)
-                    const radiusScale = Math.max(Math.max(boundsScale[0], boundsScale[1]), boundsScale[2])
+                    const radiusScale = Math.max(Math.max(boundsScale.x, boundsScale.y), boundsScale.z)
                     const radius = mesh.geometry.bounds.radius * radiusScale
 
                     boundsMin.set(-radius).add(boundsCenter)
                     boundsMax.set(+radius).add(boundsCenter)
 
                     // Apply world matrix to bounds
-                    for (let i = 0; i < 3; i++) {
-                        min[i] = Math.min(min[i], boundsMin[i])
-                        max[i] = Math.max(max[i], boundsMax[i])
-                    }
+
+                    min.x = Math.min(min.x, boundsMin.x)
+                    min.y = Math.min(min.y, boundsMin.y)
+                    min.z = Math.min(min.z, boundsMin.z)
+
+                    max.x = Math.max(max.x, boundsMax.x)
+                    max.y = Math.max(max.y, boundsMax.y)
+                    max.z = Math.max(max.z, boundsMax.z)
                 })
             })
             scale.sub(max, min)
-            const maxRadius = Math.max(Math.max(scale[0], scale[1]), scale[2]) * 0.5
+            const maxRadius = Math.max(Math.max(scale.x, scale.y), scale.z) * 0.5
             center.add(min, max).divide(2)
 
             camera.position
@@ -603,11 +618,11 @@ export function useGLBTexture(
         [scene, createProgram]
     )
 
-    const [glb, setGlb] = useState<GLTFDescription | null>(null)
+    const [glb, setGlb] = useState<GLTF | null>(null)
 
     const render = useCallback(() => {
-        if (glb && glb.animations && glb.animations.length) {
-            let { animation } = glb.animations[0]
+        if (glb?.animations?.[0]) {
+            const { animation } = glb.animations[0]
             animation.elapsed += 0.01
             animation.update()
         }
@@ -628,31 +643,14 @@ export function useGLBTexture(
 
         if (!src) return
 
-        fetch(src)
-            .then(response => {
-                if (type === "glb") {
-                    return response.arrayBuffer()
-                } else {
-                    return response.text()
-                }
-            })
-            .then(result => {
-                let desc
+        const task = async () => {
+            const gltf = await GLTFLoader.load(gl, src)
+            if (currentSrcRef.current !== src) return
+            setGlb(gltf)
+            addToScene(gltf)
+            onUpdate(target.texture)
+        }
 
-                if (type === "glb") {
-                    desc = GLTFLoader.unpackGLB(result)
-                } else {
-                    desc = JSON.parse(result)
-                }
-
-                return GLTFLoader.parse(gl, desc, "")
-            })
-            // .then(desc => GLTFLoader.parse(gl, desc, ""))
-            .then(glb => {
-                if (currentSrcRef.current !== src) return
-                setGlb(glb)
-                addToScene(glb)
-                onUpdate(target.texture)
-            })
+        void task()
     }, [src, target, scene, type, ...deps])
 }

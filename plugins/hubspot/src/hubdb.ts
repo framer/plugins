@@ -1,3 +1,6 @@
+import { type Column, ColumnTypeEnum } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/Column"
+import type { HubDbTableRowV3 } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/HubDbTableRowV3"
+import type { Option } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/Option"
 import { useMutation } from "@tanstack/react-query"
 import {
     type FieldDataEntryInput,
@@ -6,17 +9,7 @@ import {
     ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
-import pLimit from "p-limit"
-import {
-    type Column,
-    fetchPublishedTable,
-    fetchTableRows,
-    type HubDBCellValue,
-    type HubDBFile,
-    type HubDBImage,
-    type HubDBValueOption,
-    type HubDbTableRowV3,
-} from "./api"
+import { fetchPublishedTable, fetchTableRows, type HubDBFile, type HubDBImage, type HubDBValueOption } from "./api"
 import {
     computeFieldSets,
     createFieldSetHash,
@@ -32,9 +25,6 @@ import { assert, isDefined } from "./utils"
 const PLUGIN_TABLE_ID_KEY = "hubdbTableId"
 const PLUGIN_INCLUDED_FIELDS_HASH_KEY = "hubdbIncludedFieldHash"
 const PLUGIN_SLUG_FIELD_ID_KEY = "hubdbSlugFieldId"
-
-// Public HubSpot apps have a max of 100 requests / 10s
-const CONCURRENCY_LIMIT = 5
 
 export interface SyncMutationOptions {
     fields: ManagedCollectionFieldInput[]
@@ -74,48 +64,48 @@ export type HubDBPluginContext = HubDBPluginContextNew | HubDBPluginContextUpdat
 /**
  * Get the value of a HubDB cell in a format compatible with a collection field.
  */
-function getFieldValue(column: Column, cellValue: HubDBCellValue): FieldDataEntryInput | undefined {
+function getFieldValue(column: Column, cellValue: unknown): FieldDataEntryInput | undefined {
     switch (column.type) {
-        case "TEXT": {
+        case ColumnTypeEnum.Text: {
             if (typeof cellValue !== "string") return undefined
             return { type: "string", value: cellValue }
         }
 
-        case "URL": {
+        case ColumnTypeEnum.Url: {
             if (typeof cellValue !== "string") return undefined
             return { type: "link", value: cellValue }
         }
 
-        case "RICHTEXT": {
+        case ColumnTypeEnum.Richtext: {
             if (typeof cellValue !== "string") return undefined
             return { type: "formattedText", value: cellValue }
         }
 
-        case "CURRENCY":
-        case "NUMBER": {
+        case ColumnTypeEnum.Currency:
+        case ColumnTypeEnum.Number: {
             if (typeof cellValue !== "number") return undefined
             return { type: "number", value: cellValue }
         }
 
-        case "DATE":
-        case "DATETIME": {
+        case ColumnTypeEnum.Date:
+        case ColumnTypeEnum.Datetime: {
             if (typeof cellValue !== "number") return undefined
             return { type: "date", value: new Date(cellValue).toUTCString() }
         }
 
-        case "BOOLEAN": {
+        case ColumnTypeEnum.Boolean: {
             return { type: "boolean", value: cellValue === 1 }
         }
 
-        case "SELECT": {
+        case ColumnTypeEnum.Select: {
             return { type: "enum", value: (cellValue as HubDBValueOption).name }
         }
 
-        case "IMAGE": {
+        case ColumnTypeEnum.Image: {
             return { type: "image", value: (cellValue as HubDBImage).url }
         }
 
-        case "FILE": {
+        case ColumnTypeEnum.File: {
             return { type: "file", value: (cellValue as HubDBFile).url }
         }
 
@@ -138,36 +128,36 @@ export function getCollectionFieldForHubDBColumn(column: Column): ManagedCollect
     }
 
     switch (column.type) {
-        case "TEXT":
+        case ColumnTypeEnum.Text:
             return { ...fieldMetadata, type: "string" }
 
-        case "CURRENCY":
-        case "NUMBER":
+        case ColumnTypeEnum.Currency:
+        case ColumnTypeEnum.Number:
             return { ...fieldMetadata, type: "number" }
 
-        case "DATE":
-        case "DATETIME":
+        case ColumnTypeEnum.Date:
+        case ColumnTypeEnum.Datetime:
             return { ...fieldMetadata, type: "date" }
 
-        case "URL":
+        case ColumnTypeEnum.Url:
             return { ...fieldMetadata, type: "link" }
 
-        case "RICHTEXT":
+        case ColumnTypeEnum.Richtext:
             return { ...fieldMetadata, type: "formattedText" }
 
-        case "BOOLEAN":
+        case ColumnTypeEnum.Boolean:
             return { ...fieldMetadata, type: "boolean" }
 
-        case "IMAGE":
+        case ColumnTypeEnum.Image:
             return { ...fieldMetadata, type: "image" }
 
-        case "FILE":
+        case ColumnTypeEnum.File:
             return { ...fieldMetadata, type: "file", allowedFileTypes: [] }
 
-        case "SELECT": {
+        case ColumnTypeEnum.Select: {
             const cases = column.options
-                ?.filter(opt => opt.label && opt.name)
-                .map(opt => ({ name: opt.label as string, id: opt.name }))
+                ?.filter((opt): opt is Option & { label: string } => opt.label !== undefined && opt.name !== "")
+                .map(opt => ({ name: opt.label, id: opt.name }))
 
             if (!cases) return null
 
@@ -179,7 +169,7 @@ export function getCollectionFieldForHubDBColumn(column: Column): ManagedCollect
         }
 
         // TODO: Implement collection references
-        case "FOREIGN_ID":
+        case ColumnTypeEnum.ForeignId:
         default:
             return null
     }
@@ -194,7 +184,7 @@ export function getPossibleSlugFields(columns: Column[]) {
 
     for (const col of columns) {
         switch (col.type) {
-            case "TEXT":
+            case ColumnTypeEnum.Text:
                 options.push(col)
                 break
         }
@@ -247,7 +237,7 @@ function hasFieldConfigurationChanged(
     return false
 }
 
-async function processRow({ row, columns, fieldsById, slugFieldId, status, unsyncedItemIds }: ProcessRowParams) {
+function processRow({ row, columns, fieldsById, slugFieldId, status, unsyncedItemIds }: ProcessRowParams) {
     let slugValue: string | null = null
     const fieldData: FieldDataInput = {}
 
@@ -299,17 +289,14 @@ async function processRow({ row, columns, fieldsById, slugFieldId, status, unsyn
     }
 }
 
-async function processAllRows(rows: HubDbTableRowV3[], processRowParams: Omit<ProcessRowParams, "row" | "status">) {
-    const limit = pLimit(CONCURRENCY_LIMIT)
+function processAllRows(rows: HubDbTableRowV3[], processRowParams: Omit<ProcessRowParams, "row" | "status">) {
     const status: SyncStatus = {
         info: [],
         warnings: [],
         errors: [],
     }
 
-    const collectionItems = (
-        await Promise.all(rows.map(row => limit(() => processRow({ ...processRowParams, status, row }))))
-    ).filter(isDefined)
+    const collectionItems = rows.map(row => processRow({ ...processRowParams, status, row })).filter(isDefined)
 
     return {
         collectionItems,
@@ -333,7 +320,7 @@ export async function syncHubDBTable({ fields, tableId, slugFieldId, includedFie
 
     assert(table.columns)
 
-    const { collectionItems, status } = await processAllRows(rows, {
+    const { collectionItems, status } = processAllRows(rows, {
         unsyncedItemIds,
         columns: table.columns,
         slugFieldId,

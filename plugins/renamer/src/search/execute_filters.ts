@@ -45,7 +45,7 @@ export function executeFilters(filters: Filter[], index: IndexEntry[]) {
     const results: Result[] = []
 
     for (const entry of index) {
-        let include: boolean = true
+        let include = true
         let result: Result | undefined
 
         for (const filter of filters) {

@@ -27,7 +27,7 @@ interface RSSEntry {
     [contentFieldId]: string
 }
 
-const rssSources: RSSSource[] = [
+const rssSources = [
     {
         name: "The New York Times",
         url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
@@ -48,7 +48,7 @@ const rssSources: RSSSource[] = [
         url: "https://www.architecturaldigest.com/feed/rss",
         id: "architecturaldigest",
     },
-]
+] as const satisfies RSSSource[]
 
 function parseRSS(xmlDoc: Document) {
     const items: RSSEntry[] = []

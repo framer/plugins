@@ -7,12 +7,12 @@ import { downloadBlob, importFileAsText } from "./files"
 import { IconGlobe } from "./IconGlobe"
 import { createValuesBySourceFromXliff, generateXliff, parseXliff } from "./xliff"
 
-framer.showUI({
+void framer.showUI({
     width: 260,
     height: 350,
 })
 
-async function importXliff() {
+function importXliff() {
     importFileAsText(".xlf,.xliff", async (xliffText: string) => {
         try {
             const locales = await framer.getLocales()
@@ -69,10 +69,10 @@ export function App() {
             }
         }
 
-        loadLocales()
+        void loadLocales()
     }, [])
 
-    async function handleExport() {
+    function handleExport() {
         if (!selectedLocaleId || !defaultLocale) return
 
         const targetLocale = locales.find(locale => locale.id === selectedLocaleId)
@@ -80,7 +80,7 @@ export function App() {
             throw new Error(`Could not find locale with id ${selectedLocaleId}`)
         }
 
-        exportXliff(defaultLocale, targetLocale)
+        void exportXliff(defaultLocale, targetLocale)
     }
 
     return (

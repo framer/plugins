@@ -1,16 +1,27 @@
-export interface GoogleToken {
-    access_token: string
-    expires_in: number
-    id_token: string
-    scope: string
-    token_type: string
-    refresh_token?: string
-}
+import * as v from "valibot"
 
-export interface GoogleSite {
-    siteUrl: string
-    permissionLevel: string
-}
+export const GoogleTokenSchema = v.object({
+    access_token: v.string(),
+    expires_in: v.number(),
+    id_token: v.string(),
+    scope: v.string(),
+    token_type: v.string(),
+    refresh_token: v.exactOptional(v.string()),
+})
+
+export type GoogleToken = v.InferOutput<typeof GoogleTokenSchema>
+
+export const AuthorizeSchema = v.object({
+    url: v.string(),
+    readKey: v.string(),
+})
+
+export const GoogleSiteSchema = v.object({
+    siteUrl: v.string(),
+    permissionLevel: v.string(),
+})
+
+export type GoogleSite = v.InferOutput<typeof GoogleSiteSchema>
 
 export interface Site {
     url: string
@@ -49,11 +60,11 @@ export interface GoogleInspectionResult {
 
 export interface GoogleQueryResult {
     responseAggregationType: "byProperty"
-    rows?: Array<{
+    rows?: {
         clicks: number
         ctr: number
         impressions: number
         keys: string[]
         position: number
-    }>
+    }[]
 }

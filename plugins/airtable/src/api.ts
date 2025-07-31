@@ -47,7 +47,7 @@ type NumberValue = number
 type PercentValue = number
 type CurrencyValue = number
 type CheckboxValue = boolean
-type FormulaValue = string | number | boolean | Array<string | number>
+type FormulaValue = string | number | boolean | (string | number)[]
 type CreatedTimeValue = string
 type RollupValue = string | number | boolean
 type CountValue = number
@@ -61,27 +61,39 @@ type MultipleCollaboratorsValue = CollaboratorValue[]
 type MultipleRecordLinksValue = string[] | AirtableBaseEntity[]
 type MultipleAttachmentsValue = AttachmentValue[]
 type AutoNumberValue = number
-type BarcodeValue = { type?: string | null; text: string }
+
+interface BarcodeValue {
+    type?: string | null
+    text: string
+}
+
 type RatingValue = number
 type RichTextValue = string
 type DurationValue = number
 type LastModifiedTimeValue = string
-type ButtonValue = { label: string; url: string | null }
+
+interface ButtonValue {
+    label: string
+    url: string | null
+}
+
 type CreatedByValue = CollaboratorValue
 type LastModifiedByValue = CollaboratorValue
 type ExternalSyncSourceValue = Choice
-type MultipleLookupValuesValue = {
+
+interface MultipleLookupValuesValue {
     valuesByLinkedRecordId: Record<string, unknown[]>
     linkedRecordIds: string[]
 }
-type AiTextValue = {
+
+interface AiTextValue {
     state: "empty" | "loading" | "generated" | "error"
     value: string | null
     isStale: boolean
     errorType?: string
 }
 
-export type AirtableFieldValues = {
+export interface AirtableFieldValues {
     singleLineText: SingleLineTextValue
     email: EmailValue
     url: UrlValue
@@ -229,22 +241,22 @@ interface RatingOption {
         | "grayBright"
 }
 
-type DurationOption = {
+interface DurationOption {
     durationFormat: "h:mm" | "h:mm:ss" | "h:mm:ss.S" | "h:mm:ss.SS" | "h:mm:ss.SSS"
 }
 
-type LastModifiedTimeOption = {
+interface LastModifiedTimeOption {
     isValid: boolean
     referencedFieldIds: string[] | null
     result: "date" | "dateTime" | null
 }
 
-type AiTextOption = {
+interface AiTextOption {
     prompt?: (string | { field: { fieldId: string; referencedFieldIds?: string[] } })[]
     referencedFieldIds?: string[]
 }
 
-type AirtableFieldOptions = {
+interface AirtableFieldOptions {
     singleLineText: Record<string, never>
     email: Record<string, never>
     url: Record<string, never>
@@ -333,6 +345,11 @@ export interface AirtableRecord {
     fields: Record<FieldId, AirtableFieldValue>
 }
 
+interface AirtableRecordsResponse {
+    records: AirtableRecord[]
+    offset?: string
+}
+
 export interface AirtableTableSchema extends AirtableBaseEntity {
     description?: string
     primaryFieldId: string
@@ -373,7 +390,7 @@ const calculateBackoffDelay = (numAttempts: number): number => {
     return Math.random() * clippedBackoffTime
 }
 
-const request = async ({ path, method, query, body, signal }: RequestOptions, numAttempts = 0) => {
+const request = async ({ path, method, query, body, signal }: RequestOptions, numAttempts = 0): Promise<unknown> => {
     const tokens = await auth.getTokens()
 
     if (!tokens) {
@@ -405,7 +422,7 @@ const request = async ({ path, method, query, body, signal }: RequestOptions, nu
         signal,
     })
 
-    const json = await res.json()
+    const json = (await res.json()) as unknown
 
     if (res.status === 429 && numAttempts < MAX_RETRY_ATTEMPTS) {
         const delay = calculateBackoffDelay(numAttempts)
@@ -414,10 +431,10 @@ const request = async ({ path, method, query, body, signal }: RequestOptions, nu
     }
 
     if (!res.ok) {
-        const errors = (json.errors as { error: string; message: string }[])?.map(
+        const errors = (json as { errors?: { error: string; message: string }[] } | undefined)?.errors?.map(
             ({ error, message }, index) => `${index + 1}. ${error}: ${message}`
         )
-        throw new Error(`Failed to fetch Airtable API:\n\n${errors?.join("\n")}`)
+        throw new Error(`Failed to fetch Airtable API:\n\n${errors?.join("\n") ?? String(json)}`)
     }
 
     return json
@@ -431,14 +448,14 @@ export const fetchTables = async (baseId: string, signal?: AbortSignal): Promise
         method: "get",
         path: `/meta/bases/${baseId}/tables`,
         signal,
-    })
+    }) as Promise<BaseSchemaResponse>
 }
 
 /**
  * Fetches the schema of a table.
  */
 export const fetchTable = async (baseId: string, tableId: string) => {
-    const bases = await fetchTables(baseId).catch(error => {
+    const bases = await fetchTables(baseId).catch((error: unknown) => {
         if (error instanceof Error && error.name === "AbortError") {
             return null
         }
@@ -469,7 +486,7 @@ export const fetchBases = (offset?: string): Promise<BasesResponse> => {
     return request({
         path: "/meta/bases",
         query,
-    })
+    }) as Promise<BasesResponse>
 }
 
 /**
@@ -480,14 +497,14 @@ export const fetchRecords = async (baseId: string, tableId: string): Promise<Air
     let offset: string | undefined
 
     do {
-        const data = await request({
+        const data = (await request({
             path: `/${baseId}/${tableId}`,
             method: "get",
             query: {
                 returnFieldsByFieldId: "true",
                 offset,
             },
-        })
+        })) as AirtableRecordsResponse
 
         records.push(...data.records)
         offset = data.offset

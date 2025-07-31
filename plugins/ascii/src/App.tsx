@@ -61,9 +61,9 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
     useImageTexture(
         gl,
-        droppedAsset?.src ? (droppedAsset?.type === "image" ? droppedAsset?.src : undefined) : framerCanvasImage?.url,
+        droppedAsset?.src ? (droppedAsset.type === "image" ? droppedAsset.src : undefined) : framerCanvasImage?.url,
         texture => {
-            // @ts-expect-error - TODO: not sure why this is needed
+            if (!program) return
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },
@@ -72,9 +72,9 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
     useVideoTexture(
         gl,
-        droppedAsset?.type === "video" ? droppedAsset?.src : undefined,
+        droppedAsset?.type === "video" ? droppedAsset.src : undefined,
         texture => {
-            // @ts-expect-error - TODO: not sure why this is needed
+            if (!program) return
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },
@@ -88,11 +88,11 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         isPlaceholder
             ? DEFAUL_ASSET.src
             : droppedAsset?.type === "glb" || droppedAsset?.type === "gltf"
-              ? droppedAsset?.src
+              ? droppedAsset.src
               : undefined,
         droppedAsset?.type,
         texture => {
-            // @ts-expect-error - TODO: not sure why this is needed
+            if (!program) return
             program.texture = texture
             setAssetResolution([texture.width, texture.height])
         },
@@ -114,35 +114,39 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         setResolution([exportSize, exportSize / assetAspect])
     }, [exportSize, assetResolution])
 
-    const saveEffect = useCallback(async () => {
+    const saveEffect = useCallback(() => {
         if (!isAllowedToUpsertImage) return
 
-        const bytes = await toBytes()
+        const task = async () => {
+            const bytes = await toBytes()
 
-        setSavingInAction(true)
+            setSavingInAction(true)
 
-        if (droppedAsset || isPlaceholder) {
-            await framer.addImage({
-                image: {
-                    type: "bytes",
-                    bytes: bytes,
-                    mimeType: "image/png",
-                },
-            })
-        } else {
-            if (!framerCanvasImage) return
+            if (droppedAsset || isPlaceholder) {
+                await framer.addImage({
+                    image: {
+                        type: "bytes",
+                        bytes: bytes,
+                        mimeType: "image/png",
+                    },
+                })
+            } else {
+                if (!framerCanvasImage) return
 
-            const originalImage = await framerCanvasImage.getData()
+                const originalImage = await framerCanvasImage.getData()
 
-            await framer.setImage({
-                image: {
-                    bytes,
-                    mimeType: originalImage.mimeType,
-                },
-            })
+                await framer.setImage({
+                    image: {
+                        bytes,
+                        mimeType: originalImage.mimeType,
+                    },
+                })
+            }
+
+            setSavingInAction(false)
         }
 
-        setSavingInAction(false)
+        void task()
     }, [toBytes, framerCanvasImage, droppedAsset, isPlaceholder, isAllowedToUpsertImage])
 
     // resize observer
@@ -159,7 +163,9 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
 
         resizeObserver.observe(containerRef.current)
 
-        return () => resizeObserver.disconnect()
+        return () => {
+            resizeObserver.disconnect()
+        }
     }, [])
 
     return (
@@ -219,7 +225,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     ref={node => {
                         if (!node) return
                         asciiRef.current = node
-                        setProgram(node?.program)
+                        setProgram(node.program)
                     }}
                     gl={gl}
                 />
@@ -252,7 +258,12 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     }}
                 />
                 {droppedAsset && (
-                    <button className="clear" onClick={() => setDroppedAsset(null)}>
+                    <button
+                        className="clear"
+                        onClick={() => {
+                            setDroppedAsset(null)
+                        }}
+                    >
                         Clear
                     </button>
                 )}

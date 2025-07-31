@@ -16,7 +16,9 @@ export function bytesFromCanvas(canvas: HTMLCanvasElement): Promise<Uint8Array |
 
                 resolve(new Uint8Array(reader.result as ArrayBuffer))
             }
-            reader.onerror = () => reject(new Error("Could not read from blob"))
+            reader.onerror = () => {
+                reject(new Error("Could not read from blob"))
+            }
             reader.readAsArrayBuffer(blob)
         })
     })
@@ -30,8 +32,12 @@ export async function loadBitmap(bytes: Uint8Array): Promise<ImageBitmap> {
 
     const image = await new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image()
-        img.onload = () => resolve(img)
-        img.onerror = () => reject()
+        img.onload = () => {
+            resolve(img)
+        }
+        img.onerror = () => {
+            reject(new Error("Could not load image"))
+        }
         img.src = url
     })
 

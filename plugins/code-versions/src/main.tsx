@@ -8,7 +8,7 @@ import { App } from "./components/App.tsx"
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
 
-framer.showUI({
+void framer.showUI({
     width: 760,
     height: 480,
     minWidth: 600,

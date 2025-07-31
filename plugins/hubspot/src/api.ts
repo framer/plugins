@@ -1,5 +1,4 @@
 import { BlogPost } from "@hubspot/api-client/lib/codegen/cms/blogs/blog_posts/models/BlogPost"
-import { Column, ColumnTypeEnum } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/Column"
 import { HubDbTableRowV3 } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/HubDbTableRowV3"
 import { HubDbTableV3 } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/HubDbTableV3"
 import { useQuery } from "@tanstack/react-query"
@@ -93,8 +92,7 @@ interface RequestOptions {
     path: string
     method?: string
     query?: Record<string, string | number | string[]> | URLSearchParams
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    body?: any
+    body?: unknown
 }
 
 const PROXY_URL = "https://framer-cors-proxy.framer-team.workers.dev/?"
@@ -113,7 +111,7 @@ const queryKeys = {
     meetings: () => ["meetings"] as const,
 } as const
 
-const request = async <T = unknown>({ path, method, query, body }: RequestOptions): Promise<T> => {
+const request = async ({ path, method, query, body }: RequestOptions): Promise<unknown> => {
     try {
         let tokens = auth.tokens.getOrThrow()
 
@@ -145,16 +143,14 @@ const request = async <T = unknown>({ path, method, query, body }: RequestOption
         })
 
         if (method === "delete" && res.status === 204) {
-            return {} as T
+            return {}
         }
 
         if (!res.ok) {
-            throw new PluginError("Fetch Failed", "Failed to fetch HubSpot API: " + res.status)
+            throw new PluginError("Fetch Failed", `Failed to fetch HubSpot API: ${res.status}`)
         }
 
-        const json = await res.json()
-
-        return json
+        return await res.json()
     } catch (e) {
         if (e instanceof PluginError) throw e
 
@@ -174,38 +170,39 @@ async function cachedFetch<T>(queryKey: readonly unknown[], fetcher: () => Promi
     return data
 }
 
-export const fetchAllBlogPosts = (limit: number, properties: string[]) => {
-    return cachedFetch(queryKeys.blogPosts(limit, properties), () =>
-        request<CMSPaging<BlogPost>>({
-            path: "/cms/v3/blogs/posts",
-            query: { limit, properties },
-        })
+export const fetchAllBlogPosts = (limit: number, properties: string[]): Promise<CMSPaging<BlogPost>> => {
+    return cachedFetch(
+        queryKeys.blogPosts(limit, properties),
+        () => request({ path: "/cms/v3/blogs/posts", query: { limit, properties } }) as Promise<CMSPaging<BlogPost>>
     )
 }
 
-export const fetchPublishedTables = (limit: number) => {
-    return cachedFetch(queryKeys.publishedTables(limit), () =>
-        request<CMSPaging<HubDbTableV3>>({
-            path: "/cms/v3/hubdb/tables",
-            query: { limit },
-        })
+export const fetchPublishedTables = (limit: number): Promise<CMSPaging<HubDbTableV3>> => {
+    return cachedFetch(
+        queryKeys.publishedTables(limit),
+        () => request({ path: "/cms/v3/hubdb/tables", query: { limit } }) as Promise<CMSPaging<HubDbTableV3>>
     )
 }
 
-export const fetchPublishedTable = (tableId: string) => {
-    return cachedFetch(queryKeys.publishedTable(tableId), () =>
-        request<HubDbTableV3>({
-            path: `/cms/v3/hubdb/tables/${tableId}`,
-        })
+export const fetchPublishedTable = (tableId: string): Promise<HubDbTableV3> => {
+    return cachedFetch(
+        queryKeys.publishedTable(tableId),
+        () => request({ path: `/cms/v3/hubdb/tables/${tableId}` }) as Promise<HubDbTableV3>
     )
 }
 
-export const fetchTableRows = (tableId: string, properties: string[], limit: number) => {
-    return cachedFetch(queryKeys.tableRows(tableId, properties, limit), () =>
-        request<CMSPaging<HubDbTableRowV3>>({
-            path: `/cms/v3/hubdb/tables/${tableId}/rows`,
-            query: { limit, properties },
-        })
+export const fetchTableRows = (
+    tableId: string,
+    properties: string[],
+    limit: number
+): Promise<CMSPaging<HubDbTableRowV3>> => {
+    return cachedFetch(
+        queryKeys.tableRows(tableId, properties, limit),
+        () =>
+            request({
+                path: `/cms/v3/hubdb/tables/${tableId}/rows`,
+                query: { limit, properties },
+            }) as Promise<CMSPaging<HubDbTableRowV3>>
     )
 }
 
@@ -230,10 +227,10 @@ export const useUserQuery = () => {
         queryFn: () => {
             const tokens = auth.tokens.getOrThrow()
 
-            return request<HSUser>({
+            return request({
                 method: "get",
                 path: `/oauth/v1/access-tokens/${tokens.accessToken}`,
-            })
+            }) as Promise<HSUser>
         },
     })
 }
@@ -242,10 +239,10 @@ export const useAccountQuery = () => {
     return useQuery({
         queryKey: queryKeys.account(),
         queryFn: () => {
-            return request<HSAccount>({
+            return request({
                 method: "get",
                 path: "/account-info/v3/details",
-            })
+            }) as Promise<HSAccount>
         },
     })
 }
@@ -254,10 +251,10 @@ export const useInboxesQuery = () => {
     return useQuery({
         queryKey: queryKeys.inboxes(),
         queryFn: () => {
-            return request<HSQuery<HSInbox>>({
+            return request({
                 method: "GET",
                 path: "/conversations/v3/conversations/inboxes/",
-            })
+            }) as Promise<HSQuery<HSInbox>>
         },
         select: data => data.results,
     })
@@ -267,10 +264,10 @@ export const useFormsQuery = () => {
     return useQuery({
         queryKey: queryKeys.forms(),
         queryFn: () => {
-            return request<HSQuery<HSForm>>({
+            return request({
                 method: "get",
                 path: "/marketing/v3/forms/",
-            })
+            }) as Promise<HSQuery<HSForm>>
         },
         select: data => data.results,
     })
@@ -280,13 +277,11 @@ export const useMeetingsQuery = () => {
     return useQuery({
         queryKey: queryKeys.meetings(),
         queryFn: () => {
-            return request<HSQuery<HSMeeting>>({
+            return request({
                 method: "get",
                 path: "/scheduler/v3/meetings/meeting-links",
-            })
+            }) as Promise<HSQuery<HSMeeting>>
         },
         select: data => data.results,
     })
 }
-
-export { BlogPost, Column, ColumnTypeEnum, HubDbTableRowV3 }

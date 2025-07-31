@@ -1,9 +1,7 @@
-/* eslint-disable -- TODO: fix this */
-// @ts-nocheck - TODO: fix this
-
-import { Camera, Mesh, Plane, Program, Renderer, Transform } from "ogl"
+import { Camera, Mesh, Plane, Renderer, Transform } from "ogl"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { DEFAULT_WIDTH } from "../App"
+import { ASCIIMaterial } from "../materials/ascii"
 import { assert, bytesFromCanvas } from "../utils"
 
 export function useOGLPipeline() {
@@ -15,7 +13,7 @@ export function useOGLPipeline() {
     //config
     const [scene] = useState(() => new Transform())
     const [geometry] = useState(() => new Plane(gl))
-    const [program, setProgram] = useState(() => new Program(gl, {}))
+    const [program, setProgram] = useState<ASCIIMaterial | undefined>()
     const [mesh] = useState(() => new Mesh(gl, { geometry, program }))
     const [camera] = useState(
         () =>
@@ -31,8 +29,9 @@ export function useOGLPipeline() {
     camera.position.z = 1
 
     useEffect(() => {
+        if (!program) return
         renderer.setSize(resolution[0], resolution[1])
-        program?.setResolution?.(resolution[0], resolution[1])
+        program.setResolution(resolution[0], resolution[1])
     }, [renderer, program, resolution])
 
     useEffect(() => {
@@ -87,7 +86,9 @@ export function useOGLPipeline() {
 
         raf = requestAnimationFrame(update)
 
-        return () => cancelAnimationFrame(raf)
+        return () => {
+            cancelAnimationFrame(raf)
+        }
     }, [render])
 
     return {

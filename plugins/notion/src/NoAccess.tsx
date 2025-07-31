@@ -7,7 +7,7 @@ export function NoTableAccess({ previousDatabaseId }: { previousDatabaseId: stri
     const handleRetryClick = () => {
         setIsRetrying(true)
         auth.authorize()
-            .catch(error => {
+            .catch((error: unknown) => {
                 console.error(error)
             })
             .finally(() => {
@@ -15,23 +15,22 @@ export function NoTableAccess({ previousDatabaseId }: { previousDatabaseId: stri
             })
     }
 
-    const handleLogout = () => {
-        auth.logout()
-        window.location.reload()
+    const handleLogout = async () => {
+        await auth.logout()
     }
 
     return (
         <div className="no-access-container">
             <p>
                 Your Notion account does not have access to the synced database. Retry or{" "}
-                <a onClick={handleLogout}>log out</a> of the Notion plugin.
+                <a onClick={() => void handleLogout()}>log out</a> of the Notion plugin.
             </p>
             <div className="actions">
                 <button className="action-button" onClick={handleRetryClick}>
                     {isRetrying ? <div className="framer-spinner" /> : "Retry"}
                 </button>
                 {previousDatabaseId && (
-                    <a href={`https://notion.so/${previousDatabaseId?.replace(/-/g, "")}`} target="_blank">
+                    <a href={`https://notion.so/${previousDatabaseId.replace(/-/g, "")}`} target="_blank">
                         <button className="action-button framer-button-primary">View Database</button>
                     </a>
                 )}

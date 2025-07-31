@@ -16,8 +16,8 @@ export default function GoogleLogin({ login, loading, hasError, errorMessage }: 
                     <p className="interstitial-title">Connect to Google</p>
                     <p>
                         {hasError
-                            ? errorMessage ||
-                              "Sorry, there was an error connecting to your Google account. Please try again."
+                            ? (errorMessage ??
+                              "Sorry, there was an error connecting to your Google account. Please try again.")
                             : "Improve your performance on Google Search. Make sure your site is published first, then log in."}
                     </p>
                 </div>

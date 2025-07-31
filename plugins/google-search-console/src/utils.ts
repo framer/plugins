@@ -27,11 +27,11 @@ function* chunks<T>(arr: T[], n: number): Generator<T[], void> {
 
 const batchLimit = 900
 
-export async function batchGoogleApiCall<T, P extends BatchGoogleApiCallRequest>(
+export async function batchGoogleApiCall<P extends BatchGoogleApiCallRequest>(
     token: string,
     refresh: () => Promise<GoogleToken | null>,
     parts: P[]
-): Promise<({ request: P; response: T } | null)[] | null> {
+): Promise<({ request: P; response: unknown } | null)[] | null> {
     if (!parts.length) {
         return null
     }
@@ -72,7 +72,7 @@ ${JSON.stringify(part.body)}
                 method: "POST",
             })
 
-        let result = await attempt(initialToken?.access_token || token)
+        let result = await attempt(initialToken?.access_token ?? token)
 
         if (!result.ok) {
             const newToken = await refresh()
@@ -89,26 +89,21 @@ ${JSON.stringify(part.body)}
         try {
             const text = await result.text()
 
-            const textParts = text
-                .split("--batch_")
-                .map(part => {
-                    try {
-                        const indexId = part.match(/<response-request-([0-9]+)>/)?.[1]
-                        if (indexId) {
-                            const numericIndexId = Number(indexId)
+            const textParts = text.split("--batch_").map(part => {
+                try {
+                    const indexId = /<response-request-([0-9]+)>/.exec(part)?.[1]
+                    if (!indexId) return null
 
-                            const json = JSON.parse(part.slice(part.indexOf("{")))
+                    const request = currParts[Number(indexId)]
+                    if (!request) return null
 
-                            return { request: currParts[numericIndexId], response: json }
-                        }
-                    } catch (e) {
-                        return null
-                    }
-                })
-                .filter(part => part) as {
-                request: P
-                response: T
-            }[]
+                    const response = JSON.parse(part.slice(part.indexOf("{"))) as unknown
+
+                    return { request, response }
+                } catch (e) {
+                    return null
+                }
+            })
 
             return textParts
         } catch (e) {
@@ -125,7 +120,7 @@ ${JSON.stringify(part.body)}
     return flat
 }
 
-export async function googleApiCall<T>(
+export async function googleApiCall(
     path: string,
     token: string,
     refresh: () => Promise<GoogleToken | null>,
@@ -133,7 +128,7 @@ export async function googleApiCall<T>(
         method?: "GET" | "PUT" | "POST"
         body?: BodyInit
     } = { method: "GET" }
-): Promise<T> {
+): Promise<unknown> {
     const initialToken = getLocalStorageTokens()
 
     const attempt = async (currToken: string) =>
@@ -145,7 +140,7 @@ export async function googleApiCall<T>(
             ...(opts.method !== "GET" ? opts : {}),
         })
 
-    let result = await attempt(initialToken?.access_token || token)
+    let result = await attempt(initialToken?.access_token ?? token)
 
     if (!result.ok) {
         const newToken = await refresh()
@@ -162,11 +157,11 @@ export async function googleApiCall<T>(
     }
 
     try {
-        const json = await result.json()
+        const json = (await result.json()) as unknown
 
         return json
     } catch (e) {
-        return null as unknown as T
+        return null
     }
 }
 

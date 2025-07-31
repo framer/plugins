@@ -1,8 +1,8 @@
 import { useCallback, useContext, useEffect, useState } from "react"
-import { AuthContext, useGoogleToken } from "../auth"
+import { AccessTokenContext, useGoogleToken } from "../auth"
 import Loading from "../components/Loading"
 import { GoogleError } from "../errors"
-import type { GoogleSitemap, GoogleToken, SiteWithGoogleSite } from "../types"
+import type { GoogleSitemap, SiteWithGoogleSite } from "../types"
 import { googleApiCall, sitemapUrl } from "../utils"
 import NeedsVerify from "./NeedsVerify"
 import SiteHasIndexedSitemap from "./SiteHasIndexedSitemap"
@@ -27,45 +27,47 @@ export default function SiteView({ site, logout }: SiteViewProps) {
         e: Error
     } | null>(null)
 
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     const { refresh } = useGoogleToken()
 
     const fetchGoogleSitemaps = useCallback(
         async (siteUrl: string, token: string) => {
-            const result = await googleApiCall<{ sitemap: GoogleSitemap[] }>(
+            const result = (await googleApiCall(
                 `/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/sitemaps`,
                 token,
                 refresh
-            )
+            )) as { sitemap: GoogleSitemap[] } | null
 
-            return (result?.sitemap as GoogleSitemap[]) || []
+            return result?.sitemap ?? []
         },
         [refresh]
     )
 
-    const update = useCallback(async () => {
+    const update = useCallback(() => {
         setError(null)
 
         if (SHOW_MOCK_SITEMAP_DATA) {
             return
         }
 
-        try {
-            if (site.googleSite) {
-                const sitemaps = await fetchGoogleSitemaps(site.googleSite.siteUrl, authContext.access_token)
-                const submittedSitemap = sitemaps?.find(currSitemap => currSitemap.path === currSitemapUrl)
+        const task = async () => {
+            try {
+                const sitemaps = await fetchGoogleSitemaps(site.googleSite.siteUrl, accessToken)
+                const submittedSitemap = sitemaps.find(currSitemap => currSitemap.path === currSitemapUrl)
 
                 setSitemapsState({ sitemaps, submitted: !!submittedSitemap })
-            }
-        } catch (e) {
-            if (((e as GoogleError)?.cause as { status: number })?.status === 403) {
-                setError({ level: "display", e: e as unknown as GoogleError })
-            } else {
-                setError({ level: "throw", e: e as unknown as GoogleError })
+            } catch (e) {
+                if (((e as GoogleError | undefined)?.cause as { status: number } | undefined)?.status === 403) {
+                    setError({ level: "display", e: e as GoogleError })
+                } else {
+                    setError({ level: "throw", e: e as GoogleError })
+                }
             }
         }
-    }, [authContext.access_token, currSitemapUrl, fetchGoogleSitemaps, site.googleSite])
+
+        void task()
+    }, [accessToken, currSitemapUrl, fetchGoogleSitemaps, site.googleSite])
 
     useEffect(() => {
         update()

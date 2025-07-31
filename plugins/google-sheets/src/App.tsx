@@ -8,7 +8,6 @@ import { MapSheetFieldsPage } from "./pages/MapSheetFields"
 import { Problem } from "./pages/Problem"
 import { SelectSheetPage } from "./pages/SelectSheet"
 import {
-    getPluginContext,
     type PluginContext,
     type PluginContextUpdate,
     syncSheet,
@@ -16,6 +15,7 @@ import {
     useSheetQuery,
     useSyncSheetMutation,
 } from "./sheets"
+import { showFieldMappingUI, showLoginUI } from "./ui"
 import { assert, syncMethods } from "./utils"
 
 interface AppProps {
@@ -64,12 +64,14 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
 
     const { data: sheet, isPending: isSheetPending } = useSheetQuery(spreadsheetId ?? "", sheetTitle ?? "")
 
+    const hasSheet = Boolean(spreadsheetId && sheetTitle)
+
     const syncMutation = useSyncSheetMutation({
         onSuccess: result => {
             logSyncResult(result)
 
             if (result.status === "success") {
-                framer.closePlugin("Synchronization successful")
+                void framer.closePlugin("Synchronization successful")
                 return
             }
         },
@@ -86,24 +88,52 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     }, [isUserInfoError, isSelectSheetError, setContext])
 
     useLayoutEffect(() => {
-        const width = sheetTitle !== null ? 360 : 320
-        const height = sheetTitle !== null ? 425 : 345
+        const showUI = async () => {
+            try {
+                if (hasSheet) {
+                    await showFieldMappingUI()
+                } else {
+                    await showLoginUI()
+                }
+            } catch (error) {
+                console.error(error)
+                framer.notify("Failed to open plugin. Check the logs for more details.", { variant: "error" })
+            }
+        }
 
-        framer.showUI({
-            width,
-            height,
-            minWidth: width,
-            minHeight: height,
-            // Only allow resizing when mapping fields as the default size could not be enough.
-            // This will keep the given dimensions in the Select Sheet Screen.
-            resizable: sheetTitle !== null,
-        })
-    }, [sheetTitle])
+        void showUI()
+    }, [sheetTitle, hasSheet, isSheetPending])
+
+    useEffect(() => {
+        framer
+            .setMenu([
+                {
+                    label: `View ${sheetTitle ?? ""} in Google Sheets`,
+                    visible: Boolean(spreadsheetId),
+                    onAction: () => {
+                        if (!spreadsheetId) return
+                        window.open(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/edit`, "_blank")
+                    },
+                },
+                { type: "separator" },
+                {
+                    label: "Log Out",
+                    onAction: () => {
+                        void auth.logout()
+                    },
+                },
+            ])
+            .catch((e: unknown) => {
+                console.error(e)
+            })
+    }, [sheetTitle, spreadsheetId])
 
     if (!spreadsheetId || sheetTitle === null) {
         return (
             <SelectSheetPage
-                onError={() => setIsSelectSheetError(true)}
+                onError={() => {
+                    setIsSelectSheetError(true)
+                }}
                 onSheetSelected={(selectedSpreadsheetId, selectedSheetTitle) => {
                     setSpreadsheetId(selectedSpreadsheetId)
                     setSheetTitle(selectedSheetTitle)
@@ -152,10 +182,9 @@ export function App({ pluginContext }: AppProps) {
 
     useLayoutEffect(() => {
         if (!shouldSyncOnly) return
-        assert(context.type === "update")
         assert(context.slugColumn !== null, "Expected slug column")
 
-        framer.hideUI()
+        void framer.hideUI()
 
         const {
             spreadsheetId,
@@ -168,20 +197,26 @@ export function App({ pluginContext }: AppProps) {
         } = context
         const [headerRow] = sheet.values
 
-        syncSheet({
-            ignoredColumns,
-            slugColumn,
-            fetchedSheet: sheet,
-            lastSyncedTime,
-            spreadsheetId,
-            sheetTitle,
-            fields,
-            // Determine if the field type is already configured, otherwise default to "string"
-            colFieldTypes: headerRow.map(colName => {
-                const field = fields.find(field => field?.name === colName)
-                return field?.type ?? "string"
-            }),
-        }).then(() => framer.closePlugin())
+        const task = async () => {
+            await syncSheet({
+                ignoredColumns,
+                slugColumn,
+                fetchedSheet: sheet,
+                lastSyncedTime,
+                spreadsheetId,
+                sheetTitle,
+                fields,
+                // Determine if the field type is already configured, otherwise default to "string"
+                colFieldTypes: headerRow.map(colName => {
+                    const field = fields.find(field => field.name === colName)
+                    return field?.type ?? "string"
+                }),
+            })
+
+            void framer.closePlugin()
+        }
+
+        void task()
     }, [context, shouldSyncOnly])
 
     if (shouldSyncOnly) return null
@@ -192,14 +227,7 @@ export function App({ pluginContext }: AppProps) {
                 <p className="text-content">
                     Your Google Account does not have access to the synced spreadsheet. Check your access and try again
                     or{" "}
-                    <a
-                        href="#"
-                        className="text-sheets-green"
-                        onClick={() => {
-                            auth.logout()
-                            getPluginContext().then(setContext)
-                        }}
-                    >
+                    <a href="#" className="text-sheets-green" onClick={() => void auth.logout()}>
                         log out
                     </a>{" "}
                     and try a different account.
@@ -216,10 +244,11 @@ export function App({ pluginContext }: AppProps) {
                     <div
                         className="my-1 font-black truncate cursor-pointer"
                         title="Click to copy"
-                        onClick={() => {
-                            navigator.clipboard.writeText(context.title)
-                            framer.notify("Sheet title copied")
-                        }}
+                        onClick={() =>
+                            void navigator.clipboard.writeText(context.title).then(() => {
+                                framer.notify("Sheet title copied")
+                            })
+                        }
                     >
                         {context.title}
                     </div>{" "}

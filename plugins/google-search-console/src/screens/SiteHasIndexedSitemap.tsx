@@ -65,7 +65,7 @@ function URLRow({ url, inspection }: URLRowProps) {
 
     return (
         <div className="url">
-            {inspection && inspection.inspectionResultLink ? (
+            {inspection?.inspectionResultLink ? (
                 <a href={inspection.inspectionResultLink} target="_blank" rel="noopener">
                     {row}
                 </a>
@@ -118,9 +118,12 @@ export default function SiteHasIndexedSitemap({ site, logout }: SiteHasIndexedSi
 
     useEffect(() => {
         async function update() {
-            if (SHOW_MOCK_SITEMAP_DATA) {
-                setUrls([...new Set(mockUrls)].sort())
-            } else {
+            try {
+                if (SHOW_MOCK_SITEMAP_DATA) {
+                    setUrls([...new Set(mockUrls)].sort())
+                    return
+                }
+
                 const sitemapResult = await fetch(`https://cors.farpace.workers.dev/${site.domain}/sitemap.xml`)
                 const sitemapText = await sitemapResult.text()
 
@@ -130,14 +133,12 @@ export default function SiteHasIndexedSitemap({ site, logout }: SiteHasIndexedSi
                     .get()
 
                 setUrls([...new Set(urls)].sort())
+            } catch (e) {
+                showBoundary(e)
             }
         }
 
-        try {
-            update()
-        } catch (e) {
-            showBoundary(e)
-        }
+        void update()
     }, [showBoundary, site.domain])
 
     const performance = usePerformanceResultsHook(site.googleSite.siteUrl, dates)
@@ -150,33 +151,29 @@ export default function SiteHasIndexedSitemap({ site, logout }: SiteHasIndexedSi
         }
     }, [resize, performance])
 
-    if (site.googleSite) {
-        return (
-            <div className="in-app">
-                <Performance siteUrl={site.googleSite.siteUrl} performance={performance} />
-                <section>
-                    <URLStatuses urls={urls} googleSiteUrl={site.googleSite.siteUrl} />
-                </section>
-                <section className="actions-footer">
-                    <button type="button" onClick={logout}>
-                        Log Out
-                    </button>
-                    <button
-                        type="button"
-                        className="framer-button-primary"
-                        onClick={() => {
-                            window.open(
-                                `https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(site.googleSite?.siteUrl || site.url)}`,
-                                "_blank"
-                            )
-                        }}
-                    >
-                        Dashboard
-                    </button>
-                </section>
-            </div>
-        )
-    }
-
-    return null
+    return (
+        <div className="in-app">
+            <Performance siteUrl={site.googleSite.siteUrl} performance={performance} />
+            <section>
+                <URLStatuses urls={urls} googleSiteUrl={site.googleSite.siteUrl} />
+            </section>
+            <section className="actions-footer">
+                <button type="button" onClick={logout}>
+                    Log Out
+                </button>
+                <button
+                    type="button"
+                    className="framer-button-primary"
+                    onClick={() => {
+                        window.open(
+                            `https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(site.googleSite.siteUrl || site.url)}`,
+                            "_blank"
+                        )
+                    }}
+                >
+                    Dashboard
+                </button>
+            </section>
+        </div>
+    )
 }

@@ -39,7 +39,9 @@ const debounce = <T extends (...args: never[]) => void>(fn: T, ms = 300) => {
     let timeoutId: ReturnType<typeof setTimeout>
     return function (...args: Parameters<T>) {
         clearTimeout(timeoutId)
-        timeoutId = setTimeout(() => fn(...args), ms)
+        timeoutId = setTimeout(() => {
+            fn(...args)
+        }, ms)
     }
 }
 
@@ -50,31 +52,35 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [hasPainted, setHasPainted] = useState(false)
 
-    const handleSaveImage = useCallback(async () => {
+    const handleSaveImage = useCallback(() => {
         if (!isAllowedToUpsertImage) return
 
         const ctx = canvasRef.current?.getContext("2d")
         assert(ctx)
 
-        const originalImage = await image.getData()
+        const task = async () => {
+            const originalImage = await image.getData()
 
-        assert(canvasRef.current)
-        const nextBytes = await bytesFromCanvas(canvasRef.current)
-        assert(nextBytes)
+            assert(canvasRef.current)
+            const nextBytes = await bytesFromCanvas(canvasRef.current)
+            assert(nextBytes)
 
-        const start = performance.now()
+            const start = performance.now()
 
-        framer.hideUI()
-        await framer.setImage({
-            image: {
-                bytes: nextBytes,
-                mimeType: originalImage.mimeType,
-            },
-        })
+            void framer.hideUI()
+            await framer.setImage({
+                image: {
+                    bytes: nextBytes,
+                    mimeType: originalImage.mimeType,
+                },
+            })
 
-        void framer.closePlugin("Image saved...")
+            void framer.closePlugin("Image saved...")
 
-        console.log("total duration", performance.now() - start)
+            console.log("total duration", performance.now() - start)
+        }
+
+        void task()
     }, [isAllowedToUpsertImage, image])
 
     const updateCanvas = useMemo(
@@ -114,7 +120,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
                 canvas.width = displayWidth
                 canvas.height = displayHeight
 
-                framer.showUI({
+                void framer.showUI({
                     position: "top right",
                     width: 280,
                     height: displayHeight + 95,
@@ -131,7 +137,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
         (nextValue: number) => {
             startTransition(() => {
                 setThreshold(nextValue)
-                void updateCanvas(nextValue)
+                updateCanvas(nextValue)
             })
         },
         [updateCanvas]
@@ -139,7 +145,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
 
     useEffect(() => {
         // Start in the middle between 0-255
-        void updateCanvas(127)
+        updateCanvas(127)
     }, [image])
 
     return (
@@ -154,7 +160,9 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
                 min="0"
                 max="255"
                 value={threshold}
-                onChange={event => handleThresholdChange(Number(event.target.value))}
+                onChange={event => {
+                    handleThresholdChange(Number(event.target.value))
+                }}
             />
 
             <button

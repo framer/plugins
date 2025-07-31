@@ -29,7 +29,7 @@ export const Upload = forwardRef(function Upload(
             accept={{
                 "image/*": [".png", ".jpeg", ".jpg", ".webp", ".avif"],
             }}
-            onDrop={async acceptedFiles => {
+            onDrop={acceptedFiles => {
                 const file = acceptedFiles[0]
                 if (!file) return
 

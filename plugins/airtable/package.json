@@ -13,9 +13,10 @@
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
-        "framer-plugin": "^3.4.0",
+        "framer-plugin": "^3.5.2",
         "react": "^18.3.1",
-        "react-dom": "^18.3.1"
+        "react-dom": "^18.3.1",
+        "valibot": "^1.1.0"
     },
     "devDependencies": {
         "@types/react": "^18.3.23",

@@ -6,7 +6,24 @@ import { NumberInput } from "../inputs/number-input"
 import { useGradientTexture } from "../use-gradient-texture"
 import { useImageTexture } from "../use-image-texture"
 
+interface Uniforms {
+    uTexture: { value: Texture }
+    uResolution: { value: Vec2 }
+    uDitherTexture: { value: Texture }
+    uPaletteTexture: { value: Texture }
+    uPixelSize: { value: number }
+    uColorMode: { value: number }
+    uQuantization: { value: number }
+    uRandom: { value: number }
+    uBrightness: { value: number }
+    uRed: { value: number }
+    uGreen: { value: number }
+    uBlue: { value: number }
+}
+
 export class OrderedDitherMaterial extends Program {
+    declare uniforms: Uniforms
+
     constructor(gl: OGLRenderingContext) {
         super(gl, {
             vertex: /*glsl*/ `#version 300 es
@@ -38,7 +55,6 @@ export class OrderedDitherMaterial extends Program {
                 uniform sampler2D uTexture;
                 uniform sampler2D uDitherTexture;
                 uniform sampler2D uPaletteTexture;
-                uniform int uMode;
                 uniform vec2 uResolution;
                 uniform float uPixelSize;
                 uniform int uColorMode;
@@ -121,17 +137,13 @@ export class OrderedDitherMaterial extends Program {
                 uRed: { value: 0.299 },
                 uGreen: { value: 0.587 },
                 uBlue: { value: 0.114 },
-            },
+            } satisfies Uniforms,
             transparent: true,
         })
     }
 
     setResolution(x: number, y: number) {
         this.uniforms.uResolution.value.set(Math.floor(x), Math.floor(y))
-    }
-
-    set mode(value: number) {
-        this.uniforms.uMode.value = value
     }
 
     set pixelSize(value: number) {
@@ -224,9 +236,9 @@ const MATRICES = [
     },
 ]
 
-const SHOW_DEV_TOOLS = false
+const SHOW_DEV_TOOLS = false as boolean
 
-export type OrderedDitherRef = {
+export interface OrderedDitherRef {
     program: OrderedDitherMaterial
     setPixelSize: (value: number) => void
 }
@@ -397,7 +409,9 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                 <label className="gui-label">Pixelation</label>
                 <NumberInput
                     value={pixelSize}
-                    onValueChange={value => setPixelSize(Number(value))}
+                    onValueChange={value => {
+                        setPixelSize(Number(value))
+                    }}
                     min={1}
                     max={50}
                     step={1}
@@ -419,7 +433,9 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                 <label className="gui-label">Quantization</label>
                 <NumberInput
                     value={quantization}
-                    onValueChange={value => setQuantization(Number(value))}
+                    onValueChange={value => {
+                        setQuantization(Number(value))
+                    }}
                     min={2}
                     max={8}
                     step={1}

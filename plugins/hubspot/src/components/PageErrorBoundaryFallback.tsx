@@ -2,8 +2,11 @@ import { QueryErrorResetBoundary } from "@tanstack/react-query"
 import { framer } from "framer-plugin"
 import type { PropsWithChildren } from "react"
 import { ErrorBoundary } from "react-error-boundary"
+import * as v from "valibot"
 import auth from "../auth"
 import { PluginError } from "../PluginError"
+
+const ErrorSchema = v.object({ message: v.string() })
 
 export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
     <QueryErrorResetBoundary>
@@ -16,7 +19,7 @@ export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
                             <div className="col items-center m-auto">
                                 <h6>{error instanceof PluginError && error.title}</h6>
                                 <span className="text-tertiary text-center max-w-[200px]">
-                                    {error.message}
+                                    {v.is(ErrorSchema, error) ? error.message : "Unknown error"}
                                     <br />
                                     <br />
                                     Please retry or{" "}
@@ -26,10 +29,10 @@ export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
                                         onClick={e => {
                                             e.preventDefault()
                                             auth.logout()
-                                            framer.closePlugin()
+                                            void framer.closePlugin()
                                         }}
                                     >
-                                        logout
+                                        log out
                                     </a>
                                     .
                                 </span>

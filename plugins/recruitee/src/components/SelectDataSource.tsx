@@ -81,7 +81,7 @@ export function SelectDataSource({
                         id="boardToken"
                         type="text"
                         required
-                        placeholder="Enter Board Token…"
+                        placeholder="Enter Token…"
                         value={boardToken}
                         onChange={event => {
                             setBoardToken(event.target.value)

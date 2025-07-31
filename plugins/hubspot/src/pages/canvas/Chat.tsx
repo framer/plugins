@@ -28,17 +28,17 @@ export default function ChatPage() {
     useEffect(() => {
         async function checkExistingSettings() {
             const customCode = await framer.getCustomCode()
-            const existingHTML = customCode?.bodyStart.html
+            const existingHTML = customCode.bodyStart.html
 
-            const matches = (existingHTML ?? "").match(/window\.hsConversationsSettings\s*=\s*(\{.*?\});/)
-            if (matches && matches[1]) {
+            const matches = /window\.hsConversationsSettings\s*=\s*(\{.*?\});/.exec(existingHTML ?? "")
+            if (matches?.[1]) {
                 setSettings(v.parse(SettingsSchema, JSON.parse(matches[1])))
             }
 
             setHasSetExistingSettings(true)
         }
 
-        checkExistingSettings()
+        void checkExistingSettings()
     }, [])
 
     useEffect(() => {
@@ -46,13 +46,13 @@ export default function ChatPage() {
 
         async function applySettings() {
             const customCode = await framer.getCustomCode()
-            const existingHTML = customCode?.bodyStart.html
+            const existingHTML = customCode.bodyStart.html
 
-            if (!hasSetExistingSettings || existingHTML === undefined) return
+            if (!hasSetExistingSettings || existingHTML === null) return
 
             const settingsScript = `<script>window.hsConversationsSettings = ${JSON.stringify(settings)};</script>`
 
-            if (!existingHTML?.includes(settingsScript)) {
+            if (!existingHTML.includes(settingsScript)) {
                 await framer.setCustomCode({
                     html: settingsScript,
                     location: "bodyStart",
@@ -60,7 +60,7 @@ export default function ChatPage() {
             }
         }
 
-        applySettings()
+        void applySettings()
     }, [settings, hasSetExistingSettings, isAllowedToSetCustomCode])
 
     if (isLoadingAccount || isLoadingInboxes) return <CenteredSpinner />
@@ -101,7 +101,7 @@ export default function ChatPage() {
                     name="enableWidgetCookieBanner"
                     id="enableWidgetCookieBanner"
                     value={JSON.stringify(settings.enableWidgetCookieBanner)}
-                    onChange={value =>
+                    onChange={value => {
                         setSettings({
                             ...settings,
                             enableWidgetCookieBanner: v.parse(
@@ -109,7 +109,7 @@ export default function ChatPage() {
                                 JSON.parse(value.target.value)
                             ),
                         })
-                    }
+                    }}
                     disabled={!isAllowedToSetCustomCode}
                     title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
                     className={isAllowedToSetCustomCode ? undefined : "opacity-50"}
@@ -129,12 +129,12 @@ export default function ChatPage() {
                         { value: "true", label: "Hide" },
                     ]}
                     value={JSON.stringify(settings.disableAttachment)}
-                    onValueChange={value =>
+                    onValueChange={value => {
                         setSettings({
                             ...settings,
                             disableAttachment: v.parse(DisableAttachmentSchema, JSON.parse(value)),
                         })
-                    }
+                    }}
                     disabled={!isAllowedToSetCustomCode}
                     title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
                 />

@@ -1,15 +1,14 @@
 import { useContext, useState } from "react"
 import { Check, Loader } from "react-feather"
 import { requestIndexing } from "../api"
-import { AuthContext } from "../auth"
-import type { GoogleToken } from "../types"
+import { AccessTokenContext } from "../auth"
 
 interface ReIndexButtonProps {
     urls: string[] | null
 }
 
 export default function ReIndexButton({ urls = [] }: ReIndexButtonProps) {
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     const [reindexAllStatus, setReindexAllStatus] = useState({
         loading: false,
@@ -27,9 +26,8 @@ export default function ReIndexButton({ urls = [] }: ReIndexButtonProps) {
 
                     setReindexAllStatus({ loading: true, success: false })
 
-                    const promises = (urls || []).map(url => requestIndexing(url, authContext.access_token))
-
-                    Promise.all(promises).then(() => {
+                    const promises = (urls ?? []).map(url => requestIndexing(url, accessToken))
+                    void Promise.all(promises).then(() => {
                         setReindexAllStatus({ loading: false, success: true })
                     })
                 }}

@@ -13,7 +13,7 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
     const [isRetrying, setIsRetrying] = useState(false)
 
     useLayoutEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 240,
             height,
             resizable: false,
@@ -27,9 +27,16 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
     const handleRetryClick = () => {
         setIsRetrying(true)
 
-        getPluginContext()
-            .then(setContext)
-            .finally(() => setIsRetrying(false))
+        const task = async () => {
+            try {
+                const context = await getPluginContext()
+                setContext(context)
+            } finally {
+                setIsRetrying(false)
+            }
+        }
+
+        void task()
     }
 
     return (

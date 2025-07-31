@@ -66,7 +66,7 @@ export const FieldMapper = ({
     )
 
     return (
-        <ScrollFadeContainer height={height || 280} className={className}>
+        <ScrollFadeContainer height={height ?? 280} className={className}>
             <div className="grid grid-cols-field-picker items-center gap-2.5">
                 <span className="col-span-2 h-[30px] flex items-end text-tertiary">{fromLabel}</span>
                 <span className="h-[30px] flex items-end text-tertiary">{toLabel}</span>

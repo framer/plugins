@@ -1,6 +1,7 @@
+import { Column, ColumnTypeEnum } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/Column"
 import { framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
-import { type Column, usePublishedTable } from "../../../api"
+import { usePublishedTable } from "../../../api"
 import { useLoggingToggle } from "../../../cms"
 import { Button } from "../../../components/Button"
 import { CenteredSpinner } from "../../../components/CenteredSpinner"
@@ -18,7 +19,7 @@ import { assert, isDefined, syncMethods } from "../../../utils"
 const getInitialSlugFieldId = (context: HubDBPluginContext, columns: Column[]): string | null => {
     if (context.type === "update" && context.slugFieldId) return context.slugFieldId
 
-    const textColumns = columns.filter(col => col.type === "TEXT")
+    const textColumns = columns.filter(col => col.type === ColumnTypeEnum.Text)
     return textColumns[0]?.id ?? null
 }
 
@@ -40,8 +41,8 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
     const searchParams = useSearchParams()
     const tableId = searchParams.get("tableId")
 
-    const { data: table, isLoading: isLoadingTable } = usePublishedTable(tableId || "")
-    const slugFields = useMemo(() => getPossibleSlugFields(table?.columns || []), [table])
+    const { data: table, isLoading: isLoadingTable } = usePublishedTable(tableId ?? "")
+    const slugFields = useMemo(() => getPossibleSlugFields(table?.columns ?? []), [table])
     const [slugFieldId, setSlugFieldId] = useState<string | null>(null)
     const [collectionFieldConfig, setCollectionFieldConfig] = useState<ManagedCollectionFieldConfig[]>([])
     const [includedFieldIds, setIncludedFieldIds] = useState(new Set<string>())
@@ -49,7 +50,7 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
 
     const { mutate: sync, isPending: isSyncing } = useSyncHubDBTableMutation({
         onError: e => framer.notify(e.message, { variant: "error" }),
-        onSuccess: () => framer.closePlugin("Synchronization successful"),
+        onSuccess: () => void framer.closePlugin("Synchronization successful"),
     })
 
     useEffect(() => {
@@ -109,7 +110,9 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
                 <select
                     className="w-full"
                     value={slugFieldId ?? ""}
-                    onChange={e => setSlugFieldId(e.target.value)}
+                    onChange={e => {
+                        setSlugFieldId(e.target.value)
+                    }}
                     id="slugField"
                     required
                     disabled={!isAllowedToManage}

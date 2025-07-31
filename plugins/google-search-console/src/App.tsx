@@ -3,7 +3,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from "react"
 import { ErrorBoundary, useErrorBoundary } from "react-error-boundary"
 import "./App.css"
 import * as v from "valibot"
-import { AuthContext, useGoogleToken } from "./auth"
+import { AccessTokenContext, useGoogleToken } from "./auth"
 import Loading from "./components/Loading"
 import { LARGE_HEIGHT, PLUGIN_WIDTH, SMALL_HEIGHT } from "./constants"
 import { mockSiteInfo } from "./mocks"
@@ -11,10 +11,10 @@ import CriticalError from "./screens/CriticalError"
 import GoogleLogin from "./screens/GoogleLogin"
 import NeedsPublish from "./screens/NeedsPublish"
 import SiteView from "./screens/SiteView"
-import type { GoogleSite, GoogleToken, Site, SiteWithGoogleSite } from "./types"
+import { type GoogleSite, GoogleSiteSchema, type Site } from "./types"
 import { googleApiCall, stripTrailingSlash } from "./utils"
 
-framer.showUI({
+void framer.showUI({
     position: "top right",
     width: PLUGIN_WIDTH,
     height: SMALL_HEIGHT,
@@ -32,7 +32,7 @@ function usePublishedSite() {
 
     const [needsPublish, setNeedsPublish] = useState(false)
 
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     useEffect(() => {
         return framer.subscribeToPublishInfo(setPublishInfo)
@@ -41,12 +41,12 @@ function usePublishedSite() {
     const { refresh } = useGoogleToken()
 
     const fetchGoogleSites = useCallback(
-        async (token: string): Promise<Array<GoogleSite>> => {
+        async (token: string): Promise<GoogleSite[]> => {
             const result = (await googleApiCall(`/webmasters/v3/sites`, token, refresh)) as {
-                siteEntry: Array<GoogleSite>
+                siteEntry: GoogleSite[]
             } | null
 
-            return result?.siteEntry || []
+            return result?.siteEntry ?? []
         },
         [refresh]
     )
@@ -62,17 +62,14 @@ function usePublishedSite() {
                     if (publishInfo.production?.url) {
                         const domain = new URL(publishInfo.production.url).hostname
 
-                        const googleSites = await fetchGoogleSites(authContext.access_token)
+                        const googleSites = await fetchGoogleSites(accessToken)
 
                         const url = stripTrailingSlash(publishInfo.production.url)
 
-                        let googleSite =
-                            googleSites.find(currSite => currSite.siteUrl === `sc-domain:${domain}`) || null
-
-                        if (!googleSite) {
-                            googleSite =
-                                googleSites.find(currSite => stripTrailingSlash(currSite.siteUrl) === url) || null
-                        }
+                        const googleSite =
+                            googleSites.find(currSite => currSite.siteUrl === `sc-domain:${domain}`) ??
+                            googleSites.find(currSite => stripTrailingSlash(currSite.siteUrl) === url) ??
+                            null
 
                         setSiteInfo({
                             url,
@@ -90,8 +87,8 @@ function usePublishedSite() {
             }
         }
 
-        update()
-    }, [authContext.access_token, fetchGoogleSites, publishInfo, showBoundary])
+        void update()
+    }, [accessToken, fetchGoogleSites, publishInfo, showBoundary])
 
     if (SHOW_MOCK_SITEMAP_DATA) {
         return mockSiteInfo
@@ -105,6 +102,8 @@ interface AppLoadSiteProps {
     logout: () => void
 }
 
+const WithGoogleSiteSchema = v.object({ googleSite: GoogleSiteSchema })
+
 function AppLoadSite({ login, logout }: AppLoadSiteProps) {
     const site = usePublishedSite()
 
@@ -114,8 +113,8 @@ function AppLoadSite({ login, logout }: AppLoadSiteProps) {
 
     return !site.siteInfo ? (
         <Loading />
-    ) : site.siteInfo && site.siteInfo.googleSite ? (
-        <SiteView site={site.siteInfo as SiteWithGoogleSite} logout={logout} />
+    ) : v.is(WithGoogleSiteSchema, site.siteInfo) ? (
+        <SiteView site={site.siteInfo} logout={logout} />
     ) : (
         <CriticalError site={site.siteInfo} logout={logout} />
     )
@@ -130,14 +129,14 @@ export function App() {
 
     useEffect(() => {
         if (!tokens?.access_token) {
-            framer.showUI({ width: PLUGIN_WIDTH, height: SMALL_HEIGHT })
+            void framer.showUI({ width: PLUGIN_WIDTH, height: SMALL_HEIGHT })
         } else {
-            framer.showUI({ width: PLUGIN_WIDTH, height: LARGE_HEIGHT })
+            void framer.showUI({ width: PLUGIN_WIDTH, height: LARGE_HEIGHT })
         }
     }, [tokens?.access_token])
 
     return (
-        <main key={tokens?.access_token || "logout"} ref={ref}>
+        <main key={tokens?.access_token ?? "logout"} ref={ref}>
             <ErrorBoundary
                 FallbackComponent={({ error }: { error: unknown }) => {
                     const errorMessage = v.is(ErrorSchema, error) && error.name !== "GoogleError" ? error.message : ""
@@ -145,15 +144,15 @@ export function App() {
                 }}
                 resetKeys={[tokens?.access_token]}
             >
-                <AuthContext.Provider value={tokens}>
-                    {isReady ? (
-                        tokens?.access_token ? (
+                {isReady ? (
+                    tokens?.access_token ? (
+                        <AccessTokenContext.Provider value={tokens.access_token}>
                             <AppLoadSite key={tokens.access_token} login={login} logout={logout} />
-                        ) : (
-                            <GoogleLogin login={login} loading={loading} />
-                        )
-                    ) : null}
-                </AuthContext.Provider>
+                        </AccessTokenContext.Provider>
+                    ) : (
+                        <GoogleLogin login={login} loading={loading} />
+                    )
+                ) : null}
             </ErrorBoundary>
         </main>
     )

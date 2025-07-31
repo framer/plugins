@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition -- ogl types are untrustworthy */
+
 import {
     Camera,
     Geometry,
@@ -458,7 +460,7 @@ export function useGLBTexture(
         (
             node: Transform & { geometry?: Geometry; boneTexture?: Texture; program: { gltfMaterial?: GLTFMaterial } }
         ) => {
-            const gltf = node.program.gltfMaterial || ({} as GLTFMaterial)
+            const gltf = node.program.gltfMaterial ?? ({} as GLTFMaterial)
             let { vertex, fragment } = shader
 
             const vertexPrefix = gl.renderer.isWebgl2
@@ -507,8 +509,8 @@ export function useGLBTexture(
                     tRM: {
                         value: gltf.metallicRoughnessTexture ? gltf.metallicRoughnessTexture.texture : null,
                     },
-                    uRoughness: { value: gltf.roughnessFactor !== undefined ? gltf.roughnessFactor : 1 },
-                    uMetallic: { value: gltf.metallicFactor !== undefined ? gltf.metallicFactor : 1 },
+                    uRoughness: { value: gltf.roughnessFactor ?? 1 },
+                    uMetallic: { value: gltf.metallicFactor ?? 1 },
 
                     tNormal: { value: gltf.normalTexture ? gltf.normalTexture.texture : null },
                     uNormalScale: { value: gltf.normalTexture ? gltf.normalTexture.scale || 1 : 1 },
@@ -541,7 +543,9 @@ export function useGLBTexture(
 
     const addToScene = useCallback(
         (gltf: GLTF) => {
-            scene.children.forEach(child => child.setParent(null))
+            scene.children.forEach(child => {
+                child.setParent(null)
+            })
 
             const s = gltf.scene || gltf.scenes[0]
             s.forEach(root => {
@@ -617,7 +621,7 @@ export function useGLBTexture(
     const [glb, setGlb] = useState<GLTF | null>(null)
 
     const render = useCallback(() => {
-        if (glb && glb.animations && glb.animations[0]) {
+        if (glb?.animations?.[0]) {
             const { animation } = glb.animations[0]
             animation.elapsed += 0.01
             animation.update()
@@ -647,6 +651,6 @@ export function useGLBTexture(
             onUpdate(target.texture)
         }
 
-        task()
+        void task()
     }, [src, target, scene, type, ...deps])
 }

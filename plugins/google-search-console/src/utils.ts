@@ -72,7 +72,7 @@ ${JSON.stringify(part.body)}
                 method: "POST",
             })
 
-        let result = await attempt(initialToken?.access_token || token)
+        let result = await attempt(initialToken?.access_token ?? token)
 
         if (!result.ok) {
             const newToken = await refresh()
@@ -91,7 +91,7 @@ ${JSON.stringify(part.body)}
 
             const textParts = text.split("--batch_").map(part => {
                 try {
-                    const indexId = part.match(/<response-request-([0-9]+)>/)?.[1]
+                    const indexId = /<response-request-([0-9]+)>/.exec(part)?.[1]
                     if (!indexId) return null
 
                     const request = currParts[Number(indexId)]
@@ -140,7 +140,7 @@ export async function googleApiCall(
             ...(opts.method !== "GET" ? opts : {}),
         })
 
-    let result = await attempt(initialToken?.access_token || token)
+    let result = await attempt(initialToken?.access_token ?? token)
 
     if (!result.ok) {
         const newToken = await refresh()

@@ -60,7 +60,7 @@ export async function fetchUnsplash<TSchema extends v.GenericSchema>(
     })
 
     if (!response.ok) {
-        throw new Error("Failed to fetch Unsplash API:" + response.status)
+        throw new Error(`Failed to fetch Unsplash API: ${response.status}`)
     }
 
     const json = (await response.json()) as unknown
@@ -79,11 +79,9 @@ export function useListPhotosInfinite(query: string) {
         queryKey: ["photos", query],
         initialPageParam: 1,
         queryFn: async ({ pageParam, signal }) => {
-            const page = pageParam ?? 1
-
             if (query.length === 0) {
                 const photos = await fetchUnsplash(
-                    `/photos?page=${page}&per_page=${pageItemCount}`,
+                    `/photos?page=${pageParam}&per_page=${pageItemCount}`,
                     v.array(unsplashPhotoSchema),
                     {
                         signal,
@@ -99,7 +97,7 @@ export function useListPhotosInfinite(query: string) {
             }
 
             const result = await fetchUnsplash(
-                `/search/photos?query=${query}&page=${pageParam ?? 1}&per_page=${pageItemCount}`,
+                `/search/photos?query=${query}&page=${pageParam}&per_page=${pageItemCount}`,
                 listPhotosSchema,
                 { signal, method: "GET" }
             )

@@ -1,0 +1,33 @@
+name: Shippy
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - ready_for_review
+      - synchronize
+  workflow_dispatch:
+    # NOTE: To prevent GitHub from adding PRs to the merge queue before check is done,
+    # make sure that there is a ruleset that requires the “Shippy check to pass.
+    merge_group:
+      types:
+        - checks_requested
+  
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-pr-description:
+    name: PR Description Check
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
+    steps:
+      - name: Check PR description
+        run: |
+          trimmed="$(echo "${{ github.event.pull_request.body }}" | xargs)"
+          if [ -z "$trimmed" ]; then
+            echo "❌ PR description is required."
+            exit 1
+          fi

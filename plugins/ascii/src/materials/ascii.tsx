@@ -182,9 +182,9 @@ export class ASCIIMaterial extends Program {
     }
 }
 
-const FONTS = ["Roboto Mono", "Fragment Mono", "Martian Mono", "Space Mono", "Courier Prime"]
+const FONTS = ["Roboto Mono", "Fragment Mono", "Martian Mono", "Space Mono", "Courier Prime"] as const
 
-export type ASCIIRef = {
+export interface ASCIIRef {
     program: ASCIIMaterial
     setPixelSize: (value: number) => void
 }
@@ -196,7 +196,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
     const [textColor, setTextColor] = useState("#ffffff")
     const [brightness, setBrightness] = useState(0)
     const [backgroundColor, setBackgroundColor] = useState("#000000")
-    const [font, setFont] = useState(FONTS[0])
+    const [font, setFont] = useState<string>(FONTS[0])
     const [isTransparent, setIsTransparent] = useState(false)
     const [isFilled, setIsFilled] = useState(false)
 
@@ -268,7 +268,9 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     className="gui-input"
                     type="text"
                     value={characters}
-                    onChange={e => setCharacters(e.target.value)}
+                    onChange={e => {
+                        setCharacters(e.target.value)
+                    }}
                 />
             </div>
             <div className="gui-row">

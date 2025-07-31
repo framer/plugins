@@ -8,9 +8,7 @@ function handleFocus(event: React.FocusEvent<HTMLInputElement>) {
     event.target.select()
 }
 
-function calculateRadius(derivedFromOuterValue: boolean, value: number = 20, childRect: Rect) {
-    if (!childRect) return
-
+function calculateRadius(derivedFromOuterValue: boolean, value = 20, childRect: Rect) {
     const smallestValue = Math.max(childRect.x, childRect.y)
 
     if (derivedFromOuterValue) {
@@ -69,10 +67,10 @@ export function App() {
         }
 
         let active = true
-        const children = parentNode.getChildren()
-        const parentRect = parentNode.getRect()
 
-        Promise.all([children, parentRect]).then(([children, parentRect]) => {
+        const task = async () => {
+            const [children, parentRect] = await Promise.all([parentNode.getChildren(), parentNode.getRect()])
+
             if (!active) return
             if (children.length !== 1 || !parentRect) {
                 setState(null)
@@ -85,39 +83,42 @@ export function App() {
                 return
             }
 
-            childNode.getRect().then(childRect => {
-                if (!active) return
-                if (!childRect) {
-                    setState(null)
-                    return
-                }
+            const childRect = await childNode.getRect()
 
-                setState({
-                    parentNode,
-                    childNode,
-                    parentRect,
-                    childRect,
-                })
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- https://github.com/typescript-eslint/typescript-eslint/issues/1459
+            if (!active) return
+            if (!childRect) {
+                setState(null)
+                return
+            }
 
-                if (!supportsBorderRadius(parentNode)) return
-                const selectionParentRadius =
-                    parentNode.borderRadius !== null ? Number.parseInt(parentNode.borderRadius) : 0
-
-                if (!supportsBorderRadius(childNode)) return
-                const selectionChildRadius =
-                    childNode.borderRadius !== null
-                        ? Number.parseInt(childNode.borderRadius) > 0
-                            ? Number.parseInt(childNode.borderRadius)
-                            : 0
-                        : 0
-
-                setOuterValue(selectionParentRadius)
-                setOuterInputValue(selectionParentRadius.toString())
-
-                setInnerValue(selectionChildRadius)
-                setInnerInputValue(selectionChildRadius.toString())
+            setState({
+                parentNode,
+                childNode,
+                parentRect,
+                childRect,
             })
-        })
+
+            if (!supportsBorderRadius(parentNode)) return
+            const selectionParentRadius =
+                parentNode.borderRadius !== null ? Number.parseInt(parentNode.borderRadius) : 0
+
+            if (!supportsBorderRadius(childNode)) return
+            const selectionChildRadius =
+                childNode.borderRadius !== null
+                    ? Number.parseInt(childNode.borderRadius) > 0
+                        ? Number.parseInt(childNode.borderRadius)
+                        : 0
+                    : 0
+
+            setOuterValue(selectionParentRadius)
+            setOuterInputValue(selectionParentRadius.toString())
+
+            setInnerValue(selectionChildRadius)
+            setInnerInputValue(selectionChildRadius.toString())
+        }
+
+        void task()
 
         return () => {
             active = false
@@ -128,10 +129,10 @@ export function App() {
         if (!isAllowedToSetAttributes) return
 
         if (state) {
-            framer.setAttributes(state.parentNode.id, {
+            void framer.setAttributes(state.parentNode.id, {
                 borderRadius: `${outerValue}px`,
             })
-            framer.setAttributes(state.childNode.id, {
+            void framer.setAttributes(state.childNode.id, {
                 borderRadius: `${innerValue}px`,
             })
         }
@@ -139,28 +140,20 @@ export function App() {
 
     function handleOuterSliderChange(value: number[]) {
         if (!state) return
-        const radii = calculateRadius(true, value[0], state.childRect)
-
-        if (radii) {
-            const { outer, inner } = radii
-            setOuterValue(outer)
-            setInnerValue(inner)
-            setOuterInputValue(`${outer}`)
-            setInnerInputValue(`${inner > 0 ? inner : 0}`)
-        }
+        const { outer, inner } = calculateRadius(true, value[0], state.childRect)
+        setOuterValue(outer)
+        setInnerValue(inner)
+        setOuterInputValue(`${outer}`)
+        setInnerInputValue(`${inner > 0 ? inner : 0}`)
     }
 
     function handleInnerSliderChange(value: number[]) {
         if (!state) return
-        const radii = calculateRadius(false, value[0], state.childRect)
-
-        if (radii) {
-            const { outer, inner } = radii
-            setOuterValue(outer)
-            setInnerValue(inner)
-            setOuterInputValue(`${outer}`)
-            setInnerInputValue(`${inner > 0 ? inner : 0}`)
-        }
+        const { outer, inner } = calculateRadius(false, value[0], state.childRect)
+        setOuterValue(outer)
+        setInnerValue(inner)
+        setOuterInputValue(`${outer}`)
+        setInnerInputValue(`${inner > 0 ? inner : 0}`)
     }
 
     const handleOuterInput = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -177,15 +170,11 @@ export function App() {
         if (event.key === "Enter") {
             const newOuter = parseFloat(outerInputValue)
             if (!state) return
-            const radii = calculateRadius(true, newOuter, state.childRect)
-
-            if (radii) {
-                const { outer, inner } = radii
-                setOuterValue(outer)
-                setInnerValue(inner)
-                setOuterInputValue(`${outer}`)
-                setInnerInputValue(`${inner > 0 ? inner : 0}`)
-            }
+            const { outer, inner } = calculateRadius(true, newOuter, state.childRect)
+            setOuterValue(outer)
+            setInnerValue(inner)
+            setOuterInputValue(`${outer}`)
+            setInnerInputValue(`${inner > 0 ? inner : 0}`)
         }
     }
 
@@ -193,15 +182,11 @@ export function App() {
         if (event.key === "Enter") {
             const newInner = parseFloat(innerInputValue)
             if (!state) return
-            const radii = calculateRadius(false, newInner, state.childRect)
-
-            if (radii) {
-                const { outer, inner } = radii
-                setOuterValue(outer)
-                setInnerValue(inner)
-                setOuterInputValue(`${outer}`)
-                setInnerInputValue(`${inner > 0 ? inner : 0}`)
-            }
+            const { outer, inner } = calculateRadius(false, newInner, state.childRect)
+            setOuterValue(outer)
+            setInnerValue(inner)
+            setOuterInputValue(`${outer}`)
+            setInnerInputValue(`${inner > 0 ? inner : 0}`)
         }
     }
 
@@ -220,7 +205,7 @@ export function App() {
     return (
         <main>
             <div className="flex">
-                <div className={`row ${(!state || !isAllowedToSetAttributes) && "disable"}`}>
+                <div className={`row ${!state || !isAllowedToSetAttributes ? "disable" : ""}`}>
                     <p>Outer</p>
                     <input
                         type="number"
@@ -248,7 +233,7 @@ export function App() {
                         <Slider.Thumb className="SliderThumb" />
                     </Slider.Root>
                 </div>
-                <div className={`row ${(!state || !isAllowedToSetAttributes) && "disable"}`}>
+                <div className={`row ${!state || !isAllowedToSetAttributes ? "disable" : ""}`}>
                     <p>Inner</p>
 
                     <input

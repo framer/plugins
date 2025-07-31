@@ -47,8 +47,7 @@ function FieldMappingRow({
                     disabled={isDisabled}
                     value={field.collectionId}
                     onChange={event => {
-                        const value = event.target.value ? event.target.value : (originalFieldName ?? "")
-                        onCollectionChange(field.id, value)
+                        onCollectionChange(field.id, event.target.value || originalFieldName || "")
                     }}
                 >
                     {field.supportedCollections?.length === 0 && (

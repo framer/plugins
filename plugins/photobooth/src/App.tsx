@@ -11,7 +11,7 @@ export function App() {
     const webcamRef = useRef<Webcam>(null)
     const [scope, animate] = useAnimate()
 
-    const capture = useCallback(async () => {
+    const capture = useCallback(() => {
         if (!isAllowedToUpsertImage) return
         if (!webcamRef.current) return
 
@@ -20,17 +20,21 @@ export function App() {
 
         animate(".webcam-flash", { opacity: 1 })
 
-        const imageData = await getAssetDataFromUrl(image)
+        const task = async () => {
+            const imageData = await getAssetDataFromUrl(image)
 
-        const mode = framer.mode
-        if (mode === "image" || mode === "editImage") {
-            await framer.setImage({ image: imageData, name: "selfie" })
-            await framer.closePlugin()
-        } else {
-            await framer.addImage({ image: imageData, name: "selfie" })
+            const mode = framer.mode
+            if (mode === "image" || mode === "editImage") {
+                await framer.setImage({ image: imageData, name: "selfie" })
+                await framer.closePlugin()
+            } else {
+                await framer.addImage({ image: imageData, name: "selfie" })
+            }
+
+            animate(".webcam-flash", { opacity: 0 }, { duration: 0.3 })
         }
 
-        animate(".webcam-flash", { opacity: 0 }, { duration: 0.3 })
+        void task()
     }, [isAllowedToUpsertImage, webcamRef])
 
     return (

@@ -52,7 +52,7 @@ export function App() {
     }, [selection])
 
     const handleOnClick = useCallback(async (node: CanvasNode, color: string) => {
-        if (!node || !color) return
+        if (!color) return
 
         await framer.setAttributes(node.id, {
             backgroundColor: color,
@@ -62,7 +62,6 @@ export function App() {
     const setAsGradient = useCallback(
         async (node: CanvasNode, colors: FinalColor[]) => {
             if (!isAllowedToSetAttributes) return
-            if (!node || !colors) return
             if (!supportsBackgroundGradient(node)) return
 
             const colorStops: ColorStop[] = colors.map((color: FinalColor, index: number) => {
@@ -119,7 +118,7 @@ export function App() {
                         style={{ opacity: supportsGradient ? 1 : 0.5 }}
                         onClick={() => {
                             if (!currentSelection) return
-                            setAsGradient(currentSelection, colors)
+                            void setAsGradient(currentSelection, colors)
                         }}
                         title={isAllowedToSetAttributes ? undefined : "Insufficient permissions"}
                     >

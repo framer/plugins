@@ -6,6 +6,7 @@ import {
     type ManagedCollectionItemInput,
     type ProtectedMethod,
 } from "framer-plugin"
+import * as v from "valibot"
 import { isGreenhouseItemField } from "./api-types"
 import { dataSources, type GreenhouseDataSource, type GreenhouseField } from "./dataSources"
 import { assertNever, decodeHtml, isCollectionReference } from "./utils"
@@ -94,6 +95,9 @@ export function mergeFieldsWithExistingFields(
     })
 }
 
+const StringifiableSchema = v.union([v.string(), v.number(), v.boolean()])
+const ArrayWithIdsSchema = v.array(v.object({ id: v.number() }))
+
 async function getItems(
     dataSource: GreenhouseDataSource,
     fieldsToSync: readonly ManagedCollectionFieldInput[],
@@ -103,7 +107,7 @@ async function getItems(
 
     const dataItems = await dataSource.fetch(boardToken)
 
-    const itemIdBySlug: Map<string, string> = new Map()
+    const itemIdBySlug = new Map<string, string>()
     const idField = fieldsToSync[0]
     if (!idField) {
         throw new Error("No ID field found in data source.")
@@ -126,7 +130,7 @@ async function getItems(
         itemIdBySlug.set(uniqueSlug, id)
     }
 
-    const slugByItemId: Map<string, string> = new Map()
+    const slugByItemId = new Map<string, string>()
     for (const [slug, itemId] of itemIdBySlug.entries()) {
         slugByItemId.set(itemId, slug)
     }
@@ -139,7 +143,7 @@ async function getItems(
         }
 
         const fieldData: FieldDataInput = {}
-        for (const [fieldName, rawValue] of Object.entries(item)) {
+        for (const [fieldName, rawValue] of Object.entries(item) as [string, unknown][]) {
             const isFieldIgnored = !fieldsToSync.find(field => field.id === fieldName)
             const field = dataSource.fields.find(field => field.id === fieldName)
 
@@ -152,7 +156,7 @@ async function getItems(
             switch (field.type) {
                 case "string":
                     fieldData[field.id] = {
-                        value: value ? String(value) : "",
+                        value: v.is(StringifiableSchema, value) ? String(value) : "",
                         type: "string",
                     }
                     break
@@ -172,13 +176,13 @@ async function getItems(
                 case "date":
                 case "link":
                     fieldData[field.id] = {
-                        value: value ? String(value) : null,
+                        value: v.is(StringifiableSchema, value) ? String(value) : null,
                         type: field.type,
                     }
                     break
                 case "multiCollectionReference": {
-                    const ids: string[] = []
-                    if (Array.isArray(value)) {
+                    const ids = []
+                    if (v.is(ArrayWithIdsSchema, value)) {
                         ids.push(...value.map(item => String(item.id)))
                     }
 
@@ -263,10 +267,8 @@ export async function syncExistingCollection(
     }
 
     if (!framer.isAllowedTo(...syncMethods)) {
-        framer.closePlugin("You are not allowed to sync this collection.", {
-            variant: "error",
-        })
-        return { didSync: false }
+        await framer.closePlugin("You are not allowed to sync this collection.", { variant: "error" })
+        throw new Error("Unreachable")
     }
 
     try {

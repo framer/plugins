@@ -8,13 +8,17 @@ import {
     framer,
 } from "framer-plugin"
 
-type CSVRecord = Record<string, string>
+import * as v from "valibot"
+
+const CSVRecordSchema = v.record(v.string(), v.string())
+
+type CSVRecord = v.InferOutput<typeof CSVRecordSchema>
 
 export type ImportResultItem = CollectionItemInput & {
     action: "add" | "conflict" | "onConflictUpdate" | "onConflictSkip"
 }
 
-export type ImportResult = {
+export interface ImportResult {
     warnings: {
         missingSlugCount: number
         doubleSlugCount: number
@@ -36,7 +40,7 @@ export async function parseCSV(data: string): Promise<CSVRecord[]> {
     const { parse } = await import("csv-parse/browser/esm/sync")
 
     let records: CSVRecord[] = []
-    let error: unknown
+    let error
 
     // Delimiters to try
     // ,  = pretty much the default
@@ -49,7 +53,7 @@ export async function parseCSV(data: string): Promise<CSVRecord[]> {
 
     for (const delimiter of delimiters) {
         try {
-            const parsed = parse(data, { ...options, delimiter })
+            const parsed = parse(data, { ...options, delimiter }) as unknown
 
             // It can happen that parsing succeeds with the wrong delimiter. For example, a tab separated file could be parsed
             // successfully with comma separators. If that's the case, we can find it by checking two things:
@@ -60,16 +64,16 @@ export async function parseCSV(data: string): Promise<CSVRecord[]> {
             if (firstItemKeys.length < 2) {
                 const delimiterInKey = delimiters.some(del => firstItemKeys[0]?.includes(del))
                 if (delimiterInKey) {
-                    error = "Parsed with incorrect delimiter"
+                    error = new Error("Parsed with incorrect delimiter")
                     continue
                 }
             }
 
             error = undefined
-            records = parsed
+            records = v.parse(v.array(CSVRecordSchema), parsed)
             break
-        } catch (err) {
-            error = err
+        } catch (innerError) {
+            error = innerError instanceof Error ? innerError : new Error(String(innerError))
         }
     }
 
@@ -134,7 +138,7 @@ function getFieldDataEntryInputForField(
             if (Number.isNaN(number)) {
                 return new ConversionError(`Invalid value for field “${field.name}” expected a number`)
             }
-            return { type: "number", value: number ?? 0 }
+            return { type: "number", value: number }
         }
 
         case "boolean": {
@@ -353,9 +357,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
                 continue
             }
 
-            if (fieldDataEntry !== undefined) {
-                fieldData[field.id] = fieldDataEntry
-            }
+            fieldData[field.id] = fieldDataEntry
         }
 
         const item: ImportResultItem = {
@@ -388,19 +390,23 @@ export async function importCSV(collection: Collection, result: ImportResult) {
     await collection.addItems(
         result.items
             .filter(item => item.action !== "onConflictSkip")
-            .map(item =>
-                item.action === "add"
-                    ? {
-                          slug: item.slug!,
-                          fieldData: item.fieldData,
-                          draft: item.draft,
-                      }
-                    : {
-                          id: item.id!,
-                          fieldData: item.fieldData,
-                          draft: item.draft,
-                      }
-            )
+            .map(item => {
+                if (item.action === "add") {
+                    assert(item.slug !== undefined, "Item requires a slug")
+                    return {
+                        slug: item.slug,
+                        fieldData: item.fieldData,
+                        draft: item.draft,
+                    }
+                }
+
+                assert(item.id !== undefined, "Item requires an id")
+                return {
+                    id: item.id,
+                    fieldData: item.fieldData,
+                    draft: item.draft,
+                }
+            })
     )
 
     const messages: string[] = []

@@ -3168,9 +3168,10 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.4.0"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -3306,13 +3307,13 @@ __metadata:
   linkType: hard
 
 "axios@npm:^1.8.3":
-  version: 1.10.0
-  resolution: "axios@npm:1.10.0"
+  version: 1.11.0
+  resolution: "axios@npm:1.11.0"
   dependencies:
     follow-redirects: "npm:^1.15.6"
-    form-data: "npm:^4.0.0"
+    form-data: "npm:^4.0.4"
     proxy-from-env: "npm:^1.1.0"
-  checksum: 10/d43c80316a45611fd395743e15d16ea69a95f2b7f7095f2bb12cb78f9ca0a905194a02e52a3bf4e0db9f85fd1186d6c690410644c10ecd8bb0a468e57c2040e4
+  checksum: 10/232df4af7a4e4e07baa84621b9cc4b0c518a757b4eacc7f635c0eb3642cb98dff347326739f24b891b3b4481b7b838c79a3a0c4819c9fbc1fc40232431b9c5dc
   languageName: node
   linkType: hard
 
@@ -3763,6 +3764,7 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -4595,15 +4597,16 @@ __metadata:
   linkType: hard
 
 "form-data@npm:^2.5.0":
-  version: 2.5.3
-  resolution: "form-data@npm:2.5.3"
+  version: 2.5.5
+  resolution: "form-data@npm:2.5.5"
   dependencies:
     asynckit: "npm:^0.4.0"
     combined-stream: "npm:^1.0.8"
     es-set-tostringtag: "npm:^2.1.0"
+    hasown: "npm:^2.0.2"
     mime-types: "npm:^2.1.35"
     safe-buffer: "npm:^5.2.1"
-  checksum: 10/c8fced6dcb97aa50d4101dd66431cbc932bfc62409dedf633c811cc2cb30abd5b0e4e24213aff86045b44a4de4178587781a9d3da7268df38e54f8b5b6acea89
+  checksum: 10/4b6a8d07bb67089da41048e734215f68317a8e29dd5385a972bf5c458a023313c69d3b5d6b8baafbb7f808fa9881e0e2e030ffe61e096b3ddc894c516401271d
   languageName: node
   linkType: hard
 
@@ -4617,6 +4620,19 @@ __metadata:
     hasown: "npm:^2.0.2"
     mime-types: "npm:^2.1.12"
   checksum: 10/22f6e55e6f32a5797a500ed7ca5aa9d690c4de6e1b3308f25f0d83a27d08d91a265ab59a190db2305b15144f8f07df08e8117bad6a93fc93de1baa838bfcc0b5
+  languageName: node
+  linkType: hard
+
+"form-data@npm:^4.0.4":
+  version: 4.0.4
+  resolution: "form-data@npm:4.0.4"
+  dependencies:
+    asynckit: "npm:^0.4.0"
+    combined-stream: "npm:^1.0.8"
+    es-set-tostringtag: "npm:^2.1.0"
+    hasown: "npm:^2.0.2"
+    mime-types: "npm:^2.1.12"
+  checksum: 10/a4b62e21932f48702bc468cc26fb276d186e6b07b557e3dd7cc455872bdbb82db7db066844a64ad3cf40eaf3a753c830538183570462d3649fdfd705601cbcfb
   languageName: node
   linkType: hard
 
@@ -4673,13 +4689,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-plugin@npm:^3.4.0":
-  version: 3.4.0
-  resolution: "framer-plugin@npm:3.4.0"
+"framer-plugin@npm:^3.5.2":
+  version: 3.5.2
+  resolution: "framer-plugin@npm:3.5.2"
   peerDependencies:
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 10/3ba06eb482b992af0a548b7541dda36c59481e0252d1c822b712cc6e480f4a71b8b67080669abff452cb6e3d2ea33c531c59c58c0b2ab80c8382750f0d3e1104
+  checksum: 10/4f2ad2e782b3a18bb827b809366bd5e0c9250917155ba4db762e65e404dff61bb3729f8ffc892bbb7a355c3c82ed7438a0d4b381228b01df47e9c76ad3a80124
   languageName: node
   linkType: hard
 
@@ -4797,6 +4813,7 @@ __metadata:
     react-feather: "npm:^2.0.10"
     react-is: "npm:^18.3.1"
     recharts: "npm:^3.0.2"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -4808,12 +4825,13 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     classnames: "npm:^2.5.1"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
     react-intersection-observer: "npm:^9.16.0"
     tailwindcss: "npm:^4.1.11"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -4840,6 +4858,7 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -4923,14 +4942,14 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     classnames: "npm:^2.5.1"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     motion: "npm:^12.23.0"
-    p-limit: "npm:^6.2.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
     tailwindcss: "npm:^4.1.11"
     usehooks-ts: "npm:^3.1.1"
+    valibot: "npm:^1.1.0"
     wouter: "npm:^3.7.1"
   languageName: unknown
   linkType: soft
@@ -5699,10 +5718,11 @@ __metadata:
     "@notionhq/client": "npm:^3.1.3"
     "@types/react": "npm:^18.3.18"
     "@types/react-dom": "npm:^18.3.5"
-    framer-plugin: "npm:^3.4.0"
+    framer-plugin: "npm:^3.5.2"
     framer-plugin-tools: "npm:^1.0.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -5749,15 +5769,6 @@ __metadata:
   dependencies:
     yocto-queue: "npm:^0.1.0"
   checksum: 10/7c3690c4dbf62ef625671e20b7bdf1cbc9534e83352a2780f165b0d3ceba21907e77ad63401708145ca4e25bfc51636588d89a8c0aeb715e6c37d1c066430360
-  languageName: node
-  linkType: hard
-
-"p-limit@npm:^6.2.0":
-  version: 6.2.0
-  resolution: "p-limit@npm:6.2.0"
-  dependencies:
-    yocto-queue: "npm:^1.1.1"
-  checksum: 10/70e8df3e5f1c173c9bd9fa8390a3c5c2797505240ae42973536992b1f5f59a922153c2f35ff1bf36fb72a0f025b0f13fca062a4233e830adad446960d56b4d84
   languageName: node
   linkType: hard
 
@@ -6945,6 +6956,7 @@ __metadata:
     framer-plugin: "npm:^3.3.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
   languageName: unknown
   linkType: soft
 
@@ -7660,13 +7672,6 @@ __metadata:
   version: 0.1.0
   resolution: "yocto-queue@npm:0.1.0"
   checksum: 10/f77b3d8d00310def622123df93d4ee654fc6a0096182af8bd60679ddcdfb3474c56c6c7190817c84a2785648cdee9d721c0154eb45698c62176c322fb46fc700
-  languageName: node
-  linkType: hard
-
-"yocto-queue@npm:^1.1.1":
-  version: 1.2.1
-  resolution: "yocto-queue@npm:1.2.1"
-  checksum: 10/0843d6c2c0558e5c06e98edf9c17942f25c769e21b519303a5c2adefd5b738c9b2054204dc856ac0cd9d134b1bc27d928ce84fd23c9e2423b7e013d5a6f50577
   languageName: node
   linkType: hard
 

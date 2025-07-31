@@ -1,11 +1,17 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
+import * as v from "valibot"
 import {
+    type Department,
+    DepartmentSchema,
+    type Education,
+    EducationSchema,
     type GreenhouseItem,
-    validateDepartments,
-    validateEducations,
-    validateJobs,
-    validateOffices,
-    validateSections,
+    type Job,
+    JobSchema,
+    type Office,
+    OfficeSchema,
+    type Section,
+    SectionSchema,
 } from "./api-types"
 
 export interface GreenhouseDataSource {
@@ -18,28 +24,29 @@ export interface GreenhouseDataSource {
      * The rest of the fields are the fields of the data source.
      */
     fields: readonly GreenhouseField[]
-    apiPath: string
     fetch: (boardToken: string) => Promise<GreenhouseItem[]>
 }
 
-async function fetchGreenhouseData(url: string, itemsKey: string): Promise<unknown[]> {
+const PaginationDataSchema = v.object({ meta: v.object({ total_count: v.number(), per_page: v.number() }) })
+
+async function fetchGreenhousePages(url: string): Promise<unknown[]> {
     try {
         const response = await fetch(url)
-        const data = await response.json()
-        const items = []
+        const data = (await response.json()) as unknown
+        const pages = []
 
-        if (data?.meta?.total_count && data?.meta?.per_page) {
-            const pages = Math.ceil(data.meta.total_count / data.meta.per_page)
-            for (let i = 0; i < pages; i++) {
-                const response = await fetch(`${url}?page=${i + 1}`)
-                const data = await response.json()
-                items.push(...(data[itemsKey] as unknown[]))
+        if (v.is(PaginationDataSchema, data)) {
+            const numberOfPages = Math.ceil(data.meta.total_count / data.meta.per_page)
+            for (let i = 1; i <= numberOfPages; i += 1) {
+                const response = await fetch(`${url}?page=${i}`)
+                const pageData = (await response.json()) as unknown
+                pages.push(pageData)
             }
         } else {
-            items.push(...(data[itemsKey] as unknown[]))
+            pages.push(data)
         }
 
-        return items
+        return pages
     } catch (error) {
         console.error("Error fetching Greenhouse data:", error)
         throw error
@@ -51,7 +58,7 @@ export type GreenhouseField = ManagedCollectionFieldInput &
         | {
               type: Exclude<ManagedCollectionFieldInput["type"], "collectionReference" | "multiCollectionReference">
               /** Used to transform the value of the field. Sometimes the value is inside an object, so we need to extract it. */
-              getValue?: <T>(value: T) => unknown
+              getValue?: (value: unknown) => unknown
               canBeUsedAsSlug?: boolean
           }
         | {
@@ -62,15 +69,15 @@ export type GreenhouseField = ManagedCollectionFieldInput &
           }
     )
 
+const EducationPagesSchema = v.array(v.object({ items: v.array(EducationSchema) }))
+
 const degreesDataSource = createDataSource(
     {
         name: "Degrees",
-        apiPath: "education/degrees",
-        fetch: async (boardToken: string) => {
+        fetch: async (boardToken: string): Promise<Education[]> => {
             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/degrees`
-            const items = await fetchGreenhouseData(url, "items")
-            validateEducations(items)
-            return items
+            const items = v.parse(EducationPagesSchema, await fetchGreenhousePages(url))
+            return items.flatMap(page => page.items)
         },
     },
     [
@@ -78,15 +85,14 @@ const degreesDataSource = createDataSource(
         { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
     ]
 )
+
 const schoolsDataSource = createDataSource(
     {
         name: "Schools",
-        apiPath: "education/schools",
-        fetch: async (boardToken: string) => {
+        fetch: async (boardToken: string): Promise<Education[]> => {
             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/schools`
-            const items = await fetchGreenhouseData(url, "items")
-            validateEducations(items)
-            return items
+            const items = v.parse(EducationPagesSchema, await fetchGreenhousePages(url))
+            return items.flatMap(page => page.items)
         },
     },
     [
@@ -94,15 +100,14 @@ const schoolsDataSource = createDataSource(
         { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
     ]
 )
+
 const disciplinesDataSource = createDataSource(
     {
         name: "Disciplines",
-        apiPath: "education/disciplines",
-        fetch: async (boardToken: string) => {
+        fetch: async (boardToken: string): Promise<Education[]> => {
             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/education/disciplines`
-            const items = await fetchGreenhouseData(url, "items")
-            validateEducations(items)
-            return items
+            const items = v.parse(EducationPagesSchema, await fetchGreenhousePages(url))
+            return items.flatMap(page => page.items)
         },
     },
     [
@@ -110,18 +115,18 @@ const disciplinesDataSource = createDataSource(
         { id: "text", name: "Name", type: "string", canBeUsedAsSlug: true },
     ]
 )
+
+const DepartmentPagesSchema = v.array(v.object({ departments: v.array(DepartmentSchema) }))
 
 const jobsDataSourceName = "Jobs"
 
 const departmentsDataSource = createDataSource(
     {
         name: "Departments",
-        apiPath: "departments",
-        fetch: async (boardToken: string) => {
+        fetch: async (boardToken: string): Promise<Department[]> => {
             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/departments`
-            const items = await fetchGreenhouseData(url, "departments")
-            validateDepartments(items)
-            return items
+            const items = v.parse(DepartmentPagesSchema, await fetchGreenhousePages(url))
+            return items.flatMap(page => page.departments)
         },
     },
     [
@@ -136,15 +141,16 @@ const departmentsDataSource = createDataSource(
         },
     ]
 )
+
+const OfficePagesSchema = v.array(v.object({ offices: v.array(OfficeSchema) }))
+
 const officesDataSource = createDataSource(
     {
         name: "Offices",
-        apiPath: "offices",
-        fetch: async (boardToken: string) => {
+        fetch: async (boardToken: string): Promise<Office[]> => {
             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/offices`
-            const items = await fetchGreenhouseData(url, "offices")
-            validateOffices(items)
-            return items
+            const items = v.parse(OfficePagesSchema, await fetchGreenhousePages(url))
+            return items.flatMap(page => page.offices)
         },
     },
     [
@@ -160,15 +166,16 @@ const officesDataSource = createDataSource(
         },
     ]
 )
+
+const JobPagesSchema = v.array(v.object({ jobs: v.array(JobSchema) }))
+
 const jobsDataSource = createDataSource(
     {
         name: jobsDataSourceName,
-        apiPath: "jobs?content=true",
-        fetch: async (boardToken: string) => {
+        fetch: async (boardToken: string): Promise<Job[]> => {
             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs?content=true`
-            const items = await fetchGreenhouseData(url, "jobs")
-            validateJobs(items)
-            return items
+            const items = v.parse(JobPagesSchema, await fetchGreenhousePages(url))
+            return items.flatMap(page => page.jobs)
         },
     },
     [
@@ -194,14 +201,14 @@ const jobsDataSource = createDataSource(
         { id: "first_published", name: "First Published", type: "date" },
         {
             id: "offices",
-            name: "Offices",
+            name: officesDataSource.name,
             type: "multiCollectionReference",
             collectionId: "",
             dataSourceId: officesDataSource.name,
         },
         {
             id: "departments",
-            name: "Departments",
+            name: departmentsDataSource.name,
             type: "multiCollectionReference",
             collectionId: "",
             dataSourceId: departmentsDataSource.name,
@@ -210,15 +217,15 @@ const jobsDataSource = createDataSource(
     ]
 )
 
+const SectionPagesSchema = v.array(v.object({ sections: v.array(SectionSchema) }))
+
 const sectionsDataSource = createDataSource(
     {
         name: "Sections",
-        apiPath: "sections",
-        fetch: async (boardToken: string) => {
+        fetch: async (boardToken: string): Promise<Section[]> => {
             const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/sections`
-            const items = await fetchGreenhouseData(url, "sections")
-            validateSections(items)
-            return items
+            const items = v.parse(SectionPagesSchema, await fetchGreenhousePages(url))
+            return items.flatMap(page => page.sections)
         },
     },
     [
@@ -226,7 +233,7 @@ const sectionsDataSource = createDataSource(
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
         {
             id: "jobs",
-            name: "Jobs",
+            name: jobsDataSource.name,
             type: "multiCollectionReference",
             collectionId: "",
             dataSourceId: jobsDataSource.name,
@@ -247,11 +254,9 @@ export const dataSources = [
 function createDataSource(
     {
         name,
-        apiPath,
         fetch,
     }: {
         name: string
-        apiPath: string
         fetch: (boardToken: string) => Promise<GreenhouseItem[]>
     },
     [idField, slugField, ...fields]: [GreenhouseField, GreenhouseField, ...GreenhouseField[]]
@@ -259,7 +264,6 @@ function createDataSource(
     return {
         id: name,
         name,
-        apiPath,
         fields: [idField, slugField, ...fields],
         fetch,
     }

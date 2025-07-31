@@ -13,7 +13,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const pollInterval = useRef<ReturnType<typeof setInterval>>()
 
     useLayoutEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 320,
             height: 340,
         })
@@ -24,11 +24,12 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             clearInterval(pollInterval.current)
         }
 
-        return new Promise(resolve => {
-            const fetchTokens = async () => {
-                const tokens = await auth.fetchTokens(readKey)
-                clearInterval(pollInterval.current)
-                resolve(tokens)
+        return new Promise<void>(resolve => {
+            const fetchTokens = () => {
+                void auth.fetchTokens(readKey).then(() => {
+                    clearInterval(pollInterval.current)
+                    resolve()
+                })
             }
 
             // Start 2.5 second interval polling
@@ -36,27 +37,31 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
         })
     }
 
-    const login = async (event: React.FormEvent<HTMLFormElement>) => {
+    const login = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         setIsLoading(true)
 
-        try {
-            // Retrieve the auth URL and a set of read and write keys
-            const authorization = await auth.authorize()
+        const task = async () => {
+            try {
+                // Retrieve the auth URL and a set of read and write keys
+                const authorization = await auth.authorize()
 
-            // Open up the Airtable authorization window
-            window.open(authorization.url)
+                // Open up the Airtable authorization window
+                window.open(authorization.url)
 
-            // Poll the auth server and wait for tokens
-            await pollForTokens(authorization.readKey)
+                // Poll the auth server and wait for tokens
+                await pollForTokens(authorization.readKey)
 
-            onAuthenticated()
-        } catch (e) {
-            framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
-        } finally {
-            setIsLoading(false)
+                onAuthenticated()
+            } catch (e) {
+                framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
+            } finally {
+                setIsLoading(false)
+            }
         }
+
+        void task()
     }
 
     return (

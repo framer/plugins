@@ -6,18 +6,11 @@ import {
     ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
+import * as v from "valibot"
 import auth from "./auth"
 import { logSyncResult } from "./debug.ts"
 import { queryClient } from "./main.tsx"
-import {
-    assert,
-    columnToLetter,
-    generateHashId,
-    generateUniqueNames,
-    isDefined,
-    parseStringToArray,
-    slugify,
-} from "./utils"
+import { assert, columnToLetter, generateHashId, generateUniqueNames, isDefined, slugify } from "./utils"
 
 const USER_INFO_API_URL = "https://www.googleapis.com/oauth2/v1"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
@@ -29,15 +22,6 @@ const PLUGIN_LAST_SYNCED_KEY = "sheetsPluginLastSynced"
 const PLUGIN_IGNORED_COLUMNS_KEY = "sheetsPluginIgnoredColumns"
 const PLUGIN_SHEET_HEADER_ROW_HASH_KEY = "sheetsPluginSheetHeaderRowHash"
 const PLUGIN_SLUG_COLUMN_KEY = "sheetsPluginSlugColumn"
-
-/** @deprecated - use PLUGIN_SHEET_ID_KEY instead */
-const DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY = "sheetsPluginSheetTitle"
-/** @deprecated - use PLUGIN_SHEET_HEADER_ROW_HASH_KEY instead  */
-const DO_NOT_USE_ME_PLUGIN_SHEET_HEADER_ROW_KEY = "sheetsPluginSheetHeaderRow"
-/** @deprecated - use PLUGIN_IGNORED_COLUMNS_KEY instead */
-const DO_NOT_USE_ME_PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY = "sheetsPluginIgnoredFieldColumnIndexes"
-/** @deprecated - use PLUGIN_SLUG_COLUMN_KEY instead */
-const DO_NOT_USE_ME_PLUGIN_SLUG_INDEX_COLUMN_KEY = "sheetsPluginSlugIndexColumn"
 
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
 const HEADER_ROW_DELIMITER = "OIhpKTpp"
@@ -88,7 +72,7 @@ interface RequestOptions {
     body?: Record<string, unknown>
 }
 
-const request = async <T = unknown>({ path, service = "sheets", method = "get", query, body }: RequestOptions) => {
+const request = async ({ path, service = "sheets", method = "get", query, body }: RequestOptions): Promise<unknown> => {
     const tokens = await auth.getTokens()
 
     if (!tokens) {
@@ -114,13 +98,7 @@ const request = async <T = unknown>({ path, service = "sheets", method = "get", 
 
     if (query) {
         const queryParams = Object.entries(query)
-            .map(([key, value]) => {
-                if (value !== undefined) {
-                    return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
-                }
-
-                return ""
-            })
+            .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
             .filter(Boolean)
             .join("&")
 
@@ -140,42 +118,42 @@ const request = async <T = unknown>({ path, service = "sheets", method = "get", 
         },
     })
 
-    const json = await res.json()
+    const json = (await res.json()) as unknown
 
     if (!res.ok) {
-        const errorMessage = json.error.message
+        const errorMessage = (json as { error: { message: string } }).error.message
         throw new Error("Failed to fetch Google Sheets API: " + errorMessage)
     }
 
-    return json as T
+    return json
 }
 
-function fetchUserInfo() {
-    return request<UserInfo>({
+async function fetchUserInfo(): Promise<UserInfo> {
+    return request({
         service: "oauth",
         path: `/userinfo`,
-    })
+    }) as Promise<UserInfo>
 }
 
-function fetchSpreadsheetInfo(spreadsheetId: string) {
-    return request<SpreadsheetInfo>({
+async function fetchSpreadsheetInfo(spreadsheetId: string): Promise<SpreadsheetInfo> {
+    return request({
         path: `/spreadsheets/${spreadsheetId}`,
         query: {
             includeGridData: "true",
             fields: "spreadsheetId,spreadsheetUrl,properties.title,sheets.properties.title,sheets.properties.sheetId",
         },
-    })
+    }) as Promise<SpreadsheetInfo>
 }
 
-function fetchSheet(spreadsheetId: string, sheetTitle: string, range?: string) {
-    return request<Sheet>({
+async function fetchSheet(spreadsheetId: string, sheetTitle: string, range?: string): Promise<Sheet> {
+    return request({
         path: `/spreadsheets/${spreadsheetId}/values/${sheetTitle}`,
         query: {
             range: range ?? sheetTitle,
             valueRenderOption: "UNFORMATTED_VALUE",
             dateTimeRenderOption: "SERIAL_NUMBER",
         },
-    })
+    }) as Promise<Sheet>
 }
 
 export const useFetchUserInfo = () => {
@@ -362,7 +340,7 @@ function processSheetRow({
         if (ignoredFieldColumnIndexes.includes(colIndex)) continue
 
         // +1 as zero-indexed, another +1 to account for header row
-        const location = columnToLetter(colIndex + 1) + (rowIndex + 2)
+        const location = `${columnToLetter(colIndex + 1)}${rowIndex + 2}`
 
         const fieldType = fieldTypes[colIndex]
         assert(isDefined(fieldType), "Field type must be defined")
@@ -516,9 +494,8 @@ export async function getPluginContext(): Promise<PluginContext> {
 
     const spreadsheetId = await collection.getPluginData(PLUGIN_SPREADSHEET_ID_KEY)
     const storedSheetId = await collection.getPluginData(PLUGIN_SHEET_ID_KEY)
-    const storedSheetTitle = await collection.getPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY)
 
-    if (!spreadsheetId || (storedSheetTitle === null && storedSheetId === null) || !isAuthenticated) {
+    if (!spreadsheetId || storedSheetId === null || !isAuthenticated) {
         return {
             type: "new",
             collection,
@@ -527,20 +504,11 @@ export async function getPluginContext(): Promise<PluginContext> {
     }
 
     // Fetch both new and legacy data
-    const [
-        rawIgnoredColumns,
-        rawSheetHeaderRowHash,
-        storedSlugColumn,
-        lastSyncedTime,
-        legacyIgnoredIndexes,
-        legacySlugIndex,
-    ] = await Promise.all([
+    const [rawIgnoredColumns, rawSheetHeaderRowHash, storedSlugColumn, lastSyncedTime] = await Promise.all([
         collection.getPluginData(PLUGIN_IGNORED_COLUMNS_KEY),
         collection.getPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY),
         collection.getPluginData(PLUGIN_SLUG_COLUMN_KEY),
         collection.getPluginData(PLUGIN_LAST_SYNCED_KEY),
-        collection.getPluginData(DO_NOT_USE_ME_PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY),
-        collection.getPluginData(DO_NOT_USE_ME_PLUGIN_SLUG_INDEX_COLUMN_KEY),
     ])
 
     let spreadsheetInfo
@@ -551,32 +519,13 @@ export async function getPluginContext(): Promise<PluginContext> {
         return { type: "no-sheet-access", spreadsheetId }
     }
 
-    const sheetId =
-        storedSheetId === null
-            ? spreadsheetInfo.sheets.find(x => x.properties.title === storedSheetTitle)?.properties.sheetId
-            : parseInt(storedSheetId)
-
-    if (sheetId === undefined) {
-        // Shouldn't be able to get here if storedSheetId isn't null
-        assert(storedSheetTitle !== null, "Expected stored sheet title to be defined")
-        return { type: "sheet-by-title-missing", spreadsheetId, title: storedSheetTitle }
-    }
+    const sheetId = parseInt(storedSheetId)
 
     const sheetTitle = spreadsheetInfo.sheets.find(x => x.properties.sheetId === sheetId)?.properties.title
     assert(sheetTitle !== undefined, "Expected sheet title to be defined")
 
     const sheet = await fetchSheetWithClient(spreadsheetId, sheetTitle)
     assert(lastSyncedTime, "Expected last synced time to be set")
-
-    if (storedSheetTitle !== null) {
-        // If we're here it means that we recovered sheet ID from its title. Now
-        // that we have the ID, get rid of the title, as to reduce the potential
-        // for confusion/bugs. Done sequantially as to ensure that we don't
-        // delete the title and then fail to save the ID.
-
-        await collection.setPluginData(PLUGIN_SHEET_ID_KEY, sheetId.toString())
-        await collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_TITLE_KEY, null)
-    }
 
     // Sheet ID never leaves here because Google offers slightly better API
     // ergonomics when you refer to sheets by their titles, so that's what we
@@ -595,26 +544,33 @@ export async function getPluginContext(): Promise<PluginContext> {
     if (!rawIgnoredColumns || !storedSlugColumn) {
         const uniqueHeaderRowNames = generateUniqueNames(sheetHeaderRow)
 
-        ignoredColumns =
-            parseStringToArray<number>(legacyIgnoredIndexes, "number")
-                ?.map(idx => uniqueHeaderRowNames[idx])
-                .filter(isDefined) ?? []
-
-        slugColumn = legacySlugIndex ? (uniqueHeaderRowNames[parseInt(legacySlugIndex)] ?? null) : null
-
         collectionFields = collectionFields.map((field, index) => ({
             ...field,
             id: uniqueHeaderRowNames.find(name => name === field.name) ?? uniqueHeaderRowNames[index] ?? field.name,
         }))
-
-        await Promise.all([
-            collection.setPluginData(DO_NOT_USE_ME_PLUGIN_IGNORED_FIELD_COLUMN_INDEXES_KEY, null),
-            collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SLUG_INDEX_COLUMN_KEY, null),
-            collection.setPluginData(DO_NOT_USE_ME_PLUGIN_SHEET_HEADER_ROW_KEY, null),
-        ])
     } else {
-        ignoredColumns = parseStringToArray<string>(rawIgnoredColumns, "string")
         slugColumn = storedSlugColumn
+        const result = v.safeParse(v.pipe(v.string(), v.parseJson(), v.array(v.string())), rawIgnoredColumns)
+
+        if (result.success) {
+            ignoredColumns = result.output
+        } else if (framer.isAllowedTo("ManagedCollection.setPluginData")) {
+            ignoredColumns = await salvageIgnoredColumns(rawIgnoredColumns, ignoredColumns =>
+                collection.setPluginData(PLUGIN_IGNORED_COLUMNS_KEY, JSON.stringify(ignoredColumns))
+            )
+
+            // Notify the user to be sure they're aware of the issue, to be sure they acknowledge it make it persistent
+            framer.notify("Some columns couldn’t be restored. Please review your ignored columns in Manage.", {
+                variant: "warning",
+                durationMs: Infinity,
+            })
+        } else {
+            ignoredColumns = []
+
+            framer.notify("Configuration of ignored columns is invalid. You need write permissions to fix it.", {
+                variant: "error",
+            })
+        }
     }
 
     // We should not hash ignored fields since they are not synced to Framer,
@@ -626,8 +582,8 @@ export async function getPluginContext(): Promise<PluginContext> {
     if (storedSheetHeaderRowHash && collectionFields.length > 0) {
         const reorderedCollectionFields = []
 
-        for (let i = 0; i < sheetHeaderRow.length; i++) {
-            const field = collectionFields.find(field => field.id === sheetHeaderRow[i])
+        for (const fieldId of sheetHeaderRow) {
+            const field = collectionFields.find(field => field.id === fieldId)
 
             if (field) {
                 reorderedCollectionFields.push(field)
@@ -674,4 +630,23 @@ export const useSyncSheetMutation = ({
         onSuccess,
         onError,
     })
+}
+
+async function salvageIgnoredColumns(
+    rawIgnoredColumns: unknown,
+    setIgnoredColumns: (ignoredColumns: string[]) => Promise<void>
+): Promise<string[]> {
+    let result: string[]
+
+    const atLeastAnArrayResult = v.safeParse(v.pipe(v.string(), v.parseJson(), v.array(v.unknown())), rawIgnoredColumns)
+
+    if (atLeastAnArrayResult.success) {
+        result = atLeastAnArrayResult.output.filter(i => typeof i === "string")
+    } else {
+        result = []
+    }
+
+    await setIgnoredColumns(result)
+
+    return result
 }

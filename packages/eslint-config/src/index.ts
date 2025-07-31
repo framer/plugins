@@ -31,10 +31,29 @@ export default tseslint.config(
 
     {
         files: JS_AND_TS_GLOBS,
-        extends: [tseslint.configs.recommended],
+        extends: [tseslint.configs.strictTypeChecked, tseslint.configs.stylisticTypeChecked],
+        languageOptions: { parserOptions: { projectService: true } },
         rules: {
             // Covered by TypeScript
             "@typescript-eslint/no-unused-vars": 0,
+
+            // Enabled in strictTypeChecked, but goes a little too far
+            "@typescript-eslint/restrict-template-expressions": [
+                "error",
+                {
+                    allowAny: false,
+                    allowBoolean: false,
+                    allowNever: false,
+                    allowNullish: false,
+                    allowNumber: true, // Ruins `${number}px`
+                    allowRegExp: false,
+                },
+            ],
         },
+    },
+
+    {
+        files: [JS_GLOB],
+        extends: [tseslint.configs.disableTypeChecked],
     }
 )

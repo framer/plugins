@@ -1,10 +1,10 @@
 import { useCallback, useContext, useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
-import { AuthContext, useGoogleToken } from "../auth"
+import { AccessTokenContext, useGoogleToken } from "../auth"
 import Loading from "../components/Loading"
 import confirmation from "../images/Confirmation@2x.png"
 import sitemap from "../images/Sitemap@2x.png"
-import type { GoogleToken, SiteWithGoogleSite } from "../types"
+import type { SiteWithGoogleSite } from "../types"
 import { googleApiCall, sitemapUrl } from "../utils"
 
 interface SiteHasUnindexedSitemapProps {
@@ -15,33 +15,37 @@ interface SiteHasUnindexedSitemapProps {
 export default function SiteHasUnindexedSitemap({ site }: SiteHasUnindexedSitemapProps) {
     const { showBoundary } = useErrorBoundary()
 
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     const [status, setStatus] = useState<"pending" | "loading" | "success" | "fail">("pending")
 
     const { refresh } = useGoogleToken()
 
-    const submit = useCallback(async () => {
-        try {
-            const currSitemapUrl = sitemapUrl(site.url)
-            if (site.googleSite.siteUrl) {
-                setStatus("loading")
+    const submit = useCallback(() => {
+        const task = async () => {
+            try {
+                const currSitemapUrl = sitemapUrl(site.url)
+                if (site.googleSite.siteUrl) {
+                    setStatus("loading")
 
-                await googleApiCall<null>(
-                    `/webmasters/v3/sites/${encodeURIComponent(site.googleSite.siteUrl)}/sitemaps/${encodeURIComponent(currSitemapUrl)}`,
-                    authContext.access_token,
-                    refresh,
-                    {
-                        method: "PUT",
-                    }
-                )
+                    await googleApiCall(
+                        `/webmasters/v3/sites/${encodeURIComponent(site.googleSite.siteUrl)}/sitemaps/${encodeURIComponent(currSitemapUrl)}`,
+                        accessToken,
+                        refresh,
+                        {
+                            method: "PUT",
+                        }
+                    )
 
-                setStatus("success")
+                    setStatus("success")
+                }
+            } catch (e) {
+                showBoundary(e)
             }
-        } catch (e) {
-            showBoundary(e)
         }
-    }, [authContext.access_token, refresh, showBoundary, site.googleSite.siteUrl, site.url])
+
+        void task()
+    }, [accessToken, refresh, showBoundary, site.googleSite.siteUrl, site.url])
 
     if (status === "loading") {
         return <Loading />

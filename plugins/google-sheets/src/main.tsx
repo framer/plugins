@@ -2,7 +2,7 @@ import "./globals.css"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { framer } from "framer-plugin"
-import React, { type ReactNode } from "react"
+import React from "react"
 import ReactDOM from "react-dom/client"
 import { App } from "./App.tsx"
 import { PageErrorBoundaryFallback } from "./components/ErrorBoundaryFallback.tsx"
@@ -17,33 +17,23 @@ export const queryClient = new QueryClient({
     },
 })
 
-function renderPlugin(app: ReactNode) {
+try {
     const root = document.getElementById("root")
     if (!root) throw new Error("Root element not found")
 
+    const pluginContext = await getPluginContext()
     ReactDOM.createRoot(root).render(
         <React.StrictMode>
             <QueryClientProvider client={queryClient}>
                 <div className="w-full px-[15px] flex flex-col flex-1 overflow-y-auto no-scrollbar">
-                    <PageErrorBoundaryFallback>{app}</PageErrorBoundaryFallback>
+                    <PageErrorBoundaryFallback>
+                        <App pluginContext={pluginContext} />
+                    </PageErrorBoundaryFallback>
                 </div>
             </QueryClientProvider>
         </React.StrictMode>
     )
+} catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    void framer.closePlugin(message, { variant: "error" })
 }
-
-async function runPlugin() {
-    try {
-        const pluginContext = await getPluginContext()
-
-        renderPlugin(<App pluginContext={pluginContext} />)
-    } catch (e) {
-        const message = e instanceof Error ? e.message : String(e)
-
-        framer.closePlugin(message, {
-            variant: "error",
-        })
-    }
-}
-
-runPlugin()

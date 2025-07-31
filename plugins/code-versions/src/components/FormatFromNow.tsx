@@ -23,7 +23,9 @@ export function FormatFromNow({ date, locales }: FormatFromNowProps) {
 
         timeoutId = window.setTimeout(updateNow, 10_000)
 
-        return () => clearTimeout(timeoutId)
+        return () => {
+            clearTimeout(timeoutId)
+        }
     }, [targetDate])
 
     return <span>{formatRelative(now, targetDate, locales)}</span>

@@ -28,7 +28,7 @@ const routes: Route[] = [
         path: "/canvas",
         element: CanvasMenuPage,
         size: {
-            height: 546,
+            height: 561,
         },
         children: [
             {
@@ -186,6 +186,19 @@ export function App() {
                 return
             }
 
+            void framer.setMenu([
+                {
+                    label: "Log Out",
+                    visible: true,
+                    onAction: () => {
+                        auth.logout()
+                        framer.closePlugin(
+                            "To fully remove the integration, uninstall the Framer app from the HubSpot integrations dashboard."
+                        )
+                    },
+                },
+            ])
+
             if (isInCMSModes) {
                 return handleCMSModes()
             }
@@ -194,8 +207,12 @@ export function App() {
         }
 
         getContexts()
-            .then(() => setIsLoading(false))
-            .catch(e => framer.closePlugin(e instanceof Error ? e.message : "Unknown error", { variant: "error" }))
+            .then(() => {
+                setIsLoading(false)
+            })
+            .catch((error: unknown) =>
+                framer.closePlugin(error instanceof Error ? error.message : "Unknown error", { variant: "error" })
+            )
     }, [navigate, isAuthenticated])
 
     if (isLoading) return null

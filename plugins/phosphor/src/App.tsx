@@ -23,7 +23,10 @@ interface IconEntry {
     updated_in: number // 1.4
 }
 
-type WeightOption = { key: string; value: IconWeight }
+interface WeightOption {
+    key: string
+    value: IconWeight
+}
 
 const weightOptions: WeightOption[] = [
     {
@@ -52,7 +55,7 @@ const weightOptions: WeightOption[] = [
     },
 ]
 
-const icons: ReadonlyArray<IconEntry> = iconData.map(entry => ({
+const icons: readonly IconEntry[] = iconData.map(entry => ({
     ...entry,
     Icon: Icons[entry.pascal_name as keyof typeof Icons] as Icons.Icon,
 }))
@@ -109,7 +112,7 @@ function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
                         className="icon-parent"
                         onClick={() => {
                             if (!isAllowedToAddSVG) return
-                            handleIconClick(entry)
+                            void handleIconClick(entry)
                         }}
                         disabled={!isAllowedToAddSVG}
                         title={isAllowedToAddSVG ? undefined : "Insufficient permissions"}
@@ -143,7 +146,9 @@ export function App() {
                     autoCorrect="off"
                     autoFocus
                     className="search-input"
-                    onChange={e => setSearchQuery(e.target.value)}
+                    onChange={e => {
+                        setSearchQuery(e.target.value)
+                    }}
                     placeholder="Search…"
                 />
                 <select

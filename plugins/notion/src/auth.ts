@@ -1,7 +1,14 @@
+import { framer } from "framer-plugin"
+import * as v from "valibot"
 import { API_BASE_URL, PLUGIN_KEYS } from "./api"
+import { showLoginUI } from "./ui"
 import { generateRandomId } from "./utils"
 
-type Tokens = {
+const TokensSchema = v.object({
+    token: v.string(),
+})
+
+interface StoredTokens {
     bearer_token: string
 }
 
@@ -13,13 +20,16 @@ interface Authorize {
 
 class Auth {
     private readonly NOTION_CLIENT_ID = "3504c5a7-9f75-4f87-aa1b-b735f8480432"
-    storedTokens?: Tokens | null
+    storedTokens?: StoredTokens | null
 
-    logout() {
+    async logout() {
         this.tokens.clear()
+        await framer.setMenu([])
+        await showLoginUI()
+        window.location.reload()
     }
 
-    async getTokens() {
+    getTokens() {
         const tokens = this.tokens.get()
         if (!tokens) return null
 
@@ -35,7 +45,7 @@ class Auth {
             throw new Error("Failed to fetch tokens")
         }
 
-        const { token } = await res.json()
+        const { token } = v.parse(TokensSchema, await res.json())
         this.tokens.save({ bearer_token: token })
         return token
     }
@@ -66,7 +76,7 @@ class Auth {
     }
 
     private readonly tokens = {
-        save: (tokens: Tokens) => {
+        save: (tokens: StoredTokens) => {
             this.storedTokens = tokens
             localStorage.setItem(PLUGIN_KEYS.BEARER_TOKEN, tokens.bearer_token)
         },

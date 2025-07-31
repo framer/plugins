@@ -7,7 +7,7 @@ import { IconRedirects } from "./IconRedirects"
 
 const learnMoreLink = "https://www.framer.com/help/articles/bulk-importing-exporting-redirects/"
 
-framer.showUI({
+void framer.showUI({
     width: 260,
     height: 370,
 })
@@ -42,29 +42,33 @@ async function handleImport(csv: string) {
     }
 }
 
-async function importCsv() {
+function importCsv() {
     importFileAsText(".csv", handleImport)
 }
 
-async function exportCsv() {
+function exportCsv() {
     const filename = "redirects.csv"
 
-    try {
-        const redirects = await framer.getRedirects()
+    const task = async () => {
+        try {
+            const redirects = await framer.getRedirects()
 
-        if (redirects.length === 0) {
-            framer.notify("This project has no redirects", { variant: "warning" })
-            return
+            if (redirects.length === 0) {
+                framer.notify("This project has no redirects", { variant: "warning" })
+                return
+            }
+
+            const csv = generateCsv(redirects)
+            downloadBlob(csv, filename, "text/csv")
+
+            framer.notify(`Successfully exported ${filename}`)
+        } catch (error) {
+            console.error(error)
+            framer.notify(`Error exporting ${filename}`, { variant: "error" })
         }
-
-        const csv = generateCsv(redirects)
-        downloadBlob(csv, filename, "text/csv")
-
-        framer.notify(`Successfully exported ${filename}`)
-    } catch (error) {
-        console.error(error)
-        framer.notify(`Error exporting ${filename}`, { variant: "error" })
     }
+
+    void task()
 }
 
 export function App() {
@@ -73,20 +77,24 @@ export function App() {
     useEffect(() => {
         if (!isAllowedToAddRedirects) return
 
-        const handlePaste = async (event: ClipboardEvent) => {
-            if (!event.clipboardData) return
+        const handlePaste = ({ clipboardData }: ClipboardEvent) => {
+            if (!clipboardData) return
 
-            try {
-                const csv = event.clipboardData.getData("text/plain")
-                if (!csv) return
+            const task = async () => {
+                try {
+                    const csv = clipboardData.getData("text/plain")
+                    if (!csv) return
 
-                await handleImport(csv)
-            } catch (error) {
-                console.error("Error accessing clipboard data:", error)
-                framer.notify("Unable to access clipboard content", {
-                    variant: "error",
-                })
+                    await handleImport(csv)
+                } catch (error) {
+                    console.error("Error accessing clipboard data:", error)
+                    framer.notify("Unable to access clipboard content", {
+                        variant: "error",
+                    })
+                }
             }
+
+            void task()
         }
 
         window.addEventListener("paste", handlePaste)

@@ -1,78 +1,46 @@
 import { useContext, useEffect, useState } from "react"
 import { useErrorBoundary } from "react-error-boundary"
-import { AuthContext, useGoogleToken } from "./auth"
-import type { GoogleInspectionResult, GoogleQueryResult, GoogleToken } from "./types"
-import { batchGoogleApiCall, googleApiCall } from "./utils"
-
-interface GoogleInspectCall {
-    apiPath: string
-    method: "GET" | "PUT" | "POST"
-    body: {
-        inspectionUrl: string
-        siteUrl: string
-        languageCode: string
-    }
-}
+import * as v from "valibot"
+import { AccessTokenContext, useGoogleToken } from "./auth"
+import type { GoogleInspectionResult, GoogleQueryResult } from "./types"
+import { batchGoogleApiCall, googleApiCall, isDefined } from "./utils"
 
 export function useBatchIndexingResult(urls: string[] | null, googleSiteUrl: string) {
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
     const [result, setResult] = useState<Record<string, GoogleInspectionResult> | null>(null)
 
     const { refresh } = useGoogleToken()
 
     useEffect(() => {
-        batchGoogleApiCall<{ inspectionResult: GoogleInspectionResult }, GoogleInspectCall>(
-            authContext.access_token,
-            refresh,
-            (urls || []).map(url => ({
-                apiPath: "/v1/urlInspection/index:inspect",
-                method: "POST",
-                body: {
-                    inspectionUrl: url,
-                    siteUrl: googleSiteUrl,
-                    languageCode: window.navigator.language,
-                },
-            }))
-        ).then(response => {
-            if (response) {
-                const urlsWithStatus: Record<string, GoogleInspectionResult> = {}
-                for (const responseUrl of response) {
-                    if (responseUrl) {
-                        urlsWithStatus[responseUrl.request.body.inspectionUrl] = responseUrl.response.inspectionResult
-                    }
-                }
+        const task = async () => {
+            const batchResponse = await batchGoogleApiCall(
+                accessToken,
+                refresh,
+                (urls ?? []).map(url => ({
+                    apiPath: "/v1/urlInspection/index:inspect",
+                    method: "POST",
+                    body: {
+                        inspectionUrl: url,
+                        siteUrl: googleSiteUrl,
+                        languageCode: window.navigator.language,
+                    },
+                }))
+            )
 
-                setResult(urlsWithStatus)
+            if (!batchResponse) return
+
+            const urlsWithStatus: Record<string, GoogleInspectionResult> = {}
+            for (const responseUrl of batchResponse) {
+                if (!responseUrl) continue
+                const { inspectionResult } = responseUrl.response as { inspectionResult: GoogleInspectionResult }
+                urlsWithStatus[responseUrl.request.body.inspectionUrl] = inspectionResult
             }
-        })
-    }, [authContext.access_token, googleSiteUrl, refresh, urls])
 
-    return result
-}
+            setResult(urlsWithStatus)
+        }
 
-export function useSingleIndexingResult(url: string, googleSiteUrl: string) {
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
-    const [result, setResult] = useState<GoogleInspectionResult | null>(null)
-
-    const { refresh } = useGoogleToken()
-
-    useEffect(() => {
-        googleApiCall<{ inspectionResult: GoogleInspectionResult }>(
-            "/v1/urlInspection/index:inspect",
-            authContext.access_token,
-            refresh,
-            {
-                method: "POST",
-                body: JSON.stringify({
-                    inspectionUrl: url,
-                    siteUrl: googleSiteUrl,
-                    languageCode: window.navigator.language,
-                }),
-            }
-        ).then(response => {
-            setResult(response.inspectionResult)
-        })
-    }, [authContext.access_token, googleSiteUrl, refresh, url])
+        void task()
+    }, [accessToken, googleSiteUrl, refresh, urls])
 
     return result
 }
@@ -80,7 +48,7 @@ export function useSingleIndexingResult(url: string, googleSiteUrl: string) {
 export function useIndexingResults(urls: string[] | null, currentPageUrl: string | undefined, googleSiteUrl?: string) {
     const { showBoundary } = useErrorBoundary()
 
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     const [result, setResult] = useState<{
         progress: number
@@ -110,53 +78,57 @@ export function useIndexingResults(urls: string[] | null, currentPageUrl: string
             setResult({ progress: 0, results: null })
 
             if (currentPageUrl) {
-                googleApiCall<{ inspectionResult: GoogleInspectionResult }>(
-                    "/v1/urlInspection/index:inspect",
-                    authContext.access_token,
-                    refresh,
-                    {
-                        method: "POST",
-                        body: JSON.stringify({
-                            inspectionUrl: currentPageUrl,
-                            siteUrl: googleSiteUrl,
-                            languageCode: window.navigator.language,
-                        }),
-                    }
-                ).then(currInspection => {
-                    setCurrPageResult({
-                        url: currentPageUrl,
-                        inspection: currInspection?.inspectionResult,
-                    })
-                })
+                const currPageTask = async () => {
+                    const currInspection = (await googleApiCall(
+                        "/v1/urlInspection/index:inspect",
+                        accessToken,
+                        refresh,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({
+                                inspectionUrl: currentPageUrl,
+                                siteUrl: googleSiteUrl,
+                                languageCode: window.navigator.language,
+                            }),
+                        }
+                    )) as { inspectionResult: GoogleInspectionResult } | null
+
+                    setCurrPageResult(
+                        currInspection && {
+                            url: currentPageUrl,
+                            inspection: currInspection.inspectionResult,
+                        }
+                    )
+                }
+
+                void currPageTask()
             }
 
-            const promises = (urls || []).map(async url => {
-                const inspection = await googleApiCall<{
-                    inspectionResult: GoogleInspectionResult
-                }>("/v1/urlInspection/index:inspect", authContext.access_token, refresh, {
+            const promises = (urls ?? []).map(async url => {
+                const inspection = (await googleApiCall("/v1/urlInspection/index:inspect", accessToken, refresh, {
                     method: "POST",
                     body: JSON.stringify({
                         inspectionUrl: url,
                         siteUrl: googleSiteUrl,
                         languageCode: window.navigator.language,
                     }),
-                })
+                })) as { inspectionResult: GoogleInspectionResult } | null
 
                 incrementProgress()
 
-                return { url, inspection: inspection?.inspectionResult }
+                return inspection && { url, inspection: inspection.inspectionResult }
             })
 
             try {
                 const results = await Promise.all(promises)
-                setResult(currResult => ({ progress: currResult.progress, results }))
+                setResult(currResult => ({ progress: currResult.progress, results: results.filter(isDefined) }))
             } catch (e) {
                 showBoundary(e)
             }
         }
 
-        update()
-    }, [authContext.access_token, currentPageUrl, googleSiteUrl, refresh, showBoundary, urls])
+        void update()
+    }, [accessToken, currentPageUrl, googleSiteUrl, refresh, showBoundary, urls])
 
     return { currPageResult, result }
 }
@@ -165,23 +137,26 @@ function randomIntFromInterval(min: number, max: number) {
     return Math.floor(min + Math.random() * (max - min + 1))
 }
 
+const RandomDataSchema = v.array(v.array(v.number()))
+type RandomData = v.InferOutput<typeof RandomDataSchema>
+
 export function useMockPerformanceResults(): {
     dailyPerformance: GoogleQueryResult
     queryPerformance: GoogleQueryResult
 } {
-    const getRandomData = (): number[][] => {
-        const savedData = window.localStorage.getItem("searchConsoleRandomChartData") as string
+    const getRandomData = (): RandomData => {
+        const savedData = window.localStorage.getItem("searchConsoleRandomChartData")
 
         if (savedData) {
-            return JSON.parse(savedData)
+            return v.parse(RandomDataSchema, JSON.parse(savedData))
         }
 
-        const randomDataGen = [...new Array(14)].map(() => {
+        const randomDataGen = []
+        for (let i = 0; i < 14; i++) {
             const clicks = randomIntFromInterval(1000, 3000)
             const impressions = clicks + randomIntFromInterval(1000, 3000)
-
-            return [clicks, impressions]
-        })
+            randomDataGen.push([clicks, impressions])
+        }
 
         window.localStorage.setItem("searchConsoleRandomChartData", JSON.stringify(randomDataGen))
 
@@ -196,8 +171,8 @@ export function useMockPerformanceResults(): {
 
         return {
             keys: [date.toISOString()],
-            clicks: row[0] || 0,
-            impressions: row[1] || 0,
+            clicks: row[0] ?? 0,
+            impressions: row[1] ?? 0,
             ctr: 0,
             position: 0,
         }
@@ -222,7 +197,7 @@ export function usePerformanceResults(siteUrl: string, dates: string[]) {
 
     const { showBoundary } = useErrorBoundary()
 
-    const authContext = useContext(AuthContext) as NonNullable<GoogleToken>
+    const accessToken = useContext(AccessTokenContext)
 
     const { refresh } = useGoogleToken()
 
@@ -231,7 +206,7 @@ export function usePerformanceResults(siteUrl: string, dates: string[]) {
             try {
                 const dailyPerformance = (await googleApiCall(
                     `/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
-                    authContext.access_token,
+                    accessToken,
                     refresh,
                     {
                         method: "POST",
@@ -245,7 +220,7 @@ export function usePerformanceResults(siteUrl: string, dates: string[]) {
 
                 const queryPerformance = (await googleApiCall(
                     `/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
-                    authContext.access_token,
+                    accessToken,
                     refresh,
                     {
                         method: "POST",
@@ -264,8 +239,8 @@ export function usePerformanceResults(siteUrl: string, dates: string[]) {
             }
         }
 
-        update()
-    }, [authContext.access_token, dates, refresh, showBoundary, siteUrl])
+        void update()
+    }, [accessToken, dates, refresh, showBoundary, siteUrl])
 
     return data
 }

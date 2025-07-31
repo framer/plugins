@@ -22,15 +22,13 @@ export function PreviewTable({ collection }: Props) {
     const [showGradient, setShowGradient] = useState(false)
 
     useEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 340,
             height: 370,
             resizable: false,
         })
 
         const load = async () => {
-            if (!collection) return
-
             const fields = await collection.getFields()
             const items = await collection.getItems()
 
@@ -48,7 +46,7 @@ export function PreviewTable({ collection }: Props) {
 
         window.addEventListener("resize", resize)
 
-        load()
+        void load()
         resize()
 
         return () => {

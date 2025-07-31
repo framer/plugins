@@ -8,6 +8,7 @@ import {
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import pLimit from "p-limit"
+import * as v from "valibot"
 import {
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
@@ -24,7 +25,7 @@ import {
     richTextToPlainText,
 } from "./api"
 import { richTextToHtml } from "./blocksToHtml"
-import { formatDate, isNotNull, shouldBeNever, slugify, syncMethods } from "./utils"
+import { formatDate, isNotNull, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -98,14 +99,12 @@ export async function syncCollection(
 
     const promises = databaseItems.map((item, index) =>
         limit(async () => {
-            if (!item) throw new Error("Logic error")
-
             seenItemIds.add(item.id)
 
             let skipContent = false
             if (isUnchangedSinceLastSync(item.last_edited_time, lastSynced)) {
                 console.warn({
-                    message: `Skipping content update. last updated: ${formatDate(item.last_edited_time)}, last synced: ${formatDate(lastSynced!)}`,
+                    message: `Skipping content update. last updated: ${formatDate(item.last_edited_time)}, last synced: ${lastSynced ? formatDate(lastSynced) : "never"}`,
                     url: item.url,
                 })
                 skipContent = true
@@ -241,6 +240,14 @@ export async function syncCollection(
     ])
 }
 
+const IgnoredFieldIdsSchema = v.array(v.string())
+
+export function parseIgnoredFieldIds(ignoredFieldIdsStringified: string | null): Set<string> {
+    return ignoredFieldIdsStringified
+        ? new Set(v.parse(IgnoredFieldIdsSchema, JSON.parse(ignoredFieldIdsStringified)))
+        : new Set<string>()
+}
+
 export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDatabaseId: string | null,
@@ -261,7 +268,7 @@ export async function syncExistingCollection(
 
         const dataSourceFieldsInfo = getDatabaseFieldsInfo(dataSource.database, databaseIdMap)
         const fieldsInfo = mergeFieldsInfoWithExistingFields(dataSourceFieldsInfo, existingFields)
-        const fields = await fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
+        const fields = fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
 
         const slugField = fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
@@ -271,9 +278,7 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        const ignoredFieldIds: Set<string> = previousIgnoredFieldIds
-            ? new Set(JSON.parse(previousIgnoredFieldIds))
-            : new Set()
+        const ignoredFieldIds = parseIgnoredFieldIds(previousIgnoredFieldIds)
 
         const fieldsToSync = fields.filter(
             field =>
@@ -285,17 +290,17 @@ export async function syncExistingCollection(
     } catch (error) {
         console.error(error)
         framer.notify(
-            `Failed to sync database “${previousDatabaseName || previousDatabaseId}”. Check browser console for more details.`,
+            `Failed to sync database “${previousDatabaseName ?? previousDatabaseId}”. Check browser console for more details.`,
             { variant: "error" }
         )
         return { didSync: false }
     }
 }
 
-export async function fieldsInfoToCollectionFields(
+export function fieldsInfoToCollectionFields(
     fieldsInfo: FieldInfo[],
     databaseIdMap: DatabaseIdMap
-): Promise<ManagedCollectionFieldInput[]> {
+): ManagedCollectionFieldInput[] {
     const fields: ManagedCollectionFieldInput[] = []
 
     for (const fieldInfo of fieldsInfo) {
@@ -345,7 +350,7 @@ export async function fieldsInfoToCollectionFields(
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
                 let cases: Extract<ManagedCollectionFieldInput, { type: "enum" }>["cases"] | null = null
-                switch (property?.type) {
+                switch (property.type) {
                     case "select":
                         cases = property.select.options.map(option => ({
                             id: option.id,
@@ -397,8 +402,8 @@ export async function fieldsInfoToCollectionFields(
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
                 if (property.type === "relation") {
-                    const databaseId = property.relation?.database_id
-                    if (databaseId && databaseIdMap) {
+                    const databaseId = property.relation.database_id
+                    if (databaseId) {
                         const collectionId = databaseIdMap.get(databaseId)
                         if (collectionId) {
                             fields.push({
@@ -427,7 +432,7 @@ export function getFieldDataEntryForProperty(
 ): FieldDataEntryInput | null {
     switch (property.type) {
         case "checkbox": {
-            return { type: "boolean", value: property.checkbox ?? false }
+            return { type: "boolean", value: property.checkbox }
         }
         case "last_edited_time": {
             return { type: "date", value: property.last_edited_time }
@@ -476,7 +481,7 @@ export function getFieldDataEntryForProperty(
                 return {
                     type: "string",
                     value: property.unique_id.prefix
-                        ? `${property.unique_id.prefix}-${property.unique_id.number}`
+                        ? `${property.unique_id.prefix}-${String(property.unique_id.number)}`
                         : String(property.unique_id.number),
                 }
             }
@@ -521,7 +526,7 @@ export function getFieldDataEntryForProperty(
                                 case undefined:
                                     return
                                 default:
-                                    shouldBeNever(file)
+                                    file satisfies never
                             }
                         })
                         .filter(file => file !== undefined),

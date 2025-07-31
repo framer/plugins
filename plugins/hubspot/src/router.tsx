@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import { AnimatePresence, type MotionProps, motion } from "motion/react"
-import { cloneElement, useEffect, useState } from "react"
+import { cloneElement, useCallback, useEffect, useState } from "react"
 import { type RouteComponentProps, useLocation, useRoute } from "wouter"
 import type { BlogPluginContext } from "./blog"
 import { Layout } from "./components/Layout"
@@ -17,7 +17,7 @@ interface PluginSize {
     height?: number
 }
 
-export type PageProps = RouteComponentProps & PluginContexts
+export type PageProps = RouteComponentProps & PluginContexts & { goBack: () => void }
 
 export interface Route {
     path: string
@@ -56,17 +56,9 @@ function useRoutes({ routes, hubDbPluginContext, blogPluginContext }: UseRoutesP
         setIsFirstPage(false)
     }, [])
 
-    useEffect(() => {
-        const originalHistoryBack = history.back
-
-        history.back = () => {
-            setAnimationDirection(-1)
-            originalHistoryBack.call(history)
-        }
-
-        return () => {
-            history.back = originalHistoryBack
-        }
+    const goBack = useCallback(() => {
+        setAnimationDirection(-1)
+        history.back()
     }, [])
 
     useEffect(() => {
@@ -136,12 +128,18 @@ function useRoutes({ routes, hubDbPluginContext, blogPluginContext }: UseRoutesP
         return {
             page: (
                 <motion.div {...(animationProps as MotionProps)} className="w-full h-full">
-                    <Layout title={pageTitle} animateForward={animationDirection === 1} showTopDivider={showTopDivider}>
+                    <Layout
+                        title={pageTitle}
+                        animateForward={animationDirection === 1}
+                        showTopDivider={showTopDivider}
+                        goBack={goBack}
+                    >
                         <PageErrorBoundaryFallback>
                             <Element
                                 params={params}
                                 hubDbPluginContext={hubDbPluginContext}
                                 blogPluginContext={blogPluginContext}
+                                goBack={goBack}
                             />
                         </PageErrorBoundaryFallback>
                     </Layout>
@@ -179,7 +177,7 @@ export function Router({ routes, hubDbPluginContext, blogPluginContext }: Router
     const { page, size } = useRoutes({ routes, hubDbPluginContext, blogPluginContext })
 
     useEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: size?.width ?? 260,
             height: size?.height ?? 345,
         })
@@ -188,11 +186,9 @@ export function Router({ routes, hubDbPluginContext, blogPluginContext }: Router
     return (
         <div className="relative w-full h-full overflow-hidden">
             <AnimatePresence>
-                {page && (
-                    <SizePreserver size={size} key={location.pathname}>
-                        {cloneElement(page, { key: location.pathname })}
-                    </SizePreserver>
-                )}
+                <SizePreserver size={size} key={location.pathname}>
+                    {cloneElement(page, { key: location.pathname })}
+                </SizePreserver>
             </AnimatePresence>
         </div>
     )

@@ -1,20 +1,24 @@
 import { framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useState } from "react"
+import * as v from "valibot"
 import { Link } from "wouter"
 import { useAccountQuery, useInboxesQuery } from "../../api"
 import { CenteredSpinner } from "../../components/CenteredSpinner"
 import { SegmentedControls } from "../../components/SegmentedControls"
 
-interface Settings {
-    enableWidgetCookieBanner: string
-    disableAttachment: string
-}
+const EnableWidgetCookieBannerSchema = v.union([v.boolean(), v.literal("ON_EXIT_INTENT")])
+const DisableAttachmentSchema = v.boolean()
+
+const SettingsSchema = v.object({
+    enableWidgetCookieBanner: EnableWidgetCookieBannerSchema,
+    disableAttachment: DisableAttachmentSchema,
+})
 
 export default function ChatPage() {
     const [hasSetExistingSettings, setHasSetExistingSettings] = useState(false)
-    const [settings, setSettings] = useState<Settings>({
-        enableWidgetCookieBanner: "false",
-        disableAttachment: "false",
+    const [settings, setSettings] = useState<v.InferOutput<typeof SettingsSchema>>({
+        enableWidgetCookieBanner: false,
+        disableAttachment: false,
     })
     const { data: account, isLoading: isLoadingAccount } = useAccountQuery()
     const { data: inboxes, isLoading: isLoadingInboxes } = useInboxesQuery()
@@ -24,21 +28,17 @@ export default function ChatPage() {
     useEffect(() => {
         async function checkExistingSettings() {
             const customCode = await framer.getCustomCode()
-            const existingHTML = customCode?.bodyStart.html
+            const existingHTML = customCode.bodyStart.html
 
-            const matches = (existingHTML ?? "").match(/window\.hsConversationsSettings\s*=\s*(\{.*?\});/)
-            if (matches && matches[1]) {
-                const { enableWidgetCookieBanner, disableAttachment } = JSON.parse(matches[1])
-                setSettings({
-                    enableWidgetCookieBanner: enableWidgetCookieBanner.toString(),
-                    disableAttachment: disableAttachment.toString(),
-                })
+            const matches = /window\.hsConversationsSettings\s*=\s*(\{.*?\});/.exec(existingHTML ?? "")
+            if (matches?.[1]) {
+                setSettings(v.parse(SettingsSchema, JSON.parse(matches[1])))
             }
 
             setHasSetExistingSettings(true)
         }
 
-        checkExistingSettings()
+        void checkExistingSettings()
     }, [])
 
     useEffect(() => {
@@ -46,23 +46,13 @@ export default function ChatPage() {
 
         async function applySettings() {
             const customCode = await framer.getCustomCode()
-            const existingHTML = customCode?.bodyStart.html
+            const existingHTML = customCode.bodyStart.html
 
-            if (!hasSetExistingSettings || existingHTML === undefined) return
+            if (!hasSetExistingSettings || existingHTML === null) return
 
-            const { enableWidgetCookieBanner, disableAttachment } = settings
-            const chatSettings = {
-                disableAttachment: disableAttachment === "true",
-                enableWidgetCookieBanner:
-                    enableWidgetCookieBanner === "true"
-                        ? true
-                        : enableWidgetCookieBanner === "ON_EXIT_INTENT"
-                          ? "ON_EXIT_INTENT"
-                          : false,
-            }
-            const settingsScript = `<script>window.hsConversationsSettings = ${JSON.stringify(chatSettings)};</script>`
+            const settingsScript = `<script>window.hsConversationsSettings = ${JSON.stringify(settings)};</script>`
 
-            if (!existingHTML?.includes(settingsScript)) {
+            if (!existingHTML.includes(settingsScript)) {
                 await framer.setCustomCode({
                     html: settingsScript,
                     location: "bodyStart",
@@ -70,7 +60,7 @@ export default function ChatPage() {
             }
         }
 
-        applySettings()
+        void applySettings()
     }, [settings, hasSetExistingSettings, isAllowedToSetCustomCode])
 
     if (isLoadingAccount || isLoadingInboxes) return <CenteredSpinner />
@@ -110,15 +100,24 @@ export default function ChatPage() {
                 <select
                     name="enableWidgetCookieBanner"
                     id="enableWidgetCookieBanner"
-                    value={settings.enableWidgetCookieBanner}
-                    onChange={value => setSettings({ ...settings, enableWidgetCookieBanner: value.target.value })}
+                    value={JSON.stringify(settings.enableWidgetCookieBanner)}
+                    onChange={value => {
+                        setSettings({
+                            ...settings,
+                            enableWidgetCookieBanner: v.parse(
+                                EnableWidgetCookieBannerSchema,
+                                JSON.parse(value.target.value)
+                            ),
+                        })
+                    }}
                     disabled={!isAllowedToSetCustomCode}
                     title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
                     className={isAllowedToSetCustomCode ? undefined : "opacity-50"}
                 >
                     <option value="true">Enabled</option>
                     <option value="false">Disabled</option>
-                    <option value="ON_EXIT_INTENT">On Exit Intent</option>
+                    {/* The double quotes are intentional, as these values are the output of JSON.stringify */}
+                    <option value='"ON_EXIT_INTENT"'>On Exit Intent</option>
                 </select>
             </div>
             <div className="input-container">
@@ -129,8 +128,13 @@ export default function ChatPage() {
                         { value: "false", label: "Show" },
                         { value: "true", label: "Hide" },
                     ]}
-                    value={settings.disableAttachment}
-                    onValueChange={value => setSettings({ ...settings, disableAttachment: value })}
+                    value={JSON.stringify(settings.disableAttachment)}
+                    onValueChange={value => {
+                        setSettings({
+                            ...settings,
+                            disableAttachment: v.parse(DisableAttachmentSchema, JSON.parse(value)),
+                        })
+                    }}
                     disabled={!isAllowedToSetCustomCode}
                     title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
                 />

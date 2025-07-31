@@ -1,21 +1,18 @@
 import { framer } from "framer-plugin"
 import { bytesFromCanvas } from "./utils"
 
-async function flipHorizontally() {
-    const isAllowedToUpsertImage = framer.isAllowedTo("setImage")
+const isAllowedToUpsertImage = framer.isAllowedTo("setImage")
+if (!isAllowedToUpsertImage) {
+    await framer.closePlugin("You don't have permission to edit images.", { variant: "error" })
+}
 
-    if (!isAllowedToUpsertImage) {
-        framer.closePlugin("You don't have permission to edit images.", { variant: "error" })
-        return
-    }
+const image = await framer.getImage()
+if (!image) {
+    await framer.closePlugin("No Image was selected.", { variant: "error" })
+    throw new Error("Unreachable")
+}
 
-    const image = await framer.getImage()
-
-    if (!image) {
-        framer.closePlugin("No Image was selected.", { variant: "error" })
-        return
-    }
-
+try {
     const canvas = document.createElement("canvas")
     const ctx = canvas.getContext("2d")
 
@@ -43,12 +40,6 @@ async function flipHorizontally() {
     })
 
     await framer.closePlugin("Image flipped successfully")
+} catch (err) {
+    await framer.closePlugin("Unexpected error", { variant: "error" })
 }
-
-;(async () => {
-    try {
-        await flipHorizontally()
-    } catch (err) {
-        framer.closePlugin("Unexpected error", { variant: "error" })
-    }
-})()

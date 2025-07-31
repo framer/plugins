@@ -32,7 +32,13 @@ const MenuOption = ({
     return (
         <button
             className={cx("h-[110px] w-full tile col items-center justify-center rounded-md", className)}
-            onClick={() => (onClick ? onClick() : navigate(to))}
+            onClick={() => {
+                if (onClick) {
+                    onClick()
+                } else {
+                    navigate(to)
+                }
+            }}
         >
             {icon}
             <p className="font-semibold text-tertiary">{title}</p>
@@ -49,14 +55,14 @@ export default function MenuPage() {
 
     useEffect(() => {
         const pageQuery = queries[location]
-        if (pageQuery && pageQuery.shouldRefetch) {
-            pageQuery.query.refetch()
+        if (pageQuery?.shouldRefetch) {
+            void pageQuery.query.refetch()
         }
     }, [location, queries])
 
     return (
         <main>
-            <div className="col-lg items-center pt-[30px] pb-15">
+            <div className="col-lg items-center py-[30px]">
                 <Logo />
                 <div className="col items-center">
                     <h6>Welcome to HubSpot</h6>

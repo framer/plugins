@@ -53,7 +53,7 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
     )
 
     const applyAction = useCallback(
-        async (action: "onConflictUpdate" | "onConflictSkip") => {
+        (action: "onConflictUpdate" | "onConflictSkip") => {
             if (!currentRecord) return
 
             if (!applyToAll) {
@@ -63,7 +63,8 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
             }
 
             let current = currentRecord
-            do {
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional
+            while (true) {
                 setAction(current, action)
                 const next = recordsIterator.next()
                 if (next.done) {
@@ -71,7 +72,7 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
                     break
                 }
                 current = next.value
-            } while (current)
+            }
         },
         [currentRecord, applyToAll, setAction, moveToNextRecord, recordsIterator, onAllConflictsResolved]
     )
@@ -80,9 +81,9 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
 
     return (
         <form
-            onSubmit={async event => {
+            onSubmit={event => {
                 event.preventDefault()
-                await applyAction("onConflictUpdate")
+                applyAction("onConflictUpdate")
             }}
             className="manage-conflicts"
         >
@@ -97,7 +98,9 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
                         type="checkbox"
                         id="apply-to-all"
                         checked={applyToAll}
-                        onChange={event => setApplyToAll(event.currentTarget.checked)}
+                        onChange={event => {
+                            setApplyToAll(event.currentTarget.checked)
+                        }}
                     />
                     Apply to all
                 </label>
@@ -106,7 +109,12 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
             <hr />
 
             <div className="actions">
-                <button type="button" onClick={async () => applyAction("onConflictSkip")}>
+                <button
+                    type="button"
+                    onClick={() => {
+                        applyAction("onConflictSkip")
+                    }}
+                >
                     Skip Item
                 </button>
                 <button type="submit" className="framer-button-primary">
@@ -130,7 +138,7 @@ export function App({ collection }: { collection: Collection }) {
     const [isDragging, setIsDragging] = useState(false)
 
     useEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             width: 260,
             height: 330,
             resizable: false,
@@ -142,7 +150,7 @@ export function App({ collection }: { collection: Collection }) {
             return
         }
 
-        framer.showUI({
+        void framer.showUI({
             width: 260,
             height: 165,
             resizable: false,
@@ -208,12 +216,12 @@ export function App({ collection }: { collection: Collection }) {
             }
         }
 
-        const handleDrop = async (event: DragEvent) => {
+        const handleDrop = (event: DragEvent) => {
             event.preventDefault()
             setIsDragging(false)
 
             const file = event.dataTransfer?.files[0]
-            if (!file || !file.name.endsWith(".csv")) return
+            if (!file?.name.endsWith(".csv")) return
 
             const input = document.getElementById("file-input") as HTMLInputElement
             const dataTransfer = new DataTransfer()
@@ -222,9 +230,9 @@ export function App({ collection }: { collection: Collection }) {
             form.current?.requestSubmit()
         }
 
-        form.current?.addEventListener("dragover", handleDragOver)
-        form.current?.addEventListener("dragleave", handleDragLeave)
-        form.current?.addEventListener("drop", handleDrop)
+        form.current.addEventListener("dragover", handleDragOver)
+        form.current.addEventListener("dragleave", handleDragLeave)
+        form.current.addEventListener("drop", handleDrop)
 
         return () => {
             form.current?.removeEventListener("dragover", handleDragOver)
@@ -236,20 +244,23 @@ export function App({ collection }: { collection: Collection }) {
     useEffect(() => {
         if (!isAllowedToAddItems) return
 
-        const handlePaste = async (event: ClipboardEvent) => {
-            if (!event.clipboardData) return
+        const handlePaste = ({ clipboardData }: ClipboardEvent) => {
+            if (!clipboardData) return
 
-            try {
-                const csv = event.clipboardData.getData("text/plain")
-                if (!csv) return
-
-                await processAndImport(csv)
-            } catch (error) {
-                console.error("Error accessing clipboard data:", error)
-                framer.notify("Unable to access clipboard content", {
-                    variant: "error",
-                })
+            const task = async () => {
+                try {
+                    const csv = clipboardData.getData("text/plain")
+                    if (!csv) return
+                    await processAndImport(csv)
+                } catch (error) {
+                    console.error("Error accessing clipboard data:", error)
+                    framer.notify("Unable to access clipboard content", {
+                        variant: "error",
+                    })
+                }
             }
+
+            void task()
         }
 
         window.addEventListener("paste", handlePaste)
@@ -260,20 +271,20 @@ export function App({ collection }: { collection: Collection }) {
     }, [isAllowedToAddItems, processAndImport])
 
     const handleSubmit = useCallback(
-        async (event: React.FormEvent<HTMLFormElement>) => {
+        (event: React.FormEvent<HTMLFormElement>) => {
             if (!isAllowedToAddItems) return
             event.preventDefault()
 
-            const formData = new FormData(form.current!)
+            if (!form.current) throw new Error("Form ref not set")
+
+            const formData = new FormData(form.current)
             const fileValue = formData.get("file")
 
             if (!fileValue || typeof fileValue === "string") return
 
             const file = fileValue
 
-            const csv = await file.text()
-
-            await processAndImport(csv)
+            void file.text().then(processAndImport)
         },
         [isAllowedToAddItems, processAndImport]
     )
@@ -290,11 +301,10 @@ export function App({ collection }: { collection: Collection }) {
             <ManageConflicts
                 records={itemsWithConflict}
                 onAllConflictsResolved={resolvedItems => {
-                    const updatedItems = result.items.map(item => {
-                        const resolvedItem = resolvedItems.find(resolved => resolved.slug === item.slug)
-                        return resolvedItem || item
-                    })
-                    importItems({ ...result, items: updatedItems })
+                    const updatedItems = result.items.map(
+                        item => resolvedItems.find(resolved => resolved.slug === item.slug) ?? item
+                    )
+                    void importItems({ ...result, items: updatedItems })
                 }}
             />
         )
@@ -321,7 +331,11 @@ export function App({ collection }: { collection: Collection }) {
                 }}
             />
 
-            {isDragging && <div className="dropzone dragging">{isDragging && <p>Drop CSV file to import</p>}</div>}
+            {isDragging && (
+                <div className="dropzone dragging">
+                    <p>Drop CSV file to import</p>
+                </div>
+            )}
 
             {!isDragging && (
                 <>

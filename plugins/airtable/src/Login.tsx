@@ -3,6 +3,7 @@ import "./App.css"
 import { framer } from "framer-plugin"
 import { useLayoutEffect, useRef } from "react"
 import auth from "./auth"
+import { showLoginUI } from "./ui"
 
 interface AuthenticationProps {
     onAuthenticated: () => void
@@ -12,10 +13,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     useLayoutEffect(() => {
-        framer.showUI({
-            width: 320,
-            height: 340,
-        })
+        void showLoginUI()
     }, [])
 
     const pollForTokens = (readKey: string) => {
@@ -24,32 +22,37 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
         }
 
         return new Promise(resolve => {
-            pollInterval.current = setInterval(() => {
-                auth.fetchTokens(readKey).then(tokens => {
-                    clearInterval(pollInterval.current)
-                    resolve(tokens)
-                })
-            }, 2500)
+            const task = async () => {
+                const tokens = await auth.fetchTokens(readKey)
+                clearInterval(pollInterval.current)
+                resolve(tokens)
+            }
+
+            pollInterval.current = setInterval(() => void task(), 2500)
         })
     }
 
-    const login = async (event: React.FormEvent<HTMLFormElement>) => {
+    const login = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
-        try {
-            // Retrieve the auth URL and a set of read and write keys
-            const authorization = await auth.authorize()
+        const task = async () => {
+            try {
+                // Retrieve the auth URL and a set of read and write keys
+                const authorization = await auth.authorize()
 
-            // Open up the Airtable authorization window
-            window.open(authorization.url)
+                // Open up the Airtable authorization window
+                window.open(authorization.url)
 
-            // Poll the auth server and wait for tokens
-            await pollForTokens(authorization.readKey)
+                // Poll the auth server and wait for tokens
+                await pollForTokens(authorization.readKey)
 
-            onAuthenticated()
-        } catch (e) {
-            framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
+                onAuthenticated()
+            } catch (e) {
+                framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
+            }
         }
+
+        void task()
     }
 
     return (

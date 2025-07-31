@@ -6,7 +6,6 @@ import type {
     LocalizedValueStatus,
 } from "framer-plugin"
 import "./App.css"
-import { shouldBeNever } from "./assert"
 
 function escapeXml(unsafe: string): string {
     return unsafe
@@ -20,6 +19,9 @@ function escapeXml(unsafe: string): string {
 /** See http://docs.oasis-open.org/xliff/xliff-core/v2.0/os/xliff-core-v2.0-os.html#state */
 type XliffState = "initial" | "translated" | "reviewed" | "final"
 
+// The two functions below have `undefined` in their return types as to future-proof against LocalizedValueStatus and
+// XliffState unions being expanded in minor releases.
+
 function statusToXliffState(status: LocalizedValueStatus): XliffState | undefined {
     switch (status) {
         case "new":
@@ -30,8 +32,7 @@ function statusToXliffState(status: LocalizedValueStatus): XliffState | undefine
         case "done":
             return "final"
         default:
-            shouldBeNever(status)
-            return
+            status satisfies never
     }
 }
 
@@ -45,8 +46,7 @@ function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined
         case "final":
             return "done"
         default:
-            shouldBeNever(state)
-            return
+            state satisfies never
     }
 }
 
@@ -69,14 +69,14 @@ function generateUnit(source: LocalizationSource, targetLocale: Locale) {
 
     if (localeData.status !== "new") {
         notes.push(`<note category="lastEdited">${localeData.lastEdited}</note>`)
-        notes.push(`<note category="readonly">${localeData.readonly}</note>`)
+        notes.push(`<note category="readonly">${localeData.readonly.toString()}</note>`)
     }
 
     return `            <unit id="${source.id}">
                 <notes>
                     ${notes.join("\n                    ")}
                 </notes>
-                <segment state="${state}"${localeData.status === "warning" ? ` subState="framer:warning"` : ""}>
+                <segment state="${state ?? ""}"${localeData.status === "warning" ? ` subState="framer:warning"` : ""}>
                     <source>${sourceValue}</source>
                     <target>${targetValue}</target>
                 </segment>
@@ -90,7 +90,7 @@ export function generateGroup(localizationGroup: LocalizationGroup, targetLocale
             <notes>
                 <note category="type">${localizationGroup.type}</note>
                 <note category="name">${escapeXml(localizationGroup.name)}</note>
-                <note category="supportsExcludedStatus">${localizationGroup.supportsExcludedStatus}</note>
+                <note category="supportsExcludedStatus">${localizationGroup.supportsExcludedStatus.toString()}</note>
             </notes>
 ${units.join("\n")}
         </group>`

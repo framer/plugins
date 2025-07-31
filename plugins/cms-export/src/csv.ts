@@ -1,7 +1,6 @@
 import type { Collection, CollectionItem, Field } from "framer-plugin"
 
 import { isColorStyle } from "framer-plugin"
-import { shouldBeNever } from "./assert"
 
 function downloadFile(file: File) {
     const filename = file.name
@@ -50,7 +49,7 @@ function isFieldSupported(field: Field): field is SupportedField {
             return false
 
         default:
-            shouldBeNever(field)
+            field satisfies never
             return false
     }
 }
@@ -105,7 +104,7 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
                         continue
                     }
 
-                    columns.push(`${fieldData.value.url}`)
+                    columns.push(fieldData.value.url)
                     continue
                 }
 
@@ -115,17 +114,17 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
                         continue
                     }
 
-                    columns.push(`${fieldData.value.url}`, fieldData.value.altText ? `${fieldData.value.altText}` : "")
+                    columns.push(fieldData.value.url, fieldData.value.altText ?? "")
                     continue
                 }
 
                 case "multiCollectionReference": {
-                    columns.push(`${fieldData.value.join(",")}`)
+                    columns.push(fieldData.value.join(","))
                     continue
                 }
 
                 case "enum": {
-                    columns.push(`${fieldData.value}`)
+                    columns.push(fieldData.value)
                     continue
                 }
 
@@ -146,12 +145,12 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
                 case "date":
                 case "link":
                 case "number": {
-                    columns.push(`${fieldData.value ?? ""}`)
+                    columns.push(fieldData.value === undefined ? "" : fieldData.value.toString())
                     continue
                 }
 
                 default: {
-                    shouldBeNever(fieldData)
+                    fieldData satisfies never
                 }
             }
         }

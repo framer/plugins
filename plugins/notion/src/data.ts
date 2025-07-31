@@ -376,7 +376,7 @@ export function fieldsInfoToCollectionFields(
                 break
             }
             default:
-                throw new Error(`Unsupported field type: ${fieldType as string}`)
+                throw new Error(`Unsupported field type: ${String(fieldType)}`)
         }
     }
 

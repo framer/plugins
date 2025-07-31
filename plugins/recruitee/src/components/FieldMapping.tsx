@@ -30,9 +30,11 @@ function FieldMappingRow({
         <>
             <button
                 type="button"
-                className={`source-field ${isMissingReference && "missing-reference"}`}
+                className={`source-field ${isMissingReference ? "missing-reference" : ""}`}
                 aria-disabled={isDisabled}
-                onClick={() => onToggleDisabled(field.id)}
+                onClick={() => {
+                    onToggleDisabled(field.id)
+                }}
                 tabIndex={0}
             >
                 <input type="checkbox" checked={!isDisabled} tabIndex={-1} readOnly />
@@ -44,7 +46,10 @@ function FieldMappingRow({
                     className="target-field"
                     disabled={isDisabled}
                     value={field.collectionId}
-                    onChange={event => onCollectionChange(field.id, event.target.value)}
+                    onChange={event => {
+                        const value = event.target.value ? event.target.value : (originalFieldName ?? "")
+                        onCollectionChange(field.id, value)
+                    }}
                 >
                     {field.supportedCollections?.length === 0 && (
                         <option value="" disabled>
@@ -61,10 +66,12 @@ function FieldMappingRow({
                 <input
                     type="text"
                     className="target-field"
-                    disabled={disabled} // IsDisabled doesn't make sense here since it's not a collection reference field
+                    disabled={isDisabled} // Use isDisabled consistently for clarity
                     placeholder={originalFieldName}
                     value={field.name !== originalFieldName ? field.name : ""}
-                    onChange={event => onNameChange(field.id, event.target.value ?? originalFieldName ?? "")}
+                    onChange={event => {
+                        onNameChange(field.id, event.target.value || originalFieldName || "")
+                    }}
                 />
             )}
         </>
@@ -115,7 +122,7 @@ export function FieldMapping({ companyId, boardToken, collection, dataSource, in
 
         collection
             .getFields()
-            .then(async collectionFields => {
+            .then(collectionFields => {
                 if (abortController.signal.aborted) return
 
                 setStatus("mapping-fields")
@@ -132,7 +139,7 @@ export function FieldMapping({ companyId, boardToken, collection, dataSource, in
                     setIgnoredFieldIds(ignoredIds)
                 }
             })
-            .catch(error => {
+            .catch((error: unknown) => {
                 if (!abortController.signal.aborted) {
                     console.error("Failed to fetch collection fields:", error)
                     framer.notify("Failed to load collection fields", { variant: "error" })
@@ -204,7 +211,7 @@ export function FieldMapping({ companyId, boardToken, collection, dataSource, in
 
             await collection.setFields(removeRecruiteeKeys(fieldsToSync))
             await syncCollection(companyId, boardToken, collection, dataSource, fieldsToSync, selectedSlugField)
-            await framer.closePlugin("Synchronization successful", { variant: "success" })
+            framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)
             framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
@@ -221,7 +228,12 @@ export function FieldMapping({ companyId, boardToken, collection, dataSource, in
 
     return (
         <main className="framer-hide-scrollbar mapping">
-            <form onSubmit={handleSubmit}>
+            <form
+                onSubmit={event => {
+                    event.preventDefault()
+                    void handleSubmit(event)
+                }}
+            >
                 <label className="slug-field" htmlFor="slugField">
                     Slug Field
                     <select

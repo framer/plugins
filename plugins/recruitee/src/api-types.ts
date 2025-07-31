@@ -3,7 +3,8 @@ export const tagsSchema = v.object({
     id: v.number(),
     name: v.string(),
 })
-const OfferLeafSchema = v.object({
+
+export const OfferLeafSchema = v.object({
     id: v.number(),
     title: v.string(),
     department: v.nullable(v.string()),
@@ -58,7 +59,7 @@ const OfferLeafSchema = v.object({
     wysiwyg_editor: v.nullable(v.string()),
     location_ids: v.array(v.number()),
 })
-const LocationLeafSchema = v.object({
+export const LocationLeafSchema = v.object({
     id: v.number(),
     name: v.string(),
     city: v.string(),
@@ -86,7 +87,7 @@ export const OfferSchema = v.object({
 })
 export type Offer = v.InferOutput<typeof OfferSchema>
 
-const DepartmentLeafSchema = v.object({
+export const DepartmentLeafSchema = v.object({
     id: v.number(),
     name: v.string(),
     status: v.nullable(v.string()),
@@ -99,7 +100,7 @@ export const DepartmentSchema = v.object({
 })
 
 export type Department = v.InferOutput<typeof DepartmentSchema>
-const CandidateLeafSchema = v.object({
+export const CandidateLeafSchema = v.object({
     id: v.number(),
     initials: v.nullable(v.string()),
     name: v.string(),

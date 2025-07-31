@@ -42,7 +42,7 @@ export function SelectDataSource({
                     onSelectDataSource(dataSource)
                     onSelectBoardToken(boardToken)
                 })
-                .catch(error => {
+                .catch((error: unknown) => {
                     console.error(error)
                     framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
                         variant: "error",
@@ -70,7 +70,9 @@ export function SelectDataSource({
                         required
                         placeholder="Enter Company ID…"
                         value={companyId}
-                        onChange={event => setCompanyId(event.target.value)}
+                        onChange={event => {
+                            setCompanyId(event.target.value)
+                        }}
                     />
                 </label>
                 <label>
@@ -81,7 +83,9 @@ export function SelectDataSource({
                         required
                         placeholder="Enter Board Token…"
                         value={boardToken}
-                        onChange={event => setBoardToken(event.target.value)}
+                        onChange={event => {
+                            setBoardToken(event.target.value)
+                        }}
                     />
                 </label>
                 <label>
@@ -89,7 +93,9 @@ export function SelectDataSource({
                     <select
                         id="collection"
                         required
-                        onChange={event => setSelectedDataSourceId(event.target.value)}
+                        onChange={event => {
+                            setSelectedDataSourceId(event.target.value)
+                        }}
                         value={selectedDataSourceId}
                         disabled={!boardToken}
                     >

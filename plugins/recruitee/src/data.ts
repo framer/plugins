@@ -9,7 +9,7 @@ import {
 import * as v from "valibot"
 import { isRecruiteeItemField } from "./api-types"
 import { dataSources, type RecruiteeDataSource, type RecruiteeField } from "./dataSources"
-import { assertNever, decodeHtml, isCollectionReference } from "./utils"
+import { assertNever, isCollectionReference } from "./utils"
 
 export const dataSourceIdPluginKey = "dataSourceId"
 export const slugFieldIdPluginKey = "slugFieldId"
@@ -115,7 +115,7 @@ async function getItems(
 
     const dataItems = await dataSource.fetch(boardToken, companyId)
 
-    const itemIdBySlug: Map<string, string> = new Map()
+    const itemIdBySlug = new Map<string, string>()
     const idField = fieldsToSync[0]
     if (!idField) {
         throw new Error("No ID field found in data source.")
@@ -138,7 +138,7 @@ async function getItems(
         itemIdBySlug.set(uniqueSlug, id)
     }
 
-    const slugByItemId: Map<string, string> = new Map()
+    const slugByItemId = new Map<string, string>()
     for (const [slug, itemId] of itemIdBySlug.entries()) {
         slugByItemId.set(itemId, slug)
     }
@@ -176,7 +176,7 @@ async function getItems(
                     break
                 case "formattedText":
                     fieldData[field.id] = {
-                        value: decodeHtml(value ? String(value) : ""),
+                        value: v.is(StringifiableSchema, value) ? String(value) : "",
                         type: "formattedText",
                     }
                     break
@@ -213,10 +213,15 @@ async function getItems(
                 }
                 case "image":
                 case "file":
+                case "array":
+                    throw new Error(`${field.type} field is not supported.`)
                 case "enum":
                     throw new Error(`${field.type} field is not supported.`)
                 default:
-                    assertNever(field)
+                    assertNever(
+                        field,
+                        new Error(`Unsupported field type: ${(field as unknown as { type: string }).type}`)
+                    )
             }
         }
 

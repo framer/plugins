@@ -354,7 +354,8 @@ export function fieldsInfoToCollectionFields(
                 })
                 break
             }
-            case "multiCollectionReference": {
+            case "multiCollectionReference":
+            case "collectionReference": {
                 assertFieldTypeMatchesPropertyType(property.type, fieldType)
 
                 if (property.type === "relation") {
@@ -363,7 +364,7 @@ export function fieldsInfoToCollectionFields(
                         const collectionId = databaseIdMap.get(databaseId)
                         if (collectionId) {
                             fields.push({
-                                type: "multiCollectionReference",
+                                type: fieldType,
                                 id: fieldInfo.id,
                                 name: fieldName,
                                 collectionId,
@@ -375,7 +376,7 @@ export function fieldsInfoToCollectionFields(
                 break
             }
             default:
-                throw new Error(`Unsupported field type: ${fieldType}`)
+                throw new Error(`Unsupported field type: ${String(fieldType)}`)
         }
     }
 
@@ -456,7 +457,13 @@ export function getFieldDataEntryForProperty(
             return { type: "date", value: property.date?.start ?? null }
         }
         case "relation": {
-            return { type: "multiCollectionReference", value: property.relation.map(({ id }) => id) }
+            if (field.type === "multiCollectionReference") {
+                return { type: "multiCollectionReference", value: property.relation.map(({ id }) => id) }
+            } else if (field.type === "collectionReference") {
+                return { type: "collectionReference", value: property.relation[0]?.id ?? null }
+            }
+
+            return null
         }
         case "files": {
             if (field.type === "array") {

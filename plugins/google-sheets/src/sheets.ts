@@ -312,6 +312,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
         case "enum":
         case "image":
         case "link":
+        case "file":
         case "formattedText":
         case "color":
         case "string": {

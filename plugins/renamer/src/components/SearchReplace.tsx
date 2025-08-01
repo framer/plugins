@@ -1,5 +1,4 @@
 import SearchIcon from "./SearchIcon"
-import Spinner from "./Spinner"
 import TextField from "./TextField"
 
 interface Props {
@@ -25,10 +24,10 @@ export default function SearchReplace({
     actionLabel,
     showReplacement,
     isAllowed,
-    onRenameClick = () => {},
+    onRenameClick,
 }: Props) {
     const handleTextFieldKeyDown = (event: React.KeyboardEvent) => {
-        if (event.key === "Enter") {
+        if (event.key === "Enter" && onRenameClick) {
             onRenameClick()
         }
     }

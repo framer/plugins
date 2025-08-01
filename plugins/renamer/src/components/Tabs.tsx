@@ -1,3 +1,5 @@
+import cx from "classnames"
+
 interface TabItem {
     label: string
     active: boolean
@@ -12,7 +14,7 @@ export default function Tabs({ items }: Props) {
     return (
         <div className="tabs">
             {items.map((item, index) => (
-                <button key={index} className={`tab ${item.active ? "active" : ""}`} onClick={item.select}>
+                <button key={index} className={cx("tab", item.active && "active")} onClick={item.select}>
                     {item.label}
                 </button>
             ))}

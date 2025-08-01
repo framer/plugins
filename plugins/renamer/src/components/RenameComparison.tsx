@@ -1,3 +1,5 @@
+import cx from "classnames"
+
 interface Props {
     selected: boolean
     before: string
@@ -8,13 +10,11 @@ interface Props {
 
 export default function RenameComparison({ selected, before, after, children, onClick }: Props) {
     return (
-        <button className={`replace-comparison ${after ? "grid" : ""} ${selected ? "selected" : ""}`} onClick={onClick}>
+        <button className={cx("replace-comparison", after && "grid", selected && "selected")} onClick={onClick}>
             <div className="before">
                 <div className="icon">{children}</div>
-
                 <div className="label">{before}</div>
             </div>
-
             {after && (
                 <>
                     <div className="chevron">
@@ -38,10 +38,8 @@ export default function RenameComparison({ selected, before, after, children, on
                             </g>
                         </svg>
                     </div>
-
                     <div className="after">
                         <div className="icon">{children}</div>
-
                         <div className="label">{after}</div>
                     </div>
                 </>

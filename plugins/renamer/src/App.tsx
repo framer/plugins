@@ -105,8 +105,6 @@ export function App() {
                     setReplacing(true)
                 },
 
-                onProgress: () => {},
-
                 onCompleted: () => {
                     setReplacing(false)
                     void indexer.restart()
@@ -117,7 +115,7 @@ export function App() {
 
     const renameResults = useCallback(() => {
         if (!isAllowedToSetAttributes) return
-        resultsRenamer.start(results)
+        void resultsRenamer.start(results)
     }, [isAllowedToSetAttributes, resultsRenamer, results])
 
     const throttle = useCallback((callback: () => void, delay = 1000) => {
@@ -167,8 +165,7 @@ export function App() {
         setIndex({})
         void indexer.start()
 
-        return framer.subscribeToCanvasRoot(async () => {
-            const root = await framer.getCanvasRoot()
+        return framer.subscribeToCanvasRoot(root => {
             setCurrentRootId(root.id)
 
             if (replacing) return
@@ -235,7 +232,9 @@ export function App() {
 
             <SearchReplace
                 query={textSearchFilter.query}
-                setQuery={(query: string) => setTextSearchFilter(prev => ({ ...prev, query }))}
+                setQuery={(query: string) => {
+                    setTextSearchFilter(prev => ({ ...prev, query }))
+                }}
                 replacement={replacement}
                 setReplacement={setReplacement}
                 loading={replacing}

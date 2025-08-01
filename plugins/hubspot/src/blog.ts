@@ -106,7 +106,7 @@ function getFieldDataEntryInput(
 
         case "date": {
             if (typeof value !== "string") return undefined
-            return { type: "date", value: new Date(value).toUTCString() }
+            return { type: "date", value }
         }
 
         case "boolean": {

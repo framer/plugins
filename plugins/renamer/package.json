@@ -4,29 +4,22 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "check-svelte": "svelte-check",
-        "dev": "vite",
-        "build": "vite build",
+        "dev": "run g:dev",
+        "build": "run g:build",
         "check-biome": "run g:check-biome",
         "check-eslint": "run g:check-eslint",
-        "pack": "npx framer-plugin-tools@latest pack",
-        "preview": "vite preview",
+        "preview": "run g:preview",
+        "pack": "framer-plugin-tools pack",
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
-        "framer-plugin": "^3.3.2",
+        "framer-plugin": "^3.5.2",
         "react": "^18.3.1",
         "react-dom": "^18.3.1"
     },
     "devDependencies": {
-        "@sveltejs/vite-plugin-svelte": "^5.1.0",
         "@types/react": "^18.3.23",
         "@types/react-dom": "^18.3.7",
-        "svelte": "^5.35.2",
-        "svelte-check": "^4.2.2",
-        "typescript": "^5.8.3",
-        "vite": "^7.0.1",
-        "vite-plugin-framer": "^1.0.7",
-        "vite-plugin-mkcert": "^1.17.8"
+        "framer-plugin-tools": "^1.0.0"
     }
 }

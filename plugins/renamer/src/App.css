@@ -1,0 +1,41 @@
+.app {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	padding: 0 15px 15px;
+}
+
+.results {
+	position: relative;
+	height: 100%;
+	overflow: hidden;
+}
+
+.empty-state {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	user-select: none;
+	position: absolute;
+	inset: 0;
+}
+
+[data-framer-theme="dark"] .empty-state img.light {
+	display: none;
+}
+
+[data-framer-theme="light"] .empty-state img.dark {
+	display: none;
+}
+
+.empty-state img {
+	width: 200px;
+}
+
+.list {
+	background-color: var(--framer-color-bg);
+	position: absolute;
+	inset: 0;
+}

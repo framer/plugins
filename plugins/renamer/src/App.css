@@ -55,11 +55,10 @@
 	background: none !important;
 	border: 0;
 	width: auto;
-	padding: 0;
 	color: #999999;
 	font-weight: 600;
 	user-select: none;
-	padding: 0 5px;
+	padding: 0 8px;
 	transition: color 200ms ease;
 }
 
@@ -283,14 +282,14 @@
 	color: var(--framer-color-text-tertiary);
 }
 
-.frame-icon {
-	color: #09f;
+.after .frame-icon {
+	color: var(--framer-color-tint);
 }
 
-.component-icon {
+.after .component-icon {
 	color: #9a66ff;
 }
 
-.text-icon {
+.after .text-icon {
 	color: #999;
 }

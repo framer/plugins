@@ -88,7 +88,11 @@ export async function getBlogPluginContext(): Promise<BlogPluginContext> {
     }
 }
 
-function getFieldDataEntryInput(field: ManagedCollectionFieldInput, value: unknown): FieldDataEntryInput | undefined {
+function getFieldDataEntryInput(
+    field: ManagedCollectionFieldInput,
+    value: unknown,
+    post?: BlogPost
+): FieldDataEntryInput | undefined {
     switch (field.type) {
         case "string": {
             if (typeof value !== "string") return undefined
@@ -101,7 +105,7 @@ function getFieldDataEntryInput(field: ManagedCollectionFieldInput, value: unkno
         }
 
         case "date": {
-            if (typeof value !== "number") return undefined
+            if (typeof value !== "string") return undefined
             return { type: "date", value: new Date(value).toUTCString() }
         }
 
@@ -117,6 +121,15 @@ function getFieldDataEntryInput(field: ManagedCollectionFieldInput, value: unkno
 
         case "image": {
             if (typeof value !== "string") return undefined
+
+            // Include alt text in featuredImage
+            if (field.id === "featuredImage" && post) {
+                const alt = post.featuredImageAltText
+                if (alt) {
+                    return { type: "image", value, alt }
+                }
+            }
+
             return { type: "image", value }
         }
 
@@ -171,7 +184,7 @@ function processPost({ post, fieldsById, unsyncedItemIds, status }: ProcessPostP
         // Not included in field mapping, skip
         if (!field) continue
 
-        const fieldDataEntryInput = getFieldDataEntryInput(field, propertyValue)
+        const fieldDataEntryInput = getFieldDataEntryInput(field, propertyValue, post)
         if (fieldDataEntryInput) {
             fieldData[propertyName] = fieldDataEntryInput
         } else {

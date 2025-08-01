@@ -217,8 +217,8 @@ export function App() {
             <div className="results">
                 {!textSearchFilter.query ? (
                     <div className="empty-state">
-                        <img className="light" src={starsLightImage} alt="Stars" />
-                        <img className="dark" src={starsDarkImage} alt="Stars" />
+                        <img className="light" src={starsLightImage} alt="Stars" draggable={false} />
+                        <img className="dark" src={starsDarkImage} alt="Stars" draggable={false} />
                     </div>
                 ) : (
                     <div className="list">

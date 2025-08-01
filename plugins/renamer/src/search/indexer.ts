@@ -76,6 +76,7 @@ export class Indexer {
 
                 if (!isCanvasNode(node)) continue
                 if (!this.isIncludedNodeType(node)) continue
+                if (node.isReplica) continue
 
                 const name = node.name ?? (await getDefaultCanvasNodeName(node))
                 const rect = this.includedAttributes.includes("rect") ? await node.getRect() : null

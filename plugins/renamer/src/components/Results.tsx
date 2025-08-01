@@ -4,7 +4,6 @@ import type { Result } from "../search/types"
 import LayerIcon from "./LayerIcon"
 import PlaceholderRenameComparison from "./PlaceholderRenameComparison"
 import RenameComparison from "./RenameComparison"
-import "./Results.css"
 
 interface Props {
     query: string

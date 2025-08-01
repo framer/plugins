@@ -1,6 +1,3 @@
-
-import "./PlaceholderRenameComparison.css"
-
 interface Props {
     index: number
     total: number

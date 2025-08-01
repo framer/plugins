@@ -1,5 +1,3 @@
-import "./Spinner.css"
-
 interface Props {
     type: "dashed" | "solid"
 }

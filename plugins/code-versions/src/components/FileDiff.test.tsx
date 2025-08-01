@@ -7,6 +7,12 @@ const REMOVED_CLASS_NAME = "bg-diff-remove-bg/10"
 const ADDED_ROW_CLASS_NAME = "to-diff-add-bg/10"
 const REMOVED_ROW_CLASS_NAME = "to-diff-remove/10"
 
+function getCodeElement(content: string) {
+    return screen.getByText(
+        (_content, element) => element?.tagName === "CODE" && element.textContent?.trim() === content
+    )
+}
+
 describe("FileDiff", () => {
     describe("when content is identical", () => {
         it("shows unchanged content without highlighting", () => {
@@ -14,8 +20,8 @@ describe("FileDiff", () => {
             render(<FileDiff original={content} revised={content} />)
             const table = screen.getByRole("table")
             expect(table).toBeInTheDocument()
-            expect(screen.getByText("function test() {")).toBeInTheDocument()
-            expect(screen.getByText("return true;")).toBeInTheDocument()
+            expect(getCodeElement("function test() {")).toBeInTheDocument()
+            expect(getCodeElement("return true;")).toBeInTheDocument()
             expect(screen.getByText("}")).toBeInTheDocument()
             expect(screen.queryByRole("mark")).not.toBeInTheDocument()
         })

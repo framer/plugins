@@ -2,6 +2,7 @@ import { match, P } from "ts-pattern"
 import { cn } from "../utils"
 import { getLineDiffWithEdges } from "../utils/diff/line-diff"
 import type { InlineDiff, LineDiff } from "../utils/diff/types"
+import { HighlightedCode } from "./HighlightedCode"
 
 interface FileDiffProps {
     original: string
@@ -58,7 +59,9 @@ function ContextRow({ line }: { line: LineDiff & { type: "context" } }) {
         <tr className="h-(--code-row-height) leading-(--code-row-height)">
             <LineNumberCell variant="context" lineNumber={line.oldLine} />
             <LineNumberCell variant="context" lineNumber={line.newLine} />
-            <ContentCell>{line.content}</ContentCell>
+            <ContentCell>
+                <HighlightedCode code={line.content} showLineNumbers={false} />
+            </ContentCell>
         </tr>
     )
 }

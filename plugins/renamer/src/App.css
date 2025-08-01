@@ -160,9 +160,11 @@
 	overflow: hidden;
 }
 
-.list-container {
+.container {
 	flex: 1;
 	overflow-y: auto;
+	padding-top: 15px;
+	padding-bottom: 15px;
 }
 
 .loading-placeholders {
@@ -242,7 +244,7 @@
 
 .replace-comparison.grid {
 	display: grid;
-	grid-template-columns: 1fr 55px 1fr;
+	grid-template-columns: 1fr 12px 1fr;
 }
 
 .chevron {
@@ -263,6 +265,7 @@
 	align-items: center;
 	gap: 10px;
 	overflow: hidden;
+	flex: 1;
 }
 
 .label {
@@ -280,6 +283,14 @@
 	color: var(--framer-color-text-tertiary);
 }
 
-.after .icon {
-	color: var(--framer-color-tint);
+.frame-icon {
+	color: #09f;
+}
+
+.component-icon {
+	color: #9a66ff;
+}
+
+.text-icon {
+	color: #999;
 }

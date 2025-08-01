@@ -21,7 +21,7 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
 
     return (
         <div className="results">
-            <div className="list-container">
+            <div className="container">
                 {results.map((result, index) => (
                     <RenameComparison
                         key={`${result.title}-${index}`}

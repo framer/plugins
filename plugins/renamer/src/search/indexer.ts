@@ -115,6 +115,7 @@ export class Indexer {
         const [webPages, componentNodes, vectorSetNodes] = await Promise.all([
             framer.getNodesWithType("WebPageNode"),
             framer.getNodesWithType("ComponentNode"),
+            // @ts-expect-error - See https://github.com/framer/plugins/issues/356
             framer.getNodesWithType("VectorSetNode"),
         ])
         return [...webPages, ...componentNodes, ...vectorSetNodes]

@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import starsDarkImage from "./assets/stars_dark.png"
 import starsLightImage from "./assets/stars_light.png"
 import Results from "./components/Results.tsx"
@@ -50,6 +50,8 @@ export function App() {
     const entries: IndexEntry[] = useMemo(() => Object.values(index), [index])
     const results: Result[] = useMemo(() => executeFilters(filters, entries), [filters, entries])
 
+    const resultsRenamerRef = useRef<BatchProcessResults | null>(null)
+
     const indexer = useMemo(
         () =>
             new Indexer({
@@ -64,7 +66,7 @@ export function App() {
 
                 onStarted: () => {
                     setIndexing(true)
-                    resultsRenamer.setReady(false)
+                    resultsRenamerRef.current?.setReady(false)
                 },
 
                 onUpsert: entry => {
@@ -73,45 +75,46 @@ export function App() {
 
                 onCompleted: () => {
                     setIndexing(false)
-                    resultsRenamer.setReady(true)
+                    resultsRenamerRef.current?.setReady(true)
                 },
             }),
         []
     )
 
-    const resultsRenamer = useMemo(
-        () =>
-            new BatchProcessResults({
-                process: async (result: Result, node: CanvasNode) => {
-                    switch (currentMode) {
-                        case "search":
-                            await node.setAttributes({
-                                name: renameResult(result, replacement),
-                            })
-                            return
+    const resultsRenamer = useMemo(() => {
+        const instance = new BatchProcessResults({
+            process: async (result: Result, node: CanvasNode) => {
+                switch (currentMode) {
+                    case "search":
+                        await node.setAttributes({
+                            name: renameResult(result, replacement),
+                        })
+                        return
 
-                        case "clean":
-                            await node.setAttributes({
-                                name: cleanUpResult(result),
-                            })
-                            return
+                    case "clean":
+                        await node.setAttributes({
+                            name: cleanUpResult(result),
+                        })
+                        return
 
-                        default:
-                            assertNever(currentMode)
-                    }
-                },
+                    default:
+                        assertNever(currentMode)
+                }
+            },
 
-                onStarted: () => {
-                    setReplacing(true)
-                },
+            onStarted: () => {
+                setReplacing(true)
+            },
 
-                onCompleted: () => {
-                    setReplacing(false)
-                    void indexer.restart()
-                },
-            }),
-        [currentMode, replacement]
-    )
+            onCompleted: () => {
+                setReplacing(false)
+                void indexer.restart()
+            },
+        })
+
+        resultsRenamerRef.current = instance
+        return instance
+    }, [currentMode, replacement, indexer])
 
     const renameResults = useCallback(() => {
         if (!isAllowedToSetAttributes) return

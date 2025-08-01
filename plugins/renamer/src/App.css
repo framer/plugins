@@ -1,296 +1,296 @@
 /* App styles */
 .app {
-	display: flex;
-	flex-direction: column;
-	width: 100%;
-	height: 100%;
-	position: absolute;
-	padding: 0 15px 15px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    padding: 0 15px 15px;
 }
 
 .results {
-	position: relative;
-	height: 100%;
-	overflow: hidden;
+    position: relative;
+    height: 100%;
+    overflow: hidden;
 }
 
 .empty-state {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	user-select: none;
-	position: absolute;
-	inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    position: absolute;
+    inset: 0;
 }
 
 [data-framer-theme="dark"] .empty-state img.light {
-	display: none;
+    display: none;
 }
 
 [data-framer-theme="light"] .empty-state img.dark {
-	display: none;
+    display: none;
 }
 
 .empty-state img {
-	width: 200px;
+    width: 200px;
 }
 
 .list {
-	background-color: var(--framer-color-bg);
-	position: absolute;
-	inset: 0;
+    background-color: var(--framer-color-bg);
+    position: absolute;
+    inset: 0;
 }
 
 /* Tabs styles */
 .tabs {
-	display: flex;
-	align-items: center;
-	height: 52px;
-	flex-shrink: 0;
-	border-top: 1px solid var(--framer-color-divider);
-	border-bottom: 1px solid var(--framer-color-divider);
+    display: flex;
+    align-items: center;
+    height: 52px;
+    flex-shrink: 0;
+    border-top: 1px solid var(--framer-color-divider);
+    border-bottom: 1px solid var(--framer-color-divider);
 }
 
 .tab {
-	background: none !important;
-	border: 0;
-	width: auto;
-	color: #999999;
-	font-weight: 600;
-	user-select: none;
-	padding: 0 8px;
-	transition: color 200ms ease;
+    background: none !important;
+    border: 0;
+    width: auto;
+    color: #999999;
+    font-weight: 600;
+    user-select: none;
+    padding: 0 8px;
+    transition: color 200ms ease;
 }
 
 .tab:first-child {
-	padding-left: 0;
+    padding-left: 0;
 }
 
 .tab.active {
-	color: var(--framer-color-text);
+    color: var(--framer-color-text);
 }
 
 /* TextField styles */
 .text-field {
-	background-color: var(--framer-color-bg-tertiary);
-	border-radius: 8px;
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	padding: 0 10px;
-	height: 30px;
-	position: relative;
-	overflow: hidden;
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 10px;
+    height: 30px;
+    position: relative;
+    overflow: hidden;
 }
 
 .text-field:focus-within {
-	box-shadow: 0 0 0 1px var(--framer-color-tint) inset;
+    box-shadow: 0 0 0 1px var(--framer-color-tint) inset;
 }
 
 .leading-content {
-	color: var(--framer-color-text-tertiary);
-	flex-shrink: 0;
-	pointer-events: none;
+    color: var(--framer-color-text-tertiary);
+    flex-shrink: 0;
+    pointer-events: none;
 }
 
 .text-field input {
-	background-color: transparent;
-	width: 100%;
-	height: 100%;
-	padding: 0;
-	flex-shrink: 1;
-	border: none;
-	outline: none;
+    background-color: transparent;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    flex-shrink: 1;
+    border: none;
+    outline: none;
 }
 
 .text-field input:focus {
-	box-shadow: none;
+    box-shadow: none;
 }
 
 .text-field input::placeholder {
-	color: #999999;
+    color: #999999;
 }
 
 /* SearchReplace styles */
 .search-replace {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .rename-button {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	user-select: none;
-	border: none;
-	border-radius: 8px;
-	height: 30px;
-	font-weight: 600;
-	cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    border: none;
+    border-radius: 8px;
+    height: 30px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 .rename-button:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 [data-framer-theme="light"] .rename-button {
-	background: #111;
-	color: #fff;
-	--framer-color-text: #fff;
+    background: #111;
+    color: #fff;
+    --framer-color-text: #fff;
 }
 
 [data-framer-theme="dark"] .rename-button {
-	background: #fff;
-	color: #111;
-	--framer-color-text: #111;
+    background: #fff;
+    color: #111;
+    --framer-color-text: #111;
 }
 
 /* Results styles */
 .results {
-	display: flex;
-	flex-direction: column;
-	gap: 1px;
-	height: 100%;
-	overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    height: 100%;
+    overflow: hidden;
 }
 
 .container {
-	flex: 1;
-	overflow-y: auto;
-	padding-top: 15px;
-	padding-bottom: 15px;
+    flex: 1;
+    overflow-y: auto;
+    padding-top: 15px;
+    padding-bottom: 15px;
 }
 
 .loading-placeholders {
-	padding: 15px 0;
+    padding: 15px 0;
 }
 
 .empty-state {
-	color: var(--framer-color-text-tertiary);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	position: absolute;
-	inset: 0;
-	user-select: none;
+    color: var(--framer-color-text-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    inset: 0;
+    user-select: none;
 }
 
 /* LayerIcon styles */
 .icon svg {
-	width: 100%;
+    width: 100%;
 }
 
 /* PlaceholderRenameComparison styles */
 @keyframes pulse {
-	0% {
-		opacity: 0.3;
-	}
+    0% {
+        opacity: 0.3;
+    }
 
-	50% {
-		opacity: 1;
-	}
+    50% {
+        opacity: 1;
+    }
 
-	100% {
-		opacity: 0.3;
-	}
+    100% {
+        opacity: 0.3;
+    }
 }
 
 .placeholder-rename-comparison {
-	border-radius: 8px;
-	display: flex;
-	flex-shrink: 0;
-	align-items: center;
-	width: 100%;
-	height: 30px;
-	gap: 7px;
-	animation: pulse 1.5s ease infinite;
-	animation-fill-mode: forwards;
+    border-radius: 8px;
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    width: 100%;
+    height: 30px;
+    gap: 7px;
+    animation: pulse 1.5s ease infinite;
+    animation-fill-mode: forwards;
 }
 
 .content {
-	background: color-mix(in srgb, transparent, var(--framer-color-text) 10%);
-	border-radius: 100px;
-	height: 12px;
+    background: color-mix(in srgb, transparent, var(--framer-color-text) 10%);
+    border-radius: 100px;
+    height: 12px;
 }
 
 /* RenameComparison styles */
 .replace-comparison {
-	background: none !important;
-	align-items: center;
-	height: 30px;
-	gap: 10px;
-	width: 100%;
-	user-select: none;
-	border: none;
-	cursor: pointer;
-	text-align: left;
-	font-weight: 500;
-	padding: 0;
+    background: none !important;
+    align-items: center;
+    height: 30px;
+    gap: 10px;
+    width: 100%;
+    user-select: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-weight: 500;
+    padding: 0;
 }
 
 [data-framer-theme="dark"] .replace-comparison {
-	color: #999999;
+    color: #999999;
 }
 
 [data-framer-theme="light"] .replace-comparison {
-	color: #666666;
+    color: #666666;
 }
 
 .replace-comparison.grid {
-	display: grid;
-	grid-template-columns: 1fr 12px 1fr;
+    display: grid;
+    grid-template-columns: 1fr 12px 1fr;
 }
 
 .chevron {
-	place-self: center;
+    place-self: center;
 }
 
 [data-framer-theme="dark"] .chevron {
-	color: #666666;
+    color: #666666;
 }
 
 [data-framer-theme="light"] .chevron {
-	color: #999999;
+    color: #999999;
 }
 
 .before,
 .after {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	overflow: hidden;
-	flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+    flex: 1;
 }
 
 .label {
-	text-overflow: ellipsis;
-	overflow: hidden;
-	white-space: nowrap;
-	width: 100%;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    width: 100%;
 }
 
 .icon {
-	flex-shrink: 0;
+    flex-shrink: 0;
 }
 
 .before .icon {
-	color: var(--framer-color-text-tertiary);
+    color: var(--framer-color-text-tertiary);
 }
 
 .after .frame-icon {
-	color: var(--framer-color-tint);
+    color: var(--framer-color-tint);
 }
 
 .after .component-icon {
-	color: #9a66ff;
+    color: #9a66ff;
 }
 
 .after .text-icon {
-	color: #999;
+    color: #999;
 }
 
 .after .vector-set-item-icon {
-	color: #09f;
+    color: #09f;
 }

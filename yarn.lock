@@ -6405,6 +6405,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
+    classnames: "npm:^2.5.1"
     framer-plugin: "npm:^3.5.2"
     framer-plugin-tools: "npm:^1.0.0"
     react: "npm:^18.3.1"

@@ -1,4 +1,4 @@
-import type { ComponentInstanceNode, FrameNode, SVGNode, TextNode } from "framer-plugin"
+import type { ComponentInstanceNode, FrameNode, SVGNode, TextNode, VectorSetItemNode } from "framer-plugin"
 import type { Range } from "../utils/text"
 
 export type IndexNodeType = Exclude<CanvasNode["__class"], "UnknownNode">
@@ -20,4 +20,4 @@ export interface Result {
     entry: IndexEntry
 }
 
-export type CanvasNode = FrameNode | TextNode | ComponentInstanceNode | SVGNode
+export type CanvasNode = FrameNode | TextNode | ComponentInstanceNode | SVGNode | VectorSetItemNode

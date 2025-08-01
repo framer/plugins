@@ -54,7 +54,7 @@ export function App() {
         () =>
             new Indexer({
                 scope: "page",
-                includedNodeTypes: ["FrameNode", "SVGNode", "ComponentInstanceNode"],
+                includedNodeTypes: ["FrameNode", "SVGNode", "ComponentInstanceNode", "TextNode", "VectorSetItemNode"],
                 includedAttributes: [],
 
                 onRestarted: () => {

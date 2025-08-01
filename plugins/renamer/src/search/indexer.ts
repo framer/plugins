@@ -1,4 +1,12 @@
-import { framer, isFrameNode, isTextNode, isWebPageNode, WebPageNode } from "framer-plugin"
+import {
+    type CanvasRootNode,
+    framer,
+    isComponentNode,
+    isFrameNode,
+    isTextNode,
+    isVectorSetNode,
+    isWebPageNode,
+} from "framer-plugin"
 import { isCanvasNode } from "./traits"
 import type { CanvasNode, IndexEntry } from "./types"
 
@@ -59,7 +67,7 @@ export class Indexer {
         }
     }
 
-    private async *crawl(pages: WebPageNode[]): AsyncGenerator<IndexEntry[]> {
+    private async *crawl(pages: CanvasRootNode[]): AsyncGenerator<IndexEntry[]> {
         let batch: IndexEntry[] = []
 
         for (const page of pages) {
@@ -70,9 +78,7 @@ export class Indexer {
                 if (!this.isIncludedNodeType(node)) continue
 
                 const name = node.name ?? (await getDefaultCanvasNodeName(node))
-
                 const rect = this.includedAttributes.includes("rect") ? await node.getRect() : null
-
                 const text = this.includedAttributes.includes("text") && isTextNode(node) ? await node.getText() : null
 
                 batch.push({
@@ -97,15 +103,20 @@ export class Indexer {
         }
     }
 
-    private async getPages(): Promise<WebPageNode[]> {
+    private async getPages(): Promise<CanvasRootNode[]> {
         const root = await framer.getCanvasRoot()
-        if (!isWebPageNode(root)) return []
+        if (!isWebPageNode(root) && !isVectorSetNode(root) && !isComponentNode(root)) return []
 
         if (this.scope === "page") {
             return [root]
         }
 
-        return await framer.getNodesWithType("WebPageNode")
+        const [webPages, componentNodes, vectorSetNodes] = await Promise.all([
+            framer.getNodesWithType("WebPageNode"),
+            framer.getNodesWithType("ComponentNode"),
+            framer.getNodesWithType("VectorSetNode"),
+        ])
+        return [...webPages, ...componentNodes, ...vectorSetNodes]
     }
 
     async start() {

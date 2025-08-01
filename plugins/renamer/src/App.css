@@ -111,11 +111,6 @@
 	color: #999999;
 }
 
-/* Spinner styles */
-.spinner svg {
-	color: var(--framer-color-text-tertiary);
-}
-
 /* SearchReplace styles */
 .search-replace {
 	display: flex;
@@ -141,13 +136,15 @@
 }
 
 [data-framer-theme="light"] .rename-button {
-	background: #111111;
-	color: white;
+	background: #111;
+	color: #fff;
+	--framer-color-text: #fff;
 }
 
 [data-framer-theme="dark"] .rename-button {
-	background: white;
-	color: #111111;
+	background: #fff;
+	color: #111;
+	--framer-color-text: #111;
 }
 
 /* Results styles */

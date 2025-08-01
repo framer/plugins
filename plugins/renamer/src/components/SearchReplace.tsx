@@ -1,4 +1,4 @@
-import iconSearch from "../assets/icon_search.svg?raw"
+import SearchIcon from "./SearchIcon"
 import Spinner from "./Spinner"
 import TextField from "./TextField"
 
@@ -42,7 +42,7 @@ export default function SearchReplace({
                 focused={false}
                 disabled={loading}
                 onKeyDown={handleTextFieldKeyDown}
-                leadingContent={<div dangerouslySetInnerHTML={{ __html: iconSearch }} />}
+                leadingContent={<SearchIcon />}
             />
 
             {showReplacement && (
@@ -61,7 +61,7 @@ export default function SearchReplace({
                 disabled={!query || disableAction || !isAllowed}
                 title={isAllowed ? undefined : "Insufficient permissions"}
             >
-                {loading ? <Spinner type="solid" /> : actionLabel}
+                {loading ? <div className="framer-spinner" /> : actionLabel}
             </button>
         </div>
     )

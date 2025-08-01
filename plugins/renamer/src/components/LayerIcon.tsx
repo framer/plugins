@@ -1,5 +1,4 @@
 import type { IndexNodeType } from "../search/types"
-import "./LayerIcon.css"
 
 interface Props {
     type: IndexNodeType

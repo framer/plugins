@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react"
-import "./TextField.css"
 
 interface Props {
     value: string

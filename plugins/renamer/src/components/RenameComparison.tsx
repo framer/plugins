@@ -1,5 +1,3 @@
-import "./RenameComparison.css"
-
 interface Props {
     selected: boolean
     before: string

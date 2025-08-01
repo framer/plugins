@@ -1,5 +1,3 @@
-import "./Tabs.css"
-
 interface TabItem {
     label: string
     active: boolean

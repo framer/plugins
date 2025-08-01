@@ -1,7 +1,6 @@
 import iconSearch from "../assets/icon_search.svg?raw"
 import Spinner from "./Spinner"
 import TextField from "./TextField"
-import "./SearchReplace.css"
 
 interface Props {
     query: string

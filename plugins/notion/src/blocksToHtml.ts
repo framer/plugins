@@ -46,6 +46,9 @@ const YOUTUBE_ID_REGEX = /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))(?<
 export function blocksToHtml(blocks: BlockObjectResponse[]) {
     let htmlContent = ""
 
+    let tableHasColumnHeader = false
+    let tableHasRowHeader = false
+
     for (let i = 0; i < blocks.length; i++) {
         const block = blocks[i]
         assert(block)
@@ -106,26 +109,35 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
             }
             case "table":
                 htmlContent += `<table>`
+                tableHasRowHeader = block.table.has_row_header
+                tableHasColumnHeader = block.table.has_column_header
                 break
-            case "table_row":
-                if (blocks[i - 1]?.type === "table") {
-                    htmlContent += `<thead><tr>`
-                    block.table_row.cells.forEach(cell => {
-                        htmlContent += `<th>${richTextToHtml(cell)}</th>`
-                    })
-                    htmlContent += `</tr></thead><tbody>`
-                } else {
-                    htmlContent += `<tr>`
-                    block.table_row.cells.forEach(cell => {
-                        htmlContent += `<td>${richTextToHtml(cell)}</td>`
-                    })
-                    htmlContent += `</tr>`
+            case "table_row": {
+                // Check if this is the first row after a table block
+                const isFirstRow = blocks[i - 1]?.type === "table"
+
+                if (isFirstRow) {
+                    htmlContent += `<tbody>`
                 }
+
+                htmlContent += `<tr>`
+                block.table_row.cells.forEach((cell, cellIndex) => {
+                    // Determine if this cell is a header
+                    const isHeaderCell = (isFirstRow && tableHasColumnHeader) || (cellIndex === 0 && tableHasRowHeader)
+
+                    if (isHeaderCell) {
+                        htmlContent += `<th>${richTextToHtml(cell)}</th>`
+                    } else {
+                        htmlContent += `<td>${richTextToHtml(cell)}</td>`
+                    }
+                })
+                htmlContent += `</tr>`
 
                 if (blocks[i + 1]?.type !== "table_row") {
                     htmlContent += `</tbody></table>`
                 }
                 break
+            }
             case "video": {
                 if (block.video.type !== "external") {
                     break

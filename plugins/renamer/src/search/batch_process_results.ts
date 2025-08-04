@@ -36,7 +36,7 @@ export class BatchProcessResults {
                     return
                 }
 
-                setTimeout(poll, 500)
+                setTimeout(poll, 100)
             }
 
             poll()
@@ -61,8 +61,8 @@ export class BatchProcessResults {
     }
 
     async start(results: Result[]) {
-        if (this.started || !this.ready) {
-            this.onError()
+        if (this.started) {
+            framer.notify("A layer rename operation is already in progress", { variant: "error" })
             return
         }
 

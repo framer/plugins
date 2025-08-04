@@ -121,11 +121,7 @@ export function App() {
             onCompleted: (renamedCount: number) => {
                 setReplacing(false)
                 void indexer.restart()
-                framer.notify(`Renamed ${renamedCount} layer${renamedCount === 1 ? "" : "s"}`)
-            },
-
-            onError: () => {
-                framer.notify("Unable to rename layers. Please try again.", { variant: "error" })
+                framer.notify(`Renamed ${renamedCount} layer${renamedCount === 1 ? "" : "s"}`, { variant: "success" })
             },
         })
 

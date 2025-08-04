@@ -38,10 +38,10 @@ export default function SearchReplace({
                 placeholder="Find"
                 value={query}
                 setValue={setQuery}
-                focused={false}
                 disabled={loading}
                 onKeyDown={handleTextFieldKeyDown}
                 leadingContent={<SearchIcon />}
+                autoFocus
             />
 
             {showReplacement && (

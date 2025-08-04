@@ -6,6 +6,7 @@ interface Props {
     placeholder: string
     focused?: boolean
     disabled?: boolean
+    autoFocus?: boolean
     leadingContent?: React.ReactNode
     onKeyDown: (event: React.KeyboardEvent) => void
 }
@@ -16,6 +17,7 @@ export default function TextField({
     placeholder,
     focused,
     disabled = false,
+    autoFocus = false,
     leadingContent,
     onKeyDown,
 }: Props) {
@@ -45,6 +47,7 @@ export default function TextField({
                 ref={inputRef}
                 disabled={disabled}
                 onKeyDown={onKeyDown}
+                autoFocus={autoFocus}
             />
         </div>
     )

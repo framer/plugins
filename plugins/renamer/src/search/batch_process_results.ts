@@ -3,10 +3,10 @@ import { isCanvasNode } from "./traits"
 import type { CanvasNode, Result } from "./types"
 
 interface BatchProcessResultsOptions {
-    process: (result: Result, node: CanvasNode, index: number) => Promise<void>
+    process: (result: Result, node: CanvasNode, index: number) => Promise<boolean>
     onStarted: () => void
     onProgress?: (count: number, total: number) => void
-    onCompleted: () => void
+    onCompleted: (renamedCount: number) => void
     onError: () => void
 }
 
@@ -72,13 +72,15 @@ export class BatchProcessResults {
         await this.waitForReady()
 
         let index = 0
+        let renamedCount = 0
 
         for (const batch of this.batchProcess(results)) {
             for (const result of batch) {
                 const node = await framer.getNode(result.id)
                 if (!isCanvasNode(node)) continue
 
-                await this.process(result, node, index)
+                const changed = await this.process(result, node, index)
+                if (changed) renamedCount += 1
                 index += 1
             }
 
@@ -86,7 +88,7 @@ export class BatchProcessResults {
         }
 
         this.started = false
-        this.onCompleted()
+        this.onCompleted(renamedCount)
     }
 
     setReady(ready: boolean) {

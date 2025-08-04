@@ -116,6 +116,8 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding-top: 15px;
+    border-top: 1px solid var(--framer-color-divider);
 }
 
 .rename-button {
@@ -303,4 +305,30 @@
 
 .after .vector-set-item-icon {
     color: #09f;
+}
+
+/* Overflow gradients */
+
+.overflow-gradient-top {
+    top: 0;
+    background: linear-gradient(to bottom, var(--framer-color-bg), transparent);
+}
+
+.overflow-gradient-bottom {
+    bottom: 0;
+    background: linear-gradient(to top, var(--framer-color-bg), transparent);
+}
+
+.overflow-gradient-top,
+.overflow-gradient-bottom {
+    width: 100%;
+    height: 50px;
+    position: absolute;
+    transition: opacity 200ms ease;
+    pointer-events: none;
+}
+
+.overflow-gradient-top.hidden,
+.overflow-gradient-bottom.hidden {
+    opacity: 0;
 }

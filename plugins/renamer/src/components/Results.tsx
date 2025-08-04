@@ -1,4 +1,6 @@
+import cx from "classnames"
 import { framer } from "framer-plugin"
+import { useEffect, useRef, useState } from "react"
 
 import type { Result } from "../search/types"
 import LayerIcon from "./LayerIcon"
@@ -14,14 +16,47 @@ interface Props {
 }
 
 export default function Results({ query, indexing, results, selectedNodeIds, getTextAfterRename }: Props) {
+    const scrollAreaRef = useRef<HTMLDivElement>(null)
+    const [showTopGradient, setShowTopGradient] = useState(false)
+    const [showBottomGradient, setShowBottomGradient] = useState(false)
+
     const focusResult = async (result: Result) => {
         await framer.setSelection(result.id)
         await framer.zoomIntoView(result.id, { maxZoom: 1 })
     }
 
+    const handleScroll = () => {
+        if (scrollAreaRef.current) {
+            const scrollTop = scrollAreaRef.current.scrollTop
+
+            // Show top gradient when scrolled down
+            setShowTopGradient(scrollTop > 0)
+
+            // Show bottom gradient when not at the bottom
+            const scrollHeight = scrollAreaRef.current.scrollHeight
+            const clientHeight = scrollAreaRef.current.clientHeight
+            setShowBottomGradient(scrollTop + clientHeight < scrollHeight)
+        }
+    }
+
+    useEffect(() => {
+        const scrollArea = scrollAreaRef.current
+        if (scrollArea) {
+            scrollArea.addEventListener("scroll", handleScroll)
+            // Initial check
+            handleScroll()
+
+            return () => {
+                scrollArea.removeEventListener("scroll", handleScroll)
+            }
+        }
+    }, [results])
+
     return (
         <div className="results">
-            <div className="container">
+            <div className={cx("overflow-gradient-top", !showTopGradient && "hidden")} />
+
+            <div className="container" ref={scrollAreaRef}>
                 {results.map((result, index) => (
                     <RenameComparison
                         key={`${result.title}-${index}`}
@@ -46,6 +81,8 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
                     </div>
                 )}
             </div>
+
+            <div className={cx("overflow-gradient-bottom", !showBottomGradient && "hidden")} />
 
             {results.length === 0 && query && !indexing && <div className="empty-state">No Results</div>}
         </div>

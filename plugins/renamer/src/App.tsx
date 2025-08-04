@@ -92,13 +92,21 @@ export function App() {
                         await node.setAttributes({
                             name: renameResult(result, replacementRef.current),
                         })
-                        return
+                        return true // The name is always changed in search mode
 
                     case "clean":
-                        await node.setAttributes({
-                            name: cleanUpResult(result),
-                        })
-                        return
+                        const originalName = result.title
+                        const cleanedName = cleanUpResult(result)
+
+                        // Only return true if the name actually changed
+                        if (originalName !== cleanedName) {
+                            await node.setAttributes({
+                                name: cleanedName,
+                            })
+                            return true
+                        }
+
+                        return false
 
                     default:
                         assertNever(currentMode)
@@ -109,10 +117,10 @@ export function App() {
                 setReplacing(true)
             },
 
-            onCompleted: () => {
+            onCompleted: (renamedCount: number) => {
                 setReplacing(false)
                 void indexer.restart()
-                framer.notify(`Renamed ${results.length} layer${results.length === 1 ? "" : "s"}`)
+                framer.notify(`Renamed ${renamedCount} layer${renamedCount === 1 ? "" : "s"}`)
             },
 
             onError: () => {

@@ -1,6 +1,8 @@
-# Framer Plugin Template
+# 3rd-Party Optimizer
 
-This is a template for using the Framer Plugin API in a TypeScript project.
+This plugin installs a snippet that optimizes how 3rd-party analytics scripts interact with the main-thread, to improve Core Web Vitals (INP).
+
+See also [yieldGTMCalls.md](./yieldGTMCalls.md) for detailed docs.
 
 ## Quickstart
 

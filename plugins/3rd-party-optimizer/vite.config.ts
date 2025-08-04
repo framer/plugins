@@ -1,11 +1,9 @@
 import { readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
-import react from "@vitejs/plugin-react-swc"
+import defaultConfig from "@framer/vite-config"
 import { transformSync } from "esbuild"
 import { defineConfig } from "vite"
-import framer from "vite-plugin-framer"
-import mkcert from "vite-plugin-mkcert"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -40,8 +38,6 @@ function compileYieldGTMCalls() {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    plugins: [react(), mkcert(), framer(), compileYieldGTMCalls()],
-    build: {
-        target: "ES2022",
-    },
+    ...defaultConfig,
+    plugins: [...defaultConfig.plugins, compileYieldGTMCalls()],
 })

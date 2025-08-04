@@ -5,14 +5,14 @@ import "./App.css"
 
 import scriptSource from "virtual:yield-gtm-calls"
 
-framer.showUI({
+void framer.showUI({
     position: "top right",
     width: 260,
     height: 135,
 })
 
 let currentCustomCode: CustomCode | null = null
-let scriptToAdd = "<script>" + scriptSource + "</script>"
+const scriptToAdd = "<script>" + scriptSource + "</script>"
 
 const subscribe = (callback: () => void) => {
     return framer.subscribeToCustomCode(customCode => {
@@ -26,9 +26,9 @@ export function App() {
     const customCode = useSyncExternalStore(subscribe, getSnapshot)
 
     const scriptAdded = !!customCode?.headStart.html
-    const scriptOutdated = scriptAdded && customCode?.headStart.html !== scriptToAdd
+    const scriptOutdated = scriptAdded && customCode.headStart.html !== scriptToAdd
     const toggleScript = () => {
-        framer.setCustomCode({
+        void framer.setCustomCode({
             html: scriptAdded ? "" : scriptToAdd,
             location: "headStart",
         })

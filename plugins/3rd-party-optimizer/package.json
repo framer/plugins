@@ -13,13 +13,13 @@
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
-        "react": "^18",
-        "react-dom": "^18"
+        "react": "^18.2",
+        "react-dom": "^18.2"
     },
     "devDependencies": {
         "@types/node": "^22",
-        "@types/react": "^18",
-        "@types/react-dom": "^18",
+        "@types/react": "^18.2",
+        "@types/react-dom": "^18.2",
         "esbuild": "^0.25.8"
     }
 }

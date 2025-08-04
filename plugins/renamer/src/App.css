@@ -45,29 +45,58 @@
 .tabs {
     display: flex;
     align-items: center;
-    height: 52px;
     flex-shrink: 0;
-    border-top: 1px solid var(--framer-color-divider);
+    padding-bottom: 15px;
     border-bottom: 1px solid var(--framer-color-divider);
 }
 
-.tab {
-    background: none !important;
-    border: 0;
-    width: auto;
-    color: #999999;
-    font-weight: 600;
-    user-select: none;
-    padding: 0 8px;
-    transition: color 200ms ease;
+.tabs-container {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    width: 100%;
+    padding: 2px;
+    height: 30px;
 }
 
-.tab:first-child {
-    padding-left: 0;
+.tab {
+    position: relative;
+    background: none !important;
+    border: 0;
+    flex: 1;
+    height: 100%;
+    color: #999999;
+    font-weight: 500;
+    user-select: none;
+    transition: color 200ms ease;
 }
 
 .tab.active {
     color: var(--framer-color-text);
+    font-weight: 600;
+}
+
+.tab-bg-container {
+    position: absolute;
+    inset: 2px;
+}
+
+.tab-bg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: 6px;
+    background-color: var(--framer-color-bg);
+    box-shadow: 0px 0px 0px 1px rgba(0, 0, 0, 0.02), 0px 1px 0px 0px rgba(0, 0, 0, 0.05), 0px 2px 4px 0px rgba(0, 0, 0, 0.1);
+    transition: left 150ms ease;
+}
+
+[data-framer-theme="dark"] .tab-bg {
+    background-color: #555;
 }
 
 /* TextField styles */

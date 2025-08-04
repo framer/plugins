@@ -239,12 +239,7 @@ export function FieldMapping({ companyId, boardToken, collection, dataSource, in
 
     return (
         <main className="framer-hide-scrollbar mapping">
-            <form
-                onSubmit={event => {
-                    event.preventDefault()
-                    void handleSubmit(event)
-                }}
-            >
+            <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
                     Slug Field
                     <select

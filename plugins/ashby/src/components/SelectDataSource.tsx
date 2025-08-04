@@ -60,7 +60,7 @@ export function SelectDataSource({
                         id="jobBoardName"
                         type="text"
                         required
-                        placeholder="Enter Job Board Name…"
+                        placeholder="jobBoardName"
                         value={jobBoardName}
                         onChange={event => {
                             setJobBoardName(event.target.value)

@@ -1,5 +1,5 @@
 import { framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { type FormEventHandler, useCallback, useEffect, useMemo, useState } from "react"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "../data"
 import { type AshbyDataSource, type AshbyField, removeAshbyKeys } from "../dataSources"
 import { isCollectionReference, isMissingReferenceField } from "../utils"
@@ -184,7 +184,7 @@ export function FieldMapping({ jobBoardName, collection, dataSource, initialSlug
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
-    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit: FormEventHandler<HTMLFormElement> = event => {
         event.preventDefault()
 
         if (!selectedSlugField) {
@@ -195,30 +195,44 @@ export function FieldMapping({ jobBoardName, collection, dataSource, initialSlug
             return
         }
 
-        try {
-            setStatus("syncing-collection")
+        // try {
+        setStatus("syncing-collection")
 
-            const fieldsToSync: AshbyField[] = []
+        const fieldsToSync: AshbyField[] = []
 
-            for (const field of fields) {
-                if (ignoredFieldIds.has(field.id) || isMissingReferenceField(field)) continue
-                fieldsToSync.push({
-                    ...field,
-                    name: field.name.trim() || field.id,
-                })
-            }
-
-            await collection.setFields(removeAshbyKeys(fieldsToSync))
-            await syncCollection(jobBoardName, collection, dataSource, fieldsToSync, selectedSlugField)
-            framer.closePlugin("Synchronization successful", { variant: "success" })
-        } catch (error) {
-            console.error(error)
-            framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
-                variant: "error",
+        for (const field of fields) {
+            if (ignoredFieldIds.has(field.id) || isMissingReferenceField(field)) continue
+            fieldsToSync.push({
+                ...field,
+                name: field.name.trim() || field.id,
             })
-        } finally {
-            setStatus("mapping-fields")
         }
+
+        collection
+            .setFields(removeAshbyKeys(fieldsToSync))
+            .then(() => {
+                syncCollection(jobBoardName, collection, dataSource, fieldsToSync, selectedSlugField)
+                    .then(() => {
+                        framer.closePlugin("Synchronization successful", { variant: "success" })
+                    })
+                    .catch((error: unknown) => {
+                        console.error(error)
+                        framer.notify(
+                            `Failed to sync collection “${dataSource.id}”. Check the logs for more details.`,
+                            {
+                                variant: "error",
+                            }
+                        )
+                        setStatus("mapping-fields")
+                    })
+            })
+            .catch((error: unknown) => {
+                console.error(error)
+                framer.notify(`Failed to set fields. Check the logs for more details.`, {
+                    variant: "error",
+                })
+                setStatus("mapping-fields")
+            })
     }
 
     if (isLoadingFields) {
@@ -227,11 +241,7 @@ export function FieldMapping({ jobBoardName, collection, dataSource, initialSlug
 
     return (
         <main className="framer-hide-scrollbar mapping">
-            <form
-                onSubmit={event => {
-                    void handleSubmit(event)
-                }}
-            >
+            <form onSubmit={handleSubmit}>
                 <label className="slug-field" htmlFor="slugField">
                     Slug Field
                     <select

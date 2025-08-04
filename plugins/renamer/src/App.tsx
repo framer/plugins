@@ -94,7 +94,7 @@ export function App() {
                         })
                         return true // The name is always changed in search mode
 
-                    case "clean":
+                    case "clean": {
                         const originalName = result.title
                         const cleanedName = cleanUpResult(result)
 
@@ -107,6 +107,7 @@ export function App() {
                         }
 
                         return false
+                    }
 
                     default:
                         assertNever(currentMode)

@@ -7,7 +7,6 @@ interface BatchProcessResultsOptions {
     onStarted: () => void
     onProgress?: (count: number, total: number) => void
     onCompleted: (renamedCount: number) => void
-    onError: () => void
 }
 
 export class BatchProcessResults {
@@ -18,14 +17,12 @@ export class BatchProcessResults {
     private onStarted: BatchProcessResultsOptions["onStarted"]
     private onProgress: BatchProcessResultsOptions["onProgress"]
     private onCompleted: BatchProcessResultsOptions["onCompleted"]
-    private onError: BatchProcessResultsOptions["onError"]
 
     constructor(options: BatchProcessResultsOptions) {
         this.process = options.process
         this.onStarted = options.onStarted
         this.onProgress = options.onProgress
         this.onCompleted = options.onCompleted
-        this.onError = options.onError
     }
 
     private async waitForReady(): Promise<void> {

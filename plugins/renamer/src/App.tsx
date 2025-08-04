@@ -53,6 +53,8 @@ export function App() {
     const resultsRenamerRef = useRef<BatchProcessResults | null>(null)
     const replacementRef = useRef(replacement)
 
+    const noResults = results.length === 0 && textSearchFilter.query !== "" && !indexing
+
     const indexer = useMemo(
         () =>
             new Indexer({
@@ -110,6 +112,7 @@ export function App() {
             onCompleted: () => {
                 setReplacing(false)
                 void indexer.restart()
+                framer.notify(`Renamed ${results.length} layer${results.length === 1 ? "" : "s"}`)
             },
         })
 
@@ -247,7 +250,7 @@ export function App() {
                 replacement={replacement}
                 setReplacement={setReplacementValue}
                 loading={replacing}
-                disableAction={currentMode === "search" && !replacement}
+                disableAction={(currentMode === "search" && !replacement) || noResults}
                 isAllowed={isAllowedToSetAttributes}
                 showReplacement={currentMode === "search"}
                 actionLabel={currentMode === "search" ? "Rename" : "Clean Up"}

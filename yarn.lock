@@ -3275,6 +3275,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"ashby@workspace:plugins/ashby":
+  version: 0.0.0-use.local
+  resolution: "ashby@workspace:plugins/ashby"
+  dependencies:
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    framer-plugin: "npm:^3.5.2"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
+  languageName: unknown
+  linkType: soft
+
 "assertion-error@npm:^2.0.1":
   version: 2.0.1
   resolution: "assertion-error@npm:2.0.1"

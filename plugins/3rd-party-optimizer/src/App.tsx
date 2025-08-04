@@ -29,7 +29,7 @@ export function App() {
     const scriptOutdated = scriptAdded && customCode.headStart.html !== scriptToAdd
     const toggleScript = () => {
         void framer.setCustomCode({
-            html: scriptAdded ? "" : scriptToAdd,
+            html: scriptAdded && !scriptOutdated ? "" : scriptToAdd,
             location: "headStart",
         })
     }
@@ -47,7 +47,7 @@ export function App() {
                 <p>The script is disabled. Please go to Site Settings → General and enable it.</p>
             )}
             <button
-                className={`framer-button-${scriptOutdated ? "primary" : "secondary"} ${scriptAdded ? "framer-button-danger" : ""}`}
+                className={`framer-button-${scriptOutdated ? "primary" : scriptAdded ? "framer-button-danger" : "secondary"}`}
                 onClick={toggleScript}
             >
                 {scriptOutdated ? "Update Script" : scriptAdded ? "Remove Script" : "Add Script"}

@@ -53,7 +53,7 @@ async function yieldUnlessUrgent(shouldWaitForLoad = false) {
         pendingResolvers.add(resolve)
 
         // await next paint without a setTimeout fallback, as the fallbacks are the event listeners above
-        void queueAfterPaintCallback(() => {
+        queueAfterPaintCallback(() => {
             setTimeout(() => {
                 pendingResolvers.delete(resolve)
                 resolve()

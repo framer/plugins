@@ -149,7 +149,7 @@ function getEdgeBorderClass(type: "add" | "remove", isTopEdge = false, isBottomE
 }
 
 function Mark({ children, className }: { children: React.ReactNode; className?: string }) {
-    return <mark className={cn("h-(--code-row-height) inline-block pr-3", className)}>{children}</mark>
+    return <mark className={cn("h-(--code-row-height) inline-block", className)}>{children}</mark>
 }
 
 function InlineDiffs({ parts, type }: { parts: readonly InlineDiff[]; type: "add" | "remove" }) {

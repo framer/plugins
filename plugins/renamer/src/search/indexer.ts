@@ -1,12 +1,4 @@
-import {
-    type CanvasRootNode,
-    framer,
-    isComponentNode,
-    isFrameNode,
-    isTextNode,
-    isVectorSetNode,
-    isWebPageNode,
-} from "framer-plugin"
+import { type CanvasRootNode, framer, isComponentNode, isFrameNode, isTextNode, isWebPageNode } from "framer-plugin"
 import { isCanvasNode } from "./traits"
 import type { CanvasNode, IndexEntry } from "./types"
 
@@ -106,19 +98,17 @@ export class Indexer {
 
     private async getPages(): Promise<CanvasRootNode[]> {
         const root = await framer.getCanvasRoot()
-        if (!isWebPageNode(root) && !isVectorSetNode(root) && !isComponentNode(root)) return []
+        if (!isWebPageNode(root) && !isComponentNode(root)) return []
 
         if (this.scope === "page") {
             return [root]
         }
 
-        const [webPages, componentNodes, vectorSetNodes] = await Promise.all([
+        const [webPages, componentNodes] = await Promise.all([
             framer.getNodesWithType("WebPageNode"),
             framer.getNodesWithType("ComponentNode"),
-            // @ts-expect-error - See https://github.com/framer/plugins/issues/356
-            framer.getNodesWithType("VectorSetNode"),
         ])
-        return [...webPages, ...componentNodes, ...vectorSetNodes]
+        return [...webPages, ...componentNodes]
     }
 
     async start() {

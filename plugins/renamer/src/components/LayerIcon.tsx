@@ -53,17 +53,6 @@ export default function LayerIcon({ type }: Props) {
             )
             break
 
-        case "VectorSetItemNode":
-            icon = (
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 11 11" className="vector-set-item-icon">
-                    <path
-                        d="M 4.851 1.121 C 5.14 0.622 5.86 0.622 6.149 1.121 L 10.348 8.374 C 10.638 8.874 10.277 9.5 9.699 9.5 L 1.301 9.5 C 0.723 9.5 0.362 8.874 0.652 8.374 Z"
-                        fill="currentColor"
-                    ></path>
-                </svg>
-            )
-            break
-
         default:
             icon = null
     }

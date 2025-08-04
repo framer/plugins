@@ -206,6 +206,7 @@ async function getItems(
                 case "image":
                 case "file":
                 case "enum":
+                case "array":
                     throw new Error(`${field.type} field is not supported.`)
                 default:
                     assertNever(field)

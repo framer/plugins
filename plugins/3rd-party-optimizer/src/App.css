@@ -1,0 +1,19 @@
+/* Your Plugin CSS */
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 0 15px 15px 15px;
+    height: 100%;
+    gap: 15px;
+}
+
+.framer-button-danger.framer-button-danger {
+    background-color: rgba(255, 36, 36, 0.1);
+    color: #ff2424;
+}
+
+center {
+    color: var(--framer-color-text-tertiary);
+}

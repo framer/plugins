@@ -58,7 +58,10 @@ export class BatchProcessResults {
     }
 
     async start(results: Result[]) {
-        if (this.started || !this.ready) return
+        if (this.started || !this.ready) {
+            framer.notify("Unable to rename layers. Please try again.", { variant: "error" })
+            return
+        }
 
         this.started = true
         this.onStarted()

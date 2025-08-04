@@ -51,6 +51,7 @@ export function App() {
     const results: Result[] = useMemo(() => executeFilters(filters, entries), [filters, entries])
 
     const resultsRenamerRef = useRef<BatchProcessResults | null>(null)
+    const replacementRef = useRef(replacement)
 
     const indexer = useMemo(
         () =>
@@ -87,7 +88,7 @@ export function App() {
                 switch (currentMode) {
                     case "search":
                         await node.setAttributes({
-                            name: renameResult(result, replacement),
+                            name: renameResult(result, replacementRef.current),
                         })
                         return
 
@@ -114,7 +115,7 @@ export function App() {
 
         resultsRenamerRef.current = instance
         return instance
-    }, [currentMode, replacement, indexer])
+    }, [currentMode, indexer])
 
     const renameResults = useCallback(() => {
         if (!isAllowedToSetAttributes) return
@@ -210,6 +211,11 @@ export function App() {
         [currentMode, replacement]
     )
 
+    const setReplacementValue = (value: string) => {
+        setReplacement(value)
+        replacementRef.current = value
+    }
+
     return (
         <div className="app">
             <Tabs items={tabItems} />
@@ -239,7 +245,7 @@ export function App() {
                     setTextSearchFilter(prev => ({ ...prev, query }))
                 }}
                 replacement={replacement}
-                setReplacement={setReplacement}
+                setReplacement={setReplacementValue}
                 loading={replacing}
                 disableAction={currentMode === "search" && !replacement}
                 isAllowed={isAllowedToSetAttributes}

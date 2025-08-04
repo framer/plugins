@@ -15,7 +15,7 @@
         "fix-eslint": "turbo run --continue check-eslint -- --fix",
         "build": "turbo run build",
         "g:build": "cd $INIT_CWD && run g:vite build",
-        "g:check-biome": "biome check $INIT_CWD",
+        "g:check-biome": "if [ \"$CI\" = \"true\" ]; then biome ci --changed $INIT_CWD; else biome check $INIT_CWD; fi",
         "g:check-eslint": "cd $INIT_CWD && DEBUG='eslint:eslint' eslint --report-unused-disable-directives-severity error .",
         "g:check-typescript": "tsc --project $INIT_CWD",
         "g:check-vitest": "cd $INIT_CWD && vitest run",
@@ -25,13 +25,13 @@
         "preview": "turbo run preview --concurrency=40"
     },
     "devDependencies": {
-        "@biomejs/biome": "^2.0.6",
+        "@biomejs/biome": "^2.1.3",
         "@framer/eslint-config": "workspace:*",
         "@framer/vite-config": "workspace:*",
-        "eslint": "^9.30.1",
-        "jiti": "^2.4.2",
-        "turbo": "^2.5.4",
-        "typescript": "^5.8.3",
-        "vite": "^7.0.1"
+        "eslint": "^9.32.0",
+        "jiti": "^2.5.1",
+        "turbo": "^2.5.5",
+        "typescript": "^5.9.2",
+        "vite": "^7.0.6"
     }
 }

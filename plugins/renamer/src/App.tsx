@@ -114,6 +114,10 @@ export function App() {
                 void indexer.restart()
                 framer.notify(`Renamed ${results.length} layer${results.length === 1 ? "" : "s"}`)
             },
+
+            onError: () => {
+                framer.notify("Unable to rename layers. Please try again.", { variant: "error" })
+            },
         })
 
         resultsRenamerRef.current = instance

@@ -128,6 +128,16 @@
     height: 30px;
     font-weight: 600;
     cursor: pointer;
+    transition: opacity 200ms ease;
+}
+
+.rename-button:hover,
+.rename-button:focus {
+    opacity: 0.9;
+}
+
+.rename-button:active {
+    opacity: 0.8;
 }
 
 .rename-button:disabled {
@@ -136,13 +146,13 @@
 }
 
 [data-framer-theme="light"] .rename-button {
-    background: #111;
+    background: #111 !important;
     color: #fff;
     --framer-color-text: #fff;
 }
 
 [data-framer-theme="dark"] .rename-button {
-    background: #fff;
+    background: #fff !important;
     color: #111;
     --framer-color-text: #111;
 }

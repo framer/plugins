@@ -1,6 +1,6 @@
-import { CanvasNode, framer } from "framer-plugin"
+import { type CanvasNode, framer } from "framer-plugin"
 import { useEffect, useState } from "react"
-import "./App.css"
+import "./styles.css"
 
 framer.showUI({
     position: "top right",
@@ -30,7 +30,7 @@ export function App() {
     }
 
     return (
-        <main>
+        <main className="mx-4 space-y-2">
             <p>
                 Welcome! Check out the{" "}
                 <a href="https://framer.com/developers/plugins/introduction" target="_blank">

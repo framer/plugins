@@ -65,6 +65,12 @@ export async function getTables(baseId: string, signal: AbortSignal): Promise<Ai
 const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
 const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
 
+const MAILTO_PREFIX = "mailto:"
+const TEL_PREFIX = "tel:"
+
+const MAILTO_REGEX = new RegExp(MAILTO_PREFIX, "gi")
+const TEL_REGEX = new RegExp(TEL_PREFIX, "gi")
+
 const NonEmptyArrayOfAttachmentsSchema = v.pipe(
     v.array(v.object({ type: v.optional(v.string()), id: v.string(), url: v.string() })),
     v.minLength(1)
@@ -73,7 +79,10 @@ const NonEmptyArrayOfAttachmentsSchema = v.pipe(
 const ArrayOfStringsSchema = v.array(v.string())
 const NonEmptyArrayOfStringsSchema = v.pipe(ArrayOfStringsSchema, v.minLength(1))
 
-function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
+export function getFieldDataEntryForFieldSchema(
+    fieldSchema: PossibleField,
+    value: unknown
+): FieldDataEntryInput | null {
     // If the field is a lookup field, only use the first value from the array.
     if (fieldSchema.originalAirtableType === "multipleLookupValues") {
         if (!Array.isArray(value)) return null
@@ -94,14 +103,14 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
             if (typeof value === "string") {
                 if (fieldSchema.airtableType === "email" || EMAIL_REGEX.test(value)) {
                     return {
-                        value: `mailto:${value}`,
+                        value: `${MAILTO_PREFIX}${value.replace(MAILTO_REGEX, "")}`,
                         type: "link",
                     }
                 }
 
                 if (fieldSchema.airtableType === "phoneNumber" || PHONE_REGEX.test(value)) {
                     return {
-                        value: `tel:${value}`,
+                        value: `${TEL_PREFIX}${value.replace(TEL_REGEX, "")}`,
                         type: "link",
                     }
                 }

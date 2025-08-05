@@ -31,6 +31,6 @@
             "cache": false,
             "persistent": true
         },
-        "test": {}
+        "check-vitest": {}
     }
 }

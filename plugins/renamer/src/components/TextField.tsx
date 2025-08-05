@@ -8,7 +8,6 @@ interface Props {
     disabled?: boolean
     autoFocus?: boolean
     leadingContent?: React.ReactNode
-    onKeyDown: (event: React.KeyboardEvent) => void
 }
 
 export default function TextField({
@@ -19,13 +18,8 @@ export default function TextField({
     disabled = false,
     autoFocus = false,
     leadingContent,
-    onKeyDown,
 }: Props) {
     const inputRef = useRef<HTMLInputElement>(null)
-
-    const focusInput = () => {
-        inputRef.current?.focus()
-    }
 
     useEffect(() => {
         if (focused) {
@@ -34,7 +28,7 @@ export default function TextField({
     }, [focused])
 
     return (
-        <div className="text-field" onClick={focusInput} onKeyDown={focusInput} role="textbox" tabIndex={-1}>
+        <label className="text-field" tabIndex={-1}>
             {leadingContent && <div className="leading-content">{leadingContent}</div>}
 
             <input
@@ -46,9 +40,8 @@ export default function TextField({
                 }}
                 ref={inputRef}
                 disabled={disabled}
-                onKeyDown={onKeyDown}
                 autoFocus={autoFocus}
             />
-        </div>
+        </label>
     )
 }

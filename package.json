@@ -15,7 +15,7 @@
         "fix-eslint": "turbo run --continue check-eslint -- --fix",
         "build": "turbo run build",
         "g:build": "cd $INIT_CWD && run g:vite build",
-        "g:check-biome": "if [ \"$CI\" = \"true\" ]; then biome ci --changed $INIT_CWD; else biome check $INIT_CWD; fi",
+        "g:check-biome": "test \"${CI:-false}\" = \"true\" && biome ci --changed $INIT_CWD || biome check --changed $INIT_CWD",
         "g:check-eslint": "cd $INIT_CWD && DEBUG='eslint:eslint' eslint --report-unused-disable-directives-severity error .",
         "g:check-typescript": "tsc --project $INIT_CWD",
         "g:check-vitest": "cd $INIT_CWD && vitest run",

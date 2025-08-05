@@ -63,8 +63,8 @@ export class Indexer {
         let batch: IndexEntry[] = []
 
         for (const page of pages) {
-            const nodes = await page.getChildren()
-            const childNodeIds = nodes.map(node => node.id)
+            const children = await page.getChildren()
+            const childNodeIds = children.map(node => node.id)
 
             for await (const node of page.walk()) {
                 if (this.abortRequested) return

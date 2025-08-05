@@ -7,127 +7,67 @@ describe("getFieldDataEntryForFieldSchema", () => {
         vi.clearAllMocks()
     })
 
-    const createEmailField = (): PossibleField => ({
-        id: "email_field",
-        name: "Email",
-        type: "link",
-        userEditable: true,
-        airtableType: "email",
-    })
+    const createEmailField = () =>
+        ({
+            id: "email_field",
+            name: "Email",
+            type: "link",
+            airtableType: "email",
+        }) as const satisfies PossibleField
 
-    const createPhoneField = (): PossibleField => ({
-        id: "phone_field",
-        name: "Phone",
-        type: "link",
-        userEditable: true,
-        airtableType: "phoneNumber",
-    })
+    const createPhoneField = () =>
+        ({
+            id: "phone_field",
+            name: "Phone",
+            type: "link",
+            airtableType: "phoneNumber",
+        }) as const satisfies PossibleField
 
     describe("Email field processing", () => {
-        it("should add mailto: prefix to email without prefix", () => {
-            const result = getFieldDataEntryForFieldSchema(createEmailField(), "user@example.com")
+        it.each<[PossibleField, string]>([
+            [createEmailField(), "user@example.com"],
+            [createEmailField(), "mailto:user@example.com"],
+            [createEmailField(), "mailto:mailto:user@example.com"],
+            [createEmailField(), "MAILTO:user@example.com"],
+            [
+                {
+                    id: "link_field",
+                    name: "Link",
+                    type: "link",
+                    airtableType: "url", // Not an email field type
+                },
+                "user@example.com",
+            ],
+        ])("%s -> %s", (field, input) => {
+            const result = getFieldDataEntryForFieldSchema(field, input)
 
             expect(result).toEqual({
                 value: "mailto:user@example.com",
-                type: "link",
-            })
-        })
-
-        it("should preserve single mailto: prefix", () => {
-            const result = getFieldDataEntryForFieldSchema(createEmailField(), "mailto:user@example.com")
-
-            expect(result).toEqual({
-                value: "mailto:user@example.com",
-                type: "link",
-            })
-        })
-
-        it("should normalize multiple mailto: prefixes to one", () => {
-            const result = getFieldDataEntryForFieldSchema(createEmailField(), "mailto:mailto:user@example.com")
-
-            expect(result).toEqual({
-                value: "mailto:user@example.com",
-                type: "link",
-            })
-        })
-
-        it("should handle case insensitive mailto: prefix", () => {
-            const result = getFieldDataEntryForFieldSchema(createEmailField(), "MAILTO:user@example.com")
-
-            expect(result).toEqual({
-                value: "mailto:user@example.com",
-                type: "link",
-            })
-        })
-
-        it("should detect email by regex when field type is not email", () => {
-            const linkField: PossibleField = {
-                id: "link_field",
-                name: "Link",
-                type: "link",
-                userEditable: true,
-                airtableType: "url", // Not an email field type
-            }
-
-            const result = getFieldDataEntryForFieldSchema(linkField, "test@domain.co.uk")
-
-            expect(result).toEqual({
-                value: "mailto:test@domain.co.uk",
                 type: "link",
             })
         })
     })
 
     describe("Phone field processing", () => {
-        it("should add tel: prefix to phone without prefix", () => {
-            const result = getFieldDataEntryForFieldSchema(createPhoneField(), "+1234567890")
+        it.each<[PossibleField, string]>([
+            [createPhoneField(), "+1234567890"],
+            [createPhoneField(), "tel:+1234567890"],
+            [createPhoneField(), "tel:tel:+1234567890"],
+            [createPhoneField(), "TEL:+1234567890"],
+            [
+                {
+                    id: "link_field",
+                    name: "Link",
+                    type: "link",
+                    airtableType: "url", // Not a phone field type
+                },
+                "+1234567890",
+            ],
+        ])("%s -> %s", (field, input) => {
+            const result = getFieldDataEntryForFieldSchema(field, input)
 
             expect(result).toEqual({
                 value: "tel:+1234567890",
-                type: "link",
-            })
-        })
-
-        it("should preserve single tel: prefix", () => {
-            const result = getFieldDataEntryForFieldSchema(createPhoneField(), "tel:+1234567890")
-
-            expect(result).toEqual({
-                value: "tel:+1234567890",
-                type: "link",
-            })
-        })
-
-        it("should normalize multiple tel: prefixes to one", () => {
-            const result = getFieldDataEntryForFieldSchema(createPhoneField(), "tel:tel:+1234567890")
-
-            expect(result).toEqual({
-                value: "tel:+1234567890",
-                type: "link",
-            })
-        })
-
-        it("should handle case insensitive tel: prefix", () => {
-            const result = getFieldDataEntryForFieldSchema(createPhoneField(), "TEL:+1234567890")
-
-            expect(result).toEqual({
-                value: "tel:+1234567890",
-                type: "link",
-            })
-        })
-
-        it("should detect phone by regex when field type is not phoneNumber", () => {
-            const linkField: PossibleField = {
-                id: "link_field",
-                name: "Link",
-                type: "link",
-                userEditable: true,
-                airtableType: "url", // Not a phone field type
-            }
-
-            const result = getFieldDataEntryForFieldSchema(linkField, "1234567890")
-
-            expect(result).toEqual({
-                value: "tel:1234567890",
                 type: "link",
             })
         })

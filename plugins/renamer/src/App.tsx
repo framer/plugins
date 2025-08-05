@@ -1,4 +1,4 @@
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import starsDarkImage from "./assets/stars_dark.png"
 import starsLightImage from "./assets/stars_light.png"
@@ -25,7 +25,7 @@ void framer.showUI({
 })
 
 export function App() {
-    const [isAllowedToSetAttributes, setIsAllowedToSetAttributes] = useState(framer.isAllowedTo("Node.setAttributes"))
+    const isAllowedToSetAttributes = useIsAllowedTo("Node.setAttributes")
     const [currentRootId, setCurrentRootId] = useState<string>()
     const [currentMode, setCurrentMode] = useState<"search" | "clean">("search")
     const [indexing, setIndexing] = useState(false)
@@ -154,15 +154,6 @@ export function App() {
             }),
         [throttle, indexer]
     )
-
-    // Subscribe to permissions
-    useEffect(() => {
-        const unsubscribe = framer.subscribeToIsAllowedTo("Node.setAttributes", newIsAllowed => {
-            setIsAllowedToSetAttributes(newIsAllowed)
-        })
-
-        return unsubscribe
-    }, [])
 
     // Subscribe to selection
     useEffect(() => {

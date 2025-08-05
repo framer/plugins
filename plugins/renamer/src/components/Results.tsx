@@ -84,7 +84,7 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
 
             <div className={cx("overflow-gradient-bottom", !showBottomGradient && "hidden")} />
 
-            {results.length === 0 && query && !indexing && <div className="empty-state">No Results</div>}
+            {results.length === 0 && query && !indexing && <div className="results-empty-state">No Results</div>}
         </div>
     )
 }

@@ -11,7 +11,7 @@ interface Props {
     actionLabel: string
     showReplacement: boolean
     isAllowed: boolean
-    onRenameClick?: () => void
+    onRenameClick: (e?: React.FormEvent) => void
 }
 
 export default function SearchReplace({
@@ -26,42 +26,29 @@ export default function SearchReplace({
     isAllowed,
     onRenameClick,
 }: Props) {
-    const handleTextFieldKeyDown = (event: React.KeyboardEvent) => {
-        if (event.key === "Enter" && onRenameClick) {
-            onRenameClick()
-        }
-    }
-
     return (
-        <div className="search-replace">
+        <form className="search-replace" onSubmit={e => onRenameClick(e)}>
             <TextField
                 placeholder="Find"
                 value={query}
                 setValue={setQuery}
                 disabled={loading}
-                onKeyDown={handleTextFieldKeyDown}
                 leadingContent={<SearchIcon />}
                 autoFocus
             />
 
             {showReplacement && (
-                <TextField
-                    placeholder="Rename To…"
-                    value={replacement}
-                    setValue={setReplacement}
-                    disabled={loading}
-                    onKeyDown={handleTextFieldKeyDown}
-                />
+                <TextField placeholder="Rename To…" value={replacement} setValue={setReplacement} disabled={loading} />
             )}
 
             <button
+                type="submit"
                 className="rename-button"
-                onClick={onRenameClick}
                 disabled={!query || disableAction || !isAllowed}
                 title={isAllowed ? undefined : "Insufficient permissions"}
             >
                 {loading ? <div className="framer-spinner" /> : actionLabel}
             </button>
-        </div>
+        </form>
     )
 }

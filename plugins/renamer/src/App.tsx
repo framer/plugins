@@ -129,10 +129,17 @@ export function App() {
         return instance
     }, [currentMode, indexer])
 
-    const renameResults = useCallback(() => {
-        if (!isAllowedToSetAttributes) return
-        void resultsRenamer.start(results)
-    }, [isAllowedToSetAttributes, resultsRenamer, results])
+    const renameResults = useCallback(
+        (e?: React.FormEvent) => {
+            if (e) {
+                e.preventDefault()
+            }
+
+            if (!isAllowedToSetAttributes) return
+            void resultsRenamer.start(results)
+        },
+        [isAllowedToSetAttributes, resultsRenamer, results]
+    )
 
     const throttle = useCallback((callback: () => void, delay = 1000) => {
         let timeout: ReturnType<typeof setTimeout> | null = null
@@ -181,22 +188,25 @@ export function App() {
         })
     }, [indexer, replacing, throttledStartIndexer])
 
-    const tabItems = [
-        {
-            label: "Search",
-            active: currentMode === "search",
-            select: () => {
-                setCurrentMode("search")
+    const tabItems = useMemo(
+        () => [
+            {
+                label: "Search",
+                active: currentMode === "search",
+                select: () => {
+                    setCurrentMode("search")
+                },
             },
-        },
-        {
-            label: "Clean",
-            active: currentMode === "clean",
-            select: () => {
-                setCurrentMode("clean")
+            {
+                label: "Clean",
+                active: currentMode === "clean",
+                select: () => {
+                    setCurrentMode("clean")
+                },
             },
-        },
-    ]
+        ],
+        [currentMode]
+    )
 
     const getTextAfterRename = useCallback(
         (result: Result) => {
@@ -214,16 +224,20 @@ export function App() {
         [currentMode, replacement]
     )
 
-    const setReplacementValue = (value: string) => {
+    const setReplacementValue = useCallback((value: string) => {
         setReplacement(value)
         replacementRef.current = value
-    }
+    }, [])
+
+    const setQuery = useCallback((query: string) => {
+        setTextSearchFilter(prev => ({ ...prev, query }))
+    }, [])
 
     return (
         <div className="app">
             <Tabs items={tabItems} />
 
-            <div className="results">
+            <div className="app-content">
                 {!textSearchFilter.query ? (
                     <div className="empty-state">
                         <img className="light" src={starsLightImage} alt="Stars" draggable={false} />
@@ -244,9 +258,7 @@ export function App() {
 
             <SearchReplace
                 query={textSearchFilter.query}
-                setQuery={(query: string) => {
-                    setTextSearchFilter(prev => ({ ...prev, query }))
-                }}
+                setQuery={setQuery}
                 replacement={replacement}
                 setReplacement={setReplacementValue}
                 loading={replacing}

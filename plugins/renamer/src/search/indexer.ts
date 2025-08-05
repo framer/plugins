@@ -59,14 +59,14 @@ export class Indexer {
         }
     }
 
-    private async *crawl(pages: CanvasRootNode[]): AsyncGenerator<IndexEntry[]> {
+    private async *crawl(rootNodes: CanvasRootNode[]): AsyncGenerator<IndexEntry[]> {
         let batch: IndexEntry[] = []
 
-        for (const page of pages) {
-            const children = await page.getChildren()
+        for (const rootNode of rootNodes) {
+            const children = await rootNode.getChildren()
             const childNodeIds = children.map(node => node.id)
 
-            for await (const node of page.walk()) {
+            for await (const node of rootNode.walk()) {
                 if (this.abortRequested) return
 
                 if (!isCanvasNode(node)) continue
@@ -102,28 +102,28 @@ export class Indexer {
         }
     }
 
-    private async getPages(): Promise<CanvasRootNode[]> {
+    private async getRootNodes(): Promise<CanvasRootNode[]> {
+        if (this.scope === "project") {
+            const [webPages, componentNodes] = await Promise.all([
+                framer.getNodesWithType("WebPageNode"),
+                framer.getNodesWithType("ComponentNode"),
+            ])
+            return [...webPages, ...componentNodes]
+        }
+
         const root = await framer.getCanvasRoot()
         if (!isWebPageNode(root) && !isComponentNode(root)) return []
 
-        if (this.scope === "page") {
-            return [root]
-        }
-
-        const [webPages, componentNodes] = await Promise.all([
-            framer.getNodesWithType("WebPageNode"),
-            framer.getNodesWithType("ComponentNode"),
-        ])
-        return [...webPages, ...componentNodes]
+        return [root]
     }
 
     async start() {
-        const pages = await this.getPages()
+        const rootNodes = await this.getRootNodes()
 
         this.abortRequested = false
         this.onStarted()
 
-        for await (const batch of this.crawl(pages)) {
+        for await (const batch of this.crawl(rootNodes)) {
             this.upsertEntries(batch)
         }
 

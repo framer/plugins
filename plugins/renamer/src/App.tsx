@@ -85,6 +85,8 @@ export function App() {
     )
 
     const resultsRenamer = useMemo(() => {
+        let renamedCount = 0
+
         const instance = new BatchProcessResults({
             process: async (result: Result, node: CanvasNode) => {
                 switch (currentMode) {
@@ -92,21 +94,21 @@ export function App() {
                         await node.setAttributes({
                             name: renameResult(result, replacementRef.current),
                         })
-                        return true // The name is always changed in search mode
+                        renamedCount += 1 // The name is always changed in search mode
+                        break
 
                     case "clean": {
                         const originalName = result.title
                         const cleanedName = cleanUpResult(result)
 
-                        // Only return true if the name actually changed
+                        // Only increment count if the name actually changed
                         if (originalName !== cleanedName) {
                             await node.setAttributes({
                                 name: cleanedName,
                             })
-                            return true
+                            renamedCount += 1
                         }
-
-                        return false
+                        break
                     }
 
                     default:
@@ -116,9 +118,10 @@ export function App() {
 
             onStarted: () => {
                 setReplacing(true)
+                renamedCount = 0 // Reset counter at start
             },
 
-            onCompleted: (renamedCount: number) => {
+            onCompleted: () => {
                 setReplacing(false)
                 void indexer.restart()
                 framer.notify(`Renamed ${renamedCount} layer${renamedCount === 1 ? "" : "s"}`, { variant: "success" })

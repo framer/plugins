@@ -3,10 +3,10 @@ import { isCanvasNode } from "./traits"
 import type { CanvasNode, Result } from "./types"
 
 interface BatchProcessResultsOptions {
-    process: (result: Result, node: CanvasNode, index: number) => Promise<boolean>
+    process: (result: Result, node: CanvasNode, index: number) => Promise<void>
     onStarted: () => void
     onProgress?: (count: number, total: number) => void
-    onCompleted: (renamedCount: number) => void
+    onCompleted: () => void
 }
 
 export class BatchProcessResults {
@@ -58,10 +58,7 @@ export class BatchProcessResults {
     }
 
     async start(results: Result[]) {
-        if (this.started) {
-            framer.notify("A layer rename operation is already in progress", { variant: "error" })
-            return
-        }
+        if (this.started) return
 
         this.started = true
         this.onStarted()
@@ -69,15 +66,13 @@ export class BatchProcessResults {
         await this.waitForReady()
 
         let index = 0
-        let renamedCount = 0
 
         for (const batch of this.batchProcess(results)) {
             for (const result of batch) {
                 const node = await framer.getNode(result.id)
                 if (!isCanvasNode(node)) continue
 
-                const changed = await this.process(result, node, index)
-                if (changed) renamedCount += 1
+                await this.process(result, node, index)
                 index += 1
             }
 
@@ -85,7 +80,7 @@ export class BatchProcessResults {
         }
 
         this.started = false
-        this.onCompleted(renamedCount)
+        this.onCompleted()
     }
 
     setReady(ready: boolean) {

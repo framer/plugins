@@ -27,7 +27,7 @@ export default function SearchReplace({
     onRenameClick,
 }: Props) {
     return (
-        <form className="search-replace" onSubmit={e => onRenameClick(e)}>
+        <form className="search-replace" onSubmit={onRenameClick}>
             <TextField
                 placeholder="Find"
                 value={query}

@@ -11,7 +11,7 @@
         "preview": "run g:preview",
         "pack": "npx framer-plugin-tools@latest pack",
         "check-typescript": "run g:check-typescript",
-        "test": "vitest run",
+        "check-vitest": "run g:check-vitest",
         "test-watch": "vitest"
     },
     "dependencies": {

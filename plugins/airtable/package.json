@@ -10,7 +10,8 @@
         "check-eslint": "run g:check-eslint",
         "preview": "run g:preview",
         "pack": "npx framer-plugin-tools@latest pack",
-        "check-typescript": "run g:check-typescript"
+        "check-typescript": "run g:check-typescript",
+        "check-vitest": "vitest run"
     },
     "dependencies": {
         "framer-plugin": "^3.5.2",

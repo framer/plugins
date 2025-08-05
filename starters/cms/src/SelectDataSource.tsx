@@ -46,11 +46,13 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={event => void handleSubmit(event)}>
                 <label htmlFor="collection">
                     <select
                         id="collection"
-                        onChange={event => setSelectedDataSourceId(event.target.value)}
+                        onChange={event => {
+                            setSelectedDataSourceId(event.target.value)
+                        }}
                         value={selectedDataSourceId}
                     >
                         <option value="" disabled>

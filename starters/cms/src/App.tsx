@@ -19,7 +19,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
     useLayoutEffect(() => {
         const hasDataSourceSelected = Boolean(dataSource)
 
-        framer.showUI({
+        void framer.showUI({
             width: hasDataSourceSelected ? 360 : 260,
             height: hasDataSourceSelected ? 425 : 340,
             minWidth: hasDataSourceSelected ? 360 : undefined,
@@ -38,7 +38,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
         setIsLoadingDataSource(true)
         getDataSource(previousDataSourceId, abortController.signal)
             .then(setDataSource)
-            .catch(error => {
+            .catch((error: unknown) => {
                 if (abortController.signal.aborted) return
 
                 console.error(error)
@@ -55,7 +55,9 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId }: A
                 setIsLoadingDataSource(false)
             })
 
-        return () => abortController.abort()
+        return () => {
+            abortController.abort()
+        }
     }, [previousDataSourceId])
 
     if (isLoadingDataSource) {

@@ -63,12 +63,18 @@ export class Indexer {
         let batch: IndexEntry[] = []
 
         for (const page of pages) {
+            const nodes = await page.getChildren()
+            const childNodeIds = nodes.map(node => node.id)
+
             for await (const node of page.walk()) {
                 if (this.abortRequested) return
 
                 if (!isCanvasNode(node)) continue
                 if (!this.isIncludedNodeType(node)) continue
-                if (node.isReplica) continue
+
+                // Filter out replica nodes unless they are a variant/breakpoint
+                // Replica nodes share the same name between variants/breakpoints, so they can be filtered out
+                if (node.isReplica && !childNodeIds.includes(node.id)) continue
 
                 const name = node.name ?? (await getDefaultCanvasNodeName(node))
                 const rect = this.includedAttributes.includes("rect") ? await node.getRect() : null

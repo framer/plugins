@@ -57,15 +57,19 @@ function parseRSS(xmlDoc: Document) {
     if (itemNodes.length === 0) itemNodes = xmlDoc.querySelectorAll("item")
 
     for (const item of itemNodes) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         const title = item.querySelector("title")?.textContent?.trim()
         if (!title) continue
 
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         const description = item.querySelector("description")?.textContent?.trim()
         if (!description) continue
 
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         const link = item.querySelector("link")?.textContent?.trim()
         if (!link) continue
 
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         const date = item.querySelector("pubDate")?.textContent?.trim()
 
         items.push({ title, link, date: date ? new Date(date) : null, content: description })

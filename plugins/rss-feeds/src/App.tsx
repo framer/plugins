@@ -32,7 +32,7 @@ export function App({ collection, initialRssSourceId }: Props) {
         const task = async () => {
             try {
                 await importData(collection, selectedSourceId)
-                await framer.closePlugin()
+                framer.closePlugin()
             } finally {
                 setIsSyncing(false)
             }

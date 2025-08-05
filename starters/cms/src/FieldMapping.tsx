@@ -24,7 +24,9 @@ function FieldMappingRow({
             <button
                 type="button"
                 className={`source-field ${isIgnored ? "ignored" : ""}`}
-                onClick={() => onToggleDisabled(field.id)}
+                onClick={() => {
+                    onToggleDisabled(field.id)
+                }}
                 disabled={disabled}
             >
                 <input type="checkbox" checked={!isIgnored} tabIndex={-1} readOnly />
@@ -46,7 +48,9 @@ function FieldMappingRow({
                 disabled={isIgnored || disabled}
                 placeholder={field.id}
                 value={field.name}
-                onChange={event => onNameChange(field.id, event.target.value)}
+                onChange={event => {
+                    onNameChange(field.id, event.target.value)
+                }}
                 onKeyDown={event => {
                     if (event.key === "Enter") {
                         event.preventDefault()
@@ -113,14 +117,16 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
                 setStatus("mapping-fields")
             })
-            .catch(error => {
+            .catch((error: unknown) => {
                 if (!abortController.signal.aborted) {
                     console.error("Failed to fetch collection fields:", error)
                     framer.notify("Failed to load collection fields", { variant: "error" })
                 }
             })
 
-        return () => abortController.abort()
+        return () => {
+            abortController.abort()
+        }
     }, [initialSlugFieldId, dataSource, collection])
 
     const changeFieldName = useCallback((fieldId: string, name: string) => {
@@ -171,7 +177,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
             await collection.setFields(fieldsToSync)
             await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField)
-            await framer.closePlugin("Synchronization successful", { variant: "success" })
+            framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)
             framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
@@ -193,7 +199,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     return (
         <main className="framer-hide-scrollbar mapping">
             <hr className="sticky-divider" />
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={event => void handleSubmit(event)}>
                 <label className="slug-field" htmlFor="slugField">
                     Slug Field
                     <select

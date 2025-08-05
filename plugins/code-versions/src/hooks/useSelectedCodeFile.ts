@@ -38,6 +38,8 @@ export function useSelectedCodeFile(): UseSelectedCodeFile {
 
     useEffect(() => {
         // Subscribe to open code file changes in Code Mode
+        // @ts-expect-error TS(2339): Property 'unstable_getCodeFile' does not exist on type 'F...
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
         const unsubscribeOpenCodeFile = framer.subscribeToOpenCodeFile(codeFile => {
             if (framer.mode !== "code") return
 
@@ -45,6 +47,7 @@ export function useSelectedCodeFile(): UseSelectedCodeFile {
                 codeFile
                     ? {
                           type: StatusTypes.SELECTED_CODE_FILE,
+                          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                           codeFile,
                       }
                     : {
@@ -70,7 +73,9 @@ export function useSelectedCodeFile(): UseSelectedCodeFile {
             const task = async () => {
                 if (isComponentInstanceNode(firstNode)) {
                     try {
-                        const matchingFile = await framer.getCodeFile(firstNode.componentIdentifier)
+                        // @ts-expect-error TS(2339): Property 'unstable_getCodeFile' does not exist on type 'F...
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+                        const matchingFile = await framer.unstable_getCodeFile(firstNode.componentIdentifier)
                         if (!matchingFile) {
                             setSelectionState({
                                 type: StatusTypes.NO_SELECTION,
@@ -80,6 +85,7 @@ export function useSelectedCodeFile(): UseSelectedCodeFile {
 
                         setSelectionState({
                             type: StatusTypes.SELECTED_CODE_FILE,
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                             codeFile: matchingFile,
                         })
                         return
@@ -104,10 +110,14 @@ export function useSelectedCodeFile(): UseSelectedCodeFile {
         })
 
         // Subscribe for changes in the code file itself, e.g. on save
-        const unsubscribeCodeFile = framer.subscribeToCodeFiles(codeFiles => {
+
+        // @ts-expect-error TS(2551): Property 'unstable_subscribeToCodeFiles' does not exist o...
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+        const unsubscribeCodeFile = framer.unstable_subscribeToCodeFiles(codeFiles => {
             if (selectionState.type !== StatusTypes.SELECTED_CODE_FILE) return
 
-            const matchingFile = codeFiles.find(codeFile => codeFile.id === codeFileId)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+            const matchingFile = codeFiles.find((codeFile: { id: string | undefined }) => codeFile.id === codeFileId)
 
             if (!matchingFile) {
                 // Code file has been deleted
@@ -119,13 +129,16 @@ export function useSelectedCodeFile(): UseSelectedCodeFile {
 
             setSelectionState({
                 type: StatusTypes.SELECTED_CODE_FILE,
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 codeFile: matchingFile,
             })
         })
 
         return () => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             unsubscribeOpenCodeFile()
             unsubscribeSelection()
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             unsubscribeCodeFile()
         }
     }, [selectionState.type, codeFileId])

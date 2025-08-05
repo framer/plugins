@@ -42,7 +42,7 @@ export const dataSourceOptions = [
 export async function getDataSource(dataSourceId: string, abortSignal?: AbortSignal): Promise<DataSource> {
     // Fetch from your data source
     const dataSourceResponse = await fetch(`/data/${dataSourceId}.json`, { signal: abortSignal })
-    const dataSource = await dataSourceResponse.json()
+    const dataSource = (await dataSourceResponse.json()) as DataSource
 
     // Map your source fields to supported field types in Framer
     const fields: ManagedCollectionFieldInput[] = []
@@ -74,7 +74,7 @@ export async function getDataSource(dataSourceId: string, abortSignal?: AbortSig
         }
     }
 
-    const items = dataSource.items as FieldDataInput[]
+    const items = dataSource.items
 
     return {
         id: dataSource.id,

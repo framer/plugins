@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 "use strict"
 
 // turns on override logs
@@ -106,20 +107,24 @@ type DataLayer = Omit<object[], "push"> & {
     push: DataLayerPush
     __f?: boolean // flag to indicate if the push function has been overridden
 }
+interface CloneEvent extends Event {
+    __originalEvent: Event
+}
 
-function cloneEvent(event: Event) {
+function cloneEvent(event: Event): CloneEvent {
     // @ts-expect-error TS(2339): We already cloned this event
     if (event.__originalEvent) return event
 
     // @ts-expect-error TS(2351): TS doesn't know that event.constructor is a function
-    const newEvent = new event.constructor(event.type, event)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const newEvent = new event.constructor(event.type, event) as CloneEvent
 
     // the following need to be set to read-only or they get overridden when dispatching
     const keysToDefine = ["target", "srcElement", "offsetX", "offsetY", "layerX", "layerY", "toElement"] as const
     for (const key of keysToDefine) {
         if (key in event) {
             Object.defineProperty(newEvent, key, {
-                writable: false, // Neededed to prevent write, else this gets overridden when dispatching.
+                writable: false, // Needed to prevent write, else this gets overridden when dispatching.
                 value: event[key as keyof Event],
             })
         }
@@ -147,9 +152,11 @@ function cloneEvent(event: Event) {
         let prop: keyof Event
         for (prop in event) {
             if (typeof event[prop] === "function" || readOnlyProps.includes(prop)) continue
-            if (newEvent[prop] === undefined) {
+
+            const newEventProp = newEvent[prop]
+            if (newEventProp === undefined) {
                 missingProps.push(prop)
-            } else if (event[prop] !== newEvent[prop]) {
+            } else if (event[prop] !== newEventProp) {
                 differentProps.push(prop)
             }
         }
@@ -164,6 +171,7 @@ function cloneEvent(event: Event) {
 
 // #region capturing listener interceptor
 // Intercept capturing event listeners:
+// eslint-disable-next-line @typescript-eslint/unbound-method
 const originalAddEventListener = document.addEventListener
 const typesToIntercept = ["click", "auxclick", "mousedown", "keyup", "submit"] as const
 type EventType = (typeof typesToIntercept)[number]
@@ -192,7 +200,10 @@ document.addEventListener = function (
             async function overriddenEventListener(this: unknown, e) {
                 const event = cloneEvent(e) // Clone at the time of interception
 
-                if (event.type === "mousedown" && event.button === 0 /* primary / left mouse button */) {
+                if (
+                    event.type === "mousedown" &&
+                    (event as unknown as MouseEvent).button === 0 /* primary / left mouse button */
+                ) {
                     await globalWaitingForClickPromise
                 }
 
@@ -224,16 +235,21 @@ document.addEventListener("readystatechange", () => {
 
         const event = cloneEvent(e) // Clone at the time of interception
 
-        if (event.type === "mousedown" && event.button === 0 /* primary / left mouse button */) {
+        if (
+            event.type === "mousedown" &&
+            (event as unknown as MouseEvent).button === 0 /* primary / left mouse button */
+        ) {
             await globalWaitingForClickPromise
         }
 
         await yieldUnlessUrgent()
+
         document.dispatchEvent(event)
     }
 
     // Intercept `document` level listeners that are not capturing.
     for (const element of typesToIntercept) {
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
         body.addEventListener(element, interceptEvent)
     }
 })
@@ -271,7 +287,7 @@ function defineCustomDataLayerPush(dataLayer: DataLayer) {
             if (DEBUG) console.log("set dataLayer.push", value)
 
             if (value === mostRecentPushWrapper) return // skip for `window.dataLayer = window.dataLayer||[]`
-            mostRecentPushWrapper = value ? wrapDataLayerPush(value, dataLayer) : undefined
+            mostRecentPushWrapper = value ? wrapDataLayerPush(value as DataLayer["push"], dataLayer) : undefined
         },
     })
     Object.defineProperty(dataLayer, "__f", {
@@ -297,7 +313,7 @@ function overrideGTMDataLayer() {
             if (DEBUG) console.log("set dataLayer", value)
 
             if (value === mostRecentDataLayerWrapper) return // skip for `window.dataLayer = window.dataLayer||[]`
-            mostRecentDataLayerWrapper = value
+            mostRecentDataLayerWrapper = value as DataLayer
             if (mostRecentDataLayerWrapper) {
                 defineCustomDataLayerPush(mostRecentDataLayerWrapper)
             }
@@ -317,8 +333,10 @@ function wrapHistory(method: "pushState" | "replaceState", value: (typeof window
         // flag to the data object.
         if (!("__f" in args[0])) {
             // @ts-expect-error TS(2339): Prototype chain call.
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
             window.history.__proto__[method].apply(window.history, args)
-            args[0].__f = true // flag to indicate that the native method was called
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            args[0].__f = true // Flag to indicate that the native method was called
         }
 
         void yieldUnlessUrgent().then(() => {
@@ -330,6 +348,7 @@ function overrideHistory(method: "pushState" | "replaceState") {
     // The initial value is a noop, so that the first override doesn't call the native method.
     // We still need to set it to a function, so that the `get` function returns a function that is
     // used if nothing ever overrides it.
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     let mostRecentHistoryWrapper: (typeof window.history)[typeof method] | undefined = wrapHistory(method, () => {})
 
     Object.defineProperty(window.history, method, {
@@ -342,7 +361,9 @@ function overrideHistory(method: "pushState" | "replaceState") {
             if (DEBUG) console.log(`set history.${method}`, value)
 
             if (value === mostRecentHistoryWrapper) return
-            mostRecentHistoryWrapper = value ? wrapHistory(method, value) : undefined
+            mostRecentHistoryWrapper = value
+                ? wrapHistory(method, value as (typeof window.history)[typeof method])
+                : undefined
         },
     })
 }

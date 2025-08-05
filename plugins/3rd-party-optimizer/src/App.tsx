@@ -1,6 +1,6 @@
 import type { CustomCode } from "framer-plugin"
 import { framer } from "framer-plugin"
-import { useEffect, useSyncExternalStore } from "react"
+import { useLayoutEffect, useSyncExternalStore } from "react"
 import "./App.css"
 
 import scriptSource from "virtual:yield-gtm-calls"
@@ -29,7 +29,7 @@ export function App() {
         })
     }
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         void framer.showUI({
             position: "top right",
             width: 260,

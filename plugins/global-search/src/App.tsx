@@ -2,7 +2,7 @@ import { type CanvasNode, framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import "./styles.css"
 
-framer.showUI({
+void framer.showUI({
     position: "top right",
     width: 240,
     height: 95,
@@ -22,8 +22,8 @@ export function App() {
     const selection = useSelection()
     const layer = selection.length === 1 ? "layer" : "layers"
 
-    const handleAddSvg = async () => {
-        await framer.addSVG({
+    const handleAddSvg = () => {
+        void framer.addSVG({
             svg: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><path fill="#999" d="M20 0v8h-8L4 0ZM4 8h8l8 8h-8v8l-8-8Z"/></svg>`,
             name: "Logo.svg",
         })

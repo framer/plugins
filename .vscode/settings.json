@@ -48,5 +48,10 @@
     },
     "workbench.editorAssociations": {
         "*.svg": "default"
-    }
+    },
+    "eslint.workingDirectories": [
+        "./starters/cms",
+        { "directory": "./plugins/*", "!cwd": true },
+        { "pattern": "./packages/*", "!cwd": true }
+    ]
 }

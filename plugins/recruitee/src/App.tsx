@@ -5,14 +5,14 @@ import { useEffect, useLayoutEffect, useState } from "react"
 import { FieldMapping } from "./components/FieldMapping"
 import { Loading } from "./components/Loading"
 import { SelectDataSource } from "./components/SelectDataSource"
-import { companyIdPluginKey, getDataSource, spaceIdPluginKey } from "./data"
+import { companyIdPluginKey, getDataSource, tokenPluginKey } from "./data"
 import type { RecruiteeDataSource } from "./dataSources"
 
 interface AppProps {
     collection: ManagedCollection
     previousDataSourceId: string | null
     previousSlugFieldId: string | null
-    previousBoardToken: string | null
+    previousToken: string | null
     previousCompanyId: string | null
 }
 
@@ -20,10 +20,10 @@ export function App({
     collection,
     previousDataSourceId,
     previousSlugFieldId,
-    previousBoardToken,
+    previousToken,
     previousCompanyId,
 }: AppProps) {
-    const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
+    const [token, setToken] = useState<string>(previousToken ?? "")
     const [companyId, setCompanyId] = useState<string>(previousCompanyId ?? "")
     const [dataSource, setDataSource] = useState<RecruiteeDataSource | null>(null)
     const [isLoading, setIsLoading] = useState(false)
@@ -41,10 +41,10 @@ export function App({
     }, [dataSource])
 
     useEffect(() => {
-        if (!previousBoardToken || !previousDataSourceId || !previousCompanyId) return
+        if (!previousToken || !previousDataSourceId || !previousCompanyId) return
 
         setIsLoading(true)
-        getDataSource(previousCompanyId, previousBoardToken, previousDataSourceId)
+        getDataSource(previousCompanyId, previousToken, previousDataSourceId)
             .then(setDataSource)
             .catch((error: unknown) => {
                 console.error(`Error loading previously configured data source “${previousDataSourceId}”.`, error)
@@ -55,16 +55,16 @@ export function App({
             .finally(() => {
                 setIsLoading(false)
             })
-    }, [previousCompanyId, previousDataSourceId, previousBoardToken])
+    }, [previousCompanyId, previousDataSourceId, previousToken])
 
     useEffect(() => {
-        if (!boardToken) return
-        if (boardToken === previousBoardToken) return
+        if (!token) return
+        if (token === previousToken) return
 
         if (framer.isAllowedTo("setPluginData")) {
-            void framer.setPluginData(spaceIdPluginKey, boardToken)
+            void framer.setPluginData(tokenPluginKey, token)
         }
-    }, [boardToken, previousBoardToken])
+    }, [token, previousToken])
 
     useEffect(() => {
         if (!companyId) return
@@ -79,15 +79,15 @@ export function App({
         return <Loading />
     }
 
-    if (!boardToken || !dataSource) {
+    if (!token || !dataSource) {
         return (
             <SelectDataSource
                 previousCompanyId={previousCompanyId}
                 onSelectCompanyId={setCompanyId}
-                onSelectBoardToken={setBoardToken}
+                onSelectToken={setToken}
                 onSelectDataSource={setDataSource}
                 previousDataSourceId={previousDataSourceId}
-                previousBoardToken={previousBoardToken}
+                previousToken={previousToken}
             />
         )
     }
@@ -96,7 +96,7 @@ export function App({
         <FieldMapping
             collection={collection}
             companyId={companyId}
-            boardToken={boardToken}
+            token={token}
             dataSource={dataSource}
             initialSlugFieldId={previousSlugFieldId}
         />

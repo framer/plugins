@@ -32,7 +32,7 @@ const pluginTokensKey = "hubspotTokens"
 
 const isLocal = () => window.location.hostname.includes("localhost")
 
-const AUTH_URI = isLocal() ? "https://localhost:8787" : "https://oauth.framer.wtf/hubspot-plugin"
+const AUTH_URI = isLocal() ? "https://localhost:8787" : "https://oauth.fetch.tools/hubspot-plugin"
 
 class Auth {
     storedTokens?: StoredTokens | null

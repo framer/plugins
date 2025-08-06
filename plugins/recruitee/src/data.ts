@@ -104,7 +104,7 @@ export function mergeFieldsWithExistingFields(
 }
 
 const StringifiableSchema = v.union([v.string(), v.number(), v.boolean()])
-const ArrayWithIdsSchema = v.array(v.object({ id: v.number() }))
+const ArrayOfIdsSchema = v.array(v.union([v.string(), v.number()]))
 
 async function getItems(
     dataSource: RecruiteeDataSource,
@@ -190,8 +190,9 @@ async function getItems(
                     break
                 case "multiCollectionReference": {
                     const ids = []
-                    if (v.is(ArrayWithIdsSchema, value)) {
-                        ids.push(...value.map(item => String(item))) // this works only in Recruitee API, make sure to update this if we change the API
+
+                    if (v.is(ArrayOfIdsSchema, value)) {
+                        ids.push(...value.map(item => String(item))) // this is specific to Recruitee API, make sure to update this if we change the API
                     }
 
                     fieldData[field.id] = {
@@ -201,21 +202,18 @@ async function getItems(
                     break
                 }
                 case "collectionReference": {
-                    if (typeof value !== "object" || value == null || !("id" in value)) {
-                        continue
-                    }
-
-                    fieldData[field.id] = {
-                        value: String(value.id),
-                        type: "collectionReference",
+                    if (v.is(v.union([v.string(), v.number()]), value)) {
+                        fieldData[field.id] = {
+                            value: String(value), // this is specific to Recruitee API, make sure to update this if we change the API
+                            type: "collectionReference",
+                        }
                     }
                     break
                 }
                 case "image":
                 case "file":
-                case "array":
-                    throw new Error(`${field.type} field is not supported.`)
                 case "enum":
+                case "array":
                     throw new Error(`${field.type} field is not supported.`)
                 default:
                     assertNever(
@@ -283,7 +281,7 @@ export async function syncExistingCollection(
     }
 
     if (!framer.isAllowedTo(...syncMethods)) {
-        framer.closePlugin("You are not allowed to sync this collection.", {
+        void framer.closePlugin("You are not allowed to sync this collection.", {
             variant: "error",
         })
         return { didSync: false }

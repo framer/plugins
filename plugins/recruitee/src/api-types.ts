@@ -16,7 +16,6 @@ export const OfferLeafSchema = v.object({
     hired_candidates_count: v.number(),
     hired_candidates_without_openings_count: v.nullable(v.number()),
     disqualified_candidates_count: v.number(),
-    location: v.nullable(v.string()),
     street: v.nullable(v.string()),
     city: v.nullable(v.string()),
     state_name: v.nullable(v.string()),
@@ -57,6 +56,7 @@ export const OfferLeafSchema = v.object({
     example: v.boolean(),
     followed: v.boolean(),
     wysiwyg_editor: v.nullable(v.string()),
+    location: v.nullable(v.string()),
     location_ids: v.array(v.number()),
 })
 export const LocationLeafSchema = v.object({

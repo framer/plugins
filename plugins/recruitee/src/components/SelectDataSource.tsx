@@ -76,7 +76,7 @@ export function SelectDataSource({
                     />
                 </label>
                 <label>
-                    <p>Board Token</p>
+                    <p>Token</p>
                     <input
                         id="token"
                         type="text"

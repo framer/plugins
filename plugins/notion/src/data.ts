@@ -572,8 +572,6 @@ export function getFieldDataEntryForProperty(
         case "formula": {
             const formula = property.formula
 
-            if (!formula) return null
-
             let value = null
             switch (formula.type) {
                 case "string":
@@ -596,6 +594,8 @@ export function getFieldDataEntryForProperty(
                 case "string":
                 case "color":
                 case "link":
+                    if (typeof value === "object") return null
+
                     return {
                         type: field.type,
                         value: String(value),
@@ -610,7 +610,7 @@ export function getFieldDataEntryForProperty(
                     }
                 }
                 case "date": {
-                    if (formula.type !== "date" || !formula.date || !formula.date.start) return null
+                    if (formula.type !== "date" || !formula.date?.start) return null
 
                     const date = new Date(formula.date.start)
 

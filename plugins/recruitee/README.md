@@ -1,14 +1,9 @@
 # Recruitee Plugin
 
-Embed your Recruitee job board, application forms, or open positions directly into your Framer projects with ease.
+Plugin to sync data from Recruitee to Framer.
 
-## 🚀 Features
+API documentation: https://docs.recruitee.com/reference/getting-started
 
-- Embed your **job listings**
-- Display job posts by **department**, **location**
-- Lightweight, responsive, and easy to configure inside Framer
-- Supports **live preview** and dynamic updating from Recruitee's API
-- 
-**By:** @sushilzore
+**By:** @sushilzore, @clementroche
 
-![Recruitee Image](src/assets/hero.png)
+![Recruitee Image](./src/assets/hero.png)

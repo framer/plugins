@@ -12,15 +12,23 @@ import {
     syncExistingCollection,
 } from "./data"
 
-const lastUsedBoardToken = await framer.getPluginData(spaceIdPluginKey)
-const lastUsedCompanyId = await framer.getPluginData(companyIdPluginKey)
-
 const activeCollection = await framer.getActiveManagedCollection()
 
-const previousDataSourceId = await activeCollection.getPluginData(dataSourceIdPluginKey)
-const previousSlugFieldId = await activeCollection.getPluginData(slugFieldIdPluginKey)
-const previousCollectionBoardToken = await activeCollection.getPluginData(spaceIdPluginKey)
-const previousCollectionCompanyId = await activeCollection.getPluginData(companyIdPluginKey)
+const [
+    lastUsedBoardToken,
+    lastUsedCompanyId,
+    previousDataSourceId,
+    previousSlugFieldId,
+    previousCollectionBoardToken,
+    previousCollectionCompanyId,
+] = await Promise.all([
+    framer.getPluginData(spaceIdPluginKey),
+    framer.getPluginData(companyIdPluginKey),
+    activeCollection.getPluginData(dataSourceIdPluginKey),
+    activeCollection.getPluginData(slugFieldIdPluginKey),
+    activeCollection.getPluginData(spaceIdPluginKey),
+    activeCollection.getPluginData(companyIdPluginKey),
+])
 
 const previousBoardToken = previousCollectionBoardToken ?? lastUsedBoardToken
 const previousCompanyId = previousCollectionCompanyId ?? lastUsedCompanyId
@@ -34,7 +42,7 @@ const { didSync } = await syncExistingCollection(
 )
 
 if (didSync) {
-    framer.closePlugin("Synchronization successful", {
+    void framer.closePlugin("Synchronization successful", {
         variant: "success",
     })
 } else {

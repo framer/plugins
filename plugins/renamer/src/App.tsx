@@ -134,9 +134,7 @@ export function App() {
 
     const renameResults = useCallback(
         (e?: React.FormEvent) => {
-            if (e) {
-                e.preventDefault()
-            }
+            e?.preventDefault()
 
             if (!isAllowedToSetAttributes) return
             void resultsRenamer.start(results)

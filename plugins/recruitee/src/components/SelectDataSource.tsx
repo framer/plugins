@@ -7,8 +7,8 @@ import { dataSources, type RecruiteeDataSource } from "../dataSources"
 interface SelectDataSourceProps {
     previousCompanyId?: string | null
     onSelectCompanyId: (companyId: string) => void
-    previousBoardToken?: string | null
-    onSelectBoardToken: (boardToken: string) => void
+    previousToken?: string | null
+    onSelectToken: (token: string) => void
     previousDataSourceId?: string | null
     onSelectDataSource: (dataSource: RecruiteeDataSource) => void
 }
@@ -16,12 +16,12 @@ interface SelectDataSourceProps {
 export function SelectDataSource({
     previousCompanyId,
     onSelectCompanyId,
-    previousBoardToken,
-    onSelectBoardToken,
+    previousToken,
+    onSelectToken,
     previousDataSourceId,
     onSelectDataSource,
 }: SelectDataSourceProps) {
-    const [boardToken, setBoardToken] = useState<string>(previousBoardToken ?? "")
+    const [token, setToken] = useState<string>(previousToken ?? "")
     const [companyId, setCompanyId] = useState<string>(previousCompanyId ?? "")
     const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(
         previousDataSourceId ?? dataSources[0]?.id ?? ""
@@ -36,11 +36,11 @@ export function SelectDataSource({
 
             setIsLoading(true)
 
-            getDataSource(companyId, boardToken, selectedDataSourceId)
+            getDataSource(companyId, token, selectedDataSourceId)
                 .then(dataSource => {
                     onSelectCompanyId(companyId)
                     onSelectDataSource(dataSource)
-                    onSelectBoardToken(boardToken)
+                    onSelectToken(token)
                 })
                 .catch((error: unknown) => {
                     console.error(error)
@@ -52,10 +52,10 @@ export function SelectDataSource({
                     setIsLoading(false)
                 })
         },
-        [companyId, boardToken, selectedDataSourceId, onSelectCompanyId, onSelectBoardToken, onSelectDataSource]
+        [companyId, token, selectedDataSourceId, onSelectCompanyId, onSelectToken, onSelectDataSource]
     )
 
-    const isButtonDisabled = !boardToken || !selectedDataSourceId || isLoading || !isAllowedToManage
+    const isButtonDisabled = !token || !selectedDataSourceId || isLoading || !isAllowedToManage
 
     return (
         <main className="framer-hide-scrollbar setup">
@@ -78,13 +78,13 @@ export function SelectDataSource({
                 <label>
                     <p>Board Token</p>
                     <input
-                        id="boardToken"
+                        id="token"
                         type="text"
                         required
                         placeholder="Enter Token…"
-                        value={boardToken}
+                        value={token}
                         onChange={event => {
-                            setBoardToken(event.target.value)
+                            setToken(event.target.value)
                         }}
                     />
                 </label>
@@ -97,7 +97,7 @@ export function SelectDataSource({
                             setSelectedDataSourceId(event.target.value)
                         }}
                         value={selectedDataSourceId}
-                        disabled={!boardToken}
+                        disabled={!token}
                     >
                         <option value="" disabled>
                             Choose Source…

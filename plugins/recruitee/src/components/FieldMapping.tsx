@@ -81,13 +81,13 @@ const emptyArray: RecruiteeField[] = []
 
 interface FieldMappingProps {
     companyId: string
-    boardToken: string
+    token: string
     collection: ManagedCollection
     dataSource: RecruiteeDataSource
     initialSlugFieldId: string | null
 }
 
-export function FieldMapping({ companyId, boardToken, collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
+export function FieldMapping({ companyId, token, collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
     )
@@ -209,7 +209,7 @@ export function FieldMapping({ companyId, boardToken, collection, dataSource, in
         collection
             .setFields(removeRecruiteeKeys(fieldsToSync))
             .then(() => {
-                syncCollection(companyId, boardToken, collection, dataSource, fieldsToSync, selectedSlugField)
+                syncCollection(companyId, token, collection, dataSource, fieldsToSync, selectedSlugField)
                     .then(() => {
                         void framer.closePlugin("Synchronization successful", { variant: "success" })
                     })

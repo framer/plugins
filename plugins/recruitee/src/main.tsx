@@ -8,36 +8,36 @@ import {
     companyIdPluginKey,
     dataSourceIdPluginKey,
     slugFieldIdPluginKey,
-    spaceIdPluginKey,
     syncExistingCollection,
+    tokenPluginKey,
 } from "./data"
 
 const activeCollection = await framer.getActiveManagedCollection()
 
 const [
-    lastUsedBoardToken,
+    lastUsedToken,
     lastUsedCompanyId,
     previousDataSourceId,
     previousSlugFieldId,
-    previousCollectionBoardToken,
+    previousCollectionToken,
     previousCollectionCompanyId,
 ] = await Promise.all([
-    framer.getPluginData(spaceIdPluginKey),
+    framer.getPluginData(tokenPluginKey),
     framer.getPluginData(companyIdPluginKey),
     activeCollection.getPluginData(dataSourceIdPluginKey),
     activeCollection.getPluginData(slugFieldIdPluginKey),
-    activeCollection.getPluginData(spaceIdPluginKey),
+    activeCollection.getPluginData(tokenPluginKey),
     activeCollection.getPluginData(companyIdPluginKey),
 ])
 
-const previousBoardToken = previousCollectionBoardToken ?? lastUsedBoardToken
+const previousToken = previousCollectionToken ?? lastUsedToken
 const previousCompanyId = previousCollectionCompanyId ?? lastUsedCompanyId
 
 const { didSync } = await syncExistingCollection(
     activeCollection,
     previousDataSourceId,
     previousSlugFieldId,
-    previousBoardToken,
+    previousToken,
     previousCompanyId
 )
 
@@ -55,7 +55,7 @@ if (didSync) {
                 collection={activeCollection}
                 previousDataSourceId={previousDataSourceId}
                 previousSlugFieldId={previousSlugFieldId}
-                previousBoardToken={previousBoardToken}
+                previousToken={previousToken}
                 previousCompanyId={previousCompanyId}
             />
         </StrictMode>

@@ -1,5 +1,7 @@
 import {
     type AnyNode,
+    Collection,
+    CollectionItem,
     ComponentNode,
     isComponentInstanceNode,
     isComponentNode,
@@ -13,22 +15,34 @@ import {
 export type RootNode = ComponentNode | WebPageNode
 export type RootNodeType = RootNode["__class"]
 
-// Search index entry - extends the renamer's IndexEntry concept
-export interface IndexEntry {
+export type IndexEntryType = AnyNode["__class"]
+
+interface IndexEntryBase {
     id: string
-    type: AnyNode["__class"]
-    name: string | null
-    text: string | null
-    node: AnyNode
-    rootNodeName: string | null
-    rootNodeType: RootNodeType
-    rootNode: AnyNode
+    type: string
 }
 
-export interface TextRange {
-    start: number
-    end: number
+export interface IndexNodeEntry extends IndexEntryBase {
+    type: IndexEntryType
+    node: AnyNode
+    rootNodeName: string | null
+    rootNode: RootNode
+    rootNodeType: RootNodeType
+    text: string | null
+    name: string | null
 }
+
+export interface IndexCollectionItemEntry extends IndexEntryBase {
+    type: "CollectionItem"
+    collectionItem: CollectionItem
+    rootNodeName: string
+    rootNode: Collection
+    rootNodeType: "Collection"
+    slug: string
+    fields: Record<string, string>
+}
+
+export type IndexEntry = IndexNodeEntry | IndexCollectionItemEntry
 
 export const includedAttributes = ["text"] as const
 export type IncludedAttribute = (typeof includedAttributes)[number]

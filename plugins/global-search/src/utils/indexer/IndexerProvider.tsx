@@ -30,6 +30,8 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
         }
 
         const onError = ({ error }: Events["error"]) => {
+            setIsIndexing(false)
+            setIndex({})
             console.error(error)
         }
 

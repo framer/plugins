@@ -65,6 +65,16 @@ export async function getTables(baseId: string, signal: AbortSignal): Promise<Ai
 const EMAIL_REGEX = /\S[^\s@]*@\S+\.\S+/
 const PHONE_REGEX = /^(\+?[0-9])[0-9]{7,14}$/
 
+/**
+ * Helper function to ensure a value has the specified prefix,
+ * removing any existing instances of the prefix first
+ */
+function ensurePrefix(prefix: string, value: string): string {
+    const regex = new RegExp(prefix, "gi")
+    const result = value.replace(regex, "")
+    return `${prefix}${result}`
+}
+
 const NonEmptyArrayOfAttachmentsSchema = v.pipe(
     v.array(v.object({ type: v.optional(v.string()), id: v.string(), url: v.string() })),
     v.minLength(1)
@@ -73,7 +83,10 @@ const NonEmptyArrayOfAttachmentsSchema = v.pipe(
 const ArrayOfStringsSchema = v.array(v.string())
 const NonEmptyArrayOfStringsSchema = v.pipe(ArrayOfStringsSchema, v.minLength(1))
 
-function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unknown): FieldDataEntryInput | null {
+export function getFieldDataEntryForFieldSchema(
+    fieldSchema: PossibleField,
+    value: unknown
+): FieldDataEntryInput | null {
     // If the field is a lookup field, only use the first value from the array.
     if (fieldSchema.originalAirtableType === "multipleLookupValues") {
         if (!Array.isArray(value)) return null
@@ -94,14 +107,14 @@ function getFieldDataEntryForFieldSchema(fieldSchema: PossibleField, value: unkn
             if (typeof value === "string") {
                 if (fieldSchema.airtableType === "email" || EMAIL_REGEX.test(value)) {
                     return {
-                        value: `mailto:${value}`,
+                        value: ensurePrefix("mailto:", value),
                         type: "link",
                     }
                 }
 
                 if (fieldSchema.airtableType === "phoneNumber" || PHONE_REGEX.test(value)) {
                     return {
-                        value: `tel:${value}`,
+                        value: ensurePrefix("tel:", value),
                         type: "link",
                     }
                 }

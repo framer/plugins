@@ -1,5 +1,5 @@
 /* Custom two-color theme for Prism syntax highlighting */
-.current-code {
+.highlighted-code {
     color: var(--color-code-primary);
     line-height: var(--code-row-height);
 

@@ -1,0 +1,6 @@
+{
+    "id": "a3b33y",
+    "name": "Ashby",
+    "modes": ["syncManagedCollection", "configureManagedCollection"],
+    "icon": "/icon.svg"
+}

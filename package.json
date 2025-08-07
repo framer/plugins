@@ -9,7 +9,7 @@
         "plugins/*"
     ],
     "scripts": {
-        "check": "turbo run --continue check-biome check-eslint check-prettier check-svelte check-typescript test",
+        "check": "turbo run --continue check-biome check-eslint check-prettier check-svelte check-typescript check-vitest",
         "dev": "turbo run dev --concurrency=40",
         "fix-biome": "turbo run --continue check-biome -- --write",
         "fix-eslint": "turbo run --continue check-eslint -- --fix",
@@ -18,6 +18,7 @@
         "g:check-biome": "biome check $INIT_CWD",
         "g:check-eslint": "cd $INIT_CWD && DEBUG='eslint:eslint' eslint --report-unused-disable-directives-severity error .",
         "g:check-typescript": "tsc --project $INIT_CWD",
+        "g:check-vitest": "cd $INIT_CWD && vitest run",
         "g:dev": "cd $INIT_CWD && run g:vite",
         "g:preview": "cd $INIT_CWD && run g:vite preview",
         "g:vite": "cd $INIT_CWD && NODE_OPTIONS='--no-warnings=ExperimentalWarning' vite --config $PROJECT_CWD/packages/vite-config/src/index.ts",

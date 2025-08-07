@@ -81,11 +81,50 @@ jobs:
 
         steps:
             - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
             - uses: actions/setup-node@v4
               with:
                   node-version-file: .tool-versions
 
-            - run: yarn
+            - name: Get changed files
+              id: changed-files
+              uses: tj-actions/changed-files@v45
+              with:
+                  files: |
+                      plugins/*/src/**
+                      plugins/*/test/**
+                      plugins/*/*.test.ts
+                      plugins/*/*.test.tsx
+                      plugins/*/vitest.config.ts
+                      plugins/*/test-setup.ts
 
-            - run: yarn turbo test
+            - name: Install dependencies
+              if: steps.changed-files.outputs.any_changed == 'true'
+              run: yarn
+
+            - name: Get changed plugins
+              if: steps.changed-files.outputs.any_changed == 'true'
+              id: changed-plugins
+              run: |
+                # Extract unique plugin names from changed files
+                PLUGINS=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | \
+                  grep -E '^plugins/[^/]+/' | \
+                  cut -d'/' -f2 | \
+                  sort -u | \
+                  tr '\n' ' ')
+                echo "plugins=$PLUGINS" >> $GITHUB_OUTPUT
+                echo "Changed plugins: $PLUGINS"
+
+            - name: Run tests for changed plugins
+              if: steps.changed-files.outputs.any_changed == 'true' && steps.changed-plugins.outputs.plugins != ''
+              run: |
+                for plugin in ${{ steps.changed-plugins.outputs.plugins }}; do
+                  echo "Checking tests for plugin: $plugin"
+                  if [ -f "plugins/$plugin/package.json" ] && grep -q '"check-vitest"' "plugins/$plugin/package.json"; then
+                    yarn workspace $plugin check-vitest
+                  else
+                    echo "No check-vitest script found for $plugin, skipping..."
+                  fi
+                done

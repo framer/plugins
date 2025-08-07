@@ -1,5 +1,5 @@
 {
-    "name": "airtable",
+    "name": "ashby",
     "private": true,
     "version": "0.0.0",
     "type": "module",
@@ -10,20 +10,16 @@
         "check-eslint": "run g:check-eslint",
         "preview": "run g:preview",
         "pack": "npx framer-plugin-tools@latest pack",
-        "check-typescript": "run g:check-typescript",
-        "check-vitest": "vitest run"
+        "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
         "framer-plugin": "^3.5.2",
-        "marked": "^16.1.1",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "valibot": "^1.1.0"
     },
     "devDependencies": {
         "@types/react": "^18.3.23",
-        "@types/react-dom": "^18.3.7",
-        "happy-dom": "^18.0.1",
-        "vitest": "^3.2.4"
+        "@types/react-dom": "^18.3.7"
     }
 }

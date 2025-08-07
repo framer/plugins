@@ -15,14 +15,14 @@ export interface RecruiteeDataSource {
     fetch: (token: string, companyId: string) => Promise<RecruiteeItem[]>
 }
 
-async function fetchRecruiteeData(url: string, token: string): Promise<unknown[]> {
+async function fetchRecruiteeData(url: string, token: string): Promise<unknown> {
     try {
         const response = await fetch(url, {
             headers: new Headers({
                 Authorization: "Bearer " + token,
             }),
         })
-        return [(await response.json())] as unknown []
+        return await response.json()
     } catch (error) {
         console.error("Error fetching Recruitee data:", error)
         throw error
@@ -45,7 +45,7 @@ export type RecruiteeField = ManagedCollectionFieldInput &
           }
     )
 
-const locationsSchema = v.array(v.object({ locations: v.array(LocationSchema) }))
+const locationsSchema = v.object({ locations: v.array(LocationSchema) })
 const locationDataSource = createDataSource(
     {
         name: "Locations",
@@ -56,7 +56,7 @@ const locationDataSource = createDataSource(
                 console.log("Error parsing Recruitee data:", items.issues)
                 throw new Error("Error parsing Recruitee data")
             }
-            return items.output.flatMap(page => page.locations)
+            return items.output.locations
         },
     },
     [
@@ -78,7 +78,7 @@ const locationDataSource = createDataSource(
     ]
 )
 
-const offersSchema = v.array(v.object({ offers: v.array(OfferSchema) }))
+const offersSchema = v.object({ offers: v.array(OfferSchema) })
 const offersDataSource = createDataSource(
     {
         name: "Offers",
@@ -90,7 +90,7 @@ const offersDataSource = createDataSource(
                 console.log("Error parsing Recruitee data:", data.issues)
                 throw new Error("Error parsing Recruitee data")
             }
-            return data.output.flatMap(page => page.offers)
+            return data.output.offers
         },
     },
     [
@@ -134,15 +134,9 @@ const offersDataSource = createDataSource(
         { id: "mailbox_email", name: "Email", type: "string" },
         { id: "requirements", name: "Requirements", type: "formattedText" },
         { id: "description", name: "Description", type: "formattedText" },
-        {
-            id: "offer_tags",
-            name: "Offer Tags",
-            type: "string",
-            getValue: (item: any) => (Array.isArray(item.offer_tags) ? item.offer_tags.join(", ") : item.offer_tags),
-        },
         { id: "tags", name: "Tags", type: "string" },
         { id: "url", name: "URL", type: "link" },
-        { id: "adminapp_url", name: "Adminapp URL", type: "link" },
+        { id: "adminapp_url", name: "Admin App URL", type: "link" },
         { id: "careers_url", name: "Careers URL", type: "link" },
         { id: "kind", name: "Kind", type: "string" },
         { id: "has_active_campaign", name: "Has Active Campaign", type: "boolean" },
@@ -185,7 +179,7 @@ const offersDataSource = createDataSource(
         },
     ]
 )
-const departmentsSchema = v.array(v.object({ departments: v.array(DepartmentSchema) }))
+const departmentsSchema = v.object({ departments: v.array(DepartmentSchema) })
 const departmentsDataSource = createDataSource(
     {
         name: "Departments",
@@ -196,7 +190,7 @@ const departmentsDataSource = createDataSource(
                 console.log("Error parsing Recruitee data:", data.issues)
                 throw new Error("Error parsing Recruitee data")
             }
-            return data.output.flatMap(page => page.departments)
+            return data.output.departments
         },
     },
     [
@@ -208,7 +202,7 @@ const departmentsDataSource = createDataSource(
     ]
 )
 
-const candidatesSchema = v.array(v.object({ candidates: v.array(CandidateSchema) }))
+const candidatesSchema = v.object({ candidates: v.array(CandidateSchema) })
 const candidatesDataSource = createDataSource(
     {
         name: "Candidates",
@@ -219,7 +213,7 @@ const candidatesDataSource = createDataSource(
                 console.log("Error parsing Recruitee data:", data.issues)
                 throw new Error("Error parsing Recruitee data")
             }
-            return data.output.flatMap(page => page.candidates)
+            return data.output.candidates
         },
     },
     [

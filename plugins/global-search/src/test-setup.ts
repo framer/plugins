@@ -8,6 +8,7 @@ vi.mock("framer-plugin", () => ({
     framer: {
         showUI: vi.fn(),
         subscribeToSelection: vi.fn(),
+        setMenu: vi.fn(),
     },
 }))
 

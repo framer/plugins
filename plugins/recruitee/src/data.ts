@@ -211,7 +211,10 @@ async function getItems(
                 }
                 case "image":
                 case "file":
-                    fieldData[field.id] =  { type: field.type, value: v.is(StringifiableSchema, value) ? String(value) : "" }
+                    fieldData[field.id] = {
+                        type: field.type,
+                        value: v.is(StringifiableSchema, value) ? String(value) : "",
+                    }
                     break
                 case "enum":
                 case "array":

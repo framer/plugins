@@ -12,14 +12,14 @@ export interface RecruiteeDataSource {
      * The rest of the fields are the fields of the data source.
      */
     fields: readonly RecruiteeField[]
-    fetch: (boardToken: string, companyId: string) => Promise<RecruiteeItem[]>
+    fetch: (token: string, companyId: string) => Promise<RecruiteeItem[]>
 }
 
-async function fetchRecruiteeData(url: string, boardToken: string): Promise<unknown[]> {
+async function fetchRecruiteeData(url: string, token: string): Promise<unknown[]> {
     try {
         const response = await fetch(url, {
             headers: new Headers({
-                Authorization: "Bearer " + boardToken,
+                Authorization: "Bearer " + token,
             }),
         })
         const items = []
@@ -51,10 +51,14 @@ const locationsSchema = v.array(v.object({ locations: v.array(LocationSchema) })
 const locationDataSource = createDataSource(
     {
         name: "Locations",
-        fetch: async (boardToken: string, companyId: string) => {
+        fetch: async (token: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/locations`
-            const items = v.parse(locationsSchema, await fetchRecruiteeData(url, boardToken))
-            return items.flatMap(page => page.locations)
+            const items = v.safeParse(locationsSchema, await fetchRecruiteeData(url, token))
+            if (!items.success) {
+                console.log("Error parsing Recruitee data:", items.issues)
+                throw new Error("Error parsing Recruitee data")
+            }
+            return items.output.flatMap(page => page.locations)
         },
     },
     [
@@ -80,19 +84,30 @@ const offersSchema = v.array(v.object({ offers: v.array(OfferSchema) }))
 const offersDataSource = createDataSource(
     {
         name: "Offers",
-        fetch: async (boardToken: string, companyId: string) => {
+        fetch: async (token: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/offers`
-            const items = v.parse(offersSchema, await fetchRecruiteeData(url, boardToken))
-            return items.flatMap(page => page.offers)
+            const data = v.safeParse(offersSchema, await fetchRecruiteeData(url, token))
+
+            if (!data.success) {
+                console.log("Error parsing Recruitee data:", data.issues)
+                throw new Error("Error parsing Recruitee data")
+            }
+            return data.output.flatMap(page => page.offers)
         },
     },
     [
         { id: "slug", name: "Slug", type: "string", canBeUsedAsSlug: true },
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-        { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
+        { id: "title", name: "Title", type: "string" },
         { id: "position", name: "Position", type: "number" },
-        { id: "department", name: "Department", type: "string" },
-        { id: "department_id", name: "Department ID", type: "string" },
+        { id: "department", name: "Department Name", type: "string" },
+        {
+            id: "department_id",
+            name: "Department",
+            type: "collectionReference",
+            collectionId: "",
+            dataSourceId: "Departments",
+        },
         { id: "employment_type", name: "Type", type: "string" },
         { id: "status", name: "Status", type: "string" },
         { id: "candidates_count", name: "Candidates Count", type: "number" },
@@ -134,12 +149,11 @@ const offersDataSource = createDataSource(
         { id: "highlight_html", name: "Highlight Html", type: "formattedText" },
         { id: "job_scheduler", name: "Job Scheduler", type: "string" },
         { id: "lang_code", name: "Lang Code", type: "string" },
-        // { id: "eeo_settings", name: "Eeo Settings", type: "string" },
         { id: "hiring_manager_id", name: "Hiring Manager Id", type: "string" },
-        { id: "on_site", name: "Is On Site", type: "boolean" },
-        { id: "pipeline", name: "Is Pipeline", type: "boolean" },
+        { id: "on_site", name: "on Site", type: "boolean" },
+        { id: "pipeline", name: "pipeline", type: "boolean" },
         { id: "pipeline_template_id", name: "Pipeline Template Id", type: "string" },
-        { id: "remote", name: "Is Remote", type: "boolean" },
+        { id: "remote", name: "remote", type: "boolean" },
         { id: "published_at", name: "Published At", type: "string" },
         { id: "closed_at", name: "Closed At", type: "string" },
         { id: "priority", name: "Priority", type: "string" },
@@ -148,7 +162,7 @@ const offersDataSource = createDataSource(
             name: "Recruiter",
             type: "string",
         },
-        { id: "hybrid", name: "Is Hybrid", type: "boolean" },
+        { id: "hybrid", name: "hybrid", type: "boolean" },
         { id: "wysiwyg_editor", name: "Wysiwyg Editor", type: "string" },
         { id: "created_at", name: "Created At", type: "string" },
         { id: "updated_at", name: "Updated At", type: "string" },
@@ -156,11 +170,16 @@ const offersDataSource = createDataSource(
         { id: "example", name: "Example", type: "boolean" },
         { id: "followed", name: "Followed", type: "boolean" },
         {
+            id: "location",
+            name: "Location",
+            type: "string",
+        },
+        {
             id: "location_ids",
             name: "Locations",
             type: "multiCollectionReference",
             collectionId: "",
-            dataSourceId: locationDataSource.name,
+            dataSourceId: "Locations",
         },
     ]
 )
@@ -168,10 +187,14 @@ const departmentsSchema = v.array(v.object({ departments: v.array(DepartmentSche
 const departmentsDataSource = createDataSource(
     {
         name: "Departments",
-        fetch: async (boardToken: string, companyId: string) => {
+        fetch: async (token: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/departments`
-            const items = v.parse(departmentsSchema, await fetchRecruiteeData(url, boardToken))
-            return items.flatMap(page => page.departments)
+            const data = v.safeParse(departmentsSchema, await fetchRecruiteeData(url, token))
+            if (!data.success) {
+                console.log("Error parsing Recruitee data:", data.issues)
+                throw new Error("Error parsing Recruitee data")
+            }
+            return data.output.flatMap(page => page.departments)
         },
     },
     [
@@ -187,10 +210,14 @@ const candidatesSchema = v.array(v.object({ candidates: v.array(CandidateSchema)
 const candidatesDataSource = createDataSource(
     {
         name: "Candidates",
-        fetch: async (boardToken: string, companyId: string) => {
+        fetch: async (token: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/candidates`
-            const items = v.parse(candidatesSchema, await fetchRecruiteeData(url, boardToken))
-            return items.flatMap(page => page.candidates)
+            const data = v.safeParse(candidatesSchema, await fetchRecruiteeData(url, token))
+            if (!data.success) {
+                console.log("Error parsing Recruitee data:", data.issues)
+                throw new Error("Error parsing Recruitee data")
+            }
+            return data.output.flatMap(page => page.candidates)
         },
     },
     [
@@ -203,12 +230,8 @@ const candidatesDataSource = createDataSource(
             name: "Emails",
             type: "string",
             getValue: value => {
-                if (typeof value === "object" && value !== null) {
-                    return Object.entries(value)
-                        .map(([, val]) => `${val}`)
-                        .join(", ")
-                }
-                return null
+                const list = v.parse(v.array(v.string()), value)
+                return list.join(", ")
             },
         },
         { id: "invalid_emails", name: "Invalid Emails", type: "string" },
@@ -217,12 +240,8 @@ const candidatesDataSource = createDataSource(
             name: "Phones",
             type: "string",
             getValue: value => {
-                if (typeof value === "object" && value !== null) {
-                    return Object.entries(value)
-                        .map(([, val]) => `${val}`)
-                        .join(", ")
-                }
-                return null
+                const list = v.parse(v.array(v.string()), value)
+                return list.join(", ")
             },
         },
 
@@ -266,7 +285,7 @@ function createDataSource(
         fetch,
     }: {
         name: string
-        fetch: (boardToken: string, companyId: string) => Promise<RecruiteeItem[]>
+        fetch: (token: string, companyId: string) => Promise<RecruiteeItem[]>
     },
     [idField, slugField, ...fields]: [RecruiteeField, RecruiteeField, ...RecruiteeField[]]
 ): RecruiteeDataSource {

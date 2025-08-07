@@ -13,8 +13,7 @@ import { assertNever, isCollectionReference } from "./utils"
 
 export const dataSourceIdPluginKey = "dataSourceId"
 export const slugFieldIdPluginKey = "slugFieldId"
-export const spaceIdPluginKey = "spaceId"
-
+export const tokenPluginKey = "token"
 export const companyIdPluginKey = "companyId"
 
 function replaceSupportedCollections(
@@ -42,13 +41,13 @@ function replaceSupportedCollections(
 
 export async function getDataSource(
     companyId: string,
-    boardToken: string,
+    token: string,
     dataSourceId: string
 ): Promise<RecruiteeDataSource> {
     if (!companyId) {
         throw new Error("No Company Id Found. Please provide Company ID.")
     }
-    if (!boardToken) {
+    if (!token) {
         throw new Error("No Board Token found. Please select a board.")
     }
     const dataSource = dataSources.find(option => option.id === dataSourceId)
@@ -61,8 +60,8 @@ export async function getDataSource(
 
     const managedCollections = await framer.getManagedCollections()
     for (const collection of managedCollections) {
-        const collectionBoardToken = await collection.getPluginData(spaceIdPluginKey)
-        if (collectionBoardToken !== boardToken) {
+        const collectionToken = await collection.getPluginData(tokenPluginKey)
+        if (collectionToken !== token) {
             continue
         }
 
@@ -104,16 +103,16 @@ export function mergeFieldsWithExistingFields(
 }
 
 const StringifiableSchema = v.union([v.string(), v.number(), v.boolean()])
-const ArrayWithIdsSchema = v.array(v.object({ id: v.number() }))
+const ArrayOfIdsSchema = v.array(v.union([v.string(), v.number()]))
 
 async function getItems(
     dataSource: RecruiteeDataSource,
     fieldsToSync: readonly ManagedCollectionFieldInput[],
-    { boardToken, slugFieldId, companyId }: { boardToken: string; slugFieldId: string; companyId: string }
+    { token, slugFieldId, companyId }: { token: string; slugFieldId: string; companyId: string }
 ): Promise<ManagedCollectionItemInput[]> {
     const items: ManagedCollectionItemInput[] = []
 
-    const dataItems = await dataSource.fetch(boardToken, companyId)
+    const dataItems = await dataSource.fetch(token, companyId)
 
     const itemIdBySlug = new Map<string, string>()
     const idField = fieldsToSync[0]
@@ -190,8 +189,9 @@ async function getItems(
                     break
                 case "multiCollectionReference": {
                     const ids = []
-                    if (v.is(ArrayWithIdsSchema, value)) {
-                        ids.push(...value.map(item => String(item))) // this works only in Recruitee API, make sure to update this if we change the API
+
+                    if (v.is(ArrayOfIdsSchema, value)) {
+                        ids.push(...value.map(item => String(item))) // this is specific to Recruitee API, make sure to update this if we change the API
                     }
 
                     fieldData[field.id] = {
@@ -201,21 +201,18 @@ async function getItems(
                     break
                 }
                 case "collectionReference": {
-                    if (typeof value !== "object" || value == null || !("id" in value)) {
-                        continue
-                    }
-
-                    fieldData[field.id] = {
-                        value: String(value.id),
-                        type: "collectionReference",
+                    if (v.is(v.union([v.string(), v.number()]), value)) {
+                        fieldData[field.id] = {
+                            value: String(value), // this is specific to Recruitee API, make sure to update this if we change the API
+                            type: "collectionReference",
+                        }
                     }
                     break
                 }
                 case "image":
                 case "file":
-                case "array":
-                    throw new Error(`${field.type} field is not supported.`)
                 case "enum":
+                case "array":
                     throw new Error(`${field.type} field is not supported.`)
                 default:
                     assertNever(
@@ -238,7 +235,7 @@ async function getItems(
 
 export async function syncCollection(
     companyId: string,
-    boardToken: string,
+    token: string,
     collection: ManagedCollection,
     dataSource: RecruiteeDataSource,
     fields: readonly ManagedCollectionFieldInput[],
@@ -246,7 +243,7 @@ export async function syncCollection(
 ): Promise<void> {
     const existingItemsIds = await collection.getItemIds()
     const items = await getItems(dataSource, fields, {
-        boardToken,
+        token,
         slugFieldId: slugField.id,
         companyId: companyId,
     })
@@ -256,7 +253,7 @@ export async function syncCollection(
     await collection.removeItems(unsyncedItemsIds)
     await collection.addItems(items)
     await collection.setPluginData(companyIdPluginKey, companyId)
-    await collection.setPluginData(spaceIdPluginKey, boardToken)
+    await collection.setPluginData(tokenPluginKey, token)
     await collection.setPluginData(dataSourceIdPluginKey, dataSource.id)
     await collection.setPluginData(slugFieldIdPluginKey, slugField.id)
 }
@@ -271,10 +268,10 @@ export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDataSourceId: string | null,
     previousSlugFieldId: string | null,
-    previousBoardToken: string | null,
+    previousToken: string | null,
     previousCompanyId: string | null
 ): Promise<{ didSync: boolean }> {
-    if (!previousDataSourceId || !previousBoardToken || !previousCompanyId) {
+    if (!previousDataSourceId || !previousToken || !previousCompanyId) {
         return { didSync: false }
     }
 
@@ -283,14 +280,14 @@ export async function syncExistingCollection(
     }
 
     if (!framer.isAllowedTo(...syncMethods)) {
-        framer.closePlugin("You are not allowed to sync this collection.", {
+        void framer.closePlugin("You are not allowed to sync this collection.", {
             variant: "error",
         })
         return { didSync: false }
     }
 
     try {
-        const dataSource = await getDataSource(previousCompanyId, previousBoardToken, previousDataSourceId)
+        const dataSource = await getDataSource(previousCompanyId, previousToken, previousDataSourceId)
         const existingFields = await collection.getFields()
 
         const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)
@@ -301,7 +298,7 @@ export async function syncExistingCollection(
             return { didSync: false }
         }
 
-        await syncCollection(previousCompanyId, previousBoardToken, collection, dataSource, existingFields, slugField)
+        await syncCollection(previousCompanyId, previousToken, collection, dataSource, existingFields, slugField)
         return { didSync: true }
     } catch (error) {
         console.error(error)

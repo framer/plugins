@@ -8,33 +8,41 @@ import {
     companyIdPluginKey,
     dataSourceIdPluginKey,
     slugFieldIdPluginKey,
-    spaceIdPluginKey,
     syncExistingCollection,
+    tokenPluginKey,
 } from "./data"
-
-const lastUsedBoardToken = await framer.getPluginData(spaceIdPluginKey)
-const lastUsedCompanyId = await framer.getPluginData(companyIdPluginKey)
 
 const activeCollection = await framer.getActiveManagedCollection()
 
-const previousDataSourceId = await activeCollection.getPluginData(dataSourceIdPluginKey)
-const previousSlugFieldId = await activeCollection.getPluginData(slugFieldIdPluginKey)
-const previousCollectionBoardToken = await activeCollection.getPluginData(spaceIdPluginKey)
-const previousCollectionCompanyId = await activeCollection.getPluginData(companyIdPluginKey)
+const [
+    lastUsedToken,
+    lastUsedCompanyId,
+    previousDataSourceId,
+    previousSlugFieldId,
+    previousCollectionToken,
+    previousCollectionCompanyId,
+] = await Promise.all([
+    framer.getPluginData(tokenPluginKey),
+    framer.getPluginData(companyIdPluginKey),
+    activeCollection.getPluginData(dataSourceIdPluginKey),
+    activeCollection.getPluginData(slugFieldIdPluginKey),
+    activeCollection.getPluginData(tokenPluginKey),
+    activeCollection.getPluginData(companyIdPluginKey),
+])
 
-const previousBoardToken = previousCollectionBoardToken ?? lastUsedBoardToken
+const previousToken = previousCollectionToken ?? lastUsedToken
 const previousCompanyId = previousCollectionCompanyId ?? lastUsedCompanyId
 
 const { didSync } = await syncExistingCollection(
     activeCollection,
     previousDataSourceId,
     previousSlugFieldId,
-    previousBoardToken,
+    previousToken,
     previousCompanyId
 )
 
 if (didSync) {
-    framer.closePlugin("Synchronization successful", {
+    void framer.closePlugin("Synchronization successful", {
         variant: "success",
     })
 } else {
@@ -47,7 +55,7 @@ if (didSync) {
                 collection={activeCollection}
                 previousDataSourceId={previousDataSourceId}
                 previousSlugFieldId={previousSlugFieldId}
-                previousBoardToken={previousBoardToken}
+                previousToken={previousToken}
                 previousCompanyId={previousCompanyId}
             />
         </StrictMode>

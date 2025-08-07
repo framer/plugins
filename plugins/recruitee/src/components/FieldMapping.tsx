@@ -3,7 +3,7 @@ import { type FormEventHandler, useCallback, useEffect, useMemo, useState } from
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "../data"
 import { type RecruiteeDataSource, type RecruiteeField, removeRecruiteeKeys } from "../dataSources"
 import { isCollectionReference, isMissingReferenceField } from "../utils"
-import { ChevronIcon } from "./Icons"
+import { ChevronIcon } from "./ChevronIcon"
 import { Loading } from "./Loading"
 
 interface FieldMappingRowProps {
@@ -47,7 +47,7 @@ function FieldMappingRow({
                     disabled={isDisabled}
                     value={field.collectionId}
                     onChange={event => {
-                        onCollectionChange(field.id, event.target.value || originalFieldName || "")
+                        onCollectionChange(field.id, event.target.value || (originalFieldName ?? ""))
                     }}
                 >
                     {field.supportedCollections?.length === 0 && (
@@ -65,11 +65,11 @@ function FieldMappingRow({
                 <input
                     type="text"
                     className="target-field"
-                    disabled={isDisabled} // Use isDisabled consistently for clarity
+                    disabled={isDisabled}
                     placeholder={originalFieldName}
                     value={field.name !== originalFieldName ? field.name : ""}
                     onChange={event => {
-                        onNameChange(field.id, event.target.value || originalFieldName || "")
+                        onNameChange(field.id, event.target.value || (originalFieldName ?? ""))
                     }}
                 />
             )}
@@ -81,13 +81,13 @@ const emptyArray: RecruiteeField[] = []
 
 interface FieldMappingProps {
     companyId: string
-    boardToken: string
+    token: string
     collection: ManagedCollection
     dataSource: RecruiteeDataSource
     initialSlugFieldId: string | null
 }
 
-export function FieldMapping({ companyId, boardToken, collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
+export function FieldMapping({ companyId, token, collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
     )
@@ -209,9 +209,9 @@ export function FieldMapping({ companyId, boardToken, collection, dataSource, in
         collection
             .setFields(removeRecruiteeKeys(fieldsToSync))
             .then(() => {
-                syncCollection(companyId, boardToken, collection, dataSource, fieldsToSync, selectedSlugField)
+                syncCollection(companyId, token, collection, dataSource, fieldsToSync, selectedSlugField)
                     .then(() => {
-                        framer.closePlugin("Synchronization successful", { variant: "success" })
+                        void framer.closePlugin("Synchronization successful", { variant: "success" })
                     })
                     .catch((error: unknown) => {
                         console.error(error)

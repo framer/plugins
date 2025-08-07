@@ -22,9 +22,7 @@ async function fetchRecruiteeData(url: string, token: string): Promise<unknown[]
                 Authorization: "Bearer " + token,
             }),
         })
-        const items = []
-        items.push((await response.json()) as unknown)
-        return items
+        return [(await response.json())] as unknown []
     } catch (error) {
         console.error("Error fetching Recruitee data:", error)
         throw error

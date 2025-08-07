@@ -140,7 +140,7 @@ const offersDataSource = createDataSource(
             id: "offer_tags",
             name: "Offer Tags",
             type: "string",
-            getValue: (item: any) => Array.isArray(item.offer_tags) ? item.offer_tags.join(", ") : item.offer_tags,
+            getValue: (item: any) => (Array.isArray(item.offer_tags) ? item.offer_tags.join(", ") : item.offer_tags),
         },
         { id: "tags", name: "Tags", type: "string" },
         { id: "url", name: "URL", type: "link" },

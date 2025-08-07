@@ -134,7 +134,15 @@ const offersDataSource = createDataSource(
         { id: "mailbox_email", name: "Email", type: "string" },
         { id: "requirements", name: "Requirements", type: "formattedText" },
         { id: "description", name: "Description", type: "formattedText" },
-        { id: "tags", name: "Tags", type: "string" },
+        {
+            id: "tags",
+            name: "Tags",
+            type: "string",
+            getValue: value => {
+                const list = v.parse(v.array(v.object({ name: v.string() })), value)
+                return list.map(item => item.name).join(", ")
+            },
+        },
         { id: "url", name: "URL", type: "link" },
         { id: "adminapp_url", name: "Admin App URL", type: "link" },
         { id: "careers_url", name: "Careers URL", type: "link" },

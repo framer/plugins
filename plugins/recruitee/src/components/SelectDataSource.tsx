@@ -55,7 +55,7 @@ export function SelectDataSource({
         [companyId, token, selectedDataSourceId, onSelectCompanyId, onSelectToken, onSelectDataSource]
     )
 
-    const isButtonDisabled = !token || !selectedDataSourceId || isLoading || !isAllowedToManage
+    const isButtonDisabled = !companyId || !token || !selectedDataSourceId || isLoading || !isAllowedToManage
 
     return (
         <main className="framer-hide-scrollbar setup">

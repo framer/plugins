@@ -4,7 +4,7 @@ export const tagsSchema = v.object({
     name: v.string(),
 })
 
-export const OfferLeafSchema = v.object({
+export const OfferSchema = v.object({
     id: v.number(),
     title: v.string(),
     department: v.nullable(v.string()),
@@ -59,7 +59,7 @@ export const OfferLeafSchema = v.object({
     location: v.nullable(v.string()),
     location_ids: v.array(v.number()),
 })
-export const LocationLeafSchema = v.object({
+export const LocationSchema = v.object({
     id: v.number(),
     name: v.string(),
     city: v.string(),
@@ -76,18 +76,12 @@ export const LocationLeafSchema = v.object({
     created_at: v.nullable(v.string()),
     updated_at: v.nullable(v.string()),
 })
-export const LocationSchema = v.object({
-    ...LocationLeafSchema.entries,
-})
 
 export type Location = v.InferOutput<typeof LocationSchema>
 
-export const OfferSchema = v.object({
-    ...OfferLeafSchema.entries,
-})
 export type Offer = v.InferOutput<typeof OfferSchema>
 
-export const DepartmentLeafSchema = v.object({
+export const DepartmentSchema = v.object({
     id: v.number(),
     name: v.string(),
     status: v.nullable(v.string()),
@@ -95,12 +89,8 @@ export const DepartmentLeafSchema = v.object({
     talent_pools_count: v.nullable(v.number()),
 })
 
-export const DepartmentSchema = v.object({
-    ...DepartmentLeafSchema.entries,
-})
-
 export type Department = v.InferOutput<typeof DepartmentSchema>
-export const CandidateLeafSchema = v.object({
+export const CandidateSchema = v.object({
     id: v.number(),
     initials: v.nullable(v.string()),
     name: v.string(),
@@ -131,10 +121,6 @@ export const CandidateLeafSchema = v.object({
     referrer: v.nullable(v.string()),
     created_at: v.nullable(v.string()),
     updated_at: v.nullable(v.string()),
-})
-
-export const CandidateSchema = v.object({
-    ...CandidateLeafSchema.entries,
 })
 
 export type Candidate = v.InferOutput<typeof CandidateSchema>

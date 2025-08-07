@@ -1,5 +1,13 @@
-import { type AnyNode, framer, isComponentNode, isFrameNode, isTextNode, isWebPageNode } from "framer-plugin"
-import { TypedEventEmitter } from "./event-emitter"
+import {
+    type AnyNode,
+    Collection,
+    framer,
+    isComponentNode,
+    isFrameNode,
+    isTextNode,
+    isWebPageNode,
+} from "framer-plugin"
+import { type EventMap, TypedEventEmitter } from "../event-emitter"
 import { stripMarkup } from "./strip-markup"
 import { type IndexEntry, includedAttributes, type RootNode, shouldIndexNode } from "./types"
 
@@ -58,24 +66,11 @@ export class GlobalSearchIndexer {
         return null
     }
 
-    private async *crawl(rootNodes: readonly RootNode[]): AsyncGenerator<IndexEntry[]> {
+    private async *crawlNodes(rootNodes: readonly RootNode[]): AsyncGenerator<IndexEntry[]> {
         let batch: IndexEntry[] = []
 
         for (const rootNode of rootNodes) {
             const rootNodeName = await getNodeName(rootNode)
-            if (shouldIndexNode(rootNode)) {
-                const text = await this.getNodeText(rootNode)
-                batch.push({
-                    id: rootNode.id,
-                    type: rootNode.__class,
-                    name: rootNodeName,
-                    text,
-                    node: rootNode,
-                    rootNode,
-                    rootNodeName,
-                    rootNodeType: rootNode.__class,
-                })
-            }
 
             for await (const node of rootNode.walk()) {
                 if (this.abortRequested) return
@@ -107,6 +102,50 @@ export class GlobalSearchIndexer {
         }
     }
 
+    private async *crawlCollections(collections: readonly Collection[]): AsyncGenerator<IndexEntry[]> {
+        let batch: IndexEntry[] = []
+
+        for (const collection of collections) {
+            const [fieldNames, items] = await Promise.all([collection.getFields(), collection.getItems()])
+            const fieldNameMap = new Map(fieldNames.map(f => [f.id, f.name]))
+
+            for (const item of items) {
+                const fields = Object.fromEntries(
+                    Object.entries(item.fieldData).flatMap(([key, field]) => {
+                        const finalKey = fieldNameMap.get(key) ?? key
+                        switch (field.type) {
+                            case "string":
+                                return [[finalKey, field.value]]
+                            case "formattedText":
+                                return [[finalKey, stripMarkup(field.value)]]
+                        }
+                        return []
+                    })
+                )
+
+                batch.push({
+                    id: item.id,
+                    type: "CollectionItem",
+                    collectionItem: item,
+                    rootNode: collection,
+                    rootNodeName: collection.name,
+                    rootNodeType: "Collection",
+                    fields,
+                    slug: item.slug,
+                })
+            }
+
+            if (batch.length === this.batchSize) {
+                yield batch
+                batch = []
+            }
+        }
+
+        if (batch.length > 0) {
+            yield batch
+        }
+    }
+
     async start() {
         try {
             const [pages, components] = await Promise.all([
@@ -117,7 +156,14 @@ export class GlobalSearchIndexer {
             this.abortRequested = false
             this.eventEmitter.emit("started")
 
-            for await (const batch of this.crawl([...pages, ...components])) {
+            for await (const batch of this.crawlNodes([...pages, ...components])) {
+                if (this.abortRequested) break
+                this.upsertEntries(batch)
+            }
+
+            const collections = await framer.getCollections()
+
+            for await (const batch of this.crawlCollections(collections)) {
                 if (this.abortRequested) break
                 this.upsertEntries(batch)
             }

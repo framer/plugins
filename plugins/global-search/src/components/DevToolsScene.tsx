@@ -15,8 +15,15 @@ export function DevToolsScene() {
     const filteredEntries = useMemo(
         () =>
             entries.filter(entry => {
-                if (entry.node.id === filterQuery) return true
-                return entry.name?.toLowerCase().includes(filterQuery.toLowerCase())
+                if (entry.id === filterQuery) return true
+                switch (entry.type) {
+                    case "CollectionItem":
+                        return Object.values(entry.fields).some(field =>
+                            field.toLowerCase().includes(filterQuery.toLowerCase())
+                        )
+                    default:
+                        return entry.name?.toLowerCase().includes(filterQuery.toLowerCase())
+                }
             }),
         [entries, filterQuery]
     )
@@ -31,7 +38,6 @@ export function DevToolsScene() {
                 },
                 {} as Record<string, number>
             ),
-            withText: entries.filter(e => e.text).length,
         }),
         [entries]
     )
@@ -79,12 +85,11 @@ export function DevToolsScene() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">
-                                            {entry.name || "Unnamed"}
+                                            {entry.type === "CollectionItem"
+                                                ? `${entry.rootNodeName} - ${entry.slug}`
+                                                : entry.name || "Unnamed"}
                                         </p>
                                         <p className="text-xs text-gray-500">{entry.type}</p>
-                                        {entry.text && (
-                                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">{entry.text}</p>
-                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -116,11 +121,13 @@ export function DevToolsScene() {
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
                                     <p className="text-sm bg-gray-50 p-2 rounded">
-                                        {selectedEntry.name || "(no name)"}
+                                        {selectedEntry.type === "CollectionItem"
+                                            ? "Collection Item"
+                                            : selectedEntry.name || "(no name)"}
                                     </p>
                                 </div>
 
-                                {selectedEntry.text && (
+                                {selectedEntry.type !== "CollectionItem" && (
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">
                                             Text Content
@@ -128,6 +135,15 @@ export function DevToolsScene() {
                                         <p className="text-sm bg-gray-50 p-2 rounded whitespace-pre-wrap">
                                             {selectedEntry.text}
                                         </p>
+                                    </div>
+                                )}
+
+                                {selectedEntry.type === "CollectionItem" && (
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Fields</label>
+                                        <pre className="text-sm bg-gray-50 p-2 rounded whitespace-pre-wrap">
+                                            {JSON.stringify(selectedEntry.fields, null, 2)}
+                                        </pre>
                                     </div>
                                 )}
 
@@ -149,15 +165,9 @@ export function DevToolsScene() {
                                         <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto text-xs">
                                             {JSON.stringify(
                                                 {
-                                                    ...selectedEntry.node,
-                                                    // Limit some potentially large properties
-                                                    ...(selectedEntry.node.__class && {
-                                                        __class: selectedEntry.node.__class,
-                                                    }),
-                                                    ...(selectedEntry.node.id && { id: selectedEntry.node.id }),
-                                                    ...("name" in selectedEntry.node && {
-                                                        name: selectedEntry.node.name,
-                                                    }),
+                                                    ...(selectedEntry.type === "CollectionItem"
+                                                        ? selectedEntry.collectionItem
+                                                        : selectedEntry.node),
                                                 },
                                                 null,
                                                 2

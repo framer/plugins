@@ -7,7 +7,7 @@ import {
     type ProtectedMethod,
 } from "framer-plugin"
 import * as v from "valibot"
-import { isRecruiteeItemField } from "./api-types"
+import { hasOwnProperty } from "./api-types"
 import { dataSources, type RecruiteeDataSource, type RecruiteeField } from "./dataSources"
 import { assertNever, isCollectionReference } from "./utils"
 
@@ -121,7 +121,7 @@ async function getItems(
     }
 
     for (const item of dataItems) {
-        if (!isRecruiteeItemField(slugFieldId, item)) {
+        if (!hasOwnProperty(item, slugFieldId)) {
             throw new Error(`No slug field found in data source.`)
         }
 

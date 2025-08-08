@@ -1,4 +1,4 @@
-import { framer, isFrameNode, isTextNode, isWebPageNode, WebPageNode } from "framer-plugin"
+import { type CanvasRootNode, framer, isComponentNode, isFrameNode, isTextNode, isWebPageNode } from "framer-plugin"
 import { isCanvasNode } from "./traits"
 import type { CanvasNode, IndexEntry } from "./types"
 
@@ -59,20 +59,25 @@ export class Indexer {
         }
     }
 
-    private async *crawl(pages: WebPageNode[]): AsyncGenerator<IndexEntry[]> {
+    private async *crawl(rootNodes: CanvasRootNode[]): AsyncGenerator<IndexEntry[]> {
         let batch: IndexEntry[] = []
 
-        for (const page of pages) {
-            for await (const node of page.walk()) {
+        for (const rootNode of rootNodes) {
+            const children = await rootNode.getChildren()
+            const childNodeIds = children.map(node => node.id)
+
+            for await (const node of rootNode.walk()) {
                 if (this.abortRequested) return
 
                 if (!isCanvasNode(node)) continue
                 if (!this.isIncludedNodeType(node)) continue
 
+                // Filter out replica nodes unless they are a variant/breakpoint
+                // Replica nodes share the same name between variants/breakpoints, so they can be filtered out
+                if (node.isReplica && !childNodeIds.includes(node.id)) continue
+
                 const name = node.name ?? (await getDefaultCanvasNodeName(node))
-
                 const rect = this.includedAttributes.includes("rect") ? await node.getRect() : null
-
                 const text = this.includedAttributes.includes("text") && isTextNode(node) ? await node.getText() : null
 
                 batch.push({
@@ -97,24 +102,28 @@ export class Indexer {
         }
     }
 
-    private async getPages(): Promise<WebPageNode[]> {
-        const root = await framer.getCanvasRoot()
-        if (!isWebPageNode(root)) return []
-
-        if (this.scope === "page") {
-            return [root]
+    private async getRootNodes(): Promise<CanvasRootNode[]> {
+        if (this.scope === "project") {
+            const [webPages, componentNodes] = await Promise.all([
+                framer.getNodesWithType("WebPageNode"),
+                framer.getNodesWithType("ComponentNode"),
+            ])
+            return [...webPages, ...componentNodes]
         }
 
-        return await framer.getNodesWithType("WebPageNode")
+        const root = await framer.getCanvasRoot()
+        if (!isWebPageNode(root) && !isComponentNode(root)) return []
+
+        return [root]
     }
 
     async start() {
-        const pages = await this.getPages()
+        const rootNodes = await this.getRootNodes()
 
         this.abortRequested = false
         this.onStarted()
 
-        for await (const batch of this.crawl(pages)) {
+        for await (const batch of this.crawl(rootNodes)) {
             this.upsertEntries(batch)
         }
 

@@ -7,7 +7,7 @@ import {
     isTextNode,
     isWebPageNode,
 } from "framer-plugin"
-import { TypedEventEmitter } from "./event-emitter"
+import { type EventMap, TypedEventEmitter } from "./event-emitter"
 import { stripMarkup } from "./strip-markup"
 import { type IndexEntry, includedAttributes, type RootNode, shouldIndexNode } from "./types"
 

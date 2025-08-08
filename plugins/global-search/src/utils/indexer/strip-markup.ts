@@ -7,7 +7,10 @@ const parser = new DOMParser()
  * stripMarkup("Hello <b>world</b>") // "Hello world"
  */
 export function stripMarkup(text: string) {
-    const document = parser.parseFromString(text, "text/html")
+    // Normalize explicit line breaks and hr's before parsing so words don't collapse
+    const normalized = text.replace(/<(br|hr)\s*\/?>(?=\s*|$)/gi, "\n")
+
+    const document = parser.parseFromString(normalized, "text/html")
 
     if (!document.body.textContent) return ""
 

@@ -51,7 +51,7 @@ describe("stripMarkup(text)", () => {
     })
 
     it("should handle self-closing tags", () => {
-        expect(stripMarkup("Try to make<br/>ends meet")).toBe("Try to makeends meet")
+        expect(stripMarkup("Try to make<br/>ends meet")).toBe("Try to make ends meet")
         expect(stripMarkup("Image: <img src='test.jpg' alt='test'/>")).toBe("Image:")
     })
 })

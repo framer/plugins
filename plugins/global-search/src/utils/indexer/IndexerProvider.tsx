@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { IndexerContext } from "./context"
-import type { Events } from "./event-emitter"
+import type { IndexerEvents } from "./indexer"
 import { GlobalSearchIndexer } from "./indexer"
 import type { IndexEntry } from "./types"
 
@@ -16,7 +16,7 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         indexer.start()
 
-        const onUpsert = ({ entry }: Events["upsert"]) => {
+        const onUpsert = ({ entry }: IndexerEvents["upsert"]) => {
             setIndex(prev => ({ ...prev, [entry.id]: entry }))
         }
 

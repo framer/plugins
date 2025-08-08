@@ -33,9 +33,19 @@ async function getNodeName(node: AnyNode): Promise<string | null> {
     return null
 }
 
+export interface IndexerEvents extends EventMap {
+    upsert: { entry: IndexEntry }
+    error: { error: Error }
+    progress: { processed: number; total?: number }
+    started: void
+    completed: void
+    restarted: void
+    aborted: void
+}
+
 export class GlobalSearchIndexer {
-    private eventEmitter = new TypedEventEmitter()
-    public on: TypedEventEmitter["on"] = (...args) => this.eventEmitter.on(...args)
+    private eventEmitter = new TypedEventEmitter<IndexerEvents>()
+    public on: typeof this.eventEmitter.on = (...args) => this.eventEmitter.on(...args)
 
     private entries: Record<string, IndexEntry> = {}
     private batchSize = 10
@@ -144,7 +154,7 @@ export class GlobalSearchIndexer {
             ])
 
             this.abortRequested = false
-            this.eventEmitter.emit("started", undefined)
+            this.eventEmitter.emit("started")
 
             for await (const batch of this.crawlNodes([...pages, ...components])) {
                 if (this.abortRequested) break
@@ -159,7 +169,7 @@ export class GlobalSearchIndexer {
             }
 
             if (!this.abortRequested) {
-                this.eventEmitter.emit("completed", undefined)
+                this.eventEmitter.emit("completed")
             }
         } catch (error) {
             this.eventEmitter.emit("error", { error: error instanceof Error ? error : new Error(String(error)) })
@@ -169,7 +179,7 @@ export class GlobalSearchIndexer {
     async restart() {
         this.abortRequested = true
         this.entries = {}
-        this.eventEmitter.emit("restarted", undefined)
+        this.eventEmitter.emit("restarted")
         return this.start()
     }
 

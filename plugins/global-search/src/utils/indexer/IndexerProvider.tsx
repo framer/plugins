@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { startTransition, useEffect, useMemo, useState } from "react"
 import { IndexerContext } from "./context"
 import type { IndexerEvents } from "./indexer"
 import { GlobalSearchIndexer } from "./indexer"

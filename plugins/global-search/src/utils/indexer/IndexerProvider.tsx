@@ -49,16 +49,17 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
                 setIsIndexing(true)
             })
 
-        const unsubscribeUpsert = indexer.on("upsert", onUpsert)
-        const unsubscribeStarted = indexer.on("started", onStarted)
-        const unsubscribeCompleted = indexer.on("completed", onCompleted)
-        const unsubscribeError = indexer.on("error", onError)
+        const unsubscribes = [
+            indexer.on("upsert", onUpsert),
+            indexer.on("restarted", onRestarted),
+            indexer.on("aborted", onAborted),
+            indexer.on("started", onStarted),
+            indexer.on("completed", onCompleted),
+            indexer.on("error", onError),
+        ]
 
         return () => {
-            unsubscribeUpsert()
-            unsubscribeStarted()
-            unsubscribeCompleted()
-            unsubscribeError()
+            for (const unsubscribe of unsubscribes) unsubscribe()
         }
     }, [indexer])
 

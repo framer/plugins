@@ -21,14 +21,16 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
                 setIndex(prev => ({ ...prev, [entry.id]: entry }))
             })
 
-        const onStarted = () => {
-            setIndex({})
-            setIsIndexing(true)
-        }
+        const onStarted = () =>
+            startTransition(() => {
+                setIndex({})
+                setIsIndexing(true)
+            })
 
-        const onCompleted = () => {
-            setIsIndexing(false)
-        }
+        const onCompleted = () =>
+            startTransition(() => {
+                setIsIndexing(false)
+            })
 
         const onError = ({ error }: IndexerEvents["error"]) => {
             setIsIndexing(false)

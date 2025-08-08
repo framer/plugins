@@ -5,8 +5,7 @@ const TokensSchema = v.object({
     access_token: v.string(),
     refresh_token: v.string(),
     expires_in: v.number(),
-    scope: v.string(),
-    token_type: v.literal("Bearer"),
+    token_type: v.literal("bearer"),
 })
 
 type Tokens = v.InferOutput<typeof TokensSchema>
@@ -22,7 +21,6 @@ type StoredTokens = v.InferOutput<typeof StoredTokensSchema>
 
 const AuthorizeSchema = v.object({
     url: v.string(),
-    writeKey: v.string(),
     readKey: v.string(),
 })
 

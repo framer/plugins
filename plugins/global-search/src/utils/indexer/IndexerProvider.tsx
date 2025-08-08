@@ -16,9 +16,10 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         indexer.start()
 
-        const onUpsert = ({ entry }: IndexerEvents["upsert"]) => {
-            setIndex(prev => ({ ...prev, [entry.id]: entry }))
-        }
+        const onUpsert = ({ entry }: IndexerEvents["upsert"]) =>
+            startTransition(() => {
+                setIndex(prev => ({ ...prev, [entry.id]: entry }))
+            })
 
         const onStarted = () => {
             setIndex({})

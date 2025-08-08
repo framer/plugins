@@ -32,11 +32,22 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
                 setIsIndexing(false)
             })
 
-        const onError = ({ error }: IndexerEvents["error"]) => {
-            setIsIndexing(false)
-            setIndex({})
-            console.error(error)
-        }
+        const onAborted = () =>
+            startTransition(() => {
+                setIsIndexing(false)
+            })
+
+        const onError = ({ error }: IndexerEvents["error"]) =>
+            startTransition(() => {
+                setIsIndexing(false)
+                setIndex({})
+                console.error(error)
+            })
+
+        const onRestarted = () =>
+            startTransition(() => {
+                setIsIndexing(true)
+            })
 
         const unsubscribeUpsert = indexer.on("upsert", onUpsert)
         const unsubscribeStarted = indexer.on("started", onStarted)

@@ -10,7 +10,9 @@ interface SelectDataSourceProps {
 }
 
 export function SelectDataSource({ collection, onSelectDataSource }: SelectDataSourceProps) {
-    const [status, setStatus] = useState<"loading-bases" | "loading-tables" | "ready" | "error">("loading-bases")
+    const [status, setStatus] = useState<"loading-bases" | "loading-tables" | "ready" | "error-bases" | "error-tables">(
+        "loading-bases"
+    )
     const [bases, setBases] = useState<AirtableBase[]>([])
     const [tables, setTables] = useState<AirtableTable[]>([])
 
@@ -22,9 +24,15 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
         setStatus("loading-bases")
 
         const task = async () => {
-            const bases = await getUserBases()
-            setBases(bases)
-            setSelectedBaseId(bases[0]?.id ?? "")
+            try {
+                const bases = await getUserBases()
+                setBases(bases)
+                setSelectedBaseId(bases[0]?.id ?? "")
+            } catch (error) {
+                console.error(error)
+                setStatus("error-bases")
+                framer.notify("Failed to load bases. Check the logs for more details.", { variant: "error" })
+            }
         }
 
         void task()
@@ -39,12 +47,22 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
             setSelectedTableId("")
 
             const task = async () => {
-                const tables = await getTables(selectedBaseId, abortController.signal)
-                if (abortController.signal.aborted) return
+                try {
+                    const tables = await getTables(selectedBaseId, abortController.signal)
+                    if (abortController.signal.aborted) return
 
-                setTables(tables)
-                setStatus("ready")
-                setSelectedTableId(tables[0]?.id ?? "")
+                    setTables(tables)
+                    setStatus("ready")
+                    setSelectedTableId(tables[0]?.id ?? "")
+                } catch (error) {
+                    console.error(error)
+                    setStatus("error-tables")
+
+                    const baseName = bases.find(base => base.id === selectedBaseId)?.name ?? selectedBaseId
+                    framer.notify(`Failed to load tables for base "${baseName}". Check the logs for more details.`, {
+                        variant: "error",
+                    })
+                }
             }
 
             void task()
@@ -96,47 +114,58 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                 <img src="airtable.svg" alt="Airtable icon" style={{ width: 80, height: 80 }} />
             </div>
 
-            <label htmlFor="base">
-                Base
-                <select
-                    id="base"
-                    onChange={event => {
-                        setSelectedBaseId(event.target.value)
-                    }}
-                    value={selectedBaseId}
-                    disabled={status === "loading-bases"}
-                >
-                    <option value="" disabled>
-                        {status === "loading-bases" ? "Loading…" : "Choose…"}
-                    </option>
-                    {bases.map(({ id, name }) => (
-                        <option key={id} value={id}>
-                            {name}
+            <div className="setup-list">
+                <label htmlFor="base">
+                    Base
+                    <select
+                        id="base"
+                        onChange={event => {
+                            setSelectedBaseId(event.target.value)
+                        }}
+                        value={selectedBaseId}
+                        disabled={status === "loading-bases" || status === "error-bases"}
+                    >
+                        <option value="" disabled>
+                            {status === "loading-bases" ? "Loading…" : status === "error-bases" ? "Error" : "Choose…"}
                         </option>
-                    ))}
-                </select>
-            </label>
+                        {bases.map(({ id, name }) => (
+                            <option key={id} value={id}>
+                                {name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
 
-            <label htmlFor="table">
-                Table
-                <select
-                    id="table"
-                    onChange={event => {
-                        setSelectedTableId(event.target.value)
-                    }}
-                    value={selectedTableId}
-                    disabled={!selectedBaseId || status === "loading-tables"}
-                >
-                    <option value="" disabled>
-                        {status === "loading-tables" ? "Loading…" : "Choose…"}
-                    </option>
-                    {tables.map(({ id, name }) => (
-                        <option key={id} value={id}>
-                            {name}
+                <label htmlFor="table">
+                    Table
+                    <select
+                        id="table"
+                        onChange={event => {
+                            setSelectedTableId(event.target.value)
+                        }}
+                        value={selectedTableId}
+                        disabled={
+                            !selectedBaseId ||
+                            status === "loading-tables" ||
+                            status === "error-tables" ||
+                            status === "error-bases"
+                        }
+                    >
+                        <option value="" disabled>
+                            {status === "loading-tables"
+                                ? "Loading…"
+                                : status === "error-tables" || status === "error-bases"
+                                  ? "Error"
+                                  : "Choose…"}
                         </option>
-                    ))}
-                </select>
-            </label>
+                        {tables.map(({ id, name }) => (
+                            <option key={id} value={id}>
+                                {name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            </div>
 
             <button type="submit" disabled={!selectedBaseId || !selectedTableId || isLoading}>
                 {isLoading ? <div className="framer-spinner" /> : "Next"}

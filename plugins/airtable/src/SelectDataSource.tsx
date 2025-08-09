@@ -20,6 +20,8 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
     const [selectedTableId, setSelectedTableId] = useState<string>("")
     const [isLoading, setIsLoading] = useState(false)
 
+    const selectedBase = bases.find(base => base.id === selectedBaseId)
+
     useEffect(() => {
         setStatus("loading-bases")
 
@@ -58,7 +60,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                     console.error(error)
                     setStatus("error-tables")
 
-                    const baseName = bases.find(base => base.id === selectedBaseId)?.name ?? selectedBaseId
+                    const baseName = selectedBase?.name ?? selectedBaseId
                     framer.notify(`Failed to load tables for base "${baseName}". Check the logs for more details.`, {
                         variant: "error",
                     })
@@ -71,7 +73,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
         return () => {
             abortController.abort()
         }
-    }, [selectedBaseId])
+    }, [selectedBaseId, selectedBase])
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()

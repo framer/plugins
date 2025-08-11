@@ -1,6 +1,6 @@
 import cx from "classnames"
 import { framer } from "framer-plugin"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import type { Result } from "../search/types"
 import LayerIcon from "./LayerIcon"
@@ -15,61 +15,110 @@ interface Props {
     getTextAfterRename: (result: Result) => string
 }
 
+const ITEM_HEIGHT = 30
+const PAGE_SIZE = 10
+const BUFFER_SIZE = 5
+
 export default function Results({ query, indexing, results, selectedNodeIds, getTextAfterRename }: Props) {
     const scrollAreaRef = useRef<HTMLDivElement>(null)
     const [showTopGradient, setShowTopGradient] = useState(false)
     const [showBottomGradient, setShowBottomGradient] = useState(false)
+    const [scrollTop, setScrollTop] = useState(0)
+    const [containerHeight, setContainerHeight] = useState(0)
 
     const focusResult = async (result: Result) => {
         await framer.setSelection(result.id)
         await framer.zoomIntoView(result.id, { maxZoom: 1 })
     }
 
-    const handleScroll = () => {
+    // Reset scroll position when query changes
+    useEffect(() => {
         if (scrollAreaRef.current) {
-            const scrollTop = scrollAreaRef.current.scrollTop
-
-            // Show top gradient when scrolled down
-            setShowTopGradient(scrollTop > 0)
-
-            // Show bottom gradient when not at the bottom
-            const scrollHeight = scrollAreaRef.current.scrollHeight
-            const clientHeight = scrollAreaRef.current.clientHeight
-            setShowBottomGradient(scrollTop + clientHeight < scrollHeight)
+            scrollAreaRef.current.scrollTop = 0
+            setScrollTop(0)
         }
-    }
+    }, [query])
+
+    // Calculate virtual list range
+    const { startIndex, endIndex } = useMemo(() => {
+        const visibleItemCount = Math.ceil(containerHeight / ITEM_HEIGHT)
+
+        // Calculate the range of items that should be visible based on container height
+        const visibleStartIndex = Math.floor(scrollTop / ITEM_HEIGHT)
+        const visibleEndIndex = Math.min(results.length, visibleStartIndex + visibleItemCount)
+
+        // Add buffer items above and below the visible range
+        const rawStartIndex = Math.max(0, visibleStartIndex - BUFFER_SIZE)
+        const rawEndIndex = Math.min(results.length, visibleEndIndex + BUFFER_SIZE)
+
+        // Snap to multiples of PAGE_SIZE
+        const startIndex = Math.floor(rawStartIndex / PAGE_SIZE) * PAGE_SIZE
+        const endIndex = Math.min(results.length, Math.ceil(rawEndIndex / PAGE_SIZE) * PAGE_SIZE)
+
+        return { startIndex, endIndex }
+    }, [results, scrollTop, containerHeight])
+
+    const visibleItems = useMemo(() => {
+        return results.slice(startIndex, endIndex)
+    }, [results, startIndex, endIndex])
 
     useEffect(() => {
         const scrollArea = scrollAreaRef.current
         if (scrollArea) {
-            scrollArea.addEventListener("scroll", handleScroll)
-            // Initial check
-            handleScroll()
+            const handleScrollAndResize = () => {
+                if (scrollAreaRef.current) {
+                    setContainerHeight(scrollAreaRef.current.clientHeight)
+
+                    const newScrollTop = scrollAreaRef.current.scrollTop
+                    setScrollTop(newScrollTop)
+
+                    // Show top gradient when scrolled down
+                    setShowTopGradient(newScrollTop > 0)
+
+                    // Show bottom gradient when not at the bottom
+                    const scrollHeight = scrollAreaRef.current.scrollHeight
+                    const clientHeight = scrollAreaRef.current.clientHeight
+                    setShowBottomGradient(newScrollTop + clientHeight < scrollHeight)
+                }
+            }
+
+            const resizeObserver = new ResizeObserver(handleScrollAndResize)
+            resizeObserver.observe(scrollArea)
+
+            scrollArea.addEventListener("scroll", handleScrollAndResize)
+            handleScrollAndResize()
 
             return () => {
-                scrollArea.removeEventListener("scroll", handleScroll)
+                resizeObserver.disconnect()
+                scrollArea.removeEventListener("scroll", handleScrollAndResize)
             }
         }
     }, [results])
 
     return (
         <div className="results">
-            <div className={cx("overflow-gradient-top", !showTopGradient && "hidden")} />
-
             <div className="container" ref={scrollAreaRef}>
-                {results.map((result, index) => (
-                    <RenameComparison
-                        key={`${result.title}-${index}`}
-                        selected={selectedNodeIds.includes(result.id)}
-                        before={result.title}
-                        after={getTextAfterRename(result)}
-                        onClick={() => {
-                            void focusResult(result)
-                        }}
-                    >
-                        <LayerIcon type={result.entry.type} />
-                    </RenameComparison>
-                ))}
+                <div
+                    className="results-list"
+                    style={{
+                        height: results.length * ITEM_HEIGHT,
+                        paddingTop: startIndex * ITEM_HEIGHT,
+                    }}
+                >
+                    {visibleItems.map((result, index) => (
+                        <RenameComparison
+                            key={`${result.title}-${startIndex + index}`}
+                            selected={selectedNodeIds.includes(result.id)}
+                            before={result.title}
+                            after={getTextAfterRename(result)}
+                            onClick={() => {
+                                void focusResult(result)
+                            }}
+                        >
+                            <LayerIcon type={result.entry.type} />
+                        </RenameComparison>
+                    ))}
+                </div>
 
                 {indexing && query && (
                     <div className="loading-placeholders">
@@ -82,6 +131,7 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
                 )}
             </div>
 
+            <div className={cx("overflow-gradient-top", !showTopGradient && "hidden")} />
             <div className={cx("overflow-gradient-bottom", !showBottomGradient && "hidden")} />
 
             {results.length === 0 && query && !indexing && <div className="results-empty-state">No Results</div>}

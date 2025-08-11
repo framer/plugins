@@ -5924,6 +5924,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"prco@workspace:plugins/prco":
+  version: 0.0.0-use.local
+  resolution: "prco@workspace:plugins/prco"
+  dependencies:
+    "@types/react": "npm:^18.3.23"
+    "@types/react-dom": "npm:^18.3.7"
+    framer-plugin: "npm:^3.5.2"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    valibot: "npm:^1.1.0"
+  languageName: unknown
+  linkType: soft
+
 "prelude-ls@npm:^1.2.1":
   version: 1.2.1
   resolution: "prelude-ls@npm:1.2.1"

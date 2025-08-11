@@ -47,6 +47,9 @@
     textarea,
     select {
         padding: initial;
+        background-color: initial;
+        border: initial;
+        outline: initial;
     }
 
     ::selection {

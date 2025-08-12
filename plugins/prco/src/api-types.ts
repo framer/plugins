@@ -149,7 +149,10 @@ export const MediaKitsSchema = v.object({
 export type MediaKits = v.InferOutput<typeof MediaKitsSchema>
 
 export type PrCoItem = PressReleases | Clippings | MediaKits | MediaInfo | Tags
-export function isPrCoItemField<T extends PrCoItem>(field: unknown, itemType: T): field is keyof T {
-    if (typeof field !== "string" || field === "") return false
-    return Object.prototype.hasOwnProperty.call(itemType, field)
+
+export function hasOwnProperty<T extends object, Key extends PropertyKey>(
+    object: T,
+    key: Key
+): object is T & Record<Key, unknown> {
+    return Object.hasOwn(object, key)
 }

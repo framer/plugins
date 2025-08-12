@@ -6,15 +6,12 @@ type SearchInputProps = DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputEle
 
 export function SearchInput({ className, ...props }: SearchInputProps) {
     return (
-        <label className="flex items-center gap-2 text-framer-text-tertiary flex-1 border border-amber-500 rounded-md -ml-1 pl-2">
+        <label className={cn("flex items-center gap-2 flex-1", className)}>
             <span className="sr-only">Search for anything in your Framer project</span>
-            <IconSearch aria-hidden />
+            <IconSearch aria-hidden className="text-tertiary-light dark:text-tertiary-dark" />
             <input
                 type="text"
-                className={cn(
-                    "flex-1 bg-transparent border-none outline-none focus-visible:outline-none focus-visible:ring-0 text-xs selection:bg-amber-500",
-                    className
-                )}
+                className="flex-1 h-[18px] bg-transparent border-none outline-none focus-visible:outline-none focus-visible:ring-0 text-xs p-0 text-primary-light dark:text-primary-dark placeholder:text-tertiary-light dark:placeholder:text-tertiary-dark"
                 placeholder="Search..."
                 {...props}
             />

@@ -1,10 +1,12 @@
-export function SearchIcon() {
+import type { SVGProps } from "react"
+
+export function SearchIcon(props: SVGProps<SVGSVGElement>) {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+        <svg xmlns="http://www.w3.org/2000/svg" width={11.4} height={11.1} {...props}>
             <path
                 fill="currentColor"
-                d="M7.5 2a5.5 5.5 0 0 1 4.383 8.823l1.885 1.884a.75.75 0 1 1-1.061 1.061l-1.884-1.885A5.5 5.5 0 1 1 7.5 2Zm-4 5.5a4 4 0 1 0 8 0 4 4 0 0 0-8 0Z"
-            ></path>
+                d="M5 0a5 5 0 014.1 7.8l2 2a.8.8 0 01-1 1.1l-2-2A5 5 0 115 0zM1.5 5a3.5 3.5 0 107 0 3.5 3.5 0 00-7 0z"
+            />
         </svg>
     )
 }

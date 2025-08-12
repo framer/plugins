@@ -1,12 +1,14 @@
 import { framer, type MenuItem } from "framer-plugin"
 import { memo, type ReactNode, useCallback, useRef } from "react"
+import { cn } from "../../utils/className"
 
 interface MenuProps {
     items: MenuItem[]
     children: ReactNode
+    className?: string | undefined
 }
 
-export const Menu = memo(function Menu({ items, children }: MenuProps) {
+export const Menu = memo(function Menu({ items, children, className }: MenuProps) {
     const buttonRef = useRef<HTMLButtonElement>(null)
 
     const toggleMenu = useCallback(
@@ -26,16 +28,16 @@ export const Menu = memo(function Menu({ items, children }: MenuProps) {
     )
 
     return (
-        <div className="relative">
+        <div className={cn("relative h-full flex items-center", className)}>
             <button
                 type="button"
                 ref={buttonRef}
                 onMouseDown={toggleMenu}
                 onKeyDown={toggleMenu}
-                className="border border-amber-500 group size-6 text-white rounded-md flex-shrink-0 flex items-center justify-center bg-transparent p-0 focus-visible:outline-none hover:text-framer-text-base focus-visible:text-framer-text-base disabled:opacity-50 disabled:pointer-events-none disabled:cursor-default visible"
+                className="group h-full -mx-2 px-2 -my-3 py-3 text-white rounded-md flex-shrink-0 flex items-center justify-center bg-transparent focus-visible:outline-none hover:text-primary-light dark:hover:text-primary-dark focus-visible:text-primary-light dark:focus-visible:text-primary-dark disabled:opacity-50 disabled:pointer-events-none disabled:cursor-default visible"
                 aria-haspopup="true"
             >
-                <div className="flex items-center justify-center w-fit h-fit flex-shrink-0 bg-transparent text-framer-text-tertiary group-hover:text-framer-text-base group-focus-visible:text-framer-text-base">
+                <div className="flex items-center justify-center w-fit h-fit flex-shrink-0 bg-transparent text-tertiary-light dark:text-tertiary-dark group-hover:text-primary-light dark:group-hover:text-primary-dark group-focus-visible:text-primary-light dark:group-focus-visible:text-primary-dark">
                     {children}
                 </div>
             </button>

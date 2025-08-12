@@ -1,6 +1,7 @@
 import { framer, type MenuItem } from "framer-plugin"
 import { startTransition, useCallback, useEffect, useMemo, useState } from "react"
 import { assertNever } from "../utils/assert"
+import { cn } from "../utils/className"
 import { type ReadonlyGroupedResults } from "../utils/filter/group-results"
 import type { Range } from "../utils/filter/ranges"
 import { type CollectionItemResult, type NodeResult, type Result } from "../utils/filter/types"
@@ -24,16 +25,13 @@ export function SearchScene() {
         })
     }, [])
 
-    const hasResults = useMemo(() => {
-        for (const [, resultForRootNodeType] of entries(results)) {
-            if (!resultForRootNodeType) continue
-
-            for (const resultsForRootId of Object.values(resultForRootNodeType)) {
-                if (resultsForRootId.length > 0) return true
-            }
-        }
-        return false
-    }, [results])
+    const hasResults = useMemo(
+        () =>
+            Object.values(results).some(resultForRootNodeType =>
+                Object.values(resultForRootNodeType).some(resultsForRootId => resultsForRootId.length > 0)
+            ),
+        [results]
+    )
 
     useEffect(() => {
         if (query && hasResults) {
@@ -46,21 +44,27 @@ export function SearchScene() {
             })
         } else {
             framer.showUI({
-                height: 64,
+                height: 50,
             })
         }
     }, [query, hasResults])
 
     return (
         <main className="flex flex-col h-full">
-            <div className="flex gap-2 border-b border-framer-divider border-t py-3 mx-3">
+            <div
+                className={cn(
+                    "flex gap-2 border-divider-light dark:border-divider-dark border-y py-3 mx-3 transition-colors",
+                    !query && "border-b-transparent dark:border-b-transparent"
+                )}
+            >
                 <SearchInput value={query} onChange={handleQueryChange} />
                 <Menu items={optionsMenuItems}>
-                    <IconEllipsis />
+                    <IconEllipsis className="text-framer-text-tertiary-light dark:text-framer-text-tertiary-dark" />
                 </Menu>
             </div>
             <div className="flex-1 overflow-y-auto px-4 flex flex-col">
-                {query && hasResults ? <SearchResultsByRootType results={results} /> : <NoResults />}
+                {query && hasResults && <SearchResultsByRootType results={results} />}
+                {query && !hasResults && <NoResults />}
             </div>
         </main>
     )

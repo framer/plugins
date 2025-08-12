@@ -1,17 +1,11 @@
-export function IconEllipsis() {
+import type { SVGProps } from "react"
+
+export function IconEllipsis(props: SVGProps<SVGSVGElement>) {
     return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="13"
-            fill="none"
-            viewBox="0 0 16 13"
-            aria-label="Ellipsis"
-        >
-            <title>Ellipsis</title>
+        <svg xmlns="http://www.w3.org/2000/svg" width={13} height={3} fill="none" overflow="visible" {...props}>
             <path
-                d="M 2.999 5 C 3.827 5 4.499 5.672 4.499 6.5 C 4.499 7.328 3.827 8 2.999 8 C 2.171 8 1.499 7.328 1.499 6.5 C 1.499 5.672 2.171 5 2.999 5 Z M 7.999 5 C 8.827 5 9.499 5.672 9.499 6.5 C 9.499 7.328 8.827 8 7.999 8 C 7.171 8 6.499 7.328 6.499 6.5 C 6.499 5.672 7.171 5 7.999 5 Z M 12.999 5 C 13.827 5 14.499 5.672 14.499 6.5 C 14.499 7.328 13.827 8 12.999 8 C 12.171 8 11.499 7.328 11.499 6.5 C 11.499 5.672 12.171 5 12.999 5 Z"
                 fill="currentColor"
+                d="M1.5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z"
             />
         </svg>
     )

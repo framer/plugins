@@ -1,5 +1,5 @@
 import { framer, type MenuItem } from "framer-plugin"
-import { startTransition, useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { assertNever } from "../utils/assert"
 import { cn } from "../utils/className"
 import { type ReadonlyGroupedResults } from "../utils/filter/group-results"
@@ -21,25 +21,11 @@ export function SearchScene() {
     const { results, hasResults } = useFilter(query, searchOptions, index)
 
     const handleQueryChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-        startTransition(() => {
-            setQuery(event.target.value)
-        })
+        setQuery(event.target.value)
     }, [])
 
     useEffect(() => {
-        if (query && hasResults) {
-            framer.showUI({
-                height: 320,
-            })
-        } else if (query && !hasResults) {
-            framer.showUI({
-                height: 140,
-            })
-        } else {
-            framer.showUI({
-                height: 50,
-            })
-        }
+        void framer.showUI({ height: getPluginSize(query, hasResults) })
     }, [query, hasResults])
 
     return (

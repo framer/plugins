@@ -29,7 +29,6 @@ export const PageErrorBoundaryFallback = ({ children }: PropsWithChildren) => (
                                         onClick={e => {
                                             e.preventDefault()
                                             auth.logout()
-                                            void framer.closePlugin()
                                         }}
                                     >
                                         log out

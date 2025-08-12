@@ -182,6 +182,7 @@ export function App() {
             const isInCMSModes = mode === "syncManagedCollection" || mode === "configureManagedCollection"
 
             if (!isAuthenticated) {
+                void framer.setMenu([])
                 navigate("/")
                 return
             }
@@ -192,9 +193,6 @@ export function App() {
                     visible: true,
                     onAction: () => {
                         auth.logout()
-                        framer.closePlugin(
-                            "To fully remove the integration, uninstall the Framer app from the HubSpot integrations dashboard."
-                        )
                     },
                 },
             ])

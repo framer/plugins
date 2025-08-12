@@ -2,13 +2,13 @@ import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
 import { DevToolsScene } from "./components/DevToolsScene"
+import { SearchScene } from "./components/SearchScene"
 import { IndexerProvider } from "./utils/indexer/IndexerProvider"
 
 framer.showUI({
     position: "top right",
-    width: 400,
-    height: 600,
-    resizable: true,
+    width: 280,
+    height: 64,
 })
 
 export function App() {
@@ -34,11 +34,8 @@ export function App() {
             )}
         >
             <IndexerProvider>
-                {activeScene === "dev-tools" ? (
-                    <DevToolsScene />
-                ) : (
-                    <div>Welcome! This is under development. Select "Open Dev Tools" to get started.</div>
-                )}
+                {activeScene === "dev-tools" && <DevToolsScene />}
+                {activeScene === "search" && <SearchScene />}
             </IndexerProvider>
         </ErrorBoundary>
     )

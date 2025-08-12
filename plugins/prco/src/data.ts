@@ -8,7 +8,7 @@ import {
 } from "framer-plugin"
 
 import * as v from "valibot"
-import { isPrCoItemField } from "./api-types"
+import { hasOwnProperty } from "./api-types"
 import { dataSources, type PrCoDataSource, type PrCoField } from "./dataSources"
 import { assertNever, isCollectionReference } from "./utils"
 export const slugFieldIdPluginKey = "slugFieldId"
@@ -114,7 +114,7 @@ async function getItems(
     }
 
     for (const item of dataItems) {
-        if (!isPrCoItemField(slugFieldId, item)) {
+        if (!hasOwnProperty(item, slugFieldId)) {
             throw new Error(`No slug field found in data source.`)
         }
 

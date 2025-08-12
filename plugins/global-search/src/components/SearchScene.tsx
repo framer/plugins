@@ -18,21 +18,13 @@ export function SearchScene() {
     const { index, isIndexing } = useIndexer()
     const [query, setQuery] = useState("")
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
-    const { results } = useFilter(query, searchOptions, index)
+    const { results, hasResults } = useFilter(query, searchOptions, index)
 
     const handleQueryChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         startTransition(() => {
             setQuery(event.target.value)
         })
     }, [])
-
-    const hasResults = useMemo(
-        () =>
-            Object.values(results).some(resultForRootNodeType =>
-                Object.values(resultForRootNodeType).some(resultsForRootId => resultsForRootId.length > 0)
-            ),
-        [results]
-    )
 
     useEffect(() => {
         if (query && hasResults) {

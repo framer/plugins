@@ -137,7 +137,7 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
             .then(async collectionFields => {
                 if (abortController.signal.aborted) return
 
-                const fields = await getFields(dataSource, collectionFields)
+                const fields = getFields(dataSource, collectionFields)
 
                 setFields(mergeFieldsWithExistingFields(fields, collectionFields))
 
@@ -221,7 +221,14 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
             const fieldsToSync: ManagedCollectionFieldInput[] = []
             for (const field of fields) {
                 if (ignoredFieldIds.has(field.id)) continue
-                fieldsToSync.push({ ...field, name: field.name.trim() || field.id })
+
+                const fieldValue = { ...field, name: field.name.trim() || field.id }
+
+                if (fieldValue.type === "file") {
+                    fieldValue.allowedFileTypes = []
+                }
+
+                fieldsToSync.push(fieldValue)
             }
 
             await collection.setFields(fieldsToSync)

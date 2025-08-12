@@ -9,6 +9,8 @@ import { useFilter } from "../utils/filter/useFilter"
 import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
+import { getPluginSize } from "../utils/plugin-size"
+import { NoResults } from "./NoResults"
 import { SearchInput } from "./SearchInput"
 import { IconEllipsis } from "./ui/IconEllipsis"
 import { IconSpinner } from "./ui/IconSpinner"
@@ -50,7 +52,7 @@ export function SearchScene() {
                     <IconEllipsis className="text-framer-text-tertiary-light dark:text-framer-text-tertiary-dark" />
                 </Menu>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 flex flex-col">
+            <div className="overflow-y-auto px-4 flex flex-col flex-1">
                 {query && hasResults && <SearchResultsByRootType results={results} />}
                 {query && !hasResults && <NoResults />}
             </div>
@@ -60,14 +62,6 @@ export function SearchScene() {
 
 // All components below this line are temporary and will be removed when the search results are implemented
 // Having them ensures it's easier to verify the indexer and filterer are working as expected
-
-function NoResults() {
-    return (
-        <div className="flex-1 flex justify-center items-center">
-            <div className="text-center text-amber-500">No results found.</div>
-        </div>
-    )
-}
 
 function SearchResultsByRootType({ results }: { results: ReadonlyGroupedResults }) {
     return Object.entries(results).map(([rootNodeType, resultsByRootId]) => (

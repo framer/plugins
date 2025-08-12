@@ -1,6 +1,6 @@
 {
     "id": "pr0co0",
-    "name": "pr.Co",
+    "name": "PR.co",
     "modes": ["syncManagedCollection", "configureManagedCollection"],
     "icon": "/icon.svg"
 }

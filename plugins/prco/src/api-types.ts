@@ -45,22 +45,23 @@ export const ClippingImageSchema = v.object({
 })
 export const ClippingImageAsImageSchema = v.pipe(
     ClippingImageSchema,
-    v.transform(obj => obj.small || obj.medium || obj.large)
+    v.transform(obj => obj.small ?? obj.medium ?? obj.large)
 )
 
 export const FeaturedImagesForClSchemaAsImage = v.pipe(
     v.array(FeaturedImagesForClSchema),
-    v.transform(arr => arr[0]?.url || null)
+    v.transform(arr => arr[0]?.url ?? null)
 )
 
 export const TagsSchema = v.object({
-    id: v.optional(v.number()),
+    id: v.optional(v.string()),
     slug: v.nullable(v.string()),
     pressroom_id: v.optional(v.number()),
     name: v.nullable(v.string()),
     description: v.nullable(v.string()),
     layout: v.nullable(v.string()),
-    image: v.optional(v.union([ImageSizesSchema, v.nullable(v.string())])),
+    image: v.optional(ImageSizesSchema),
+    hero_image: v.optional(ImageSizesSchema),
 })
 export type Tags = v.InferOutput<typeof TagsSchema>
 export const PressReleasesSchema = v.object({

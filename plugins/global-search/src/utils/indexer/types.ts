@@ -12,37 +12,40 @@ import {
     WebPageNode,
 } from "framer-plugin"
 
-export type RootNode = ComponentNode | WebPageNode
-export type RootNodeType = RootNode["__class"]
+export type IndexNodeRootNode = ComponentNode | WebPageNode
+export type IndexNodeRootNodeType = IndexNodeRootNode["__class"]
 
 export type IndexEntryType = AnyNode["__class"]
 
 interface IndexEntryBase {
-    id: string
-    type: string
+    readonly id: string
+    readonly type: string
+    readonly rootNode: IndexNodeRootNode | Collection
 }
 
 export interface IndexNodeEntry extends IndexEntryBase {
-    type: IndexEntryType
-    node: AnyNode
-    rootNodeName: string | null
-    rootNode: RootNode
-    rootNodeType: RootNodeType
-    text: string | null
-    name: string | null
+    readonly type: IndexEntryType
+    readonly node: AnyNode
+    readonly rootNodeName: string | null
+    readonly rootNode: IndexNodeRootNode
+    readonly rootNodeType: IndexNodeRootNodeType
+    readonly text: string | null
+    readonly name: string | null
 }
 
 export interface IndexCollectionItemEntry extends IndexEntryBase {
-    type: "CollectionItem"
-    collectionItem: CollectionItem
-    rootNodeName: string
-    rootNode: Collection
-    rootNodeType: "Collection"
-    slug: string
-    fields: Record<string, string>
+    readonly type: "CollectionItem"
+    readonly collectionItem: CollectionItem
+    readonly rootNodeName: string
+    readonly rootNode: Collection
+    readonly rootNodeType: "Collection"
+    readonly slug: string
+    readonly fields: Record<string, string>
 }
 
 export type IndexEntry = IndexNodeEntry | IndexCollectionItemEntry
+
+export type RootNodeType = IndexEntry["rootNodeType"]
 
 export const includedAttributes = ["text"] as const
 export type IncludedAttribute = (typeof includedAttributes)[number]

@@ -1,0 +1,52 @@
+import type { IndexCollectionItemEntry, IndexEntry, IndexNodeEntry, RootNodeType } from "../indexer/types"
+import type { Range } from "./ranges"
+
+export const enum FilterType {
+    RootNodes = "rootNodes",
+}
+
+export const enum MatcherType {
+    Text = "text",
+}
+
+// A matcher produces a result, while a filter can narrows down the results
+export interface TextMatcher {
+    readonly type: MatcherType.Text
+    readonly query: string
+    readonly caseSensitive: boolean
+}
+
+export interface RootNodesFilter {
+    readonly type: FilterType.RootNodes
+    readonly rootNodes: readonly RootNodeType[]
+}
+
+export type Matcher = TextMatcher
+export type Filter = RootNodesFilter
+
+export enum ResultType {
+    CollectionItem = "CollectionItem",
+    Node = "Node",
+}
+
+export interface BaseResult {
+    readonly type: ResultType
+    readonly id: string
+    readonly text: string
+    readonly ranges: readonly Range[]
+    readonly entry: IndexEntry
+}
+
+export interface CollectionItemResult extends BaseResult {
+    readonly type: ResultType.CollectionItem
+    readonly field: keyof IndexCollectionItemEntry["fields"]
+    readonly text: string
+    readonly entry: IndexCollectionItemEntry
+}
+
+export interface NodeResult extends BaseResult {
+    readonly type: ResultType.Node
+    readonly entry: IndexNodeEntry
+}
+
+export type Result = CollectionItemResult | NodeResult

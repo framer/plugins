@@ -217,8 +217,13 @@ async function getItems(
                     }
                     break
                 case "enum":
+                    fieldData[field.id] = {
+                        value: String(value),
+                        type: "enum",
+                    }
+                    break
                 case "array":
-                    throw new Error(`${field.type} field is not supported.`)
+                    throw new Error(`${String(field.type)} field is not supported.`)
                 default:
                     assertNever(
                         field,

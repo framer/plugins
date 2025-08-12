@@ -84,6 +84,7 @@ const offersDataSource = createDataSource(
         name: "Offers",
         fetch: async (token: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/offers`
+
             const data = v.safeParse(offersSchema, await fetchRecruiteeData(url, token))
 
             if (!data.success) {
@@ -106,7 +107,17 @@ const offersDataSource = createDataSource(
             dataSourceId: "Departments",
         },
         { id: "employment_type", name: "Type", type: "string" },
-        { id: "status", name: "Status", type: "string" },
+        {
+            id: "status",
+            name: "Status",
+            type: "enum",
+            cases: [
+                { id: "published", name: "Published" },
+                { id: "internal", name: "Internal" },
+                { id: "closed", name: "Closed" },
+                { id: "archived", name: "Archived" },
+            ],
+        },
         { id: "candidates_count", name: "Candidates Count", type: "number" },
         { id: "qualified_candidates_count", name: "Qualified Candidates Count", type: "number" },
         {
@@ -194,6 +205,7 @@ const departmentsDataSource = createDataSource(
         fetch: async (token: string, companyId: string) => {
             const url = `https://api.recruitee.com/c/${companyId}/departments`
             const data = v.safeParse(departmentsSchema, await fetchRecruiteeData(url, token))
+
             if (!data.success) {
                 console.log("Error parsing Recruitee data:", data.issues)
                 throw new Error("Error parsing Recruitee data")
@@ -204,7 +216,11 @@ const departmentsDataSource = createDataSource(
     [
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-        { id: "status", name: "Status", type: "string" },
+        {
+            id: "status",
+            name: "Status",
+            type: "string",
+        },
         { id: "offers_count", name: "Offers Count", type: "number" },
         { id: "talent_pools_count", name: "Talent Pools Count", type: "number" },
     ]

@@ -11,10 +11,11 @@ import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
 import { SearchInput } from "./SearchInput"
 import { IconEllipsis } from "./ui/IconEllipsis"
+import { IconSpinner } from "./ui/IconSpinner"
 import { Menu } from "./ui/Menu"
 
 export function SearchScene() {
-    const { index } = useIndexer()
+    const { index, isIndexing } = useIndexer()
     const [query, setQuery] = useState("")
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
     const { results } = useFilter(query, searchOptions, index)
@@ -53,11 +54,20 @@ export function SearchScene() {
         <main className="flex flex-col h-full">
             <div
                 className={cn(
-                    "flex gap-2 border-divider-light dark:border-divider-dark border-y py-3 mx-3 transition-colors",
+                    "flex gap-2 border-divider-light dark:border-divider-dark border-y py-3 mx-3 transition-colors items-center",
                     !query && "border-b-transparent dark:border-b-transparent"
                 )}
             >
                 <SearchInput value={query} onChange={handleQueryChange} />
+                {isIndexing && (
+                    // TODO: Discuss if we should add a tooltip to explain what's this.
+                    <span
+                        title="Indexing..."
+                        className="animate-[fade-in_150ms_forwards] [animation-delay:500ms] opacity-0"
+                    >
+                        <IconSpinner className="text-black dark:text-white animate-[spin_0.8s_linear_infinite]" />
+                    </span>
+                )}
                 <Menu items={optionsMenuItems}>
                     <IconEllipsis className="text-framer-text-tertiary-light dark:text-framer-text-tertiary-dark" />
                 </Menu>

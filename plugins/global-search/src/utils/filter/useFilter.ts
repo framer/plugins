@@ -3,7 +3,7 @@ import type { IndexEntry, RootNodeType } from "../indexer/types"
 import { executeFilters } from "./execute-filter"
 import type { ReadonlyGroupedResults } from "./group-results"
 import { groupResults } from "./group-results"
-import { type Filter, FilterType } from "./types"
+import { type Filter, FilterType, type Matcher, MatcherType } from "./types"
 
 export function useFilter(
     query: string,
@@ -14,18 +14,19 @@ export function useFilter(
 } {
     const deferredQuery = useDeferredValue(query)
 
+    const matchers = useMemo((): readonly Matcher[] => {
+        return [{ type: MatcherType.Text, query: deferredQuery, caseSensitive: false }]
+    }, [deferredQuery])
+
     const filters = useMemo((): readonly Filter[] => {
-        return [
-            { type: FilterType.Text, query: deferredQuery, caseSensitive: false },
-            { type: FilterType.RootNodes, rootNodes: searchOptions },
-        ]
-    }, [deferredQuery, searchOptions])
+        return [{ type: FilterType.RootNodes, rootNodes: searchOptions }]
+    }, [searchOptions])
 
     const results = useMemo(() => {
-        const items = executeFilters(filters, index)
+        const items = executeFilters(matchers, filters, index)
 
         return groupResults(items)
-    }, [filters, index])
+    }, [matchers, filters, index])
 
     return {
         results,

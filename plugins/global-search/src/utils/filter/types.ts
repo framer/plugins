@@ -2,26 +2,27 @@ import type { IndexCollectionItemEntry, IndexEntry, IndexNodeEntry, RootNodeType
 import type { Range } from "./ranges"
 
 export const enum FilterType {
-    Text = "text",
     RootNodes = "rootNodes",
 }
 
-interface BaseFilter {
-    readonly type: FilterType
+export const enum MatcherType {
+    Text = "text",
 }
 
-export interface TextFilter extends BaseFilter {
-    readonly type: FilterType.Text
+// A matcher produces a result, while a filter can narrows down the results
+export interface TextMatcher {
+    readonly type: MatcherType.Text
     readonly query: string
     readonly caseSensitive: boolean
 }
 
-export interface RootNodesFilter extends BaseFilter {
+export interface RootNodesFilter {
     readonly type: FilterType.RootNodes
     readonly rootNodes: readonly RootNodeType[]
 }
 
-export type Filter = TextFilter | RootNodesFilter
+export type Matcher = TextMatcher
+export type Filter = RootNodesFilter
 
 export enum ResultType {
     CollectionItem = "CollectionItem",

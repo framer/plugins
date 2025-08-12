@@ -3,6 +3,7 @@ import * as v from "valibot"
 import {
     ClippingImageAsImageSchema,
     ClippingsSchema,
+    ImageSizesSchema,
     ImageUrlFromSizes,
     MediaInfoSchema,
     MediaKitsSchema,
@@ -11,6 +12,8 @@ import {
     SocialKeysAsStringSchema,
     TagsSchema,
 } from "./api-types"
+
+const API_URL = "https://api.pr.co/v1"
 
 export interface PrCoDataSource {
     id: string
@@ -52,45 +55,64 @@ export type PrCoField = ManagedCollectionFieldInput &
     )
 
 const TagSchema = v.object({ data: v.array(TagsSchema) })
-interface TagResponse {
-    data: ({ slug?: string } & Record<string, any>)[]
-}
 const TagDataSource = createDataSource(
     {
         name: "Tags",
         fetch: async (pressRoomId: string) => {
-            const url = `https://api.pr.co/v1/pressrooms/${pressRoomId}/tags.json`
-            const rawData = (await fetchPrCoData(url)) as TagResponse
-            if (rawData.data && Array.isArray(rawData.data)) {
-                rawData.data = rawData.data.map((tag: any, index: number) => ({
-                    ...tag,
-                    id: tag.slug || `tag-${index}-${Date.now()}`,
-                }))
-            }
-            const data = v.safeParse(TagSchema, rawData)
+            const url = `${API_URL}/pressrooms/${pressRoomId}/tags.json?limit=9999`
+            const data = v.safeParse(TagSchema, await fetchPrCoData(url))
 
             if (!data.success) {
                 console.log("Error parsing PrCo data:", data.issues)
                 throw new Error("Error parsing PrCo data")
             }
 
-            return data.output.data
+            const dataWithId = data.output.data.map((tag, index) => ({
+                ...tag,
+                id: tag.slug ?? String(index),
+            }))
+
+            return dataWithId
         },
     },
     [
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
         { id: "id", name: "Id", type: "string", canBeUsedAsSlug: true },
         { id: "pressroom_id", name: "Press Room ID", type: "number" },
-        { id: "description", name: "Body Html", type: "formattedText" },
-        { id: "layout", name: "Layout", type: "date" },
+        { id: "description", name: "Description", type: "formattedText" },
+        { id: "layout", name: "Layout", type: "string" },
         {
             id: "image",
             name: "Image",
-            type: "image",
+            type: "array",
+            fields: [
+                {
+                    id: "image",
+                    name: "Image",
+                    type: "image",
+                },
+            ],
             getValue: value => {
-                if (value && Object.keys(value).length === 0) {
-                    return v.parse(ImageUrlFromSizes, value)
-                }
+                const parsed = v.parse(ImageSizesSchema, value)
+
+                return [parsed.large?.url, parsed.medium?.url, parsed.small?.url, parsed.original?.url].filter(v => v)
+            },
+        },
+        {
+            id: "hero_image",
+            name: "Hero Image",
+            type: "array",
+            fields: [
+                {
+                    id: "image",
+                    name: "Image",
+                    type: "image",
+                },
+            ],
+            getValue: value => {
+                const parsed = v.parse(ImageSizesSchema, value)
+
+                return [parsed.large?.url, parsed.medium?.url, parsed.small?.url, parsed.original?.url].filter(v => v)
             },
         },
     ]
@@ -101,7 +123,7 @@ const ClippingDataSource = createDataSource(
     {
         name: "Clippings",
         fetch: async (pressRoomId: string) => {
-            const url = `https://api.pr.co/v1/pressrooms/${pressRoomId}/clippings.json`
+            const url = `${API_URL}/pressrooms/${pressRoomId}/clippings.json?limit=9999`
             const data = v.safeParse(ClippingSchema, await fetchPrCoData(url))
 
             if (!data.success) {
@@ -177,7 +199,7 @@ const MediaDataSource = createDataSource(
     {
         name: "Media",
         fetch: async (pressRoomId: string) => {
-            const url = `https://api.pr.co/v1/pressrooms/${pressRoomId}/media_kits.json`
+            const url = `${API_URL}/pressrooms/${pressRoomId}/media_kits.json?limit=9999`
             const ApiResponseSchema = v.object({
                 data: v.array(
                     v.object({
@@ -225,7 +247,7 @@ const ImageDataSource = createDataSource(
     {
         name: "Images",
         fetch: async (pressRoomId: string) => {
-            const url = `https://api.pr.co/v1/pressrooms/${pressRoomId}/images.json`
+            const url = `${API_URL}/pressrooms/${pressRoomId}/images.json?limit=9999`
             const data = v.safeParse(MediaSchema, await fetchPrCoData(url))
 
             if (!data.success) {
@@ -261,7 +283,7 @@ const MovieDataSource = createDataSource(
     {
         name: "Movies",
         fetch: async (pressRoomId: string) => {
-            const url = `https://api.pr.co/v1/pressrooms/${pressRoomId}/movies.json`
+            const url = `${API_URL}/pressrooms/${pressRoomId}/movies.json?limit=9999`
             const data = v.safeParse(MediaSchema, await fetchPrCoData(url))
 
             if (!data.success) {
@@ -292,7 +314,7 @@ const DocumentsDataSource = createDataSource(
     {
         name: "Documents",
         fetch: async (pressRoomId: string) => {
-            const url = `https://api.pr.co/v1/pressrooms/${pressRoomId}/documents.json`
+            const url = `${API_URL}/pressrooms/${pressRoomId}/documents.json?limit=9999`
             const data = v.safeParse(MediaSchema, await fetchPrCoData(url))
 
             if (!data.success) {
@@ -318,7 +340,7 @@ const MediaKitDataSource = createDataSource(
     {
         name: "Media Kits",
         fetch: async (pressRoomId: string) => {
-            const url = `https://api.pr.co/v1/pressrooms/${pressRoomId}/media_kits.json`
+            const url = `${API_URL}/pressrooms/${pressRoomId}/media_kits.json?limit=9999`
             const data = v.safeParse(MediaKitSchema, await fetchPrCoData(url))
 
             if (!data.success) {
@@ -353,8 +375,12 @@ const PressReleaseDataSource = createDataSource(
     {
         name: "Press Releases",
         fetch: async (pressRoomId: string) => {
-            const url = `https://api.pr.co/v1/pressrooms/${pressRoomId}/press_releases.json?includes=featured_images,tags`
+            const url = `${API_URL}/pressrooms/${pressRoomId}/press_releases.json?includes=featured_images,tags&limit=9999`
             const data = v.safeParse(PressReleaseSchema, await fetchPrCoData(url))
+
+            console.log(data)
+
+            // return
 
             if (!data.success) {
                 console.log("Error parsing PrCo data:", data.issues)
@@ -409,6 +435,7 @@ export const dataSources = [
     ImageDataSource,
     MovieDataSource,
     DocumentsDataSource,
+    TagDataSource,
 ] satisfies PrCoDataSource[]
 
 function createDataSource(

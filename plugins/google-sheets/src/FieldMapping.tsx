@@ -104,12 +104,12 @@ interface FieldMappingProps {
     collection: ManagedCollection
     collectionFields: ManagedCollectionFieldInput[]
     dataSource: DataSource
-    initialSlugFieldId: string | null
+    initialSlugColumn: string | null
 }
 
-export function FieldMapping({ collection, collectionFields, dataSource, initialSlugFieldId }: FieldMappingProps) {
+export function FieldMapping({ collection, collectionFields, dataSource, initialSlugColumn }: FieldMappingProps) {
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
-        initialSlugFieldId ? "loading-fields" : "mapping-fields"
+        initialSlugColumn ? "loading-fields" : "mapping-fields"
     )
     const isSyncing = status === "syncing-collection"
     const isLoadingFields = status === "loading-fields"
@@ -124,7 +124,7 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
     )
 
     const [selectedSlugField, setSelectedSlugField] = useState<ManagedCollectionFieldInput | null>(
-        possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
+        possibleSlugFields.find(field => field.id === initialSlugColumn) ?? possibleSlugFields[0] ?? null
     )
 
     const dataSourceName = dataSource.sheetTitle || "Sheet"
@@ -143,7 +143,7 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
 
                 const existingFieldIds = new Set(collectionFields.map(field => field.id))
 
-                if (initialSlugFieldId) {
+                if (initialSlugColumn) {
                     const ignoredIds = new Set<string>()
                     for (const sourceField of fields) {
                         if (existingFieldIds.has(sourceField.id)) continue
@@ -162,7 +162,7 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
             })
 
         return () => abortController.abort()
-    }, [initialSlugFieldId, dataSource, collection])
+    }, [initialSlugColumn, dataSource, collection])
 
     const changeFieldName = useCallback((fieldId: string, name: string) => {
         setFields(prevFields => {
@@ -232,7 +232,7 @@ export function FieldMapping({ collection, collectionFields, dataSource, initial
             }
 
             await collection.setFields(fieldsToSync)
-            await syncCollection(collection, dataSource, fieldsToSync, ignoredFieldIds, selectedSlugField)
+            await syncCollection(collection, dataSource, fieldsToSync, ignoredFieldIds, selectedSlugField.name)
             await framer.closePlugin("Synchronization successful", { variant: "success" })
         } catch (error) {
             console.error(error)

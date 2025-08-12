@@ -46,7 +46,7 @@ export async function syncCollection(
     dataSource: DataSource,
     fields: readonly ManagedCollectionFieldInput[],
     ignoredFieldIds: Set<string>,
-    slugField: ManagedCollectionFieldInput
+    slugColumn: string | null
 ) {
     const unsyncedItemIds = new Set(await collection.getItemIds())
     const { id: spreadsheetId, sheetTitle } = dataSource
@@ -57,12 +57,19 @@ export async function syncCollection(
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
     const headerRowHash = generateHeaderRowHash(headerRow, Array.from(ignoredFieldIds))
 
+    if (!slugColumn || !headerRow.includes(slugColumn)) {
+        framer.notify(`No field matches the slug field ID “${slugColumn}”. Sync will not be performed.`, {
+            variant: "error",
+        })
+        throw new Error(`No field matches the slug field ID “${slugColumn}”. Sync will not be performed.`)
+    }
+
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
         unsyncedItemIds,
         fieldTypes: Object.fromEntries(fields.map(field => [field.id, field.type])),
         ignoredFieldColumnIndexes: Array.from(ignoredFieldIds).map(col => uniqueHeaderRowNames.indexOf(col)),
-        slugFieldColumnIndex: slugField ? uniqueHeaderRowNames.indexOf(slugField.id) : -1,
+        slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
     })
 
     const itemsToDelete = Array.from(unsyncedItemIds)
@@ -79,7 +86,7 @@ export async function syncCollection(
         collection.setPluginData(PLUGIN_KEYS.SHEET_ID, sheetId.toString()),
         collection.setPluginData(PLUGIN_KEYS.IGNORED_COLUMNS, JSON.stringify(Array.from(ignoredFieldIds))),
         collection.setPluginData(PLUGIN_KEYS.SHEET_HEADER_ROW_HASH, headerRowHash),
-        collection.setPluginData(PLUGIN_KEYS.SLUG_COLUMN, slugField.id),
+        collection.setPluginData(PLUGIN_KEYS.SLUG_COLUMN, slugColumn),
         collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
     ])
 }
@@ -87,7 +94,7 @@ export async function syncCollection(
 export async function syncExistingCollection(
     collection: ManagedCollection,
     previousSheetId: string | null,
-    previousSlugFieldId: string | null,
+    previousSlugColumn: string | null,
     previousSpreadsheetId: string | null,
     previousLastSynced: string | null,
     previousIgnoredColumns: string | null,
@@ -97,7 +104,7 @@ export async function syncExistingCollection(
         return { didSync: false }
     }
 
-    if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId) {
+    if (framer.mode !== "syncManagedCollection" || !previousSlugColumn) {
         return { didSync: false }
     }
 
@@ -108,19 +115,11 @@ export async function syncExistingCollection(
     try {
         const dataSource = await getDataSource(previousSpreadsheetId, previousSheetId)
         const existingFields = await collection.getFields()
-        const fields = getFields(dataSource, existingFields)
-
-        const slugField = fields.find(field => field.id === previousSlugFieldId)
-        if (!slugField) {
-            framer.notify(`No field matches the slug field ID “${previousSlugFieldId}”. Sync will not be performed.`, {
-                variant: "error",
-            })
-            return { didSync: false }
-        }
+        // const fields = getFields(dataSource, existingFields)
 
         const ignoredFieldIds = new Set(previousIgnoredColumns ? JSON.parse(previousIgnoredColumns) : []) as Set<string>
 
-        await syncCollection(collection, dataSource, existingFields, ignoredFieldIds, slugField)
+        await syncCollection(collection, dataSource, existingFields, ignoredFieldIds, previousSlugColumn)
         return { didSync: true }
     } catch (error) {
         console.error(error)

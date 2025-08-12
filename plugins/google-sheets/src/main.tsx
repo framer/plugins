@@ -1,13 +1,13 @@
 import "framer-plugin/framer.css"
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { framer } from "framer-plugin"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { App } from "./App.tsx"
-import { PLUGIN_KEYS, syncExistingCollection } from "./data"
 import auth from "./auth"
+import { PLUGIN_KEYS, syncExistingCollection } from "./data"
 import { Authenticate } from "./Login"
 
 const activeCollection = await framer.getActiveManagedCollection()
@@ -45,7 +45,7 @@ if (!tokens) {
 
 const [
     previousSheetId,
-    previousSlugFieldId,
+    previousSlugColumn,
     previousSpreadsheetId,
     previousLastSynced,
     previousIgnoredColumns,
@@ -62,7 +62,7 @@ const [
 const { didSync } = await syncExistingCollection(
     activeCollection,
     previousSheetId,
-    previousSlugFieldId,
+    previousSlugColumn,
     previousSpreadsheetId,
     previousLastSynced,
     previousIgnoredColumns,
@@ -84,7 +84,7 @@ if (didSync) {
                     collection={activeCollection}
                     collectionFields={collectionFields}
                     previousSheetId={previousSheetId}
-                    previousSlugFieldId={previousSlugFieldId}
+                    previousSlugColumn={previousSlugColumn}
                     previousSpreadsheetId={previousSpreadsheetId}
                     previousLastSynced={previousLastSynced}
                     previousIgnoredColumns={previousIgnoredColumns}

@@ -15,7 +15,7 @@ interface AppProps {
     collectionFields: ManagedCollectionFieldInput[]
     previousSpreadsheetId: string | null
     previousSheetId: string | null
-    previousSlugFieldId: string | null
+    previousSlugColumn: string | null
     previousLastSynced: string | null
     previousIgnoredColumns: string | null
     previousSheetHeaderRowHash: string | null
@@ -26,7 +26,7 @@ export function App({
     collectionFields,
     previousSpreadsheetId,
     previousSheetId,
-    previousSlugFieldId,
+    previousSlugColumn,
     previousLastSynced,
     previousIgnoredColumns,
     previousSheetHeaderRowHash,
@@ -86,7 +86,7 @@ export function App({
                 if (abortController.signal.aborted) return
 
                 if (dataSource) {
-                    setDataSource(dataSource)
+                setDataSource(dataSource)
                 } else {
                     throw new Error(`Sheet with ID ${previousSheetId} not found in spreadsheet`)
                 }
@@ -166,7 +166,7 @@ export function App({
             collection={collection}
             collectionFields={collectionFields}
             dataSource={finalDataSource}
-            initialSlugFieldId={previousSlugFieldId}
+            initialSlugColumn={previousSlugColumn}
         />
     )
 }

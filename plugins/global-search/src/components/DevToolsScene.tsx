@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react"
+import { framer } from "framer-plugin"
+import { useEffect, useMemo, useState } from "react"
 import { cn } from "../utils/className"
 import { type IndexEntry } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
@@ -27,6 +28,14 @@ export function DevToolsScene() {
             }),
         [entries, filterQuery]
     )
+
+    useEffect(() => {
+        framer.showUI({
+            height: Infinity,
+            width: Infinity,
+            resizable: true,
+        })
+    }, [])
 
     const stats = useMemo(
         () => ({

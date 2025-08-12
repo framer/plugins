@@ -105,9 +105,9 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
                         paddingTop: startIndex * ITEM_HEIGHT,
                     }}
                 >
-                    {visibleItems.map((result, index) => (
+                    {visibleItems.map(result => (
                         <RenameComparison
-                            key={`${result.title}-${startIndex + index}`}
+                            key={result.id}
                             selected={selectedNodeIds.includes(result.id)}
                             before={result.title}
                             after={getTextAfterRename(result)}

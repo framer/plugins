@@ -5,7 +5,7 @@ import type { CanvasNode, Result } from "./types"
 interface BatchProcessResultsOptions {
     process: (result: Result, node: CanvasNode, index: number) => Promise<void>
     onStarted: () => void
-    onProgress: (count: number, total: number) => void
+    onProgress?: (count: number, total: number) => void
     onCompleted: () => void
 }
 
@@ -33,7 +33,7 @@ export class BatchProcessResults {
                     return
                 }
 
-                setTimeout(poll, 500)
+                setTimeout(poll, 100)
             }
 
             poll()
@@ -58,7 +58,7 @@ export class BatchProcessResults {
     }
 
     async start(results: Result[]) {
-        if (this.started || !this.ready) return
+        if (this.started) return
 
         this.started = true
         this.onStarted()
@@ -76,7 +76,7 @@ export class BatchProcessResults {
                 index += 1
             }
 
-            this.onProgress(index, results.length)
+            this.onProgress?.(index, results.length)
         }
 
         this.started = false

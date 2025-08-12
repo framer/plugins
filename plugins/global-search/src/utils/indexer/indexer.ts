@@ -9,7 +9,7 @@ import {
 } from "framer-plugin"
 import { type EventMap, TypedEventEmitter } from "../event-emitter"
 import { stripMarkup } from "./strip-markup"
-import { type IndexEntry, includedAttributes, type RootNode, shouldIndexNode } from "./types"
+import { type IndexEntry, type IndexNodeRootNode, includedAttributes, shouldIndexNode } from "./types"
 
 async function getNodeName(node: AnyNode): Promise<string | null> {
     if (isWebPageNode(node)) {
@@ -66,7 +66,7 @@ export class GlobalSearchIndexer {
         return null
     }
 
-    private async *crawlNodes(rootNodes: readonly RootNode[]): AsyncGenerator<IndexEntry[]> {
+    private async *crawlNodes(rootNodes: readonly IndexNodeRootNode[]): AsyncGenerator<IndexEntry[]> {
         let batch: IndexEntry[] = []
 
         for (const rootNode of rootNodes) {

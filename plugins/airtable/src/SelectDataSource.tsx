@@ -1,5 +1,5 @@
 import { framer, type ManagedCollection } from "framer-plugin"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { AirtableBase, AirtableTable, DataSource } from "./data"
 import { getTables, getUserBases } from "./data"
 import { inferFields } from "./fields"
@@ -110,6 +110,32 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
         void task()
     }
 
+    const [basesPlaceholderText, tablesPlaceholderText] = useMemo(() => {
+        let basesText = "Choose…"
+        let tablesText = "Choose…"
+
+        switch (status) {
+            case "loading-bases":
+                basesText = "Loading…"
+                break
+            case "error-bases":
+                basesText = "Error"
+                break
+        }
+
+        switch (status) {
+            case "loading-tables":
+                tablesText = "Loading…"
+                break
+            case "error-bases":
+            case "error-tables":
+                tablesText = "Error"
+                break
+        }
+
+        return [basesText, tablesText]
+    }, [status])
+
     return (
         <form className="framer-hide-scrollbar setup" onSubmit={handleSubmit}>
             <div className="logo">
@@ -128,7 +154,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                         disabled={status === "loading-bases" || status === "error-bases"}
                     >
                         <option value="" disabled>
-                            {status === "loading-bases" ? "Loading…" : status === "error-bases" ? "Error" : "Choose…"}
+                            {basesPlaceholderText}
                         </option>
                         {bases.map(({ id, name }) => (
                             <option key={id} value={id}>
@@ -154,11 +180,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                         }
                     >
                         <option value="" disabled>
-                            {status === "loading-tables"
-                                ? "Loading…"
-                                : status === "error-tables" || status === "error-bases"
-                                  ? "Error"
-                                  : "Choose…"}
+                            {tablesPlaceholderText}
                         </option>
                         {tables.map(({ id, name }) => (
                             <option key={id} value={id}>

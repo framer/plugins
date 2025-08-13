@@ -4,11 +4,12 @@ import { ErrorBoundary } from "react-error-boundary"
 import { DevToolsScene } from "./components/DevToolsScene"
 import { SearchScene } from "./components/SearchScene"
 import { IndexerProvider } from "./utils/indexer/IndexerProvider"
+import { getPluginSize } from "./utils/plugin-size"
 
 framer.showUI({
+    ...getPluginSize({ query: undefined, hasResults: false }),
+    resizable: false,
     position: "top right",
-    width: 280,
-    height: 64,
 })
 
 export function App() {

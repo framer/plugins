@@ -1,12 +1,17 @@
 /**
  * Returns the size of the plugin based on the query and whether there are results, in pixels.
  */
-export function getPluginSize(query: string, hasResults: boolean) {
+export function getPluginSize({ query, hasResults }: { query: string | undefined; hasResults: boolean }): {
+    height: number
+    width: number
+} {
+    let height: number
     if (query && hasResults) {
-        return 320
+        height = 320
     } else if (query && !hasResults) {
-        return 140
+        height = 140
     } else {
-        return 50
+        height = 50
     }
+    return { height, width: 280 }
 }

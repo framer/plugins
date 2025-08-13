@@ -27,7 +27,10 @@ export function SearchScene() {
     }, [])
 
     useEffect(() => {
-        void framer.showUI({ height: getPluginSize(query, hasResults) })
+        void framer.showUI({
+            ...getPluginSize({ query, hasResults }),
+            resizable: false,
+        })
     }, [query, hasResults])
 
     return (

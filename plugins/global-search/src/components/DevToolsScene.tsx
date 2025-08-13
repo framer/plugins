@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react"
 import { cn } from "../utils/className"
 import { type IndexEntry } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
+import { getPluginSize } from "../utils/plugin-size"
 
 export function DevToolsScene() {
     const { index, isIndexing, indexerInstance } = useIndexer()
@@ -35,6 +36,12 @@ export function DevToolsScene() {
             width: Infinity,
             resizable: true,
         })
+        return () => {
+            framer.showUI({
+                ...getPluginSize({ query: undefined, hasResults: false }),
+                resizable: false,
+            })
+        }
     }, [])
 
     const stats = useMemo(

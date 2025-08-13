@@ -53,7 +53,7 @@ export function SearchScene() {
                 </Menu>
             </div>
             <div className="overflow-y-auto px-4 flex flex-col flex-1">
-                {query && hasResults && <Results results={results} />}
+                {query && hasResults && <Results groupedResults={results} />}
                 {query && !hasResults && !isIndexing && <NoResults />}
             </div>
         </main>

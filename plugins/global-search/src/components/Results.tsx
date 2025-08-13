@@ -1,32 +1,62 @@
 import { assertNever } from "../utils/assert"
-import type { GroupedResult } from "../utils/filter/group-results"
-
+import type { EntryResult } from "../utils/filter/group-results"
 import type { Range } from "../utils/filter/ranges"
 import type { CollectionItemResult, NodeResult, Result } from "../utils/filter/types"
+import type { RootNodeType } from "../utils/indexer/types"
+import { IconArrowRight } from "./ui/IconArrowRight"
+import { IconCollection } from "./ui/IconCollection"
+import { IconComponent } from "./ui/IconComponent"
+import { IconWebPage } from "./ui/IconWebPage"
 
 interface ResultsProps {
-    results: readonly GroupedResult[]
+    groupedResults: readonly EntryResult[]
 }
 
-export function Results({ results }: ResultsProps) {
-    return results.map(result => <SearchResultGroup key={result.entry.id} groupedResult={result} />)
-}
-
-function SearchResultGroup({ groupedResult }: { groupedResult: GroupedResult }) {
-    if (groupedResult.results.length === 0) return null
-
+export function ResultsList({ groupedResults }: ResultsProps) {
     return (
-        <div className="flex flex-col gap-2 mb-4 text-amber-500">
-            <div className="text-lg text-amber-800">
-                {groupedResult.entry.rootNodeName || "Unnamed"} ({groupedResult.entry.rootNodeType}{" "}
-                {groupedResult.entry.rootNode.id})
-            </div>
-            <ul className="flex flex-col gap-2">
-                {groupedResult.results.map(result => (
+        <div className="flex flex-col pt-2">
+            {groupedResults.map(group => (
+                <ResultPerEntry key={group.entry.id} entry={group.entry} results={group.results} />
+            ))}
+        </div>
+    )
+}
+
+const defaultIconClassName = "text-tertiary-light dark:text-tertiary-dark"
+export function ResultIcon({ rootNodeType }: { rootNodeType: RootNodeType }) {
+    switch (rootNodeType) {
+        case "WebPageNode":
+            return <IconWebPage className={defaultIconClassName} />
+        case "Collection":
+            return <IconCollection className={defaultIconClassName} />
+        case "ComponentNode":
+            return <IconComponent className={defaultIconClassName} />
+        default:
+            assertNever(rootNodeType)
+    }
+}
+
+function EntryResult({ entry, results }: { entry: EntryResult["entry"]; results: EntryResult["results"] }) {
+    return (
+        <details open className="group flex flex-col gap-2">
+            <summary className="flex flex-row gap-2 justify-start items-center h-6">
+                <IconArrowRight
+                    className="text-tertiary-light dark:text-tertiary-dark transition-transform duration-200 ease-in-out group-open:rotate-90"
+                    aria-hidden="true"
+                />
+
+                <ResultIcon rootNodeType={entry.rootNodeType} aria-hidden="true" />
+
+                <span className="text-xs text-secondary-light dark:text-secondary-dark whitespace-nowrap overflow-ellipsis">
+                    {entry.rootNodeName || `Unnamed ${entry.rootNodeType}`}
+                </span>
+            </summary>
+            <ul className="flex flex-col gap-2 ms-5 text-amber-500 text-xs">
+                {results.map(result => (
                     <SearchResult key={result.id} result={result} />
                 ))}
             </ul>
-        </div>
+        </details>
     )
 }
 

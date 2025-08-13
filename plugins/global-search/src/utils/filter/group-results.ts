@@ -1,12 +1,12 @@
 import type { Result } from "./types"
 
-export interface GroupedResult {
+export interface EntryResult {
     readonly entry: Result["entry"]
     readonly results: readonly Result[]
 }
 
 /** Groups the results by the result's entry id. */
-export function groupResults(items: readonly Result[]): readonly GroupedResult[] {
+export function groupResults(items: readonly Result[]): readonly EntryResult[] {
     const entryMap = new Map<string, [Result, ...(readonly Result[])]>()
 
     for (const item of items) {
@@ -21,7 +21,7 @@ export function groupResults(items: readonly Result[]): readonly GroupedResult[]
         }
     }
 
-    return Array.from(entryMap.values()).map((results): GroupedResult => {
+    return Array.from(entryMap.values()).map((results): EntryResult => {
         const [first] = results
         return {
             entry: first.entry,

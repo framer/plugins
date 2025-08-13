@@ -13,5 +13,5 @@ export function getPluginSize({ query, hasResults }: { query: string | undefined
     } else {
         height = 50
     }
-    return { height, width: 280 }
+    return { height, width: 260 }
 }

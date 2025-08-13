@@ -4,57 +4,27 @@
 
 @custom-variant dark (&:where([data-framer-theme="dark"], [data-framer-theme="dark"] *));
 
-@theme inline {
+@theme {
     /* Fonts */
     --font-mono: "input-mono", ui-monospace, monospace;
-    --font-sans: var(--framer-font-family);
-
-    /* Backgrounds */
-    --color-framer-bg-base: var(--framer-color-bg, light-dark(#ffffff, #111111));
-    --color-framer-bg-primary: var(--framer-color-bg-primary, var(--framer-color-bg, light-dark(#ffffff, #111111)));
-    --color-framer-bg-secondary: var(--framer-color-bg-secondary, light-dark(#eeeeee, #1d1d1d));
-    --color-framer-bg-tertiary: var(--framer-color-bg-tertiary, light-dark(#f3f3f3, #2b2b2b));
-    --color-framer-divider: var(--framer-color-divider, light-dark(#eeeeee, #252525));
-    --color-framer-tint: var(--framer-color-tint, light-dark(#0099ff, #0099ff));
-    --color-framer-tint-dimmed: var(
-        --framer-color-tint-dimmed,
-        light-dark(rgba(0, 153, 255, 0.1), rgba(0, 153, 255, 0.15))
-    );
-    --color-framer-tint-dark: var(--framer-color-tint-dark, light-dark(#0088ff, #0088ff));
-    --color-framer-black-dimmed: rgba(0, 0, 0, 0.5);
+    --font-sans: "Inter", sans-serif;
 
     /* Text colors */
-    --color-framer-text-base: var(--framer-color-text, light-dark(#333333, #ffffff));
-    --color-framer-text-primary: var(--framer-color-text, light-dark(#333333, #ffffff));
-    --color-framer-text-secondary: var(--framer-color-text-secondary);
-    --color-framer-text-tertiary: var(--framer-color-text-tertiary, light-dark(#999999, #777777));
-    --color-framer-text-inverted: var(--framer-color-text-reversed, light-dark(#ffffff, #ffffff));
-    --color-framer-button-hover-light: #eeeeee;
-    --color-framer-button-hover-dark: #282828;
+    --color-base-light: #333333;
+    --color-base-dark: #ffffff;
+    --color-primary-light: #222222;
+    --color-primary-dark: #ffffff;
+    --color-secondary-light: #666666;
+    --color-secondary-dark: #999999;
+    --color-tertiary-light: #999999;
+    --color-tertiary-dark: #666666;
 
     /* Borders */
-    --border-color-divider: var(--framer-color-divider, light-dark(#eeeeee, #252525));
+    --border-color-divider-light: #eeeeee;
+    --border-color-divider-dark: #252525;
 
     /* Spacing */
     --spacing: 5px;
-}
-
-@layer base {
-    @import "framer-plugin/framer.css";
-
-    input,
-    button,
-    textarea,
-    select {
-        padding: initial;
-        background-color: initial;
-        border: initial;
-        outline: initial;
-    }
-
-    ::selection {
-        background-color: var(--color-selection-bg);
-    }
 }
 
 @utility scrollbar-hidden {
@@ -62,5 +32,16 @@
 
     &::-webkit-scrollbar {
         display: none;
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1);
+    }
+    to {
+        opacity: 1;
+        animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1);
     }
 }

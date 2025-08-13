@@ -11,6 +11,7 @@ export function useFilter(
     index: readonly IndexEntry[]
 ): {
     results: ReadonlyGroupedResults
+    hasResults: boolean
 } {
     const deferredQuery = useDeferredValue(query)
 
@@ -22,13 +23,17 @@ export function useFilter(
         return [{ type: FilterType.RootNodes, rootNodes: searchOptions }]
     }, [searchOptions])
 
-    const results = useMemo(() => {
+    const { hasResults, results } = useMemo(() => {
         const items = executeFilters(matchers, filters, index)
 
-        return groupResults(items)
+        return {
+            results: groupResults(items),
+            hasResults: items.length > 0,
+        }
     }, [matchers, filters, index])
 
     return {
         results,
+        hasResults,
     }
 }

@@ -1,6 +1,7 @@
 import { framer, type MenuItem } from "framer-plugin"
-import { startTransition, useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { assertNever } from "../utils/assert"
+import { cn } from "../utils/className"
 import { type ReadonlyGroupedResults } from "../utils/filter/group-results"
 import type { Range } from "../utils/filter/ranges"
 import { type CollectionItemResult, type NodeResult, type Result } from "../utils/filter/types"
@@ -8,59 +9,55 @@ import { useFilter } from "../utils/filter/useFilter"
 import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
+import { getPluginSize } from "../utils/plugin-size"
+import { NoResults } from "./NoResults"
 import { SearchInput } from "./SearchInput"
 import { IconEllipsis } from "./ui/IconEllipsis"
+import { IconSpinner } from "./ui/IconSpinner"
 import { Menu } from "./ui/Menu"
 
 export function SearchScene() {
-    const { index } = useIndexer()
+    const { index, isIndexing } = useIndexer()
     const [query, setQuery] = useState("")
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
-    const { results } = useFilter(query, searchOptions, index)
+    const { results, hasResults } = useFilter(query, searchOptions, index)
 
     const handleQueryChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-        startTransition(() => {
-            setQuery(event.target.value)
-        })
+        setQuery(event.target.value)
     }, [])
 
-    const hasResults = useMemo(() => {
-        for (const [, resultForRootNodeType] of entries(results)) {
-            if (!resultForRootNodeType) continue
-
-            for (const resultsForRootId of Object.values(resultForRootNodeType)) {
-                if (resultsForRootId.length > 0) return true
-            }
-        }
-        return false
-    }, [results])
-
     useEffect(() => {
-        if (query && hasResults) {
-            framer.showUI({
-                height: 320,
-            })
-        } else if (query && !hasResults) {
-            framer.showUI({
-                height: 140,
-            })
-        } else {
-            framer.showUI({
-                height: 64,
-            })
-        }
+        void framer.showUI({
+            ...getPluginSize({ query, hasResults }),
+            resizable: false,
+        })
     }, [query, hasResults])
 
     return (
         <main className="flex flex-col h-full">
-            <div className="flex gap-2 border-b border-framer-divider border-t py-3 mx-3">
+            <div
+                className={cn(
+                    "flex gap-2 border-divider-light dark:border-divider-dark border-y py-3 mx-3 transition-colors items-center",
+                    !query && "border-b-transparent dark:border-b-transparent"
+                )}
+            >
                 <SearchInput value={query} onChange={handleQueryChange} />
+                {isIndexing && (
+                    // TODO: Discuss if we should add a tooltip to explain what's this.
+                    <span
+                        title="Indexing..."
+                        className="animate-[fade-in_150ms_forwards] [animation-delay:500ms] opacity-0"
+                    >
+                        <IconSpinner className="text-black dark:text-white animate-[spin_0.8s_linear_infinite]" />
+                    </span>
+                )}
                 <Menu items={optionsMenuItems}>
-                    <IconEllipsis />
+                    <IconEllipsis className="text-framer-text-tertiary-light dark:text-framer-text-tertiary-dark" />
                 </Menu>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 flex flex-col">
-                {query && hasResults ? <SearchResultsByRootType results={results} /> : <NoResults />}
+            <div className="overflow-y-auto px-4 flex flex-col flex-1">
+                {query && hasResults && <SearchResultsByRootType results={results} />}
+                {query && !hasResults && <NoResults />}
             </div>
         </main>
     )
@@ -68,14 +65,6 @@ export function SearchScene() {
 
 // All components below this line are temporary and will be removed when the search results are implemented
 // Having them ensures it's easier to verify the indexer and filterer are working as expected
-
-function NoResults() {
-    return (
-        <div className="flex-1 flex justify-center items-center">
-            <div className="text-center text-amber-500">No results found.</div>
-        </div>
-    )
-}
 
 function SearchResultsByRootType({ results }: { results: ReadonlyGroupedResults }) {
     return Object.entries(results).map(([rootNodeType, resultsByRootId]) => (

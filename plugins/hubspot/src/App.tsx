@@ -182,20 +182,9 @@ export function App() {
             const isInCMSModes = mode === "syncManagedCollection" || mode === "configureManagedCollection"
 
             if (!isAuthenticated) {
-                void framer.setMenu([])
                 navigate("/")
                 return
             }
-
-            void framer.setMenu([
-                {
-                    label: "Log Out",
-                    visible: true,
-                    onAction: () => {
-                        auth.logout()
-                    },
-                },
-            ])
 
             if (isInCMSModes) {
                 return handleCMSModes()
@@ -212,6 +201,22 @@ export function App() {
                 framer.closePlugin(error instanceof Error ? error.message : "Unknown error", { variant: "error" })
             )
     }, [navigate, isAuthenticated])
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            void framer.setMenu([
+                {
+                    label: "Log Out",
+                    visible: true,
+                    onAction: () => {
+                        auth.logout()
+                    },
+                },
+            ])
+        } else {
+            void framer.setMenu([])
+        }
+    }, [isAuthenticated])
 
     if (isLoading) return null
 

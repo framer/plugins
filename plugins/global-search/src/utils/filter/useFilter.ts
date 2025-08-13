@@ -1,8 +1,7 @@
 import { useDeferredValue, useMemo } from "react"
 import type { IndexEntry, RootNodeType } from "../indexer/types"
 import { executeFilters } from "./execute-filter"
-import type { ReadonlyGroupedResults } from "./group-results"
-import { groupResults } from "./group-results"
+import { type GroupedResult, groupResults } from "./group-results"
 import { type Filter, FilterType, type Matcher, MatcherType } from "./types"
 
 export function useFilter(
@@ -10,7 +9,7 @@ export function useFilter(
     searchOptions: readonly RootNodeType[],
     index: readonly IndexEntry[]
 ): {
-    results: ReadonlyGroupedResults
+    results: readonly GroupedResult[]
     hasResults: boolean
 } {
     const deferredQuery = useDeferredValue(query)

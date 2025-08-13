@@ -1,16 +1,13 @@
 import { framer, type MenuItem } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { assertNever } from "../utils/assert"
 import { cn } from "../utils/className"
-import { type ReadonlyGroupedResults } from "../utils/filter/group-results"
-import type { Range } from "../utils/filter/ranges"
-import { type CollectionItemResult, type NodeResult, type Result } from "../utils/filter/types"
 import { useFilter } from "../utils/filter/useFilter"
 import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
 import { getPluginSize } from "../utils/plugin-size"
 import { NoResults } from "./NoResults"
+import { ResultsList } from "./Results"
 import { SearchInput } from "./SearchInput"
 import { IconEllipsis } from "./ui/IconEllipsis"
 import { IconSpinner } from "./ui/IconSpinner"
@@ -56,93 +53,10 @@ export function SearchScene() {
                 </Menu>
             </div>
             <div className="overflow-y-auto px-4 flex flex-col flex-1">
-                {query && hasResults && <SearchResultsByRootType results={results} />}
-                {query && !hasResults && <NoResults />}
+                {query && hasResults && <Results results={results} />}
+                {query && !hasResults && !isIndexing && <NoResults />}
             </div>
         </main>
-    )
-}
-
-// All components below this line are temporary and will be removed when the search results are implemented
-// Having them ensures it's easier to verify the indexer and filterer are working as expected
-
-function SearchResultsByRootType({ results }: { results: ReadonlyGroupedResults }) {
-    return Object.entries(results).map(([rootNodeType, resultsByRootId]) => (
-        <RootNodeTypeSection key={rootNodeType} resultsByRootId={resultsByRootId} />
-    ))
-}
-
-function RootNodeTypeSection({ resultsByRootId }: { resultsByRootId: { readonly [id: string]: readonly Result[] } }) {
-    return (
-        <div className="flex flex-col gap-2 mb-4 text-amber-500">
-            {Object.entries(resultsByRootId).map(([rootNodeId, results]) => (
-                <SearchResultGroup key={rootNodeId} results={results} />
-            ))}
-        </div>
-    )
-}
-
-function SearchResultGroup({ results }: { results: readonly Result[] }) {
-    const [first] = results
-
-    if (!first) return null
-
-    return (
-        <div>
-            <div className="text-lg text-amber-800">
-                {first.entry.rootNodeName} ({first.entry.rootNodeType} {first.entry.rootNode.id})
-            </div>
-            <ul className="flex flex-col gap-2">
-                {results.map(result => (
-                    <SearchResult key={result.id} result={result} />
-                ))}
-            </ul>
-        </div>
-    )
-}
-
-function SearchResult({ result }: { result: Result }) {
-    if (result.type === "CollectionItem") {
-        return <CollectionItemSearchResult result={result} />
-    } else if (result.type === "Node") {
-        return <NodeSearchResult result={result} />
-    }
-
-    assertNever(result)
-}
-
-function NodeSearchResult({ result }: { result: NodeResult }) {
-    if (!result.entry.text) return null
-
-    return <SearchResultRanges text={result.entry.text} ranges={result.ranges} resultId={result.id} />
-}
-
-function CollectionItemSearchResult({ result }: { result: CollectionItemResult }) {
-    if (!result.text) return null
-
-    return <SearchResultRanges text={result.text} ranges={result.ranges} resultId={result.id} />
-}
-
-function SearchResultRanges({ text, ranges, resultId }: { text: string; ranges: readonly Range[]; resultId: string }) {
-    return ranges.map(range => (
-        <li key={`${resultId}-${range.join("-")}`} className="text-ellipsis overflow-hidden whitespace-nowrap">
-            <HighlightedTextWithContext text={text} range={range} /> ({resultId})
-        </li>
-    ))
-}
-
-function HighlightedTextWithContext({ text, range }: { text: string; range: Range }) {
-    const [start, end] = range
-    const before = text.slice(0, start)
-    const match = text.slice(start, end)
-    const after = text.slice(end)
-
-    return (
-        <>
-            {before}
-            <span className="font-bold">{match}</span>
-            {after}
-        </>
     )
 }
 

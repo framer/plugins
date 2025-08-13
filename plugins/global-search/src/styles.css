@@ -9,7 +9,7 @@
     --font-mono: "input-mono", ui-monospace, monospace;
     --font-sans: "Inter", sans-serif;
 
-    /* Text colors */
+    /* Colors */
     --color-base-light: #333333;
     --color-base-dark: #ffffff;
     --color-primary-light: #222222;
@@ -19,9 +19,11 @@
     --color-tertiary-light: #999999;
     --color-tertiary-dark: #666666;
 
-    /* Borders */
-    --border-color-divider-light: #eeeeee;
-    --border-color-divider-dark: #252525;
+    --color-option-light: #f5f5f5;
+    --color-option-dark: #2b2b2b;
+
+    --color-divider-light: #eeeeee;
+    --color-divider-dark: #252525;
 
     /* Spacing */
     --spacing: 5px;

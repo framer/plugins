@@ -52,8 +52,8 @@ export function SearchScene() {
                     <IconEllipsis className="text-framer-text-tertiary-light dark:text-framer-text-tertiary-dark" />
                 </Menu>
             </div>
-            <div className="overflow-y-auto px-4 flex flex-col flex-1">
-                {query && hasResults && <Results groupedResults={results} />}
+            <div className="overflow-y-auto px-3 flex flex-col flex-1">
+                {query && hasResults && <ResultsList groupedResults={results} />}
                 {query && !hasResults && !isIndexing && <NoResults />}
             </div>
         </main>

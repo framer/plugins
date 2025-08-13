@@ -1,7 +1,9 @@
+import { framer } from "framer-plugin"
+import { useCallback, useMemo } from "react"
 import { assertNever } from "../utils/assert"
 import type { EntryResult } from "../utils/filter/group-results"
 import type { Range } from "../utils/filter/ranges"
-import type { CollectionItemResult, NodeResult, Result } from "../utils/filter/types"
+import type { Result } from "../utils/filter/types"
 import type { RootNodeType } from "../utils/indexer/types"
 import { IconArrowRight } from "./ui/IconArrowRight"
 import { IconCollection } from "./ui/IconCollection"
@@ -14,7 +16,7 @@ interface ResultsProps {
 
 export function ResultsList({ groupedResults }: ResultsProps) {
     return (
-        <div className="flex flex-col pt-2">
+        <div className="flex flex-col divide-y divide-divider-light dark:divide-divider-dark">
             {groupedResults.map(group => (
                 <ResultPerEntry key={group.entry.id} entry={group.entry} results={group.results} />
             ))}
@@ -36,58 +38,84 @@ export function ResultIcon({ rootNodeType }: { rootNodeType: RootNodeType }) {
     }
 }
 
-function EntryResult({ entry, results }: { entry: EntryResult["entry"]; results: EntryResult["results"] }) {
+function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; results: EntryResult["results"] }) {
+    const resultsWithRanges = useMemo(() => {
+        // each result could have multiple ranges, but we want to show each range as a separate result
+        return results.flatMap(result => {
+            return result.ranges.map(range => ({
+                ...result,
+                id: `${result.id}-${range.join("-")}`,
+                range,
+            }))
+        })
+    }, [results])
+
     return (
-        <details open className="group flex flex-col gap-2">
-            <summary className="flex flex-row gap-2 justify-start items-center h-6">
-                <IconArrowRight
-                    className="text-tertiary-light dark:text-tertiary-dark transition-transform duration-200 ease-in-out group-open:rotate-90"
-                    aria-hidden="true"
-                />
+        <details open className="group flex flex-col not-first:pt-2 not-last:pb-2">
+            <summary className="flex flex-row gap-2 justify-start items-center h-6 select-none overflow-hidden ps-2 hover:bg-option-light dark:hover:bg-option-dark rounded-lg pe-0.5 transition-colors">
+                <div className="flex-shrink-0 flex gap-2 justify-start items-center">
+                    <IconArrowRight
+                        className="text-tertiary-light dark:text-tertiary-dark hover:text-secondary-light dark:hover:text-secondary-dark transition-transform duration-200 ease-in-out group-open:rotate-90"
+                        aria-hidden="true"
+                    />
 
-                <ResultIcon rootNodeType={entry.rootNodeType} aria-hidden="true" />
+                    <ResultIcon rootNodeType={entry.rootNodeType} aria-hidden="true" />
+                </div>
 
-                <span className="text-xs text-secondary-light dark:text-secondary-dark whitespace-nowrap overflow-ellipsis">
+                <div className="text-xs text-secondary-light dark:text-secondary-dark hover:text-primary-light dark:hover:text-primary-dark whitespace-nowrap text-ellipsis flex-1 overflow-hidden">
                     {entry.rootNodeName || `Unnamed ${entry.rootNodeType}`}
-                </span>
+                </div>
             </summary>
-            <ul className="flex flex-col gap-2 ms-5 text-amber-500 text-xs">
-                {results.map(result => (
-                    <SearchResult key={result.id} result={result} />
+            <ul className="flex flex-col">
+                {resultsWithRanges.map(result => (
+                    <Match key={result.id} targetId={result.entry.id} text={result.text} range={result.range} />
                 ))}
             </ul>
         </details>
     )
 }
 
-function SearchResult({ result }: { result: Result }) {
-    if (result.type === "CollectionItem") {
-        return <CollectionItemSearchResult result={result} />
-    } else if (result.type === "Node") {
-        return <NodeSearchResult result={result} />
-    }
+function Match({ targetId, text, range }: { targetId: string; text: string; range: Range }) {
+    const navigateToResult = useCallback(() => {
+        framer.navigateTo(targetId).catch(error => {
+            framer.notify(`Failed to go to item. ${error.message}`)
+        })
+    }, [targetId])
 
-    assertNever(result)
+    const { before, highlight, after } = useHighlightedTextWithContext({ text, range })
+
+    return (
+        <button
+            onClick={navigateToResult}
+            className="text-xs h-6 text-left select-none cursor-pointer pl-5 text-secondary-light dark:text-secondary-dark hover:text-primary-light dark:hover:text-primary-dark hover:bg-option-light dark:hover:bg-option-dark rounded-lg pe-0.5 transition-colors"
+        >
+            <li className="text-ellipsis overflow-hidden whitespace-nowrap">
+                {before}
+                <span className="font-semibold bg-transparent">{highlight}</span>
+                {after}
+            </li>
+        </button>
+    )
 }
 
-function NodeSearchResult({ result }: { result: NodeResult }) {
-    if (!result.entry.text) return null
+function NodeSearchResult({ text, range }: { text: string; range: Range }) {
+    if (!text) return null
 
-    return <SearchResultRanges text={result.entry.text} ranges={result.ranges} resultId={result.id} />
+    return <SearchResultRanges text={text} range={range} />
 }
 
-function CollectionItemSearchResult({ result }: { result: CollectionItemResult }) {
-    if (!result.text) return null
+function CollectionItemSearchResult({ text, range }: { text: string; range: Range }) {
+    if (!text) return null
 
-    return <SearchResultRanges text={result.text} ranges={result.ranges} resultId={result.id} />
+    return <SearchResultRanges text={text} range={range} />
 }
 
-function SearchResultRanges({ text, ranges, resultId }: { text: string; ranges: readonly Range[]; resultId: string }) {
-    return ranges.map(range => (
-        <li key={`${resultId}-${range.join("-")}`} className="text-ellipsis overflow-hidden whitespace-nowrap">
-            <HighlightedTextWithContext text={text} range={range} /> ({resultId})
+function SearchResultRanges({ text, range }: { text: string; range: Range }) {
+    return (
+        <li className="text-ellipsis overflow-hidden whitespace-nowrap">
+            <HighlightedTextWithContext text={text} range={range} />
         </li>
-    ))
+    )
 }
 
 function HighlightedTextWithContext({ text, range }: { text: string; range: Range }) {
@@ -96,11 +124,13 @@ function HighlightedTextWithContext({ text, range }: { text: string; range: Rang
     const highlight = text.slice(start, end)
     const after = text.slice(end)
 
-    return (
-        <>
-            {before}
-            <span className="font-bold">{match}</span>
-            {after}
-        </>
-    )
+    const limitedBefore = useMemo(() => {
+        if (text.length < 30) return before
+
+        const beforeWords = before.trimStart().split(/\s+/)
+        const omitted = beforeWords.length > 4
+        return (omitted ? "…" : "") + beforeWords.slice(-3).join(" ")
+    }, [before, text])
+
+    return { before: limitedBefore, highlight: highlight, after }
 }

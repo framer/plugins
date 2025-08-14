@@ -211,7 +211,6 @@ async function getItems(
                     break
                 case "array": {
                     const parsedValue = v.parse(v.array(v.string()), value)
-
                     fieldData[field.id] = {
                         type: field.type,
                         value: parsedValue.map((url: string) => ({
@@ -223,7 +222,6 @@ async function getItems(
                             },
                         })),
                     }
-
                     break
                 }
                 case "enum":

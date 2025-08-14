@@ -48,7 +48,7 @@ export const JobSchema = v.object({
     secondaryLocations: v.array(SecondaryLocationSchema), // allow empty array
     department: v.nullable(v.string()),
     team: v.nullable(v.string()),
-    isListed: v.boolean(),
+    isListed: v.nullable(v.boolean()),
     isRemote: v.nullable(v.boolean()),
     descriptionHtml: v.string(),
     descriptionPlain: v.string(),

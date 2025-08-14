@@ -1,8 +1,14 @@
 import * as v from "valibot"
 export const FeaturedImagesForClSchema = v.object({
-    url: v.nullable(v.string()),
-    width: v.nullable(v.union([v.number(), v.string()])),
-    height: v.nullable(v.union([v.number(), v.string()])),
+    url: v.optional(v.nullable(v.string())),
+    width: v.optional(v.nullable(v.union([v.number(), v.string()]))),
+    height: v.optional(v.nullable(v.union([v.number(), v.string()]))),
+})
+
+export const AlexaSchema = v.object({
+    overall_rank: v.optional(v.nullable(v.number())),
+    country_rank: v.optional(v.nullable(v.union([v.number(), v.string()]))),
+    country_rank_code: v.optional(v.nullable(v.union([v.number(), v.string()]))),
 })
 
 export const ImageSizesSchema = v.object({
@@ -103,7 +109,7 @@ export const ClippingsSchema = v.object({
     release_date: v.nullable(v.string()),
     shares: v.nullable(SocialSchema),
     sizes: v.nullable(ImageSizesSchema),
-    alexa: v.nullable(v.string()),
+    alexa: v.nullable(AlexaSchema),
     private: v.nullable(v.boolean()),
     permalink: v.nullable(v.string()),
     type: v.nullable(v.string()),
@@ -130,7 +136,7 @@ export const MediaInfoSchema = v.object({
     mp4_url: v.optional(v.string()),
     mp4_1080p_url: v.optional(v.string()),
     thumbnail_1080p_url: v.optional(v.string()),
-    sizes: v.optional(v.union([ImageSizesSchema, v.nullable(v.string())])),
+    sizes: v.optional(v.nullable(ImageSizesSchema)),
 })
 export type MediaInfo = v.InferOutput<typeof MediaInfoSchema>
 

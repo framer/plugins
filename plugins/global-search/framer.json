@@ -1,6 +1,6 @@
 {
     "id": "73ea97",
-    "name": "Global Search",
+    "name": "Text Search",
     "modes": ["canvas"],
     "icon": "/icon.svg"
 }

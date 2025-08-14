@@ -5,13 +5,9 @@ import { DevToolsScene } from "./components/DevToolsScene"
 import { ErrorScene } from "./components/ErrorScene"
 import { SearchScene } from "./components/SearchScene"
 import { IndexerProvider } from "./utils/indexer/IndexerProvider"
-import { getPluginSize } from "./utils/plugin-size"
+import { getPluginUiOptions } from "./utils/plugin-ui"
 
-framer.showUI({
-    ...getPluginSize({ query: undefined, hasResults: false }),
-    resizable: false,
-    position: "top right",
-})
+framer.showUI(getPluginUiOptions({ query: undefined, hasResults: false }))
 
 export function App() {
     const [activeScene, setActiveScene] = useState<"search" | "dev-tools">("search")

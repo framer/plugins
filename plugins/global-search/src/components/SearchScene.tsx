@@ -5,7 +5,7 @@ import { useFilter } from "../utils/filter/useFilter"
 import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
-import { getPluginSize } from "../utils/plugin-size"
+import { getPluginUiOptions } from "../utils/plugin-ui"
 import { NoResults } from "./NoResults"
 import { ResultsList } from "./Results"
 import { SearchInput } from "./SearchInput"
@@ -24,10 +24,7 @@ export function SearchScene() {
     }, [])
 
     useEffect(() => {
-        void framer.showUI({
-            ...getPluginSize({ query, hasResults }),
-            resizable: false,
-        })
+        void framer.showUI(getPluginUiOptions({ query, hasResults }))
     }, [query, hasResults])
 
     return (

@@ -26,3 +26,7 @@ export function findRanges(text: string, query: string, isCaseSensitive: boolean
 
     return indices.map((start): Range => [start, start + needle.length])
 }
+
+export function rangeLength([start, end]: Range): number {
+    return end - start
+}

@@ -25,6 +25,9 @@
     --color-divider-light: #eeeeee;
     --color-divider-dark: #252525;
 
+    --color-modal-light: #ffffff;
+    --color-modal-dark: #111111;
+
     /* Spacing */
     --spacing: 5px;
 }

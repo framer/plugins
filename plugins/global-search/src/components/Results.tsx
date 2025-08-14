@@ -2,9 +2,9 @@ import { framer } from "framer-plugin"
 import { useCallback, useMemo } from "react"
 import { assertNever } from "../utils/assert"
 import type { EntryResult } from "../utils/filter/group-results"
-import type { Range } from "../utils/filter/ranges"
-import type { Result } from "../utils/filter/types"
+import { type Range, rangeLength } from "../utils/filter/ranges"
 import type { RootNodeType } from "../utils/indexer/types"
+import { truncateFromStart } from "../utils/text"
 import { IconArrowRight } from "./ui/IconArrowRight"
 import { IconCollection } from "./ui/IconCollection"
 import { IconComponent } from "./ui/IconComponent"
@@ -52,17 +52,17 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
 
     return (
         <details open className="group flex flex-col not-first:pt-2 not-last:pb-2">
-            <summary className="flex flex-row gap-2 justify-start items-center h-6 select-none overflow-hidden ps-2 hover:bg-option-light dark:hover:bg-option-dark rounded-lg pe-0.5 transition-colors">
+            <summary className="flex flex-row gap-2 justify-start items-center h-8 select-none overflow-hidden ps-2 pt-2 sticky top-0 bg-modal-light dark:bg-modal-dark">
                 <div className="flex-shrink-0 flex gap-2 justify-start items-center">
                     <IconArrowRight
-                        className="text-tertiary-light dark:text-tertiary-dark hover:text-secondary-light dark:hover:text-secondary-dark transition-transform duration-200 ease-in-out group-open:rotate-90"
+                        className="text-tertiary-light dark:text-tertiary-dark  transition-transform duration-200 ease-in-out group-open:rotate-90"
                         aria-hidden="true"
                     />
 
                     <ResultIcon rootNodeType={entry.rootNodeType} aria-hidden="true" />
                 </div>
 
-                <div className="text-xs text-secondary-light dark:text-secondary-dark hover:text-primary-light dark:hover:text-primary-dark whitespace-nowrap text-ellipsis flex-1 overflow-hidden">
+                <div className="text-xs text-secondary-light dark:text-secondary-dark whitespace-nowrap text-ellipsis flex-1 overflow-hidden">
                     {entry.rootNodeName || `Unnamed ${entry.rootNodeType}`}
                 </div>
             </summary>
@@ -87,7 +87,7 @@ function Match({ targetId, text, range }: { targetId: string; text: string; rang
     return (
         <button
             onClick={navigateToResult}
-            className="text-xs h-6 text-left select-none cursor-pointer pl-5 text-secondary-light dark:text-secondary-dark hover:text-primary-light dark:hover:text-primary-dark hover:bg-option-light dark:hover:bg-option-dark rounded-lg pe-0.5 transition-colors"
+            className="text-secondary-light dark:text-secondary-dark text-xs h-6 text-left select-none cursor-pointer pl-5 hover:bg-option-light dark:hover:bg-option-dark hover:text-primary-light dark:hover:text-primary-dark rounded-lg transition-colors"
         >
             <li className="text-ellipsis overflow-hidden whitespace-nowrap">
                 {before}
@@ -98,39 +98,18 @@ function Match({ targetId, text, range }: { targetId: string; text: string; rang
     )
 }
 
-function NodeSearchResult({ text, range }: { text: string; range: Range }) {
-    if (!text) return null
-
-    return <SearchResultRanges text={text} range={range} />
-}
-
-function CollectionItemSearchResult({ text, range }: { text: string; range: Range }) {
-    if (!text) return null
-
-    return <SearchResultRanges text={text} range={range} />
-}
-
-function SearchResultRanges({ text, range }: { text: string; range: Range }) {
-    return (
-        <li className="text-ellipsis overflow-hidden whitespace-nowrap">
-            <HighlightedTextWithContext text={text} range={range} />
-        </li>
-    )
-}
-
-function HighlightedTextWithContext({ text, range }: { text: string; range: Range }) {
+const rowLength = 30
+function useHighlightedTextWithContext({ text, range }: { text: string; range: Range }) {
     const [start, end] = range
+    const maxBeforeLength = Math.floor((rowLength - rangeLength(range)) / 2)
     const before = text.slice(0, start)
     const highlight = text.slice(start, end)
     const after = text.slice(end)
 
-    const limitedBefore = useMemo(() => {
-        if (text.length < 30) return before
-
-        const beforeWords = before.trimStart().split(/\s+/)
-        const omitted = beforeWords.length > 4
-        return (omitted ? "…" : "") + beforeWords.slice(-3).join(" ")
-    }, [before, text])
+    const limitedBefore = useMemo(
+        () => (text.length < rowLength ? before : truncateFromStart(before, maxBeforeLength)),
+        [before, text, maxBeforeLength]
+    )
 
     return { before: limitedBefore, highlight: highlight, after }
 }

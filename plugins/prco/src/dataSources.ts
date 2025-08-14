@@ -3,6 +3,7 @@ import * as v from "valibot"
 import {
     ClippingImageAsImageSchema,
     ClippingsSchema,
+    FeaturedImagesForClSchema,
     ImageSizesSchema,
     ImageUrlFromSizes,
     MediaInfoSchema,
@@ -143,15 +144,22 @@ const ClippingDataSource = createDataSource(
         { id: "release_date", name: "Release Date", type: "date" },
         { id: "source", name: "Source", type: "string" },
         { id: "url", name: "URL", type: "link" },
-        /* {
+        {
             id: "featured_images",
             name: "Featured Images",
-            type: "string",
+            type: "array",
+            fields: [
+                {
+                    id: "featured_images",
+                    name: "Featured Images",
+                    type: "image",
+                },
+            ],
             getValue: value => {
-                const list = v.parse(v.array(v.object({ url: v.string() })), value)
-                return list.map(item => { item.url})
+                const parsed = v.parse(v.array(FeaturedImagesForClSchema), value)
+                return parsed.map(item => item.url).filter(v => v)
             },
-        },*/
+        },
         { id: "language", name: "Language", type: "string" },
         {
             id: "shares",
@@ -269,11 +277,17 @@ const ImageDataSource = createDataSource(
         {
             id: "sizes",
             name: "Sizes",
-            type: "image",
+            type: "array",
+            fields: [
+                {
+                    id: "sizes",
+                    name: "Sizes",
+                    type: "image",
+                },
+            ],
             getValue: value => {
-                if (value && Object.keys(value).length === 0) {
-                    return v.parse(ImageUrlFromSizes, value)
-                }
+                const parsed = v.parse(ImageSizesSchema, value)
+                return [parsed.large?.url, parsed.medium?.url, parsed.original?.url, parsed.square?.url].filter(v => v)
             },
         },
     ]
@@ -325,7 +339,7 @@ const DocumentsDataSource = createDataSource(
         },
     },
     [
-        { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
+        { id: "title", name: "Title", type: "string" },
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "permalink", name: "Permalink", type: "string" },
         { id: "type", name: "Type", type: "string" },
@@ -377,10 +391,6 @@ const PressReleaseDataSource = createDataSource(
         fetch: async (pressRoomId: string) => {
             const url = `${API_URL}/pressrooms/${pressRoomId}/press_releases.json?includes=featured_images,tags&limit=9999`
             const data = v.safeParse(PressReleaseSchema, await fetchPrCoData(url))
-
-            console.log(data)
-
-            // return
 
             if (!data.success) {
                 console.log("Error parsing PrCo data:", data.issues)

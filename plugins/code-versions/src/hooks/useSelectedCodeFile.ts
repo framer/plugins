@@ -70,7 +70,7 @@ export function useSelectedCodeFile(): UseSelectedCodeFile {
             const task = async () => {
                 if (isComponentInstanceNode(firstNode)) {
                     try {
-                        const matchingFile = await framer.unstable_getCodeFile(firstNode.componentIdentifier)
+                        const matchingFile = await framer.getCodeFile(firstNode.componentIdentifier)
                         if (!matchingFile) {
                             setSelectionState({
                                 type: StatusTypes.NO_SELECTION,
@@ -104,7 +104,7 @@ export function useSelectedCodeFile(): UseSelectedCodeFile {
         })
 
         // Subscribe for changes in the code file itself, e.g. on save
-        const unsubscribeCodeFile = framer.unstable_subscribeToCodeFiles(codeFiles => {
+        const unsubscribeCodeFile = framer.subscribeToCodeFiles(codeFiles => {
             if (selectionState.type !== StatusTypes.SELECTED_CODE_FILE) return
 
             const matchingFile = codeFiles.find(codeFile => codeFile.id === codeFileId)

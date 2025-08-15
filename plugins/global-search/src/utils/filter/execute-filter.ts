@@ -67,23 +67,17 @@ function executeTextMatcherForCollectionItems(
     matcher: TextMatcher,
     entry: IndexCollectionItemEntry
 ): Result | undefined {
-    // FIXME: This only returns the first matching field
-    // Instead of having multiple fields in the index, we should have a single entry per field in the index
-    for (const [field, text] of Object.entries(entry.fields)) {
-        const ranges = findRanges(text, matcher.query, matcher.caseSensitive)
-        if (ranges.length) {
-            return {
-                id: `${entry.id}-${field}`,
-                field,
-                text,
-                ranges,
-                entry,
-                type: ResultType.CollectionItem,
-            }
+    const ranges = findRanges(entry.text, matcher.query, matcher.caseSensitive)
+    if (ranges.length) {
+        return {
+            id: `${entry.id}-${entry.matchingField.id}`,
+            matchingField: entry.matchingField,
+            text: entry.text,
+            ranges,
+            entry,
+            type: ResultType.CollectionItem,
         }
     }
-
-    return undefined
 }
 
 /** Execute a filter on a result and return true if the result should be included. */

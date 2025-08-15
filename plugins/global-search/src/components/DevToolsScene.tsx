@@ -18,14 +18,7 @@ export function DevToolsScene() {
         () =>
             entries.filter(entry => {
                 if (entry.id === filterQuery) return true
-                switch (entry.type) {
-                    case "CollectionItem":
-                        return Object.values(entry.fields).some(field =>
-                            field.toLowerCase().includes(filterQuery.toLowerCase())
-                        )
-                    default:
-                        return entry.name?.toLowerCase().includes(filterQuery.toLowerCase())
-                }
+                return entry.text?.toLowerCase().includes(filterQuery.toLowerCase())
             }),
         [entries, filterQuery]
     )
@@ -100,7 +93,7 @@ export function DevToolsScene() {
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">
                                             {entry.type === "CollectionItem"
-                                                ? `${entry.rootNodeName} - ${entry.slug}`
+                                                ? `${entry.rootNodeName}`
                                                 : (entry.name ?? "Unnamed")}
                                         </p>
                                         <p className="text-xs text-gray-500">{entry.type}</p>
@@ -154,9 +147,9 @@ export function DevToolsScene() {
 
                                 {selectedEntry.type === "CollectionItem" && (
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Fields</label>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Field</label>
                                         <pre className="text-sm bg-gray-50 p-2 rounded whitespace-pre-wrap">
-                                            {JSON.stringify(selectedEntry.fields, null, 2)}
+                                            {selectedEntry.matchingField.name} ({selectedEntry.matchingField.id})
                                         </pre>
                                     </div>
                                 )}

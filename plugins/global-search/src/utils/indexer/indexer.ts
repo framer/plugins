@@ -79,6 +79,8 @@ export class GlobalSearchIndexer {
 
                 const [text, name] = await Promise.all([this.getNodeText(node), getNodeName(node)])
 
+                if (!text && !name) continue
+
                 batch.push({
                     id: node.id,
                     type: node.__class,
@@ -114,6 +116,9 @@ export class GlobalSearchIndexer {
                     if (field.type !== "string" && field.type !== "formattedText") continue
 
                     const text = field.type === "formattedText" ? stripMarkup(field.value) : field.value
+
+                    // Skip empty fields
+                    if (text.length === 0) continue
 
                     batch.push({
                         id: `${item.id}-${key}`,

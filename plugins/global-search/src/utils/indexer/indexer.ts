@@ -37,10 +37,10 @@ export interface IndexerEvents extends EventMap {
     upsert: { entry: IndexEntry }
     error: { error: Error }
     progress: { processed: number; total?: number }
-    started: void
-    completed: void
-    restarted: void
-    aborted: void
+    started: never
+    completed: never
+    restarted: never
+    aborted: never
 }
 
 export class GlobalSearchIndexer {
@@ -157,6 +157,8 @@ export class GlobalSearchIndexer {
             this.eventEmitter.emit("started")
 
             for await (const batch of this.crawlNodes([...pages, ...components])) {
+                // this isn't a unnecassary static expression, as the value could change during the async loop
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 if (this.abortRequested) break
                 this.upsertEntries(batch)
             }
@@ -164,10 +166,14 @@ export class GlobalSearchIndexer {
             const collections = await framer.getCollections()
 
             for await (const batch of this.crawlCollections(collections)) {
+                // this isn't a unnecassary static expression, as the value could change during the async loop
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 if (this.abortRequested) break
                 this.upsertEntries(batch)
             }
 
+            // this isn't a unnecassary static expression, as the value could change during the async loop
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             if (!this.abortRequested) {
                 this.eventEmitter.emit("completed")
             }

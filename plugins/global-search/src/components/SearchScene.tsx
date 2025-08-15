@@ -66,7 +66,7 @@ const optionsEnabled = {
     ComponentNode: true,
     WebPageNode: true,
     Collection: true,
-} as const satisfies Record<RootNodeType, boolean>
+}
 
 const defaultSearchOptions = entries(optionsEnabled)
     .filter(([, enabled]) => enabled)

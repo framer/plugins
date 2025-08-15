@@ -10,48 +10,50 @@ import type { IndexEntry } from "./types"
  */
 export function IndexerProvider({ children }: { children: React.ReactNode }) {
     const indexerRef = useRef<GlobalSearchIndexer>()
-    if (!indexerRef.current) {
-        indexerRef.current = new GlobalSearchIndexer()
-    }
+    indexerRef.current ??= new GlobalSearchIndexer()
     const indexer = indexerRef.current
     const [isIndexing, setIsIndexing] = useState(false)
     const [index, setIndex] = useState<Record<string, IndexEntry>>({})
 
     useEffect(() => {
-        indexer.start()
-
-        const onUpsert = ({ entry }: IndexerEvents["upsert"]) =>
+        const onUpsert = ({ entry }: IndexerEvents["upsert"]) => {
             startTransition(() => {
                 setIndex(prev => ({ ...prev, [entry.id]: entry }))
             })
+        }
 
-        const onStarted = () =>
+        const onStarted = () => {
             startTransition(() => {
                 setIndex({})
                 setIsIndexing(true)
             })
+        }
 
-        const onCompleted = () =>
+        const onCompleted = () => {
             startTransition(() => {
                 setIsIndexing(false)
             })
+        }
 
-        const onAborted = () =>
+        const onAborted = () => {
             startTransition(() => {
                 setIsIndexing(false)
             })
+        }
 
-        const onError = ({ error }: IndexerEvents["error"]) =>
+        const onError = ({ error }: IndexerEvents["error"]) => {
             startTransition(() => {
                 setIsIndexing(false)
                 setIndex({})
                 console.error(error)
             })
+        }
 
-        const onRestarted = () =>
+        const onRestarted = () => {
             startTransition(() => {
                 setIsIndexing(true)
             })
+        }
 
         const unsubscribes = [
             indexer.on("upsert", onUpsert),
@@ -61,6 +63,8 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
             indexer.on("completed", onCompleted),
             indexer.on("error", onError),
         ]
+
+        void indexer.start()
 
         return () => {
             for (const unsubscribe of unsubscribes) unsubscribe()

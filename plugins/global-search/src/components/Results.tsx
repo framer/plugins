@@ -63,7 +63,7 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
                 </div>
 
                 <div className="text-xs text-secondary-light dark:text-secondary-dark whitespace-nowrap text-ellipsis flex-1 overflow-hidden">
-                    {entry.rootNodeName || `Unnamed ${entry.rootNodeType}`}
+                    {entry.rootNodeName ?? `Unnamed ${entry.rootNodeType}`}
                 </div>
             </summary>
             <ul className="flex flex-col">
@@ -77,8 +77,8 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
 
 function Match({ targetId, text, range }: { targetId: string; text: string; range: Range }) {
     const navigateToResult = useCallback(() => {
-        framer.navigateTo(targetId).catch(error => {
-            framer.notify(`Failed to go to item. ${error.message}`)
+        framer.navigateTo(targetId).catch((error: unknown) => {
+            framer.notify(`Failed to go to item. ${error instanceof Error ? error.message : "Unknown error"}`)
         })
     }, [targetId])
 

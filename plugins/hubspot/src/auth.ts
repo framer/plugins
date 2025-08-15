@@ -1,3 +1,4 @@
+import { framer } from "framer-plugin"
 import * as v from "valibot"
 import { PluginError } from "./PluginError"
 
@@ -98,6 +99,11 @@ class Auth {
 
     logout() {
         this.tokens.clear()
+        framer.notify(
+            "To fully remove the integration, uninstall the Framer app from the HubSpot integrations dashboard.",
+            { durationMs: 5000 }
+        )
+        window.location.reload()
     }
 
     public readonly tokens = {

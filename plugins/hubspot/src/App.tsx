@@ -186,19 +186,6 @@ export function App() {
                 return
             }
 
-            void framer.setMenu([
-                {
-                    label: "Log Out",
-                    visible: true,
-                    onAction: () => {
-                        auth.logout()
-                        framer.closePlugin(
-                            "To fully remove the integration, uninstall the Framer app from the HubSpot integrations dashboard."
-                        )
-                    },
-                },
-            ])
-
             if (isInCMSModes) {
                 return handleCMSModes()
             }
@@ -214,6 +201,22 @@ export function App() {
                 framer.closePlugin(error instanceof Error ? error.message : "Unknown error", { variant: "error" })
             )
     }, [navigate, isAuthenticated])
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            void framer.setMenu([
+                {
+                    label: "Log Out",
+                    visible: true,
+                    onAction: () => {
+                        auth.logout()
+                    },
+                },
+            ])
+        } else {
+            void framer.setMenu([])
+        }
+    }, [isAuthenticated])
 
     if (isLoading) return null
 

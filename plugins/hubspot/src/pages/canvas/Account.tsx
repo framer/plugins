@@ -1,4 +1,3 @@
-import { framer } from "framer-plugin"
 import { useUserQuery } from "../../api"
 import auth from "../../auth"
 import { CenteredSpinner } from "../../components/CenteredSpinner"
@@ -8,9 +7,6 @@ export default function AccountPage() {
 
     const handleLogout = () => {
         auth.logout()
-        void framer.closePlugin(
-            "Uninstall the Framer app from the HubSpot integrations dashboard to complete the removal"
-        )
     }
 
     if (isLoadingUser) return <CenteredSpinner />

@@ -2,6 +2,7 @@ import { framer } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { ErrorBoundary } from "react-error-boundary"
 import { DevToolsScene } from "./components/DevToolsScene"
+import { ErrorScene } from "./components/ErrorScene"
 import { SearchScene } from "./components/SearchScene"
 import { IndexerProvider } from "./utils/indexer/IndexerProvider"
 import { getPluginSize } from "./utils/plugin-size"
@@ -26,14 +27,7 @@ export function App() {
     })
 
     return (
-        <ErrorBoundary
-            fallbackRender={({ error, resetErrorBoundary }) => (
-                <div>
-                    {error.message}
-                    <button onClick={resetErrorBoundary}>Reset</button>
-                </div>
-            )}
-        >
+        <ErrorBoundary FallbackComponent={ErrorScene}>
             <IndexerProvider>
                 {activeScene === "dev-tools" && <DevToolsScene />}
                 {activeScene === "search" && <SearchScene />}

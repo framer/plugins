@@ -1,11 +1,12 @@
 import { framer } from "framer-plugin"
 import { useEffect } from "react"
-import { getPluginSize } from "../utils/plugin-size"
+import { getPluginUiOptions } from "../utils/plugin-ui"
 
 export function ErrorScene() {
     useEffect(() => {
-        framer.showUI({ ...getPluginSize({ query: "error", hasResults: false }), resizable: false })
+        framer.showUI(getPluginUiOptions({ query: "error", hasResults: false }))
     }, [])
+
     return (
         <div className="flex-1 flex justify-center items-center select-none py-1 px-4">
             <div className="text-center text-tertiary-light dark:text-tertiary-dark text-xs space-y-4">

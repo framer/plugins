@@ -1,30 +1,31 @@
-import type { IndexEntry, RootNodeType } from "../indexer/types"
-import type { ReadonlyRecord } from "../object"
 import type { Result } from "./types"
 
-export type GroupedResults = { [type in RootNodeType]?: Record<IndexEntry["id"], Result[]> }
-export type ReadonlyGroupedResults = {
-    readonly [type in RootNodeType]?: ReadonlyRecord<IndexEntry["id"], readonly Result[]>
+export interface EntryResult {
+    readonly entry: Result["entry"]
+    readonly results: readonly Result[]
 }
 
-/** Groups the results by root node type and the result's entry id. */
-export function groupResults(items: readonly Result[]): ReadonlyGroupedResults {
-    const grouped: GroupedResults = {}
+/** Groups the results by the result's entry id. */
+export function groupResults(items: readonly Result[]): readonly EntryResult[] {
+    const entryMap = new Map<string, [Result, ...(readonly Result[])]>()
+
     for (const item of items) {
-        let rootNodeGroup = grouped[item.entry.rootNodeType]
-        if (!rootNodeGroup) {
-            rootNodeGroup = {}
-            grouped[item.entry.rootNodeType] = rootNodeGroup
-        }
+        const nodeId = item.entry.rootNode.id
 
-        let rootNode = rootNodeGroup[item.entry.rootNode.id]
-        if (!rootNode) {
-            rootNode = []
-            rootNodeGroup[item.entry.rootNode.id] = rootNode
-        }
+        const nodeResults = entryMap.get(nodeId)
 
-        rootNode.push(item)
+        if (!nodeResults) {
+            entryMap.set(nodeId, [item])
+        } else {
+            nodeResults.push(item)
+        }
     }
 
-    return grouped
+    return Array.from(entryMap.values()).map((results): EntryResult => {
+        const [first] = results
+        return {
+            entry: first.entry,
+            results,
+        }
+    })
 }

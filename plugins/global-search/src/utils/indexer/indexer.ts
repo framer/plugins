@@ -117,7 +117,7 @@ export class GlobalSearchIndexer {
 
                     batch.push({
                         id: `${item.id}-${key}`,
-                        type: "CollectionItem",
+                        type: "CollectionItemField",
                         collectionItem: item,
                         rootNode: collection,
                         rootNodeName: collection.name,

@@ -25,7 +25,7 @@ export type Matcher = TextMatcher
 export type Filter = RootNodesFilter
 
 export enum ResultType {
-    CollectionItem = "CollectionItem",
+    CollectionItemField = "CollectionItemField",
     Node = "Node",
 }
 
@@ -38,7 +38,7 @@ export interface BaseResult {
 }
 
 export interface CollectionItemResult extends BaseResult {
-    readonly type: ResultType.CollectionItem
+    readonly type: ResultType.CollectionItemField
     readonly matchingField: IndexCollectionItemEntry["matchingField"]
     readonly text: string
     readonly entry: IndexCollectionItemEntry

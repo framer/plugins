@@ -92,8 +92,8 @@ export function DevToolsScene() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">
-                                            {entry.type === "CollectionItem"
-                                                ? `${entry.rootNodeName}`
+                                            {entry.type === "CollectionItemField"
+                                                ? entry.rootNodeName
                                                 : (entry.name ?? "Unnamed")}
                                         </p>
                                         <p className="text-xs text-gray-500">{entry.type}</p>
@@ -128,13 +128,13 @@ export function DevToolsScene() {
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
                                     <p className="text-sm bg-gray-50 p-2 rounded">
-                                        {selectedEntry.type === "CollectionItem"
+                                        {selectedEntry.type === "CollectionItemField"
                                             ? "Collection Item"
                                             : (selectedEntry.name ?? "(no name)")}
                                     </p>
                                 </div>
 
-                                {selectedEntry.type !== "CollectionItem" && (
+                                {selectedEntry.type !== "CollectionItemField" && (
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">
                                             Text Content
@@ -145,7 +145,7 @@ export function DevToolsScene() {
                                     </div>
                                 )}
 
-                                {selectedEntry.type === "CollectionItem" && (
+                                {selectedEntry.type === "CollectionItemField" && (
                                     <div>
                                         <label className="block text-xs font-medium text-gray-700 mb-1">Field</label>
                                         <pre className="text-sm bg-gray-50 p-2 rounded whitespace-pre-wrap">
@@ -173,7 +173,7 @@ export function DevToolsScene() {
                                             {JSON.stringify(
                                                 {
                                                     // eslint-disable-next-line @typescript-eslint/no-misused-spread
-                                                    ...(selectedEntry.type === "CollectionItem"
+                                                    ...(selectedEntry.type === "CollectionItemField"
                                                         ? selectedEntry.collectionItem
                                                         : selectedEntry.node),
                                                 },

@@ -45,14 +45,14 @@ function executeMatcher(matcher: Matcher, entry: IndexEntry): Result | undefined
     const ranges = findRanges(entry.text, matcher.query, matcher.caseSensitive)
     if (!ranges.length) return undefined
 
-    if (entry.type === "CollectionItem") {
+    if (entry.type === "CollectionItemField") {
         return {
             id: `${entry.id}-${entry.matchingField.id}`,
             matchingField: entry.matchingField,
             text: entry.text,
             ranges,
             entry,
-            type: ResultType.CollectionItem,
+            type: ResultType.CollectionItemField,
         }
     }
 

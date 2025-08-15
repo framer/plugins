@@ -14,14 +14,15 @@ interface FieldTypeOption {
 }
 
 const fieldTypeOptions: FieldTypeOption[] = [
-    { type: "boolean", label: "Boolean" },
-    { type: "color", label: "Color" },
-    { type: "number", label: "Number" },
-    { type: "string", label: "String" },
+    { type: "string", label: "Plain Text" },
     { type: "formattedText", label: "Formatted Text" },
-    { type: "image", label: "Image" },
-    { type: "link", label: "Link" },
     { type: "date", label: "Date" },
+    { type: "link", label: "Link" },
+    { type: "image", label: "Image" },
+    { type: "color", label: "Color" },
+    { type: "boolean", label: "Toggle" },
+    { type: "number", label: "Number" },
+    { type: "file", label: "File" },
 ]
 
 const getInitialSlugColumn = (context: PluginContext, slugFields: ManagedCollectionFieldInput[]): string => {
@@ -232,6 +233,10 @@ export function MapSheetFieldsPage({
                 const maybeOverride = fieldNameOverrides[field.id]
                 if (maybeOverride) {
                     field.name = maybeOverride
+                }
+
+                if (field.type === "file") {
+                    field.allowedFileTypes = []
                 }
 
                 return field

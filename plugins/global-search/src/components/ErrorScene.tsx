@@ -4,7 +4,7 @@ import { getPluginUiOptions } from "../utils/plugin-ui"
 
 export function ErrorScene() {
     useEffect(() => {
-        framer.showUI(getPluginUiOptions({ query: "error", hasResults: false }))
+        void framer.showUI(getPluginUiOptions({ query: "error", hasResults: false }))
     }, [])
 
     return (

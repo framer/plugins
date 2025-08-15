@@ -12,17 +12,26 @@ export const Menu = memo(function Menu({ items, children, className }: MenuProps
     const buttonRef = useRef<HTMLButtonElement>(null)
 
     const toggleMenu = useCallback(
-        async (event: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLButtonElement>) => {
+        (event: React.MouseEvent<HTMLButtonElement> | React.KeyboardEvent<HTMLButtonElement>) => {
             if (!buttonRef.current) return
             if ("key" in event && event.key !== "Enter" && event.key !== " ") return
 
             const buttonBounds = buttonRef.current.getBoundingClientRect()
 
-            await framer.showContextMenu(items, {
-                location: { x: buttonBounds.right - 5, y: buttonBounds.bottom },
-                placement: "bottom-left",
-                width: 200,
-            })
+            framer
+                .showContextMenu(items, {
+                    location: { x: buttonBounds.right - 5, y: buttonBounds.bottom },
+                    placement: "bottom-left",
+                    width: 200,
+                })
+                .catch((error: unknown) => {
+                    framer.notify(
+                        `Failed to show context menu. ${error instanceof Error ? error.message : "Unknown error"}`,
+                        {
+                            variant: "error",
+                        }
+                    )
+                })
         },
         [items]
     )

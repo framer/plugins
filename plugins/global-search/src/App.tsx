@@ -7,16 +7,18 @@ import { SearchScene } from "./components/SearchScene"
 import { IndexerProvider } from "./utils/indexer/IndexerProvider"
 import { getPluginUiOptions } from "./utils/plugin-ui"
 
-framer.showUI(getPluginUiOptions({ query: undefined, hasResults: false }))
+void framer.showUI(getPluginUiOptions({ query: undefined, hasResults: false }))
 
 export function App() {
     const [activeScene, setActiveScene] = useState<"search" | "dev-tools">("search")
 
     useEffect(() => {
-        framer.setMenu([
+        void framer.setMenu([
             {
                 label: "Open Dev Tools",
-                onAction: () => setActiveScene(state => (state === "dev-tools" ? "search" : "dev-tools")),
+                onAction: () => {
+                    setActiveScene(state => (state === "dev-tools" ? "search" : "dev-tools"))
+                },
                 checked: activeScene === "dev-tools",
             },
         ])

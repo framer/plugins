@@ -31,26 +31,23 @@ export function DevToolsScene() {
     )
 
     useEffect(() => {
-        framer.showUI({
+        void framer.showUI({
             height: Infinity,
             width: Infinity,
             resizable: true,
         })
         return () => {
-            framer.showUI(getPluginUiOptions({ query: undefined, hasResults: false }))
+            void framer.showUI(getPluginUiOptions({ query: undefined, hasResults: false }))
         }
     }, [])
 
     const stats = useMemo(
         () => ({
             total: entries.length,
-            byType: entries.reduce(
-                (acc, entry) => {
-                    acc[entry.type] = (acc[entry.type] ?? 0) + 1
-                    return acc
-                },
-                {} as Record<string, number>
-            ),
+            byType: entries.reduce<Record<string, number>>((acc, entry) => {
+                acc[entry.type] = (acc[entry.type] ?? 0) + 1
+                return acc
+            }, {}),
         }),
         [entries]
     )
@@ -63,11 +60,13 @@ export function DevToolsScene() {
                         type="text"
                         placeholder="Filter by name or id"
                         value={filterQuery}
-                        onChange={e => setFilterQuery(e.target.value)}
+                        onChange={e => {
+                            setFilterQuery(e.target.value)
+                        }}
                         className="w-full p-2 border border-gray-300 rounded flex-1"
                     />
                     <button
-                        onClick={() => indexerInstance.restart()}
+                        onClick={() => void indexerInstance.restart()}
                         disabled={isIndexing}
                         className="px-3 py-1 bg-blue-500 text-white text-sm rounded disabled:opacity-50 w-auto"
                     >
@@ -93,14 +92,16 @@ export function DevToolsScene() {
                                     "p-3 cursor-pointer hover:bg-gray-50",
                                     selectedEntry === entry && "bg-blue-50"
                                 )}
-                                onClick={() => setSelectedEntry(entry)}
+                                onClick={() => {
+                                    setSelectedEntry(entry)
+                                }}
                             >
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">
                                             {entry.type === "CollectionItem"
                                                 ? `${entry.rootNodeName} - ${entry.slug}`
-                                                : entry.name || "Unnamed"}
+                                                : (entry.name ?? "Unnamed")}
                                         </p>
                                         <p className="text-xs text-gray-500">{entry.type}</p>
                                     </div>
@@ -136,7 +137,7 @@ export function DevToolsScene() {
                                     <p className="text-sm bg-gray-50 p-2 rounded">
                                         {selectedEntry.type === "CollectionItem"
                                             ? "Collection Item"
-                                            : selectedEntry.name || "(no name)"}
+                                            : (selectedEntry.name ?? "(no name)")}
                                     </p>
                                 </div>
 
@@ -178,6 +179,7 @@ export function DevToolsScene() {
                                         <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto text-xs">
                                             {JSON.stringify(
                                                 {
+                                                    // eslint-disable-next-line @typescript-eslint/no-misused-spread
                                                     ...(selectedEntry.type === "CollectionItem"
                                                         ? selectedEntry.collectionItem
                                                         : selectedEntry.node),

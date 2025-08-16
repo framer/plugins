@@ -1,0 +1,6 @@
+{
+    "id": "r3cruI",
+    "name": "Recruitee",
+    "modes": ["syncManagedCollection", "configureManagedCollection"],
+    "icon": "/icon.svg"
+}

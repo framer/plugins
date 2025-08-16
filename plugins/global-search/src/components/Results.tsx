@@ -68,7 +68,12 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
             </summary>
             <ul className="flex flex-col">
                 {resultsWithRanges.map(result => (
-                    <Match key={result.id} targetId={result.entry.id} text={result.text} range={result.range} />
+                    <Match
+                        key={result.id}
+                        targetId={entry.type === "CollectionItemField" ? entry.collectionItem.id : entry.node.id}
+                        text={result.text}
+                        range={result.range}
+                    />
                 ))}
             </ul>
         </details>

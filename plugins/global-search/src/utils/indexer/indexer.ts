@@ -79,6 +79,8 @@ export class GlobalSearchIndexer {
 
                 const [text, name] = await Promise.all([this.getNodeText(node), getNodeName(node)])
 
+                if (!text && !name) continue
+
                 batch.push({
                     id: node.id,
                     type: node.__class,
@@ -110,34 +112,33 @@ export class GlobalSearchIndexer {
             const fieldNameMap = new Map(fieldNames.map(f => [f.id, f.name]))
 
             for (const item of items) {
-                const fields = Object.fromEntries(
-                    Object.entries(item.fieldData).flatMap(([key, field]) => {
-                        const finalKey = fieldNameMap.get(key) ?? key
-                        switch (field.type) {
-                            case "string":
-                                return [[finalKey, field.value]]
-                            case "formattedText":
-                                return [[finalKey, stripMarkup(field.value)]]
-                        }
-                        return []
+                for (const [key, field] of Object.entries(item.fieldData)) {
+                    if (field.type !== "string" && field.type !== "formattedText") continue
+
+                    const text = field.type === "formattedText" ? stripMarkup(field.value) : field.value
+
+                    // Skip empty fields
+                    if (text.length === 0) continue
+
+                    batch.push({
+                        id: `${item.id}-${key}`,
+                        type: "CollectionItemField",
+                        collectionItem: item,
+                        rootNode: collection,
+                        rootNodeName: collection.name,
+                        rootNodeType: "Collection",
+                        matchingField: {
+                            name: fieldNameMap.get(key) ?? null,
+                            id: key,
+                        },
+                        text,
                     })
-                )
 
-                batch.push({
-                    id: item.id,
-                    type: "CollectionItem",
-                    collectionItem: item,
-                    rootNode: collection,
-                    rootNodeName: collection.name,
-                    rootNodeType: "Collection",
-                    fields,
-                    slug: item.slug,
-                })
-            }
-
-            if (batch.length === this.batchSize) {
-                yield batch
-                batch = []
+                    if (batch.length === this.batchSize) {
+                        yield batch
+                        batch = []
+                    }
+                }
             }
         }
 

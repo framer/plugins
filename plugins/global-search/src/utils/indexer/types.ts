@@ -21,6 +21,7 @@ interface IndexEntryBase {
     readonly id: string
     readonly type: string
     readonly rootNode: IndexNodeRootNode | Collection
+    readonly text: string | null
 }
 
 export interface IndexNodeEntry extends IndexEntryBase {
@@ -34,13 +35,16 @@ export interface IndexNodeEntry extends IndexEntryBase {
 }
 
 export interface IndexCollectionItemEntry extends IndexEntryBase {
-    readonly type: "CollectionItem"
+    readonly type: "CollectionItemField"
     readonly collectionItem: CollectionItem
     readonly rootNodeName: string
     readonly rootNode: Collection
     readonly rootNodeType: "Collection"
-    readonly slug: string
-    readonly fields: Record<string, string>
+    readonly matchingField: {
+        readonly name: string | null
+        readonly id: string
+    }
+    readonly text: string
 }
 
 export type IndexEntry = IndexNodeEntry | IndexCollectionItemEntry

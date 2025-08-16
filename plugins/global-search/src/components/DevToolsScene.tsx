@@ -18,14 +18,7 @@ export function DevToolsScene() {
         () =>
             entries.filter(entry => {
                 if (entry.id === filterQuery) return true
-                switch (entry.type) {
-                    case "CollectionItem":
-                        return Object.values(entry.fields).some(field =>
-                            field.toLowerCase().includes(filterQuery.toLowerCase())
-                        )
-                    default:
-                        return entry.name?.toLowerCase().includes(filterQuery.toLowerCase())
-                }
+                return entry.text?.toLowerCase().includes(filterQuery.toLowerCase())
             }),
         [entries, filterQuery]
     )
@@ -87,7 +80,7 @@ export function DevToolsScene() {
                     <div className="divide-y">
                         {filteredEntries.map(entry => (
                             <div
-                                key={`${entry.id}-${entry.type}`}
+                                key={entry.id}
                                 className={cn(
                                     "p-3 cursor-pointer hover:bg-gray-50",
                                     selectedEntry === entry && "bg-blue-50"
@@ -99,8 +92,8 @@ export function DevToolsScene() {
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">
-                                            {entry.type === "CollectionItem"
-                                                ? `${entry.rootNodeName} - ${entry.slug}`
+                                            {entry.type === "CollectionItemField"
+                                                ? entry.id
                                                 : (entry.name ?? "Unnamed")}
                                         </p>
                                         <p className="text-xs text-gray-500">{entry.type}</p>
@@ -135,28 +128,24 @@ export function DevToolsScene() {
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
                                     <p className="text-sm bg-gray-50 p-2 rounded">
-                                        {selectedEntry.type === "CollectionItem"
+                                        {selectedEntry.type === "CollectionItemField"
                                             ? "Collection Item"
                                             : (selectedEntry.name ?? "(no name)")}
                                     </p>
                                 </div>
 
-                                {selectedEntry.type !== "CollectionItem" && (
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                                            Text Content
-                                        </label>
-                                        <p className="text-sm bg-gray-50 p-2 rounded whitespace-pre-wrap">
-                                            {selectedEntry.text}
-                                        </p>
-                                    </div>
-                                )}
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Text Content</label>
+                                    <p className="text-sm bg-gray-50 p-2 rounded whitespace-pre-wrap">
+                                        {selectedEntry.text}
+                                    </p>
+                                </div>
 
-                                {selectedEntry.type === "CollectionItem" && (
+                                {selectedEntry.type === "CollectionItemField" && (
                                     <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1">Fields</label>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Field</label>
                                         <pre className="text-sm bg-gray-50 p-2 rounded whitespace-pre-wrap">
-                                            {JSON.stringify(selectedEntry.fields, null, 2)}
+                                            {selectedEntry.matchingField.name} ({selectedEntry.matchingField.id})
                                         </pre>
                                     </div>
                                 )}
@@ -178,12 +167,9 @@ export function DevToolsScene() {
                                         </summary>
                                         <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto text-xs">
                                             {JSON.stringify(
-                                                {
-                                                    // eslint-disable-next-line @typescript-eslint/no-misused-spread
-                                                    ...(selectedEntry.type === "CollectionItem"
-                                                        ? selectedEntry.collectionItem
-                                                        : selectedEntry.node),
-                                                },
+                                                selectedEntry.type === "CollectionItemField"
+                                                    ? selectedEntry.collectionItem
+                                                    : selectedEntry.node,
                                                 null,
                                                 2
                                             )}

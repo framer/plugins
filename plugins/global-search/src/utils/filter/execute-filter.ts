@@ -1,6 +1,6 @@
-import type { IndexCollectionItemEntry, IndexEntry, IndexNodeEntry } from "../indexer/types"
+import type { IndexEntry } from "../indexer/types"
 import { findRanges } from "./ranges"
-import { type Filter, type Matcher, type Result, ResultType, type RootNodesFilter, type TextMatcher } from "./types"
+import { type Filter, type Matcher, type Result, ResultType, type RootNodesFilter } from "./types"
 
 /** Execute a list of filters on a list of entries and return the results. */
 export function executeFilters(
@@ -40,50 +40,29 @@ export function executeFilters(
 
 /** Execute a matcher on a single entry and routes to the appropriate matcher function. */
 function executeMatcher(matcher: Matcher, entry: IndexEntry): Result | undefined {
-    // When more matchers are added, we can add more matcher functions here and use this as a router
-    if (entry.type === "CollectionItem") {
-        return executeTextMatcherForCollectionItems(matcher, entry)
-    }
-    return executeTextMatcherForNodes(matcher, entry)
-}
+    if (!entry.text) return undefined
 
-function executeTextMatcherForNodes(matcher: TextMatcher, entry: IndexNodeEntry): Result | undefined {
-    const text = entry.text ?? entry.name
-    if (!text) return undefined
-
-    const ranges = findRanges(text, matcher.query, matcher.caseSensitive)
+    const ranges = findRanges(entry.text, matcher.query, matcher.caseSensitive)
     if (!ranges.length) return undefined
+
+    if (entry.type === "CollectionItemField") {
+        return {
+            id: `${entry.id}-${entry.matchingField.id}`,
+            matchingField: entry.matchingField,
+            text: entry.text,
+            ranges,
+            entry,
+            type: ResultType.CollectionItemField,
+        }
+    }
 
     return {
         id: entry.id,
-        text: text,
+        text: entry.text,
         ranges,
         entry,
         type: ResultType.Node,
     }
-}
-
-function executeTextMatcherForCollectionItems(
-    matcher: TextMatcher,
-    entry: IndexCollectionItemEntry
-): Result | undefined {
-    // FIXME: This only returns the first matching field
-    // Instead of having multiple fields in the index, we should have a single entry per field in the index
-    for (const [field, text] of Object.entries(entry.fields)) {
-        const ranges = findRanges(text, matcher.query, matcher.caseSensitive)
-        if (ranges.length) {
-            return {
-                id: `${entry.id}-${field}`,
-                field,
-                text,
-                ranges,
-                entry,
-                type: ResultType.CollectionItem,
-            }
-        }
-    }
-
-    return undefined
 }
 
 /** Execute a filter on a result and return true if the result should be included. */

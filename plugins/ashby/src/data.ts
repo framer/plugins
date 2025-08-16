@@ -151,74 +151,76 @@ async function getItems(
         const fieldData: FieldDataInput = {}
         for (const [fieldName, rawValue] of Object.entries(item) as [string, unknown][]) {
             const isFieldIgnored = !fieldsToSync.find(field => field.id === fieldName)
-            const field = dataSource.fields.find(field => field.id === fieldName)
+            const fields = dataSource.fields.filter(field => (field.key ?? field.id) === fieldName)
 
-            if (!field || isFieldIgnored) {
+            if (fields.length === 0 || isFieldIgnored) {
                 continue
             }
 
-            const value = field.getValue ? field.getValue(rawValue) : rawValue
+            for (const field of fields) {
+                const value = field.getValue ? field.getValue(rawValue) : rawValue
 
-            switch (field.type) {
-                case "string":
-                    fieldData[field.id] = {
-                        value: v.is(StringifiableSchema, value) ? String(value) : "",
-                        type: "string",
-                    }
-                    break
-                case "number":
-                    fieldData[field.id] = { value: Number(value), type: "number" }
-                    break
-                case "boolean":
-                    fieldData[field.id] = { value: Boolean(value), type: "boolean" }
-                    break
-                case "formattedText":
-                    fieldData[field.id] = {
-                        value: v.is(StringifiableSchema, value) ? String(value) : "",
-                        type: "formattedText",
-                    }
-                    break
-                case "color":
-                case "date":
-                case "link":
-                    fieldData[field.id] = {
-                        value: v.is(StringifiableSchema, value) ? String(value) : null,
-                        type: field.type,
-                    }
-                    break
-                case "multiCollectionReference": {
-                    const ids: string[] = []
-                    if (v.is(ArrayWithIdsSchema, value)) {
-                        ids.push(...value.map(item => String(item.id)))
-                    }
+                switch (field.type) {
+                    case "string":
+                        fieldData[field.id] = {
+                            value: v.is(StringifiableSchema, value) ? String(value) : "",
+                            type: "string",
+                        }
+                        break
+                    case "number":
+                        fieldData[field.id] = { value: Number(value), type: "number" }
+                        break
+                    case "boolean":
+                        fieldData[field.id] = { value: Boolean(value), type: "boolean" }
+                        break
+                    case "formattedText":
+                        fieldData[field.id] = {
+                            value: v.is(StringifiableSchema, value) ? String(value) : "",
+                            type: "formattedText",
+                        }
+                        break
+                    case "color":
+                    case "date":
+                    case "link":
+                        fieldData[field.id] = {
+                            value: v.is(StringifiableSchema, value) ? String(value) : null,
+                            type: field.type,
+                        }
+                        break
+                    case "multiCollectionReference": {
+                        const ids: string[] = []
+                        if (v.is(ArrayWithIdsSchema, value)) {
+                            ids.push(...value.map(item => String(item.id)))
+                        }
 
-                    fieldData[field.id] = {
-                        value: ids,
-                        type: "multiCollectionReference",
+                        fieldData[field.id] = {
+                            value: ids,
+                            type: "multiCollectionReference",
+                        }
+                        break
                     }
-                    break
+                    case "collectionReference": {
+                        if (typeof value !== "object" || value == null || !("id" in value)) {
+                            continue
+                        }
+
+                        fieldData[field.id] = {
+                            value: String(value.id),
+                            type: "collectionReference",
+                        }
+                        break
+                    }
+                    case "image":
+                    case "file":
+                    case "enum":
+                    case "array":
+                        throw new Error(`${field.type} field is not supported.`)
+                    default:
+                        assertNever(
+                            field,
+                            new Error(`Unsupported field type: ${(field as unknown as { type: string }).type}`)
+                        )
                 }
-                case "collectionReference": {
-                    if (typeof value !== "object" || value == null || !("id" in value)) {
-                        continue
-                    }
-
-                    fieldData[field.id] = {
-                        value: String(value.id),
-                        type: "collectionReference",
-                    }
-                    break
-                }
-                case "image":
-                case "file":
-                case "enum":
-                case "array":
-                    throw new Error(`${field.type} field is not supported.`)
-                default:
-                    assertNever(
-                        field,
-                        new Error(`Unsupported field type: ${(field as unknown as { type: string }).type}`)
-                    )
             }
         }
 

@@ -75,6 +75,13 @@ select:not(:disabled) {
     width: 164px;
 }
 
+.setup-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
 .mapping {
     padding-bottom: 0;
 }

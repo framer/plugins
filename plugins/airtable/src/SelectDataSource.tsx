@@ -1,5 +1,5 @@
 import { framer, type ManagedCollection } from "framer-plugin"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { AirtableBase, AirtableTable, DataSource } from "./data"
 import { getTables, getUserBases } from "./data"
 import { inferFields } from "./fields"
@@ -10,7 +10,9 @@ interface SelectDataSourceProps {
 }
 
 export function SelectDataSource({ collection, onSelectDataSource }: SelectDataSourceProps) {
-    const [status, setStatus] = useState<"loading-bases" | "loading-tables" | "ready" | "error">("loading-bases")
+    const [status, setStatus] = useState<"loading-bases" | "loading-tables" | "ready" | "error-bases" | "error-tables">(
+        "loading-bases"
+    )
     const [bases, setBases] = useState<AirtableBase[]>([])
     const [tables, setTables] = useState<AirtableTable[]>([])
 
@@ -18,13 +20,21 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
     const [selectedTableId, setSelectedTableId] = useState<string>("")
     const [isLoading, setIsLoading] = useState(false)
 
+    const selectedBase = bases.find(base => base.id === selectedBaseId)
+
     useEffect(() => {
         setStatus("loading-bases")
 
         const task = async () => {
-            const bases = await getUserBases()
-            setBases(bases)
-            setSelectedBaseId(bases[0]?.id ?? "")
+            try {
+                const bases = await getUserBases()
+                setBases(bases)
+                setSelectedBaseId(bases[0]?.id ?? "")
+            } catch (error) {
+                console.error(error)
+                setStatus("error-bases")
+                framer.notify("Failed to load bases. Check the logs for more details.", { variant: "error" })
+            }
         }
 
         void task()
@@ -39,12 +49,22 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
             setSelectedTableId("")
 
             const task = async () => {
-                const tables = await getTables(selectedBaseId, abortController.signal)
-                if (abortController.signal.aborted) return
+                try {
+                    const tables = await getTables(selectedBaseId, abortController.signal)
+                    if (abortController.signal.aborted) return
 
-                setTables(tables)
-                setStatus("ready")
-                setSelectedTableId(tables[0]?.id ?? "")
+                    setTables(tables)
+                    setStatus("ready")
+                    setSelectedTableId(tables[0]?.id ?? "")
+                } catch (error) {
+                    console.error(error)
+                    setStatus("error-tables")
+
+                    const baseName = selectedBase?.name ?? selectedBaseId
+                    framer.notify(`Failed to load tables for base "${baseName}". Check the logs for more details.`, {
+                        variant: "error",
+                    })
+                }
             }
 
             void task()
@@ -53,7 +73,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
         return () => {
             abortController.abort()
         }
-    }, [selectedBaseId])
+    }, [selectedBaseId, selectedBase])
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -90,53 +110,86 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
         void task()
     }
 
+    const [basesPlaceholderText, tablesPlaceholderText] = useMemo(() => {
+        let basesText = "Choose…"
+        let tablesText = "Choose…"
+
+        switch (status) {
+            case "loading-bases":
+                basesText = "Loading…"
+                break
+            case "error-bases":
+                basesText = "Error"
+                break
+        }
+
+        switch (status) {
+            case "loading-tables":
+                tablesText = "Loading…"
+                break
+            case "error-bases":
+            case "error-tables":
+                tablesText = "Error"
+                break
+        }
+
+        return [basesText, tablesText]
+    }, [status])
+
     return (
         <form className="framer-hide-scrollbar setup" onSubmit={handleSubmit}>
             <div className="logo">
                 <img src="airtable.svg" alt="Airtable icon" style={{ width: 80, height: 80 }} />
             </div>
 
-            <label htmlFor="base">
-                Base
-                <select
-                    id="base"
-                    onChange={event => {
-                        setSelectedBaseId(event.target.value)
-                    }}
-                    value={selectedBaseId}
-                    disabled={status === "loading-bases"}
-                >
-                    <option value="" disabled>
-                        {status === "loading-bases" ? "Loading…" : "Choose…"}
-                    </option>
-                    {bases.map(({ id, name }) => (
-                        <option key={id} value={id}>
-                            {name}
+            <div className="setup-list">
+                <label htmlFor="base">
+                    Base
+                    <select
+                        id="base"
+                        onChange={event => {
+                            setSelectedBaseId(event.target.value)
+                        }}
+                        value={selectedBaseId}
+                        disabled={status === "loading-bases" || status === "error-bases"}
+                    >
+                        <option value="" disabled>
+                            {basesPlaceholderText}
                         </option>
-                    ))}
-                </select>
-            </label>
+                        {bases.map(({ id, name }) => (
+                            <option key={id} value={id}>
+                                {name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
 
-            <label htmlFor="table">
-                Table
-                <select
-                    id="table"
-                    onChange={event => {
-                        setSelectedTableId(event.target.value)
-                    }}
-                    value={selectedTableId}
-                    disabled={!selectedBaseId || status === "loading-tables"}
-                >
-                    <option value="" disabled>
-                        {status === "loading-tables" ? "Loading…" : "Choose…"}
-                    </option>
-                    {tables.map(({ id, name }) => (
-                        <option key={id} value={id}>
-                            {name}
+                <label htmlFor="table">
+                    Table
+                    <select
+                        id="table"
+                        onChange={event => {
+                            setSelectedTableId(event.target.value)
+                        }}
+                        value={selectedTableId}
+                        disabled={
+                            !selectedBaseId ||
+                            status === "loading-tables" ||
+                            status === "error-tables" ||
+                            status === "error-bases"
+                        }
+                    >
+                        <option value="" disabled>
+                            {tablesPlaceholderText}
                         </option>
-                    ))}
-                </select>
-            </label>
+                        {tables.map(({ id, name }) => (
+                            <option key={id} value={id}>
+                                {name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            </div>
 
             <button type="submit" disabled={!selectedBaseId || !selectedTableId || isLoading}>
                 {isLoading ? <div className="framer-spinner" /> : "Next"}

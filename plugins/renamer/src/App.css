@@ -160,7 +160,7 @@
     height: 30px;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity 200ms ease;
+    transition: background-color 150ms ease, color 150ms ease;
 }
 
 .rename-button:hover,
@@ -173,17 +173,18 @@
 }
 
 .rename-button:disabled {
-    opacity: 0.5;
+    opacity: 1;
+    color: var(--framer-color-text-tertiary) !important;
     cursor: not-allowed;
 }
 
-[data-framer-theme="light"] .rename-button {
+[data-framer-theme="light"] .rename-button:not(:disabled) {
     background: #111 !important;
     color: #fff;
     --framer-color-text: #fff;
 }
 
-[data-framer-theme="dark"] .rename-button {
+[data-framer-theme="dark"] .rename-button:not(:disabled) {
     background: #fff !important;
     color: #111;
     --framer-color-text: #111;

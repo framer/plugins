@@ -10,7 +10,7 @@ interface FieldMappingRowProps {
     field: RecruiteeField
     originalFieldName: string | undefined
     disabled: boolean
-    onToggleDisabled: (fieldId: string) => void
+    onToggleDisabled: (field: RecruiteeField) => void
     onNameChange: (fieldId: string, name: string) => void
     onCollectionChange: (fieldId: string, collectionId: string) => void
 }
@@ -32,7 +32,7 @@ function FieldMappingRow({
                 type="button"
                 className={`source-field ${isMissingReference ? "missing-reference" : ""} ${isIgnored ? "disabled" : ""}`}
                 onClick={() => {
-                    onToggleDisabled(field.id)
+                    onToggleDisabled(field)
                 }}
                 tabIndex={0}
             >
@@ -169,14 +169,16 @@ export function FieldMapping({ companyId, token, collection, dataSource, initial
         )
     }, [])
 
-    const toggleFieldDisabledState = useCallback((fieldId: string) => {
+    const toggleFieldDisabledState = useCallback((field: RecruiteeField) => {
+        if (isMissingReferenceField(field)) return
+
         setIgnoredFieldIds(previousIgnoredFieldIds => {
             const updatedIgnoredFieldIds = new Set(previousIgnoredFieldIds)
 
-            if (updatedIgnoredFieldIds.has(fieldId)) {
-                updatedIgnoredFieldIds.delete(fieldId)
+            if (updatedIgnoredFieldIds.has(field.id)) {
+                updatedIgnoredFieldIds.delete(field.id)
             } else {
-                updatedIgnoredFieldIds.add(fieldId)
+                updatedIgnoredFieldIds.add(field.id)
             }
 
             return updatedIgnoredFieldIds
@@ -274,10 +276,7 @@ export function FieldMapping({ companyId, token, collection, dataSource, initial
                             field={field}
                             originalFieldName={dataSource.fields.find(sourceField => sourceField.id === field.id)?.name}
                             disabled={ignoredFieldIds.has(field.id)}
-                            onToggleDisabled={() => {
-                                if (isMissingReferenceField(field)) return
-                                toggleFieldDisabledState(field.id)
-                            }}
+                            onToggleDisabled={toggleFieldDisabledState}
                             onNameChange={changeFieldName}
                             onCollectionChange={changeCollectionId}
                         />

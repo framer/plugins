@@ -47,7 +47,6 @@
     align-items: center;
     flex-shrink: 0;
     padding-bottom: 15px;
-    border-bottom: 1px solid var(--framer-color-divider);
 }
 
 .tabs-container {
@@ -149,7 +148,6 @@
     flex-direction: column;
     gap: 10px;
     padding-top: 15px;
-    border-top: 1px solid var(--framer-color-divider);
 }
 
 .rename-button {
@@ -198,6 +196,11 @@
     gap: 1px;
     height: 100%;
     overflow: hidden;
+    border-top: 1px solid var(--framer-color-divider);
+}
+
+.results.is-scrollable {
+    border-bottom: 1px solid var(--framer-color-divider);
 }
 
 .container {
@@ -342,12 +345,12 @@
 /* Overflow gradients */
 
 .overflow-gradient-top {
-    top: 0;
+    top: 1px;
     background: linear-gradient(to bottom, var(--framer-color-bg), transparent);
 }
 
 .overflow-gradient-bottom {
-    bottom: 0;
+    bottom: 1px;
     background: linear-gradient(to top, var(--framer-color-bg), transparent);
 }
 

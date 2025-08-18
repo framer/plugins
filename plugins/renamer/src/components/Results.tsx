@@ -25,6 +25,7 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
     const [showBottomGradient, setShowBottomGradient] = useState(false)
     const [scrollTop, setScrollTop] = useState(0)
     const [containerHeight, setContainerHeight] = useState(0)
+    const [isScrollable, setIsScrollable] = useState(false)
 
     const focusResult = async (result: Result) => {
         await framer.setSelection(result.id)
@@ -72,12 +73,15 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
                     const newScrollTop = scrollAreaRef.current.scrollTop
                     setScrollTop(newScrollTop)
 
+                    // Calculate if content overflows
+                    const scrollHeight = scrollAreaRef.current.scrollHeight
+                    const clientHeight = scrollAreaRef.current.clientHeight
+                    setIsScrollable(scrollHeight > clientHeight)
+
                     // Show top gradient when scrolled down
                     setShowTopGradient(newScrollTop > 0)
 
                     // Show bottom gradient when not at the bottom
-                    const scrollHeight = scrollAreaRef.current.scrollHeight
-                    const clientHeight = scrollAreaRef.current.clientHeight
                     setShowBottomGradient(newScrollTop + clientHeight < scrollHeight)
                 }
             }
@@ -95,8 +99,10 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
         }
     }, [results])
 
-    return (
-        <div className="results">
+    return results.length === 0 && query && !indexing ? (
+        <div className="results-empty-state">No Results</div>
+    ) : (
+        <div className={cx("results", isScrollable && "is-scrollable")}>
             <div className="container" ref={scrollAreaRef}>
                 <div
                     className="results-list"
@@ -133,8 +139,6 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
 
             <div className={cx("overflow-gradient-top", !showTopGradient && "hidden")} />
             <div className={cx("overflow-gradient-bottom", !showBottomGradient && "hidden")} />
-
-            {results.length === 0 && query && !indexing && <div className="results-empty-state">No Results</div>}
         </div>
     )
 }

@@ -160,7 +160,9 @@
     height: 30px;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 150ms ease, color 150ms ease;
+    transition:
+        background-color 150ms ease,
+        color 150ms ease;
 }
 
 .rename-button:hover,
@@ -197,15 +199,21 @@
     gap: 1px;
     height: 100%;
     overflow: hidden;
+}
+
+.results-container {
+    position: absolute;
+    inset: 0;
     border-top: 1px solid var(--framer-color-divider);
 }
 
-.results.is-scrollable {
+.results-container.is-scrollable {
     border-bottom: 1px solid var(--framer-color-divider);
 }
 
 .container {
     flex: 1;
+    height: 100%;
     overflow-y: auto;
     padding-top: 15px;
     padding-bottom: 15px;
@@ -346,12 +354,12 @@
 /* Overflow gradients */
 
 .overflow-gradient-top {
-    top: 1px;
+    top: 0;
     background: linear-gradient(to bottom, var(--framer-color-bg), transparent);
 }
 
 .overflow-gradient-bottom {
-    bottom: 1px;
+    bottom: 0;
     background: linear-gradient(to top, var(--framer-color-bg), transparent);
 }
 

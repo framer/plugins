@@ -102,43 +102,45 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
     return results.length === 0 && query && !indexing ? (
         <div className="results-empty-state">No Results</div>
     ) : (
-        <div className={cx("results", isScrollable && "is-scrollable")}>
-            <div className="container" ref={scrollAreaRef}>
-                <div
-                    className="results-list"
-                    style={{
-                        height: results.length * ITEM_HEIGHT,
-                        paddingTop: startIndex * ITEM_HEIGHT,
-                    }}
-                >
-                    {visibleItems.map(result => (
-                        <RenameComparison
-                            key={result.id}
-                            selected={selectedNodeIds.includes(result.id)}
-                            before={result.title}
-                            after={getTextAfterRename(result)}
-                            onClick={() => {
-                                void focusResult(result)
-                            }}
-                        >
-                            <LayerIcon type={result.entry.type} />
-                        </RenameComparison>
-                    ))}
+        <div className={cx("results-container", isScrollable && "is-scrollable")}>
+            <div className="results">
+                <div className="container" ref={scrollAreaRef}>
+                    <div
+                        className="results-list"
+                        style={{
+                            height: results.length * ITEM_HEIGHT,
+                            paddingTop: startIndex * ITEM_HEIGHT,
+                        }}
+                    >
+                        {visibleItems.map(result => (
+                            <RenameComparison
+                                key={result.id}
+                                selected={selectedNodeIds.includes(result.id)}
+                                before={result.title}
+                                after={getTextAfterRename(result)}
+                                onClick={() => {
+                                    void focusResult(result)
+                                }}
+                            >
+                                <LayerIcon type={result.entry.type} />
+                            </RenameComparison>
+                        ))}
+                    </div>
+
+                    {indexing && query && (
+                        <div className="loading-placeholders">
+                            <PlaceholderRenameComparison index={0} total={5} width={30} />
+                            <PlaceholderRenameComparison index={1} total={5} width={40} />
+                            <PlaceholderRenameComparison index={2} total={5} width={20} />
+                            <PlaceholderRenameComparison index={3} total={5} width={30} />
+                            <PlaceholderRenameComparison index={4} total={5} width={20} />
+                        </div>
+                    )}
                 </div>
 
-                {indexing && query && (
-                    <div className="loading-placeholders">
-                        <PlaceholderRenameComparison index={0} total={5} width={30} />
-                        <PlaceholderRenameComparison index={1} total={5} width={40} />
-                        <PlaceholderRenameComparison index={2} total={5} width={20} />
-                        <PlaceholderRenameComparison index={3} total={5} width={30} />
-                        <PlaceholderRenameComparison index={4} total={5} width={20} />
-                    </div>
-                )}
+                <div className={cx("overflow-gradient-top", !showTopGradient && "hidden")} />
+                <div className={cx("overflow-gradient-bottom", !showBottomGradient && "hidden")} />
             </div>
-
-            <div className={cx("overflow-gradient-top", !showTopGradient && "hidden")} />
-            <div className={cx("overflow-gradient-bottom", !showBottomGradient && "hidden")} />
         </div>
     )
 }

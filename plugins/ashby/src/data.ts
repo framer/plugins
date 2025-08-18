@@ -141,6 +141,18 @@ async function getItems(
         slugByItemId.set(itemId, slug)
     }
 
+    const fieldLookup = new Map<string, AshbyField[]>()
+    for (const field of dataSource.fields) {
+        const key = field.key ?? field.id
+        if (!fieldLookup.has(key)) {
+            fieldLookup.set(key, [])
+        }
+        const existingFields = fieldLookup.get(key)
+        if (existingFields) {
+            existingFields.push(field)
+        }
+    }
+
     for (const item of dataItems) {
         const id = String(item.id)
         const slug = slugByItemId.get(id)
@@ -151,7 +163,7 @@ async function getItems(
         const fieldData: FieldDataInput = {}
         for (const [fieldName, rawValue] of Object.entries(item) as [string, unknown][]) {
             const isFieldIgnored = !fieldsToSync.find(field => field.id === fieldName)
-            const fields = dataSource.fields.filter(field => (field.key ?? field.id) === fieldName)
+            const fields = fieldLookup.get(fieldName) ?? []
 
             if (fields.length === 0 || isFieldIgnored) {
                 continue

@@ -5,7 +5,6 @@
     width: 100%;
     height: 100%;
     position: absolute;
-    padding: 0 15px 15px;
 }
 
 .app-content {
@@ -46,7 +45,8 @@
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    padding-bottom: 15px;
+    padding: 0 15px 15px;
+    position: relative;
 }
 
 .tabs-container {
@@ -72,6 +72,10 @@
     font-weight: 500;
     user-select: none;
     transition: color 200ms ease;
+}
+
+.tab:not(.active):hover {
+    color: var(--framer-color-text-secondary);
 }
 
 .tab.active {
@@ -147,7 +151,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-top: 15px;
+    padding: 15px;
 }
 
 .rename-button {
@@ -204,19 +208,35 @@
 .results-container {
     position: absolute;
     inset: 0;
-    border-top: 1px solid var(--framer-color-divider);
 }
 
-.results-container.is-scrollable {
-    border-bottom: 1px solid var(--framer-color-divider);
+.results-container:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 15px;
+    right: 15px;
+    height: 1px;
+    background-color: var(--framer-color-divider);
+    z-index: 1;
+}
+
+.results-container.is-scrollable:after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 15px;
+    right: 15px;
+    height: 1px;
+    background-color: var(--framer-color-divider);
+    z-index: 1;
 }
 
 .container {
     flex: 1;
     height: 100%;
     overflow-y: auto;
-    padding-top: 15px;
-    padding-bottom: 15px;
+    padding: 15px;
 }
 
 .results-list {
@@ -287,7 +307,7 @@
     cursor: pointer;
     text-align: left;
     font-weight: 500;
-    padding: 0;
+    padding: 0 0 0 10px;
 }
 
 [data-framer-theme="dark"] .replace-comparison {
@@ -366,7 +386,8 @@
 .overflow-gradient-top,
 .overflow-gradient-bottom {
     position: absolute;
-    width: 100%;
+    left: 15px;
+    right: 15px;
     height: 40px;
     transition: opacity 200ms ease;
     pointer-events: none;

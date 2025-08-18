@@ -44,10 +44,10 @@ export async function getDataSource(
     token: string,
     dataSourceId: string
 ): Promise<RecruiteeDataSource> {
-    if (!companyId) {
+    if (companyId === "") {
         throw new Error("No Company Id Found. Please provide Company ID.")
     }
-    if (!token) {
+    if (token === "") {
         throw new Error("No Board Token found. Please select a board.")
     }
     const dataSource = dataSources.find(option => option.id === dataSourceId)
@@ -61,7 +61,8 @@ export async function getDataSource(
     const managedCollections = await framer.getManagedCollections()
     for (const collection of managedCollections) {
         const collectionToken = await collection.getPluginData(tokenPluginKey)
-        if (collectionToken !== token) {
+        const collectionCompanyId = await collection.getPluginData(companyIdPluginKey)
+        if (collectionToken !== token || collectionCompanyId !== companyId) {
             continue
         }
 

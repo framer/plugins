@@ -24,48 +24,48 @@ function FieldMappingRow({
     onCollectionChange,
 }: FieldMappingRowProps) {
     const isMissingReference = isMissingReferenceField(field)
-    const isDisabled = disabled || isMissingReference
+    const isIgnored = disabled || isMissingReference
 
     return (
         <>
             <button
                 type="button"
-                className={`source-field ${isMissingReference ? "missing-reference" : ""}`}
-                aria-disabled={isDisabled}
+                className={`source-field ${isMissingReference ? "missing-reference" : ""} ${isIgnored ? "disabled" : ""}`}
                 onClick={() => {
                     onToggleDisabled(field.id)
                 }}
                 tabIndex={0}
             >
-                <input type="checkbox" checked={!isDisabled} tabIndex={-1} readOnly />
+                <input type="checkbox" checked={!isIgnored} tabIndex={-1} readOnly />
                 <span>{originalFieldName ?? field.id}</span>
             </button>
             <ChevronIcon />
             {isCollectionReference(field) ? (
                 <select
                     className="target-field"
-                    disabled={isDisabled}
+                    disabled={isIgnored}
                     value={field.collectionId}
                     onChange={event => {
                         onCollectionChange(field.id, event.target.value || (originalFieldName ?? ""))
                     }}
                 >
-                    {field.supportedCollections?.length === 0 && (
+                    {field.supportedCollections?.length === 0 ? (
                         <option value="" disabled>
                             Missing Collection
                         </option>
+                    ) : (
+                        field.supportedCollections?.map(collection => (
+                            <option key={collection.id} value={collection.id}>
+                                {collection.name}
+                            </option>
+                        ))
                     )}
-                    {field.supportedCollections?.map(collection => (
-                        <option key={collection.id} value={collection.id}>
-                            {collection.name}
-                        </option>
-                    ))}
                 </select>
             ) : (
                 <input
                     type="text"
                     className="target-field"
-                    disabled={isDisabled}
+                    disabled={isIgnored}
                     placeholder={originalFieldName}
                     value={field.name !== originalFieldName ? field.name : ""}
                     onChange={event => {
@@ -77,7 +77,8 @@ function FieldMappingRow({
     )
 }
 
-const emptyArray: RecruiteeField[] = []
+const emptyArray: readonly RecruiteeField[] = []
+Object.freeze(emptyArray)
 
 interface FieldMappingProps {
     companyId: string
@@ -103,7 +104,7 @@ export function FieldMapping({ companyId, token, collection, dataSource, initial
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 
-    const [fields, setFields] = useState<RecruiteeField[]>(emptyArray)
+    const [fields, setFields] = useState<readonly RecruiteeField[]>(emptyArray)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(() => {
         const initialFieldIds = new Set()
 

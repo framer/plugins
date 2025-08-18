@@ -141,7 +141,7 @@ form {
     text-overflow: ellipsis;
 }
 
-.mapping .source-field[aria-disabled="true"] {
+.mapping .source-field.disabled {
     opacity: 0.5;
     background-color: var(--framer-color-bg-tertiary) !important;
 }

@@ -5,11 +5,11 @@ import { getDataSource, syncMethods } from "../data"
 import { dataSources, type RecruiteeDataSource } from "../dataSources"
 
 interface SelectDataSourceProps {
-    previousCompanyId?: string | null
+    previousCompanyId: string | null | undefined
     onSelectCompanyId: (companyId: string) => void
     previousToken?: string | null
     onSelectToken: (token: string) => void
-    previousDataSourceId?: string | null
+    previousDataSourceId: string | null | undefined
     onSelectDataSource: (dataSource: RecruiteeDataSource) => void
 }
 

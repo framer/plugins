@@ -1,10 +1,10 @@
-import { SegmentedControl } from "@radix-ui/themes"
 import { Color, type OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { ColorInput } from "../color-input"
 import { GLSL } from "../glsl"
 import { useCharactersAtlasTexture } from "../hooks/use-characters-atlas-texture"
 import { NumberInput } from "../number-input"
+import SegmentedControl from "../segmented-control"
 
 interface Uniforms {
     uTexture: { value: Texture }
@@ -328,16 +328,16 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
             </div>
             <div className="gui-row">
                 <label className="gui-label">Fill</label>
-                <SegmentedControl.Root
-                    value={isFilled ? "true" : "false"}
-                    onValueChange={value => {
-                        setIsFilled(value === "true")
+                <SegmentedControl
+                    items={[
+                        { value: true, label: "Yes" },
+                        { value: false, label: "No" },
+                    ]}
+                    value={isFilled}
+                    onChange={value => {
+                        setIsFilled(value)
                     }}
-                    className="gui-segmented-control"
-                >
-                    <SegmentedControl.Item value="true">Yes</SegmentedControl.Item>
-                    <SegmentedControl.Item value="false">No</SegmentedControl.Item>
-                </SegmentedControl.Root>
+                />
             </div>
 
             {!isFilled && (

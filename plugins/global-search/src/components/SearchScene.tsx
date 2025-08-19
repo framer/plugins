@@ -1,7 +1,7 @@
 import { framer, type MenuItem } from "framer-plugin"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react"
 import { cn } from "../utils/className"
-import { useFilter } from "../utils/filter/useFilter"
+import { useAsyncFilter } from "../utils/filter/useAsyncFilter"
 import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
@@ -17,22 +17,31 @@ export function SearchScene() {
     const { index, isIndexing } = useIndexer()
     const [query, setQuery] = useState("")
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
-    const { results, hasResults } = useFilter(query, searchOptions, index)
+    const deferredQuery = useDeferredValue(query)
+
+    const { results, hasResults, error: filterError, isFiltering } = useAsyncFilter(deferredQuery, searchOptions, index)
+
+    if (filterError) {
+        console.error(filterError)
+        throw filterError
+    }
 
     const handleQueryChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(event.target.value)
     }, [])
 
     useEffect(() => {
-        void framer.showUI(getPluginUiOptions({ query, hasResults }))
-    }, [query, hasResults])
+        void framer.showUI(
+            getPluginUiOptions({ query: deferredQuery, hasResults, hasFinalResults: !isIndexing && !isFiltering })
+        )
+    }, [deferredQuery, hasResults, isIndexing, isFiltering])
 
     return (
         <main className="flex flex-col h-full">
             <div
                 className={cn(
                     "flex gap-2 border-divider-light dark:border-divider-dark border-y py-3 mx-3 transition-colors items-center",
-                    !query && "border-b-transparent dark:border-b-transparent"
+                    !deferredQuery && "border-b-transparent dark:border-b-transparent"
                 )}
             >
                 <SearchInput value={query} onChange={handleQueryChange} />
@@ -50,8 +59,8 @@ export function SearchScene() {
                 </Menu>
             </div>
             <div className="overflow-y-auto px-3 flex flex-col flex-1">
-                {query && hasResults && <ResultsList groupedResults={results} />}
-                {query && !hasResults && !isIndexing && <NoResults />}
+                {deferredQuery && hasResults && <ResultsList groupedResults={results} />}
+                {deferredQuery && !hasResults && !isIndexing && !isFiltering && <NoResults />}
             </div>
         </main>
     )

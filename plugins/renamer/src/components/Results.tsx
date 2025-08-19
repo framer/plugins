@@ -21,11 +21,9 @@ const BUFFER_SIZE = 5
 
 export default function Results({ query, indexing, results, selectedNodeIds, getTextAfterRename }: Props) {
     const scrollAreaRef = useRef<HTMLDivElement>(null)
-    const [showTopGradient, setShowTopGradient] = useState(false)
     const [showBottomGradient, setShowBottomGradient] = useState(false)
     const [scrollTop, setScrollTop] = useState(0)
     const [containerHeight, setContainerHeight] = useState(0)
-    const [isScrollable, setIsScrollable] = useState(false)
 
     const focusResult = async (result: Result) => {
         await framer.setSelection(result.id)
@@ -73,13 +71,9 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
                     const newScrollTop = scrollAreaRef.current.scrollTop
                     setScrollTop(newScrollTop)
 
-                    // Calculate if content overflows
+                    // Calculate dimensions for bottom gradient
                     const scrollHeight = scrollAreaRef.current.scrollHeight
                     const clientHeight = scrollAreaRef.current.clientHeight
-                    setIsScrollable(scrollHeight > clientHeight)
-
-                    // Show top gradient when scrolled down
-                    setShowTopGradient(newScrollTop > 0)
 
                     // Show bottom gradient when not at the bottom
                     setShowBottomGradient(newScrollTop + clientHeight < scrollHeight)
@@ -102,7 +96,7 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
     return results.length === 0 && query && !indexing ? (
         <div className="results-empty-state">No Results</div>
     ) : (
-        <div className={cx("results-container", isScrollable && "is-scrollable")}>
+        <div className="results-container">
             <div className="results">
                 <div className="container" ref={scrollAreaRef}>
                     <div
@@ -138,7 +132,6 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
                     )}
                 </div>
 
-                <div className={cx("overflow-gradient-top", !showTopGradient && "hidden")} />
                 <div className={cx("overflow-gradient-bottom", !showBottomGradient && "hidden")} />
             </div>
         </div>

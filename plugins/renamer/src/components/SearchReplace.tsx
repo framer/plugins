@@ -29,7 +29,7 @@ export default function SearchReplace({
     return (
         <form className="search-replace" onSubmit={onRenameClick}>
             <TextField
-                placeholder="Find"
+                placeholder="Search…"
                 value={query}
                 setValue={setQuery}
                 disabled={loading}

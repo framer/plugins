@@ -45,8 +45,19 @@
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    padding: 0 15px 15px;
+    padding: 15px;
     position: relative;
+}
+
+.tabs:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 15px;
+    right: 15px;
+    height: 1px;
+    background-color: var(--framer-color-divider);
+    z-index: 1;
 }
 
 .tabs-container {
@@ -371,29 +382,19 @@
     color: #999;
 }
 
-/* Overflow gradients */
+/* Overflow gradient */
 
-.overflow-gradient-top {
-    top: 0;
-    background: linear-gradient(to bottom, var(--framer-color-bg), transparent);
-}
-
-.overflow-gradient-bottom {
-    bottom: 0;
-    background: linear-gradient(to top, var(--framer-color-bg), transparent);
-}
-
-.overflow-gradient-top,
 .overflow-gradient-bottom {
     position: absolute;
+    bottom: 0;
     left: 15px;
     right: 15px;
     height: 40px;
+    background: linear-gradient(to top, var(--framer-color-bg), transparent);
     transition: opacity 200ms ease;
     pointer-events: none;
 }
 
-.overflow-gradient-top.hidden,
 .overflow-gradient-bottom.hidden {
     opacity: 0;
 }

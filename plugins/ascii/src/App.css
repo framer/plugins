@@ -48,7 +48,6 @@ html * {
     inset: 0px;
     border-radius: 10px;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-    /* border: 1px solid red; */
     pointer-events: none;
 }
 

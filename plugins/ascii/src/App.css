@@ -6,6 +6,14 @@ html * {
     scrollbar-width: thin;
 }
 
+body[data-framer-theme="light"] {
+    --slider-track-color: #ddd;
+}
+
+body[data-framer-theme="dark"] {
+    --slider-track-color: #444;
+}
+
 .canvas-container {
     min-width: 100%;
     position: relative;
@@ -212,52 +220,6 @@ body[data-framer-theme="light"] {
     }
 }
 
-/* Slider */
-.SliderRoot {
-    position: relative;
-    display: flex;
-    align-items: center;
-    user-select: none;
-    touch-action: none;
-    width: 62px;
-    height: 30px;
-    border-radius: 8px;
-    cursor: ew-resize;
-}
-
-.SliderTrack {
-    background-color: #e6e6e6;
-    position: relative;
-    flex-grow: 1;
-    border-radius: 9999px;
-    height: 2px;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.SliderRange {
-    position: absolute;
-    background-color: var(--framer-color-text);
-    border-radius: 2px;
-    height: 2px;
-}
-
-.SliderThumb {
-    display: block;
-    width: 10px;
-    height: 10px;
-    background-color: white;
-    box-shadow:
-        0 1px 1px rgba(0, 0, 0, 0.1),
-        0 1px 2px rgba(0, 0, 0, 0.1),
-        0 2px 4px rgba(0, 0, 0, 0.1);
-    border-radius: 20px;
-}
-
-.SliderThumb:focus {
-    outline: none;
-}
-
 body[data-framer-theme="dark"] .strokeWidth {
     background: #444444;
 }
@@ -308,6 +270,45 @@ body[data-framer-theme="light"] {
         flex-grow: 1;
         width: auto;
     }
+}
+
+/* Slider */
+input[type="range"] {
+    -webkit-appearance: none;
+    background-color: transparent;
+    padding: 0;
+    cursor: default;
+}
+
+input[type="range"]:focus {
+    box-shadow: none;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    background: linear-gradient(
+        to right,
+        var(--framer-color-tint) var(--progress),
+        var(--slider-track-color) var(--progress)
+    );
+    border-radius: 2px;
+    height: 2px;
+    will-change: transform;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    background-color: #fff;
+    border: none;
+    border-radius: 50%;
+    box-shadow:
+        0px 1px 3px 0px rgba(0, 0, 0, 0.2),
+        0px 0.5px 0px 0px rgba(0, 0, 0, 0.1) !important;
+    cursor: pointer;
+    height: 10px;
+    margin-top: -4px;
+    opacity: 1;
+    width: 10px;
+    will-change: transform;
 }
 
 /* Segmented Control styles */

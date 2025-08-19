@@ -1,4 +1,3 @@
-// import "@radix-ui/themes/styles.css"
 import cn from "clsx"
 import { framer, type ImageAsset, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"

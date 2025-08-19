@@ -1,4 +1,4 @@
-import cx from "classnames"
+import cn from "clsx"
 
 interface SegmentedControlItem {
     value: string
@@ -31,7 +31,7 @@ export default function SegmentedControl({ items, value, onChange }: Props) {
             {items.map((item, index) => (
                 <button
                     key={index}
-                    className={cx("segmented-control-item", item.value === value && "active")}
+                    className={cn("segmented-control-item", item.value === value && "active")}
                     onClick={() => {
                         onChange(item.value)
                     }}

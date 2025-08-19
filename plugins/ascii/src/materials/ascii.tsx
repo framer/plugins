@@ -1,3 +1,4 @@
+import { framer } from "framer-plugin"
 import { Color, type OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
 import { ColorInput } from "../color-input"
@@ -184,21 +185,33 @@ export class ASCIIMaterial extends Program {
 
 const FONTS = ["Roboto Mono", "Fragment Mono", "Martian Mono", "Space Mono", "Courier Prime"] as const
 
+const DEFAULT_VALUES = {
+    characters: " ./FR#",
+    colorMode: 0,
+    pixelSize: 10,
+    textColor: "#ffffff",
+    brightness: 0,
+    backgroundColor: "#000000",
+    font: FONTS[0],
+    isFilled: false,
+    isTransparent: false,
+}
+
 export interface ASCIIRef {
     program: ASCIIMaterial
     setPixelSize: (value: number) => void
 }
 
 export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function Ascii({ gl }, ref) {
-    const [characters, setCharacters] = useState(" ./FR#")
-    const [colorMode, setColorMode] = useState(0)
-    const [pixelSize, setPixelSize] = useState(10)
-    const [textColor, setTextColor] = useState("#ffffff")
-    const [brightness, setBrightness] = useState(0)
-    const [backgroundColor, setBackgroundColor] = useState("#000000")
-    const [font, setFont] = useState<string>(FONTS[0])
-    const [isTransparent, setIsTransparent] = useState(false)
-    const [isFilled, setIsFilled] = useState(false)
+    const [characters, setCharacters] = useState(DEFAULT_VALUES.characters)
+    const [colorMode, setColorMode] = useState(DEFAULT_VALUES.colorMode)
+    const [pixelSize, setPixelSize] = useState(DEFAULT_VALUES.pixelSize)
+    const [textColor, setTextColor] = useState(DEFAULT_VALUES.textColor)
+    const [brightness, setBrightness] = useState(DEFAULT_VALUES.brightness)
+    const [backgroundColor, setBackgroundColor] = useState(DEFAULT_VALUES.backgroundColor)
+    const [font, setFont] = useState<string>(DEFAULT_VALUES.font)
+    const [isTransparent, setIsTransparent] = useState(DEFAULT_VALUES.isTransparent)
+    const [isFilled, setIsFilled] = useState(DEFAULT_VALUES.isFilled)
 
     const [program] = useState(() => new ASCIIMaterial(gl))
 
@@ -260,9 +273,85 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
         if (isFilled) setColorMode(0)
     }, [isFilled])
 
+    function onContextMenu(e: React.MouseEvent<HTMLDivElement>, property: keyof typeof DEFAULT_VALUES) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        let enabled = true
+        let onAction: (() => void) | undefined = undefined
+
+        switch (property) {
+            case "characters":
+                enabled = characters !== DEFAULT_VALUES.characters
+                onAction = () => {
+                    setCharacters(DEFAULT_VALUES.characters)
+                }
+                break
+            case "font":
+                enabled = font !== DEFAULT_VALUES.font
+                onAction = () => {
+                    setFont(DEFAULT_VALUES.font)
+                }
+                break
+            case "pixelSize":
+                enabled = pixelSize !== DEFAULT_VALUES.pixelSize
+                onAction = () => {
+                    setPixelSize(DEFAULT_VALUES.pixelSize)
+                }
+                break
+            case "brightness":
+                enabled = brightness !== DEFAULT_VALUES.brightness
+                onAction = () => {
+                    setBrightness(DEFAULT_VALUES.brightness)
+                }
+                break
+            case "isFilled":
+                enabled = isFilled !== DEFAULT_VALUES.isFilled
+                onAction = () => {
+                    setIsFilled(false)
+                }
+                break
+            case "backgroundColor":
+                enabled = backgroundColor !== DEFAULT_VALUES.backgroundColor || isTransparent
+                onAction = () => {
+                    setBackgroundColor(DEFAULT_VALUES.backgroundColor)
+                    setIsTransparent(false)
+                }
+                break
+            case "colorMode":
+                enabled = colorMode !== DEFAULT_VALUES.colorMode
+                onAction = () => {
+                    setColorMode(DEFAULT_VALUES.colorMode)
+                }
+                break
+            case "textColor":
+                enabled = textColor !== DEFAULT_VALUES.textColor
+                onAction = () => {
+                    setTextColor(DEFAULT_VALUES.textColor)
+                }
+                break
+        }
+
+        framer.showContextMenu(
+            [
+                {
+                    label: "Reset to Default",
+                    enabled,
+                    onAction,
+                },
+            ],
+            {
+                location: {
+                    x: e.clientX,
+                    y: e.clientY,
+                },
+            }
+        )
+    }
+
     return (
         <>
-            <div className="gui-row">
+            <div className="gui-row" onContextMenu={e => onContextMenu(e, "characters")}>
                 <label className="gui-label">Characters</label>
                 <input
                     className="gui-input"
@@ -273,7 +362,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     }}
                 />
             </div>
-            <div className="gui-row">
+            <div className="gui-row" onContextMenu={e => onContextMenu(e, "font")}>
                 <label className="gui-label">Font</label>
                 <select
                     onChange={e => {
@@ -302,7 +391,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     ))}
                 </div>
             </div>
-            <div className="gui-row">
+            <div className="gui-row" onContextMenu={e => onContextMenu(e, "pixelSize")}>
                 <label className="gui-label">Size</label>
                 <NumberInput
                     value={pixelSize}
@@ -314,7 +403,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     step={1}
                 />
             </div>
-            <div className="gui-row">
+            <div className="gui-row" onContextMenu={e => onContextMenu(e, "brightness")}>
                 <label className="gui-label">Brightness</label>
                 <NumberInput
                     value={brightness}
@@ -326,7 +415,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     step={1}
                 />
             </div>
-            <div className="gui-row">
+            <div className="gui-row" onContextMenu={e => onContextMenu(e, "isFilled")}>
                 <label className="gui-label">Fill</label>
                 <SegmentedControl
                     items={[
@@ -341,7 +430,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
             </div>
 
             {!isFilled && (
-                <div className="gui-row">
+                <div className="gui-row" onContextMenu={e => onContextMenu(e, "backgroundColor")}>
                     <label className="gui-label">Background</label>
                     <ColorInput
                         value={isTransparent ? false : backgroundColor}
@@ -357,7 +446,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     />
                 </div>
             )}
-            <div className="gui-row">
+            <div className="gui-row" onContextMenu={e => onContextMenu(e, "colorMode")}>
                 <label className="gui-label">Color Mode</label>
                 <select
                     onChange={e => {
@@ -376,7 +465,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
             </div>
 
             {[4].includes(colorMode) && (
-                <div className="gui-row">
+                <div className="gui-row" onContextMenu={e => onContextMenu(e, "textColor")}>
                     <label className="gui-label">Text Color</label>
                     <ColorInput
                         value={textColor}

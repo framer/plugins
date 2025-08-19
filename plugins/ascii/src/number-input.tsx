@@ -73,9 +73,11 @@ export function NumberInput({
                 onChange={e => {
                     onValueChange?.(Number(e.target.value))
                 }}
-                style={{
-                    "--progress": `${((value - min) / (max - min)) * 100}%`,
-                }}
+                style={
+                    {
+                        "--progress": `${((value - min) / (max - min)) * 100}%`,
+                    } as React.CSSProperties
+                }
             />
         </>
     )

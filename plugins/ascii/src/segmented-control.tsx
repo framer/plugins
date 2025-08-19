@@ -1,14 +1,14 @@
 import cx from "classnames"
 
 interface SegmentedControlItem {
-    value: any
+    value: string
     label: string
 }
 
 interface Props {
     items: SegmentedControlItem[]
-    value: any
-    onChange: (value: any) => void
+    value: string
+    onChange: (value: string) => void
 }
 
 export default function SegmentedControl({ items, value, onChange }: Props) {
@@ -32,7 +32,9 @@ export default function SegmentedControl({ items, value, onChange }: Props) {
                 <button
                     key={index}
                     className={cx("segmented-control-item", item.value === value && "active")}
-                    onClick={() => onChange(item.value)}
+                    onClick={() => {
+                        onChange(item.value)
+                    }}
                 >
                     {item.label}
                 </button>

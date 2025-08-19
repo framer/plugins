@@ -332,7 +332,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                 break
         }
 
-        framer.showContextMenu(
+        void framer.showContextMenu(
             [
                 {
                     label: "Reset to Default",
@@ -351,7 +351,12 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
 
     return (
         <>
-            <div className="gui-row" onContextMenu={e => onContextMenu(e, "characters")}>
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    onContextMenu(e, "characters")
+                }}
+            >
                 <label className="gui-label">Characters</label>
                 <input
                     className="gui-input"
@@ -362,7 +367,12 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     }}
                 />
             </div>
-            <div className="gui-row" onContextMenu={e => onContextMenu(e, "font")}>
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    onContextMenu(e, "font")
+                }}
+            >
                 <label className="gui-label">Font</label>
                 <select
                     onChange={e => {
@@ -391,7 +401,12 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     ))}
                 </div>
             </div>
-            <div className="gui-row" onContextMenu={e => onContextMenu(e, "pixelSize")}>
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    onContextMenu(e, "pixelSize")
+                }}
+            >
                 <label className="gui-label">Size</label>
                 <NumberInput
                     value={pixelSize}
@@ -403,7 +418,12 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     step={1}
                 />
             </div>
-            <div className="gui-row" onContextMenu={e => onContextMenu(e, "brightness")}>
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    onContextMenu(e, "brightness")
+                }}
+            >
                 <label className="gui-label">Brightness</label>
                 <NumberInput
                     value={brightness}
@@ -415,22 +435,32 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     step={1}
                 />
             </div>
-            <div className="gui-row" onContextMenu={e => onContextMenu(e, "isFilled")}>
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    onContextMenu(e, "isFilled")
+                }}
+            >
                 <label className="gui-label">Fill</label>
                 <SegmentedControl
                     items={[
-                        { value: true, label: "Yes" },
-                        { value: false, label: "No" },
+                        { value: "true", label: "Yes" },
+                        { value: "false", label: "No" },
                     ]}
-                    value={isFilled}
+                    value={isFilled ? "true" : "false"}
                     onChange={value => {
-                        setIsFilled(value)
+                        setIsFilled(value === "true")
                     }}
                 />
             </div>
 
             {!isFilled && (
-                <div className="gui-row" onContextMenu={e => onContextMenu(e, "backgroundColor")}>
+                <div
+                    className="gui-row"
+                    onContextMenu={e => {
+                        onContextMenu(e, "backgroundColor")
+                    }}
+                >
                     <label className="gui-label">Background</label>
                     <ColorInput
                         value={isTransparent ? false : backgroundColor}
@@ -446,7 +476,12 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     />
                 </div>
             )}
-            <div className="gui-row" onContextMenu={e => onContextMenu(e, "colorMode")}>
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    onContextMenu(e, "colorMode")
+                }}
+            >
                 <label className="gui-label">Color Mode</label>
                 <select
                     onChange={e => {
@@ -454,7 +489,6 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                     }}
                     className="gui-select"
                     value={colorMode}
-                    // defaultValue={colorMode}
                 >
                     <option value="0">RGB</option>
                     <option value="1">RGB (quantized)</option>
@@ -465,7 +499,12 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
             </div>
 
             {[4].includes(colorMode) && (
-                <div className="gui-row" onContextMenu={e => onContextMenu(e, "textColor")}>
+                <div
+                    className="gui-row"
+                    onContextMenu={e => {
+                        onContextMenu(e, "textColor")
+                    }}
+                >
                     <label className="gui-label">Text Color</label>
                     <ColorInput
                         value={textColor}

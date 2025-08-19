@@ -73,6 +73,9 @@ export function NumberInput({
                 onChange={e => {
                     onValueChange?.(Number(e.target.value))
                 }}
+                style={{
+                    "--progress": `${((value - min) / (max - min)) * 100}%`,
+                }}
             />
         </>
     )

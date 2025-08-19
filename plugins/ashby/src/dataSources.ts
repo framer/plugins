@@ -30,12 +30,14 @@ async function fetchAshbyData(url: string): Promise<unknown> {
 export type AshbyField = ManagedCollectionFieldInput &
     (
         | {
+              key?: string
               type: Exclude<ManagedCollectionFieldInput["type"], "collectionReference" | "multiCollectionReference">
               /** Used to transform the value of the field. Sometimes the value is inside an object, so we need to extract it. */
               getValue?: (value: unknown) => unknown
               canBeUsedAsSlug?: boolean
           }
         | {
+              key?: string
               type: "collectionReference" | "multiCollectionReference"
               getValue?: never
               dataSourceId: string
@@ -112,6 +114,39 @@ const jobsDataSource = createDataSource(
 
                 // use Set to remove duplicates (e.g. "San Francisco, CA, CA")
                 return parts.length > 0 ? [...new Set(parts)].join(", ") : null
+            },
+        },
+        {
+            id: "region",
+            key: "address",
+            name: "Region",
+            type: "string",
+            getValue: (value: unknown) => {
+                const address = v.parse(JobAddressSchema, value).postalAddress
+
+                return address.addressRegion?.trim()
+            },
+        },
+        {
+            id: "country",
+            key: "address",
+            name: "Country",
+            type: "string",
+            getValue: (value: unknown) => {
+                const address = v.parse(JobAddressSchema, value).postalAddress
+
+                return address.addressCountry?.trim()
+            },
+        },
+        {
+            id: "locality",
+            key: "address",
+            name: "Locality",
+            type: "string",
+            getValue: (value: unknown) => {
+                const address = v.parse(JobAddressSchema, value).postalAddress
+
+                return address.addressLocality?.trim()
             },
         },
     ]

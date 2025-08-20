@@ -10,7 +10,7 @@ export function groupResults(items: readonly Result[]): readonly EntryResult[] {
     const entryMap = new Map<string, [Result, ...(readonly Result[])]>()
 
     for (const item of items) {
-        const nodeId = item.entry.rootNode.id
+        const nodeId = item.entry.rootNodeId
 
         const nodeResults = entryMap.get(nodeId)
 

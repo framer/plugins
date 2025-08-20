@@ -156,26 +156,6 @@ export function DevToolsScene() {
                                         {selectedEntry.rootNodeName} ({selectedEntry.rootNodeType})
                                     </p>
                                 </div>
-
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                        Raw Node Data
-                                    </label>
-                                    <details className="text-xs">
-                                        <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
-                                            Show raw node object
-                                        </summary>
-                                        <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto text-xs">
-                                            {JSON.stringify(
-                                                selectedEntry.type === "CollectionItemField"
-                                                    ? selectedEntry.collectionItem
-                                                    : selectedEntry.node,
-                                                null,
-                                                2
-                                            )}
-                                        </pre>
-                                    </details>
-                                </div>
                             </div>
                         </div>
                     ) : (

@@ -84,10 +84,10 @@ export class GlobalSearchIndexer {
                 batch.push({
                     id: node.id,
                     type: node.__class,
+                    nodeId: node.id,
                     name,
                     text,
-                    node,
-                    rootNode,
+                    rootNodeId: rootNode.id,
                     rootNodeName,
                     rootNodeType: rootNode.__class,
                 })
@@ -123,8 +123,8 @@ export class GlobalSearchIndexer {
                     batch.push({
                         id: `${item.id}-${key}`,
                         type: "CollectionItemField",
-                        collectionItem: item,
-                        rootNode: collection,
+                        collectionItemId: item.id,
+                        rootNodeId: collection.id,
                         rootNodeName: collection.name,
                         rootNodeType: "Collection",
                         matchingField: {

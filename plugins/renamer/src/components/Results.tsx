@@ -21,7 +21,6 @@ const BUFFER_SIZE = 5
 
 export default function Results({ query, indexing, results, selectedNodeIds, getTextAfterRename }: Props) {
     const scrollAreaRef = useRef<HTMLDivElement>(null)
-    const [showTopGradient, setShowTopGradient] = useState(false)
     const [showBottomGradient, setShowBottomGradient] = useState(false)
     const [scrollTop, setScrollTop] = useState(0)
     const [containerHeight, setContainerHeight] = useState(0)
@@ -72,12 +71,11 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
                     const newScrollTop = scrollAreaRef.current.scrollTop
                     setScrollTop(newScrollTop)
 
-                    // Show top gradient when scrolled down
-                    setShowTopGradient(newScrollTop > 0)
-
-                    // Show bottom gradient when not at the bottom
+                    // Calculate dimensions for bottom gradient
                     const scrollHeight = scrollAreaRef.current.scrollHeight
                     const clientHeight = scrollAreaRef.current.clientHeight
+
+                    // Show bottom gradient when not at the bottom
                     setShowBottomGradient(newScrollTop + clientHeight < scrollHeight)
                 }
             }
@@ -95,46 +93,50 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
         }
     }, [results])
 
+    // Empty state
+    if (results.length === 0 && query && !indexing) {
+        return <div className="results-empty-state">No Results</div>
+    }
+
     return (
-        <div className="results">
-            <div className="container" ref={scrollAreaRef}>
-                <div
-                    className="results-list"
-                    style={{
-                        height: results.length * ITEM_HEIGHT,
-                        paddingTop: startIndex * ITEM_HEIGHT,
-                    }}
-                >
-                    {visibleItems.map(result => (
-                        <RenameComparison
-                            key={result.id}
-                            selected={selectedNodeIds.includes(result.id)}
-                            before={result.title}
-                            after={getTextAfterRename(result)}
-                            onClick={() => {
-                                void focusResult(result)
-                            }}
-                        >
-                            <LayerIcon type={result.entry.type} />
-                        </RenameComparison>
-                    ))}
+        <div className="results-container">
+            <div className="results">
+                <div className="container" ref={scrollAreaRef}>
+                    <div
+                        className="results-list"
+                        style={{
+                            height: results.length * ITEM_HEIGHT,
+                            paddingTop: startIndex * ITEM_HEIGHT,
+                        }}
+                    >
+                        {visibleItems.map(result => (
+                            <RenameComparison
+                                key={result.id}
+                                selected={selectedNodeIds.includes(result.id)}
+                                before={result.title}
+                                after={getTextAfterRename(result)}
+                                onClick={() => {
+                                    void focusResult(result)
+                                }}
+                            >
+                                <LayerIcon type={result.entry.type} />
+                            </RenameComparison>
+                        ))}
+                    </div>
+
+                    {indexing && query && (
+                        <div className="loading-placeholders">
+                            <PlaceholderRenameComparison index={0} total={5} width={30} />
+                            <PlaceholderRenameComparison index={1} total={5} width={40} />
+                            <PlaceholderRenameComparison index={2} total={5} width={20} />
+                            <PlaceholderRenameComparison index={3} total={5} width={30} />
+                            <PlaceholderRenameComparison index={4} total={5} width={20} />
+                        </div>
+                    )}
                 </div>
 
-                {indexing && query && (
-                    <div className="loading-placeholders">
-                        <PlaceholderRenameComparison index={0} total={5} width={30} />
-                        <PlaceholderRenameComparison index={1} total={5} width={40} />
-                        <PlaceholderRenameComparison index={2} total={5} width={20} />
-                        <PlaceholderRenameComparison index={3} total={5} width={30} />
-                        <PlaceholderRenameComparison index={4} total={5} width={20} />
-                    </div>
-                )}
+                <div className={cx("overflow-gradient-bottom", !showBottomGradient && "hidden")} />
             </div>
-
-            <div className={cx("overflow-gradient-top", !showTopGradient && "hidden")} />
-            <div className={cx("overflow-gradient-bottom", !showBottomGradient && "hidden")} />
-
-            {results.length === 0 && query && !indexing && <div className="results-empty-state">No Results</div>}
         </div>
     )
 }

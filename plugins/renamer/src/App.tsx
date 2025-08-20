@@ -21,6 +21,7 @@ void framer.showUI({
     height: 450,
     minWidth: 260,
     minHeight: 450,
+    maxWidth: 600,
     resizable: true,
 })
 

@@ -5,7 +5,6 @@
     width: 100%;
     height: 100%;
     position: absolute;
-    padding: 0 15px 15px;
 }
 
 .app-content {
@@ -45,29 +44,76 @@
 .tabs {
     display: flex;
     align-items: center;
-    height: 52px;
     flex-shrink: 0;
-    border-top: 1px solid var(--framer-color-divider);
-    border-bottom: 1px solid var(--framer-color-divider);
+    padding: 15px;
+    position: relative;
+}
+
+.tabs:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 15px;
+    right: 15px;
+    height: 1px;
+    background-color: var(--framer-color-divider);
+    z-index: 1;
+}
+
+.tabs-container {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    width: 100%;
+    padding: 2px;
+    height: 30px;
 }
 
 .tab {
+    position: relative;
     background: none !important;
     border: 0;
-    width: auto;
+    flex: 1;
+    height: 100%;
     color: #999999;
-    font-weight: 600;
+    font-weight: 500;
     user-select: none;
-    padding: 0 8px;
     transition: color 200ms ease;
 }
 
-.tab:first-child {
-    padding-left: 0;
+.tab:not(.active):hover {
+    color: var(--framer-color-text-secondary);
 }
 
 .tab.active {
     color: var(--framer-color-text);
+    font-weight: 600;
+}
+
+.tab-bg-container {
+    position: absolute;
+    inset: 2px;
+}
+
+.tab-bg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-radius: 6px;
+    background-color: var(--framer-color-bg);
+    box-shadow:
+        0px 0px 0px 1px rgba(0, 0, 0, 0.02),
+        0px 1px 0px 0px rgba(0, 0, 0, 0.05),
+        0px 2px 4px 0px rgba(0, 0, 0, 0.1);
+    transition: left 150ms ease;
+}
+
+[data-framer-theme="dark"] .tab-bg {
+    background-color: #555;
 }
 
 /* TextField styles */
@@ -116,8 +162,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-top: 15px;
-    border-top: 1px solid var(--framer-color-divider);
+    padding: 15px;
 }
 
 .rename-button {
@@ -130,7 +175,9 @@
     height: 30px;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity 200ms ease;
+    transition:
+        background-color 150ms ease,
+        color 150ms ease;
 }
 
 .rename-button:hover,
@@ -143,17 +190,18 @@
 }
 
 .rename-button:disabled {
-    opacity: 0.5;
+    opacity: 1;
+    color: var(--framer-color-text-tertiary) !important;
     cursor: not-allowed;
 }
 
-[data-framer-theme="light"] .rename-button {
+[data-framer-theme="light"] .rename-button:not(:disabled) {
     background: #111 !important;
     color: #fff;
     --framer-color-text: #fff;
 }
 
-[data-framer-theme="dark"] .rename-button {
+[data-framer-theme="dark"] .rename-button:not(:disabled) {
     background: #fff !important;
     color: #111;
     --framer-color-text: #111;
@@ -168,11 +216,38 @@
     overflow: hidden;
 }
 
+.results-container {
+    position: absolute;
+    inset: 0;
+}
+
+.results-container:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 15px;
+    right: 15px;
+    height: 1px;
+    background-color: var(--framer-color-divider);
+    z-index: 1;
+}
+
+.results-container.is-scrollable:after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 15px;
+    right: 15px;
+    height: 1px;
+    background-color: var(--framer-color-divider);
+    z-index: 1;
+}
+
 .container {
     flex: 1;
+    height: 100%;
     overflow-y: auto;
-    padding-top: 15px;
-    padding-bottom: 15px;
+    padding: 15px;
 }
 
 .results-list {
@@ -243,7 +318,7 @@
     cursor: pointer;
     text-align: left;
     font-weight: 500;
-    padding: 0;
+    padding: 0 0 0 10px;
 }
 
 [data-framer-theme="dark"] .replace-comparison {
@@ -307,28 +382,19 @@
     color: #999;
 }
 
-/* Overflow gradients */
+/* Overflow gradient */
 
-.overflow-gradient-top {
-    top: 0;
-    background: linear-gradient(to bottom, var(--framer-color-bg), transparent);
-}
-
-.overflow-gradient-bottom {
-    bottom: 0;
-    background: linear-gradient(to top, var(--framer-color-bg), transparent);
-}
-
-.overflow-gradient-top,
 .overflow-gradient-bottom {
     position: absolute;
-    width: 100%;
+    bottom: 0;
+    left: 15px;
+    right: 15px;
     height: 40px;
+    background: linear-gradient(to top, var(--framer-color-bg), transparent);
     transition: opacity 200ms ease;
     pointer-events: none;
 }
 
-.overflow-gradient-top.hidden,
 .overflow-gradient-bottom.hidden {
     opacity: 0;
 }

@@ -93,9 +93,12 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
         }
     }, [results])
 
-    return results.length === 0 && query && !indexing ? (
-        <div className="results-empty-state">No Results</div>
-    ) : (
+    // Empty state
+    if (results.length === 0 && query && !indexing) {
+        return <div className="results-empty-state">No Results</div>
+    }
+
+    return (
         <div className="results-container">
             <div className="results">
                 <div className="container" ref={scrollAreaRef}>

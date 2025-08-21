@@ -2,27 +2,23 @@ import type { IndexEntry } from "../indexer/types"
 import { findRanges } from "./ranges"
 import { type Filter, type Matcher, type Result, ResultType, type RootNodesFilter } from "./types"
 
-/** Execute a list of filters on a list of entries and return the results. */
-export function executeFilters(
-    /** The matchers to execute on the index. */
+export type FilterFunction = (entry: IndexEntry) => Result | false
+
+/** Create a filter function that can process a single entry. */
+export function createFilterFunction(
+    /** The matchers to execute on entries. */
     matchers: readonly Matcher[],
     /** A filter to narrow down the results. */
-    filters: readonly Filter[],
-    /** The index to search on */
-    index: readonly IndexEntry[]
-): Result[] {
-    const results: Result[] = []
-
-    for (const entry of index) {
-        let include = true
-        let result: Result | undefined
+    filters: readonly Filter[]
+): FilterFunction {
+    return entry => {
+        let result: Result | false = false
 
         for (const matcher of matchers) {
             const matchResult = executeMatcher(matcher, entry)
 
             if (matchResult === undefined) {
-                include = false
-                break
+                return false
             }
 
             if (filters.some(filter => executeFilter(filter, matchResult))) {
@@ -30,12 +26,8 @@ export function executeFilters(
             }
         }
 
-        if (include && result) {
-            results.push(result)
-        }
+        return result
     }
-
-    return results
 }
 
 /** Execute a matcher on a single entry and routes to the appropriate matcher function. */

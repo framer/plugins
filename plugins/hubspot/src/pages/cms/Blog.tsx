@@ -16,7 +16,7 @@ export default function Blog({ blogPluginContext }: PageProps) {
 
     const { mutate: sync, isPending: isSyncing } = useSyncBlogsMutation({
         onError: e => framer.notify(e.message, { variant: "error" }),
-        onSuccess: () => void framer.closePlugin("Synchronization successful"),
+        onSuccess: () => framer.closePlugin("Synchronization successful"),
     })
 
     useEffect(() => {

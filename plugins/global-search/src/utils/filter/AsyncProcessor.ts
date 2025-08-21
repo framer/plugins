@@ -74,11 +74,6 @@ export class TimeBasedAsyncProcessor<TInput, TOutput> {
     async start(items: readonly TInput[], itemProcessor: (item: TInput) => TOutput | false): Promise<void> {
         this.abort()
 
-        if (items.length === 0) {
-            this.emitProgressUpdate([], 0, 0, false)
-            return
-        }
-
         this.events.emit("started")
 
         const abortController = new AbortController()
@@ -109,10 +104,9 @@ export class TimeBasedAsyncProcessor<TInput, TOutput> {
 
                 if (isProcessing) {
                     await waitForIdle()
-                } else {
-                    this.events.emit("completed", results)
                 }
             }
+            this.events.emit("completed", results)
         } catch (error: unknown) {
             if (abortController.signal.aborted) return
 

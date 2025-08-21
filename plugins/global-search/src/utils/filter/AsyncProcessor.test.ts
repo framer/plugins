@@ -70,18 +70,10 @@ describe("TimeBasedAsyncProcessor", () => {
 
         await processor.start(emptyItems, itemProcessor)
 
-        expect(startedCallback).not.toHaveBeenCalled()
-        expect(completedCallback).not.toHaveBeenCalled()
+        expect(startedCallback).toHaveBeenCalled()
+        expect(completedCallback).toHaveBeenCalled()
         expect(errorCallback).not.toHaveBeenCalled()
-
-        expect(progressCallback).toHaveBeenCalledWith({
-            results: [],
-            isProcessing: false,
-            progress: 0,
-            processedItems: 0,
-            totalItems: 0,
-            error: null,
-        })
+        expect(completedCallback).toHaveBeenCalledWith([])
     })
 
     describe("error handling", () => {

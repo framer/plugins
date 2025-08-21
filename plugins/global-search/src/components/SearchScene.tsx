@@ -19,7 +19,7 @@ export function SearchScene() {
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
     const deferredQuery = useDeferredValue(query)
 
-    const { results, hasResults, error: filterError, isFiltering } = useAsyncFilter(deferredQuery, searchOptions, index)
+    const { results, hasResults, error: filterError } = useAsyncFilter(deferredQuery, searchOptions, index)
 
     if (filterError) {
         console.error(filterError)
@@ -31,10 +31,8 @@ export function SearchScene() {
     }, [])
 
     useEffect(() => {
-        void framer.showUI(
-            getPluginUiOptions({ query: deferredQuery, hasResults, hasFinalResults: !isIndexing && !isFiltering })
-        )
-    }, [deferredQuery, hasResults, isIndexing, isFiltering])
+        void framer.showUI(getPluginUiOptions({ query: deferredQuery, hasResults, areResultsFinal: !isIndexing }))
+    }, [deferredQuery, hasResults, isIndexing])
 
     return (
         <main className="flex flex-col h-full">
@@ -60,7 +58,7 @@ export function SearchScene() {
             </div>
             <div className="overflow-y-auto px-3 flex flex-col flex-1">
                 {deferredQuery && hasResults && <ResultsList groupedResults={results} />}
-                {deferredQuery && !hasResults && !isIndexing && !isFiltering && <NoResults />}
+                {deferredQuery && !hasResults && !isIndexing && <NoResults />}
             </div>
         </main>
     )

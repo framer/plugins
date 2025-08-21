@@ -21,7 +21,7 @@
         "g:check-vitest": "cd $INIT_CWD && vitest run",
         "g:dev": "cd $INIT_CWD && run g:vite",
         "g:preview": "cd $INIT_CWD && run g:vite preview",
-        "g:vite": "cd $INIT_CWD && NODE_OPTIONS='--no-warnings=ExperimentalWarning' vite --config $PROJECT_CWD/packages/vite-config/src/index.ts",
+        "g:vite": "cd $INIT_CWD && NODE_OPTIONS='--no-warnings=ExperimentalWarning' vite --config ${VITE_CONFIG_PATH:-$PROJECT_CWD/packages/vite-config/src/index.ts}",
         "preview": "turbo run preview --concurrency=40"
     },
     "devDependencies": {

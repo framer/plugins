@@ -1,0 +1,71 @@
+/* Your Plugin CSS */
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 0 15px 15px 15px;
+    height: 100%;
+    gap: 15px;
+}
+
+.framer-button-primary-inverted.framer-button-primary-inverted {
+    background-color: var(--framer-color-tint-dimmed);
+    color: var(--framer-color-tint);
+}
+
+.framer-button-primary-inverted.framer-button-primary-inverted:focus {
+    background-color: var(--framer-color-tint-dimmed);
+}
+
+.framer-button-small {
+    width: 46px;
+    font-size: 10px;
+    border-radius: 6px;
+    height: 20px;
+    font-weight: 500;
+}
+
+.muted {
+    color: var(--framer-color-text-tertiary);
+}
+
+p {
+    text-align: center;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.align-center {
+    align-items: center;
+}
+
+.justify-space-between {
+    justify-content: space-between;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.flex-column {
+    flex-direction: column;
+}
+
+.gap-10 {
+    gap: 10px;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+.p-image {
+    padding: 4px 0;
+}
+
+.mt-5 {
+    margin-top: 5px;
+}

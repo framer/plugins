@@ -1,5 +1,5 @@
 import { framer, type ManagedCollection } from "framer-plugin"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import auth from "./auth"
 import type { AirtableBase, AirtableTable, DataSource } from "./data"
 import { getTables, getUserBases } from "./data"
@@ -21,6 +21,9 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
     const [selectedTableId, setSelectedTableId] = useState<string>("")
     const [isLoading, setIsLoading] = useState(false)
 
+    const basesLoadedRef = useRef(false)
+    const lastBaseIdRef = useRef<string>("")
+
     const selectedBase = bases.find(base => base.id === selectedBaseId)
 
     const loadBases = async () => {
@@ -38,13 +41,16 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
     }
 
     useEffect(() => {
+        if (basesLoadedRef.current) return
+        basesLoadedRef.current = true
         void loadBases()
     }, [])
 
     useEffect(() => {
         const abortController = new AbortController()
 
-        if (selectedBaseId) {
+        if (selectedBaseId && selectedBaseId !== lastBaseIdRef.current) {
+            lastBaseIdRef.current = selectedBaseId
             setStatus("loading-tables")
             setTables([])
             setSelectedTableId("")

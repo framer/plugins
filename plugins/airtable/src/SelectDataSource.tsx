@@ -1,5 +1,6 @@
 import { framer, type ManagedCollection } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
+import auth from "./auth"
 import type { AirtableBase, AirtableTable, DataSource } from "./data"
 import { getTables, getUserBases } from "./data"
 import { inferFields } from "./fields"
@@ -22,22 +23,22 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
 
     const selectedBase = bases.find(base => base.id === selectedBaseId)
 
-    useEffect(() => {
+    const loadBases = async () => {
         setStatus("loading-bases")
 
-        const task = async () => {
-            try {
-                const bases = await getUserBases()
-                setBases(bases)
-                setSelectedBaseId(bases[0]?.id ?? "")
-            } catch (error) {
-                console.error(error)
-                setStatus("error-bases")
-                framer.notify("Failed to load bases. Check the logs for more details.", { variant: "error" })
-            }
+        try {
+            const bases = await getUserBases()
+            setBases(bases)
+            setSelectedBaseId(bases[0]?.id ?? "")
+        } catch (error) {
+            console.error(error)
+            setStatus("error-bases")
+            framer.notify("Failed to load bases. Check the logs for more details.", { variant: "error" })
         }
+    }
 
-        void task()
+    useEffect(() => {
+        void loadBases()
     }, [])
 
     useEffect(() => {
@@ -110,6 +111,15 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
         void task()
     }
 
+    const handleRetryClick = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        void loadBases()
+    }
+
+    const handleLogout = () => {
+        void auth.logout()
+    }
+
     const [basesPlaceholderText, tablesPlaceholderText] = useMemo(() => {
         let basesText = "Choose…"
         let tablesText = "Choose…"
@@ -136,6 +146,22 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
         return [basesText, tablesText]
     }, [status])
 
+    if (status === "error-bases") {
+        return (
+            <form className="setup-error" onSubmit={handleRetryClick}>
+                <span>Failed to load bases</span>
+                <div className="actions">
+                    <button className="action-button" onClick={handleLogout}>
+                        Log Out
+                    </button>
+                    <button type="submit" className="action-button framer-button-primary">
+                        Retry
+                    </button>
+                </div>
+            </form>
+        )
+    }
+
     return (
         <form className="framer-hide-scrollbar setup" onSubmit={handleSubmit}>
             <div className="logo">
@@ -151,7 +177,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                             setSelectedBaseId(event.target.value)
                         }}
                         value={selectedBaseId}
-                        disabled={status === "loading-bases" || status === "error-bases"}
+                        disabled={status === "loading-bases"}
                     >
                         <option value="" disabled>
                             {basesPlaceholderText}
@@ -172,12 +198,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                             setSelectedTableId(event.target.value)
                         }}
                         value={selectedTableId}
-                        disabled={
-                            !selectedBaseId ||
-                            status === "loading-tables" ||
-                            status === "error-tables" ||
-                            status === "error-bases"
-                        }
+                        disabled={!selectedBaseId || status === "loading-tables" || status === "error-tables"}
                     >
                         <option value="" disabled>
                             {tablesPlaceholderText}

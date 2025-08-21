@@ -71,7 +71,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
             logSyncResult(result)
 
             if (result.status === "success") {
-                void framer.closePlugin("Synchronization successful")
+                framer.closePlugin("Synchronization successful")
                 return
             }
         },
@@ -213,7 +213,7 @@ export function App({ pluginContext }: AppProps) {
                 }),
             })
 
-            void framer.closePlugin()
+            framer.closePlugin()
         }
 
         void task()

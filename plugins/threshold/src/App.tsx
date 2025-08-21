@@ -75,7 +75,7 @@ function ThresholdImage({ image, maxWidth, maxHeight }: { image: ImageAsset; max
                 },
             })
 
-            void framer.closePlugin("Image saved...")
+            framer.closePlugin("Image saved...")
 
             console.log("total duration", performance.now() - start)
         }

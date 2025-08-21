@@ -11,7 +11,7 @@ if (!root) {
 }
 
 import.meta.hot?.dispose(() => {
-    void framer.closePlugin()
+    framer.closePlugin()
 })
 
 void framer.showUI({

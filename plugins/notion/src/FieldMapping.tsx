@@ -259,7 +259,7 @@ export function FieldMapping({
                     ignoredFieldIds,
                     previousLastSynced
                 )
-                void framer.closePlugin("Synchronization successful", { variant: "success" })
+                framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
                 console.error(error)
                 framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {

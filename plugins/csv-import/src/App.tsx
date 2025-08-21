@@ -186,13 +186,13 @@ export function App({ collection }: { collection: Collection }) {
                 console.error(error)
 
                 if (error instanceof ImportError || error instanceof Error) {
-                    void framer.closePlugin(error.message, {
+                    framer.closePlugin(error.message, {
                         variant: "error",
                     })
                     return
                 }
 
-                void framer.closePlugin("Error processing CSV file. Check console for details.", {
+                framer.closePlugin("Error processing CSV file. Check console for details.", {
                     variant: "error",
                 })
             }

@@ -184,7 +184,7 @@ async function getItems(
                     const ids = []
 
                     if (v.is(ArrayOfIdsSchema, value)) {
-                        ids.push(...value.map(item => String(item))) // this is specific to PrCo API, make sure to update this if we change the API
+                        ids.push(...value.map(item => String(item)))
                     }
 
                     fieldData[field.id] = {
@@ -196,7 +196,7 @@ async function getItems(
                 case "collectionReference": {
                     if (v.is(v.union([v.string(), v.number()]), value)) {
                         fieldData[field.id] = {
-                            value: String(value), // this is specific to PrCo API, make sure to update this if we change the API
+                            value: String(value),
                             type: "collectionReference",
                         }
                     }
@@ -211,17 +211,22 @@ async function getItems(
                     break
                 case "array": {
                     const parsedValue = v.parse(v.array(v.string()), value)
-                    fieldData[field.id] = {
-                        type: field.type,
+                    const fieldId = v.parse(v.string(), field.id)
+
+                    const galleryFieldId = v.parse(v.string(), field.fields[0].id)
+
+                    fieldData[fieldId] = {
+                        type: "array",
                         value: parsedValue.map((url: string) => ({
                             fieldData: {
-                                image: {
-                                    value: url,
+                                [galleryFieldId]: {
                                     type: "image",
+                                    value: url,
                                 },
                             },
                         })),
                     }
+
                     break
                 }
                 case "enum":

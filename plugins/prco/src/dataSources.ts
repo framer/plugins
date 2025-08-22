@@ -3,14 +3,14 @@ import * as v from "valibot"
 import {
     ClippingImageAsImageSchema,
     ClippingsSchema,
-    FeaturedImagesForClSchema,
+    // FeaturedImagesForClSchema,
     ImageSizesSchema,
-    ImageUrlFromSizes,
+    // ImageUrlFromSizes,
     MediaInfoSchema,
     MediaKitsSchema,
     type PrCoItem,
     PressReleasesSchema,
-    SocialKeysAsStringSchema,
+    // SocialKeysAsStringSchema,
     TagsSchema,
 } from "./api-types"
 
@@ -49,7 +49,7 @@ export type PrCoField = ManagedCollectionFieldInput &
           }
         | {
               type: "collectionReference" | "multiCollectionReference"
-              getValue?: never
+              getValue?: (value: unknown) => unknown
               dataSourceId: string
               supportedCollections?: { id: string; name: string }[]
           }
@@ -78,17 +78,16 @@ const TagDataSource = createDataSource(
     },
     [
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
-        { id: "id", name: "Id", type: "string", canBeUsedAsSlug: true },
-        { id: "pressroom_id", name: "Press Room ID", type: "number" },
-        { id: "description", name: "Description", type: "formattedText" },
-        { id: "layout", name: "Layout", type: "string" },
+        { id: "pressroom_id", name: "Press Room ID", type: "string" },
+        { id: "description", name: "Description", type: "string" },
+        { id: "layout", name: "Layout", type: "string" }, // ideally be a "enum" but no API documentation
         {
             id: "image",
             name: "Image",
             type: "array",
             fields: [
                 {
-                    id: "image",
+                    id: "image_image",
                     name: "Image",
                     type: "image",
                 },
@@ -105,7 +104,7 @@ const TagDataSource = createDataSource(
             type: "array",
             fields: [
                 {
-                    id: "image",
+                    id: "hero_image_image",
                     name: "Image",
                     type: "image",
                 },
@@ -135,66 +134,77 @@ const ClippingDataSource = createDataSource(
         },
     },
     [
-        { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-        { id: "pressroom_id", name: "Press Room ID", type: "number" },
-        { id: "press_release_id", name: "Press Release Date", type: "date" },
+        { id: "title", name: "Title", type: "string" },
+        { id: "pressroom_id", name: "Press Room ID", type: "string" },
+        { id: "press_release_id", name: "Press Release ID", type: "string" },
         { id: "state", name: "State", type: "string" },
         { id: "description", name: "Description", type: "string" },
         { id: "release_date", name: "Release Date", type: "date" },
         { id: "source", name: "Source", type: "string" },
         { id: "url", name: "URL", type: "link" },
-        {
-            id: "featured_images",
-            name: "Featured Images",
-            type: "array",
-            fields: [
-                {
-                    id: "featured_images",
-                    name: "Featured Images",
-                    type: "image",
-                },
-            ],
-            getValue: value => {
-                const parsed = v.parse(v.array(FeaturedImagesForClSchema), value)
-                return parsed.map(item => item.url).filter(v => v)
-            },
-        },
+
         { id: "language", name: "Language", type: "string" },
-        {
-            id: "shares",
-            name: "Shares",
-            type: "string",
-            getValue: value => {
-                if (value && Object.keys(value).length === 0) {
-                    return v.parse(SocialKeysAsStringSchema, value)
-                }
-            },
-        },
+        // {
+        //     id: "shares",
+        //     name: "Shares",
+        //     type: "string",
+        //     getValue: value => {
+        //         if (value && Object.keys(value).length === 0) {
+        //             return v.parse(SocialKeysAsStringSchema, value)
+        //         }
+        //     },
+        // },
+        // { // this fails because one of the images is 403
+        //     id: "featured_images",
+        //     name: "Featured Images",
+        //     type: "array",
+        //     fields: [
+        //         {
+        //             id: "featured_images_image",
+        //             name: "Image",
+        //             type: "image",
+        //         },
+        //     ],
+        //     getValue: value => {
+        //         const parsed = v.parse(v.array(FeaturedImagesForClSchema), value)
+        //         return parsed.map(item => item.url).filter(v => v)
+        //     },
+        // },
         {
             id: "clipping_image",
             name: "Clipping Image",
             type: "image",
             getValue: value => {
-                if (value && Object.keys(value).length === 0) {
-                    return v.parse(ClippingImageAsImageSchema, value)
-                }
+                // if (value && Object.keys(value).length === 0) {
+                return v.parse(ClippingImageAsImageSchema, value)
+                // }
             },
         },
-        {
-            id: "sizes",
-            name: "Sizes",
-            type: "image",
-            getValue: value => {
-                if (value && Object.keys(value).length === 0) {
-                    return v.parse(ImageUrlFromSizes, value)
-                }
-            },
-        },
-        { id: "alexa", name: "Alexa", type: "string" },
+        // { // this fails because one of the images is 403
+        //     id: "sizes",
+        //     name: "Sizes",
+        //     type: "array",
+        //     fields: [
+        //         {
+        //             id: "sizes_image",
+        //             name: "Image",
+        //             type: "image",
+        //         },
+        //     ],
+        //     getValue: value => {
+        //         // if (value && Object.keys(value).length === 0) {
+        //         //     return v.parse(ImageUrlFromSizes, value)
+        //         // }
+
+        //         const parsed = v.parse(ImageSizesSchema, value)
+        //         return [parsed.original?.url, parsed.thumbnail?.url].filter(v => v)
+        //     },
+        // },
+        // { id: "alexa", name: "Alexa", type: "boolean" }, // TODO:
         { id: "permalink", name: "Permalink", type: "string" },
         { id: "type", name: "Type", type: "string" },
-        { id: "pdf", name: "PDF", type: "link" },
+        // { id: "pdf", name: "PDF", type: "link" },
         { id: "private", name: "Private", type: "boolean" },
         { id: "show_iframe", name: "Show Iframe", type: "boolean" },
         { id: "published_at", name: "Published At", type: "date" },
@@ -203,53 +213,53 @@ const ClippingDataSource = createDataSource(
 
 const MediaSchema = v.object({ data: v.array(MediaInfoSchema) })
 
-const MediaDataSource = createDataSource(
-    {
-        name: "Media",
-        fetch: async (pressRoomId: string) => {
-            const url = `${API_URL}/pressrooms/${pressRoomId}/media_kits.json?limit=9999`
-            const ApiResponseSchema = v.object({
-                data: v.array(
-                    v.object({
-                        media: v.array(MediaInfoSchema),
-                    })
-                ),
-            })
-            const validated = v.parse(ApiResponseSchema, await fetchPrCoData(url))
-            const data = v.safeParse(MediaSchema, { data: validated.data.flatMap(item => item.media) })
-            if (!data.success) {
-                console.log("Error parsing PrCo data:", data.issues)
-                throw new Error("Error parsing PrCo data")
-            }
+// const MediaDataSource = createDataSource(
+//     {
+//         name: "Media",
+//         fetch: async (pressRoomId: string) => {
+//             const url = `${API_URL}/pressrooms/${pressRoomId}/media_kits.json?limit=9999`
+//             const ApiResponseSchema = v.object({
+//                 data: v.array(
+//                     v.object({
+//                         media: v.array(MediaInfoSchema),
+//                     })
+//                 ),
+//             })
+//             const validated = v.parse(ApiResponseSchema, await fetchPrCoData(url))
+//             const data = v.safeParse(MediaSchema, { data: validated.data.flatMap(item => item.media) })
+//             if (!data.success) {
+//                 console.log("Error parsing PrCo data:", data.issues)
+//                 throw new Error("Error parsing PrCo data")
+//             }
 
-            return data.output.data
-        },
-    },
-    [
-        { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
-        { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-        { id: "pressroom_id", name: "Press Room ID", type: "number" },
-        { id: "permalink", name: "Permalink", type: "string" },
-        { id: "type", name: "Type", type: "string" },
-        { id: "content_type", name: "Content Type", type: "string" },
-        { id: "transparent", name: "Transparent", type: "boolean" },
-        { id: "file_size", name: "File Size", type: "number" },
-        { id: "url", name: "URL", type: "link" },
-        { id: "webm_url", name: "Webm URL", type: "link" },
-        { id: "mp4_url", name: "MP4 URL", type: "link" },
-        { id: "thumbnail_url", name: "Thumbnail", type: "image" },
-        {
-            id: "sizes",
-            name: "Sizes",
-            type: "image",
-            getValue: value => {
-                if (value && Object.keys(value).length === 0) {
-                    return v.parse(ImageUrlFromSizes, value)
-                }
-            },
-        },
-    ]
-)
+//             return data.output.data
+//         },
+//     },
+//     [
+//         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
+//         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
+//         { id: "pressroom_id", name: "Press Room ID", type: "string" },
+//         { id: "permalink", name: "Permalink", type: "string" },
+//         { id: "type", name: "Type", type: "string" },
+//         { id: "content_type", name: "Content Type", type: "string" },
+//         { id: "transparent", name: "Transparent", type: "boolean" },
+//         { id: "file_size", name: "File Size", type: "number" },
+//         { id: "url", name: "URL", type: "link" },
+//         { id: "webm_url", name: "Webm URL", type: "link" },
+//         { id: "mp4_url", name: "MP4 URL", type: "link" },
+//         { id: "thumbnail_url", name: "Thumbnail", type: "image" },
+//         {
+//             id: "sizes",
+//             name: "Sizes",
+//             type: "image",
+//             getValue: value => {
+//                 if (value && Object.keys(value).length === 0) {
+//                     return v.parse(ImageUrlFromSizes, value)
+//                 }
+//             },
+//         },
+//     ]
+// )
 
 const ImageDataSource = createDataSource(
     {
@@ -268,7 +278,7 @@ const ImageDataSource = createDataSource(
     [
         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-        { id: "pressroom_id", name: "Press Room ID", type: "number" },
+        { id: "pressroom_id", name: "Press Room ID", type: "string" },
         { id: "permalink", name: "Permalink", type: "string" },
         { id: "type", name: "Type", type: "string" },
         { id: "content_type", name: "Content Type", type: "string" },
@@ -280,8 +290,8 @@ const ImageDataSource = createDataSource(
             type: "array",
             fields: [
                 {
-                    id: "sizes",
-                    name: "Sizes",
+                    id: "sizes_image",
+                    name: "Image",
                     type: "image",
                 },
             ],
@@ -310,7 +320,7 @@ const MovieDataSource = createDataSource(
     [
         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-        { id: "pressroom_id", name: "Press Room ID", type: "number" },
+        { id: "pressroom_id", name: "Press Room ID", type: "string" },
         { id: "permalink", name: "Permalink", type: "string" },
         { id: "type", name: "Type", type: "string" },
         { id: "content_type", name: "Content Type", type: "string" },
@@ -347,6 +357,24 @@ const DocumentsDataSource = createDataSource(
         { id: "has_thumb", name: "Has Thumb", type: "boolean" },
         { id: "file_size", name: "File Size", type: "number" },
         { id: "url", name: "URL", type: "link" },
+        {
+            id: "sizes",
+            name: "Sizes",
+            type: "array",
+            fields: [
+                {
+                    id: "sizes_image",
+                    name: "Image",
+                    type: "image",
+                },
+            ],
+            getValue: value => {
+                const parsed = v.parse(v.nullable(ImageSizesSchema), value)
+                return [parsed?.large?.url, parsed?.medium?.url, parsed?.original?.url, parsed?.square?.url].filter(
+                    v => v
+                )
+            },
+        },
     ]
 )
 const MediaKitSchema = v.object({ data: v.array(MediaKitsSchema) })
@@ -374,13 +402,13 @@ const MediaKitDataSource = createDataSource(
         { id: "total_size", name: "Total Size", type: "number" },
         { id: "is_locked", name: "Is Locked", type: "boolean" },
         { id: "is_password_protected", name: "Is Password Protected", type: "boolean" },
-        {
-            id: "medias",
-            name: MediaDataSource.name,
-            type: "multiCollectionReference",
-            dataSourceId: MediaDataSource.name,
-            collectionId: "",
-        },
+        // { // multiCollectionReference doesn't support multiple collections (images, movies)
+        //     id: "medias",
+        //     name: MediaDataSource.name,
+        //     type: "multiCollectionReference",
+        //     dataSourceId: MediaDataSource.name,
+        //     collectionId: "",
+        // },
     ]
 )
 
@@ -403,18 +431,22 @@ const PressReleaseDataSource = createDataSource(
     [
         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-        { id: "pressroom_id", name: "Press Room ID", type: "number" },
+        { id: "pressroom_id", name: "Press Room ID", type: "string" },
         { id: "subtitle", name: "Sub Title", type: "string" },
         { id: "release_date", name: "Release Date", type: "date" },
         { id: "release_location", name: "Release Location", type: "string" },
         { id: "language", name: "Language", type: "string" },
-        { id: "social_media_pitch", name: "Social Media Pitch", type: "string" },
+        { id: "social_media_pitch", name: "Social Media Pitch", type: "string" }, // no API documentation, assume it's a string
         {
             id: "tags",
             name: TagDataSource.name,
             type: "multiCollectionReference",
             dataSourceId: TagDataSource.name,
             collectionId: "",
+            getValue: value => {
+                const parsed = v.parse(v.array(TagsSchema), value)
+                return parsed.map(item => item.slug)
+            },
         },
         {
             id: "featured_images",
@@ -422,19 +454,23 @@ const PressReleaseDataSource = createDataSource(
             type: "multiCollectionReference",
             dataSourceId: ImageDataSource.name,
             collectionId: "",
+            getValue: value => {
+                const parsed = v.parse(v.array(MediaInfoSchema), value)
+                return parsed.map(item => item.id)
+            },
         },
         { id: "summary", name: "Summary", type: "formattedText" },
         { id: "body_html", name: "Body Html", type: "formattedText" },
         { id: "permalink", name: "Permalink", type: "string" },
         { id: "full_url", name: "Full URL", type: "link" },
         { id: "type", name: "Type", type: "string" },
-        { id: "state", name: "State", type: "string" },
+        { id: "state", name: "State", type: "string" }, // ideally be a "enum" but API is not documented
         { id: "pdf", name: "PDF", type: "link" },
         { id: "show_in_timeline", name: "Show In Timeline", type: "boolean" },
         { id: "show_boilerplate_text", name: "Show Boilerplate Text", type: "boolean" },
         { id: "freeform_two", name: "Freeform Two", type: "boolean" },
         { id: "reading_time", name: "Reading Time", type: "number" },
-        { id: "updated_at", name: "Updated At", type: "string" },
+        { id: "updated_at", name: "Updated At", type: "date" },
     ]
 )
 

@@ -19,12 +19,12 @@ if (mode === "syncManagedCollection" && rssSourceId) {
     )
 
     if (!isAllowedToImportData) {
-        await framer.closePlugin("You don't have permission to import data.", { variant: "error" })
+        framer.closePlugin("You don't have permission to import data.", { variant: "error" })
     }
 
     try {
         await importData(collection, rssSourceId)
-        await framer.closePlugin()
+        framer.closePlugin()
     } catch {
         // Failed to synchronize - show configuration
     }

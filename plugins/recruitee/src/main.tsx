@@ -42,7 +42,7 @@ const { didSync } = await syncExistingCollection(
 )
 
 if (didSync) {
-    void framer.closePlugin("Synchronization successful", {
+    framer.closePlugin("Synchronization successful", {
         variant: "success",
     })
 } else {

@@ -291,7 +291,7 @@ export async function syncExistingCollection(
     }
 
     if (!framer.isAllowedTo(...syncMethods)) {
-        void framer.closePlugin("You are not allowed to sync this collection.", {
+        framer.closePlugin("You are not allowed to sync this collection.", {
             variant: "error",
         })
         return { didSync: false }

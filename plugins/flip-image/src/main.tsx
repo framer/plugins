@@ -3,12 +3,12 @@ import { bytesFromCanvas } from "./utils"
 
 const isAllowedToUpsertImage = framer.isAllowedTo("setImage")
 if (!isAllowedToUpsertImage) {
-    await framer.closePlugin("You don't have permission to edit images.", { variant: "error" })
+    framer.closePlugin("You don't have permission to edit images.", { variant: "error" })
 }
 
 const image = await framer.getImage()
 if (!image) {
-    await framer.closePlugin("No Image was selected.", { variant: "error" })
+    framer.closePlugin("No Image was selected.", { variant: "error" })
     throw new Error("Unreachable")
 }
 
@@ -39,7 +39,7 @@ try {
         image: { bytes: result, mimeType },
     })
 
-    await framer.closePlugin("Image flipped successfully")
+    framer.closePlugin("Image flipped successfully")
 } catch (err) {
-    await framer.closePlugin("Unexpected error", { variant: "error" })
+    framer.closePlugin("Unexpected error", { variant: "error" })
 }

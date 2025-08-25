@@ -1,6 +1,7 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from "react"
-import type { IndexEntry, RootNodeType } from "../indexer/types"
-import { TimeBasedAsyncProcessor } from "./AsyncProcessor"
+import type { GlobalSearchDatabase } from "../db"
+import type { RootNodeType } from "../indexer/types"
+import { IdleCallbackAsyncProcessor } from "./AsyncProcessor"
 import { createFilterFunction, type FilterFunction } from "./execute-filter"
 import type { EntryResult } from "./group-results"
 import { groupResults } from "./group-results"
@@ -15,9 +16,10 @@ export interface AsyncFilterState {
 export function useAsyncFilter(
     query: string,
     rootNodes: readonly RootNodeType[],
-    index: readonly IndexEntry[]
+    database: GlobalSearchDatabase,
+    dataVersion: number
 ): AsyncFilterState {
-    const processorRef = useRef<TimeBasedAsyncProcessor<IndexEntry, Result> | null>(null)
+    const processorRef = useRef<IdleCallbackAsyncProcessor<Result> | null>(null)
 
     const [state, setState] = useState<AsyncFilterState>({
         results: [],
@@ -32,7 +34,7 @@ export function useAsyncFilter(
     }, [query, rootNodes])
 
     if (!processorRef.current) {
-        processorRef.current = new TimeBasedAsyncProcessor<IndexEntry, Result>()
+        processorRef.current = new IdleCallbackAsyncProcessor<Result>()
 
         const processor = processorRef.current
 
@@ -43,7 +45,7 @@ export function useAsyncFilter(
             })
         })
 
-        processor.on("completed", results => {
+        processor.on("progress", ({ results }) => {
             startTransition(() => {
                 const uiResults = groupResults(results)
                 setState({
@@ -64,12 +66,12 @@ export function useAsyncFilter(
         const processor = processorRef.current
         if (!processor) return
 
-        void processor.start(index, itemProcessor)
+        void processor.start(database, itemProcessor)
 
         return () => {
             processor.abort()
         }
-    }, [query, rootNodes, index, itemProcessor])
+    }, [database, itemProcessor, dataVersion])
 
     return state
 }

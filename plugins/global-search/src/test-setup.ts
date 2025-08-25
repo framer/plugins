@@ -11,13 +11,23 @@ vi.mock("framer-plugin", () => ({
         setMenu: vi.fn(),
         getNodesWithType: vi.fn().mockReturnValue([]),
         getCollections: vi.fn().mockReturnValue([]),
+        getProjectInfo: vi.fn().mockResolvedValue({
+            id: "test-project-id",
+            name: "Test Project",
+        }),
     },
 }))
 
 // Mock requestIdleCallback for tests
 Object.defineProperty(globalThis, "requestIdleCallback", {
     value: (callback: IdleRequestCallback, options?: IdleRequestOptions): number => {
-        return setTimeout(callback, options?.timeout ?? 0) as unknown as number
+        const mockDeadline: IdleDeadline = {
+            didTimeout: false,
+            timeRemaining: () => 50, // Always return sufficient time for tests
+        }
+        return setTimeout(() => {
+            callback(mockDeadline)
+        }, options?.timeout ?? 0) as unknown as number
     },
     writable: true,
 })

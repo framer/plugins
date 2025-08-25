@@ -89,7 +89,6 @@ export class IdleCallbackAsyncProcessor<TOutput> {
 
                 // Wait for idle time before starting processing
                 const deadline = await waitForIdle()
-                let chunkProcessedCount = 0
 
                 // Start a new iterator from where we left off
                 const iterator = items.iterateFrom(lastProcessedKey)
@@ -114,7 +113,6 @@ export class IdleCallbackAsyncProcessor<TOutput> {
                         // Track the last processed key for resumption
                         lastProcessedKey = value.id
                         processedItems++
-                        chunkProcessedCount++
                     }
 
                     // Deadline reached, emit progress if we processed any items

@@ -6,17 +6,22 @@ import { useIndexer } from "../utils/indexer/useIndexer"
 import { getPluginUiOptions } from "../utils/plugin-ui"
 
 export function DevToolsScene() {
-    const { index, isIndexing, indexerInstance } = useIndexer()
+    const { db, dataVersion, isIndexing, indexerInstance } = useIndexer()
+
+    const [entries, setEntries] = useState<readonly IndexEntry[] | null>(null)
+    useEffect(() => {
+        // The whole devtool will be removed very soon.
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        void db.getAllEntries().then(setEntries)
+    }, [db, dataVersion])
 
     const [selectedEntry, setSelectedEntry] = useState<IndexEntry | null>(null)
 
     const [filterQuery, setFilterQuery] = useState("")
 
-    const entries = useMemo(() => Object.values(index), [index])
-
     const filteredEntries = useMemo(
         () =>
-            entries.filter(entry => {
+            entries?.filter(entry => {
                 if (entry.id === filterQuery) return true
                 return entry.text?.toLowerCase().includes(filterQuery.toLowerCase())
             }),
@@ -36,11 +41,12 @@ export function DevToolsScene() {
 
     const stats = useMemo(
         () => ({
-            total: entries.length,
-            byType: entries.reduce<Record<string, number>>((acc, entry) => {
-                acc[entry.type] = (acc[entry.type] ?? 0) + 1
-                return acc
-            }, {}),
+            total: entries?.length ?? 0,
+            byType:
+                entries?.reduce<Record<string, number>>((acc, entry) => {
+                    acc[entry.type] = (acc[entry.type] ?? 0) + 1
+                    return acc
+                }, {}) ?? {},
         }),
         [entries]
     )
@@ -78,7 +84,7 @@ export function DevToolsScene() {
             <div className="flex-1 flex overflow-hidden border-t border-t-framer-divider">
                 <div className="w-1/3 max-w-sm border-r border-r-framer-divider overflow-auto">
                     <div className="divide-y">
-                        {filteredEntries.map(entry => (
+                        {filteredEntries?.map(entry => (
                             <div
                                 key={entry.id}
                                 className={cn(

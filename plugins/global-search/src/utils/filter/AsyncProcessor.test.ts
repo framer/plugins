@@ -1,8 +1,26 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest"
-import { type Progress, TimeBasedAsyncProcessor } from "./AsyncProcessor"
+import { IdleCallbackAsyncProcessor, type Progress, type ResumableAsyncIterable } from "./AsyncProcessor"
 
-describe("TimeBasedAsyncProcessor", () => {
-    let processor: TimeBasedAsyncProcessor<string | undefined, string>
+// Simple test wrapper to make arrays work with ResumableAsyncIterable
+class TestAsyncIterable<T extends { id: string }> implements ResumableAsyncIterable<T> {
+    constructor(private items: readonly T[]) {}
+
+    async *iterateFrom(startKey: string | null): AsyncGenerator<T> {
+        const startIndex = startKey ? this.items.findIndex(item => item.id === startKey) + 1 : 0
+        for (let i = startIndex; i < this.items.length; i++) {
+            const item = this.items[i]
+            if (item) {
+                // Add a minimal await to satisfy the linter
+                await Promise.resolve()
+                yield item
+            }
+        }
+    }
+}
+
+describe("IdleCallbackAsyncProcessor", () => {
+    let processor: IdleCallbackAsyncProcessor<string>
+
     let startedCallback: Mock<() => void>
     let progressCallback: Mock<(progress: Progress<string>) => void>
     let completedCallback: Mock<(results: readonly string[]) => void>
@@ -16,76 +34,117 @@ describe("TimeBasedAsyncProcessor", () => {
         completedCallback = vi.fn()
         errorCallback = vi.fn()
 
-        processor = new TimeBasedAsyncProcessor<string | undefined, string>({
-            blockLengthMs: 16,
-        })
+        processor = new IdleCallbackAsyncProcessor<string>()
 
         processor.on("started", startedCallback)
         processor.on("progress", progressCallback)
         processor.on("completed", completedCallback)
         processor.on("error", errorCallback)
     })
-    const items = ["wop", "bop", "Tutti frutti", "oh rootie"] as const
-    const itemProcessor = (item: string | undefined): string => `processed-${item ?? "undefined"}`
+
+    const items = [
+        { id: "1", value: "wop" },
+        { id: "2", value: "bop" },
+        { id: "3", value: "Tutti frutti" },
+        { id: "4", value: "oh rootie" },
+    ] as const
+
+    const itemProcessor = (item: { id: string; value: string }): string => `processed-${item.value}`
+
+    it("should work with test async generator", async () => {
+        const testIterable = new TestAsyncIterable(items)
+        const results = []
+
+        for await (const item of testIterable.iterateFrom(null)) {
+            results.push(item)
+        }
+
+        expect(results).toEqual(items)
+    })
+
+    it("should emit started event", async () => {
+        const testIterable = new TestAsyncIterable([])
+
+        const promise = processor.start(testIterable, itemProcessor)
+
+        // Check if started was called immediately
+        expect(startedCallback).toHaveBeenCalledOnce()
+
+        await promise
+    })
 
     it("should process items and emit events in correct order", async () => {
-        await processor.start(items, itemProcessor)
+        const testIterable = new TestAsyncIterable(items)
+        await processor.start(testIterable, itemProcessor)
 
         expect(startedCallback).toHaveBeenCalledOnce()
-        expect(progressCallback).toHaveBeenCalledExactlyOnceWith({
-            results: ["processed-wop", "processed-bop", "processed-Tutti frutti", "processed-oh rootie"],
-            isProcessing: false,
-            progress: 1, // 4/4 = 1
-            processedItems: 4,
-            totalItems: 4,
-            error: null,
-        })
+        expect(errorCallback).not.toHaveBeenCalled()
 
-        expect(completedCallback).toHaveBeenCalledExactlyOnceWith([
+        // Should complete successfully
+        expect(completedCallback).toHaveBeenCalledWith([
             "processed-wop",
             "processed-bop",
             "processed-Tutti frutti",
             "processed-oh rootie",
         ])
-        expect(errorCallback).not.toHaveBeenCalled()
-    })
 
-    it("should filter out undefined results", async () => {
-        const caseItems = [...items, undefined]
-        const filteringProcessor = (item: string | undefined): string | false =>
-            item === undefined ? false : `processed-${item}`
+        // Should emit at least one progress event during processing
+        expect(progressCallback).toHaveBeenCalled()
 
-        await processor.start(caseItems, filteringProcessor)
+        // Check that progress was reported
+        const progressCalls = progressCallback.mock.calls
+        expect(progressCalls.length).toBeGreaterThan(0)
 
-        expect(completedCallback).toHaveBeenCalledExactlyOnceWith([
+        // Check final progress contains all results
+        const finalProgressCall = progressCalls[progressCalls.length - 1]?.[0]
+        expect(finalProgressCall?.results).toEqual([
             "processed-wop",
             "processed-bop",
+            "processed-Tutti frutti",
+            "processed-oh rootie",
+        ])
+    })
+
+    it("should filter out false results", async () => {
+        const filteringProcessor = (item: { id: string; value: string }): string | false =>
+            item.value === "bop" ? false : `processed-${item.value}`
+
+        const testIterable = new TestAsyncIterable(items)
+        await processor.start(testIterable, filteringProcessor)
+
+        expect(completedCallback).toHaveBeenCalledWith([
+            "processed-wop",
             "processed-Tutti frutti",
             "processed-oh rootie",
         ])
     })
 
     it("should handle empty items array just fine", async () => {
-        const emptyItems: string[] = []
+        const emptyItems: { id: string; value: string }[] = []
+        const emptyIterable = new TestAsyncIterable(emptyItems)
 
-        await processor.start(emptyItems, itemProcessor)
+        await processor.start(emptyIterable, itemProcessor)
 
         expect(startedCallback).toHaveBeenCalled()
         expect(completedCallback).toHaveBeenCalled()
         expect(errorCallback).not.toHaveBeenCalled()
         expect(completedCallback).toHaveBeenCalledWith([])
+
+        // With empty items, we should get minimal progress updates
+        expect(progressCallback).toHaveBeenCalled()
     })
 
     describe("error handling", () => {
         it("should emit error event when processor throws", async () => {
-            const errorProcessor = (item: string | undefined): string => {
-                if (item === "bop") {
+            const errorProcessor = (item: { id: string; value: string }): string => {
+                if (item.value === "bop") {
                     throw new Error("Processing failed")
                 }
-                return `processed-${item ?? "undefined"}`
+                return `processed-${item.value}`
             }
 
-            await processor.start(items, errorProcessor)
+            const testIterable = new TestAsyncIterable(items)
+            await processor.start(testIterable, errorProcessor)
 
             expect(errorCallback).toHaveBeenCalledOnce()
             const error = errorCallback.mock.calls[0]?.[0]
@@ -100,7 +159,8 @@ describe("TimeBasedAsyncProcessor", () => {
                 throw "String error"
             }
 
-            await processor.start(items, errorProcessor)
+            const testIterable = new TestAsyncIterable(items)
+            await processor.start(testIterable, errorProcessor)
 
             expect(errorCallback).toHaveBeenCalledOnce()
             const error = errorCallback.mock.calls[0]?.[0]
@@ -110,14 +170,16 @@ describe("TimeBasedAsyncProcessor", () => {
 
     describe("abort functionality", () => {
         it("should abort processing without throwing", async () => {
-            const processingPromise = processor.start(items, itemProcessor)
+            const testIterable = new TestAsyncIterable(items)
+            const processingPromise = processor.start(testIterable, itemProcessor)
             processor.abort()
 
             await expect(processingPromise).resolves.toBeUndefined()
         })
 
         it("should handle abort during processing gracefully", async () => {
-            const processingPromise = processor.start(items, itemProcessor)
+            const testIterable = new TestAsyncIterable(items)
+            const processingPromise = processor.start(testIterable, itemProcessor)
             processor.abort()
             await processingPromise
 

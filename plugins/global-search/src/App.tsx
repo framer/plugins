@@ -9,6 +9,8 @@ import { getPluginUiOptions } from "./utils/plugin-ui"
 
 void framer.showUI(getPluginUiOptions({ query: undefined, hasResults: false }))
 
+const projectInfo = await framer.getProjectInfo()
+
 export function App() {
     const [activeScene, setActiveScene] = useState<"search" | "dev-tools">("search")
 
@@ -26,7 +28,7 @@ export function App() {
 
     return (
         <ErrorBoundary FallbackComponent={ErrorScene}>
-            <IndexerProvider>
+            <IndexerProvider projectId={projectInfo.id}>
                 {activeScene === "dev-tools" && <DevToolsScene />}
                 {activeScene === "search" && <SearchScene />}
             </IndexerProvider>

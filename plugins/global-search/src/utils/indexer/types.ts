@@ -20,6 +20,7 @@ interface IndexEntryBase {
     readonly type: string
     readonly rootNodeId: string
     readonly text: string | null
+    readonly addedInIndexRun: number
 }
 
 export interface IndexNodeEntry extends IndexEntryBase {

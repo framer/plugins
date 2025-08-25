@@ -14,12 +14,12 @@ import { IconSpinner } from "./ui/IconSpinner"
 import { Menu } from "./ui/Menu"
 
 export function SearchScene() {
-    const { index, isIndexing } = useIndexer()
+    const { isIndexing, db, dataVersion } = useIndexer()
     const [query, setQuery] = useState("")
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
     const deferredQuery = useDeferredValue(query)
 
-    const { results, hasResults, error: filterError } = useAsyncFilter(deferredQuery, searchOptions, index)
+    const { results, hasResults, error: filterError } = useAsyncFilter(deferredQuery, searchOptions, db, dataVersion)
 
     if (filterError) {
         console.error(filterError)

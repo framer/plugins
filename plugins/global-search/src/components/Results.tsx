@@ -70,7 +70,7 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
                 {resultsWithRanges.map(result => (
                     <Match
                         key={result.id}
-                        targetId={entry.type === "CollectionItemField" ? entry.collectionItem.id : entry.node.id}
+                        targetId={entry.type === "CollectionItemField" ? entry.collectionItemId : entry.nodeId}
                         text={result.text}
                         range={result.range}
                     />

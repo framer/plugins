@@ -4744,6 +4744,7 @@ __metadata:
     clsx: "npm:^2.1.1"
     framer-plugin: "npm:^3.6.0-alpha.0"
     happy-dom: "npm:^18.0.1"
+    idb: "npm:^8.0.3"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
@@ -4930,6 +4931,13 @@ __metadata:
   dependencies:
     safer-buffer: "npm:>= 2.1.2 < 3.0.0"
   checksum: 10/24e3292dd3dadaa81d065c6f8c41b274a47098150d444b96e5f53b4638a9a71482921ea6a91a1f59bb71d9796de25e04afd05919fa64c360347ba65d3766f10f
+  languageName: node
+  linkType: hard
+
+"idb@npm:^8.0.3":
+  version: 8.0.3
+  resolution: "idb@npm:8.0.3"
+  checksum: 10/e2beccb0be7c6af562a5e92b209363358571a770aecdc68e891d1141d994d8f1e8f34b79dafa309ed7467d0f4df2b7b4c15f67cfd0611100282bfc3d85f9c73c
   languageName: node
   linkType: hard
 

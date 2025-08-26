@@ -4627,16 +4627,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-plugin@npm:^3.6.0-alpha.0":
-  version: 3.6.0-alpha.0
-  resolution: "framer-plugin@npm:3.6.0-alpha.0"
-  peerDependencies:
-    react: ^18.2.0
-    react-dom: ^18.2.0
-  checksum: 10/715e39d3d4678f8fbbe2f94a6b24900d774bf3728e8d8f9b5f76585ffd2cbd8647fdbe2989c5909b35f235a61f604942732730d5528fc2eea7d5dea2b7f75271
-  languageName: node
-  linkType: hard
-
 "framer-plugin@npm:^3.6.0-alpha.1":
   version: 3.6.0-alpha.1
   resolution: "framer-plugin@npm:3.6.0-alpha.1"
@@ -4644,6 +4634,16 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
   checksum: 10/6bfd655ab07c38cd9e51a58b6262b94c1b4c77147300954a96e9a29b94ec5ae60610491538d6e3aa1945ad9398bfd6151d5eb61f0be670b90aac6bfabcfc7add
+  languageName: node
+  linkType: hard
+
+"framer-plugin@npm:^3.6.1-alpha.0":
+  version: 3.6.1-alpha.0
+  resolution: "framer-plugin@npm:3.6.1-alpha.0"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/7b183a2bbbe8ed2e0143a2070b473212b6a46ac8e1554076c96545e0c9e24e69537ad0339aeebb62cd188d80b95cf3b2e5d971e09284d029d90d37514611c468
   languageName: node
   linkType: hard
 
@@ -4742,7 +4742,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.7"
     "@vitest/ui": "npm:^3.2.4"
     clsx: "npm:^2.1.1"
-    framer-plugin: "npm:^3.6.0-alpha.0"
+    framer-plugin: "npm:^3.6.1-alpha.0"
     happy-dom: "npm:^18.0.1"
     idb: "npm:^8.0.3"
     react: "npm:^18.3.1"

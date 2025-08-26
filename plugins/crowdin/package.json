@@ -1,0 +1,25 @@
+{
+    "name": "crowdin",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "run g:dev",
+        "build": "run g:build",
+        "check-biome": "run g:check-biome",
+        "check-eslint": "run g:check-eslint",
+        "preview": "run g:preview",
+        "pack": "npx framer-plugin-tools@latest pack",
+        "check-typescript": "run g:check-typescript"
+    },
+    "dependencies": {
+        "framer-plugin": "^3.3.2",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "valibot": "^1.1.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.3.23",
+        "@types/react-dom": "^18.3.7"
+    }
+}

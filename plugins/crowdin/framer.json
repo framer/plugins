@@ -1,0 +1,6 @@
+{
+    "id": "cr0d1n",
+    "name": "CrowdIn Locale Sync",
+    "modes": ["localization"],
+    "icon": "/icon.svg"
+}

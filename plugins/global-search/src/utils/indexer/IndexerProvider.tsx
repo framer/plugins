@@ -1,30 +1,33 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from "react"
+import { GlobalSearchDatabase } from "../db"
 import { IndexerContext } from "./context"
 import type { IndexerEvents } from "./indexer"
 import { GlobalSearchIndexer } from "./indexer"
-import type { IndexEntry } from "./types"
 
 /**
- * Creates an indexer instance and provides it to the children.
- * Manages the index in a React state, so that it can use reactivity to show the results
+ * Creates database and indexer instances and provides them to the children.
+ * The database manages its own version and the indexer depends on the database.
  */
-export function IndexerProvider({ children }: { children: React.ReactNode }) {
+export function IndexerProvider({ children, projectId }: { children: React.ReactNode; projectId: string }) {
+    const dbRef = useRef<GlobalSearchDatabase>()
+    dbRef.current ??= new GlobalSearchDatabase(projectId)
+    const db = dbRef.current
+
     const indexerRef = useRef<GlobalSearchIndexer>()
-    indexerRef.current ??= new GlobalSearchIndexer()
+    indexerRef.current ??= new GlobalSearchIndexer(db)
     const indexer = indexerRef.current
+
     const [isIndexing, setIsIndexing] = useState(false)
-    const [index, setIndex] = useState<Record<string, IndexEntry>>({})
+    const [dataVersion, setDataVersion] = useState(0)
 
     useEffect(() => {
-        const onUpsert = ({ entry }: IndexerEvents["upsert"]) => {
+        const onProgress = () => {
             startTransition(() => {
-                setIndex(prev => ({ ...prev, [entry.id]: entry }))
+                setDataVersion(prev => prev + 1)
             })
         }
-
         const onStarted = () => {
             startTransition(() => {
-                setIndex({})
                 setIsIndexing(true)
             })
         }
@@ -32,6 +35,7 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
         const onCompleted = () => {
             startTransition(() => {
                 setIsIndexing(false)
+                setDataVersion(prev => prev + 1)
             })
         }
 
@@ -44,7 +48,6 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
         const onError = ({ error }: IndexerEvents["error"]) => {
             startTransition(() => {
                 setIsIndexing(false)
-                setIndex({})
                 console.error(error)
             })
         }
@@ -56,7 +59,7 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
         }
 
         const unsubscribes = [
-            indexer.on("upsert", onUpsert),
+            indexer.on("progress", onProgress),
             indexer.on("restarted", onRestarted),
             indexer.on("aborted", onAborted),
             indexer.on("started", onStarted),
@@ -69,11 +72,11 @@ export function IndexerProvider({ children }: { children: React.ReactNode }) {
         return () => {
             for (const unsubscribe of unsubscribes) unsubscribe()
         }
-    }, [indexer])
+    }, [indexer, db])
 
     const data = useMemo(
-        () => ({ isIndexing, index: Object.values(index), indexerInstance: indexer }),
-        [isIndexing, index, indexer]
+        () => ({ isIndexing, indexerInstance: indexer, db, dataVersion }),
+        [isIndexing, indexer, db, dataVersion]
     )
 
     return <IndexerContext.Provider value={data}>{children}</IndexerContext.Provider>

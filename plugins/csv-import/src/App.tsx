@@ -63,7 +63,6 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
             }
 
             let current = currentRecord
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional
             while (true) {
                 setAction(current, action)
                 const next = recordsIterator.next()

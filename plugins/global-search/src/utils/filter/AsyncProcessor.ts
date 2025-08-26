@@ -1,18 +1,12 @@
 import { type EventMap, TypedEventEmitter } from "../event-emitter"
 
-export interface AsyncProcessorOptions {
-    readonly blockLengthMs?: number
+export interface ResumableAsyncIterable<T extends { id: string }> {
+    iterateFrom(lastKey: string | null): AsyncGenerator<T, unknown, T>
 }
 
 export interface Progress<TOutput> {
     readonly results: readonly TOutput[]
-    readonly isProcessing: boolean
-    /** Processing progress as a ratio (0-1) */
-    readonly progress: number
-    /** Number of items processed so far */
     readonly processedItems: number
-    /** Total number of items to process */
-    readonly totalItems: number
     readonly error: Error | null
 }
 
@@ -23,55 +17,59 @@ export interface AsyncProcessorEvents<TOutput> extends EventMap {
     error: Error
 }
 
-const setIdleCallback = "requestIdleCallback" in window ? requestIdleCallback : (cb: () => void) => setTimeout(cb, 1)
+/**
+ * The idle time threshold in milliseconds.
+ * This is based on (1000ms / 120fps) - some time to render, etc.
+ */
+const idleTimeThreshold = 7
+const getIdleCallback =
+    // Unfortunatl Safari doesn't support requestIdleCallback, so we need to shim it
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    requestIdleCallback ??
+    ((cb: IdleRequestCallback) => {
+        const start = performance.now()
+        return setTimeout(() => {
+            cb({
+                didTimeout: false,
+                timeRemaining: () => Math.max(0, idleTimeThreshold - (performance.now() - start)),
+            })
+        }, 1)
+    })
 
-function waitForIdle(): Promise<void> {
+function waitForIdle(): Promise<{
+    timeRemaining: () => number
+}> {
     return new Promise(resolve => {
-        setIdleCallback(() => {
-            resolve()
+        getIdleCallback(deadline => {
+            resolve(deadline)
         })
     })
 }
 
-export class TimeBasedAsyncProcessor<TInput, TOutput> {
+export class IdleCallbackAsyncProcessor<TOutput> {
     private abortController: AbortController | null = null
     private events = new TypedEventEmitter<AsyncProcessorEvents<TOutput>>()
-    private blockLengthMs: number
 
     public on: typeof this.events.on = (...args) => this.events.on(...args)
 
-    constructor({
-        // This could be 16ms, which comes down to 1000ms / 60fps
-        // Or, if you're living the future™ on a 120hz monitor, you could use 8ms (or 7 to allow room for UI updates)
-        // We are living in the future™ today.
-        blockLengthMs = 7,
-    }: AsyncProcessorOptions = {}) {
-        this.blockLengthMs = blockLengthMs
-    }
-
-    private emitProgressUpdate(
-        results: readonly TOutput[],
-        processedItems: number,
-        totalItems: number,
-        isProcessing: boolean
-    ): void {
-        const progress = totalItems > 0 ? processedItems / totalItems : 0
+    private emitProgressUpdate(results: readonly TOutput[], processedItems: number): void {
         this.events.emit("progress", {
             results,
-            isProcessing,
-            progress,
             processedItems,
-            totalItems,
             error: null,
         })
     }
 
     /**
-     * Start processing items. Can be called again with a new set of items.
+     * Start processing items from a resumable async iterable using requestIdleCallback deadline management.
+     * More memory efficient for large datasets and respects browser scheduling.
      *
-     * Using a class/method construct here to have the ability to encapsulate all the logic in a simpler interface, while it all could be done with other ways, this is a clearer interface
+     * The iterator is "resumable" to not run into issues with transactions stretching across idle callbacks.
      */
-    async start(items: readonly TInput[], itemProcessor: (item: TInput) => TOutput | false): Promise<void> {
+    async start<TInput extends { id: string }>(
+        items: ResumableAsyncIterable<TInput>,
+        itemProcessor: (item: TInput) => TOutput | false
+    ): Promise<void> {
         this.abort()
 
         this.events.emit("started")
@@ -80,33 +78,48 @@ export class TimeBasedAsyncProcessor<TInput, TOutput> {
         this.abortController = abortController
 
         const results: TOutput[] = []
-        let currentIndex = 0
+        let processedItems = 0
+        let lastProcessedKey: string | null = null
 
         try {
-            while (currentIndex < items.length) {
+            while (true) {
                 if (abortController.signal.aborted) return
 
-                const blockStart = performance.now()
+                // Wait for idle time before starting processing
+                const deadline = await waitForIdle()
 
-                while (currentIndex < items.length && performance.now() - blockStart < this.blockLengthMs) {
-                    const item = items[currentIndex]
-                    if (item !== undefined) {
-                        const result = itemProcessor(item)
+                // Start a new iterator from where we left off
+                const iterator = items.iterateFrom(lastProcessedKey)
+                const currentIterator = iterator[Symbol.asyncIterator]()
+
+                try {
+                    // Process items until the browser's idle deadline is reached
+                    while (deadline.timeRemaining() > 0) {
+                        const { value, done } = await currentIterator.next()
+
+                        if (done) {
+                            this.emitProgressUpdate(results, processedItems)
+                            this.events.emit("completed", results)
+                            return
+                        }
+
+                        const result = itemProcessor(value)
                         if (result !== false) {
                             results.push(result)
                         }
+
+                        // Track the last processed key for resumption
+                        lastProcessedKey = value.id
+                        processedItems++
                     }
-                    currentIndex++
-                }
 
-                const isProcessing = currentIndex < items.length
-                this.emitProgressUpdate(results, currentIndex, items.length, isProcessing)
+                    // Deadline reached, emit progress if we processed any items
 
-                if (isProcessing) {
-                    await waitForIdle()
+                    this.emitProgressUpdate(results, processedItems)
+                } finally {
+                    await currentIterator.return(undefined)
                 }
             }
-            this.events.emit("completed", results)
         } catch (error: unknown) {
             if (abortController.signal.aborted) return
 

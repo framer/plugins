@@ -7,6 +7,7 @@ import {
     isTextNode,
     isWebPageNode,
 } from "framer-plugin"
+import { GlobalSearchDatabase } from "../db"
 import { type EventMap, TypedEventEmitter } from "../event-emitter"
 import { stripMarkup } from "./strip-markup"
 import { type IndexEntry, type IndexNodeRootNode, includedAttributes, shouldIndexNode } from "./types"
@@ -34,10 +35,9 @@ async function getNodeName(node: AnyNode): Promise<string | null> {
 }
 
 export interface IndexerEvents extends EventMap {
-    upsert: { entry: IndexEntry }
     error: { error: Error }
     progress: { processed: number; total?: number }
-    started: never
+    started: { indexRun: number }
     completed: never
     restarted: never
     aborted: never
@@ -47,17 +47,13 @@ export class GlobalSearchIndexer {
     private eventEmitter = new TypedEventEmitter<IndexerEvents>()
     public on: typeof this.eventEmitter.on = (...args) => this.eventEmitter.on(...args)
 
-    private entries: Record<string, IndexEntry> = {}
-    private batchSize = 10
-
+    // For every update we make, an active query will be re-run.
+    // Adjusting this value over time will affect the performance of the UI.
+    // A smaller batch size will make showing results faster, but will also make the UI more laggy.
+    private batchSize = 100
     private abortRequested = false
 
-    private upsertEntries(entries: IndexEntry[]) {
-        for (const entry of entries) {
-            this.entries[entry.id] = entry
-            this.eventEmitter.emit("upsert", { entry })
-        }
-    }
+    constructor(private db: GlobalSearchDatabase) {}
 
     private async getNodeText(node: AnyNode): Promise<string | null> {
         if (includedAttributes.includes("text") && isTextNode(node)) {
@@ -66,7 +62,7 @@ export class GlobalSearchIndexer {
         return null
     }
 
-    private async *crawlNodes(rootNodes: readonly IndexNodeRootNode[]): AsyncGenerator<IndexEntry[]> {
+    private async *crawlNodes(indexRun: number, rootNodes: readonly IndexNodeRootNode[]): AsyncGenerator<IndexEntry[]> {
         let batch: IndexEntry[] = []
 
         for (const rootNode of rootNodes) {
@@ -84,12 +80,13 @@ export class GlobalSearchIndexer {
                 batch.push({
                     id: node.id,
                     type: node.__class,
+                    nodeId: node.id,
                     name,
                     text,
-                    node,
-                    rootNode,
+                    rootNodeId: rootNode.id,
                     rootNodeName,
                     rootNodeType: rootNode.__class,
+                    addedInIndexRun: indexRun,
                 })
 
                 if (batch.length === this.batchSize) {
@@ -104,7 +101,10 @@ export class GlobalSearchIndexer {
         }
     }
 
-    private async *crawlCollections(collections: readonly Collection[]): AsyncGenerator<IndexEntry[]> {
+    private async *crawlCollections(
+        indexRun: number,
+        collections: readonly Collection[]
+    ): AsyncGenerator<IndexEntry[]> {
         let batch: IndexEntry[] = []
 
         for (const collection of collections) {
@@ -123,8 +123,8 @@ export class GlobalSearchIndexer {
                     batch.push({
                         id: `${item.id}-${key}`,
                         type: "CollectionItemField",
-                        collectionItem: item,
-                        rootNode: collection,
+                        collectionItemId: item.id,
+                        rootNodeId: collection.id,
                         rootNodeName: collection.name,
                         rootNodeType: "Collection",
                         matchingField: {
@@ -132,6 +132,7 @@ export class GlobalSearchIndexer {
                             id: key,
                         },
                         text,
+                        addedInIndexRun: indexRun,
                     })
 
                     if (batch.length === this.batchSize) {
@@ -148,34 +149,39 @@ export class GlobalSearchIndexer {
     }
 
     async start() {
+        // XXX: The indexer has no "locking mechanism" to prevent multiple instances from running at the same time in multiple tabs.
         try {
+            const lastIndexRun = await this.db.getLastIndexRun()
+            const currentIndexRun = lastIndexRun + 1
+
             const [pages, components] = await Promise.all([
                 framer.getNodesWithType("WebPageNode"),
                 framer.getNodesWithType("ComponentNode"),
             ])
 
             this.abortRequested = false
-            this.eventEmitter.emit("started")
+            this.eventEmitter.emit("started", { indexRun: currentIndexRun })
 
-            for await (const batch of this.crawlNodes([...pages, ...components])) {
+            for await (const batch of this.crawlNodes(currentIndexRun, [...pages, ...components])) {
                 // this isn't a unnecassary static expression, as the value could change during the async loop
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 if (this.abortRequested) break
-                this.upsertEntries(batch)
+                await this.db.upsertEntries(batch)
             }
 
             const collections = await framer.getCollections()
 
-            for await (const batch of this.crawlCollections(collections)) {
+            for await (const batch of this.crawlCollections(currentIndexRun, collections)) {
                 // this isn't a unnecassary static expression, as the value could change during the async loop
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 if (this.abortRequested) break
-                this.upsertEntries(batch)
+                await this.db.upsertEntries(batch)
             }
 
             // this isn't a unnecassary static expression, as the value could change during the async loop
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             if (!this.abortRequested) {
+                await this.db.clearEntriesFromBefore(lastIndexRun)
                 this.eventEmitter.emit("completed")
             }
         } catch (error) {
@@ -185,7 +191,6 @@ export class GlobalSearchIndexer {
 
     async restart() {
         this.abortRequested = true
-        this.entries = {}
         this.eventEmitter.emit("restarted")
         return this.start()
     }
@@ -194,7 +199,11 @@ export class GlobalSearchIndexer {
         this.abortRequested = true
     }
 
-    getEntries(): IndexEntry[] {
-        return Object.values(this.entries)
+    /**
+     * @deprecated Use the `AsyncProcessor` instead. Used in devtools
+     */
+    async getEntries(): Promise<IndexEntry[]> {
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        return await this.db.getAllEntries()
     }
 }

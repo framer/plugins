@@ -1,7 +1,5 @@
 import {
     type AnyNode,
-    Collection,
-    CollectionItem,
     ComponentNode,
     isComponentInstanceNode,
     isComponentNode,
@@ -20,25 +18,24 @@ export type IndexEntryType = AnyNode["__class"]
 interface IndexEntryBase {
     readonly id: string
     readonly type: string
-    readonly rootNode: IndexNodeRootNode | Collection
+    readonly rootNodeId: string
     readonly text: string | null
+    readonly addedInIndexRun: number
 }
 
 export interface IndexNodeEntry extends IndexEntryBase {
-    readonly type: IndexEntryType
-    readonly node: AnyNode
+    readonly type: IndexEntryType // basically: string
+    readonly nodeId: string
     readonly rootNodeName: string | null
-    readonly rootNode: IndexNodeRootNode
-    readonly rootNodeType: IndexNodeRootNodeType
+    readonly rootNodeType: IndexNodeRootNodeType // basically: string
     readonly text: string | null
     readonly name: string | null
 }
 
 export interface IndexCollectionItemEntry extends IndexEntryBase {
     readonly type: "CollectionItemField"
-    readonly collectionItem: CollectionItem
+    readonly collectionItemId: string
     readonly rootNodeName: string
-    readonly rootNode: Collection
     readonly rootNodeType: "Collection"
     readonly matchingField: {
         readonly name: string | null

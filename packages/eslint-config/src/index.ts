@@ -49,6 +49,8 @@ export default tseslint.config(
                     allowRegExp: false,
                 },
             ],
+            // Enabled in strictTypeChecked, but we're cool with while-true loops
+            "@typescript-eslint/no-unnecessary-condition": ["error", { allowConstantLoopConditions: true }],
         },
     },
 

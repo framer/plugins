@@ -82,8 +82,6 @@ export class IdleCallbackAsyncProcessor<TOutput> {
         let lastProcessedKey: string | null = null
 
         try {
-            // There is an `return` in the loop, that makes sure to exit the loop when the iterator is exhausted
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             while (true) {
                 if (abortController.signal.aborted) return
 

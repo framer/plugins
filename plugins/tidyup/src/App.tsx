@@ -295,7 +295,6 @@ function getRandomizedRects(rects: RectWithId[], gap: number): RectWithId[] {
     let canvasWidth = maxSize.width * 2
     let canvasHeight = maxSize.height * 2
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Intentional
     while (true) {
         const randomRects = getRandomizeRectsForCanvas(rects, gap, canvasWidth, canvasHeight)
         if (randomRects) return randomRects

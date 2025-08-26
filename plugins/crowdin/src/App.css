@@ -1,0 +1,223 @@
+/* Your Plugin CSS */
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 0 15px 0;
+    height: 100%;
+    gap: 15px;
+
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+}
+
+.sticky-divider {
+    position: sticky;
+    top: 0;
+}
+
+.field-input {
+    width: 100%;
+    flex-shrink: 1;
+}
+
+.fields-column {
+    grid-column: span 2 / span 2;
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.logo {
+    color: var(--framer-color-text-tertiary);
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+}
+
+.setup {
+    align-items: center;
+}
+
+.setup select {
+    font-weight: 600;
+}
+
+.setup img {
+    height: 150px;
+    width: 100%;
+    border-radius: 10px;
+    background-color: #15372c;
+    object-fit: contain;
+}
+
+.setup button {
+    margin-top: 5px;
+}
+
+.setup img {
+    user-select: none;
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.setup label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 30px;
+    width: 100%;
+    justify-content: space-between;
+    color: var(--framer-color-text-secondary);
+    padding-left: 15px;
+}
+
+.setup select {
+    width: 100%;
+}
+
+.setup input,
+.setup select {
+    width: 134px;
+}
+
+.mapping {
+    padding-bottom: 0;
+}
+
+.mapping form {
+    height: 100%;
+}
+
+.mapping .fields {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 8px 1fr;
+    gap: 10px;
+    margin-bottom: auto;
+    padding-bottom: 35px;
+    align-items: center;
+    color: var(--framer-color-text-tertiary);
+    padding-top: 15px;
+}
+
+.mapping .slug-field {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--framer-color-text-tertiary);
+}
+
+.mapping .source-field {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+    white-space: nowrap;
+    font-weight: 500;
+    background-color: var(--framer-color-bg-tertiary);
+    gap: 8px;
+}
+
+.mapping .source-field[aria-disabled="true"] {
+    opacity: 0.5;
+    background-color: var(--framer-color-bg-tertiary) !important;
+}
+
+.mapping .source-field:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px #15372c;
+}
+
+.mapping .source-field.missing-reference,
+.mapping .source-field.missing-reference input[type="checkbox"] {
+    cursor: not-allowed;
+}
+
+.mapping .source-field input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.mapping .source-field input[type="checkbox"]:focus {
+    box-shadow: none;
+}
+
+[data-framer-theme="light"] .mapping .source-field input[type="checkbox"]:not(:checked) {
+    background: #ccc;
+}
+
+[data-framer-theme="dark"] .mapping .source-field input[type="checkbox"]:not(:checked) {
+    background: #666;
+}
+
+.mapping .target-field {
+    width: 100%;
+}
+
+.mapping .target-field:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--framer-color-bg-tertiary) !important;
+    color: var(--framer-color-text-tertiary) !important;
+}
+
+.mapping footer {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--framer-color-bg);
+    margin-top: auto;
+    padding-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.mapping footer:not(.scrolled)::before {
+    content: "";
+    position: absolute;
+    top: -45px;
+    left: 0;
+    width: 100%;
+    height: 45px;
+    background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
+    pointer-events: none;
+}
+
+input[type="checkbox"]:checked {
+    background-color: #15372c;
+    border-color: #15372c;
+}
+
+.setup,
+.mapping {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 15px;
+    width: 100%;
+}
+
+.setup {
+    padding-bottom: 15px;
+}
+
+a {
+    color: currentColor;
+}

@@ -530,11 +530,11 @@ export async function syncExistingCollection(
             throw new Error(`Table “${previousTableName ?? "NULL"}” not found`)
         }
 
-        // Use properly inferred fields instead of existing collection fields
-        const inferredFields = await inferFields(collection, table)
+        // Merge inferred fields with existing fields
+        const mergedFields = mergeFieldsWithExistingFields(await inferFields(collection, table), existingFields)
 
         // Filter fields to match the format expected by syncCollection
-        const fieldsToSync = inferredFields.filter(field => {
+        const fieldsToSync = mergedFields.filter(field => {
             // Only include fields that exist in the current collection
             const existsInCollection = existingFields.some(existingField => existingField.id === field.id)
 
@@ -553,7 +553,7 @@ export async function syncExistingCollection(
             baseId: previousBaseId,
             tableId: previousTableId,
             tableName: table.name,
-            fields: inferredFields,
+            fields: mergedFields,
         }
         await syncCollection(collection, dataSource, fieldsToSync, previousSlugFieldId)
         return { didSync: true }

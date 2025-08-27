@@ -73,6 +73,7 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
                         targetId={entry.type === "CollectionItemField" ? entry.collectionItemId : entry.nodeId}
                         text={result.text}
                         range={result.range}
+                        collectionFieldId={entry.type === "CollectionItemField" ? entry.matchingField.id : undefined}
                     />
                 ))}
             </ul>
@@ -80,12 +81,26 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
     )
 }
 
-function Match({ targetId, text, range }: { targetId: string; text: string; range: Range }) {
+function Match({
+    targetId,
+    text,
+    range,
+    collectionFieldId,
+}: {
+    targetId: string
+    text: string
+    range: Range
+    collectionFieldId: string | undefined
+}) {
     const navigateToResult = useCallback(() => {
-        framer.navigateTo(targetId).catch((error: unknown) => {
-            framer.notify(`Failed to go to item. ${error instanceof Error ? error.message : "Unknown error"}`)
-        })
-    }, [targetId])
+        framer
+            .navigateTo(targetId, {
+                scrollTo: collectionFieldId ? { collectionFieldId } : undefined,
+            })
+            .catch((error: unknown) => {
+                framer.notify(`Failed to go to item. ${error instanceof Error ? error.message : "Unknown error"}`)
+            })
+    }, [targetId, collectionFieldId])
 
     const { before, highlight, after } = useHighlightedTextWithContext({ text, range })
 

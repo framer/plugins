@@ -119,7 +119,7 @@ function Match({
             onClick={navigateToResult}
             className={cn(
                 "text-secondary-light dark:text-secondary-dark text-xs h-6 text-left select-none cursor-pointer pl-5  rounded-lg transition-colors",
-                "hover:bg-option-light dark:hover:bg-option-dark hover:text-primary-light dark:hover:text-primary-dark focus-visible:bg-option-light dark:focus-visible:bg-option-dark focus-visible:text-primary-light focus-visible:outline-none dark:focus-visible:text-primary-dark",
+                "hover:bg-option-light dark:hover:bg-option-dark hover:text-primary-light dark:hover:text-primary-dark focus-visible:bg-option-light dark:focus-visible:bg-option-dark focus-visible:text-primary-light dark:focus-visible:text-primary-dark",
                 "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
             )}
             data-result-match

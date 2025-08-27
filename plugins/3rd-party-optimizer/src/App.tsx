@@ -44,7 +44,7 @@ export function App() {
             {!customCode?.headStart.disabled && (
                 <p className="muted">
                     Add a script to your custom HTML to improve site performance when using 3rd-party tracking scripts.{" "}
-                    <a href="TODO" target="_blank">
+                    <a href="https://www.framer.com/marketplace/plugins/3rd-party-optimizer/" target="_blank">
                         Learn more
                     </a>
                 </p>

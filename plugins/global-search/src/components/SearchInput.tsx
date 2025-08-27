@@ -13,6 +13,7 @@ export function SearchInput({ className, ...props }: SearchInputProps) {
                 type="text"
                 className="flex-1 h-[18px] bg-transparent border-none outline-none focus-visible:outline-none focus-visible:ring-0 text-xs p-0 text-primary-light dark:text-primary-dark placeholder:text-tertiary-light dark:placeholder:text-tertiary-dark"
                 placeholder="Search..."
+                autoFocus
                 {...props}
             />
         </label>

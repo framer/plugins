@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition,@typescript-eslint/no-unsafe-function-type,@typescript-eslint/no-empty-function */
 "use strict"
 
 // turns on override logs
@@ -318,9 +318,10 @@ function overrideGTMDataLayer() {
 
 document.addEventListener("framer:overrideGTM", overrideGTMDataLayer, { once: true })
 
-// #region History wrapper override
-function wrapHistory(method: "pushState" | "replaceState", value: (typeof window.history)[typeof method]) {
-    return (...args: Parameters<(typeof window.history)[typeof method]>) => {
+// #region History/submit wrapper override
+function wrapListener<T extends object>(target: T, method: keyof T, value: Function) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (...args: any[]) => {
         // We first call the original pushState: This optimizes for UX & correctness of React components.
         // e.g., when a component renders on a new route, it might set state and/or read from the URL. If the URL isn't
         // accurate, it might lead to wrong behavior.
@@ -329,38 +330,36 @@ function wrapHistory(method: "pushState" | "replaceState", value: (typeof window
         if (!("__f" in args[0])) {
             // @ts-expect-error TS(2339): Prototype chain call.
             // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-            window.history.__proto__[method].apply(window.history, args)
+            target.__proto__[method].apply(target, args)
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             args[0].__f = true // Flag to indicate that the native method was called
         }
 
         void yieldUnlessUrgent().then(() => {
-            value.apply(window.history, args)
+            value.apply(target, args)
         })
     }
 }
-function overrideHistory(method: "pushState" | "replaceState") {
+function overrideListener<T extends object>(target: T, method: keyof T) {
     // The initial value is a noop, so that the first override doesn't call the native method.
     // We still need to set it to a function, so that the `get` function returns a function that is
     // used if nothing ever overrides it.
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    let mostRecentHistoryWrapper: (typeof window.history)[typeof method] | undefined = wrapHistory(method, () => {})
+    let mostRecentWrapper: VoidFunction | undefined = wrapListener(target, method, () => {})
 
     Object.defineProperty(window.history, method, {
         enumerable: true,
         get() {
-            return mostRecentHistoryWrapper
+            return mostRecentWrapper
         },
         set(value) {
-            if (DEBUG) console.log(`set history.${method}`, value)
+            if (DEBUG) console.log(`set history.${String(method)}`, value)
 
-            if (value === mostRecentHistoryWrapper) return
-            mostRecentHistoryWrapper = value
-                ? wrapHistory(method, value as (typeof window.history)[typeof method])
-                : undefined
+            if (value === mostRecentWrapper) return
+            mostRecentWrapper = value ? wrapListener(target, method, value as Function) : undefined
         },
     })
 }
 
-overrideHistory("pushState")
-overrideHistory("replaceState")
+overrideListener(window.history, "pushState")
+overrideListener(window.history, "replaceState")
+overrideListener(HTMLFormElement.prototype, "submit")

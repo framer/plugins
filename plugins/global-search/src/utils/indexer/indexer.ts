@@ -121,9 +121,9 @@ export class GlobalSearchIndexer {
                     if (text.length === 0) continue
 
                     batch.push({
-                        id: `${item.id}-${key}`,
+                        id: `${item.nodeId}-${key}`,
                         type: "CollectionItemField",
-                        collectionItemId: item.id,
+                        collectionItemId: item.nodeId,
                         rootNodeId: collection.id,
                         rootNodeName: collection.name,
                         rootNodeType: "Collection",

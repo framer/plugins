@@ -54,4 +54,15 @@ describe("stripMarkup(text)", () => {
         expect(stripMarkup("Try to make<br/>ends meet")).toBe("Try to make ends meet")
         expect(stripMarkup("Image: <img src='test.jpg' alt='test'/>")).toBe("Image:")
     })
+
+    it("should add spaces when content is broken up in multiple block elements", () => {
+        expect(stripMarkup("<p>Been down</p><p>Ever been down</p>")).toBe("Been down Ever been down")
+        expect(stripMarkup("<div>Been down</div><div>Ever been down</div>")).toBe("Been down Ever been down")
+    })
+
+    it("shouldn't add a space when it's an inline element", () => {
+        expect(stripMarkup("<p>I <span>c</span>an change</p><p>I ca<span>n</span> change</p>")).toBe(
+            "I can change I can change"
+        )
+    })
 })

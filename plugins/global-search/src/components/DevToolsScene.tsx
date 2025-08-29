@@ -97,11 +97,7 @@ export function DevToolsScene() {
                             >
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-gray-900 truncate">
-                                            {entry.type === "CollectionItemField"
-                                                ? entry.id
-                                                : (entry.name ?? "Unnamed")}
-                                        </p>
+                                        <p className="text-sm font-medium text-gray-900 truncate">{entry.id}</p>
                                         <p className="text-xs text-gray-500">{entry.type}</p>
                                     </div>
                                 </div>
@@ -129,15 +125,6 @@ export function DevToolsScene() {
                                     <span className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
                                         {selectedEntry.type}
                                     </span>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
-                                    <p className="text-sm bg-gray-50 p-2 rounded">
-                                        {selectedEntry.type === "CollectionItemField"
-                                            ? "Collection Item"
-                                            : (selectedEntry.name ?? "(no name)")}
-                                    </p>
                                 </div>
 
                                 <div>

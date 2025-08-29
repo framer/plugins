@@ -1,19 +1,27 @@
 import {
     type AnyNode,
+    ComponentInstanceNode,
     ComponentNode,
     isComponentInstanceNode,
     isComponentNode,
-    isFrameNode,
-    isSVGNode,
     isTextNode,
-    isWebPageNode,
+    TextNode,
     WebPageNode,
 } from "framer-plugin"
 
 export type IndexNodeRootNode = ComponentNode | WebPageNode
 export type IndexNodeRootNodeType = IndexNodeRootNode["__class"]
 
+export type IndexableNode = Extract<AnyNode, ComponentNode | TextNode | ComponentInstanceNode>
 export type IndexEntryType = AnyNode["__class"]
+
+export function isIndexableNode<T extends AnyNode>(value: T): value is T & IndexableNode {
+    if (isComponentInstanceNode(value)) return true
+    if (isTextNode(value)) return true
+    if (isComponentNode(value)) return true
+
+    return false
+}
 
 interface IndexEntryBase {
     readonly id: string
@@ -24,10 +32,10 @@ interface IndexEntryBase {
 }
 
 export interface IndexNodeEntry extends IndexEntryBase {
-    readonly type: IndexEntryType // basically: string
+    readonly type: IndexEntryType
     readonly nodeId: string
     readonly rootNodeName: string | null
-    readonly rootNodeType: IndexNodeRootNodeType // basically: string
+    readonly rootNodeType: IndexNodeRootNodeType
     readonly text: string | null
     readonly name: string | null
 }
@@ -50,14 +58,3 @@ export type RootNodeType = IndexEntry["rootNodeType"]
 
 export const includedAttributes = ["text"] as const
 export type IncludedAttribute = (typeof includedAttributes)[number]
-
-export function shouldIndexNode(value: AnyNode): boolean {
-    if (isFrameNode(value)) return true
-    if (isComponentInstanceNode(value)) return true
-    if (isTextNode(value)) return true
-    if (isSVGNode(value)) return true
-    if (isWebPageNode(value)) return true
-    if (isComponentNode(value)) return true
-
-    return false
-}

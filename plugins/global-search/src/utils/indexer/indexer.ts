@@ -10,7 +10,7 @@ import {
 import { GlobalSearchDatabase } from "../db"
 import { type EventMap, TypedEventEmitter } from "../event-emitter"
 import { stripMarkup } from "./strip-markup"
-import { type IndexEntry, type IndexNodeRootNode, includedAttributes, shouldIndexNode } from "./types"
+import { type IndexEntry, type IndexNodeRootNode, type IndexableNode, includedAttributes, isIndexableNode } from "./types"
 
 async function getNodeName(node: AnyNode): Promise<string | null> {
     if (isWebPageNode(node)) {
@@ -55,7 +55,7 @@ export class GlobalSearchIndexer {
 
     constructor(private db: GlobalSearchDatabase) {}
 
-    private async getNodeText(node: AnyNode): Promise<string | null> {
+    private async getNodeText(node: IndexableNode): Promise<string | null> {
         if (includedAttributes.includes("text") && isTextNode(node)) {
             const html = await node.getHTML()
             return html ? stripMarkup(html) : null
@@ -72,7 +72,7 @@ export class GlobalSearchIndexer {
             for await (const node of rootNode.walk()) {
                 if (this.abortRequested) return
 
-                if (!shouldIndexNode(node)) continue
+                if (!isIndexableNode(node)) continue
 
                 const [text, name] = await Promise.all([this.getNodeText(node), getNodeName(node)])
 

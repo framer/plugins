@@ -43,43 +43,60 @@ const lowPriorityCallback =
           }
         : (cb: VoidFunction) => setTimeout(cb, 1)
 
+let loadPromise: Promise<void> | undefined = new Promise<void>(resolve => {
+    window.addEventListener("load", () => {
+        resolve()
+    })
+}).then(() => {
+    loadPromise = undefined
+})
+
+async function queueYieldCallback(resolve: VoidFunction, shouldWaitForLoad: boolean) {
+    pendingResolvers.add(resolve)
+
+    let timeStamp: number | undefined
+    if (DEBUG) {
+        timeStamp = performance.now()
+    }
+
+    if (shouldWaitForLoad && document.readyState !== "complete") {
+        await loadPromise
+
+        if (DEBUG) {
+            const newTimeStamp = performance.now()
+            // @ts-expect-error TS(2554): TS doesn't know about the new syntax yet
+            // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+            console.timeStamp(`load-yield-${timeStamp}`, timeStamp, newTimeStamp, "GTM load", "GTM yield")
+            timeStamp = newTimeStamp
+        }
+    }
+
+    queueAfterPaintCallback(() => {
+        lowPriorityCallback(() => {
+            if (DEBUG)
+                // @ts-expect-error TS(2554): TS doesn't know about the new syntax yet
+                // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+                console.timeStamp(`yield-${timeStamp}`, timeStamp, performance.now(), "GTM yield", "GTM yield")
+
+            pendingResolvers.delete(resolve)
+            resolve()
+        })
+    })
+}
+
 /**
  * This is a modified `yieldUnlessUrgent` tailored to the GTM optimization use-case.
  * The difference is, we batch calls to `requestAnimationFrame` manually and only support lowest priority
  * (`setTimeout(fn, 1)`/postTask background priority)
  */
 async function yieldUnlessUrgent(shouldWaitForLoad = false) {
-    let timeStamp: number | undefined
-    if (DEBUG) {
-        timeStamp = performance.now()
-    }
-
     if (document.hidden) {
         resolvePendingPromises()
         return
     }
 
-    if (shouldWaitForLoad && document.readyState !== "complete") {
-        await new Promise<void>(resolve => {
-            document.addEventListener("load", () => {
-                resolve()
-            })
-        })
-        if (DEBUG) console.timeStamp(`load-yield-${timeStamp}`, timeStamp, performance.now(), "GTM yield", "GTM load")
-    }
-
     return new Promise<void>(resolve => {
-        pendingResolvers.add(resolve)
-
-        queueAfterPaintCallback(() => {
-            lowPriorityCallback(() => {
-                if (DEBUG)
-                    console.timeStamp(`yield-${timeStamp}`, timeStamp, performance.now(), "GTM yield", "GTM yield")
-
-                pendingResolvers.delete(resolve)
-                resolve()
-            })
-        })
+        void queueYieldCallback(resolve, shouldWaitForLoad)
     })
 }
 
@@ -119,8 +136,8 @@ document.addEventListener("click", globalClickReceivedListener, true)
 // Ensure we resolve when the page becomes hidden
 // visibilitychange + pagehide is needed to reliably (±97%) detect when the page is hidden cross-browser
 // see https://nicj.net/beaconing-in-practice-fetchlater/#beaconing-in-practice-fetchlater-onload-or-pagehide-or-visibilitychange
-document.addEventListener("visibilitychange", globalClickReceivedListener)
-document.addEventListener("pagehide", globalClickReceivedListener)
+document.addEventListener("visibilitychange", globalClickReceivedListener, true)
+document.addEventListener("pagehide", globalClickReceivedListener, true)
 
 type DataLayerPush = (...items: object[]) => boolean
 type DataLayer = Omit<object[], "push"> & {
@@ -356,6 +373,11 @@ gtmObserver.observe(document.documentElement, { childList: true, subtree: true }
 function wrapListener<T extends object>(target: T, method: keyof T, value: Function) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (...args: any[]) => {
+        if (DEBUG) {
+            console.log("Yielding for", method)
+            console.timeStamp(method as string)
+        }
+
         // We first call the original: This optimizes for UX & correctness of React components.
         // e.g., for pushState, when a component renders on a new route, it might set state and/or read from the URL. If the URL isn't
         // accurate, it might lead to wrong behavior.

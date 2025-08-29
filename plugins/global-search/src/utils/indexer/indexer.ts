@@ -78,7 +78,7 @@ export class GlobalSearchIndexer {
             for await (const node of rootNode.walk()) {
                 if (this.abortRequested) return
 
-                if (!isIndexableNode(node)) continue
+                if (!isIndexableNode(node) || !node.visible) continue
 
                 const text = await this.getNodeText(node)
 
@@ -87,7 +87,7 @@ export class GlobalSearchIndexer {
                 // skipping the entry if it's a duplicate of the original node with the same text
                 if (node.originalId) {
                     const originalNode = await framer.getNode(node.originalId)
-                    if (originalNode && isIndexableNode(originalNode)) {
+                    if (originalNode && isIndexableNode(originalNode) && originalNode.visible) {
                         const originalText = await this.getNodeText(originalNode)
                         if (originalText === text) {
                             continue

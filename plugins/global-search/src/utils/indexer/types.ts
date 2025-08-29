@@ -3,7 +3,6 @@ import {
     ComponentInstanceNode,
     ComponentNode,
     isComponentInstanceNode,
-    isComponentNode,
     isTextNode,
     TextNode,
     WebPageNode,
@@ -12,13 +11,12 @@ import {
 export type IndexNodeRootNode = ComponentNode | WebPageNode
 export type IndexNodeRootNodeType = IndexNodeRootNode["__class"]
 
-export type IndexableNode = Extract<AnyNode, ComponentNode | TextNode | ComponentInstanceNode>
+export type IndexableNode = Extract<AnyNode, TextNode | ComponentInstanceNode>
 export type IndexEntryType = AnyNode["__class"]
 
 export function isIndexableNode<T extends AnyNode>(value: T): value is T & IndexableNode {
     if (isComponentInstanceNode(value)) return true
     if (isTextNode(value)) return true
-    if (isComponentNode(value)) return true
 
     return false
 }

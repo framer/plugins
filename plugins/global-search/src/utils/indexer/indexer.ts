@@ -74,15 +74,14 @@ export class GlobalSearchIndexer {
 
                 if (!isIndexableNode(node)) continue
 
-                const [text, name] = await Promise.all([this.getNodeText(node), getNodeName(node)])
+                const text = await this.getNodeText(node)
 
-                if (!text && !name) continue
+                if (!text) continue
 
                 batch.push({
                     id: node.id,
                     type: node.__class,
                     nodeId: node.id,
-                    name,
                     text,
                     rootNodeId: rootNode.id,
                     rootNodeName,

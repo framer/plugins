@@ -37,7 +37,6 @@ export interface IndexNodeEntry extends IndexEntryBase {
     readonly rootNodeName: string | null
     readonly rootNodeType: IndexNodeRootNodeType
     readonly text: string | null
-    readonly name: string | null
 }
 
 export interface IndexCollectionItemEntry extends IndexEntryBase {

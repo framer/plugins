@@ -316,14 +316,28 @@ function overrideGTMDataLayer() {
     })
 }
 
-document.addEventListener("framer:overrideGTM", overrideGTMDataLayer, { once: true })
+const gtmObserver = new MutationObserver(() => {
+    if (document.readyState === "complete" && !("dataLayer" in window)) {
+        // GTM probably isn't on the page, so we can stop observing.
+        gtmObserver.disconnect()
+        return
+    }
+    if ("dataLayer" in window) {
+        if (DEBUG) console.log("GTM dataLayer found, overriding")
+
+        gtmObserver.disconnect()
+        overrideGTMDataLayer()
+    }
+})
+
+gtmObserver.observe(document.documentElement, { childList: true, subtree: true })
 
 // #region History/submit wrapper override
 function wrapListener<T extends object>(target: T, method: keyof T, value: Function) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (...args: any[]) => {
-        // We first call the original pushState: This optimizes for UX & correctness of React components.
-        // e.g., when a component renders on a new route, it might set state and/or read from the URL. If the URL isn't
+        // We first call the original: This optimizes for UX & correctness of React components.
+        // e.g., for pushState, when a component renders on a new route, it might set state and/or read from the URL. If the URL isn't
         // accurate, it might lead to wrong behavior.
         // We don't want to call the underlying native method twice (or multiple times), so we add a
         // flag to the data object.
@@ -346,13 +360,13 @@ function overrideListener<T extends object>(target: T, method: keyof T) {
     // used if nothing ever overrides it.
     let mostRecentWrapper: VoidFunction | undefined = wrapListener(target, method, () => {})
 
-    Object.defineProperty(window.history, method, {
+    Object.defineProperty(target, method, {
         enumerable: true,
         get() {
             return mostRecentWrapper
         },
         set(value) {
-            if (DEBUG) console.log(`set history.${String(method)}`, value)
+            if (DEBUG) console.log(`set ${String(method)}`, target, value)
 
             if (value === mostRecentWrapper) return
             mostRecentWrapper = value ? wrapListener(target, method, value as Function) : undefined

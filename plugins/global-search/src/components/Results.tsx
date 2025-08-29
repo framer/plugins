@@ -1,10 +1,12 @@
 import { framer } from "framer-plugin"
 import { useCallback, useMemo } from "react"
 import { assertNever } from "../utils/assert"
+import { cn } from "../utils/className"
 import type { EntryResult } from "../utils/filter/group-results"
 import { type Range, rangeLength } from "../utils/filter/ranges"
 import type { RootNodeType } from "../utils/indexer/types"
 import { truncateFromStart } from "../utils/text"
+import { useFocusHandlers } from "../utils/useFocus"
 import { IconArrowRight } from "./ui/IconArrowRight"
 import { IconCollection } from "./ui/IconCollection"
 import { IconComponent } from "./ui/IconComponent"
@@ -50,20 +52,27 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
         })
     }, [results])
 
+    const focusProps = useFocusHandlers({ isSelfSelectable: false })
+
     return (
-        <details open className="group flex flex-col not-first:pt-2 not-last:pb-2">
-            <summary className="flex flex-row gap-2 justify-start items-center h-8 select-none overflow-hidden ps-2 pt-2 sticky top-0 bg-modal-light dark:bg-modal-dark">
-                <div className="flex-shrink-0 flex gap-2 justify-start items-center">
-                    <IconArrowRight
-                        className="text-tertiary-light dark:text-tertiary-dark  transition-transform duration-200 ease-in-out group-open:rotate-90"
-                        aria-hidden="true"
-                    />
+        <details open className="group flex flex-col not-last:pb-2">
+            <summary
+                className="pt-2 sticky top-0 group focus-visible:outline-none bg-modal-light dark:bg-modal-dark"
+                {...focusProps}
+            >
+                <div className="flex flex-row gap-2 rounded-lg justify-start items-center h-6 select-none overflow-hidden ps-2 group-focus-visible:bg-option-light dark:group-focus-visible:bg-option-dark group-focus-visible:text-primary-light dark:group-focus-visible:text-primary-dark">
+                    <div className="flex-shrink-0 flex gap-2 justify-start items-center">
+                        <IconArrowRight
+                            className="text-tertiary-light dark:text-tertiary-dark  transition-transform duration-200 ease-in-out group-open:rotate-90"
+                            aria-hidden="true"
+                        />
 
-                    <ResultIcon rootNodeType={entry.rootNodeType} aria-hidden="true" />
-                </div>
+                        <ResultIcon rootNodeType={entry.rootNodeType} aria-hidden="true" />
+                    </div>
 
-                <div className="text-xs text-secondary-light dark:text-secondary-dark whitespace-nowrap text-ellipsis flex-1 overflow-hidden">
-                    {entry.rootNodeName ?? `Unnamed ${entry.rootNodeType}`}
+                    <div className="text-xs text-secondary-light dark:text-secondary-dark whitespace-nowrap text-ellipsis flex-1 overflow-hidden">
+                        {entry.rootNodeName ?? `Unnamed ${entry.rootNodeType}`}
+                    </div>
                 </div>
             </summary>
             <ul className="flex flex-col">
@@ -103,11 +112,17 @@ function Match({
     }, [targetId, collectionFieldId])
 
     const { before, highlight, after } = useHighlightedTextWithContext({ text, range })
+    const focusProps = useFocusHandlers({ isSelfSelectable: true })
 
     return (
         <button
             onClick={navigateToResult}
-            className="text-secondary-light dark:text-secondary-dark text-xs h-6 text-left select-none cursor-pointer pl-5 hover:bg-option-light dark:hover:bg-option-dark hover:text-primary-light dark:hover:text-primary-dark rounded-lg transition-colors"
+            className={cn(
+                "text-secondary-light dark:text-secondary-dark text-xs h-6 text-left select-none cursor-pointer pl-5  rounded-lg transition-colors",
+                "hover:bg-option-light dark:hover:bg-option-dark hover:text-primary-light dark:hover:text-primary-dark focus-visible:bg-option-light dark:focus-visible:bg-option-dark focus-visible:text-primary-light dark:focus-visible:text-primary-dark",
+                "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+            )}
+            {...focusProps}
         >
             <li className="text-ellipsis overflow-hidden whitespace-nowrap">
                 {before}

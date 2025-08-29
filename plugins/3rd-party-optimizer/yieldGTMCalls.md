@@ -22,12 +22,11 @@ Explainer for what we achieve with the `document`/`document.body` listeners:
 - The `document` one overrides capturing listeners - by overrding `document.addEventListener` to yield before calling the listener (so interception at event registration time)
 - The `document.body` one overrides the non-capturing listeners - by stopping propagation at `body` (before it reaches `document`), and then re-dispatches the `event` (cloned)
 
-On `framer:overrideGTM` event:
-- Overrides `dataLayer.push` and `ga`/`gtag()` to yield first before calling the real function
+When the script initializes, it installs a MutationObserver that waits for `dataLayer` to appear:
+- We need to wait for `dataLayer` to appear, so that the initial pushes happen as expected (e.g. `gtm.load`, `consent default`)
+- Overrides `dataLayer.push` and `ga`/`gtag()` to yield first before calling the browser-native `push` function
 - The override makes sure any further override is overridden again
-- It yields between every overridden-call. The real `push` is called last
-
-`framer:overrideGTM` is called right after setting up `window.dataLayer`.
+- It yields between every overridden-call. The real `push` is called last.
 
 `history.pushState/replaceState` overrides:
 - Overrides the functions to yield first before calling any overrides

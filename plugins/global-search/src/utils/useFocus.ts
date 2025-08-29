@@ -2,22 +2,20 @@ import type { FocusableElement } from "@react-types/shared"
 import { useCallback } from "react"
 import { useFocusManager } from "react-aria"
 
-const inputId = "text-search-input"
-const resultDataAttribute = "data-result-match"
+const navigationSelectableAttribute = "data-navigation-selectable"
 
-const propsByType = {
-    input: { id: inputId },
-    match: { [resultDataAttribute]: true },
-    "match-group": null,
-} as const
+const isResultMatch = (element: Element) => element.hasAttribute(navigationSelectableAttribute)
 
-export function useFocusHandlers(type: keyof typeof propsByType) {
+export function useFocusHandlers({
+    isSelfSelectable,
+}: {
+    /** If the element itself can be naviagated to (e.g. input or individual match), or if it is just the receiver of the key events (e.g. match group) */
+    isSelfSelectable: boolean
+}) {
     const focusManager = useFocusManager()
 
     const onKeyDown = useCallback(
         (event: React.KeyboardEvent<HTMLElement>) => {
-            const isResultMatch = (element: Element) =>
-                element.id === inputId || element.matches(`[${resultDataAttribute}]`)
             let next: FocusableElement | null | undefined
             switch (event.key) {
                 case "ArrowDown":
@@ -41,6 +39,6 @@ export function useFocusHandlers(type: keyof typeof propsByType) {
 
     return {
         onKeyDown,
-        ...propsByType[type],
+        ...(isSelfSelectable ? { [navigationSelectableAttribute]: true } : null),
     }
 }

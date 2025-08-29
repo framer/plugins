@@ -6,7 +6,7 @@ import { IconSearch } from "./ui/IconSearch"
 type SearchInputProps = DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>
 
 export function SearchInput({ className, ...props }: SearchInputProps) {
-    const focusProps = useFocusHandlers("input")
+    const focusProps = useFocusHandlers({ isSelfSelectable: true })
 
     return (
         <label className={cn("flex items-center gap-2 flex-1", className)}>

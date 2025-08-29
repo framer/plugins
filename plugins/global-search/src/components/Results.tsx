@@ -52,7 +52,7 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
         })
     }, [results])
 
-    const focusProps = useFocusHandlers("match-group")
+    const focusProps = useFocusHandlers({ isSelfSelectable: false })
 
     return (
         <details open className="group flex flex-col not-last:pb-2">
@@ -112,7 +112,7 @@ function Match({
     }, [targetId, collectionFieldId])
 
     const { before, highlight, after } = useHighlightedTextWithContext({ text, range })
-    const focusProps = useFocusHandlers("match")
+    const focusProps = useFocusHandlers({ isSelfSelectable: true })
 
     return (
         <button
@@ -122,7 +122,6 @@ function Match({
                 "hover:bg-option-light dark:hover:bg-option-dark hover:text-primary-light dark:hover:text-primary-dark focus-visible:bg-option-light dark:focus-visible:bg-option-dark focus-visible:text-primary-light dark:focus-visible:text-primary-dark",
                 "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
             )}
-            data-result-match
             {...focusProps}
         >
             <li className="text-ellipsis overflow-hidden whitespace-nowrap">

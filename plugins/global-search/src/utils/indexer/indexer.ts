@@ -10,7 +10,13 @@ import {
 import { GlobalSearchDatabase } from "../db"
 import { type EventMap, TypedEventEmitter } from "../event-emitter"
 import { stripMarkup } from "./strip-markup"
-import { type IndexEntry, type IndexNodeRootNode, type IndexableNode, includedAttributes, isIndexableNode } from "./types"
+import {
+    type IndexableNode,
+    type IndexEntry,
+    type IndexNodeRootNode,
+    includedAttributes,
+    isIndexableNode,
+} from "./types"
 
 async function getNodeName(node: AnyNode): Promise<string | null> {
     if (isWebPageNode(node)) {
@@ -77,6 +83,17 @@ export class GlobalSearchIndexer {
                 const text = await this.getNodeText(node)
 
                 if (!text) continue
+
+                // skipping the entry if it's a duplicate of the original node with the same text
+                if (node.originalId) {
+                    const originalNode = await framer.getNode(node.originalId)
+                    if (originalNode && isIndexableNode(originalNode)) {
+                        const originalText = await this.getNodeText(originalNode)
+                        if (originalText === text) {
+                            continue
+                        }
+                    }
+                }
 
                 batch.push({
                     id: node.id,

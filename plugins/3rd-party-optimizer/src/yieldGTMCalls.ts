@@ -32,11 +32,28 @@ function resolvePendingPromises() {
     pendingResolvers.clear()
 }
 
+declare const scheduler: {
+    postTask: (cb: VoidFunction, options: { priority: "background" }) => void
+}
+
+const lowPriorityCallback =
+    "scheduler" in window && "postTask" in scheduler
+        ? (cb: VoidFunction) => {
+              scheduler.postTask(cb, { priority: "background" })
+          }
+        : (cb: VoidFunction) => setTimeout(cb, 1)
+
 /**
  * This is a modified `yieldUnlessUrgent` tailored to the GTM optimization use-case.
- * The difference is, we batch calls to `requestAnimationFrame` manually and only support lowest priority (`setTimeout(fn, 1)`)
+ * The difference is, we batch calls to `requestAnimationFrame` manually and only support lowest priority
+ * (`setTimeout(fn, 1)`/postTask background priority)
  */
 async function yieldUnlessUrgent(shouldWaitForLoad = false) {
+    let timeStamp: number | undefined
+    if (DEBUG) {
+        timeStamp = performance.now()
+    }
+
     if (document.hidden) {
         resolvePendingPromises()
         return
@@ -48,17 +65,20 @@ async function yieldUnlessUrgent(shouldWaitForLoad = false) {
                 resolve()
             })
         })
+        if (DEBUG) console.timeStamp(`load-yield-${timeStamp}`, timeStamp, performance.now(), "GTM yield", "GTM load")
     }
 
     return new Promise<void>(resolve => {
         pendingResolvers.add(resolve)
 
-        // await next paint without a setTimeout fallback, as the fallbacks are the event listeners above
         queueAfterPaintCallback(() => {
-            setTimeout(() => {
+            lowPriorityCallback(() => {
+                if (DEBUG)
+                    console.timeStamp(`yield-${timeStamp}`, timeStamp, performance.now(), "GTM yield", "GTM yield")
+
                 pendingResolvers.delete(resolve)
                 resolve()
-            }, 1)
+            })
         })
     })
 }

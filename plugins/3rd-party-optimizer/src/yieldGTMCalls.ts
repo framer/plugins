@@ -136,8 +136,24 @@ document.addEventListener("click", globalClickReceivedListener, true)
 // Ensure we resolve when the page becomes hidden
 // visibilitychange + pagehide is needed to reliably (±97%) detect when the page is hidden cross-browser
 // see https://nicj.net/beaconing-in-practice-fetchlater/#beaconing-in-practice-fetchlater-onload-or-pagehide-or-visibilitychange
-document.addEventListener("visibilitychange", globalClickReceivedListener, true)
-document.addEventListener("pagehide", globalClickReceivedListener, true)
+document.addEventListener(
+    "visibilitychange",
+    () => {
+        if (document.hidden) {
+            resolvePendingPromises()
+            globalClickReceivedListener()
+        }
+    },
+    true
+)
+document.addEventListener(
+    "pagehide",
+    () => {
+        globalClickReceivedListener()
+        resolvePendingPromises()
+    },
+    true
+)
 
 type DataLayerPush = (...items: object[]) => boolean
 type DataLayer = Omit<object[], "push"> & {
@@ -205,7 +221,7 @@ function cloneEvent(event: Event): CloneEvent {
 }
 
 // #region capturing listener interceptor
-// Intercept capturing event listeners:
+// Intercept event listeners during capture phase.
 // eslint-disable-next-line @typescript-eslint/unbound-method
 const originalAddEventListener = document.addEventListener
 const typesToIntercept = ["click", "auxclick", "mousedown", "keyup", "submit"] as const
@@ -222,16 +238,13 @@ document.addEventListener = function (
     ) {
         if (DEBUG) console.log(`Overriding ${type} listener`, listener)
 
-        // Note: This listener also receives dispatches from our document.body interceptor.
-        // This means, sometimes it might yield twice. This is ok, as it can potentially split
-        // 3rd-party-listeners across multiple frames.
-        // Tiny "TODO": We could explicitly 'waterfall' those listeners:
-        // yield -> schedule next task -> yield -> schedule next task instead of
-        // yield -> all run in one task
         originalAddEventListener.call(
             this,
             type,
             async function overriddenEventListener(this: unknown, e) {
+                // @ts-expect-error TS(2339): Used to skip events that have already been handled by the bubble phase interceptor.
+                if (e.__f) return
+
                 const event = cloneEvent(e) // Clone at the time of interception
 
                 if (
@@ -259,7 +272,9 @@ document.addEventListener = function (
 }
 
 // #region body interceptor
-// readystatechange runs exactly before DOMContentLoaded, which is needed to ensure we call stopPropagation early (first listener added runs first)
+// readystatechange runs exactly before DOMContentLoaded, which is needed to ensure we call stopPropagation early (first
+// listener added runs first)
+// This runs at the bubble phase.
 document.addEventListener("readystatechange", () => {
     if (document.readyState !== "interactive") return
 
@@ -278,6 +293,9 @@ document.addEventListener("readystatechange", () => {
 
         await yieldUnlessUrgent()
 
+        // @ts-expect-error TS(2339): Used to mark the event as having been handled by the bubble phase interceptor.
+        event.__f = true
+        // We don't dispatch at the body, so that non-capturing event listeners don't receive the event twice.
         document.dispatchEvent(event)
     }
 

@@ -6,7 +6,7 @@ import { IconSearch } from "./ui/IconSearch"
 type SearchInputProps = DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>
 
 export function SearchInput({ className, ...props }: SearchInputProps) {
-    const { onKeyDown } = useFocusHandlers()
+    const focusProps = useFocusHandlers("input")
 
     return (
         <label className={cn("flex items-center gap-2 flex-1", className)}>
@@ -18,8 +18,8 @@ export function SearchInput({ className, ...props }: SearchInputProps) {
                 className="flex-1 h-[18px] bg-transparent border-none outline-none focus-visible:outline-none focus-visible:ring-0 text-xs p-0 text-primary-light dark:text-primary-dark placeholder:text-tertiary-light dark:placeholder:text-tertiary-dark"
                 placeholder="Search..."
                 autoFocus
-                onKeyDown={onKeyDown}
                 {...props}
+                {...focusProps}
             />
         </label>
     )

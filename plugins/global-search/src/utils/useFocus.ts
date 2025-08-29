@@ -2,13 +2,22 @@ import type { FocusableElement } from "@react-types/shared"
 import { useCallback } from "react"
 import { useFocusManager } from "react-aria"
 
-export function useFocusHandlers() {
+const inputId = "text-search-input"
+const resultDataAttribute = "data-result-match"
+
+const propsByType = {
+    input: { id: inputId },
+    match: { [resultDataAttribute]: true },
+    "match-group": null,
+} as const
+
+export function useFocusHandlers(type: keyof typeof propsByType) {
     const focusManager = useFocusManager()
 
     const onKeyDown = useCallback(
         (event: React.KeyboardEvent<HTMLElement>) => {
             const isResultMatch = (element: Element) =>
-                element.id === "text-search-input" || element.matches("[data-result-match]")
+                element.id === inputId || element.matches(`[${resultDataAttribute}]`)
             let next: FocusableElement | null | undefined
             switch (event.key) {
                 case "ArrowDown":
@@ -32,5 +41,6 @@ export function useFocusHandlers() {
 
     return {
         onKeyDown,
+        ...propsByType[type],
     }
 }

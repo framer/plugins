@@ -52,13 +52,13 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
         })
     }, [results])
 
-    const { onKeyDown } = useFocusHandlers()
+    const focusProps = useFocusHandlers("match-group")
 
     return (
         <details open className="group flex flex-col not-last:pb-2">
             <summary
                 className="pt-2 sticky top-0 group focus-visible:outline-none bg-modal-light dark:bg-modal-dark"
-                onKeyDown={onKeyDown}
+                {...focusProps}
             >
                 <div className="flex flex-row gap-2 rounded-lg justify-start items-center h-6 select-none overflow-hidden ps-2 group-focus-visible:bg-option-light dark:group-focus-visible:bg-option-dark group-focus-visible:text-primary-light dark:group-focus-visible:text-primary-dark">
                     <div className="flex-shrink-0 flex gap-2 justify-start items-center">
@@ -112,7 +112,7 @@ function Match({
     }, [targetId, collectionFieldId])
 
     const { before, highlight, after } = useHighlightedTextWithContext({ text, range })
-    const { onKeyDown } = useFocusHandlers()
+    const focusProps = useFocusHandlers("match")
 
     return (
         <button
@@ -123,7 +123,7 @@ function Match({
                 "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
             )}
             data-result-match
-            onKeyDown={onKeyDown}
+            {...focusProps}
         >
             <li className="text-ellipsis overflow-hidden whitespace-nowrap">
                 {before}

@@ -108,26 +108,26 @@ function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
                 const { Icon } = entry
 
                 return (
-                    <button
-                        className="icon-parent"
-                        onClick={() => {
-                            if (!isAllowedToAddSVG) return
-                            void handleIconClick(entry)
-                        }}
-                        disabled={!isAllowedToAddSVG}
-                        title={isAllowedToAddSVG ? undefined : "Insufficient permissions"}
+                    <Draggable
+                        data={() => ({
+                            type: "svg",
+                            name: "Icon",
+                            svg: renderToStaticMarkup(<Icon size={32} color={"black"} weight={weight} />),
+                        })}
+                        key={entry.name}
                     >
-                        <Draggable
-                            data={() => ({
-                                type: "svg",
-                                name: "Icon",
-                                svg: renderToStaticMarkup(<Icon size={32} color={"black"} weight={weight} />),
-                            })}
-                            key={entry.name}
+                        <button
+                            className="icon-parent"
+                            onClick={() => {
+                                if (!isAllowedToAddSVG) return
+                                void handleIconClick(entry)
+                            }}
+                            disabled={!isAllowedToAddSVG}
+                            title={isAllowedToAddSVG ? undefined : "Insufficient permissions"}
                         >
                             <Icon size={32} color={"var(--framer-color-text)"} weight={weight} />
-                        </Draggable>
-                    </button>
+                        </button>
+                    </Draggable>
                 )
             })}
         </div>

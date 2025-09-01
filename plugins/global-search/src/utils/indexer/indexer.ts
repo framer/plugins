@@ -1,5 +1,6 @@
 import {
     type AnyNode,
+    type CanvasRootNode,
     type Collection,
     framer,
     isComponentNode,
@@ -58,6 +59,7 @@ export class GlobalSearchIndexer {
     // A smaller batch size will make showing results faster, but will also make the UI more laggy.
     private batchSize = 100
     private abortRequested = false
+    private canvasSubscription: (() => void) | null = null
 
     constructor(private db: GlobalSearchDatabase) {}
 
@@ -165,6 +167,33 @@ export class GlobalSearchIndexer {
         }
     }
 
+    private async handleCanvasRootChange(rootNode: CanvasRootNode) {
+        if (this.abortRequested) return
+
+        if (!isComponentNode(rootNode) && !isWebPageNode(rootNode)) {
+            return
+        }
+
+        try {
+            const currentIndexRun = await this.db.getLastIndexRun()
+            let processed = 0
+
+            for await (const batch of this.crawlNodes(currentIndexRun, [rootNode])) {
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                if (this.abortRequested) break
+
+                await this.db.upsertEntries(batch)
+                processed += batch.length
+
+                this.eventEmitter.emit("progress", { processed })
+            }
+
+            // FIXME: clear old entries
+        } catch (error) {
+            this.eventEmitter.emit("error", { error: error instanceof Error ? error : new Error(String(error)) })
+        }
+    }
+
     async start() {
         // XXX: The indexer has no "locking mechanism" to prevent multiple instances from running at the same time in multiple tabs.
         try {
@@ -178,6 +207,10 @@ export class GlobalSearchIndexer {
 
             this.abortRequested = false
             this.eventEmitter.emit("started", { indexRun: currentIndexRun })
+
+            this.canvasSubscription ??= framer.subscribeToCanvasRoot(rootNode => {
+                void this.handleCanvasRootChange(rootNode)
+            })
 
             for await (const batch of this.crawlNodes(currentIndexRun, [...pages, ...components])) {
                 // this isn't a unnecassary static expression, as the value could change during the async loop
@@ -208,12 +241,27 @@ export class GlobalSearchIndexer {
 
     async restart() {
         this.abortRequested = true
+
+        // Clean up existing canvas subscription before restarting
+        if (this.canvasSubscription) {
+            this.canvasSubscription()
+            this.canvasSubscription = null
+        }
+
         this.eventEmitter.emit("restarted")
         return this.start()
     }
 
     abort() {
         this.abortRequested = true
+
+        // Clean up canvas subscription
+        if (this.canvasSubscription) {
+            this.canvasSubscription()
+            this.canvasSubscription = null
+        }
+
+        this.eventEmitter.emit("aborted")
     }
 
     /**

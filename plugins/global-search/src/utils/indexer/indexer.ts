@@ -10,7 +10,13 @@ import {
 import { GlobalSearchDatabase } from "../db"
 import { type EventMap, TypedEventEmitter } from "../event-emitter"
 import { stripMarkup } from "./strip-markup"
-import { type IndexEntry, type IndexNodeRootNode, includedAttributes, shouldIndexNode } from "./types"
+import {
+    type IndexableNode,
+    type IndexEntry,
+    type IndexNodeRootNode,
+    includedAttributes,
+    isIndexableNode,
+} from "./types"
 
 async function getNodeName(node: AnyNode): Promise<string | null> {
     if (isWebPageNode(node)) {
@@ -55,7 +61,7 @@ export class GlobalSearchIndexer {
 
     constructor(private db: GlobalSearchDatabase) {}
 
-    private async getNodeText(node: AnyNode): Promise<string | null> {
+    private async getNodeText(node: IndexableNode): Promise<string | null> {
         if (includedAttributes.includes("text") && isTextNode(node)) {
             const html = await node.getHTML()
             return html ? stripMarkup(html) : null
@@ -72,17 +78,27 @@ export class GlobalSearchIndexer {
             for await (const node of rootNode.walk()) {
                 if (this.abortRequested) return
 
-                if (!shouldIndexNode(node)) continue
+                if (!isIndexableNode(node) || !node.visible) continue
 
-                const [text, name] = await Promise.all([this.getNodeText(node), getNodeName(node)])
+                const text = await this.getNodeText(node)
 
-                if (!text && !name) continue
+                if (!text) continue
+
+                // skipping the entry if it's a duplicate of the original node with the same text
+                if (node.originalId) {
+                    const originalNode = await framer.getNode(node.originalId)
+                    if (originalNode && isIndexableNode(originalNode) && originalNode.visible) {
+                        const originalText = await this.getNodeText(originalNode)
+                        if (originalText === text) {
+                            continue
+                        }
+                    }
+                }
 
                 batch.push({
                     id: node.id,
                     type: node.__class,
                     nodeId: node.id,
-                    name,
                     text,
                     rootNodeId: rootNode.id,
                     rootNodeName,

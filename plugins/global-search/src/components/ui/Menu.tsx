@@ -22,7 +22,6 @@ export const Menu = memo(function Menu({ items, children, className }: MenuProps
                 .showContextMenu(items, {
                     location: { x: buttonBounds.right - 5, y: buttonBounds.bottom },
                     placement: "bottom-left",
-                    width: 200,
                 })
                 .catch((error: unknown) => {
                     framer.notify(

@@ -2,6 +2,7 @@ import { framer, type MenuItem } from "framer-plugin"
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react"
 import { FocusScope } from "react-aria"
 import { cn } from "../utils/className"
+import { compareRootNodeTypeByPriority } from "../utils/filter/group-results"
 import { useAsyncFilter } from "../utils/filter/useAsyncFilter"
 import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
@@ -88,11 +89,13 @@ const optionsMenuLabels = {
     Collection: "Collections",
 } as const satisfies Record<RootNodeType, string>
 
+const sortedRootNodeTypes = entries(optionsEnabled).sort(([a], [b]) => compareRootNodeTypeByPriority(a, b))
+
 function useOptionsMenuItems() {
     const [searchOptions, setSearchOptions] = useState<readonly RootNodeType[]>(defaultSearchOptions)
 
     const optionsMenuItems = useMemo((): MenuItem[] => {
-        return entries(optionsEnabled).map(([rootNode, enabled]) => ({
+        return sortedRootNodeTypes.map(([rootNode, enabled]) => ({
             id: rootNode,
             label: optionsMenuLabels[rootNode],
             enabled,

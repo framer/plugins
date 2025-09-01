@@ -6280,7 +6280,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-plugin@npm:^3.3.2, framer-plugin@npm:^3.5.2":
+"framer-plugin@npm:^3.3.2":
+  version: 3.3.2
+  resolution: "framer-plugin@npm:3.3.2"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/7dc93e76b93000534085a8b9e52c88a533617bbc7af57de4bb82687e44d3330e1c7f6c7441d247733ce1ccc98fb9e5c890a4a80fef342f7f5919fd742012dbb7
+  languageName: node
+  linkType: hard
+
+"framer-plugin@npm:^3.5.2":
   version: 3.5.2
   resolution: "framer-plugin@npm:3.5.2"
   peerDependencies:

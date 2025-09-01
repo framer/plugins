@@ -22,12 +22,15 @@ export function SearchScene() {
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
     const deferredQuery = useDeferredValue(query)
     const isIndexingWithMinimumDuration = useMinimumDuration(isIndexing, 500)
+    const debouncedQuery = useDebounceValue(deferredQuery, 250)
+    // if the query is shorter than 3 characters, we use the deferred query to avoid rendering long lists when the user is typing
+    const queryToUse = deferredQuery.length <= 3 ? debouncedQuery : deferredQuery
 
     const {
         results,
         running: isFilterRunning,
         error: filterError,
-    } = useAsyncFilter(deferredQuery, searchOptions, db, dataVersion)
+    } = useAsyncFilter(queryToUse, searchOptions, db, dataVersion)
 
     const hasResults = results.length > 0
     const groupedResults = useGroupResults(results)
@@ -43,9 +46,9 @@ export function SearchScene() {
 
     useEffect(() => {
         void framer.showUI(
-            getPluginUiOptions({ query: deferredQuery, hasResults, areResultsFinal: !isIndexing && !isFilterRunning })
+            getPluginUiOptions({ query: queryToUse, hasResults, areResultsFinal: !isIndexing && !isFilterRunning })
         )
-    }, [deferredQuery, hasResults, isFilterRunning, isIndexing])
+    }, [queryToUse, hasResults, isFilterRunning, isIndexing])
 
     return (
         <main className="flex flex-col h-full">
@@ -53,7 +56,7 @@ export function SearchScene() {
                 <div
                     className={cn(
                         "flex gap-2 border-divider-light dark:border-divider-dark border-y py-3 mx-3 transition-colors items-center",
-                        !deferredQuery && "border-b-transparent dark:border-b-transparent"
+                        !queryToUse && "border-b-transparent dark:border-b-transparent"
                     )}
                 >
                     <SearchInput value={query} onChange={handleQueryChange} />
@@ -71,8 +74,8 @@ export function SearchScene() {
                     </Menu>
                 </div>
                 <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden not-empty:pb-3">
-                    {deferredQuery && hasResults && <ResultsList groupedResults={groupedResults} />}
-                    {deferredQuery && !hasResults && !isIndexing && !isFilterRunning && <NoResults />}
+                    {queryToUse && hasResults && <ResultsList groupedResults={groupedResults} />}
+                    {queryToUse && !hasResults && !isIndexing && !isFilterRunning && <NoResults />}
                 </div>
             </FocusScope>
         </main>
@@ -124,4 +127,19 @@ function useOptionsMenuItems() {
     }, [searchOptions])
 
     return { searchOptions, optionsMenuItems }
+}
+
+function useDebounceValue<T>(value: T, delay: number) {
+    const [debouncedValue, setDebouncedValue] = useState<T>(value)
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setDebouncedValue(value)
+        }, delay)
+        return () => {
+            clearTimeout(timeout)
+        }
+    }, [value, delay])
+
+    return debouncedValue
 }

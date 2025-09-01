@@ -58,7 +58,7 @@ export function App() {
             )}
 
             {customCode?.headStart.disabled && (
-                <div className="flex flex-col gap-[10px] | content-center justify-center">
+                <div className="flex flex-col gap-[10px] | justify-center items-center">
                     <div className="flex | justify-center | w-full | py-[4px]">
                         <img src={warning} alt="Warning" />
                     </div>
@@ -72,7 +72,7 @@ export function App() {
             {scriptOutdated && (
                 <>
                     <div className="framer-divider" />
-                    <div className="flex | justify-between content-center | w-full">
+                    <div className="flex | justify-between items-center | w-full">
                         <p className="text-center">New script version available</p>
                         <button
                             className="framer-button-primary bg-[var(--framer-color-tint-dimmed)] text-[var(--framer-color-tint)] hover:bg-[var(--framer-color-tint-dimmed)] focus:bg-[var(--framer-color-tint-dimmed)] | rounded-[6px] | text-[10px] font-500 | w-[46px] h-[20px]"

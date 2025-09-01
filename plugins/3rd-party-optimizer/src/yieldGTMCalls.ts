@@ -389,8 +389,11 @@ gtmObserver.observe(document.documentElement, { childList: true, subtree: true }
 
 // #region History/submit wrapper override
 function wrapListener<T extends object>(target: T, method: keyof T, value: Function) {
+    // @ts-expect-error TS(2339): Prototype chain call. We try __proto__ first, as this will usually be the original method.
+    const originalMethod: Function = (target.__proto__ as unknown as T)[method] ?? (target[method] as Function)
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (...args: any[]) => {
+    return (...args: [data: object, ...args: any[]]) => {
         if (DEBUG) {
             console.log("Yielding for", method)
             console.timeStamp(method as string)
@@ -401,14 +404,14 @@ function wrapListener<T extends object>(target: T, method: keyof T, value: Funct
         // accurate, it might lead to wrong behavior.
         // We don't want to call the underlying native method twice (or multiple times), so we add a
         // flag to the data object.
-        if (!("__f" in args[0])) {
-            // @ts-expect-error TS(2339): Prototype chain call.
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-            target.__proto__[method].apply(target, args)
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            args[0].__f = true // Flag to indicate that the native method was called
+        if (typeof args[0] === "object" && !("__f" in args[0])) {
+            originalMethod.apply(target, args)
+
+            // @ts-expect-error TS(2339): Flag to indicate that the native method was called
+            args[0].__f = true
         }
 
+        // If `method` is overriden N times, it creates N yield points (as overrides might be chained)
         void yieldUnlessUrgent().then(() => {
             value.apply(target, args)
         })
@@ -418,7 +421,7 @@ function overrideListener<T extends object>(target: T, method: keyof T) {
     // The initial value is a noop, so that the first override doesn't call the native method.
     // We still need to set it to a function, so that the `get` function returns a function that is
     // used if nothing ever overrides it.
-    let mostRecentWrapper: VoidFunction | undefined = wrapListener(target, method, () => {})
+    let mostRecentWrapper: Function | undefined = wrapListener(target, method, () => {})
 
     Object.defineProperty(target, method, {
         enumerable: true,
@@ -434,6 +437,6 @@ function overrideListener<T extends object>(target: T, method: keyof T) {
     })
 }
 
-overrideListener(window.history, "pushState")
-overrideListener(window.history, "replaceState")
+overrideListener(history, "pushState")
+overrideListener(history, "replaceState")
 overrideListener(HTMLFormElement.prototype, "submit")

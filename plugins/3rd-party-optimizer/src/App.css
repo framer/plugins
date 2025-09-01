@@ -11,5 +11,6 @@
 
     p {
         color: var(--framer-color-text-tertiary);
+        text-align: center;
     }
 }

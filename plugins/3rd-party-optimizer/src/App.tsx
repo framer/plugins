@@ -49,7 +49,7 @@ export function App() {
             <div className="framer-divider" />
 
             {!customCode?.headStart.disabled && (
-                <p className="text-center">
+                <p>
                     Add a script to your custom HTML to improve site performance when using 3rd-party tracking scripts.{" "}
                     <a href="https://www.framer.com/marketplace/plugins/3rd-party-optimizer/" target="_blank">
                         Learn more
@@ -62,7 +62,7 @@ export function App() {
                     <div className="flex | justify-center | w-full | py-[4px]">
                         <img src={warning} alt="Warning" />
                     </div>
-                    <p className="text-center">
+                    <p>
                         The script is disabled. Please go to
                         <br /> Site Settings → General and enable it.
                     </p>
@@ -73,7 +73,7 @@ export function App() {
                 <>
                     <div className="framer-divider" />
                     <div className="flex | justify-between items-center | w-full">
-                        <p className="text-center">New script version available</p>
+                        <p>New script version available</p>
                         <button
                             className="framer-button-primary bg-[var(--framer-color-tint-dimmed)] text-[var(--framer-color-tint)] hover:bg-[var(--framer-color-tint-dimmed)] focus:bg-[var(--framer-color-tint-dimmed)] | rounded-[6px] | text-[10px] font-500 | w-[46px] h-[20px]"
                             onClick={toggleScript.bind(null, true)}

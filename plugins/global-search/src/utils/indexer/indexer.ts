@@ -175,7 +175,8 @@ export class GlobalSearchIndexer {
         }
 
         try {
-            const currentIndexRun = await this.db.getLastIndexRun()
+            const lastIndexRun = await this.db.getLastIndexRun()
+            const currentIndexRun = lastIndexRun + 1
             let processed = 0
 
             for await (const batch of this.crawlNodes(currentIndexRun, [rootNode])) {
@@ -187,8 +188,7 @@ export class GlobalSearchIndexer {
 
                 this.eventEmitter.emit("progress", { processed })
             }
-
-            // FIXME: clear old entries
+            await this.db.clearEntriesForRootNode(rootNode.id, lastIndexRun)
         } catch (error) {
             this.eventEmitter.emit("error", { error: error instanceof Error ? error : new Error(String(error)) })
         }

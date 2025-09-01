@@ -1,4 +1,5 @@
 import { type EventMap, TypedEventEmitter } from "../event-emitter"
+import { waitForIdle } from "../idle-utils"
 
 export interface ResumableAsyncIterable<T extends { id: string }> {
     iterateFrom(lastKey: string | null): AsyncGenerator<T, unknown, T>
@@ -15,35 +16,6 @@ export interface AsyncProcessorEvents<TOutput> extends EventMap {
     progress: Progress<TOutput>
     completed: readonly TOutput[]
     error: Error
-}
-
-/**
- * The idle time threshold in milliseconds.
- * This is based on (1000ms / 120fps) - some time to render, etc.
- */
-const idleTimeThreshold = 7
-const getIdleCallback =
-    // Unfortunatl Safari doesn't support requestIdleCallback, so we need to shim it
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    requestIdleCallback ??
-    ((cb: IdleRequestCallback) => {
-        const start = performance.now()
-        return setTimeout(() => {
-            cb({
-                didTimeout: false,
-                timeRemaining: () => Math.max(0, idleTimeThreshold - (performance.now() - start)),
-            })
-        }, 1)
-    })
-
-function waitForIdle(): Promise<{
-    timeRemaining: () => number
-}> {
-    return new Promise(resolve => {
-        getIdleCallback(deadline => {
-            resolve(deadline)
-        })
-    })
 }
 
 export class IdleCallbackAsyncProcessor<TOutput> {

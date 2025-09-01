@@ -25,12 +25,12 @@ function compileYieldGTMCalls() {
                 // Compile and minify with esbuild
                 const result = transformSync(source, {
                     loader: "ts",
-                    target: "es2022",
+                    target: "es2021",
                     minify: true,
                     format: "iife",
                 })
 
-                return `export default ${JSON.stringify(result.code)}`
+                return `export default ${JSON.stringify(`<script>${result.code}</script>`)}`
             }
         },
     }

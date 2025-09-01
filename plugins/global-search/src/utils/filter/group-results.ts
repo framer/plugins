@@ -1,3 +1,4 @@
+import type { RootNodeType } from "../indexer/types"
 import type { Result } from "./types"
 
 export interface EntryResult {
@@ -21,11 +22,20 @@ export function groupResults(items: readonly Result[]): readonly EntryResult[] {
         }
     }
 
-    return Array.from(entryMap.values()).map((results): EntryResult => {
-        const [first] = results
-        return {
-            entry: first.entry,
-            results,
-        }
-    })
+    return Array.from(entryMap.values())
+        .map((results): EntryResult => {
+            const [first] = results
+            return {
+                entry: first.entry,
+                results,
+            }
+        })
+        .sort((a, b) => {
+            const aType = a.entry.rootNodeType
+            const bType = b.entry.rootNodeType
+
+            return orderOfResults.indexOf(aType) - orderOfResults.indexOf(bType)
+        })
 }
+
+export const orderOfResults = ["WebPageNode", "Collection", "ComponentNode"] satisfies RootNodeType[]

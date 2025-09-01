@@ -162,6 +162,13 @@ export function DevToolsScene() {
                                         {selectedEntry.rootNodeName} ({selectedEntry.rootNodeType})
                                     </p>
                                 </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Indexer Run</label>
+                                    <pre className="text-sm bg-gray-50 p-2 rounded whitespace-pre-wrap">
+                                        {selectedEntry.addedInIndexRun}
+                                    </pre>
+                                </div>
                             </div>
                         </div>
                     ) : (

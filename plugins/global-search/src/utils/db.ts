@@ -50,7 +50,8 @@ export class GlobalSearchDatabase implements ResumableAsyncIterable<IndexEntry> 
         const tx = db.transaction("entries", "readonly")
         const store = tx.objectStore("entries")
 
-        const keyRange = startKey ? IDBKeyRange.lowerBound(startKey) : undefined
+        // Use exclusive lower bound (true) to avoid re-processing the startKey item when resuming
+        const keyRange = startKey ? IDBKeyRange.lowerBound(startKey, true) : undefined
         let cursor = await store.openCursor(keyRange)
 
         try {

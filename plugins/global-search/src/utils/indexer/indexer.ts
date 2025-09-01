@@ -43,7 +43,6 @@ async function getNodeName(node: AnyNode): Promise<string | null> {
 
 export interface IndexerEvents extends EventMap {
     error: { error: Error }
-    progress: { processed: number; total?: number }
     started: { indexRun: number }
     completed: never
     restarted: never
@@ -177,16 +176,8 @@ export class GlobalSearchIndexer {
         try {
             const lastIndexRun = await this.db.getLastIndexRun()
             const currentIndexRun = lastIndexRun + 1
-            let processed = 0
-
             for await (const batch of this.crawlNodes(currentIndexRun, [rootNode])) {
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                if (this.abortRequested) break
-
                 await this.db.upsertEntries(batch)
-                processed += batch.length
-
-                this.eventEmitter.emit("progress", { processed })
             }
             await this.db.clearEntriesForRootNode(rootNode.id, lastIndexRun)
         } catch (error) {
@@ -200,9 +191,10 @@ export class GlobalSearchIndexer {
             const lastIndexRun = await this.db.getLastIndexRun()
             const currentIndexRun = lastIndexRun + 1
 
-            const [pages, components] = await Promise.all([
+            const [pages, components, canvasRoot] = await Promise.all([
                 framer.getNodesWithType("WebPageNode"),
                 framer.getNodesWithType("ComponentNode"),
+                framer.getCanvasRoot(),
             ])
 
             this.abortRequested = false
@@ -212,7 +204,13 @@ export class GlobalSearchIndexer {
                 void this.handleCanvasRootChange(rootNode)
             })
 
-            for await (const batch of this.crawlNodes(currentIndexRun, [...pages, ...components])) {
+            // Remove the current open canvas root from the list of root nodes to index
+            // as it's already being indexed by the canvas root watcher
+            const rootNodesWithoutCurrentRoot = [...pages, ...components].filter(
+                rootNode => rootNode.id !== canvasRoot.id
+            )
+
+            for await (const batch of this.crawlNodes(currentIndexRun, rootNodesWithoutCurrentRoot)) {
                 // this isn't a unnecassary static expression, as the value could change during the async loop
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 if (this.abortRequested) break

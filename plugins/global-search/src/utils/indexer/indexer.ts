@@ -59,6 +59,7 @@ export class GlobalSearchIndexer {
     private batchSize = 100
     private abortRequested = false
     private canvasSubscription: (() => void) | null = null
+    private currentCanvasRootChangeAbortController: AbortController | null = null
 
     constructor(private db: GlobalSearchDatabase) {}
 
@@ -169,21 +170,36 @@ export class GlobalSearchIndexer {
     private async handleCanvasRootChange(rootNode: CanvasRootNode) {
         if (this.abortRequested) return
 
+        this.currentCanvasRootChangeAbortController?.abort()
+
+        const abortController = new AbortController()
+        this.currentCanvasRootChangeAbortController = abortController
+
         try {
+            if (abortController.signal.aborted) return
+
             const lastIndexRun = await this.db.getLastIndexRun()
             const currentIndexRun = lastIndexRun + 1
-            await this.processNodes(currentIndexRun, [rootNode as IndexNodeRootNode])
-            await this.db.clearEntriesForRootNode(rootNode.id, lastIndexRun)
+            await this.processNodes(currentIndexRun, [rootNode], abortController.signal)
+            await this.db.clearEntriesForRootNodeAndSpecificVersion(rootNode.id, lastIndexRun)
         } catch (error) {
             this.eventEmitter.emit("error", { error: error instanceof Error ? error : new Error(String(error)) })
+        } finally {
+            if (this.currentCanvasRootChangeAbortController === abortController) {
+                this.currentCanvasRootChangeAbortController = null
+            }
         }
     }
 
-    private async processNodes(currentIndexRun: number, rootNodes: readonly IndexNodeRootNode[]) {
+    private async processNodes(
+        currentIndexRun: number,
+        rootNodes: readonly CanvasRootNode[],
+        abortSignal?: AbortSignal
+    ) {
         const validRootNodes = rootNodes.filter(rootNode => isComponentNode(rootNode) || isWebPageNode(rootNode))
 
         for await (const batch of this.crawlNodes(currentIndexRun, validRootNodes)) {
-            if (this.abortRequested) break
+            if (this.abortRequested || abortSignal?.aborted) break
             await this.db.upsertEntries(batch)
         }
     }
@@ -239,13 +255,7 @@ export class GlobalSearchIndexer {
     }
 
     async restart() {
-        this.abortRequested = true
-
-        // Clean up existing canvas subscription before restarting
-        if (this.canvasSubscription) {
-            this.canvasSubscription()
-            this.canvasSubscription = null
-        }
+        this.abort()
 
         this.eventEmitter.emit("restarted")
         return this.start()
@@ -254,7 +264,9 @@ export class GlobalSearchIndexer {
     abort() {
         this.abortRequested = true
 
-        // Clean up canvas subscription
+        this.currentCanvasRootChangeAbortController?.abort()
+        this.currentCanvasRootChangeAbortController = null
+
         if (this.canvasSubscription) {
             this.canvasSubscription()
             this.canvasSubscription = null

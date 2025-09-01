@@ -1,12 +1,8 @@
 import { readFileSync } from "node:fs"
-import { dirname, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
+import { resolve } from "node:path"
 import defaultConfig from "@framer/vite-config"
 import { transformSync } from "esbuild"
 import { defineConfig } from "vite"
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 // Plugin to compile and minify yieldGTMCalls.ts
 function compileYieldGTMCalls() {
@@ -19,7 +15,7 @@ function compileYieldGTMCalls() {
         },
         load(id: string) {
             if (id === "virtual:yield-gtm-calls") {
-                const filePath = resolve(__dirname, "src/yieldGTMCalls.ts")
+                const filePath = resolve(import.meta.dirname, "src/yieldGTMCalls.ts")
                 const source = readFileSync(filePath, "utf-8")
 
                 // Compile and minify with esbuild

@@ -1,6 +1,6 @@
 import {
     type AnyNode,
-    Collection,
+    type Collection,
     framer,
     isComponentNode,
     isFrameNode,
@@ -182,7 +182,7 @@ export class GlobalSearchIndexer {
             // this isn't a unnecassary static expression, as the value could change during the async loop
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             if (!this.abortRequested) {
-                await this.db.clearEntriesFromBefore(lastIndexRun)
+                await this.db.clearEntriesFromBefore(currentIndexRun)
                 this.eventEmitter.emit("completed")
             }
         } catch (error) {

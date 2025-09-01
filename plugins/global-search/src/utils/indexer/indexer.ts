@@ -47,6 +47,8 @@ export interface IndexerEvents extends EventMap {
     completed: never
     restarted: never
     aborted: never
+    canvasRootChangeStarted: never
+    canvasRootChangeCompleted: never
 }
 
 export class GlobalSearchIndexer {
@@ -175,6 +177,8 @@ export class GlobalSearchIndexer {
         const abortController = new AbortController()
         this.currentCanvasRootChangeAbortController = abortController
 
+        this.eventEmitter.emit("canvasRootChangeStarted")
+
         try {
             if (abortController.signal.aborted) return
 
@@ -188,6 +192,7 @@ export class GlobalSearchIndexer {
             if (this.currentCanvasRootChangeAbortController === abortController) {
                 this.currentCanvasRootChangeAbortController = null
             }
+            this.eventEmitter.emit("canvasRootChangeCompleted")
         }
     }
 

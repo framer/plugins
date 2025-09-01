@@ -29,18 +29,36 @@ export function SelectDataSource({
 
             setIsLoading(true)
 
-            getDataSource(jobBoardName, selectedDataSourceId)
-                .then(dataSource => {
-                    onSelectDataSource(dataSource)
-                    onSelectJobBoardName(jobBoardName)
+            // support job board URL
+            const parsedJobBoardName = jobBoardName.replace("https://jobs.ashbyhq.com/", "")
+
+            // check if the job board name is valid
+            fetch(`https://api.ashbyhq.com/posting-api/job-board/${parsedJobBoardName}`)
+                .then(e => {
+                    if (e.status !== 200) {
+                        throw new Error("Invalid job board name")
+                    }
+
+                    getDataSource(parsedJobBoardName, selectedDataSourceId)
+                        .then(dataSource => {
+                            onSelectDataSource(dataSource)
+                            onSelectJobBoardName(parsedJobBoardName)
+                        })
+                        .catch((error: unknown) => {
+                            console.error(error)
+                            framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
+                                variant: "error",
+                            })
+                        })
+                        .finally(() => {
+                            setIsLoading(false)
+                        })
                 })
                 .catch((error: unknown) => {
                     console.error(error)
                     framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
                         variant: "error",
                     })
-                })
-                .finally(() => {
                     setIsLoading(false)
                 })
         },
@@ -54,7 +72,7 @@ export function SelectDataSource({
             <img src={hero} alt="Ashby Hero" />
 
             <form onSubmit={handleSubmit}>
-                <div>
+                <div className="field">
                     <p>Job Board Name</p>
                     <input
                         id="jobBoardName"

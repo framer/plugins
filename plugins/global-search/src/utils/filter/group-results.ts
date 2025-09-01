@@ -30,12 +30,11 @@ export function groupResults(items: readonly Result[]): readonly EntryResult[] {
                 results,
             }
         })
-        .sort((a, b) => {
-            const aType = a.entry.rootNodeType
-            const bType = b.entry.rootNodeType
-
-            return orderOfResults.indexOf(aType) - orderOfResults.indexOf(bType)
-        })
+        .sort((a, b) => compareRootNodeTypeByPriority(a.entry.rootNodeType, b.entry.rootNodeType))
 }
 
-export const orderOfResults = ["WebPageNode", "Collection", "ComponentNode"] satisfies RootNodeType[]
+const orderOfResults = ["WebPageNode", "Collection", "ComponentNode"] satisfies RootNodeType[]
+
+export function compareRootNodeTypeByPriority(a: RootNodeType, b: RootNodeType): number {
+    return orderOfResults.indexOf(a) - orderOfResults.indexOf(b)
+}

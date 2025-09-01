@@ -8,6 +8,7 @@ import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
 import { getPluginUiOptions } from "../utils/plugin-ui"
+import { useGroupResults } from "../utils/useGroupResults"
 import { useMinimumDuration } from "../utils/useMinimumDuration"
 import { NoResults } from "./NoResults"
 import { ResultsList } from "./Results"
@@ -24,10 +25,12 @@ export function SearchScene() {
 
     const {
         results,
-        hasResults,
         running: isFilterRunning,
         error: filterError,
     } = useAsyncFilter(deferredQuery, searchOptions, db, dataVersion)
+
+    const hasResults = results.length > 0
+    const groupedResults = useGroupResults(results)
 
     if (filterError) {
         console.error(filterError)
@@ -68,7 +71,7 @@ export function SearchScene() {
                     </Menu>
                 </div>
                 <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden not-empty:pb-3">
-                    {deferredQuery && hasResults && <ResultsList groupedResults={results} />}
+                    {deferredQuery && hasResults && <ResultsList groupedResults={groupedResults} />}
                     {deferredQuery && !hasResults && !isIndexing && !isFilterRunning && <NoResults />}
                 </div>
             </FocusScope>

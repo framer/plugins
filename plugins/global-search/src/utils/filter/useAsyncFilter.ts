@@ -3,12 +3,10 @@ import type { GlobalSearchDatabase } from "../db"
 import type { RootNodeType } from "../indexer/types"
 import { IdleCallbackAsyncProcessor } from "./AsyncProcessor"
 import { createFilterFunction, type FilterFunction } from "./execute-filter"
-import type { EntryResult } from "./group-results"
-import { groupResults } from "./group-results"
 import { FilterType, MatcherType, type Result } from "./types"
 
 export interface AsyncFilterState {
-    readonly results: readonly EntryResult[]
+    readonly results: readonly Result[]
     readonly hasResults: boolean
     readonly error: Error | null
     readonly running: boolean
@@ -49,10 +47,9 @@ export function useAsyncFilter(
 
         processor.on("progress", ({ results }) => {
             startTransition(() => {
-                const uiResults = groupResults(results)
                 setState(state => ({
                     ...state,
-                    results: uiResults,
+                    results,
                     hasResults: results.length > 0,
                     error: null,
                 }))

@@ -169,19 +169,31 @@ export class GlobalSearchIndexer {
     private async handleCanvasRootChange(rootNode: CanvasRootNode) {
         if (this.abortRequested) return
 
-        if (!isComponentNode(rootNode) && !isWebPageNode(rootNode)) {
-            return
-        }
-
         try {
             const lastIndexRun = await this.db.getLastIndexRun()
             const currentIndexRun = lastIndexRun + 1
-            for await (const batch of this.crawlNodes(currentIndexRun, [rootNode])) {
-                await this.db.upsertEntries(batch)
-            }
+            await this.processNodes(currentIndexRun, [rootNode as IndexNodeRootNode])
             await this.db.clearEntriesForRootNode(rootNode.id, lastIndexRun)
         } catch (error) {
             this.eventEmitter.emit("error", { error: error instanceof Error ? error : new Error(String(error)) })
+        }
+    }
+
+    private async processNodes(currentIndexRun: number, rootNodes: readonly IndexNodeRootNode[]) {
+        const validRootNodes = rootNodes.filter(rootNode => isComponentNode(rootNode) || isWebPageNode(rootNode))
+
+        for await (const batch of this.crawlNodes(currentIndexRun, validRootNodes)) {
+            if (this.abortRequested) break
+            await this.db.upsertEntries(batch)
+        }
+    }
+
+    private async processCollections(currentIndexRun: number) {
+        const collections = await framer.getCollections()
+
+        for await (const batch of this.crawlCollections(currentIndexRun, collections)) {
+            if (this.abortRequested) break
+            await this.db.upsertEntries(batch)
         }
     }
 
@@ -210,21 +222,10 @@ export class GlobalSearchIndexer {
                 rootNode => rootNode.id !== canvasRoot.id
             )
 
-            for await (const batch of this.crawlNodes(currentIndexRun, rootNodesWithoutCurrentRoot)) {
-                // this isn't a unnecassary static expression, as the value could change during the async loop
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                if (this.abortRequested) break
-                await this.db.upsertEntries(batch)
-            }
-
-            const collections = await framer.getCollections()
-
-            for await (const batch of this.crawlCollections(currentIndexRun, collections)) {
-                // this isn't a unnecassary static expression, as the value could change during the async loop
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                if (this.abortRequested) break
-                await this.db.upsertEntries(batch)
-            }
+            await Promise.all([
+                this.processNodes(currentIndexRun, rootNodesWithoutCurrentRoot),
+                this.processCollections(currentIndexRun),
+            ])
 
             // this isn't a unnecassary static expression, as the value could change during the async loop
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

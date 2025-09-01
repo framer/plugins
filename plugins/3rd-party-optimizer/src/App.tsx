@@ -30,10 +30,18 @@ export function App() {
     }
 
     useLayoutEffect(() => {
+        let height = 137
+        if (customCode?.headStart.disabled) {
+            height += 10
+        }
+        if (scriptOutdated) {
+            height += 60
+        }
+
         void framer.showUI({
             position: "top right",
             width: 260,
-            height: scriptOutdated ? 197 : customCode?.headStart.disabled ? 147 : 135,
+            height,
         })
     }, [customCode?.headStart.disabled, scriptOutdated])
 
@@ -78,7 +86,10 @@ export function App() {
                 </>
             )}
 
-            <button className={`framer-button-secondary mt-5`} onClick={toggleScript.bind(null, false)}>
+            <button
+                className={`framer-button-secondary ${!scriptOutdated ? "mt-5" : ""}`}
+                onClick={toggleScript.bind(null, false)}
+            >
                 {scriptAdded ? "Remove Script" : "Add Script"}
             </button>
         </main>

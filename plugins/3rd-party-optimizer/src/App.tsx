@@ -7,7 +7,6 @@ import scriptSource from "virtual:yield-gtm-calls"
 import warning from "./warning.svg?url"
 
 let currentCustomCode: CustomCode | null = null
-const scriptToAdd = "<script>" + scriptSource + "</script>"
 
 const subscribe = (callback: () => void) => {
     return framer.subscribeToCustomCode(customCode => {
@@ -21,10 +20,10 @@ export function App() {
     const customCode = useSyncExternalStore(subscribe, getSnapshot)
 
     const scriptAdded = !!customCode?.headStart.html
-    const scriptOutdated = scriptAdded && customCode.headStart.html !== scriptToAdd
+    const scriptOutdated = scriptAdded && customCode.headStart.html !== scriptSource
     const toggleScript = (update?: boolean) => {
         void framer.setCustomCode({
-            html: scriptAdded && !update ? "" : scriptToAdd,
+            html: scriptAdded && !update ? "" : scriptSource,
             location: "headStart",
         })
     }
@@ -46,11 +45,11 @@ export function App() {
     }, [customCode?.headStart.disabled, scriptOutdated])
 
     return (
-        <main>
+        <main className="flex flex-col gap-[15px] | items-start | h-full | p-[15px] pt-0">
             <div className="framer-divider" />
 
             {!customCode?.headStart.disabled && (
-                <p className="muted">
+                <p className="text-center">
                     Add a script to your custom HTML to improve site performance when using 3rd-party tracking scripts.{" "}
                     <a href="https://www.framer.com/marketplace/plugins/3rd-party-optimizer/" target="_blank">
                         Learn more
@@ -59,11 +58,11 @@ export function App() {
             )}
 
             {customCode?.headStart.disabled && (
-                <div className="d-flex | align-center flex-column gap-10 justify-center">
-                    <div className="d-flex | w-100 justify-center p-image">
+                <div className="flex flex-col gap-[10px] | content-center justify-center">
+                    <div className="flex | justify-center | w-full | py-[4px]">
                         <img src={warning} alt="Warning" />
                     </div>
-                    <p className="muted">
+                    <p className="text-center">
                         The script is disabled. Please go to
                         <br /> Site Settings → General and enable it.
                     </p>
@@ -73,10 +72,10 @@ export function App() {
             {scriptOutdated && (
                 <>
                     <div className="framer-divider" />
-                    <div className="d-flex | justify-space-between align-center w-100">
-                        <p className="muted">New script version available</p>
+                    <div className="flex | justify-between content-center | w-full">
+                        <p className="text-center">New script version available</p>
                         <button
-                            className="framer-button-primary framer-button-primary-inverted framer-button-small"
+                            className="framer-button-primary bg-[var(--framer-color-tint-dimmed)] text-[var(--framer-color-tint)] hover:bg-[var(--framer-color-tint-dimmed)] focus:bg-[var(--framer-color-tint-dimmed)] | rounded-[6px] | text-[10px] font-500 | w-[46px] h-[20px]"
                             onClick={toggleScript.bind(null, true)}
                         >
                             Update
@@ -87,7 +86,7 @@ export function App() {
             )}
 
             <button
-                className={`framer-button-secondary ${!scriptOutdated ? "mt-5" : ""}`}
+                className={`framer-button-secondary${scriptOutdated ? "" : " mt-[5px]"}`}
                 onClick={toggleScript.bind(null, false)}
             >
                 {scriptAdded ? "Remove Script" : "Add Script"}

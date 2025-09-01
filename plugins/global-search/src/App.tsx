@@ -28,7 +28,7 @@ export function App() {
 
     return (
         <ErrorBoundary FallbackComponent={ErrorScene}>
-            <IndexerProvider projectId={projectInfo.id}>
+            <IndexerProvider projectId={projectInfo.id} projectName={projectInfo.name}>
                 {activeScene === "dev-tools" && <DevToolsScene />}
                 {activeScene === "search" && <SearchScene />}
             </IndexerProvider>

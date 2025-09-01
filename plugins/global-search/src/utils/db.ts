@@ -20,8 +20,8 @@ export class GlobalSearchDatabase implements ResumableAsyncIterable<IndexEntry> 
     private db: IDBPDatabase<GlobalSearchDB> | null = null
     private readonly dbName: string
 
-    constructor(projectId: string) {
-        this.dbName = `global-search-${projectId}`
+    constructor(projectId: string, projectName: string) {
+        this.dbName = `global-search-${projectName}-${projectId}`
     }
 
     async open(): Promise<IDBPDatabase<GlobalSearchDB>> {

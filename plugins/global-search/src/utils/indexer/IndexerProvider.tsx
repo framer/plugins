@@ -8,9 +8,17 @@ import { GlobalSearchIndexer } from "./indexer"
  * Creates database and indexer instances and provides them to the children.
  * The database manages its own version and the indexer depends on the database.
  */
-export function IndexerProvider({ children, projectId }: { children: React.ReactNode; projectId: string }) {
+export function IndexerProvider({
+    children,
+    projectId,
+    projectName,
+}: {
+    children: React.ReactNode
+    projectId: string
+    projectName: string
+}) {
     const dbRef = useRef<GlobalSearchDatabase>()
-    dbRef.current ??= new GlobalSearchDatabase(projectId)
+    dbRef.current ??= new GlobalSearchDatabase(projectId, projectName)
     const db = dbRef.current
 
     const indexerRef = useRef<GlobalSearchIndexer>()

@@ -23,7 +23,12 @@ export function SearchScene() {
     const deferredQuery = useDeferredValue(query)
     const isIndexingWithMinimumDuration = useMinimumDuration(isIndexing, 500)
 
-    const { results, hasResults, error: filterError } = useAsyncFilter(deferredQuery, searchOptions, db, dataVersion)
+    const {
+        results,
+        hasResults,
+        running: isFilterRunning,
+        error: filterError,
+    } = useAsyncFilter(deferredQuery, searchOptions, db, dataVersion)
 
     if (filterError) {
         console.error(filterError)
@@ -35,8 +40,10 @@ export function SearchScene() {
     }, [])
 
     useEffect(() => {
-        void framer.showUI(getPluginUiOptions({ query: deferredQuery, hasResults, areResultsFinal: !isIndexing }))
-    }, [deferredQuery, hasResults, isIndexing])
+        void framer.showUI(
+            getPluginUiOptions({ query: deferredQuery, hasResults, areResultsFinal: !isIndexing && !isFilterRunning })
+        )
+    }, [deferredQuery, hasResults, isFilterRunning, isIndexing])
 
     return (
         <main className="flex flex-col h-full">
@@ -63,7 +70,7 @@ export function SearchScene() {
                 </div>
                 <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden not-empty:pb-3">
                     {deferredQuery && hasResults && <ResultsList groupedResults={results} />}
-                    {deferredQuery && !hasResults && !isIndexing && <NoResults />}
+                    {deferredQuery && !hasResults && !isIndexing && !isFilterRunning && <NoResults />}
                 </div>
             </FocusScope>
         </main>

@@ -3,7 +3,7 @@ import * as v from "valibot"
 import {
     ClippingImageAsImageSchema,
     ClippingsSchema,
-    // FeaturedImagesForClSchema,
+    FeaturedImagesForClSchema,
     ImageSizesSchema,
     // ImageUrlFromSizes,
     MediaInfoSchema,
@@ -155,52 +155,46 @@ const ClippingDataSource = createDataSource(
         //         }
         //     },
         // },
-        // { // this fails because one of the images is 403
-        //     id: "featured_images",
-        //     name: "Featured Images",
-        //     type: "array",
-        //     fields: [
-        //         {
-        //             id: "featured_images_image",
-        //             name: "Image",
-        //             type: "image",
-        //         },
-        //     ],
-        //     getValue: value => {
-        //         const parsed = v.parse(v.array(FeaturedImagesForClSchema), value)
-        //         return parsed.map(item => item.url).filter(v => v)
-        //     },
-        // },
+        {
+            id: "featured_images",
+            name: "Featured Images",
+            type: "array",
+            fields: [
+                {
+                    id: "featured_images_image",
+                    name: "Image",
+                    type: "image",
+                },
+            ],
+            getValue: value => {
+                const parsed = v.parse(v.array(FeaturedImagesForClSchema), value)
+                return parsed.map(item => item.url).filter(v => v)
+            },
+        },
         {
             id: "clipping_image",
             name: "Clipping Image",
             type: "image",
             getValue: value => {
-                // if (value && Object.keys(value).length === 0) {
                 return v.parse(ClippingImageAsImageSchema, value)
-                // }
             },
         },
-        // { // this fails because one of the images is 403
-        //     id: "sizes",
-        //     name: "Sizes",
-        //     type: "array",
-        //     fields: [
-        //         {
-        //             id: "sizes_image",
-        //             name: "Image",
-        //             type: "image",
-        //         },
-        //     ],
-        //     getValue: value => {
-        //         // if (value && Object.keys(value).length === 0) {
-        //         //     return v.parse(ImageUrlFromSizes, value)
-        //         // }
-
-        //         const parsed = v.parse(ImageSizesSchema, value)
-        //         return [parsed.original?.url, parsed.thumbnail?.url].filter(v => v)
-        //     },
-        // },
+        {
+            id: "sizes",
+            name: "Sizes",
+            type: "array",
+            fields: [
+                {
+                    id: "sizes_image",
+                    name: "Image",
+                    type: "image",
+                },
+            ],
+            getValue: value => {
+                const parsed = v.parse(ImageSizesSchema, value)
+                return [parsed.original?.url, parsed.thumbnail?.url].filter(v => v)
+            },
+        },
         // { id: "alexa", name: "Alexa", type: "boolean" }, // TODO:
         { id: "permalink", name: "Permalink", type: "string" },
         { id: "type", name: "Type", type: "string" },
@@ -212,54 +206,6 @@ const ClippingDataSource = createDataSource(
 )
 
 const MediaSchema = v.object({ data: v.array(MediaInfoSchema) })
-
-// const MediaDataSource = createDataSource(
-//     {
-//         name: "Media",
-//         fetch: async (pressRoomId: string) => {
-//             const url = `${API_URL}/pressrooms/${pressRoomId}/media_kits.json?limit=9999`
-//             const ApiResponseSchema = v.object({
-//                 data: v.array(
-//                     v.object({
-//                         media: v.array(MediaInfoSchema),
-//                     })
-//                 ),
-//             })
-//             const validated = v.parse(ApiResponseSchema, await fetchPrCoData(url))
-//             const data = v.safeParse(MediaSchema, { data: validated.data.flatMap(item => item.media) })
-//             if (!data.success) {
-//                 console.log("Error parsing PrCo data:", data.issues)
-//                 throw new Error("Error parsing PrCo data")
-//             }
-
-//             return data.output.data
-//         },
-//     },
-//     [
-//         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
-//         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-//         { id: "pressroom_id", name: "Press Room ID", type: "string" },
-//         { id: "permalink", name: "Permalink", type: "string" },
-//         { id: "type", name: "Type", type: "string" },
-//         { id: "content_type", name: "Content Type", type: "string" },
-//         { id: "transparent", name: "Transparent", type: "boolean" },
-//         { id: "file_size", name: "File Size", type: "number" },
-//         { id: "url", name: "URL", type: "link" },
-//         { id: "webm_url", name: "Webm URL", type: "link" },
-//         { id: "mp4_url", name: "MP4 URL", type: "link" },
-//         { id: "thumbnail_url", name: "Thumbnail", type: "image" },
-//         {
-//             id: "sizes",
-//             name: "Sizes",
-//             type: "image",
-//             getValue: value => {
-//                 if (value && Object.keys(value).length === 0) {
-//                     return v.parse(ImageUrlFromSizes, value)
-//                 }
-//             },
-//         },
-//     ]
-// )
 
 const ImageDataSource = createDataSource(
     {

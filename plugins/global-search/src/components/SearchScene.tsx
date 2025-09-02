@@ -8,7 +8,6 @@ import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
 import { getPluginUiOptions } from "../utils/plugin-ui"
-import { useGroupResults } from "../utils/useGroupResults"
 import { useMinimumDuration } from "../utils/useMinimumDuration"
 import { NoResults } from "./NoResults"
 import { ResultsList } from "./Results"
@@ -33,7 +32,6 @@ export function SearchScene() {
     } = useAsyncFilter(queryToUse, searchOptions, db, dataVersion)
 
     const hasResults = results.length > 0
-    const groupedResults = useGroupResults(results)
 
     if (filterError) {
         console.error(filterError)
@@ -74,7 +72,7 @@ export function SearchScene() {
                     </Menu>
                 </div>
                 <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden not-empty:pb-3">
-                    {queryToUse && hasResults && <ResultsList groupedResults={groupedResults} />}
+                    {queryToUse && hasResults && <ResultsList groupedResults={results} />}
                     {queryToUse && !hasResults && !isIndexing && !isFilterRunning && <NoResults />}
                 </div>
             </FocusScope>

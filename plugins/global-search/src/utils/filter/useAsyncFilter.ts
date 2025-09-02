@@ -3,10 +3,12 @@ import type { GlobalSearchDatabase } from "../db"
 import type { RootNodeType } from "../indexer/types"
 import { IdleCallbackAsyncProcessor } from "./AsyncProcessor"
 import { createFilterFunction, type FilterFunction } from "./execute-filter"
+import type { EntryResult } from "./group-results"
+import { groupResults } from "./group-results"
 import { FilterType, MatcherType, type Result } from "./types"
 
 export interface AsyncFilterState {
-    readonly results: readonly Result[]
+    readonly results: readonly EntryResult[]
     readonly hasResults: boolean
     readonly error: Error | null
     readonly running: boolean
@@ -19,6 +21,7 @@ export function useAsyncFilter(
     dataVersion: number
 ): AsyncFilterState {
     const processorRef = useRef<IdleCallbackAsyncProcessor<Result> | null>(null)
+    const groupingAbortControllerRef = useRef<AbortController | null>(null)
 
     const [state, setState] = useState<AsyncFilterState>({
         results: [],
@@ -46,13 +49,19 @@ export function useAsyncFilter(
         })
 
         processor.on("progress", ({ results }) => {
-            startTransition(() => {
-                setState(state => ({
-                    ...state,
-                    results,
-                    hasResults: results.length > 0,
-                    error: null,
-                }))
+            groupingAbortControllerRef.current?.abort()
+            const controller = new AbortController()
+            groupingAbortControllerRef.current = controller
+
+            void groupResults(results, controller.signal).then(results => {
+                startTransition(() => {
+                    setState(state => ({
+                        ...state,
+                        results,
+                        hasResults: results.length > 0,
+                        error: null,
+                    }))
+                })
             })
         })
 

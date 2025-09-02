@@ -1,16 +1,16 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
 import * as v from "valibot"
 import {
+    AlexaSchema,
     ClippingImageAsImageSchema,
     ClippingsSchema,
     FeaturedImagesForClSchema,
     ImageSizesSchema,
-    // ImageUrlFromSizes,
     MediaInfoSchema,
     MediaKitsSchema,
     type PrCoItem,
     PressReleasesSchema,
-    // SocialKeysAsStringSchema,
+    SocialSchema,
     TagsSchema,
 } from "./api-types"
 
@@ -42,12 +42,14 @@ async function fetchPrCoData(url: string): Promise<unknown> {
 export type PrCoField = ManagedCollectionFieldInput &
     (
         | {
+              key?: string
               type: Exclude<ManagedCollectionFieldInput["type"], "collectionReference" | "multiCollectionReference">
               /** Used to transform the value of the field. Sometimes the value is inside an object, so we need to extract it. */
               getValue?: (value: unknown) => unknown
               canBeUsedAsSlug?: boolean
           }
         | {
+              key?: string
               type: "collectionReference" | "multiCollectionReference"
               getValue?: (value: unknown) => unknown
               dataSourceId: string
@@ -145,16 +147,36 @@ const ClippingDataSource = createDataSource(
         { id: "url", name: "URL", type: "link" },
 
         { id: "language", name: "Language", type: "string" },
-        // {
-        //     id: "shares",
-        //     name: "Shares",
-        //     type: "string",
-        //     getValue: value => {
-        //         if (value && Object.keys(value).length === 0) {
-        //             return v.parse(SocialKeysAsStringSchema, value)
-        //         }
-        //     },
-        // },
+        {
+            id: "facebook_shares",
+            key: "shares",
+            name: "Facebook Shares",
+            type: "number",
+            getValue: value => {
+                const shares = v.parse(SocialSchema, value)
+                return shares.facebook
+            },
+        },
+        {
+            id: "linkedin_shares",
+            key: "shares",
+            name: "Linkedin Shares",
+            type: "number",
+            getValue: value => {
+                const shares = v.parse(SocialSchema, value)
+                return shares.linkedin
+            },
+        },
+        {
+            id: "twitter_shares",
+            key: "shares",
+            name: "Twitter Shares",
+            type: "number",
+            getValue: value => {
+                const shares = v.parse(SocialSchema, value)
+                return shares.twitter
+            },
+        },
         {
             id: "featured_images",
             name: "Featured Images",
@@ -195,12 +217,40 @@ const ClippingDataSource = createDataSource(
                 return [parsed.original?.url, parsed.thumbnail?.url].filter(v => v)
             },
         },
-        // { id: "alexa", name: "Alexa", type: "boolean" }, // TODO:
+        {
+            id: "alexa_overall_rank",
+            key: "alexa",
+            name: "Alexa Overall Rank",
+            type: "number",
+            getValue: value => {
+                const alexa = v.parse(AlexaSchema, value)
+                return alexa?.overall_rank
+            },
+        },
+        {
+            id: "alexa_country_rank",
+            key: "alexa",
+            name: "Alexa Country Rank",
+            type: "number",
+            getValue: value => {
+                const alexa = v.parse(AlexaSchema, value)
+                return alexa?.country_rank
+            },
+        },
+        {
+            id: "alexa_country_rank_code",
+            key: "alexa",
+            name: "Alexa Country Rank Code",
+            type: "string",
+            getValue: value => {
+                const alexa = v.parse(AlexaSchema, value)
+                return alexa?.country_rank_code
+            },
+        },
         { id: "permalink", name: "Permalink", type: "string" },
         { id: "type", name: "Type", type: "string" },
-        // { id: "pdf", name: "PDF", type: "link" },
         { id: "private", name: "Private", type: "boolean" },
-        { id: "show_iframe", name: "Show Iframe", type: "boolean" },
+        { id: "show_iframe", name: "Show iFrame", type: "boolean" },
         { id: "published_at", name: "Published At", type: "date" },
     ]
 )

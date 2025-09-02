@@ -5,11 +5,13 @@ export const FeaturedImagesForClSchema = v.object({
     height: v.optional(v.nullable(v.union([v.number(), v.string()]))),
 })
 
-// export const AlexaSchema = v.object({
-//     overall_rank: v.optional(v.nullable(v.number())),
-//     country_rank: v.optional(v.nullable(v.union([v.number(), v.string()]))),
-//     country_rank_code: v.optional(v.nullable(v.union([v.number(), v.string()]))),
-// })
+export const AlexaSchema = v.nullable(
+    v.object({
+        overall_rank: v.optional(v.nullable(v.number())),
+        country_rank: v.optional(v.nullable(v.union([v.number(), v.string()]))),
+        country_rank_code: v.optional(v.nullable(v.string())),
+    })
+)
 
 export const ImageSizesSchema = v.object({
     medium: v.optional(FeaturedImagesForClSchema),
@@ -20,30 +22,11 @@ export const ImageSizesSchema = v.object({
     thumbnail: v.optional(FeaturedImagesForClSchema),
 })
 
-// const sizeKeys = ["original", "large", "medium", "square", "small"] as const
-// export const ImageUrlFromSizes = v.pipe(
-//     ImageSizesSchema,
-//     v.transform(sizes => {
-//         for (const key of sizeKeys) {
-//             if (sizes[key]?.url) return sizes[key].url
-//         }
-//         return null
-//     })
-// )
 export const SocialSchema = v.object({
     facebook: v.nullable(v.number()),
     linkedin: v.nullable(v.number()),
     twitter: v.nullable(v.number()),
 })
-
-export const SocialKeysAsStringSchema = v.pipe(
-    SocialSchema,
-    v.transform(obj =>
-        Object.keys(obj)
-            .filter(key => obj[key as keyof typeof obj] === 1)
-            .join(", ")
-    )
-)
 
 export const ClippingImageSchema = v.object({
     small: v.nullable(v.string()),
@@ -132,7 +115,7 @@ export const ClippingsSchema = v.object({
     release_date: v.nullable(v.string()),
     shares: v.nullable(SocialSchema),
     sizes: v.nullable(ImageSizesSchema),
-    // alexa: v.nullable(AlexaSchema),
+    alexa: v.nullable(AlexaSchema),
     private: v.nullable(v.boolean()),
     permalink: v.nullable(v.string()),
     type: v.nullable(v.string()),

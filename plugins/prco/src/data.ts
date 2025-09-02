@@ -203,21 +203,45 @@ async function getItems(
                     break
                 }
                 case "image":
-                case "file":
+                case "file": {
+                    const url = v.is(StringifiableSchema, value) ? String(value) : ""
+
+                    let validUrl: string | null = null
+
+                    // prevent breaking if image is not valid
+                    try {
+                        const uploadedImage = await framer.uploadImage({ image: url })
+                        validUrl = uploadedImage.url
+                    } catch (error) {
+                        console.error(error)
+                    }
+
                     fieldData[field.id] = {
                         type: field.type,
-                        value: v.is(StringifiableSchema, value) ? String(value) : "",
+                        value: validUrl,
                     }
                     break
+                }
                 case "array": {
                     const parsedValue = v.parse(v.array(v.string()), value)
                     const fieldId = v.parse(v.string(), field.id)
 
                     const galleryFieldId = v.parse(v.string(), field.fields[0].id)
 
+                    // prevent breaking if some images are not valid
+                    let validUrls: string[] = []
+                    try {
+                        const uploadedImages = await framer.uploadImages(
+                            parsedValue.map((url: string) => ({ image: url }))
+                        )
+                        validUrls = uploadedImages.map(image => image.url)
+                    } catch (error) {
+                        console.error(error)
+                    }
+
                     fieldData[fieldId] = {
                         type: "array",
-                        value: parsedValue.map((url: string) => ({
+                        value: validUrls.map((url: string) => ({
                             fieldData: {
                                 [galleryFieldId]: {
                                     type: "image",

@@ -8,6 +8,7 @@ import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
 import { getPluginUiOptions } from "../utils/plugin-ui"
+import { useMinimumDuration } from "../utils/useMinimumDuration"
 import { NoResults } from "./NoResults"
 import { ResultsList } from "./Results"
 import { SearchInput } from "./SearchInput"
@@ -20,6 +21,7 @@ export function SearchScene() {
     const [query, setQuery] = useState("")
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
     const deferredQuery = useDeferredValue(query)
+    const isIndexingWithMinimumDuration = useMinimumDuration(isIndexing, 500)
 
     const { results, hasResults, error: filterError } = useAsyncFilter(deferredQuery, searchOptions, db, dataVersion)
 
@@ -46,15 +48,15 @@ export function SearchScene() {
                     )}
                 >
                     <SearchInput value={query} onChange={handleQueryChange} />
-                    {isIndexing && (
-                        // TODO: Discuss if we should add a tooltip to explain what's this.
-                        <span
-                            title="Indexing..."
-                            className="animate-[fade-in_150ms_forwards] [animation-delay:500ms] opacity-0"
-                        >
-                            <IconSpinner className="text-black dark:text-white animate-[spin_0.8s_linear_infinite]" />
-                        </span>
-                    )}
+
+                    <span
+                        title="Indexing..."
+                        className="aria-hidden:opacity-0 transition"
+                        aria-hidden={!isIndexingWithMinimumDuration}
+                    >
+                        <IconSpinner className="text-black dark:text-white animate-[spin_0.8s_linear_infinite]" />
+                    </span>
+
                     <Menu items={optionsMenuItems}>
                         <IconEllipsis className="text-framer-text-tertiary-light dark:text-framer-text-tertiary-dark" />
                     </Menu>

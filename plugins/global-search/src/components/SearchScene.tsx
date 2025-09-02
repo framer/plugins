@@ -8,6 +8,7 @@ import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
 import { getPluginUiOptions } from "../utils/plugin-ui"
+import { useDebounceValue } from "../utils/useDebounceValue"
 import { useMinimumDuration } from "../utils/useMinimumDuration"
 import { NoResults } from "./NoResults"
 import { ResultsList } from "./Results"
@@ -125,19 +126,4 @@ function useOptionsMenuItems() {
     }, [searchOptions])
 
     return { searchOptions, optionsMenuItems }
-}
-
-function useDebounceValue<T>(value: T, delay: number) {
-    const [debouncedValue, setDebouncedValue] = useState<T>(value)
-
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            setDebouncedValue(value)
-        }, delay)
-        return () => {
-            clearTimeout(timeout)
-        }
-    }, [value, delay])
-
-    return debouncedValue
 }

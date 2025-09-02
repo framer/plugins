@@ -11,6 +11,7 @@ interface GlobalSearchDB extends DBSchema {
             type: string
             rootNodeType: string
             addedInIndexRun: number
+            rootNodeIdVersion: [string, number]
         }
     }
 }
@@ -19,19 +20,27 @@ export class GlobalSearchDatabase implements ResumableAsyncIterable<IndexEntry> 
     private db: IDBPDatabase<GlobalSearchDB> | null = null
     private readonly dbName: string
 
-    constructor(projectId: string) {
-        this.dbName = `global-search-${projectId}`
+    constructor(projectId: string, projectName: string) {
+        this.dbName = `global-search-${projectName}-${projectId}`
     }
 
     async open(): Promise<IDBPDatabase<GlobalSearchDB>> {
         if (this.db) return this.db
 
-        this.db = await openDB<GlobalSearchDB>(this.dbName, 1, {
-            upgrade(db) {
-                const entriesStore = db.createObjectStore("entries", { keyPath: "id" })
-                entriesStore.createIndex("rootNodeType", "rootNodeType")
-                entriesStore.createIndex("type", "type")
-                entriesStore.createIndex("addedInIndexRun", "addedInIndexRun")
+        this.db = await openDB<GlobalSearchDB>(this.dbName, 2, {
+            upgrade(db, oldVersion, _newVersion, transaction) {
+                if (oldVersion < 1) {
+                    const entriesStore = db.createObjectStore("entries", { keyPath: "id" })
+                    entriesStore.createIndex("rootNodeType", "rootNodeType")
+                    entriesStore.createIndex("type", "type")
+                    entriesStore.createIndex("addedInIndexRun", "addedInIndexRun")
+                }
+
+                if (oldVersion < 2) {
+                    const entriesStore = transaction.objectStore("entries")
+                    // Add compound index for [rootNodeId, addedInIndexRun] - this is all we need
+                    entriesStore.createIndex("rootNodeIdVersion", ["rootNodeId", "addedInIndexRun"])
+                }
             },
         })
 
@@ -102,6 +111,27 @@ export class GlobalSearchDatabase implements ResumableAsyncIterable<IndexEntry> 
 
         // Delete all entries with addedInIndexRun < version
         let cursor = await index.openCursor(IDBKeyRange.upperBound(version, true))
+        while (cursor) {
+            await cursor.delete()
+            cursor = await cursor.continue()
+        }
+
+        await tx.done
+    }
+
+    /**
+     * Removes entries for a specific root node from a specific index run version.
+     *
+     * This is used for incremental updates when a specific canvas root changes.
+     */
+    async clearEntriesForRootNodeAndSpecificVersion(rootNodeId: string, version: number): Promise<void> {
+        const db = await this.open()
+        const tx = db.transaction("entries", "readwrite")
+        const store = tx.objectStore("entries")
+        const index = store.index("rootNodeIdVersion")
+
+        // Use compound index to efficiently find entries with exact [rootNodeId, version] match
+        let cursor = await index.openCursor(IDBKeyRange.only([rootNodeId, version]))
         while (cursor) {
             await cursor.delete()
             cursor = await cursor.continue()

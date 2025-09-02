@@ -61,7 +61,7 @@ export function SearchScene() {
                         <IconEllipsis className="text-framer-text-tertiary-light dark:text-framer-text-tertiary-dark" />
                     </Menu>
                 </div>
-                <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden">
+                <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden not-empty:pb-3">
                     {deferredQuery && hasResults && <ResultsList groupedResults={results} />}
                     {deferredQuery && !hasResults && !isIndexing && <NoResults />}
                 </div>

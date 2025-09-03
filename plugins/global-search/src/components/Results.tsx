@@ -4,6 +4,7 @@ import { assertNever } from "../utils/assert"
 import { cn } from "../utils/className"
 import type { EntryResult } from "../utils/filter/group-results"
 import { type Range, rangeLength } from "../utils/filter/ranges"
+import { ResultType } from "../utils/filter/types"
 import type { RootNodeType } from "../utils/indexer/types"
 import { truncateFromStart } from "../utils/text"
 import { useFocusHandlers } from "../utils/useFocus"
@@ -76,15 +77,24 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
                 </div>
             </summary>
             <ul className="flex flex-col">
-                {resultsWithRanges.map(result => (
-                    <Match
-                        key={result.id}
-                        targetId={entry.type === "CollectionItemField" ? entry.collectionItemId : entry.nodeId}
-                        text={result.text}
-                        range={result.range}
-                        collectionFieldId={entry.type === "CollectionItemField" ? entry.matchingField.id : undefined}
-                    />
-                ))}
+                {resultsWithRanges.map(result => {
+                    const targetId =
+                        result.type === ResultType.CollectionItemField
+                            ? result.entry.collectionItemId
+                            : result.entry.nodeId
+
+                    return (
+                        <Match
+                            key={result.id}
+                            targetId={targetId}
+                            text={result.text}
+                            range={result.range}
+                            collectionFieldId={
+                                result.type === ResultType.CollectionItemField ? result.matchingField.id : undefined
+                            }
+                        />
+                    )
+                })}
             </ul>
         </details>
     )

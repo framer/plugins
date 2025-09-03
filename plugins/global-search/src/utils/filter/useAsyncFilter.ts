@@ -65,9 +65,17 @@ export function useAsyncFilter(
             })
         })
 
-        processor.on("completed", () => {
+        processor.on("completed", results => {
             startTransition(() => {
-                setState(state => ({ ...state, running: false }))
+                groupingAbortControllerRef.current?.abort()
+                const controller = new AbortController()
+                groupingAbortControllerRef.current = controller
+
+                void groupResults(results, controller.signal).then(results => {
+                    startTransition(() => {
+                        setState(state => ({ ...state, results, running: false }))
+                    })
+                })
             })
         })
 

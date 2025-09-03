@@ -1,3 +1,5 @@
+import { assert } from "../assert"
+import { waitForIdle } from "../idle-utils"
 import type { RootNodeType } from "../indexer/types"
 import type { Result } from "./types"
 
@@ -6,19 +8,42 @@ export interface EntryResult {
     readonly results: readonly Result[]
 }
 
-/** Groups the results by the result's entry id. */
-export function groupResults(items: readonly Result[]): readonly EntryResult[] {
+/**
+ * Groups the results by the result's entry id using idle time processing.
+ * This prevents blocking the renderer when processing large amounts of results.
+ */
+export async function groupResults(
+    items: readonly Result[],
+    abortSignal?: AbortSignal
+): Promise<readonly EntryResult[]> {
     const entryMap = new Map<string, [Result, ...(readonly Result[])]>()
+    const totalItems = items.length
 
-    for (const item of items) {
-        const nodeId = item.entry.rootNodeId
+    let itemIndex = 0
+    while (itemIndex < totalItems) {
+        // Check for abortion before processing
+        if (abortSignal?.aborted) {
+            throw new Error("Operation aborted")
+        }
 
-        const nodeResults = entryMap.get(nodeId)
+        // Wait for idle time before processing
+        const deadline = await waitForIdle()
 
-        if (!nodeResults) {
-            entryMap.set(nodeId, [item])
-        } else {
-            nodeResults.push(item)
+        // Process items while we have idle time available
+        while (itemIndex < totalItems && deadline.timeRemaining() > 0) {
+            const item = items[itemIndex]
+            assert(item, "Item should be defined in groupResults loop")
+
+            const nodeId = item.entry.rootNodeId
+            const nodeResults = entryMap.get(nodeId)
+
+            if (!nodeResults) {
+                entryMap.set(nodeId, [item])
+            } else {
+                nodeResults.push(item)
+            }
+
+            itemIndex++
         }
     }
 

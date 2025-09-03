@@ -21,6 +21,7 @@ export function useAsyncFilter(
     dataVersion: number
 ): AsyncFilterState {
     const processorRef = useRef<IdleCallbackAsyncProcessor<Result> | null>(null)
+    const groupingAbortControllerRef = useRef<AbortController | null>(null)
 
     const [state, setState] = useState<AsyncFilterState>({
         results: [],
@@ -48,14 +49,19 @@ export function useAsyncFilter(
         })
 
         processor.on("progress", ({ results }) => {
-            startTransition(() => {
-                const uiResults = groupResults(results)
-                setState(state => ({
-                    ...state,
-                    results: uiResults,
-                    hasResults: results.length > 0,
-                    error: null,
-                }))
+            groupingAbortControllerRef.current?.abort()
+            const controller = new AbortController()
+            groupingAbortControllerRef.current = controller
+
+            void groupResults(results, controller.signal).then(results => {
+                startTransition(() => {
+                    setState(state => ({
+                        ...state,
+                        results,
+                        hasResults: results.length > 0,
+                        error: null,
+                    }))
+                })
             })
         })
 

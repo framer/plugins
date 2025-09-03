@@ -75,14 +75,6 @@ export class GlobalSearchDatabase implements ResumableAsyncIterable<IndexEntry> 
         }
     }
 
-    /**
-     * @deprecated Use the `iterateFrom` instead. Used in devtools for testing.
-     */
-    async getAllEntries(): Promise<IndexEntry[]> {
-        const db = await this.open()
-        return await db.getAll("entries")
-    }
-
     async getLastIndexRun(): Promise<number> {
         const db = await this.open()
         const tx = db.transaction("entries", "readonly")

@@ -279,12 +279,4 @@ export class GlobalSearchIndexer {
 
         this.eventEmitter.emit("aborted")
     }
-
-    /**
-     * @deprecated Use the `AsyncProcessor` instead. Used in devtools
-     */
-    async getEntries(): Promise<IndexEntry[]> {
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
-        return await this.db.getAllEntries()
-    }
 }

@@ -21,6 +21,8 @@ export function useAsyncFilter(
     dataVersion: number
 ): AsyncFilterState {
     const processorRef = useRef<IdleCallbackAsyncProcessor<Result> | null>(null)
+    /** If this matches the current query and root nodes, we don't update the results with each progress update but instead wait for the completed event */
+    const finalisedResultsForQueryRef = useRef<[string, readonly RootNodeType[]] | null>(null)
     const groupingAbortControllerRef = useRef<AbortController | null>(null)
 
     const [state, setState] = useState<AsyncFilterState>({
@@ -49,6 +51,10 @@ export function useAsyncFilter(
         })
 
         processor.on("progress", ({ results }) => {
+            const [finalisedQuery, finalisedRootNodes] = finalisedResultsForQueryRef.current ?? [null, null]
+            // Final = we can wait for the completed event. There is already a lot of results to look through
+            if (finalisedQuery === query && Object.is(finalisedRootNodes, rootNodes)) return
+
             groupingAbortControllerRef.current?.abort()
             const controller = new AbortController()
             groupingAbortControllerRef.current = controller
@@ -65,9 +71,18 @@ export function useAsyncFilter(
             })
         })
 
-        processor.on("completed", () => {
+        processor.on("completed", results => {
             startTransition(() => {
-                setState(state => ({ ...state, running: false }))
+                groupingAbortControllerRef.current?.abort()
+                const controller = new AbortController()
+                groupingAbortControllerRef.current = controller
+
+                void groupResults(results, controller.signal).then(results => {
+                    startTransition(() => {
+                        finalisedResultsForQueryRef.current = [query, rootNodes]
+                        setState(state => ({ ...state, results, running: false }))
+                    })
+                })
             })
         })
 

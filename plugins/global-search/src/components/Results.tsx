@@ -115,6 +115,9 @@ function Match({
         framer
             .navigateTo(targetId, {
                 scrollTo: collectionFieldId ? { collectionFieldId } : undefined,
+                zoomIntoView: {
+                    maxZoom: 1,
+                },
             })
             .catch((error: unknown) => {
                 framer.notify(`Failed to go to item. ${error instanceof Error ? error.message : "Unknown error"}`)

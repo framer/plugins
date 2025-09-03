@@ -13,7 +13,6 @@ import { NoResults } from "./NoResults"
 import { ResultsList } from "./Results"
 import { SearchInput } from "./SearchInput"
 import { IconEllipsis } from "./ui/IconEllipsis"
-import { IconSpinner } from "./ui/IconSpinner"
 import { Menu } from "./ui/Menu"
 
 export function SearchScene() {
@@ -23,7 +22,12 @@ export function SearchScene() {
     const deferredQuery = useDeferredValue(query)
     const isIndexingWithMinimumDuration = useMinimumDuration(isIndexing, 500)
 
-    const { results, hasResults, error: filterError } = useAsyncFilter(deferredQuery, searchOptions, db, dataVersion)
+    const {
+        results,
+        hasResults,
+        running: isFilterRunning,
+        error: filterError,
+    } = useAsyncFilter(deferredQuery, searchOptions, db, dataVersion)
 
     if (filterError) {
         console.error(filterError)
@@ -35,8 +39,10 @@ export function SearchScene() {
     }, [])
 
     useEffect(() => {
-        void framer.showUI(getPluginUiOptions({ query: deferredQuery, hasResults, areResultsFinal: !isIndexing }))
-    }, [deferredQuery, hasResults, isIndexing])
+        void framer.showUI(
+            getPluginUiOptions({ query: deferredQuery, hasResults, areResultsFinal: !isIndexing && !isFilterRunning })
+        )
+    }, [deferredQuery, hasResults, isFilterRunning, isIndexing])
 
     return (
         <main className="flex flex-col h-full">
@@ -49,21 +55,21 @@ export function SearchScene() {
                 >
                     <SearchInput value={query} onChange={handleQueryChange} />
 
-                    <span
+                    <div
                         title="Indexing..."
-                        className="aria-hidden:opacity-0 transition"
+                        className="aria-hidden:opacity-0 transition flex items-center justify-center"
                         aria-hidden={!isIndexingWithMinimumDuration}
                     >
-                        <IconSpinner className="text-black dark:text-white animate-[spin_0.8s_linear_infinite]" />
-                    </span>
+                        <div className="framer-spinner bg-black dark:bg-white animate-[spin_0.8s_linear_infinite]"></div>
+                    </div>
 
                     <Menu items={optionsMenuItems}>
                         <IconEllipsis className="text-framer-text-tertiary-light dark:text-framer-text-tertiary-dark" />
                     </Menu>
                 </div>
-                <div className="overflow-y-auto px-3 flex flex-col flex-1">
+                <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden not-empty:pb-3">
                     {deferredQuery && hasResults && <ResultsList groupedResults={results} />}
-                    {deferredQuery && !hasResults && !isIndexing && <NoResults />}
+                    {deferredQuery && !hasResults && !isIndexing && !isFilterRunning && <NoResults />}
                 </div>
             </FocusScope>
         </main>

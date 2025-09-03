@@ -11,6 +11,7 @@ export interface AsyncFilterState {
     readonly results: readonly EntryResult[]
     readonly hasResults: boolean
     readonly error: Error | null
+    readonly running: boolean
 }
 
 export function useAsyncFilter(
@@ -25,6 +26,7 @@ export function useAsyncFilter(
         results: [],
         hasResults: false,
         error: null,
+        running: false,
     })
 
     const itemProcessor = useMemo((): FilterFunction => {
@@ -41,23 +43,30 @@ export function useAsyncFilter(
         processor.on("started", () => {
             // Not resetting the results here to avoid flickering
             startTransition(() => {
-                setState(prev => ({ ...prev, error: null }))
+                setState(prev => ({ ...prev, error: null, running: true }))
             })
         })
 
         processor.on("progress", ({ results }) => {
             startTransition(() => {
                 const uiResults = groupResults(results)
-                setState({
+                setState(state => ({
+                    ...state,
                     results: uiResults,
                     hasResults: results.length > 0,
                     error: null,
-                })
+                }))
+            })
+        })
+
+        processor.on("completed", () => {
+            startTransition(() => {
+                setState(state => ({ ...state, running: false }))
             })
         })
 
         processor.on("error", error => {
-            setState(prev => ({ ...prev, error }))
+            setState(prev => ({ ...prev, error, running: false }))
         })
     }
 

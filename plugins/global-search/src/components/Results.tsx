@@ -57,7 +57,7 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
     return (
         <details open className="group flex flex-col not-last:pb-2">
             <summary
-                className="pt-2 sticky top-0 group focus-visible:outline-none bg-modal-light dark:bg-modal-dark"
+                className="pt-2 sticky top-0 group focus:outline-none bg-modal-light dark:bg-modal-dark cursor-pointer"
                 {...focusProps}
             >
                 <div className="flex flex-row gap-2 rounded-lg justify-start items-center h-6 select-none overflow-hidden ps-2 group-focus-visible:bg-option-light dark:group-focus-visible:bg-option-dark group-focus-visible:text-primary-light dark:group-focus-visible:text-primary-dark">
@@ -119,8 +119,8 @@ function Match({
             onClick={navigateToResult}
             className={cn(
                 "text-secondary-light dark:text-secondary-dark text-xs h-6 text-left select-none cursor-pointer pl-5  rounded-lg transition-colors",
-                "hover:bg-option-light dark:hover:bg-option-dark hover:text-primary-light dark:hover:text-primary-dark focus-visible:bg-option-light dark:focus-visible:bg-option-dark focus-visible:text-primary-light dark:focus-visible:text-primary-dark",
-                "focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                "hover:bg-option-light/50 dark:hover:bg-option-dark/50 hover:text-primary-light dark:hover:text-primary-dark focus:bg-option-light dark:focus:bg-option-dark focus:text-primary-light dark:focus:text-primary-dark",
+                "focus:outline-none focus:ring-0 focus:ring-offset-0"
             )}
             {...focusProps}
         >

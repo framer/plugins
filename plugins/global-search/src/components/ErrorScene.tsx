@@ -8,7 +8,7 @@ export function ErrorScene() {
     }, [])
 
     return (
-        <div className="flex-1 flex justify-center items-center select-none py-1 px-5">
+        <div className="flex-1 flex justify-center items-center select-none py-1 px-2 mx-3 border-divider-light dark:border-divider-dark border-y">
             <div className="text-center text-tertiary-light dark:text-tertiary-dark text-xs space-y-4">
                 The plugin crashed. Please close and reopen it. If it happens again,{" "}
                 <a

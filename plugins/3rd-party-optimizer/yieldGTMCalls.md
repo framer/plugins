@@ -26,7 +26,8 @@ When the script initializes, it installs a MutationObserver that waits for `data
 - We need to wait for `dataLayer` to appear, so that the initial pushes happen as expected (e.g. `gtm.load`, `consent default`)
 - Overrides `dataLayer.push` and `ga`/`gtag()` to yield first before calling the browser-native `push` function
 - The override makes sure any further override is overridden again
-- It yields between every overridden-call. The real `push` is called last.
+- It yields between every overridden-call. This ensures we have natural yield points between the nested GTM tasks (that call `push` from within a `push`), ensuring tasks are split across multiple frames.
+- The real `push` is called last.
 
 `history.pushState/replaceState` overrides:
 - Overrides the functions to yield first before calling any overrides
@@ -43,7 +44,11 @@ Yield method:
 - **Important**: This only works for Framer based sites, because React attaches event listeners to our React root. On other pages, defering click calls with `setTimeout(fn, 1)` might introduce delays after a user clicks somewhere
 
 ### Shortcomings
-- It doesn't fight the `hashchange`, `popstate`, `HTMLFormElement.prototype.submit` override (see next chapter) and also not the `.innerText` call that causes a reflow if you have individualElementId listeners. Those might only be fixable by patching the GTM source.
+
+- It doesn't fight the `hashchange`, `popstate`, `resize`, `scrollend` (scroll depth trigger) listeners.
+  - It makes sense to run tasks right after those, as it's unlikely the user clicks _immediately_ after those events.
+  - It's not possible to stop propagation for those without patching the GTM source.
+- It doesn't fix the `.innerText` call that causes a reflow if you have individualElementId listeners. Those might only be fixable by patching the GTM source.
 - I only tested this with a React root that is **NOT** attached to the body element (this is important, as it ensures we don't intercept Reacts event listeners - else we pretty much yield before doing anything, defeating the metrics purpose)
 - Making GTM events yield can create subtle, racy differences when navigations are involved. Consider the following example: A user triggers a SPA navigation that causes a dataLayer push. In this case, the URL at the time the push is executed, might no longer reflect the URL where the user clicked on.
 
@@ -58,8 +63,8 @@ By using the snippet from the next chapter & DevTools overrides, I've monitored 
 - GA adds a `document` listener with the 3rd param set to `false`
 - FB / Meta tracker adds a document listener with the 3rd param set to `{capture: true, once: false, passive: true}`
 - No 3p adds a listener to `document.body` itself
+- GTM also installs a `submit` override:
 
-GTM also does this when it loads:
 ```js
 var f = HTMLFormElement.prototype.submit;
 HTMLFormElement.prototype.submit = function() {

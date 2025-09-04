@@ -24,7 +24,7 @@ export default function FormsPage() {
                     {forms.map((form, i) => (
                         <ComponentInsert
                             key={i}
-                            url="https://framer.com/m/framer/hubspot.js"
+                            url="https://framer.com/m/framer/hubspot.js@0.6.1"
                             attributes={{
                                 controls: {
                                     portalId: String(portalId),

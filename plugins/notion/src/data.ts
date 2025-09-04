@@ -88,9 +88,19 @@ export async function syncCollection(
     fields: readonly ManagedCollectionFieldInput[],
     slugField: ManagedCollectionFieldInput,
     ignoredFieldIds: Set<string>,
-    lastSynced: string | null
+    lastSynced: string | null,
+    existingFields?: readonly ManagedCollectionFieldInput[]
 ) {
     const fieldsById = new Map(fields.map(field => [field.id, field]))
+
+    // Track which fields have had their type changed
+    const fieldTypeChanged = new Map<string, boolean>()
+    if (existingFields) {
+        for (const field of fields) {
+            const existingField = existingFields.find(f => f.id === field.id)
+            fieldTypeChanged.set(field.id, !existingField || existingField.type !== field.type)
+        }
+    }
 
     const seenItemIds = new Set<string>()
 
@@ -125,7 +135,8 @@ export async function syncCollection(
                 const field = fieldsById.get(property.id)
                 if (!field) continue
 
-                const fieldEntry = getFieldDataEntryForProperty(property, field)
+                const skipFieldContent = skipContent && !fieldTypeChanged.get(field.id)
+                const fieldEntry = getFieldDataEntryForProperty(property, field, skipFieldContent)
                 if (fieldEntry) {
                     fieldData[field.id] = fieldEntry
                 } else {
@@ -189,7 +200,7 @@ export async function syncCollection(
                 fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
             }
 
-            if (fieldsById.has(pageCoverProperty.id)) {
+            if (fieldsById.has(pageCoverProperty.id) && !skipContent) {
                 let coverValue: string | null = null
 
                 if (item.cover) {
@@ -285,7 +296,15 @@ export async function syncExistingCollection(
                 existingFields.some(existingField => existingField.id === field.id) && !ignoredFieldIds.has(field.id)
         )
 
-        await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds, previousLastSynced)
+        await syncCollection(
+            collection,
+            dataSource,
+            fieldsToSync,
+            slugField,
+            ignoredFieldIds,
+            previousLastSynced,
+            existingFields
+        )
         return { didSync: true }
     } catch (error) {
         console.error(error)
@@ -429,7 +448,8 @@ export function fieldsInfoToCollectionFields(
 
 export function getFieldDataEntryForProperty(
     property: PageObjectResponse["properties"][string],
-    field: ManagedCollectionFieldInput
+    field: ManagedCollectionFieldInput,
+    skipContent: boolean = false
 ): FieldDataEntryInput | null {
     switch (property.type) {
         case "checkbox": {
@@ -502,6 +522,8 @@ export function getFieldDataEntryForProperty(
             return null
         }
         case "files": {
+            if (skipContent) return null
+
             if (field.type === "array") {
                 const imageField = field.fields[0]
 

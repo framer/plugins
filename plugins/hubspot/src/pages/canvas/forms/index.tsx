@@ -24,12 +24,12 @@ export default function FormsPage() {
                     {forms.map((form, i) => (
                         <ComponentInsert
                             key={i}
-                            url="https://framer.com/m/HubSpot-Form-qRu7.js"
+                            url="https://framer.com/m/framer/hubspot.js"
                             attributes={{
                                 controls: {
                                     portalId: String(portalId),
                                     formId: form.id,
-                                    dataHostingLocation,
+                                    region: dataHostingLocation,
                                 },
                             }}
                         >

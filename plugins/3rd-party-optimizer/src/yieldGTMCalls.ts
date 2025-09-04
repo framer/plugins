@@ -51,6 +51,12 @@ let loadPromise: Promise<void> | undefined = new Promise<void>(resolve => {
     loadPromise = undefined
 })
 
+const isInputPending =
+    "scheduling" in navigator &&
+    typeof (navigator.scheduling as { isInputPending: () => boolean })?.isInputPending === "function"
+        ? (navigator.scheduling as { isInputPending: () => boolean }).isInputPending.bind(navigator.scheduling)
+        : () => false
+
 async function queueYieldCallback(resolve: VoidFunction, shouldWaitForLoad: boolean) {
     pendingResolvers.add(resolve)
 
@@ -71,7 +77,7 @@ async function queueYieldCallback(resolve: VoidFunction, shouldWaitForLoad: bool
         }
     }
 
-    queueAfterPaintCallback(() => {
+    const callback = () => {
         lowPriorityCallback(() => {
             if (DEBUG)
                 // @ts-expect-error TS(2554): TS doesn't know about the new syntax yet
@@ -81,6 +87,15 @@ async function queueYieldCallback(resolve: VoidFunction, shouldWaitForLoad: bool
             pendingResolvers.delete(resolve)
             resolve()
         })
+    }
+
+    queueAfterPaintCallback(() => {
+        if (isInputPending()) {
+            // Input is pending, so let's wait for the next paint afterwards.
+            queueAfterPaintCallback(callback)
+        } else {
+            callback()
+        }
     })
 }
 

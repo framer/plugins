@@ -41,6 +41,7 @@ Yield method:
 - We don't wait for `load` in response to user interactions, as we prevent React from handling browser events before that, so the browser should be able to execute other event handlers / native logic.
 - For `mousedown` specifically, if it was the left mouse button, we wait for the next `click` event before we yield, as anything running in response to `mousedown` could cause input delay for `click`
 - We only support the low priority yielding here, because we guarantee the listeners run when the user is about to leave
+- We check `isInputPending()` can keep yielding if `true`
 - **Important**: This only works for Framer based sites, because React attaches event listeners to our React root. On other pages, defering click calls with `setTimeout(fn, 1)` might introduce delays after a user clicks somewhere
 
 ### Shortcomings

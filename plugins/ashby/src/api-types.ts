@@ -11,9 +11,9 @@ const CompensationComponentSchema = v.object({
     summary: v.optional(v.string()),
     compensationType: v.string(),
     interval: v.string(),
-    currencyCode: v.nullable(v.string()),
-    minValue: v.nullable(v.number()),
-    maxValue: v.nullable(v.number()),
+    currencyCode: v.optional(v.nullable(v.string())),
+    minValue: v.optional(v.nullable(v.number())),
+    maxValue: v.optional(v.nullable(v.number())),
 })
 
 const CompensationTiersSchema = v.object({

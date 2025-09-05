@@ -210,7 +210,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
 
                 await collection.setFields(removeGreenhouseKeys(fieldsToSync))
                 await syncCollection(boardToken, collection, dataSource, fieldsToSync, selectedSlugField)
-                await framer.closePlugin("Synchronization successful", { variant: "success" })
+                framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
                 console.error(error)
                 framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {

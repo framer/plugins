@@ -5,6 +5,21 @@ __metadata:
   version: 8
   cacheKey: 10
 
+"3rd-party-optimizer@workspace:plugins/3rd-party-optimizer":
+  version: 0.0.0-use.local
+  resolution: "3rd-party-optimizer@workspace:plugins/3rd-party-optimizer"
+  dependencies:
+    "@framer/vite-config": "workspace:*"
+    "@types/node": "npm:^22"
+    "@types/react": "npm:^18.2"
+    "@types/react-dom": "npm:^18.2"
+    esbuild: "npm:^0.25.9"
+    framer-plugin: "npm:^3.5.2"
+    react: "npm:^18.2"
+    react-dom: "npm:^18.2"
+  languageName: unknown
+  linkType: soft
+
 "@adobe/css-tools@npm:^4.4.0":
   version: 4.4.3
   resolution: "@adobe/css-tools@npm:4.4.3"
@@ -179,177 +194,184 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@esbuild/aix-ppc64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/aix-ppc64@npm:0.25.5"
+"@esbuild/aix-ppc64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/aix-ppc64@npm:0.25.9"
   conditions: os=aix & cpu=ppc64
   languageName: node
   linkType: hard
 
-"@esbuild/android-arm64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/android-arm64@npm:0.25.5"
+"@esbuild/android-arm64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/android-arm64@npm:0.25.9"
   conditions: os=android & cpu=arm64
   languageName: node
   linkType: hard
 
-"@esbuild/android-arm@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/android-arm@npm:0.25.5"
+"@esbuild/android-arm@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/android-arm@npm:0.25.9"
   conditions: os=android & cpu=arm
   languageName: node
   linkType: hard
 
-"@esbuild/android-x64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/android-x64@npm:0.25.5"
+"@esbuild/android-x64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/android-x64@npm:0.25.9"
   conditions: os=android & cpu=x64
   languageName: node
   linkType: hard
 
-"@esbuild/darwin-arm64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/darwin-arm64@npm:0.25.5"
+"@esbuild/darwin-arm64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/darwin-arm64@npm:0.25.9"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@esbuild/darwin-x64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/darwin-x64@npm:0.25.5"
+"@esbuild/darwin-x64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/darwin-x64@npm:0.25.9"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@esbuild/freebsd-arm64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/freebsd-arm64@npm:0.25.5"
+"@esbuild/freebsd-arm64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/freebsd-arm64@npm:0.25.9"
   conditions: os=freebsd & cpu=arm64
   languageName: node
   linkType: hard
 
-"@esbuild/freebsd-x64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/freebsd-x64@npm:0.25.5"
+"@esbuild/freebsd-x64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/freebsd-x64@npm:0.25.9"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@esbuild/linux-arm64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/linux-arm64@npm:0.25.5"
+"@esbuild/linux-arm64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/linux-arm64@npm:0.25.9"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"@esbuild/linux-arm@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/linux-arm@npm:0.25.5"
+"@esbuild/linux-arm@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/linux-arm@npm:0.25.9"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@esbuild/linux-ia32@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/linux-ia32@npm:0.25.5"
+"@esbuild/linux-ia32@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/linux-ia32@npm:0.25.9"
   conditions: os=linux & cpu=ia32
   languageName: node
   linkType: hard
 
-"@esbuild/linux-loong64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/linux-loong64@npm:0.25.5"
+"@esbuild/linux-loong64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/linux-loong64@npm:0.25.9"
   conditions: os=linux & cpu=loong64
   languageName: node
   linkType: hard
 
-"@esbuild/linux-mips64el@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/linux-mips64el@npm:0.25.5"
+"@esbuild/linux-mips64el@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/linux-mips64el@npm:0.25.9"
   conditions: os=linux & cpu=mips64el
   languageName: node
   linkType: hard
 
-"@esbuild/linux-ppc64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/linux-ppc64@npm:0.25.5"
+"@esbuild/linux-ppc64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/linux-ppc64@npm:0.25.9"
   conditions: os=linux & cpu=ppc64
   languageName: node
   linkType: hard
 
-"@esbuild/linux-riscv64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/linux-riscv64@npm:0.25.5"
+"@esbuild/linux-riscv64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/linux-riscv64@npm:0.25.9"
   conditions: os=linux & cpu=riscv64
   languageName: node
   linkType: hard
 
-"@esbuild/linux-s390x@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/linux-s390x@npm:0.25.5"
+"@esbuild/linux-s390x@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/linux-s390x@npm:0.25.9"
   conditions: os=linux & cpu=s390x
   languageName: node
   linkType: hard
 
-"@esbuild/linux-x64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/linux-x64@npm:0.25.5"
+"@esbuild/linux-x64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/linux-x64@npm:0.25.9"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"@esbuild/netbsd-arm64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/netbsd-arm64@npm:0.25.5"
+"@esbuild/netbsd-arm64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/netbsd-arm64@npm:0.25.9"
   conditions: os=netbsd & cpu=arm64
   languageName: node
   linkType: hard
 
-"@esbuild/netbsd-x64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/netbsd-x64@npm:0.25.5"
+"@esbuild/netbsd-x64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/netbsd-x64@npm:0.25.9"
   conditions: os=netbsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@esbuild/openbsd-arm64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/openbsd-arm64@npm:0.25.5"
+"@esbuild/openbsd-arm64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/openbsd-arm64@npm:0.25.9"
   conditions: os=openbsd & cpu=arm64
   languageName: node
   linkType: hard
 
-"@esbuild/openbsd-x64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/openbsd-x64@npm:0.25.5"
+"@esbuild/openbsd-x64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/openbsd-x64@npm:0.25.9"
   conditions: os=openbsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@esbuild/sunos-x64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/sunos-x64@npm:0.25.5"
+"@esbuild/openharmony-arm64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/openharmony-arm64@npm:0.25.9"
+  conditions: os=openharmony & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@esbuild/sunos-x64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/sunos-x64@npm:0.25.9"
   conditions: os=sunos & cpu=x64
   languageName: node
   linkType: hard
 
-"@esbuild/win32-arm64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/win32-arm64@npm:0.25.5"
+"@esbuild/win32-arm64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/win32-arm64@npm:0.25.9"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@esbuild/win32-ia32@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/win32-ia32@npm:0.25.5"
+"@esbuild/win32-ia32@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/win32-ia32@npm:0.25.9"
   conditions: os=win32 & cpu=ia32
   languageName: node
   linkType: hard
 
-"@esbuild/win32-x64@npm:0.25.5":
-  version: 0.25.5
-  resolution: "@esbuild/win32-x64@npm:0.25.5"
+"@esbuild/win32-x64@npm:0.25.9":
+  version: 0.25.9
+  resolution: "@esbuild/win32-x64@npm:0.25.9"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -2252,16 +2274,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-aria/combobox@npm:^3.13.1":
-  version: 3.13.1
-  resolution: "@react-aria/combobox@npm:3.13.1"
+"@react-aria/combobox@npm:^3.13.2":
+  version: 3.13.2
+  resolution: "@react-aria/combobox@npm:3.13.2"
   dependencies:
     "@react-aria/focus": "npm:^3.21.1"
     "@react-aria/i18n": "npm:^3.12.12"
     "@react-aria/listbox": "npm:^3.14.8"
     "@react-aria/live-announcer": "npm:^3.4.4"
-    "@react-aria/menu": "npm:^3.19.1"
-    "@react-aria/overlays": "npm:^3.29.0"
+    "@react-aria/menu": "npm:^3.19.2"
+    "@react-aria/overlays": "npm:^3.29.1"
     "@react-aria/selection": "npm:^3.25.1"
     "@react-aria/textfield": "npm:^3.18.1"
     "@react-aria/utils": "npm:^3.30.1"
@@ -2275,7 +2297,7 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
     react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10/a54d90e1065b2301f8f0ff0fae6508538322bfbb8c8927ff3bf76ff6fbde9f505ef3187c2422462a1754a34fbc0e5a81ae83ca558fcf735cd5084bf1046f9f44
+  checksum: 10/9f3dd28acdaa496dde9af77928fed1c32f25fe56d38b2d58f680a086c11a6f7077c2f73d444e6b16af96f03dbf4349a89f641fac18d7006a85f8838e56d8b393
   languageName: node
   linkType: hard
 
@@ -2308,12 +2330,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-aria/dialog@npm:^3.5.29":
-  version: 3.5.29
-  resolution: "@react-aria/dialog@npm:3.5.29"
+"@react-aria/dialog@npm:^3.5.30":
+  version: 3.5.30
+  resolution: "@react-aria/dialog@npm:3.5.30"
   dependencies:
     "@react-aria/interactions": "npm:^3.25.5"
-    "@react-aria/overlays": "npm:^3.29.0"
+    "@react-aria/overlays": "npm:^3.29.1"
     "@react-aria/utils": "npm:^3.30.1"
     "@react-types/dialog": "npm:^3.5.21"
     "@react-types/shared": "npm:^3.32.0"
@@ -2321,7 +2343,7 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
     react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10/100a265ddcf3bd3345ba00f5a4dcabbf0c50bb8a30b9870c82c200374820d401440890a2173b3d6c13ee963057ee172afaed54ead81158aba4458e9cca52f5f2
+  checksum: 10/a95ded7450920ce2cc204d93accc7dc655c513bf8734c3c4474f41696a75c4d71a74cc5a2fe43b1dc568de48b422a74ba2448048edcab8b2910fc4cc602ac1b6
   languageName: node
   linkType: hard
 
@@ -2341,15 +2363,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-aria/dnd@npm:^3.11.1":
-  version: 3.11.1
-  resolution: "@react-aria/dnd@npm:3.11.1"
+"@react-aria/dnd@npm:^3.11.2":
+  version: 3.11.2
+  resolution: "@react-aria/dnd@npm:3.11.2"
   dependencies:
     "@internationalized/string": "npm:^3.2.7"
     "@react-aria/i18n": "npm:^3.12.12"
     "@react-aria/interactions": "npm:^3.25.5"
     "@react-aria/live-announcer": "npm:^3.4.4"
-    "@react-aria/overlays": "npm:^3.29.0"
+    "@react-aria/overlays": "npm:^3.29.1"
     "@react-aria/utils": "npm:^3.30.1"
     "@react-stately/collections": "npm:^3.12.7"
     "@react-stately/dnd": "npm:^3.7.0"
@@ -2359,7 +2381,7 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
     react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10/086e151e0e3479ad6cecc82eb2ceb1614d58d2766f8324ad9453483b4444f01d3c9bc9099367c2f4f3baaaf56cc53ee59e387c3abfd40fa2d6b9df11031aeced
+  checksum: 10/33957ac694a97f2aff6b89c43d329a66657228039e60a5f166c800d41c598f5fd2be5ad0e3739cd82c9db7757cc354c06bdce51ea13205be2389d95ba8967af7
   languageName: node
   linkType: hard
 
@@ -2549,14 +2571,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-aria/menu@npm:^3.19.1":
-  version: 3.19.1
-  resolution: "@react-aria/menu@npm:3.19.1"
+"@react-aria/menu@npm:^3.19.2":
+  version: 3.19.2
+  resolution: "@react-aria/menu@npm:3.19.2"
   dependencies:
     "@react-aria/focus": "npm:^3.21.1"
     "@react-aria/i18n": "npm:^3.12.12"
     "@react-aria/interactions": "npm:^3.25.5"
-    "@react-aria/overlays": "npm:^3.29.0"
+    "@react-aria/overlays": "npm:^3.29.1"
     "@react-aria/selection": "npm:^3.25.1"
     "@react-aria/utils": "npm:^3.30.1"
     "@react-stately/collections": "npm:^3.12.7"
@@ -2570,7 +2592,7 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
     react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10/09c6295086d9c73143ec7ae569d9373577f939aa73e7c51f8f9d9c810834d2445f389032ae2710b6d3001328999273de6584259b71621b7879857f90fed7ab09
+  checksum: 10/ce2bc6747ac7279722d10218c33e44c5649d1199c6e058187723d2b1115325436fbc5295f37da49d08be7908dc92fded1431c61466ce3b8d828039bfaa98b695
   languageName: node
   linkType: hard
 
@@ -2611,9 +2633,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-aria/overlays@npm:^3.29.0":
-  version: 3.29.0
-  resolution: "@react-aria/overlays@npm:3.29.0"
+"@react-aria/overlays@npm:^3.29.1":
+  version: 3.29.1
+  resolution: "@react-aria/overlays@npm:3.29.1"
   dependencies:
     "@react-aria/focus": "npm:^3.21.1"
     "@react-aria/i18n": "npm:^3.12.12"
@@ -2629,7 +2651,7 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
     react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10/2d12c93d2c6ef7d6725b88f111487d09db665ca2a364696425826a556ec5aa9f1e2f7b911e139053847932964f1d77f7ad97b09ace2ce40e879468b9bbed5203
+  checksum: 10/78e0d606f91eabcf9af48121f243b85cead0225e6aaf07b31746252198a07c3e7551919e8e9bd47a3b4e01ac923fd8d8096623e4c7cce8745b15a4bbb3d3826e
   languageName: node
   linkType: hard
 
@@ -2690,16 +2712,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-aria/select@npm:^3.16.1":
-  version: 3.16.1
-  resolution: "@react-aria/select@npm:3.16.1"
+"@react-aria/select@npm:^3.16.2":
+  version: 3.16.2
+  resolution: "@react-aria/select@npm:3.16.2"
   dependencies:
     "@react-aria/form": "npm:^3.1.1"
     "@react-aria/i18n": "npm:^3.12.12"
     "@react-aria/interactions": "npm:^3.25.5"
     "@react-aria/label": "npm:^3.7.21"
     "@react-aria/listbox": "npm:^3.14.8"
-    "@react-aria/menu": "npm:^3.19.1"
+    "@react-aria/menu": "npm:^3.19.2"
     "@react-aria/selection": "npm:^3.25.1"
     "@react-aria/utils": "npm:^3.30.1"
     "@react-aria/visually-hidden": "npm:^3.8.27"
@@ -2711,7 +2733,7 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
     react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10/37075d42a8e4de9b7391e43ef87a483914872323e949f8afe0974a4c0f361795e10d11e73d93e2832a2b27723d472d289cb19071d2478c43b7f04fe69082b630
+  checksum: 10/2c19e1dd60a517ed4f43fc404718054af519a922b9a0e842778db39bad4d2bcef04e53d7f3c27f0034f495bd727c20e44d55a77aa476f59ca38a86a5c64162fa
   languageName: node
   linkType: hard
 
@@ -4409,6 +4431,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^22":
+  version: 22.17.2
+  resolution: "@types/node@npm:22.17.2"
+  dependencies:
+    undici-types: "npm:~6.21.0"
+  checksum: 10/b830746c65e014d7d47102ab2f24ec74bdb60156b9b75af42e75d81375f211904347125c00543b5fd7119223b3157726bc9814619205571c0a0afd6ce3c43abb
+  languageName: node
+  linkType: hard
+
 "@types/papaparse@npm:^5.3.16":
   version: 5.3.16
   resolution: "@types/papaparse@npm:5.3.16"
@@ -4432,7 +4463,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:^18.3.5, @types/react-dom@npm:^18.3.7":
+"@types/react-dom@npm:^18.2, @types/react-dom@npm:^18.3.5, @types/react-dom@npm:^18.3.7":
   version: 18.3.7
   resolution: "@types/react-dom@npm:18.3.7"
   peerDependencies:
@@ -4450,7 +4481,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:^18, @types/react@npm:^18.3.18, @types/react@npm:^18.3.23":
+"@types/react@npm:^18, @types/react@npm:^18.2, @types/react@npm:^18.3.18, @types/react@npm:^18.3.23":
   version: 18.3.23
   resolution: "@types/react@npm:18.3.23"
   dependencies:
@@ -4875,7 +4906,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.7"
     clsx: "npm:^2.1.1"
     colorjs.io: "npm:^0.5.2"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     ogl: "npm:^1.0.11"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -5181,7 +5212,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -5198,7 +5229,7 @@ __metadata:
     eslint: "npm:^9.30.1"
     eslint-plugin-react-hooks: "npm:^5.2.0"
     eslint-plugin-react-refresh: "npm:^0.4.20"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     framer-plugin-tools: "npm:^1.0.0"
     globals: "npm:^16.3.0"
     jiti: "npm:^2.4.2"
@@ -5255,7 +5286,7 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     extract-colors: "npm:^4.2.0"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     motion: "npm:^12.23.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -5306,7 +5337,7 @@ __metadata:
     "@radix-ui/react-slider": "npm:^1.3.5"
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     lightningcss: "npm:^1.30.1"
     motion: "npm:^12.23.0"
     react: "npm:^18.3.1"
@@ -5367,7 +5398,7 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     csv-parse: "npm:^5.6.0"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.1.0"
@@ -5534,7 +5565,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     radix-ui: "npm:^1.4.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -5571,7 +5602,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.7"
     clsx: "npm:^2.1.1"
     colorjs.io: "npm:^0.5.2"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     ogl: "npm:^1.0.11"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -5638,7 +5669,7 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     extract-colors: "npm:^4.2.0"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     motion: "npm:^12.23.0"
     react: "npm:^18.3.1"
     react-color: "npm:^2.19.3"
@@ -5765,35 +5796,36 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.25.0":
-  version: 0.25.5
-  resolution: "esbuild@npm:0.25.5"
+"esbuild@npm:^0.25.0, esbuild@npm:^0.25.9":
+  version: 0.25.9
+  resolution: "esbuild@npm:0.25.9"
   dependencies:
-    "@esbuild/aix-ppc64": "npm:0.25.5"
-    "@esbuild/android-arm": "npm:0.25.5"
-    "@esbuild/android-arm64": "npm:0.25.5"
-    "@esbuild/android-x64": "npm:0.25.5"
-    "@esbuild/darwin-arm64": "npm:0.25.5"
-    "@esbuild/darwin-x64": "npm:0.25.5"
-    "@esbuild/freebsd-arm64": "npm:0.25.5"
-    "@esbuild/freebsd-x64": "npm:0.25.5"
-    "@esbuild/linux-arm": "npm:0.25.5"
-    "@esbuild/linux-arm64": "npm:0.25.5"
-    "@esbuild/linux-ia32": "npm:0.25.5"
-    "@esbuild/linux-loong64": "npm:0.25.5"
-    "@esbuild/linux-mips64el": "npm:0.25.5"
-    "@esbuild/linux-ppc64": "npm:0.25.5"
-    "@esbuild/linux-riscv64": "npm:0.25.5"
-    "@esbuild/linux-s390x": "npm:0.25.5"
-    "@esbuild/linux-x64": "npm:0.25.5"
-    "@esbuild/netbsd-arm64": "npm:0.25.5"
-    "@esbuild/netbsd-x64": "npm:0.25.5"
-    "@esbuild/openbsd-arm64": "npm:0.25.5"
-    "@esbuild/openbsd-x64": "npm:0.25.5"
-    "@esbuild/sunos-x64": "npm:0.25.5"
-    "@esbuild/win32-arm64": "npm:0.25.5"
-    "@esbuild/win32-ia32": "npm:0.25.5"
-    "@esbuild/win32-x64": "npm:0.25.5"
+    "@esbuild/aix-ppc64": "npm:0.25.9"
+    "@esbuild/android-arm": "npm:0.25.9"
+    "@esbuild/android-arm64": "npm:0.25.9"
+    "@esbuild/android-x64": "npm:0.25.9"
+    "@esbuild/darwin-arm64": "npm:0.25.9"
+    "@esbuild/darwin-x64": "npm:0.25.9"
+    "@esbuild/freebsd-arm64": "npm:0.25.9"
+    "@esbuild/freebsd-x64": "npm:0.25.9"
+    "@esbuild/linux-arm": "npm:0.25.9"
+    "@esbuild/linux-arm64": "npm:0.25.9"
+    "@esbuild/linux-ia32": "npm:0.25.9"
+    "@esbuild/linux-loong64": "npm:0.25.9"
+    "@esbuild/linux-mips64el": "npm:0.25.9"
+    "@esbuild/linux-ppc64": "npm:0.25.9"
+    "@esbuild/linux-riscv64": "npm:0.25.9"
+    "@esbuild/linux-s390x": "npm:0.25.9"
+    "@esbuild/linux-x64": "npm:0.25.9"
+    "@esbuild/netbsd-arm64": "npm:0.25.9"
+    "@esbuild/netbsd-x64": "npm:0.25.9"
+    "@esbuild/openbsd-arm64": "npm:0.25.9"
+    "@esbuild/openbsd-x64": "npm:0.25.9"
+    "@esbuild/openharmony-arm64": "npm:0.25.9"
+    "@esbuild/sunos-x64": "npm:0.25.9"
+    "@esbuild/win32-arm64": "npm:0.25.9"
+    "@esbuild/win32-ia32": "npm:0.25.9"
+    "@esbuild/win32-x64": "npm:0.25.9"
   dependenciesMeta:
     "@esbuild/aix-ppc64":
       optional: true
@@ -5837,6 +5869,8 @@ __metadata:
       optional: true
     "@esbuild/openbsd-x64":
       optional: true
+    "@esbuild/openharmony-arm64":
+      optional: true
     "@esbuild/sunos-x64":
       optional: true
     "@esbuild/win32-arm64":
@@ -5847,7 +5881,7 @@ __metadata:
       optional: true
   bin:
     esbuild: bin/esbuild
-  checksum: 10/0fa4c3b42c6ddf1a008e75a4bb3dcab08ce22ac0b31dd59dc01f7fe8e21380bfaec07a2fe3730a7cf430da5a30142d016714b358666325a4733547afa42be405
+  checksum: 10/fc174ae7f646ad413adb641c7e46f16be575e462ed209866b55d5954d382e5da839e3f3f89a8e42e2b71d48895cc636ba43523011249fe5ff9c63d8d39d3a364
   languageName: node
   linkType: hard
 
@@ -6160,7 +6194,7 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     comlink: "npm:^4.4.2"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -6243,16 +6277,6 @@ __metadata:
   bin:
     framer-plugin-tools: index.js
   checksum: 10/5f6b731038cfd23ea1e9a4b4de48a903c9e97ddc43b3598004554adba91e0fbc14efec6e6e9089a752380ffb4635f563575e6d4c6fb36597cbdb43e9edf17de8
-  languageName: node
-  linkType: hard
-
-"framer-plugin@npm:^3.3.2":
-  version: 3.3.2
-  resolution: "framer-plugin@npm:3.3.2"
-  peerDependencies:
-    react: ^18.2.0
-    react-dom: ^18.2.0
-  checksum: 10/7dc93e76b93000534085a8b9e52c88a533617bbc7af57de4bb82687e44d3330e1c7f6c7441d247733ce1ccc98fb9e5c890a4a80fef342f7f5919fd742012dbb7
   languageName: node
   linkType: hard
 
@@ -6417,7 +6441,7 @@ __metadata:
     "@types/react-is": "npm:^18.3.1"
     aveta: "npm:^1.5.2"
     cheerio: "npm:^1.1.0"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
@@ -6466,7 +6490,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.1.0"
@@ -6916,7 +6940,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -7512,7 +7536,7 @@ __metadata:
     "@phosphor-icons/react": "npm:^2.1.10"
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     fuse.js: "npm:^7.1.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -7526,7 +7550,7 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     base64-arraybuffer: "npm:^1.0.2"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     motion: "npm:^12.23.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -7593,7 +7617,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -7774,8 +7798,8 @@ __metadata:
   linkType: hard
 
 "react-aria@npm:^3.43.0":
-  version: 3.43.0
-  resolution: "react-aria@npm:3.43.0"
+  version: 3.43.1
+  resolution: "react-aria@npm:3.43.1"
   dependencies:
     "@internationalized/string": "npm:^3.2.7"
     "@react-aria/breadcrumbs": "npm:^3.5.28"
@@ -7783,11 +7807,11 @@ __metadata:
     "@react-aria/calendar": "npm:^3.9.1"
     "@react-aria/checkbox": "npm:^3.16.1"
     "@react-aria/color": "npm:^3.1.1"
-    "@react-aria/combobox": "npm:^3.13.1"
+    "@react-aria/combobox": "npm:^3.13.2"
     "@react-aria/datepicker": "npm:^3.15.1"
-    "@react-aria/dialog": "npm:^3.5.29"
+    "@react-aria/dialog": "npm:^3.5.30"
     "@react-aria/disclosure": "npm:^3.0.8"
-    "@react-aria/dnd": "npm:^3.11.1"
+    "@react-aria/dnd": "npm:^3.11.2"
     "@react-aria/focus": "npm:^3.21.1"
     "@react-aria/gridlist": "npm:^3.14.0"
     "@react-aria/i18n": "npm:^3.12.12"
@@ -7796,14 +7820,14 @@ __metadata:
     "@react-aria/landmark": "npm:^3.0.6"
     "@react-aria/link": "npm:^3.8.5"
     "@react-aria/listbox": "npm:^3.14.8"
-    "@react-aria/menu": "npm:^3.19.1"
+    "@react-aria/menu": "npm:^3.19.2"
     "@react-aria/meter": "npm:^3.4.26"
     "@react-aria/numberfield": "npm:^3.12.1"
-    "@react-aria/overlays": "npm:^3.29.0"
+    "@react-aria/overlays": "npm:^3.29.1"
     "@react-aria/progress": "npm:^3.4.26"
     "@react-aria/radio": "npm:^3.12.1"
     "@react-aria/searchfield": "npm:^3.8.8"
-    "@react-aria/select": "npm:^3.16.1"
+    "@react-aria/select": "npm:^3.16.2"
     "@react-aria/selection": "npm:^3.25.1"
     "@react-aria/separator": "npm:^3.4.12"
     "@react-aria/slider": "npm:^3.8.1"
@@ -7822,7 +7846,7 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
     react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
-  checksum: 10/4ddd9af8d7b4299570d2621fdbb3690578ad0e37e678f6a65718deb855306d7623c5cb42eb0ef61b074c67e4b3eecede62738ef39b9e80e4c160f2fe1b5b9907
+  checksum: 10/3b85dcd09d1ff8401731b47ef88893bfcfcff7151a203f9e3fcfa42c79d730c860ca9f1a27342f65cff6586e3c349f82bd11ae6139691f63021b86c504f3543d
   languageName: node
   linkType: hard
 
@@ -7853,7 +7877,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^18.3.1":
+"react-dom@npm:^18.2, react-dom@npm:^18.3.1":
   version: 18.3.1
   resolution: "react-dom@npm:18.3.1"
   dependencies:
@@ -8034,7 +8058,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^18.3.1":
+"react@npm:^18.2, react@npm:^18.3.1":
   version: 18.3.1
   resolution: "react@npm:18.3.1"
   dependencies:
@@ -8105,7 +8129,7 @@ __metadata:
     "@types/papaparse": "npm:^5.3.16"
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     papaparse: "npm:^5.5.3"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -8285,7 +8309,7 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     classnames: "npm:^2.5.1"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -8554,7 +8578,7 @@ __metadata:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     comlink: "npm:^4.4.2"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     roughjs: "npm:^4.6.6"
@@ -8567,7 +8591,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.1.0"
@@ -8841,7 +8865,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.7"
     blurhash: "npm:^2.0.5"
     classnames: "npm:^2.5.1"
-    framer-plugin: "npm:^3.3.2"
+    framer-plugin: "npm:^3.5.2"
     react: "npm:^18.3.1"
     react-blurhash: "npm:^0.3.0"
     react-dom: "npm:^18.3.1"

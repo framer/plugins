@@ -13,6 +13,7 @@ import { type EventMap, TypedEventEmitter } from "../event-emitter"
 import { stripMarkup } from "./strip-markup"
 import {
     type IndexableNode,
+    type IndexCodeFileEntry,
     type IndexEntry,
     type IndexNodeRootNode,
     includedAttributes,
@@ -218,6 +219,38 @@ export class GlobalSearchIndexer {
         }
     }
 
+    private async processCodeFiles(currentIndexRun: number) {
+        const allFiles = await framer.getCodeFiles()
+
+        const batch: IndexCodeFileEntry[] = []
+        for (const file of allFiles) {
+            if (this.abortRequested) break
+
+            const text = file.content
+            if (!text || text.length === 0) continue
+
+            batch.push({
+                id: file.id,
+                type: "CodeFile",
+                nodeId: file.id,
+                text,
+                rootNodeId: file.id,
+                rootNodeName: file.name,
+                rootNodeType: "CodeFile",
+                addedInIndexRun: currentIndexRun,
+            })
+
+            if (batch.length >= this.batchSize) {
+                await this.db.upsertEntries(batch)
+                batch.length = 0
+            }
+        }
+
+        if (batch.length > 0) {
+            await this.db.upsertEntries(batch)
+        }
+    }
+
     async start() {
         // XXX: The indexer has no "locking mechanism" to prevent multiple instances from running at the same time in multiple tabs.
         try {
@@ -246,6 +279,7 @@ export class GlobalSearchIndexer {
             await Promise.all([
                 this.processNodes(currentIndexRun, rootNodesWithoutCurrentRoot),
                 this.processCollections(currentIndexRun),
+                this.processCodeFiles(currentIndexRun),
             ])
 
             // this isn't a unnecassary static expression, as the value could change during the async loop

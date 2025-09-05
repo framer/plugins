@@ -1,4 +1,10 @@
-import type { IndexCollectionItemEntry, IndexEntry, IndexNodeEntry, RootNodeType } from "../indexer/types"
+import type {
+    IndexCodeFileEntry,
+    IndexCollectionItemEntry,
+    IndexEntry,
+    IndexNodeEntry,
+    RootNodeType,
+} from "../indexer/types"
 import type { Range } from "./ranges"
 
 export const enum FilterType {
@@ -27,6 +33,7 @@ export type Filter = RootNodesFilter
 export enum ResultType {
     CollectionItemField = "CollectionItemField",
     Node = "Node",
+    CodeFile = "CodeFile",
 }
 
 export interface BaseResult {
@@ -49,4 +56,9 @@ export interface NodeResult extends BaseResult {
     readonly entry: IndexNodeEntry
 }
 
-export type Result = CollectionItemResult | NodeResult
+export interface CodeFileResult extends BaseResult {
+    readonly type: ResultType.CodeFile
+    readonly entry: IndexCodeFileEntry
+}
+
+export type Result = CollectionItemResult | NodeResult | CodeFileResult

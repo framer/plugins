@@ -11,6 +11,8 @@ vi.mock("framer-plugin", () => ({
         setMenu: vi.fn(),
         getNodesWithType: vi.fn().mockReturnValue([]),
         getCollections: vi.fn().mockReturnValue([]),
+        getCodeFiles: vi.fn().mockResolvedValue([]),
+        getCodeFile: vi.fn().mockResolvedValue(null),
         getProjectInfo: vi.fn().mockResolvedValue({
             id: "test-project-id",
             name: "Test Project",

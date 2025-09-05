@@ -90,6 +90,7 @@ const optionsEnabled = {
     ComponentNode: true,
     WebPageNode: true,
     Collection: true,
+    CodeFile: true,
 }
 
 const defaultSearchOptions = entries(optionsEnabled)
@@ -100,6 +101,7 @@ const optionsMenuLabels = {
     ComponentNode: "Components",
     WebPageNode: "Pages",
     Collection: "Collections",
+    CodeFile: "Code",
 } as const satisfies Record<RootNodeType, string>
 
 const sortedRootNodeTypes = entries(optionsEnabled).sort(([a], [b]) => compareRootNodeTypeByPriority(a, b))

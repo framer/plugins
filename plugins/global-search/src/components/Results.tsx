@@ -9,6 +9,7 @@ import type { RootNodeType } from "../utils/indexer/types"
 import { truncateFromStart } from "../utils/text"
 import { useFocusHandlers } from "../utils/useFocus"
 import { IconArrowRight } from "./ui/IconArrowRight"
+import { IconCode } from "./ui/IconCode"
 import { IconCollection } from "./ui/IconCollection"
 import { IconComponent } from "./ui/IconComponent"
 import { IconWebPage } from "./ui/IconWebPage"
@@ -36,6 +37,8 @@ export function ResultIcon({ rootNodeType }: { rootNodeType: RootNodeType }) {
             return <IconCollection className={defaultIconClassName} />
         case "ComponentNode":
             return <IconComponent className={defaultIconClassName} />
+        case "CodeFile":
+            return <IconCode className={defaultIconClassName} />
         default:
             assertNever(rootNodeType)
     }

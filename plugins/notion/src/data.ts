@@ -111,13 +111,13 @@ export async function syncCollection(
         limit(async () => {
             seenItemIds.add(item.id)
 
-            let skipContent = false
+            let isUnchanged = false
             if (isUnchangedSinceLastSync(item.last_edited_time, lastSynced)) {
                 console.warn({
                     message: `Skipping content update. last updated: ${formatDate(item.last_edited_time)}, last synced: ${lastSynced ? formatDate(lastSynced) : "never"}`,
                     url: item.url,
                 })
-                skipContent = true
+                isUnchanged = true
             }
 
             let slugValue: null | string = null
@@ -135,8 +135,10 @@ export async function syncCollection(
                 const field = fieldsById.get(property.id)
                 if (!field) continue
 
-                const skipFieldContent = skipContent && !fieldTypeChanged.get(field.id)
-                const fieldEntry = getFieldDataEntryForProperty(property, field, skipFieldContent)
+                // Skip field value if the item has not changed and the field type has not changed
+                if (isUnchanged && !fieldTypeChanged.get(field.id)) continue
+
+                const fieldEntry = getFieldDataEntryForProperty(property, field)
                 if (fieldEntry) {
                     fieldData[field.id] = fieldEntry
                 } else {
@@ -195,12 +197,12 @@ export async function syncCollection(
                 return null
             }
 
-            if (fieldsById.has(pageContentProperty.id) && item.id && !skipContent) {
+            if (fieldsById.has(pageContentProperty.id) && item.id && !isUnchanged) {
                 const contentHTML = await getPageBlocksAsRichText(item.id)
                 fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
             }
 
-            if (fieldsById.has(pageCoverProperty.id) && !skipContent) {
+            if (fieldsById.has(pageCoverProperty.id) && !isUnchanged) {
                 let coverValue: string | null = null
 
                 if (item.cover) {
@@ -448,8 +450,7 @@ export function fieldsInfoToCollectionFields(
 
 export function getFieldDataEntryForProperty(
     property: PageObjectResponse["properties"][string],
-    field: ManagedCollectionFieldInput,
-    skipContent: boolean = false
+    field: ManagedCollectionFieldInput
 ): FieldDataEntryInput | null {
     switch (property.type) {
         case "checkbox": {
@@ -522,8 +523,6 @@ export function getFieldDataEntryForProperty(
             return null
         }
         case "files": {
-            if (skipContent) return null
-
             if (field.type === "array") {
                 const imageField = field.fields[0]
 

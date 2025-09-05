@@ -205,6 +205,7 @@ function getFieldDataEntryInputForField(
             return { type: "multiCollectionReference", value: referencedIds }
         }
 
+        case "array":
         case "divider":
         case "unsupported":
         case "array":
@@ -450,7 +451,9 @@ export async function importCSV(collection: Collection, result: ImportResult) {
     }
 
     const finalMessage = messages.join(". ")
-    framer.closePlugin(messages.length > 1 ? finalMessage + "." : finalMessage || "Successfully imported Collection")
+    void framer.closePlugin(
+        messages.length > 1 ? finalMessage + "." : finalMessage || "Successfully imported Collection"
+    )
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

@@ -205,6 +205,7 @@ function getFieldDataEntryInputForField(
             return { type: "multiCollectionReference", value: referencedIds }
         }
 
+        case "array":
         case "divider":
         case "unsupported":
             return new ConversionError(`Unsupported field type “${field.type}”`)
@@ -445,7 +446,7 @@ export async function importCSV(collection: Collection, result: ImportResult) {
     }
 
     const finalMessage = messages.join(". ")
-    await framer.closePlugin(
+    void framer.closePlugin(
         messages.length > 1 ? finalMessage + "." : finalMessage || "Successfully imported Collection"
     )
 }

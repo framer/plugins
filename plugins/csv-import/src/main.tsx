@@ -10,13 +10,8 @@ if (!root) throw new Error("Root element not found")
 
 const collection = await framer.getActiveCollection()
 
-if (!collection) {
-    await framer.closePlugin("Please select a Collection to import into")
-    throw new Error("Unreachable")
-}
-
-if (collection.readonly) {
-    await framer.closePlugin("CSV Import can only be used on writable Collections")
+if (collection && collection.managedBy !== "user") {
+    void framer.closePlugin("CSV Import can only be used on user-editable collections")
     throw new Error("Unreachable")
 }
 

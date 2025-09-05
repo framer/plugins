@@ -147,9 +147,13 @@ export function App({ collection }: { collection: Collection | null }) {
         })
 
         const task = async () => {
+            // Only load collections if opened without a collection already selected
+            if (collection) return
+
             try {
                 const collections = await framer.getCollections()
-                setCollections(collections)
+                const writableCollections = collections.filter(collection => !collection.readonly)
+                setCollections(writableCollections)
             } catch (error) {
                 console.error(error)
                 framer.notify("Failed to load collections", { variant: "error" })
@@ -380,6 +384,7 @@ export function App({ collection }: { collection: Collection | null }) {
                         </div>
                     </div>
 
+                    {/* Show collection dropdown if opened without a collection already selected */}
                     {!collection && (
                         <select
                             className="collection-select"

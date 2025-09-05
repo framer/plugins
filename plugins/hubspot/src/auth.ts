@@ -103,7 +103,7 @@ class Auth {
             "To fully remove the integration, uninstall the Framer app from the HubSpot integrations dashboard.",
             { durationMs: 5000 }
         )
-        window.location.reload()
+        window.location.pathname = "/"
     }
 
     public readonly tokens = {

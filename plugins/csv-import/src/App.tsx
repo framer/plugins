@@ -152,7 +152,7 @@ export function App({ collection }: { collection: Collection | null }) {
 
             try {
                 const collections = await framer.getCollections()
-                const writableCollections = collections.filter(collection => !collection.readonly)
+                const writableCollections = collections.filter(collection => collection.managedBy === "user")
                 setCollections(writableCollections)
             } catch (error) {
                 console.error(error)
@@ -161,7 +161,7 @@ export function App({ collection }: { collection: Collection | null }) {
         }
 
         void task()
-    }, [])
+    }, [collection])
 
     useEffect(() => {
         if (itemsWithConflict.length === 0) {
@@ -225,7 +225,9 @@ export function App({ collection }: { collection: Collection | null }) {
     useEffect(() => {
         if (!selectedCollection) return
         if (!isAllowedToAddItems) return
-        if (!form.current) return
+
+        const formElement = form.current
+        if (!formElement) return
 
         const handleDragOver = (event: DragEvent) => {
             event.preventDefault()
@@ -249,17 +251,17 @@ export function App({ collection }: { collection: Collection | null }) {
             const dataTransfer = new DataTransfer()
             dataTransfer.items.add(file)
             input.files = dataTransfer.files
-            form.current?.requestSubmit()
+            formElement.requestSubmit()
         }
 
-        form.current.addEventListener("dragover", handleDragOver)
-        form.current.addEventListener("dragleave", handleDragLeave)
-        form.current.addEventListener("drop", handleDrop)
+        formElement.addEventListener("dragover", handleDragOver)
+        formElement.addEventListener("dragleave", handleDragLeave)
+        formElement.addEventListener("drop", handleDrop)
 
         return () => {
-            form.current?.removeEventListener("dragover", handleDragOver)
-            form.current?.removeEventListener("dragleave", handleDragLeave)
-            form.current?.removeEventListener("drop", handleDrop)
+            formElement.removeEventListener("dragover", handleDragOver)
+            formElement.removeEventListener("dragleave", handleDragLeave)
+            formElement.removeEventListener("drop", handleDrop)
         }
     }, [isAllowedToAddItems, selectedCollection])
 

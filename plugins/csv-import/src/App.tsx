@@ -145,11 +145,13 @@ export function App({ collection }: { collection: Collection | null }) {
             height: 330,
             resizable: false,
         })
+    }, [])
+
+    useEffect(() => {
+        // Only load collections if opened without a collection already selected
+        if (collection) return
 
         const task = async () => {
-            // Only load collections if opened without a collection already selected
-            if (collection) return
-
             try {
                 const collections = await framer.getCollections()
                 const writableCollections = collections.filter(collection => collection.managedBy === "user")

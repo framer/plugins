@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-condition,@typescript-eslint/no-unsafe-function-type,@typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-unnecessary-condition,@typescript-eslint/no-unsafe-function-type */
 "use strict"
 
 // turns on override logs
@@ -322,14 +322,15 @@ document.addEventListener("readystatechange", () => {
 })
 
 // #region GTM override
-function wrapDataLayerPush(push: DataLayer["push"], dataLayer: DataLayer) {
+function wrapDataLayerPush(push: DataLayer["push"]) {
     // Must be a (non-async) function, not an arrow function, because we need to bind the original `this` context
     // the GTM dataLayer push function returns `true` if the push was successful, we just assume it is.
     // The `...args` spread is needed so the call results in the exactly same result as the original.
-    return function yieldingPush(...args: object[]) {
-        void yieldUnlessUrgent(true).then(function innerPush() {
-            // In case we override the native Array#push here, we need to set the original array as `this` to not cause runtime errors
-            push.apply(dataLayer, args)
+    // The function syntax is important here so we keep the correct `this`.
+    return function yieldingPush(this: DataLayer, ...args: object[]) {
+        void yieldUnlessUrgent(true).then(() => {
+            // The arrow FN is important here so we keep the correct `this`.
+            push.apply(this, args)
         })
         return true
     }
@@ -353,7 +354,7 @@ function defineCustomDataLayerPush(dataLayer: DataLayer) {
             if (DEBUG) console.log("set dataLayer.push", value)
 
             if (value === mostRecentPushWrapper) return // skip for `window.dataLayer = window.dataLayer||[]`
-            mostRecentPushWrapper = value ? wrapDataLayerPush(value as DataLayer["push"], dataLayer) : undefined
+            mostRecentPushWrapper = value ? wrapDataLayerPush(value as DataLayer["push"]) : undefined
         },
     })
     Object.defineProperty(dataLayer, "__f", {
@@ -403,40 +404,60 @@ const gtmObserver = new MutationObserver(() => {
 gtmObserver.observe(document.documentElement, { childList: true, subtree: true })
 
 // #region History/submit wrapper override
-function wrapListener<T extends object>(target: T, method: keyof T, value: Function) {
-    // @ts-expect-error TS(2339): Prototype chain call. We try __proto__ first, as this will usually be the original method.
-    const originalMethod: Function = (target.__proto__ as unknown as T)[method] ?? (target[method] as Function)
+function callOriginalMethod(
+    this: unknown,
+    originalMethod: Function,
+    args: unknown[],
+    callIfFirstArgIsntObject = false
+) {
+    const firstArg = args[0] ?? this
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (...args: [data: object, ...args: any[]]) => {
+    const argIsObject = firstArg != null && typeof firstArg === "object"
+
+    if (argIsObject && !("__f" in firstArg)) {
+        originalMethod.apply(this, args)
+
+        // @ts-expect-error TS(2339): Flag to indicate that the native method was called
+        firstArg.__f = true
+    } else if (!argIsObject && callIfFirstArgIsntObject) {
+        // If for some reason, we haven't called the original method yet, we call it here.
+        originalMethod.apply(this, args)
+    }
+}
+
+function wrapListener(originalMethod: Function, value: Function) {
+    // the function syntax is important here so we keep the correct `this`.
+    return function yieldingListener(this: unknown, ...args: [data: object, ...args: unknown[]]) {
         if (DEBUG) {
-            console.log("Yielding for", method)
-            console.timeStamp(method as string)
+            console.log("Yielding for", originalMethod)
+            console.timeStamp(originalMethod as unknown as string)
         }
 
         // We first call the original: This optimizes for UX & correctness of React components.
         // e.g., for pushState, when a component renders on a new route, it might set state and/or read from the URL. If the URL isn't
         // accurate, it might lead to wrong behavior.
         // We don't want to call the underlying native method twice (or multiple times), so we add a
-        // flag to the data object.
-        if (typeof args[0] === "object" && !("__f" in args[0])) {
-            originalMethod.apply(target, args)
-
-            // @ts-expect-error TS(2339): Flag to indicate that the native method was called
-            args[0].__f = true
-        }
+        // flag to the data object or `this`.
+        callOriginalMethod.call(this, originalMethod, args)
 
         // If `method` is overriden N times, it creates N yield points (as overrides might be chained)
         void yieldUnlessUrgent().then(() => {
-            value.apply(target, args)
+            // The arrow FN is important here so we keep the correct `this`.
+            value.apply(this, args)
         })
     }
 }
 function overrideListener<T extends object>(target: T, method: keyof T) {
-    // The initial value is a noop, so that the first override doesn't call the native method.
-    // We still need to set it to a function, so that the `get` function returns a function that is
-    // used if nothing ever overrides it.
-    let mostRecentWrapper: Function | undefined = wrapListener(target, method, () => {})
+    // @ts-expect-error TS(2339): Prototype chain call. We try __proto__ first, as this will usually be the original method.
+    const originalMethod: Function = (target.__proto__ as unknown as T)[method] ?? (target[method] as Function)
+
+    let mostRecentWrapper: Function | undefined = wrapListener(
+        originalMethod,
+        // The function syntax is important here so we keep the correct `this`.
+        function firstOverride(this: unknown, ...args: [data: object, ...args: unknown[]]) {
+            callOriginalMethod.call(this, originalMethod, args, true)
+        }
+    )
 
     Object.defineProperty(target, method, {
         enumerable: true,
@@ -447,7 +468,7 @@ function overrideListener<T extends object>(target: T, method: keyof T) {
             if (DEBUG) console.log(`set ${String(method)}`, target, value)
 
             if (value === mostRecentWrapper) return
-            mostRecentWrapper = value ? wrapListener(target, method, value as Function) : undefined
+            mostRecentWrapper = value ? wrapListener(originalMethod, value as Function) : undefined
         },
     })
 }

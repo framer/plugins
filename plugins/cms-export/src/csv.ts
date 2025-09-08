@@ -54,9 +54,15 @@ function isFieldSupported(field: Field): field is SupportedField {
     }
 }
 
-export function getDataForCSV(slugFieldName: string | null, fields: Field[], items: CollectionItem[]): Rows {
+export function getDataForCSV(
+    slugFieldName: string | null,
+    fields: Field[],
+    items: CollectionItem[],
+    limit?: number
+): Rows {
     const rows: Rows = []
     const supportedFields = fields.filter(isFieldSupported)
+    const limitedItems = typeof limit === "number" ? items.slice(0, limit) : items
     const hasDraftItems = items.some(item => item.draft)
 
     // Add header row with slug field at the start.
@@ -78,7 +84,7 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
     rows.push(header)
 
     // Add all the data rows.
-    for (const item of items) {
+    for (const item of limitedItems) {
         const columns: Columns = []
 
         // Add the slug cell.

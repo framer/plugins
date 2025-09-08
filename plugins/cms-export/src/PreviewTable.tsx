@@ -6,6 +6,8 @@ import { getDataForCSV } from "./csv"
 
 import "./PreviewTable.css"
 
+const PREVIEW_ROW_LIMIT = 25
+
 const cellTitleOverrides: Record<string, string> = {
     ":draft": "Is Draft?",
 }
@@ -32,7 +34,7 @@ export function PreviewTable({ collection }: Props) {
             const fields = await collection.getFields()
             const items = await collection.getItems()
 
-            setPreviewCSV(getDataForCSV(collection.slugFieldName, fields, items))
+            setPreviewCSV(getDataForCSV(collection.slugFieldName, fields, items, PREVIEW_ROW_LIMIT))
         }
 
         const resize = () => {
@@ -77,7 +79,7 @@ export function PreviewTable({ collection }: Props) {
                                 <tr key={`${rowIndex}`}>
                                     {row.map((cell, columnIndex) => (
                                         <td key={`${rowIndex}-${columnIndex}`} title={cell}>
-                                            {cell}
+                                            {getFirstLine(cell)}
                                         </td>
                                     ))}
                                 </tr>
@@ -92,4 +94,8 @@ export function PreviewTable({ collection }: Props) {
             <div className="preview-table-border" />
         </div>
     )
+}
+
+function getFirstLine(text: string) {
+    return text.split("\n", 2)[0] || text
 }

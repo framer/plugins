@@ -9,7 +9,7 @@ const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
 
 import.meta.hot?.dispose(() => {
-    void framer.closePlugin()
+    framer.closePlugin()
 })
 
 void framer.showUI({

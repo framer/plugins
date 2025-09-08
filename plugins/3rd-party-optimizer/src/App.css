@@ -1,0 +1,16 @@
+@import "tailwindcss";
+@import "framer-plugin/framer.css" layer(base);
+
+@layer base {
+    input,
+    button,
+    textarea,
+    select {
+        padding: initial;
+    }
+
+    p {
+        color: var(--framer-color-text-tertiary);
+        text-align: center;
+    }
+}

@@ -206,6 +206,7 @@ async function getItems(
                 case "image":
                 case "file":
                 case "enum":
+                case "array":
                     throw new Error(`${field.type} field is not supported.`)
                 default:
                     assertNever(field)
@@ -267,7 +268,7 @@ export async function syncExistingCollection(
     }
 
     if (!framer.isAllowedTo(...syncMethods)) {
-        await framer.closePlugin("You are not allowed to sync this collection.", { variant: "error" })
+        framer.closePlugin("You are not allowed to sync this collection.", { variant: "error" })
         throw new Error("Unreachable")
     }
 

@@ -35,5 +35,5 @@ try {
     )
 } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
-    void framer.closePlugin(message, { variant: "error" })
+    framer.closePlugin(message, { variant: "error" })
 }

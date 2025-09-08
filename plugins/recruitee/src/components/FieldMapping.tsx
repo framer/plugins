@@ -214,7 +214,7 @@ export function FieldMapping({ companyId, token, collection, dataSource, initial
             .then(() => {
                 syncCollection(companyId, token, collection, dataSource, fieldsToSync, selectedSlugField)
                     .then(() => {
-                        void framer.closePlugin("Synchronization successful", { variant: "success" })
+                        framer.closePlugin("Synchronization successful", { variant: "success" })
                     })
                     .catch((error: unknown) => {
                         console.error(error)

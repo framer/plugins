@@ -26,7 +26,7 @@ export function App() {
             const mode = framer.mode
             if (mode === "image" || mode === "editImage") {
                 await framer.setImage({ image: imageData, name: "selfie" })
-                await framer.closePlugin()
+                framer.closePlugin()
             } else {
                 await framer.addImage({ image: imageData, name: "selfie" })
             }

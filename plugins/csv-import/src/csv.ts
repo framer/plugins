@@ -207,7 +207,12 @@ function getFieldDataEntryInputForField(
 
         case "divider":
         case "unsupported":
+        case "array":
             return new ConversionError(`Unsupported field type “${field.type}”`)
+
+        default:
+            field satisfies never
+            return new ConversionError("This should not happen")
     }
 }
 
@@ -445,9 +450,7 @@ export async function importCSV(collection: Collection, result: ImportResult) {
     }
 
     const finalMessage = messages.join(". ")
-    await framer.closePlugin(
-        messages.length > 1 ? finalMessage + "." : finalMessage || "Successfully imported Collection"
-    )
+    framer.closePlugin(messages.length > 1 ? finalMessage + "." : finalMessage || "Successfully imported Collection")
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

@@ -1,0 +1,27 @@
+{
+    "name": "3rd-party-optimizer",
+    "private": true,
+    "version": "1.0.1",
+    "type": "module",
+    "scripts": {
+        "dev": "VITE_CONFIG_PATH=$(pwd)/vite.config.ts run g:dev",
+        "build": "VITE_CONFIG_PATH=$(pwd)/vite.config.ts run g:build",
+        "check-biome": "run g:check-biome",
+        "check-eslint": "run g:check-eslint",
+        "preview": "VITE_CONFIG_PATH=$(pwd)/vite.config.ts run g:preview",
+        "pack": "npx framer-plugin-tools@latest pack",
+        "check-typescript": "run g:check-typescript"
+    },
+    "dependencies": {
+        "framer-plugin": "^3.5.2",
+        "react": "^18.2",
+        "react-dom": "^18.2"
+    },
+    "devDependencies": {
+        "@framer/vite-config": "workspace:*",
+        "@types/node": "^22",
+        "@types/react": "^18.2",
+        "@types/react-dom": "^18.2",
+        "esbuild": "^0.25.9"
+    }
+}

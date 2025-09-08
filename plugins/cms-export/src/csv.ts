@@ -46,6 +46,7 @@ function isFieldSupported(field: Field): field is SupportedField {
 
         case "divider":
         case "unsupported":
+        case "array":
             return false
 
         default:
@@ -147,6 +148,10 @@ export function getDataForCSV(slugFieldName: string | null, fields: Field[], ite
                 case "number": {
                     columns.push(fieldData.value === undefined ? "" : fieldData.value.toString())
                     continue
+                }
+
+                case "array": {
+                    throw new Error(`Array field ${field.name} is not supported`)
                 }
 
                 default: {

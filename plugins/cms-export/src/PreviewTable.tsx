@@ -1,6 +1,5 @@
 import type { Collection } from "framer-plugin"
 
-import { framer } from "framer-plugin"
 import { useEffect, useRef, useState } from "react"
 import { getDataForCSV } from "./csv"
 
@@ -72,8 +71,8 @@ export function PreviewTable({ collection }: Props) {
                             return (
                                 <tr key={`${rowIndex}`}>
                                     {row.map((cell, columnIndex) => (
-                                        <td key={`${rowIndex}-${columnIndex}`} title={limitTitle(cell)}>
-                                            {getFirstLine(cell)}
+                                        <td key={`${rowIndex}-${columnIndex}`} title={limitCellTitle(cell)}>
+                                            {limitCellContent(cell)}
                                         </td>
                                     ))}
                                 </tr>
@@ -90,12 +89,14 @@ export function PreviewTable({ collection }: Props) {
     )
 }
 
-function getFirstLine(text: string) {
-    return text.split("\n", 2)[0] || text
+function limitCellContent(text: string) {
+    if (text.length <= 100) return text
+
+    return `${text.substring(0, 100)}…`
 }
 
-function limitTitle(text: string) {
+function limitCellTitle(text: string) {
     if (text.length <= 500) return text
 
-    return text.substring(0, 500) + "…"
+    return `${text.substring(0, 500)}…`
 }

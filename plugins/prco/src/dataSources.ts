@@ -358,13 +358,30 @@ const MediaKitDataSource = createDataSource(
         { id: "total_size", name: "Total Size", type: "number" },
         { id: "is_locked", name: "Is Locked", type: "boolean" },
         { id: "is_password_protected", name: "Is Password Protected", type: "boolean" },
-        // { // multiCollectionReference doesn't support multiple collections (images, movies)
-        //     id: "medias",
-        //     name: MediaDataSource.name,
-        //     type: "multiCollectionReference",
-        //     dataSourceId: MediaDataSource.name,
-        //     collectionId: "",
-        // },
+        {
+            key: "media",
+            id: "images",
+            name: "Images",
+            type: "multiCollectionReference",
+            dataSourceId: ImageDataSource.name,
+            collectionId: "",
+            getValue: value => {
+                const parsed = v.parse(v.array(MediaInfoSchema), value)
+                return parsed.filter(item => item.type === "image").map(item => item.id)
+            },
+        },
+        {
+            key: "media",
+            id: "movies",
+            name: "Movies",
+            type: "multiCollectionReference",
+            dataSourceId: MovieDataSource.name,
+            collectionId: "",
+            getValue: value => {
+                const parsed = v.parse(v.array(MediaInfoSchema), value)
+                return parsed.filter(item => item.type === "movie").map(item => item.id)
+            },
+        },
     ]
 )
 
@@ -435,7 +452,7 @@ const PressReleaseDataSource = createDataSource(
         },
         { id: "permalink", name: "Permalink", type: "string" },
         { id: "full_url", name: "Full URL", type: "link" },
-        { id: "state", name: "State", type: "string" }, // ideally be a "enum" but API is not documented
+        { id: "state", name: "State", type: "enum", cases: [{ id: "published", name: "Published" }] }, // ideally be a "enum" but API is not documented
         { id: "pdf", name: "PDF", type: "link" },
         { id: "show_in_timeline", name: "Show In Timeline", type: "boolean" },
         { id: "show_boilerplate_text", name: "Show Boilerplate Text", type: "boolean" },

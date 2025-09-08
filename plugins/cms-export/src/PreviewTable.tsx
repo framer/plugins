@@ -24,12 +24,6 @@ export function PreviewTable({ collection }: Props) {
     const [showGradient, setShowGradient] = useState(false)
 
     useEffect(() => {
-        void framer.showUI({
-            width: 340,
-            height: 370,
-            resizable: false,
-        })
-
         const load = async () => {
             const fields = await collection.getFields()
             const items = await collection.getItems()
@@ -78,7 +72,7 @@ export function PreviewTable({ collection }: Props) {
                             return (
                                 <tr key={`${rowIndex}`}>
                                     {row.map((cell, columnIndex) => (
-                                        <td key={`${rowIndex}-${columnIndex}`} title={cell}>
+                                        <td key={`${rowIndex}-${columnIndex}`} title={limitTitle(cell)}>
                                             {getFirstLine(cell)}
                                         </td>
                                     ))}
@@ -98,4 +92,10 @@ export function PreviewTable({ collection }: Props) {
 
 function getFirstLine(text: string) {
     return text.split("\n", 2)[0] || text
+}
+
+function limitTitle(text: string) {
+    if (text.length <= 500) return text
+
+    return text.substring(0, 500) + "…"
 }

@@ -51,16 +51,16 @@ export function SelectDataSource({
 
     return (
         <main className="framer-hide-scrollbar setup">
-            {<img src={hero} alt="PrCo Hero" />}
+            {<img src={hero} alt="PR.co Hero" />}
 
             <form onSubmit={handleSubmit}>
                 <label>
-                    <p>Press Room Id</p>
+                    <p>Press Room ID</p>
                     <input
                         id="pressRoomId"
                         type="text"
                         required
-                        placeholder="Enter Room Id…"
+                        placeholder="Enter Room ID…"
                         value={pressRoomId}
                         onChange={event => {
                             setPressRoomId(event.target.value)

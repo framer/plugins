@@ -207,11 +207,6 @@ form {
     pointer-events: none;
 }
 
-input[type="checkbox"]:checked {
-    background-color: #0c2920;
-    border-color: #0c2920;
-}
-
 .setup,
 .mapping {
     width: 100%;

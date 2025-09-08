@@ -219,12 +219,19 @@ async function getItems(
                     case "file": {
                         const url = v.is(StringifiableSchema, value) ? String(value) : ""
 
+                        if (!url) break
+
                         let validUrl: string | null = null
 
                         // prevent breaking if image is not valid
                         try {
-                            const uploadedImage = await framer.uploadImage({ image: url })
-                            validUrl = uploadedImage.url
+                            if (field.type === "image") {
+                                const uploadedImage = await framer.uploadImage({ image: url })
+                                validUrl = uploadedImage.url
+                            } else {
+                                const uploadedFile = await framer.uploadFile({ file: url })
+                                validUrl = uploadedFile.url
+                            }
                         } catch (error) {
                             console.error(error)
                         }
@@ -245,7 +252,7 @@ async function getItems(
                         let validUrls: string[] = []
                         try {
                             const uploadedImages = await framer.uploadImages(
-                                parsedValue.map((url: string) => ({ image: url }))
+                                parsedValue.filter(url => url).map((url: string) => ({ image: url }))
                             )
                             validUrls = uploadedImages.map(image => image.url)
                         } catch (error) {
@@ -266,8 +273,20 @@ async function getItems(
 
                         break
                     }
-                    case "enum":
-                        throw new Error(`${field.type} field is not supported.`)
+                    case "enum": {
+                        const parsedValue = v.parse(v.string(), value)
+
+                        if (field.cases.find(item => item.id === parsedValue)?.id) {
+                            fieldData[field.id] = {
+                                type: "enum",
+                                value: parsedValue,
+                            }
+                        } else {
+                            console.error(`Invalid enum value for: ${field.name}: ${parsedValue}`)
+                        }
+
+                        break
+                    }
                     default:
                         assertNever(
                             field,

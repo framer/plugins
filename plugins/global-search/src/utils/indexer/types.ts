@@ -49,7 +49,15 @@ export interface IndexCollectionItemEntry extends IndexEntryBase {
     readonly text: string
 }
 
-export type IndexEntry = IndexNodeEntry | IndexCollectionItemEntry
+export interface IndexCodeFileEntry extends IndexEntryBase {
+    readonly type: "CodeFile"
+    readonly nodeId: string
+    readonly rootNodeName: string
+    readonly rootNodeType: "CodeFile"
+    readonly text: string
+}
+
+export type IndexEntry = IndexNodeEntry | IndexCollectionItemEntry | IndexCodeFileEntry
 
 export type RootNodeType = IndexEntry["rootNodeType"]
 

@@ -37,23 +37,32 @@ function executeMatcher(matcher: Matcher, entry: IndexEntry): Result | undefined
     const ranges = findRanges(entry.text, matcher.query, matcher.caseSensitive)
     if (!ranges.length) return undefined
 
-    if (entry.type === "CollectionItemField") {
-        return {
-            id: `${entry.id}-${entry.matchingField.id}`,
-            matchingField: entry.matchingField,
-            text: entry.text,
-            ranges,
-            entry,
-            type: ResultType.CollectionItemField,
-        }
-    }
-
-    return {
-        id: entry.id,
-        text: entry.text,
-        ranges,
-        entry,
-        type: ResultType.Node,
+    switch (entry.type) {
+        case "CollectionItemField":
+            return {
+                id: `${entry.id}-${entry.matchingField.id}`,
+                type: ResultType.CollectionItemField,
+                entry,
+                matchingField: entry.matchingField,
+                text: entry.text,
+                ranges,
+            }
+        case "CodeFile":
+            return {
+                id: entry.id,
+                type: ResultType.CodeFile,
+                entry,
+                text: entry.text,
+                ranges,
+            }
+        case "TextNode":
+            return {
+                id: entry.id,
+                type: ResultType.Node,
+                entry,
+                text: entry.text,
+                ranges,
+            }
     }
 }
 

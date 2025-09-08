@@ -151,18 +151,31 @@ export function App({ collection }: { collection: Collection | null }) {
         // Only load collections if opened without a collection already selected
         if (collection) return
 
+        const abortController = new AbortController()
+
         const task = async () => {
             try {
                 const collections = await framer.getCollections()
+
+                // Check if component was unmounted before setting state
+                if (abortController.signal.aborted) return
+
                 const writableCollections = collections.filter(collection => collection.managedBy === "user")
                 setCollections(writableCollections)
             } catch (error) {
+                // Only handle error if component is still mounted
+                if (abortController.signal.aborted) return
+
                 console.error(error)
                 framer.notify("Failed to load collections", { variant: "error" })
             }
         }
 
         void task()
+
+        return () => {
+            abortController.abort()
+        }
     }, [collection])
 
     useEffect(() => {

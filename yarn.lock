@@ -2814,7 +2814,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:^18, @types/react@npm:^18.3.24":
+"@types/react@npm:^18, @types/react@npm:^18.3.23, @types/react@npm:^18.3.24":
   version: 18.3.24
   resolution: "@types/react@npm:18.3.24"
   dependencies:
@@ -5930,7 +5930,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.5.2"
+    framer-plugin: "npm:^3.6.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.1.0"

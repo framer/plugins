@@ -94,11 +94,13 @@ export async function syncCollection(
     const fieldsById = new Map(fields.map(field => [field.id, field]))
 
     // Track which fields have had their type changed
-    const fieldTypeChanged = new Map<string, boolean>()
+    const updatedFieldIds = new Set<string>()
     if (existingFields) {
         for (const field of fields) {
             const existingField = existingFields.find(f => f.id === field.id)
-            fieldTypeChanged.set(field.id, !existingField || existingField.type !== field.type)
+            if (!existingField || existingField.type !== field.type) {
+                updatedFieldIds.add(field.id)
+            }
         }
     }
 
@@ -136,7 +138,7 @@ export async function syncCollection(
                 if (!field) continue
 
                 // Skip field value if the item has not changed and the field type has not changed
-                if (isUnchanged && !fieldTypeChanged.get(field.id)) continue
+                if (isUnchanged && !updatedFieldIds.has(field.id)) continue
 
                 const fieldEntry = getFieldDataEntryForProperty(property, field)
                 if (fieldEntry) {

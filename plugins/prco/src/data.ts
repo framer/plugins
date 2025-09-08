@@ -187,12 +187,15 @@ async function getItems(
                         break
                     case "color":
                     case "date":
-                    case "link":
+                    case "link": {
+                        if (!value) break
+
                         fieldData[field.id] = {
                             value: v.is(StringifiableSchema, value) ? String(value) : null,
                             type: field.type,
                         }
                         break
+                    }
                     case "multiCollectionReference": {
                         const ids = []
 
@@ -217,9 +220,9 @@ async function getItems(
                     }
                     case "image":
                     case "file": {
-                        const url = v.is(StringifiableSchema, value) ? String(value) : ""
+                        if (!value) break
 
-                        if (!url) break
+                        const url = v.is(StringifiableSchema, value) ? String(value) : ""
 
                         let validUrl: string | null = null
 

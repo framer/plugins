@@ -7,6 +7,11 @@ import { useCharactersAtlasTexture } from "../hooks/use-characters-atlas-texture
 import { NumberInput } from "../number-input"
 import SegmentedControl from "../segmented-control"
 
+const BOOLEAN_TOGGLE_OPTIONS = [
+    { value: "true", label: "Yes" },
+    { value: "false", label: "No" },
+]
+
 interface Uniforms {
     uTexture: { value: Texture }
     uResolution: { value: Vec2 }
@@ -273,7 +278,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
         if (isFilled) setColorMode(0)
     }, [isFilled])
 
-    function onContextMenu(e: React.MouseEvent<HTMLDivElement>, property: keyof typeof DEFAULT_VALUES) {
+    function showRowContextMenu(e: React.MouseEvent<HTMLDivElement>, property: keyof typeof DEFAULT_VALUES) {
         e.preventDefault()
         e.stopPropagation()
 
@@ -354,7 +359,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
             <div
                 className="gui-row"
                 onContextMenu={e => {
-                    onContextMenu(e, "characters")
+                    showRowContextMenu(e, "characters")
                 }}
             >
                 <label className="gui-label">Characters</label>
@@ -370,7 +375,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
             <div
                 className="gui-row"
                 onContextMenu={e => {
-                    onContextMenu(e, "font")
+                    showRowContextMenu(e, "font")
                 }}
             >
                 <label className="gui-label">Font</label>
@@ -404,7 +409,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
             <div
                 className="gui-row"
                 onContextMenu={e => {
-                    onContextMenu(e, "pixelSize")
+                    showRowContextMenu(e, "pixelSize")
                 }}
             >
                 <label className="gui-label">Size</label>
@@ -421,7 +426,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
             <div
                 className="gui-row"
                 onContextMenu={e => {
-                    onContextMenu(e, "brightness")
+                    showRowContextMenu(e, "brightness")
                 }}
             >
                 <label className="gui-label">Brightness</label>
@@ -438,15 +443,12 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
             <div
                 className="gui-row"
                 onContextMenu={e => {
-                    onContextMenu(e, "isFilled")
+                    showRowContextMenu(e, "isFilled")
                 }}
             >
                 <label className="gui-label">Fill</label>
                 <SegmentedControl
-                    items={[
-                        { value: "true", label: "Yes" },
-                        { value: "false", label: "No" },
-                    ]}
+                    items={BOOLEAN_TOGGLE_OPTIONS}
                     value={isFilled ? "true" : "false"}
                     onChange={value => {
                         setIsFilled(value === "true")
@@ -458,7 +460,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                 <div
                     className="gui-row"
                     onContextMenu={e => {
-                        onContextMenu(e, "backgroundColor")
+                        showRowContextMenu(e, "backgroundColor")
                     }}
                 >
                     <label className="gui-label">Background</label>
@@ -479,7 +481,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
             <div
                 className="gui-row"
                 onContextMenu={e => {
-                    onContextMenu(e, "colorMode")
+                    showRowContextMenu(e, "colorMode")
                 }}
             >
                 <label className="gui-label">Color Mode</label>
@@ -502,7 +504,7 @@ export const ASCII = forwardRef<ASCIIRef, { gl: OGLRenderingContext }>(function 
                 <div
                     className="gui-row"
                     onContextMenu={e => {
-                        onContextMenu(e, "textColor")
+                        showRowContextMenu(e, "textColor")
                     }}
                 >
                     <label className="gui-label">Text Color</label>

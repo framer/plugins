@@ -6266,6 +6266,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"framer-plugin@npm:^3.6.0":
+  version: 3.6.0
+  resolution: "framer-plugin@npm:3.6.0"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/a84ab5008f90e1b7330037ce41a2ae00c3673d2abdc150748ccaa98de25f8637341dbeb2c2a9dcf000861400ec7a7785113e43037084d108f60607379882d756
+  languageName: node
+  linkType: hard
+
 "framer-plugin@npm:^3.6.0-alpha.1":
   version: 3.6.0-alpha.1
   resolution: "framer-plugin@npm:3.6.0-alpha.1"
@@ -7616,7 +7626,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.5.2"
+    framer-plugin: "npm:^3.6.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.1.0"

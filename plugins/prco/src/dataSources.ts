@@ -39,19 +39,17 @@ async function fetchPrCoData(url: string): Promise<unknown> {
     }
 }
 
-export type PrCoField = ManagedCollectionFieldInput &
-    (
+export type PrCoField = ManagedCollectionFieldInput & {
+    key?: string
+    /** Used to transform the value of the field. Sometimes the value is inside an object, so we need to extract it. */
+    getValue?: (value: unknown) => unknown
+} & (
         | {
-              key?: string
               type: Exclude<ManagedCollectionFieldInput["type"], "collectionReference" | "multiCollectionReference">
-              /** Used to transform the value of the field. Sometimes the value is inside an object, so we need to extract it. */
-              getValue?: (value: unknown) => unknown
               canBeUsedAsSlug?: boolean
           }
         | {
-              key?: string
               type: "collectionReference" | "multiCollectionReference"
-              getValue?: (value: unknown) => unknown
               dataSourceId: string
               supportedCollections?: { id: string; name: string }[]
           }
@@ -82,39 +80,28 @@ const TagDataSource = createDataSource(
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
         { id: "pressroom_id", name: "Press Room ID", type: "string" },
         { id: "description", name: "Description", type: "string" },
-        { id: "layout", name: "Layout", type: "string" }, // ideally be a "enum" but no API documentation
+        {
+            id: "layout",
+            name: "Layout",
+            type: "enum",
+            cases: [{ id: "classic", name: "Classic" }],
+        },
         {
             id: "image",
             name: "Image",
-            type: "array",
-            fields: [
-                {
-                    id: "image_image",
-                    name: "Image",
-                    type: "image",
-                },
-            ],
+            type: "image",
             getValue: value => {
                 const parsed = v.parse(ImageSizesSchema, value)
-
-                return [parsed.large?.url, parsed.medium?.url, parsed.small?.url, parsed.original?.url].filter(v => v)
+                return parsed.original?.url ?? parsed.large?.url ?? parsed.medium?.url ?? parsed.small?.url
             },
         },
         {
             id: "hero_image",
             name: "Hero Image",
-            type: "array",
-            fields: [
-                {
-                    id: "hero_image_image",
-                    name: "Image",
-                    type: "image",
-                },
-            ],
+            type: "image",
             getValue: value => {
                 const parsed = v.parse(ImageSizesSchema, value)
-
-                return [parsed.large?.url, parsed.medium?.url, parsed.small?.url, parsed.original?.url].filter(v => v)
+                return parsed.original?.url ?? parsed.large?.url ?? parsed.medium?.url ?? parsed.small?.url
             },
         },
     ]
@@ -137,7 +124,7 @@ const ClippingDataSource = createDataSource(
     },
     [
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
-        { id: "title", name: "Title", type: "string" },
+        { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
         { id: "pressroom_id", name: "Press Room ID", type: "string" },
         { id: "press_release_id", name: "Press Release ID", type: "string" },
         { id: "state", name: "State", type: "string" },
@@ -160,7 +147,7 @@ const ClippingDataSource = createDataSource(
         {
             id: "linkedin_shares",
             key: "shares",
-            name: "Linkedin Shares",
+            name: "LinkedIn Shares",
             type: "number",
             getValue: value => {
                 const shares = v.parse(SocialSchema, value)
@@ -170,7 +157,7 @@ const ClippingDataSource = createDataSource(
         {
             id: "twitter_shares",
             key: "shares",
-            name: "Twitter Shares",
+            name: "X (Twitter) Shares",
             type: "number",
             getValue: value => {
                 const shares = v.parse(SocialSchema, value)
@@ -204,17 +191,10 @@ const ClippingDataSource = createDataSource(
         {
             id: "sizes",
             name: "Sizes",
-            type: "array",
-            fields: [
-                {
-                    id: "sizes_image",
-                    name: "Image",
-                    type: "image",
-                },
-            ],
+            type: "image",
             getValue: value => {
                 const parsed = v.parse(ImageSizesSchema, value)
-                return [parsed.original?.url, parsed.thumbnail?.url].filter(v => v)
+                return parsed.original?.url ?? parsed.thumbnail?.url
             },
         },
         {
@@ -248,7 +228,6 @@ const ClippingDataSource = createDataSource(
             },
         },
         { id: "permalink", name: "Permalink", type: "string" },
-        { id: "type", name: "Type", type: "string" },
         { id: "private", name: "Private", type: "boolean" },
         { id: "show_iframe", name: "Show iFrame", type: "boolean" },
         { id: "published_at", name: "Published At", type: "date" },
@@ -276,24 +255,16 @@ const ImageDataSource = createDataSource(
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "pressroom_id", name: "Press Room ID", type: "string" },
         { id: "permalink", name: "Permalink", type: "string" },
-        { id: "type", name: "Type", type: "string" },
         { id: "content_type", name: "Content Type", type: "string" },
         { id: "transparent", name: "Transparent", type: "boolean" },
         { id: "file_size", name: "File Size", type: "number" },
         {
             id: "sizes",
             name: "Sizes",
-            type: "array",
-            fields: [
-                {
-                    id: "sizes_image",
-                    name: "Image",
-                    type: "image",
-                },
-            ],
+            type: "image",
             getValue: value => {
                 const parsed = v.parse(ImageSizesSchema, value)
-                return [parsed.large?.url, parsed.medium?.url, parsed.original?.url, parsed.square?.url].filter(v => v)
+                return parsed.original?.url ?? parsed.large?.url ?? parsed.medium?.url ?? parsed.square?.url
             },
         },
     ]
@@ -318,7 +289,6 @@ const MovieDataSource = createDataSource(
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "pressroom_id", name: "Press Room ID", type: "string" },
         { id: "permalink", name: "Permalink", type: "string" },
-        { id: "type", name: "Type", type: "string" },
         { id: "content_type", name: "Content Type", type: "string" },
         { id: "file_size", name: "File Size", type: "number" },
         { id: "url", name: "URL", type: "link" },
@@ -348,27 +318,17 @@ const DocumentsDataSource = createDataSource(
         { id: "title", name: "Title", type: "string" },
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "permalink", name: "Permalink", type: "string" },
-        { id: "type", name: "Type", type: "string" },
         { id: "content_type", name: "Content Type", type: "string" },
-        { id: "has_thumb", name: "Has Thumb", type: "boolean" },
+        { id: "has_thumb", name: "Has Thumbnail", type: "boolean" },
         { id: "file_size", name: "File Size", type: "number" },
         { id: "url", name: "URL", type: "link" },
         {
             id: "sizes",
             name: "Sizes",
-            type: "array",
-            fields: [
-                {
-                    id: "sizes_image",
-                    name: "Image",
-                    type: "image",
-                },
-            ],
+            type: "image",
             getValue: value => {
                 const parsed = v.parse(v.nullable(ImageSizesSchema), value)
-                return [parsed?.large?.url, parsed?.medium?.url, parsed?.original?.url, parsed?.square?.url].filter(
-                    v => v
-                )
+                return parsed?.original?.url ?? parsed?.large?.url ?? parsed?.medium?.url ?? parsed?.square?.url
             },
         },
     ]
@@ -393,7 +353,7 @@ const MediaKitDataSource = createDataSource(
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "description_title", name: "Description Title", type: "string" },
         { id: "description", name: "Description", type: "string" },
-        { id: "category_id", name: "Category Id", type: "number" },
+        { id: "category_id", name: "Category ID", type: "number" },
         { id: "media_count", name: "Media Count", type: "number" },
         { id: "total_size", name: "Total Size", type: "number" },
         { id: "is_locked", name: "Is Locked", type: "boolean" },
@@ -428,7 +388,7 @@ const PressReleaseDataSource = createDataSource(
         { id: "title", name: "Title", type: "string", canBeUsedAsSlug: true },
         { id: "id", name: "ID", type: "string", canBeUsedAsSlug: true },
         { id: "pressroom_id", name: "Press Room ID", type: "string" },
-        { id: "subtitle", name: "Sub Title", type: "string" },
+        { id: "subtitle", name: "Subtitle", type: "string" },
         { id: "release_date", name: "Release Date", type: "date" },
         { id: "release_location", name: "Release Location", type: "string" },
         { id: "language", name: "Language", type: "string" },
@@ -455,11 +415,26 @@ const PressReleaseDataSource = createDataSource(
                 return parsed.map(item => item.id)
             },
         },
-        { id: "summary", name: "Summary", type: "formattedText" },
-        { id: "body_html", name: "Body Html", type: "formattedText" },
+        {
+            id: "summary",
+            name: "Summary",
+            type: "formattedText",
+            getValue: value => {
+                const parsed = v.parse(v.string(), value)
+                return parsed.replaceAll("<p></p>", "")
+            },
+        },
+        {
+            id: "body_html",
+            name: "Body",
+            type: "formattedText",
+            getValue: value => {
+                const parsed = v.parse(v.string(), value)
+                return parsed.replaceAll("<p></p>", "")
+            },
+        },
         { id: "permalink", name: "Permalink", type: "string" },
         { id: "full_url", name: "Full URL", type: "link" },
-        { id: "type", name: "Type", type: "string" },
         { id: "state", name: "State", type: "string" }, // ideally be a "enum" but API is not documented
         { id: "pdf", name: "PDF", type: "link" },
         { id: "show_in_timeline", name: "Show In Timeline", type: "boolean" },
@@ -506,7 +481,12 @@ function createDataSource(
  */
 export function removePrCoKeys(fields: PrCoField[]): ManagedCollectionFieldInput[] {
     return fields.map(originalField => {
-        const { getValue, ...field } = originalField
+        if (originalField.type === "multiCollectionReference" || originalField.type === "collectionReference") {
+            const { getValue, key, dataSourceId, supportedCollections, ...field } = originalField
+            return field
+        }
+
+        const { getValue, key, canBeUsedAsSlug, ...field } = originalField
         return field
     })
 }

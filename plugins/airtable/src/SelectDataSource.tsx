@@ -5,6 +5,14 @@ import type { AirtableBase, AirtableTable, DataSource } from "./data"
 import { getTables, getUserBases } from "./data"
 import { inferFields } from "./fields"
 
+const STATUS_MAP = {
+    "loading-bases": { bases: "Loading…", tables: "Choose…" },
+    "error-bases": { bases: "Error", tables: "Error" },
+    "loading-tables": { bases: "Choose…", tables: "Loading…" },
+    "error-tables": { bases: "Choose…", tables: "Error" },
+    ready: { bases: "Choose…", tables: "Choose…" },
+}
+
 interface SelectDataSourceProps {
     collection: ManagedCollection
     onSelectDataSource: (dataSource: DataSource) => void
@@ -25,6 +33,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
     const lastBaseIdRef = useRef<string>("")
 
     const selectedBase = bases.find(base => base.id === selectedBaseId)
+    const { bases: basesPlaceholderText, tables: tablesPlaceholderText } = STATUS_MAP[status]
 
     const loadBases = async () => {
         setStatus("loading-bases")
@@ -125,32 +134,6 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
     const handleLogout = () => {
         void auth.logout()
     }
-
-    const [basesPlaceholderText, tablesPlaceholderText] = useMemo(() => {
-        let basesText = "Choose…"
-        let tablesText = "Choose…"
-
-        switch (status) {
-            case "loading-bases":
-                basesText = "Loading…"
-                break
-            case "error-bases":
-                basesText = "Error"
-                break
-        }
-
-        switch (status) {
-            case "loading-tables":
-                tablesText = "Loading…"
-                break
-            case "error-bases":
-            case "error-tables":
-                tablesText = "Error"
-                break
-        }
-
-        return [basesText, tablesText]
-    }, [status])
 
     if (status === "error-bases") {
         return (

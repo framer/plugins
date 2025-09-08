@@ -1,5 +1,5 @@
 import { framer, type ManagedCollection } from "framer-plugin"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import auth from "./auth"
 import type { AirtableBase, AirtableTable, DataSource } from "./data"
 import { getTables, getUserBases } from "./data"

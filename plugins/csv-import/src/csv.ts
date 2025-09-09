@@ -208,7 +208,6 @@ function getFieldDataEntryInputForField(
         case "array":
         case "divider":
         case "unsupported":
-        case "array":
             return new ConversionError(`Unsupported field type “${field.type}”`)
 
         default:

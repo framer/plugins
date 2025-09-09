@@ -11,6 +11,8 @@ export function App() {
     const [isLoading, setIsLoading] = useState(true)
     const [collections, setCollections] = useState<Collection[]>([])
     const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
+    const [copyLoading, setCopyLoading] = useState(false)
+    const [exportLoading, setExportLoading] = useState(false)
 
     useEffect(() => {
         void framer.showUI({
@@ -35,13 +37,29 @@ export function App() {
 
     const exportCSV = () => {
         if (!selectedCollection) return
-        void exportCollectionAsCSV(selectedCollection, selectedCollection.name)
+
+        const task = async () => {
+            setExportLoading(true)
+
+            try {
+                await exportCollectionAsCSV(selectedCollection, selectedCollection.name)
+            } catch (error) {
+                console.error("Failed to export CSV:", error)
+                framer.notify("Failed to export CSV", { variant: "error" })
+            }
+
+            setExportLoading(false)
+        }
+
+        void task()
     }
 
     const copyCSVtoClipboard = () => {
         if (!selectedCollection) return
 
         const task = async () => {
+            setCopyLoading(true)
+
             const csv = await convertCollectionToCSV(selectedCollection)
 
             try {
@@ -51,6 +69,8 @@ export function App() {
                 console.error("Failed to copy CSV:", error)
                 framer.notify("Failed to copy CSV to clipboard", { variant: "error" })
             }
+
+            setCopyLoading(false)
         }
 
         void task()
@@ -97,10 +117,10 @@ export function App() {
 
                 <div className="footer-actions">
                     <button disabled={!selectedCollection} onClick={copyCSVtoClipboard}>
-                        Copy
+                        {copyLoading ? <div className="framer-spinner" /> : "Copy"}
                     </button>
                     <button disabled={!selectedCollection} onClick={exportCSV}>
-                        Export
+                        {exportLoading ? <div className="framer-spinner" /> : "Export"}
                     </button>
                 </div>
             </div>

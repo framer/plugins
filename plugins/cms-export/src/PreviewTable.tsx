@@ -1,10 +1,13 @@
 import type { Collection } from "framer-plugin"
 
-import { framer } from "framer-plugin"
 import { useEffect, useRef, useState } from "react"
 import { getDataForCSV } from "./csv"
 
 import "./PreviewTable.css"
+
+const PREVIEW_ROW_LIMIT = 25
+const MAX_CONTENT_LENGTH = 100
+const MAX_TITLE_LENGTH = 500
 
 const cellTitleOverrides: Record<string, string> = {
     ":draft": "Is Draft?",
@@ -22,17 +25,11 @@ export function PreviewTable({ collection }: Props) {
     const [showGradient, setShowGradient] = useState(false)
 
     useEffect(() => {
-        void framer.showUI({
-            width: 340,
-            height: 370,
-            resizable: false,
-        })
-
         const load = async () => {
             const fields = await collection.getFields()
             const items = await collection.getItems()
 
-            setPreviewCSV(getDataForCSV(collection.slugFieldName, fields, items))
+            setPreviewCSV(getDataForCSV(collection.slugFieldName, fields, items, PREVIEW_ROW_LIMIT))
         }
 
         const resize = () => {
@@ -76,8 +73,8 @@ export function PreviewTable({ collection }: Props) {
                             return (
                                 <tr key={`${rowIndex}`}>
                                     {row.map((cell, columnIndex) => (
-                                        <td key={`${rowIndex}-${columnIndex}`} title={cell}>
-                                            {cell}
+                                        <td key={`${rowIndex}-${columnIndex}`} title={limitCellTitle(cell)}>
+                                            {limitCellContent(cell)}
                                         </td>
                                     ))}
                                 </tr>
@@ -92,4 +89,16 @@ export function PreviewTable({ collection }: Props) {
             <div className="preview-table-border" />
         </div>
     )
+}
+
+function limitCellContent(text: string) {
+    if (text.length <= MAX_CONTENT_LENGTH) return text
+
+    return `${text.substring(0, MAX_CONTENT_LENGTH)}…`
+}
+
+function limitCellTitle(text: string) {
+    if (text.length <= MAX_TITLE_LENGTH) return text
+
+    return `${text.substring(0, MAX_TITLE_LENGTH)}…`
 }

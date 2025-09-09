@@ -848,13 +848,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@radix-ui/colors@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "@radix-ui/colors@npm:3.0.0"
-  checksum: 10/bc9ffb01b3964f16482dc278cf6d86d85b73eae7cb94a77018fbd53b103b3d5ec1ecf77882cfbf8892f28c2c6057db8e19bf4d66234ed330a430373b092c5cfe
-  languageName: node
-  linkType: hard
-
 "@radix-ui/number@npm:1.1.1":
   version: 1.1.1
   resolution: "@radix-ui/number@npm:1.1.1"
@@ -2147,28 +2140,6 @@ __metadata:
   version: 1.1.1
   resolution: "@radix-ui/rect@npm:1.1.1"
   checksum: 10/b6c5eb787640775b53dd52fa47218a089f0a0d8220d3ebff079c0b754e1fb82d89b6bdf08a82fd0d59549bdeb52678c0cca091c302da49dcf74c3c989cb55678
-  languageName: node
-  linkType: hard
-
-"@radix-ui/themes@npm:^3.2.1":
-  version: 3.2.1
-  resolution: "@radix-ui/themes@npm:3.2.1"
-  dependencies:
-    "@radix-ui/colors": "npm:^3.0.0"
-    classnames: "npm:^2.3.2"
-    radix-ui: "npm:^1.1.3"
-    react-remove-scroll-bar: "npm:^2.3.8"
-  peerDependencies:
-    "@types/react": "*"
-    "@types/react-dom": "*"
-    react: 16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    react-dom: 16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-    "@types/react-dom":
-      optional: true
-  checksum: 10/e026d86ce301df296524c0891d2e5fcc30906dda75e5f9aa8de259eab9d2fa8ca58897d0c51077bb55f3344e58bb839bdde88251b400c4d8f0c62eb712b6b8a9
   languageName: node
   linkType: hard
 
@@ -4900,8 +4871,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "ascii@workspace:plugins/ascii"
   dependencies:
-    "@radix-ui/react-slider": "npm:^1.3.5"
-    "@radix-ui/themes": "npm:^3.2.1"
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     clsx: "npm:^2.1.1"
@@ -5181,7 +5150,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"classnames@npm:^2.3.2, classnames@npm:^2.5.1":
+"classnames@npm:^2.5.1":
   version: 2.5.1
   resolution: "classnames@npm:2.5.1"
   checksum: 10/58eb394e8817021b153bb6e7d782cfb667e4ab390cb2e9dac2fc7c6b979d1cc2b2a733093955fc5c94aa79ef5c8c89f11ab77780894509be6afbb91dddd79d15
@@ -7724,7 +7693,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"radix-ui@npm:^1.1.3, radix-ui@npm:^1.4.2":
+"radix-ui@npm:^1.4.2":
   version: 1.4.2
   resolution: "radix-ui@npm:1.4.2"
   dependencies:
@@ -7977,7 +7946,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-remove-scroll-bar@npm:^2.3.7, react-remove-scroll-bar@npm:^2.3.8":
+"react-remove-scroll-bar@npm:^2.3.7":
   version: 2.3.8
   resolution: "react-remove-scroll-bar@npm:2.3.8"
   dependencies:

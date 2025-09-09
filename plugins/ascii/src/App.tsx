@@ -1,4 +1,3 @@
-import "@radix-ui/themes/styles.css"
 import cn from "clsx"
 import { framer, type ImageAsset, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -149,6 +148,29 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
         void task()
     }, [toBytes, framerCanvasImage, droppedAsset, isPlaceholder, isAllowedToUpsertImage])
 
+    const onResolutionContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        void framer.showContextMenu(
+            [
+                {
+                    label: "Reset to Default",
+                    enabled: exportSize !== DEFAULT_WIDTH,
+                    onAction: () => {
+                        setExportSize(DEFAULT_WIDTH)
+                    },
+                },
+            ],
+            {
+                location: {
+                    x: e.clientX,
+                    y: e.clientY,
+                },
+            }
+        )
+    }
+
     // resize observer
     useEffect(() => {
         if (!containerRef.current) return
@@ -229,7 +251,7 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                     }}
                     gl={gl}
                 />
-                <div className="gui-row">
+                <div className="gui-row" onContextMenu={onResolutionContextMenu}>
                     <label className="gui-label">Resolution</label>
                     <select
                         value={exportSize}

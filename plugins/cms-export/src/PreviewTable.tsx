@@ -6,6 +6,8 @@ import { getDataForCSV } from "./csv"
 import "./PreviewTable.css"
 
 const PREVIEW_ROW_LIMIT = 25
+const MAX_CONTENT_LENGTH = 100
+const MAX_TITLE_LENGTH = 500
 
 const cellTitleOverrides: Record<string, string> = {
     ":draft": "Is Draft?",
@@ -90,13 +92,13 @@ export function PreviewTable({ collection }: Props) {
 }
 
 function limitCellContent(text: string) {
-    if (text.length <= 100) return text
+    if (text.length <= MAX_CONTENT_LENGTH) return text
 
-    return `${text.substring(0, 100)}…`
+    return `${text.substring(0, MAX_CONTENT_LENGTH)}…`
 }
 
 function limitCellTitle(text: string) {
-    if (text.length <= 500) return text
+    if (text.length <= MAX_TITLE_LENGTH) return text
 
-    return `${text.substring(0, 500)}…`
+    return `${text.substring(0, MAX_TITLE_LENGTH)}…`
 }

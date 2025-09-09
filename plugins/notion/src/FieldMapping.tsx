@@ -1,5 +1,11 @@
 import classNames from "classnames"
-import { framer, type ManagedCollection, type ManagedCollectionField, useIsAllowedTo } from "framer-plugin"
+import {
+    framer,
+    type ManagedCollection,
+    type ManagedCollectionField,
+    type MenuItem,
+    useIsAllowedTo,
+} from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
 import {
     type FieldId,
@@ -13,10 +19,11 @@ import {
     type DataSource,
     fieldsInfoToCollectionFields,
     mergeFieldsInfoWithExistingFields,
+    parseAltTextMappings,
     parseIgnoredFieldIds,
     syncCollection,
 } from "./data"
-import { assert, syncMethods } from "./utils"
+import { syncMethods } from "./utils"
 
 const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
     boolean: "Toggle",
@@ -40,9 +47,12 @@ interface FieldMappingRowProps {
     isAllowedToManage: boolean
     unsupported: boolean
     missingCollection: boolean
+    fieldsInfo: FieldInfo[]
+    ignoredFieldIds: Set<string>
     onToggleIgnored: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
     onFieldTypeChange: (fieldId: string, type: ManagedCollectionField["type"]) => void
+    onAltTextFieldChange?: (fieldId: string, altTextForImageFieldId: string | null) => void
 }
 
 function FieldMappingRow({
@@ -51,13 +61,70 @@ function FieldMappingRow({
     isAllowedToManage,
     unsupported,
     missingCollection,
+    fieldsInfo,
+    ignoredFieldIds,
     onToggleIgnored,
     onNameChange,
     onFieldTypeChange,
+    onAltTextFieldChange,
 }: FieldMappingRowProps) {
     const { id, name, originalName, type, allowedTypes } = fieldInfo
     const isFieldUnavailable = unsupported || missingCollection
     const disabled = isFieldUnavailable || ignored || !isAllowedToManage
+
+    const fieldTypeButtonText = useMemo(() => {
+        if (!type) return "Select type..."
+
+        if (fieldInfo.altTextForImageFieldId) {
+            const targetField = fieldsInfo.find(f => f.id === fieldInfo.altTextForImageFieldId)
+            return `${targetField?.name ?? "Unknown"} Alt Text`
+        }
+
+        return labelByFieldTypeOption[type]
+    }, [type, fieldInfo.altTextForImageFieldId, fieldsInfo])
+
+    const handleFieldTypeClick = async (event: React.MouseEvent) => {
+        if (disabled || allowedTypes.length <= 1) return
+
+        const buttonElement = event.currentTarget as HTMLElement
+        const buttonRect = buttonElement.getBoundingClientRect()
+
+        const menuItems: MenuItem[] = allowedTypes.map(allowedType => ({
+            label: labelByFieldTypeOption[allowedType],
+            checked: type === allowedType && !fieldInfo.altTextForImageFieldId,
+            onAction: () => {
+                onFieldTypeChange(id, allowedType)
+            },
+        }))
+
+        const isCurrentFieldTextBased = type && ["string", "formattedText"].includes(type)
+        const imageFields = fieldsInfo.filter(
+            field => field.id !== id && field.type === "image" && !ignoredFieldIds.has(field.id)
+        )
+
+        if (isCurrentFieldTextBased && imageFields.length > 0) {
+            const altTextSubmenu = imageFields.map(imageField => ({
+                label: imageField.name,
+                checked: fieldInfo.altTextForImageFieldId === imageField.id,
+                onAction: () => {
+                    onAltTextFieldChange?.(id, imageField.id)
+                },
+            }))
+
+            menuItems.push({
+                label: "Alt Text...",
+                submenu: altTextSubmenu,
+            })
+        }
+
+        await framer.showContextMenu(menuItems, {
+            location: {
+                x: buttonRect.left,
+                y: buttonRect.top - 4,
+            },
+            width: buttonRect.width + 8,
+        })
+    }
 
     return (
         <>
@@ -93,27 +160,37 @@ function FieldMappingRow({
                 <div className="unsupported-field">{unsupported ? "Unsupported Field" : "Missing Collection"}</div>
             ) : (
                 <>
-                    <select
-                        className="field-type"
+                    <button
+                        type="button"
+                        className="field-type-button"
                         disabled={disabled || allowedTypes.length <= 1}
-                        value={type ?? ""}
-                        onChange={event => {
-                            const value = allowedTypes.find(type => type === event.target.value)
-                            assert(value, "Invalid field type")
-                            onFieldTypeChange(id, value)
+                        onClick={event => {
+                            void handleFieldTypeClick(event)
                         }}
                     >
-                        {allowedTypes.map(allowedType => (
-                            <option key={allowedType} value={allowedType}>
-                                {labelByFieldTypeOption[allowedType]}
-                            </option>
-                        ))}
-                    </select>
+                        <span className="field-type-button-text">{fieldTypeButtonText}</span>
+                        <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 12 12"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="field-type-button-chevron"
+                        >
+                            <path
+                                d="M3 4.5L6 7.5L9 4.5"
+                                stroke="#999"
+                                strokeWidth="1.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </button>
                     <input
                         type="text"
-                        disabled={disabled}
-                        placeholder={originalName}
-                        value={name}
+                        disabled={disabled || !!fieldInfo.altTextForImageFieldId}
+                        placeholder={fieldInfo.altTextForImageFieldId ? "" : originalName}
+                        value={fieldInfo.altTextForImageFieldId ? "" : name}
                         onChange={event => {
                             onNameChange(id, event.target.value)
                         }}
@@ -136,6 +213,7 @@ interface FieldMappingProps {
     initialSlugFieldId: string | null
     previousLastSynced: string | null
     previousIgnoredFieldIds: string | null
+    previousAltTextMappings: string | null
     databaseIdMap: DatabaseIdMap
 }
 
@@ -145,6 +223,7 @@ export function FieldMapping({
     initialSlugFieldId,
     previousLastSynced,
     previousIgnoredFieldIds,
+    previousAltTextMappings,
     databaseIdMap,
 }: FieldMappingProps) {
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
@@ -176,7 +255,8 @@ export function FieldMapping({
             .then(collectionFields => {
                 if (abortController.signal.aborted) return
 
-                setFieldsInfo(mergeFieldsInfoWithExistingFields(initialFieldsInfo, collectionFields))
+                const altTextMappings = parseAltTextMappings(previousAltTextMappings)
+                setFieldsInfo(mergeFieldsInfoWithExistingFields(initialFieldsInfo, collectionFields, altTextMappings))
                 setStatus("mapping-fields")
             })
             .catch((error: unknown) => {
@@ -189,7 +269,17 @@ export function FieldMapping({
         return () => {
             abortController.abort()
         }
-    }, [initialSlugFieldId, dataSource, collection, initialFieldsInfo])
+    }, [initialSlugFieldId, dataSource, collection, initialFieldsInfo, previousAltTextMappings])
+
+    const changeAltTextField = (fieldId: string, altTextForImageFieldId: string | null) => {
+        setFieldsInfo(prevFieldsInfo => {
+            const updatedFieldInfo = prevFieldsInfo.map((fieldInfo): FieldInfo => {
+                if (fieldInfo.id !== fieldId) return fieldInfo
+                return { ...fieldInfo, type: "string", altTextForImageFieldId }
+            })
+            return updatedFieldInfo
+        })
+    }
 
     const changeFieldName = (fieldId: string, name: string) => {
         setFieldsInfo(prevFieldsInfo => {
@@ -204,7 +294,14 @@ export function FieldMapping({
     const changeFieldType = (fieldId: string, type: ManagedCollectionField["type"]) => {
         setFieldsInfo(prevFieldsInfo => {
             const updatedFieldInfo = prevFieldsInfo.map(fieldInfo => {
-                if (fieldInfo.id !== fieldId) return fieldInfo
+                if (fieldInfo.id !== fieldId) {
+                    if (fieldInfo.altTextForImageFieldId === fieldId) {
+                        return { ...fieldInfo, altTextForImageFieldId: undefined }
+                    }
+
+                    return fieldInfo
+                }
+
                 if (!fieldInfo.allowedTypes.includes(type)) return fieldInfo
                 return { ...fieldInfo, type }
             })
@@ -250,14 +347,14 @@ export function FieldMapping({
                     return
                 }
 
-                await collection.setFields(fieldsToSync)
                 await syncCollection(
                     collection,
                     dataSource,
                     fieldsToSync,
                     slugField,
                     ignoredFieldIds,
-                    previousLastSynced
+                    previousLastSynced,
+                    fieldsInfo
                 )
                 framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
@@ -320,9 +417,12 @@ export function FieldMapping({
                             isAllowedToManage={isAllowedToManage}
                             unsupported={!Array.isArray(fieldInfo.allowedTypes) || fieldInfo.allowedTypes.length === 0}
                             missingCollection={isMissingCollection(fieldInfo, databaseIdMap)}
+                            fieldsInfo={fieldsInfo}
+                            ignoredFieldIds={ignoredFieldIds}
                             onToggleIgnored={toggleFieldIgnoredState}
                             onNameChange={changeFieldName}
                             onFieldTypeChange={changeFieldType}
+                            onAltTextFieldChange={changeAltTextField}
                         />
                     ))}
                 </div>

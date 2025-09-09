@@ -17,6 +17,7 @@ interface AppProps {
     previousLastSynced: string | null
     previousIgnoredFieldIds: string | null
     previousDatabaseName: string | null
+    previousAltTextMappings: string | null
     existingCollectionDatabaseIdMap: DatabaseIdMap
 }
 
@@ -27,6 +28,7 @@ export function App({
     previousLastSynced,
     previousIgnoredFieldIds,
     previousDatabaseName,
+    previousAltTextMappings,
     existingCollectionDatabaseIdMap,
 }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
@@ -146,6 +148,7 @@ export function App({
             initialSlugFieldId={previousSlugFieldId}
             previousLastSynced={previousLastSynced}
             previousIgnoredFieldIds={previousIgnoredFieldIds}
+            previousAltTextMappings={previousAltTextMappings}
             databaseIdMap={databaseIdMap}
         />
     )

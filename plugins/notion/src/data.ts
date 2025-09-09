@@ -71,13 +71,23 @@ export async function getDataSource(databaseId: string, abortSignal?: AbortSigna
 
 export function mergeFieldsInfoWithExistingFields(
     sourceFieldsInfo: readonly FieldInfo[],
-    existingFields: readonly ManagedCollectionFieldInput[]
+    existingFields: readonly ManagedCollectionFieldInput[],
+    altTextMappings?: Record<string, string>
 ): FieldInfo[] {
     return sourceFieldsInfo.map(sourceFieldInfo => {
         const existingField = existingFields.find(existingField => existingField.id === sourceFieldInfo.id)
+
         if (existingField && sourceFieldInfo.allowedTypes.includes(existingField.type)) {
             return { ...sourceFieldInfo, name: existingField.name, type: existingField.type }
         }
+
+        if (altTextMappings) {
+            const altTextForImageFieldId = altTextMappings[sourceFieldInfo.id]
+            if (altTextForImageFieldId) {
+                return { ...sourceFieldInfo, altTextForImageFieldId, type: "string" }
+            }
+        }
+
         return sourceFieldInfo
     })
 }
@@ -85,12 +95,20 @@ export function mergeFieldsInfoWithExistingFields(
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
-    fields: readonly ManagedCollectionFieldInput[],
+    fields: ManagedCollectionFieldInput[],
     slugField: ManagedCollectionFieldInput,
     ignoredFieldIds: Set<string>,
-    lastSynced: string | null
+    lastSynced: string | null,
+    fieldsInfo: FieldInfo[]
 ) {
     const fieldsById = new Map(fields.map(field => [field.id, field]))
+
+    const altTextMappings: Record<string, string> = {}
+    for (const fieldInfo of fieldsInfo) {
+        if (fieldInfo.altTextForImageFieldId) {
+            altTextMappings[fieldInfo.id] = fieldInfo.altTextForImageFieldId
+        }
+    }
 
     const seenItemIds = new Set<string>()
 
@@ -208,6 +226,21 @@ export async function syncCollection(
                 fieldData[pageCoverProperty.id] = { type: "image", value: coverValue }
             }
 
+            for (const [altTextForImageFieldId, imageFieldId] of Object.entries(altTextMappings)) {
+                const imageFieldData = fieldData[imageFieldId]
+                const altTextFieldData = fieldData[altTextForImageFieldId]
+
+                if (imageFieldData?.type === "image" && altTextFieldData?.type === "string") {
+                    fieldData[imageFieldId] = {
+                        ...imageFieldData,
+                        alt: altTextFieldData.value,
+                    }
+                }
+
+                // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+                delete fieldData[altTextForImageFieldId]
+            }
+
             return {
                 id: item.id,
                 slug: slugValue,
@@ -225,6 +258,9 @@ export async function syncCollection(
         itemIdsToDelete.delete(itemId)
     }
 
+    const fieldsToCreate = fields.filter(field => !(field.id in altTextMappings))
+    await collection.setFields(fieldsToCreate)
+
     await collection.removeItems(Array.from(itemIdsToDelete))
     await collection.addItems(items)
 
@@ -237,15 +273,25 @@ export async function syncCollection(
         collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
         collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id),
         collection.setPluginData(PLUGIN_KEYS.DATABASE_NAME, richTextToPlainText(dataSource.database.title)),
+        collection.setPluginData(
+            PLUGIN_KEYS.ALT_TEXT_MAPPINGS,
+            Object.keys(altTextMappings).length > 0 ? JSON.stringify(altTextMappings) : null
+        ),
     ])
 }
 
 const IgnoredFieldIdsSchema = v.array(v.string())
+const AltTextMappingsSchema = v.record(v.string(), v.string())
 
 export function parseIgnoredFieldIds(ignoredFieldIdsStringified: string | null): Set<string> {
     return ignoredFieldIdsStringified
         ? new Set(v.parse(IgnoredFieldIdsSchema, JSON.parse(ignoredFieldIdsStringified)))
         : new Set<string>()
+}
+
+export function parseAltTextMappings(altTextMappingsStringified: string | null): Record<string, string> {
+    if (!altTextMappingsStringified) return {}
+    return v.parse(AltTextMappingsSchema, JSON.parse(altTextMappingsStringified))
 }
 
 export async function syncExistingCollection(
@@ -255,6 +301,7 @@ export async function syncExistingCollection(
     previousIgnoredFieldIds: string | null,
     previousLastSynced: string | null,
     previousDatabaseName: string | null,
+    previousAltTextMappings: string | null,
     databaseIdMap: DatabaseIdMap
 ): Promise<{ didSync: boolean }> {
     const isAllowedToSync = framer.isAllowedTo(...syncMethods)
@@ -267,7 +314,8 @@ export async function syncExistingCollection(
         const existingFields = await collection.getFields()
 
         const dataSourceFieldsInfo = getDatabaseFieldsInfo(dataSource.database, databaseIdMap)
-        const fieldsInfo = mergeFieldsInfoWithExistingFields(dataSourceFieldsInfo, existingFields)
+        const altTextMappings = parseAltTextMappings(previousAltTextMappings)
+        const fieldsInfo = mergeFieldsInfoWithExistingFields(dataSourceFieldsInfo, existingFields, altTextMappings)
         const fields = fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
 
         const slugField = fields.find(field => field.id === previousSlugFieldId)
@@ -280,12 +328,23 @@ export async function syncExistingCollection(
 
         const ignoredFieldIds = parseIgnoredFieldIds(previousIgnoredFieldIds)
 
-        const fieldsToSync = fields.filter(
-            field =>
-                existingFields.some(existingField => existingField.id === field.id) && !ignoredFieldIds.has(field.id)
-        )
+        const fieldsToSync = fields.filter(field => {
+            const isExistingField = existingFields.some(existingField => existingField.id === field.id)
+            const isIgnored = ignoredFieldIds.has(field.id)
+            const isAltTextField = field.id in altTextMappings
 
-        await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds, previousLastSynced)
+            return (isExistingField && !isIgnored) || isAltTextField
+        })
+
+        await syncCollection(
+            collection,
+            dataSource,
+            fieldsToSync,
+            slugField,
+            ignoredFieldIds,
+            previousLastSynced,
+            fieldsInfo
+        )
         return { didSync: true }
     } catch (error) {
         console.error(error)

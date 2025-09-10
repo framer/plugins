@@ -37,6 +37,7 @@ const [
     previousLastSynced,
     previousIgnoredFieldIds,
     previousDatabaseName,
+    previousAltTextMappings,
     existingCollectionDatabaseIdMap,
 ] = await Promise.all([
     activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_ID),
@@ -44,6 +45,7 @@ const [
     activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
     activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS),
     activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_NAME),
+    activeCollection.getPluginData(PLUGIN_KEYS.ALT_TEXT_MAPPINGS),
     getExistingCollectionDatabaseIdMap(),
 ])
 
@@ -54,6 +56,7 @@ const { didSync } = await syncExistingCollection(
     previousIgnoredFieldIds,
     previousLastSynced,
     previousDatabaseName,
+    previousAltTextMappings,
     existingCollectionDatabaseIdMap
 )
 
@@ -71,6 +74,7 @@ if (didSync) {
                 previousLastSynced={previousLastSynced}
                 previousIgnoredFieldIds={previousIgnoredFieldIds}
                 previousDatabaseName={previousDatabaseName}
+                previousAltTextMappings={previousAltTextMappings}
                 existingCollectionDatabaseIdMap={existingCollectionDatabaseIdMap}
             />
         </React.StrictMode>

@@ -18,6 +18,7 @@ export const PLUGIN_KEYS = {
     SLUG_FIELD_ID: "notionPluginSlugId",
     DATABASE_NAME: "notionDatabaseName",
     BEARER_TOKEN: "notionBearerToken",
+    ALT_TEXT_MAPPINGS: "notionPluginAltTextMappings",
 } as const
 
 // This is the most recent date when the page content formatted text importing was updated.
@@ -34,6 +35,7 @@ export interface FieldInfo {
     type: ManagedCollectionField["type"] | null
     allowedTypes: ManagedCollectionField["type"][]
     notionProperty: NotionProperty | null
+    altTextForImageFieldId?: string | null
 }
 
 export type NotionProperty = GetDatabaseResponse["properties"][string]

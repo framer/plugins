@@ -167,6 +167,7 @@ export function FieldMapping({
 
     const [fieldsInfo, setFieldsInfo] = useState(initialFieldsInfo)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(parseIgnoredFieldIds(previousIgnoredFieldIds))
+    const [existingFields, setExistingFields] = useState<ManagedCollectionField[]>([])
 
     useEffect(() => {
         const abortController = new AbortController()
@@ -176,6 +177,7 @@ export function FieldMapping({
             .then(collectionFields => {
                 if (abortController.signal.aborted) return
 
+                setExistingFields(collectionFields)
                 setFieldsInfo(mergeFieldsInfoWithExistingFields(initialFieldsInfo, collectionFields))
                 setStatus("mapping-fields")
             })
@@ -257,7 +259,8 @@ export function FieldMapping({
                     fieldsToSync,
                     slugField,
                     ignoredFieldIds,
-                    previousLastSynced
+                    previousLastSynced,
+                    existingFields
                 )
                 framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {

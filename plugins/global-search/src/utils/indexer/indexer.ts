@@ -76,12 +76,21 @@ export class GlobalSearchIndexer {
 
     private async *crawlNodes(indexRun: number, rootNodes: readonly IndexNodeRootNode[]): AsyncGenerator<IndexEntry[]> {
         let batch: IndexEntry[] = []
+        const measureId = `crawlNodes-${indexRun}-${Date.now()}`
+        performance.mark(`${measureId}-start`)
+        let totalNodesProcessed = 0
+        let totalNodesVisited = 0
 
         for (const rootNode of rootNodes) {
             const rootNodeName = await getNodeName(rootNode)
 
             for await (const node of rootNode.walk()) {
-                if (this.abortRequested) return
+                totalNodesVisited++
+
+                if (this.abortRequested) {
+                    this.logCrawlPerformance(measureId, totalNodesProcessed, totalNodesVisited, rootNodes.length, true)
+                    return
+                }
 
                 if (!isIndexableNode(node) || !node.visible) continue
 
@@ -111,6 +120,8 @@ export class GlobalSearchIndexer {
                     addedInIndexRun: indexRun,
                 })
 
+                totalNodesProcessed++
+
                 if (batch.length === this.batchSize) {
                     yield batch
                     batch = []
@@ -121,6 +132,33 @@ export class GlobalSearchIndexer {
         if (batch.length > 0) {
             yield batch
         }
+
+        this.logCrawlPerformance(measureId, totalNodesProcessed, totalNodesVisited, rootNodes.length, false)
+    }
+
+    private logCrawlPerformance(
+        measureId: string,
+        processed: number,
+        visited: number,
+        rootCount: number,
+        aborted: boolean
+    ) {
+        if (rootCount <= 1) return
+        performance.mark(`${measureId}-end`)
+        performance.measure(measureId, `${measureId}-start`, `${measureId}-end`)
+
+        const measure = performance.getEntriesByName(measureId, "measure")[0]
+        const duration = measure?.duration ?? 0
+        const rate = processed > 0 ? (processed / (duration / 1000)).toFixed(1) : "0"
+
+        console.log(
+            `📊 crawlNodes: ${processed} processed/${visited} visited in ${duration.toFixed(0)}ms (${rate}/s, ${rootCount} roots)${aborted ? " [ABORTED]" : ""}`
+        )
+
+        // Clean up performance entries to avoid memory leaks
+        performance.clearMarks(`${measureId}-start`)
+        performance.clearMarks(`${measureId}-end`)
+        performance.clearMeasures(measureId)
     }
 
     private async *crawlCollections(

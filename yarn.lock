@@ -3676,6 +3676,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "crowdin@workspace:plugins/crowdin"
   dependencies:
+    "@crowdin/crowdin-api-client": "npm:^1.46.0"
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.3.2"

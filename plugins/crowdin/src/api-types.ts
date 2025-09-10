@@ -15,13 +15,3 @@ export const ProjectsSchema = v.object({
 export const StoragesSchema = v.object({
     data: v.nullable(StorageSchema),
 })
-export type Projects = v.InferOutput<typeof ProjectsSchema>
-
-export type CrowdInItem = Projects
-
-export function hasOwnProperty<T extends object, Key extends PropertyKey>(
-    object: T,
-    key: Key
-): object is T & Record<Key, unknown> {
-    return Object.hasOwn(object, key)
-}

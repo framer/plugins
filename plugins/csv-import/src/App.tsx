@@ -124,7 +124,10 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
     )
 }
 
-export function App({ collection }: { collection: Collection }) {
+export function App({ collection }: { collection: Collection | null }) {
+    const [collections, setCollections] = useState<Collection[]>([])
+    const [selectedCollection, setSelectedCollection] = useState<Collection | null>(collection)
+
     const isAllowedToAddItems = useIsAllowedTo("Collection.addItems")
 
     const form = useRef<HTMLFormElement>(null)
@@ -145,6 +148,37 @@ export function App({ collection }: { collection: Collection }) {
     }, [])
 
     useEffect(() => {
+        // Only load collections if opened without a collection already selected
+        if (collection) return
+
+        const abortController = new AbortController()
+
+        const task = async () => {
+            try {
+                const collections = await framer.getCollections()
+
+                // Check if component was unmounted before setting state
+                if (abortController.signal.aborted) return
+
+                const writableCollections = collections.filter(collection => collection.managedBy === "user")
+                setCollections(writableCollections)
+            } catch (error) {
+                // Only handle error if component is still mounted
+                if (abortController.signal.aborted) return
+
+                console.error(error)
+                framer.notify("Failed to load collections", { variant: "error" })
+            }
+        }
+
+        void task()
+
+        return () => {
+            abortController.abort()
+        }
+    }, [collection])
+
+    useEffect(() => {
         if (itemsWithConflict.length === 0) {
             return
         }
@@ -158,14 +192,17 @@ export function App({ collection }: { collection: Collection }) {
 
     const importItems = useCallback(
         async (result: ImportResult) => {
+            if (!selectedCollection) return
+
             await framer.hideUI()
-            await importCSV(collection, result)
+            await importCSV(selectedCollection, result)
         },
-        [collection]
+        [selectedCollection]
     )
 
     const processAndImport = useCallback(
         async (csv: string) => {
+            if (!selectedCollection) return
             if (!isAllowedToAddItems) return
 
             try {
@@ -174,7 +211,7 @@ export function App({ collection }: { collection: Collection }) {
                     throw new Error("No records found in CSV")
                 }
 
-                const result = await processRecords(collection, csvRecords)
+                const result = await processRecords(selectedCollection, csvRecords)
                 setResult(result)
 
                 if (result.items.some(item => item.action === "conflict")) {
@@ -197,12 +234,15 @@ export function App({ collection }: { collection: Collection }) {
                 })
             }
         },
-        [isAllowedToAddItems, collection, importItems]
+        [isAllowedToAddItems, selectedCollection, importItems]
     )
 
     useEffect(() => {
+        if (!selectedCollection) return
         if (!isAllowedToAddItems) return
-        if (!form.current) return
+
+        const formElement = form.current
+        if (!formElement) return
 
         const handleDragOver = (event: DragEvent) => {
             event.preventDefault()
@@ -226,21 +266,22 @@ export function App({ collection }: { collection: Collection }) {
             const dataTransfer = new DataTransfer()
             dataTransfer.items.add(file)
             input.files = dataTransfer.files
-            form.current?.requestSubmit()
+            formElement.requestSubmit()
         }
 
-        form.current.addEventListener("dragover", handleDragOver)
-        form.current.addEventListener("dragleave", handleDragLeave)
-        form.current.addEventListener("drop", handleDrop)
+        formElement.addEventListener("dragover", handleDragOver)
+        formElement.addEventListener("dragleave", handleDragLeave)
+        formElement.addEventListener("drop", handleDrop)
 
         return () => {
-            form.current?.removeEventListener("dragover", handleDragOver)
-            form.current?.removeEventListener("dragleave", handleDragLeave)
-            form.current?.removeEventListener("drop", handleDrop)
+            formElement.removeEventListener("dragover", handleDragOver)
+            formElement.removeEventListener("dragleave", handleDragLeave)
+            formElement.removeEventListener("drop", handleDrop)
         }
-    }, [isAllowedToAddItems])
+    }, [isAllowedToAddItems, selectedCollection])
 
     useEffect(() => {
+        if (!selectedCollection) return
         if (!isAllowedToAddItems) return
 
         const handlePaste = ({ clipboardData }: ClipboardEvent) => {
@@ -267,10 +308,11 @@ export function App({ collection }: { collection: Collection }) {
         return () => {
             window.removeEventListener("paste", handlePaste)
         }
-    }, [isAllowedToAddItems, processAndImport])
+    }, [isAllowedToAddItems, processAndImport, selectedCollection])
 
     const handleSubmit = useCallback(
         (event: React.FormEvent<HTMLFormElement>) => {
+            if (!selectedCollection) return
             if (!isAllowedToAddItems) return
             event.preventDefault()
 
@@ -285,15 +327,26 @@ export function App({ collection }: { collection: Collection }) {
 
             void file.text().then(processAndImport)
         },
-        [isAllowedToAddItems, processAndImport]
+        [isAllowedToAddItems, processAndImport, selectedCollection]
     )
 
-    const handleFileChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-        if (!event.currentTarget.files?.[0]) return
-        if (inputOpenedFromImportButton.current) {
-            form.current?.requestSubmit()
-        }
-    }, [])
+    const handleFileChange = useCallback(
+        (event: ChangeEvent<HTMLInputElement>) => {
+            if (!selectedCollection) return
+            if (!event.currentTarget.files?.[0]) return
+            if (inputOpenedFromImportButton.current) {
+                form.current?.requestSubmit()
+            }
+        },
+        [selectedCollection]
+    )
+
+    const selectCollection = (event: ChangeEvent<HTMLSelectElement>) => {
+        const collection = collections.find(collection => collection.id === event.currentTarget.value)
+        if (!collection) return
+
+        setSelectedCollection(collection)
+    }
 
     if (result && itemsWithConflict.length > 0) {
         return (
@@ -348,6 +401,26 @@ export function App({ collection }: { collection: Collection }) {
                         </div>
                     </div>
 
+                    {/* Show collection dropdown if opened without a collection already selected */}
+                    {!collection && (
+                        <select
+                            className="collection-select"
+                            value={selectedCollection?.id ?? ""}
+                            onChange={selectCollection}
+                            autoFocus
+                        >
+                            <option value="" disabled>
+                                Select Collection…
+                            </option>
+
+                            {collections.map(collection => (
+                                <option key={collection.id} value={collection.id}>
+                                    {collection.name}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+
                     <button
                         className="framer-button-primary"
                         onClick={event => {
@@ -357,7 +430,7 @@ export function App({ collection }: { collection: Collection }) {
                             const input = document.getElementById("file-input") as HTMLInputElement
                             input.click()
                         }}
-                        disabled={!isAllowedToAddItems}
+                        disabled={!isAllowedToAddItems || !selectedCollection}
                         title={isAllowedToAddItems ? undefined : "Insufficient permissions"}
                     >
                         Upload File

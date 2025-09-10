@@ -1,220 +1,262 @@
 import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useState } from "react"
 import "./App.css"
+import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
 import hero from "./assets/hero.png"
 import { Loading } from "./components/Loading"
-import { dataSources } from "./dataSources"
-import { addStrings } from "./xliff"
+import {
+    getFileId,
+    getTranslationFileContent,
+    parseXliff12,
+    parseXliff20,
+    updateTranslation,
+    uploadStorage,
+} from "./xliff"
 
-void framer.showUI({
-    width: 260,
-    height: 350,
-})
+void framer.showUI({ width: 260, height: 400 })
 
 interface Project {
     readonly id: number
     readonly name: string
 }
+interface CrowdinStorageResponse {
+    data: {
+        id: string
+    }
+}
 
-// Allow both `null` and `undefined` for wrapper and `data`
-type WrappedProject = {
-    data?: { id?: number; name: string | null } | null
-} | null
-
+// ----- App component -----
 export function App() {
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
-    const [accessToken, setAccessToken] = useState<string | null>("")
-    const [projectList, setProjectList] = useState<readonly Project[] | null>(null)
-    const [selectedLocaleId, setSelectedLocaleId] = useState<string>("")
-    const [projectId, setProjectId] = useState<string>("")
+
+    const [accessToken, setAccessToken] = useState<string>("")
+    const [projectList, setProjectList] = useState<readonly Project[]>([])
+    const [projectId, setProjectId] = useState<number>(0)
     const [isLoading, setIsLoading] = useState(false)
-    const [locales, setLocales] = useState<readonly Locale[]>([])
-    const [defaultLocale, setDefaultLocale] = useState<Locale | null>(null)
 
-    useEffect(() => {
-        async function loadLocales() {
-            const initialLocales = await framer.getLocales()
-            const initialDefaultLocale = await framer.getDefaultLocale()
-            setLocales(initialLocales)
-            setDefaultLocale(initialDefaultLocale)
+    const [activeLocale, setActiveLocale] = useState<Locale | null>(null)
 
-            const activeLocale = await framer.getActiveLocale()
-            if (activeLocale) {
-                setSelectedLocaleId(activeLocale.id)
-            }
-        }
-
-        void loadLocales()
-    }, [])
-    const getDataSource = async (token: string): Promise<Project[]> => {
-        const dataSource = dataSources.find(option => option.id === "projects")
-        if (!dataSource) throw new Error("No data source found for id projects.")
-
-        try {
-            const data: WrappedProject[] = await dataSource.fetch(token)
-
-            return data
-                .filter(
-                    (item): item is { data: { id?: number; name: string | null } } =>
-                        item !== null && item.data !== undefined
-                )
-                .map(item => ({
-                    id: item.data.id ?? 0, // default id if missing
-                    name: item.data.name || "", // default name if null
-                }))
-        } catch (error) {
-            console.error("Error fetching CrowdIn data:", error)
-            throw error
-        }
-    }
-
-    // Validate token and fetch projects
-    const validateAccessToken = useCallback((token: string | null) => {
+    const validateAccessToken = useCallback(async (token: string) => {
         setAccessToken(token)
+        setIsLoading(true)
 
         if (token) {
-            getDataSource(token)
-                .then((projects: Project[]) => {
-                    setProjectList([...projects]) // store as readonly array
+            // persist token
+            if (framer.isAllowedTo("setPluginData")) {
+                void framer.setPluginData("accessToken", token)
+            }
+            const projectsGroupsApi = new ProjectsGroups({ token })
+            projectsGroupsApi
+                .withFetchAll()
+                .listProjects()
+                .then(response => {
+                    const projects = response.data.map((item: { data: Project }) => ({
+                        id: item.data.id,
+                        name: item.data.name,
+                    }))
+                    setProjectList(projects)
                 })
-                .catch(() => {
-                    setProjectList(null) // reset state on error
+                .catch((err: unknown) => {
+                    console.error(err)
+                })
+                .finally(() => {
+                    setIsLoading(false)
                 })
         } else {
-            setProjectList(null) // reset state if token is null
+            setProjectList([])
+            setIsLoading(false)
         }
     }, [])
 
-    async function exportToCrowdIn(defaultLocale: Locale, targetLocale: Locale) {
-        if (!accessToken || !projectId) {
-            framer.notify("Access Token or Project ID missing", {
+    useEffect(() => {
+        async function loadStoredToken() {
+            const storedToken = await framer.getPluginData("accessToken")
+            if (storedToken) {
+                setAccessToken(storedToken)
+                await validateAccessToken(storedToken)
+            }
+        }
+        void loadStoredToken()
+    }, [validateAccessToken])
+
+    const createCrowdinClient = (token: string) => ({
+        projects: new ProjectsGroups({ token }),
+        translations: new Translations({ token }),
+    })
+
+    useEffect(() => {
+        async function fetchActiveLocale() {
+            const locale = await framer.getActiveLocale()
+            if (locale) setActiveLocale(locale)
+        }
+        void fetchActiveLocale()
+    }, [])
+
+    // ------------------ Import from Crowdin ------------------
+    async function importFromCrowdIn() {
+        if (!accessToken || !projectId || !activeLocale) {
+            framer.notify("Access Token, Project ID, or active locale missing", {
                 variant: "error",
             })
             return
         }
+
+        setIsLoading(true)
+        const client = createCrowdinClient(accessToken)
+        const locales = await framer.getLocales()
+
+        try {
+            const exportRes = await client.translations.exportProjectTranslation(projectId, {
+                targetLanguageId: activeLocale.code,
+                format: "xliff",
+            })
+            const url = exportRes.data.url
+            if (!url) {
+                framer.notify("Crowdin export URL not found", {
+                    variant: "error",
+                })
+                return
+            }
+            const resp = await fetch(url)
+            const fileContent = await resp.text()
+
+            const translationsResult = fileContent.includes('<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0"')
+                ? parseXliff20(fileContent, locales)
+                : parseXliff12(fileContent, locales)
+
+            const { valuesBySource, targetLocale } = translationsResult
+
+            if (targetLocale.id) {
+                const updates = Object.entries(valuesBySource).map(([, val]) => {
+                    const safeValue: string = val[targetLocale.id]?.value ?? ""
+                    return {
+                        defaultMessage: safeValue,
+                        action: "set" as const,
+                        value: safeValue,
+                        needsReview: true,
+                    }
+                })
+                await framer.setLocalizationData({ [targetLocale.id]: updates })
+                framer.notify(`Imported ${Object.keys(valuesBySource).length} strings`, {
+                    variant: "success",
+                })
+            }
+        } catch (err) {
+            console.error("Error importing from Crowdin:", err)
+            framer.notify("Error importing from Crowdin", { variant: "error" })
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    // ------------------ Export to Crowdin ------------------
+    async function exportToCrowdIn() {
+        if (!accessToken || !projectId || !activeLocale) {
+            framer.notify("Access Token, Project ID, or active locale missing", {
+                variant: "error",
+            })
+            return
+        }
+
         setIsLoading(true)
         try {
-            const fileName = `framer_locale_from_${defaultLocale.code}_${targetLocale.code}.json`
-            await addStrings(projectId, fileName, accessToken)
-            setIsLoading(false)
-        } catch (err) {
-            console.error("Error exporting to CrowdIn:", err)
-            setIsLoading(false)
-            framer.notify("Error exporting to CrowdIn:", {
-                variant: "error",
-            })
-            throw err
-        }
-    }
-
-    async function importFromCrowdIn() {
-        if (!accessToken || !projectId || !selectedLocaleId) {
-            console.error("Access Token, Project ID, or Locale not set")
-            return
-        }
-
-        try {
-            // 1. Trigger Crowdin build for latest translations
-            const buildRes = await fetch(`https://api.crowdin.com/api/v2/projects/${projectId}/translations/builds`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                },
-            })
-            const buildData = await buildRes.json()
-            const buildId = buildData.data.id
-
-            // 2. Wait for build to finish
-            let buildStatus = "inProgress"
-            while (buildStatus === "inProgress") {
-                const statusRes = await fetch(
-                    `https://api.crowdin.com/api/v2/projects/${projectId}/translations/builds/${buildId}`,
-                    {
-                        headers: { Authorization: `Bearer ${accessToken}` },
-                    }
-                )
-                const statusData = await statusRes.json()
-                buildStatus = statusData.data.status
-                if (buildStatus === "inProgress") {
-                    await new Promise(r => setTimeout(r, 2000))
-                }
+            const xliffContent = await getTranslationFileContent(activeLocale)
+            if (!xliffContent) {
+                framer.notify("No translation content found for active locale", {
+                    variant: "error",
+                })
+                return
             }
 
-            // 3. Download the built translations archive
-            const downloadRes = await fetch(
-                `https://api.crowdin.com/api/v2/projects/${projectId}/translations/builds/${buildId}/download`,
-                {
-                    headers: { Authorization: `Bearer ${accessToken}` },
-                }
-            )
-            const downloadData = await downloadRes.json()
-            const downloadUrl = downloadData.data.url
+            const fileId = await getFileId(projectId, `translations-${activeLocale.code}.xliff`, accessToken)
+            if (!fileId) {
+                framer.notify("File not found in Crowdin project", { variant: "error" })
+                return
+            }
 
-            // 4. Fetch ZIP file and extract JSON
-            const zipRes = await fetch(downloadUrl)
-            const blob = await zipRes.blob()
-            console.log(blob)
+            // Upload file content to Crowdin storage
+            const storageRes = await uploadStorage(xliffContent, accessToken, activeLocale)
+            if (!storageRes.ok) {
+                framer.notify("Failed to upload file to Crowdin storage", {
+                    variant: "error",
+                })
+                return
+            }
+            const storageData = (await storageRes.json()) as CrowdinStorageResponse
+            const storageId = storageData.data.id
+
+            // Upload translation for that locale
+            const uploadRes = await updateTranslation(projectId, storageId, fileId, accessToken, activeLocale)
+            if (!uploadRes.ok) {
+                const errMsg = await uploadRes.text()
+                framer.notify(`Crowdin upload failed: ${errMsg}`, { variant: "error" })
+                return
+            }
+
+            framer.notify("Export to Crowdin complete", { variant: "success" })
         } catch (err) {
-            console.error("Error importing Crowdin translations:", err)
+            console.error("Error exporting to Crowdin:", err)
+            framer.notify("Error exporting to Crowdin", { variant: "error" })
+        } finally {
+            setIsLoading(false)
         }
     }
 
-    function handleExport() {
-        if (!selectedLocaleId || !defaultLocale) return
-        const targetLocale = locales.find(locale => locale.id === selectedLocaleId)
-        if (!targetLocale) {
-            throw new Error(`Could not find locale with id ${selectedLocaleId}`)
-        }
-        void exportToCrowdIn(defaultLocale, targetLocale)
-    }
-    if (isLoading) {
-        return <Loading />
-    }
     return (
         <main className="framer-hide-scrollbar setup">
-            <img src={hero} alt="Greenhouse Hero" />
-            <div className="form-field">
+            <img src={hero} alt="Crowdin Hero" />
+            <div className="form-field" style={{ position: "relative" }}>
+                {isLoading && (
+                    <div className="loader">
+                        <Loading />
+                    </div>
+                )}
+
                 <label className="show">
                     <p>Token</p>
                     <input
-                        id="accessToken"
                         type="text"
-                        required
                         placeholder="Enter Access Token…"
-                        value={accessToken ?? ""}
-                        onChange={event => {
-                            validateAccessToken(event.target.value)
+                        value={accessToken}
+                        onChange={e => {
+                            validateAccessToken(e.target.value)
                         }}
                     />
                 </label>
+
                 <label className="show">
-                    <p>Project ID</p>
+                    <p>Project</p>
                     <select
-                        id="spaceId"
-                        required
-                        onChange={event => {
-                            setProjectId(event.target.value)
+                        value={projectId || ""}
+                        onChange={e => {
+                            setProjectId(Number(e.target.value))
                         }}
-                        value={projectId}
                         disabled={!accessToken}
                     >
                         <option value="">Choose Project…</option>
-                        {projectList?.map(({ id, name }) => (
-                            <option key={id} value={id}>
-                                {name}
+                        {projectList.map(p => (
+                            <option key={p.id} value={p.id}>
+                                {p.name}
                             </option>
                         ))}
                     </select>
                 </label>
+
+                {activeLocale && (
+                    <label className="show">
+                        <p>
+                            <strong>Active Locale:</strong> {activeLocale.name} ({activeLocale.code})
+                        </p>
+                    </label>
+                )}
+
                 <div className="button-stack">
                     <button
                         type="button"
                         onClick={() => {
-                            if (!isAllowedToSetLocalizationData) return
-                            importFromCrowdIn()
+                            void importFromCrowdIn()
                         }}
-                        disabled={!isAllowedToSetLocalizationData}
+                        disabled={!isAllowedToSetLocalizationData || !activeLocale}
                         title={isAllowedToSetLocalizationData ? undefined : "Insufficient permissions"}
                     >
                         Import
@@ -223,8 +265,10 @@ export function App() {
                     <button
                         type="button"
                         className="framer-button-primary"
-                        onClick={handleExport}
-                        disabled={!selectedLocaleId}
+                        onClick={() => {
+                            void exportToCrowdIn()
+                        }}
+                        disabled={!activeLocale}
                     >
                         Export
                     </button>

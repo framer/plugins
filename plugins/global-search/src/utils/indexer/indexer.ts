@@ -79,11 +79,12 @@ export class GlobalSearchIndexer {
 
         for (const rootNode of rootNodes) {
             const rootNodeName = await getNodeName(rootNode)
+            const nodes = await rootNode.getNodesWithType("TextNode")
 
-            for await (const node of rootNode.walk()) {
+            for (const node of nodes) {
                 if (this.abortRequested) return
 
-                if (!isIndexableNode(node) || !node.visible) continue
+                if (!node.visible) continue
 
                 const text = await this.getNodeText(node)
 

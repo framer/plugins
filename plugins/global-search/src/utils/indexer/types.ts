@@ -1,21 +1,12 @@
-import {
-    type AnyNode,
-    ComponentInstanceNode,
-    ComponentNode,
-    isComponentInstanceNode,
-    isTextNode,
-    TextNode,
-    WebPageNode,
-} from "framer-plugin"
+import { type AnyNode, ComponentNode, isTextNode, TextNode, WebPageNode } from "framer-plugin"
 
 export type IndexNodeRootNode = ComponentNode | WebPageNode
 export type IndexNodeRootNodeType = IndexNodeRootNode["__class"]
 
-export type IndexableNode = Extract<AnyNode, TextNode | ComponentInstanceNode>
-export type IndexEntryType = AnyNode["__class"]
+export type IndexableNode = TextNode
+export type IndexEntryType = IndexableNode["__class"]
 
 export function isIndexableNode<T extends AnyNode>(value: T): value is T & IndexableNode {
-    if (isComponentInstanceNode(value)) return true
     if (isTextNode(value)) return true
 
     return false

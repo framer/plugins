@@ -129,8 +129,9 @@ export function App() {
             if (targetLocale.id) {
                 const updates = Object.entries(valuesBySource).map(([, val]) => {
                     const safeValue: string = val[targetLocale.id]?.value ?? ""
+                    const defaultMessage: string = val[targetLocale.id]?.defaultMessage ?? ""
                     return {
-                        defaultMessage: safeValue,
+                        defaultMessage: defaultMessage,
                         action: "set" as const,
                         value: safeValue,
                         needsReview: true,

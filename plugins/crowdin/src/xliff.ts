@@ -8,6 +8,7 @@ const API_URL = "https://api.crowdin.com/api/v2"
 interface TranslationValue {
     action: string
     value: string
+    defaultMessage?: string
 }
 
 type ValuesBySource = Record<string, Record<string, TranslationValue>>
@@ -39,9 +40,14 @@ export function parseXliff12(xliffText: string, locales: readonly Locale[]) {
     units.forEach(unit => {
         const id = unit.getAttribute("id")
         const target = unit.querySelector("target")?.textContent
+        const source = unit.querySelector("source")?.textContent
         if (id && target) {
             valuesBySource[id] = {
-                [targetLocale.id]: { action: "set", value: target },
+                [targetLocale.id]: {
+                    action: "set",
+                    defaultMessage: source ?? "", // null becomes empty string
+                    value: target ?? "",
+                },
             }
         }
     })
@@ -67,9 +73,14 @@ export function parseXliff20(xliffText: string, locales: readonly Locale[]) {
     units.forEach(unit => {
         const id = unit.getAttribute("id")
         const target = unit.querySelector("target")?.textContent
+        const source = unit.querySelector("source")?.textContent
         if (id && target) {
             valuesBySource[id] = {
-                [targetLocale.id]: { action: "set", value: target },
+                [targetLocale.id]: {
+                    action: "set",
+                    defaultMessage: source ?? "", // null becomes empty string
+                    value: target ?? "",
+                },
             }
         }
     })

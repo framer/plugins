@@ -5,10 +5,11 @@ import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
 import hero from "./assets/hero.png"
 import { Loading } from "./components/Loading"
 import {
+    createValuesBySourceFromXliff,
+    downloadBlob,
+    generateXliff,
     getFileId,
-    getTranslationFileContent,
-    parseXliff12,
-    parseXliff20,
+    parseXliff,
     updateTranslation,
     uploadStorage,
 } from "./xliff"
@@ -119,29 +120,16 @@ export function App() {
             }
             const resp = await fetch(url)
             const fileContent = await resp.text()
+            const { xliff, targetLocale } = parseXliff(fileContent, locales)
+            const valuesBySource = createValuesBySourceFromXliff(xliff, targetLocale)
 
-            const translationsResult = fileContent.includes('<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0"')
-                ? parseXliff20(fileContent, locales)
-                : parseXliff12(fileContent, locales)
+            const result = await framer.setLocalizationData({ valuesBySource })
 
-            const { valuesBySource, targetLocale } = translationsResult
-
-            if (targetLocale.id) {
-                const updates = Object.entries(valuesBySource).map(([, val]) => {
-                    const safeValue: string = val[targetLocale.id]?.value ?? ""
-                    const defaultMessage: string = val[targetLocale.id]?.defaultMessage ?? ""
-                    return {
-                        defaultMessage: defaultMessage,
-                        action: "set" as const,
-                        value: safeValue,
-                        needsReview: true,
-                    }
-                })
-                await framer.setLocalizationData({ [targetLocale.id]: updates })
-                framer.notify(`Imported ${Object.keys(valuesBySource).length} strings`, {
-                    variant: "success",
-                })
+            if (result.valuesBySource.errors.length > 0) {
+                throw new Error(`Import errors: ${result.valuesBySource.errors.map(error => error.error).join(", ")}`)
             }
+
+            framer.notify(`Successfully imported localizations for ${targetLocale.name}`)
         } catch (err) {
             console.error("Error importing from Crowdin:", err)
             framer.notify("Error importing from Crowdin", { variant: "error" })
@@ -161,7 +149,11 @@ export function App() {
 
         setIsLoading(true)
         try {
-            const xliffContent = await getTranslationFileContent(activeLocale)
+            const groups = await framer.getLocalizationGroups()
+            const defaultLocale = await framer.getDefaultLocale()
+            const xliffContent = generateXliff(defaultLocale, activeLocale, groups)
+            const filename = `translations-${activeLocale.code}.xliff`
+            downloadBlob(xliffContent, filename, "application/x-xliff+xml")
             if (!xliffContent) {
                 framer.notify("No translation content found for active locale", {
                     variant: "error",
@@ -169,12 +161,11 @@ export function App() {
                 return
             }
 
-            const fileId = await getFileId(projectId, `translations-${activeLocale.code}.xliff`, accessToken)
+            const fileId = await getFileId(projectId, filename, accessToken)
             if (!fileId) {
                 framer.notify("File not found in Crowdin project", { variant: "error" })
                 return
             }
-
             // Upload file content to Crowdin storage
             const storageRes = await uploadStorage(xliffContent, accessToken, activeLocale)
             if (!storageRes.ok) {
@@ -220,7 +211,7 @@ export function App() {
                         placeholder="Enter Access Token…"
                         value={accessToken}
                         onChange={e => {
-                            validateAccessToken(e.target.value)
+                            void validateAccessToken(e.target.value)
                         }}
                     />
                 </label>

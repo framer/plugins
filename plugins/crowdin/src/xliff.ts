@@ -1,17 +1,17 @@
-import { framer, type Locale } from "framer-plugin"
+import {
+    framer,
+    type Locale,
+    type LocalizationData,
+    type LocalizationGroup,
+    type LocalizationSource,
+    type LocalizedValueStatus,
+} from "framer-plugin"
 import * as v from "valibot"
 import { ProjectsSchema, StoragesSchema } from "./api-types"
 
 const API_URL = "https://api.crowdin.com/api/v2"
 
 // -------------------- Types --------------------
-interface TranslationValue {
-    action: string
-    value: string
-    defaultMessage?: string
-}
-
-type ValuesBySource = Record<string, Record<string, TranslationValue>>
 
 interface StorageResponse {
     data: { id: number; fileName?: string }
@@ -21,71 +21,85 @@ interface FileResponse {
     data: { id: number; name?: string }
 }
 
-// ----- XLIFF parsers -----
-export function parseXliff12(xliffText: string, locales: readonly Locale[]) {
+type XliffState = "initial" | "translated" | "reviewed" | "final"
+
+// The two functions below have `undefined` in their return types as to future-proof against LocalizedValueStatus and
+// XliffState unions being expanded in minor releases.
+
+function statusToXliffState(status: LocalizedValueStatus): XliffState | undefined {
+    switch (status) {
+        case "new":
+            return "initial"
+        case "needsReview":
+            return "translated"
+        case "warning":
+        case "done":
+            return "final"
+        default:
+            status satisfies never
+    }
+}
+function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined {
+    switch (state) {
+        case "initial":
+            return "new"
+        case "translated":
+            return "needsReview"
+        case "reviewed":
+        case "final":
+            return "done"
+        default:
+            state satisfies never
+    }
+}
+export function parseXliff(xliffText: string, locales: readonly Locale[]): { xliff: Document; targetLocale: Locale } {
     const parser = new DOMParser()
-    const doc = parser.parseFromString(xliffText, "text/xml")
-    const fileEl = doc.querySelector("file")
-    if (!fileEl) throw new Error("No <file> found in XLIFF 1.2")
+    const xliff = parser.parseFromString(xliffText, "text/xml")
 
-    const trgLang = fileEl.getAttribute("target-language")
-    if (!trgLang) throw new Error("No target-language in XLIFF 1.2")
+    const xliffElement = xliff.querySelector("file")
+    if (!xliffElement) throw new Error("No xliff element found in XLIFF")
 
-    const targetLocale = locales.find(l => l.code === trgLang)
-    if (!targetLocale) throw new Error(`Locale ${trgLang} not found`)
+    const targetLanguage = xliffElement.getAttribute("target-language")
+    if (!targetLanguage) throw new Error("No target language found in XLIFF")
 
-    const valuesBySource: ValuesBySource = {}
-    const units = fileEl.querySelectorAll("trans-unit")
+    const targetLocale = locales.find(locale => locale.code === targetLanguage)
+    if (!targetLocale) {
+        throw new Error(`No locale found for language code: ${targetLanguage}`)
+    }
 
-    units.forEach(unit => {
-        const id = unit.getAttribute("id")
-        const target = unit.querySelector("target")?.textContent
-        const source = unit.querySelector("source")?.textContent
-        if (id && target) {
-            valuesBySource[id] = {
-                [targetLocale.id]: {
-                    action: "set",
-                    defaultMessage: source ?? "", // null becomes empty string
-                    value: target ?? "",
-                },
-            }
-        }
-    })
-
-    return { valuesBySource, targetLocale }
+    return { xliff: xliff, targetLocale }
 }
 
-export function parseXliff20(xliffText: string, locales: readonly Locale[]) {
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(xliffText, "text/xml")
-    const xliffEl = doc.querySelector("xliff")
-    if (!xliffEl) throw new Error("No <xliff> found in XLIFF 2.0")
+export function createValuesBySourceFromXliff(
+    xliffDocument: Document,
+    targetLocale: Locale
+): LocalizationData["valuesBySource"] {
+    const valuesBySource: LocalizationData["valuesBySource"] = {}
 
-    const trgLang = xliffEl.getAttribute("trgLang")
-    if (!trgLang) throw new Error("No trgLang in XLIFF 2.0")
+    const units = xliffDocument.querySelectorAll("trans-unit")
+    for (const unit of units) {
+        console.log(unit)
+        const id = unit.getAttribute("resname")
+        const target = unit.querySelector("target")
+        if (!id || !target) continue
+        const targetValue = target.textContent
+        const state = target.getAttribute("state") as XliffState | null
+        const status = xliffStateToStatus(state ?? "final")
+        const needsReview = status === "needsReview"
 
-    const targetLocale = locales.find(l => l.code === trgLang)
-    if (!targetLocale) throw new Error(`Locale ${trgLang} not found`)
+        // Ignore missing or empty values
+        if (!targetValue) continue
 
-    const valuesBySource: ValuesBySource = {}
-    const units = xliffEl.querySelectorAll("unit")
-
-    units.forEach(unit => {
-        const id = unit.getAttribute("id")
-        const target = unit.querySelector("target")?.textContent
-        const source = unit.querySelector("source")?.textContent
-        if (id && target) {
-            valuesBySource[id] = {
-                [targetLocale.id]: {
-                    action: "set",
-                    defaultMessage: source ?? "", // null becomes empty string
-                    value: target ?? "",
-                },
-            }
+        valuesBySource[id] = {
+            [targetLocale.id]: {
+                action: "set",
+                value: targetValue,
+                needsReview: needsReview ? needsReview : undefined,
+            },
         }
-    })
+    }
 
-    return { valuesBySource, targetLocale }
+    return valuesBySource
 }
 
 export async function getTranslationFileContent(targetLocale: Locale): Promise<string> {
@@ -121,6 +135,76 @@ ${xliffUnits.join("\n")}
         console.log(e)
     }
     return ""
+}
+
+function escapeXml(unsafe: string): string {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;")
+}
+
+export function generateGroup(localizationGroup: LocalizationGroup, targetLocale: Locale) {
+    const units = localizationGroup.sources.map(source => generateUnit(source, targetLocale))
+
+    return `        <group id="${localizationGroup.id}">
+            <notes>
+                <note category="type">${localizationGroup.type}</note>
+                <note category="name">${escapeXml(localizationGroup.name)}</note>
+                <note category="supportsExcludedStatus">${localizationGroup.supportsExcludedStatus.toString()}</note>
+            </notes>
+${units.join("\n")}
+        </group>`
+}
+
+export function generateXliff(
+    defaultLocale: Locale,
+    targetLocale: Locale,
+    localizationGroups: readonly LocalizationGroup[]
+) {
+    const groups = localizationGroups.map(localizationGroup => generateGroup(localizationGroup, targetLocale))
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="${defaultLocale.code}" trgLang="${targetLocale.code}" source-language="${defaultLocale.code}">
+    <file id="${targetLocale.id}">
+${groups.join("\n")}
+    </file>
+</xliff>`
+}
+
+function generateUnit(source: LocalizationSource, targetLocale: Locale) {
+    const localeData = source.valueByLocale[targetLocale.id]
+    if (!localeData) {
+        throw new Error(`No locale data found for locale: ${targetLocale.id}`)
+    }
+
+    const state = statusToXliffState(localeData.status)
+
+    const sourceValue = escapeXml(source.value)
+    const targetValue = escapeXml(localeData.value ?? "")
+
+    const notes = [`<note category="type">${source.type}</note>`]
+
+    if (localeData.status === "warning") {
+        notes.push(`<note category="warning">${escapeXml(localeData.warning)}</note>`)
+    }
+
+    if (localeData.status !== "new") {
+        notes.push(`<note category="lastEdited">${localeData.lastEdited}</note>`)
+        notes.push(`<note category="readonly">${localeData.readonly.toString()}</note>`)
+    }
+
+    return `            <unit id="${source.id}">
+                <notes>
+                    ${notes.join("\n                    ")}
+                </notes>
+                <segment state="${state ?? ""}"${localeData.status === "warning" ? ` subState="framer:warning"` : ""}>
+                    <source>${sourceValue}</source>
+                    <target>${targetValue}</target>
+                </segment>
+            </unit>`
 }
 
 export async function uploadStorage(
@@ -279,4 +363,16 @@ export async function createFile(projectId: number, fileName: string, accessToke
         console.error("Error in createFile:", err)
         throw err
     }
+}
+
+export function downloadBlob(value: string, filename: string, type: string) {
+    const blob = new Blob([value], { type })
+    const url = URL.createObjectURL(blob)
+
+    const a = document.createElement("a")
+    a.href = url
+    a.download = filename
+
+    a.click()
+    URL.revokeObjectURL(url)
 }

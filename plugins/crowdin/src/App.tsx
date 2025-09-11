@@ -138,7 +138,7 @@ export function App({
             framer.notify(`Successfully imported localizations for ${targetLocale.name}`)
         } catch (err) {
             console.error("Error importing from Crowdin:", err)
-            framer.notify("Error importing from Crowdin", { variant: "error" })
+            framer.notify("Error importing from Crowdin Could be because translation missing in CrowdIn. Please check the source", { variant: "error" })
         } finally {
             setIsLoading(false)
         }

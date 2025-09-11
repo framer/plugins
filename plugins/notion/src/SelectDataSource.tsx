@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { type DataSource, getDataSources } from "./data"
 
 interface SelectDataSourceProps {
@@ -16,24 +16,49 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
     const [selectedDatabaseId, setSelectedDatabaseId] = useState<string | null>(null)
     const [status, setStatus] = useState<Status>(Status.Loading)
     const [dataSources, setDataSources] = useState<DataSource[]>([])
+    const isFirstFocusRef = useRef(true)
+
+    const fetchDataSources = useCallback(async () => {
+        try {
+            setStatus(Status.Loading)
+            const dataSources = await getDataSources()
+            setDataSources(dataSources)
+            setStatus(Status.Ready)
+
+            setSelectedDatabaseId(prev => {
+                // Clear selection if no databases are available
+                if (dataSources.length === 0) return null
+
+                // Auto-select if no database is currently selected or if the current selection is no longer valid
+                const currentSelectionIsValid = prev && dataSources.some(ds => ds.id === prev)
+                if (dataSources.length > 0 && !currentSelectionIsValid) {
+                    return dataSources[0]?.id ?? null
+                }
+
+                return prev
+            })
+        } catch (error) {
+            console.error(error)
+            setStatus(Status.Error)
+        }
+    }, [])
 
     useEffect(() => {
-        const fetchDataSources = async () => {
-            try {
-                const dataSources = await getDataSources()
-                setDataSources(dataSources)
-                setStatus(Status.Ready)
-                if (dataSources.length > 0) {
-                    setSelectedDatabaseId(dataSources[0]?.id ?? null)
-                }
-            } catch (error) {
-                console.error(error)
-                setStatus(Status.Error)
+        const handleWindowFocus = () => {
+            if (isFirstFocusRef.current) {
+                isFirstFocusRef.current = false
+                return
             }
+            void fetchDataSources()
         }
 
+        window.addEventListener("focus", handleWindowFocus)
         void fetchDataSources()
-    }, [])
+
+        return () => {
+            window.removeEventListener("focus", handleWindowFocus)
+        }
+    }, [fetchDataSources])
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -81,7 +106,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                         disabled={status === Status.Loading}
                     >
                         <option value="" disabled>
-                            {status === Status.Loading ? "Loading..." : "Choose Database"}
+                            {status === Status.Loading ? "Loading…" : "Choose Database…"}
                         </option>
                         {dataSources.map(({ id, name }) => (
                             <option key={id} value={id}>

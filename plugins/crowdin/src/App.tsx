@@ -1,5 +1,5 @@
-import { framer, type Locale, type LocalizationGroup, useIsAllowedTo } from "framer-plugin"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
+import { useCallback, useEffect, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
 import hero from "./assets/hero.png"

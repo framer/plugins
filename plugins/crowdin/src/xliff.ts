@@ -78,7 +78,6 @@ export function createValuesBySourceFromXliff(
 
     const units = xliffDocument.querySelectorAll("trans-unit")
     for (const unit of units) {
-        console.log(unit)
         const id = unit.getAttribute("resname")
         const target = unit.querySelector("target")
         if (!id || !target) continue

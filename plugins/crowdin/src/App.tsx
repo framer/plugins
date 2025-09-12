@@ -166,9 +166,16 @@ export function App({
         try {
             const groups = await framer.getLocalizationGroups()
             const defaultLocale = await framer.getDefaultLocale()
-
+            const sourceFilename = `framer-source-${defaultLocale.code}.xliff`
             // Ensure source file exists
-            const fileId = await ensureSourceFile(projectId, accessToken, defaultLocale, groups)
+            const fileId = await ensureSourceFile(
+                sourceFilename,
+                projectId,
+                accessToken,
+                defaultLocale,
+                activeLocale,
+                groups
+            )
 
             // Generate translation xliff
             const xliffContent = generateXliff(defaultLocale, activeLocale, groups)

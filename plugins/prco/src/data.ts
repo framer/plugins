@@ -6,14 +6,18 @@ import {
     type ManagedCollectionItemInput,
     type ProtectedMethod,
 } from "framer-plugin"
+import pLimit from "p-limit"
 
 import * as v from "valibot"
 import { hasOwnProperty } from "./api-types"
 import { dataSources, type PrCoDataSource, type PrCoField } from "./dataSources"
 import { assertNever, isCollectionReference } from "./utils"
+
+// This is to prevent rate limiting.
+const CONCURRENCY_LIMIT = 5
+
 export const slugFieldIdPluginKey = "slugFieldId"
 export const pressRoomIdPluginKey = "pressRoomId"
-
 export const dataSourceIdPluginKey = "dataSourceId"
 
 function replaceSupportedCollections(
@@ -147,166 +151,173 @@ async function getItems(
         }
     }
 
-    for (const item of dataItems) {
-        const id = String(item.id)
-        const slug = slugByItemId.get(id)
-        if (!slug) {
-            continue
-        }
+    const limit = pLimit(CONCURRENCY_LIMIT)
 
-        const fieldData: FieldDataInput = {}
-        for (const [fieldName, rawValue] of Object.entries(item) as [string, unknown][]) {
-            const isFieldIgnored = !fieldsToSync.find(field => (field.key ?? field.id) === fieldName)
-            const fields = fieldLookup.get(fieldName) ?? []
-
-            if (fields.length === 0 || isFieldIgnored) {
-                continue
+    const promises = dataItems.map(item =>
+        limit(async () => {
+            const id = String(item.id)
+            const slug = slugByItemId.get(id)
+            if (!slug) {
+                return
             }
 
-            for (const field of fields) {
-                const value = field.getValue ? field.getValue(rawValue) : rawValue
+            const fieldData: FieldDataInput = {}
+            for (const [fieldName, rawValue] of Object.entries(item) as [string, unknown][]) {
+                const isFieldIgnored = !fieldsToSync.find(field => (field.key ?? field.id) === fieldName)
+                const fields = fieldLookup.get(fieldName) ?? []
 
-                switch (field.type) {
-                    case "string":
-                        fieldData[field.id] = {
-                            value: v.is(StringifiableSchema, value) ? String(value) : "",
-                            type: "string",
-                        }
-                        break
-                    case "number":
-                        fieldData[field.id] = { value: Number(value), type: "number" }
-                        break
-                    case "boolean":
-                        fieldData[field.id] = { value: Boolean(value), type: "boolean" }
-                        break
-                    case "formattedText":
-                        fieldData[field.id] = {
-                            value: v.is(StringifiableSchema, value) ? String(value) : "",
-                            type: "formattedText",
-                        }
-                        break
-                    case "color":
-                    case "date":
-                    case "link": {
-                        if (!value) break
+                if (fields.length === 0 || isFieldIgnored) {
+                    continue
+                }
 
-                        fieldData[field.id] = {
-                            value: v.is(StringifiableSchema, value) ? String(value) : null,
-                            type: field.type,
-                        }
-                        break
-                    }
-                    case "multiCollectionReference": {
-                        const ids = []
+                for (const field of fields) {
+                    const value = field.getValue ? field.getValue(rawValue) : rawValue
 
-                        if (v.is(ArrayOfIdsSchema, value)) {
-                            ids.push(...value.map(item => String(item)))
-                        }
-
-                        fieldData[field.id] = {
-                            value: ids,
-                            type: "multiCollectionReference",
-                        }
-                        break
-                    }
-                    case "collectionReference": {
-                        if (v.is(v.union([v.string(), v.number()]), value)) {
+                    switch (field.type) {
+                        case "string":
                             fieldData[field.id] = {
-                                value: String(value),
-                                type: "collectionReference",
+                                value: v.is(StringifiableSchema, value) ? String(value) : "",
+                                type: "string",
                             }
-                        }
-                        break
-                    }
-                    case "image":
-                    case "file": {
-                        if (!value) break
-
-                        const url = v.is(StringifiableSchema, value) ? String(value) : ""
-
-                        let validUrl: string | null = null
-
-                        // prevent breaking if image is not valid
-                        try {
-                            if (field.type === "image") {
-                                const uploadedImage = await framer.uploadImage({ image: url })
-                                validUrl = uploadedImage.url
-                            } else {
-                                const uploadedFile = await framer.uploadFile({ file: url })
-                                validUrl = uploadedFile.url
+                            break
+                        case "number":
+                            fieldData[field.id] = { value: Number(value), type: "number" }
+                            break
+                        case "boolean":
+                            fieldData[field.id] = { value: Boolean(value), type: "boolean" }
+                            break
+                        case "formattedText":
+                            fieldData[field.id] = {
+                                value: v.is(StringifiableSchema, value) ? String(value) : "",
+                                type: "formattedText",
                             }
-                        } catch (error) {
-                            console.error(error)
+                            break
+                        case "color":
+                        case "date":
+                        case "link": {
+                            if (!value) break
+
+                            fieldData[field.id] = {
+                                value: v.is(StringifiableSchema, value) ? String(value) : null,
+                                type: field.type,
+                            }
+                            break
                         }
+                        case "multiCollectionReference": {
+                            const ids = []
 
-                        fieldData[field.id] = {
-                            type: field.type,
-                            value: validUrl,
+                            if (v.is(ArrayOfIdsSchema, value)) {
+                                ids.push(...value.map(item => String(item)))
+                            }
+
+                            fieldData[field.id] = {
+                                value: ids,
+                                type: "multiCollectionReference",
+                            }
+                            break
                         }
-                        break
-                    }
-                    case "array": {
-                        const parsedValue = v.parse(v.array(v.string()), value)
-                        const fieldId = v.parse(v.string(), field.id)
-
-                        const fields = v.parse(v.array(v.object({ id: v.string() })), field.fields)
-                        const galleryFieldId = v.parse(v.string(), fields[0]?.id)
-
-                        // prevent breaking if some images are not valid
-                        let validUrls: string[] = []
-                        try {
-                            const uploadedImages = await framer.uploadImages(
-                                parsedValue.filter(url => url).map((url: string) => ({ image: url }))
-                            )
-                            validUrls = uploadedImages.map(image => image.url)
-                        } catch (error) {
-                            console.error(error)
+                        case "collectionReference": {
+                            if (v.is(v.union([v.string(), v.number()]), value)) {
+                                fieldData[field.id] = {
+                                    value: String(value),
+                                    type: "collectionReference",
+                                }
+                            }
+                            break
                         }
+                        case "image":
+                        case "file": {
+                            if (!value) break
 
-                        fieldData[fieldId] = {
-                            type: "array",
-                            value: validUrls.map((url: string) => ({
-                                fieldData: {
-                                    [galleryFieldId]: {
-                                        type: "image",
-                                        value: url,
+                            const url = v.is(StringifiableSchema, value) ? String(value) : ""
+
+                            let validUrl: string | null = null
+
+                            // prevent breaking if image is not valid
+                            try {
+                                if (field.type === "image") {
+                                    const uploadedImage = await framer.uploadImage({ image: url })
+                                    validUrl = uploadedImage.url
+                                } else {
+                                    const uploadedFile = await framer.uploadFile({ file: url })
+                                    validUrl = uploadedFile.url
+                                }
+                            } catch (error) {
+                                console.error(error)
+                            }
+
+                            fieldData[field.id] = {
+                                type: field.type,
+                                value: validUrl,
+                            }
+                            break
+                        }
+                        case "array": {
+                            const parsedValue = v.parse(v.array(v.string()), value)
+                            const fieldId = v.parse(v.string(), field.id)
+
+                            const fields = v.parse(v.array(v.object({ id: v.string() })), field.fields)
+                            const galleryFieldId = v.parse(v.string(), fields[0]?.id)
+
+                            // prevent breaking if some images are not valid
+                            let validUrls: string[] = []
+
+                            try {
+                                const uploadedImages = await framer.uploadImages(
+                                    parsedValue.filter(url => url).map((url: string) => ({ image: url }))
+                                )
+                                validUrls = uploadedImages.map(image => image.url)
+                            } catch (error) {
+                                console.error(error)
+                            }
+
+                            fieldData[fieldId] = {
+                                type: "array",
+                                value: validUrls.map((url: string) => ({
+                                    fieldData: {
+                                        [galleryFieldId]: {
+                                            type: "image",
+                                            value: url,
+                                        },
                                     },
-                                },
-                            })),
-                        }
-
-                        break
-                    }
-                    case "enum": {
-                        const parsedValue = v.parse(v.string(), value)
-
-                        if (field.cases.find(item => item.id === parsedValue)?.id) {
-                            fieldData[field.id] = {
-                                type: "enum",
-                                value: parsedValue,
+                                })),
                             }
-                        } else {
-                            console.error(`Invalid enum value for: ${field.name}: ${parsedValue}`)
-                        }
 
-                        break
+                            break
+                        }
+                        case "enum": {
+                            const parsedValue = v.parse(v.string(), value)
+
+                            if (field.cases.find(item => item.id === parsedValue)?.id) {
+                                fieldData[field.id] = {
+                                    type: "enum",
+                                    value: parsedValue,
+                                }
+                            } else {
+                                console.error(`Invalid enum value for: ${field.name}: ${parsedValue}`)
+                            }
+
+                            break
+                        }
+                        default:
+                            assertNever(
+                                field,
+                                new Error(`Unsupported field type: ${(field as unknown as { type: string }).type}`)
+                            )
                     }
-                    default:
-                        assertNever(
-                            field,
-                            new Error(`Unsupported field type: ${(field as unknown as { type: string }).type}`)
-                        )
                 }
             }
-        }
 
-        items.push({
-            id,
-            slug,
-            draft: false,
-            fieldData,
+            items.push({
+                id,
+                slug,
+                draft: false,
+                fieldData,
+            })
         })
-    }
+    )
+
+    await Promise.all(promises)
 
     return items
 }

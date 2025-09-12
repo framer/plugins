@@ -23,3 +23,26 @@ export const ProjectsSchema = v.object({
 export const StoragesSchema = v.object({
     data: v.nullable(StorageSchema),
 })
+
+export const FileSchema = v.object({
+    id: v.number(),
+    projectId: v.number(),
+    name: v.string(),
+    path: v.string(),
+    type: v.string(),
+    status: v.string(),
+    createdAt: v.string(),
+    updatedAt: v.string(),
+})
+
+export const CreateFileResponseSchema = v.object({
+    data: FileSchema,
+})
+
+export const FileResponseSchema = v.object({
+    data: v.array(v.object({ data: FileSchema })),
+    pagination: v.object({
+        offset: v.number(),
+        limit: v.number(),
+    }),
+})

@@ -239,20 +239,36 @@ export async function uploadStorage(content: string, accessToken: string, fileNa
     })
 }
 export async function ensureSourceFile(
+    filename: string,
     projectId: number,
     accessToken: string,
     defaultLocale: Locale,
+    targetLocale: Locale,
     groups: readonly LocalizationGroup[]
 ): Promise<number> {
-    const filename = `framer-source-${defaultLocale.code}.xliff`
-    // check if already exists
-    const existingFileId = await getFileId(projectId, filename, accessToken)
-    if (existingFileId) return existingFileId
+    // Step 1: Check if file already exists in Crowdin
+    const fileRes = await fetch(`${API_URL}/projects/${projectId}/files?limit=500`, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    })
+    if (!fileRes.ok) {
+        throw new Error(`Failed to fetch files: ${await fileRes.text()}`)
+    }
 
-    // upload new
+    const fileData: unknown = await fileRes.json()
+    const existingFile = fileData.data.find((f: any) => f.data.name === filename)
+    if (existingFile) {
+        console.log(`Source file already exists in Crowdin: ${filename} (id: ${existingFile.data.id})`)
+        return existingFile.data.id
+    }
+    // Step 2: Upload storage for new source file
     const xliffContent = generateSourceXliff(defaultLocale, groups)
-    await uploadStorage(xliffContent, accessToken, filename)
-    return await createFile(projectId, filename, accessToken)
+    const storageRes = await uploadStorage(xliffContent, accessToken, filename);
+    const storageData = await storageRes.json() as StorageResponse;
+    const storageId = storageData.data.id;
+
+    return await createFile(projectId,storageId, filename, accessToken)
 }
 
 async function checkAndCreateLanguage(projectId: number, languageCode: string, accessToken: string) {
@@ -388,7 +404,7 @@ export async function getFileId(projectId: number, fileName: string, accessToken
             })
             return existingFileId
         } else {
-            return await createFile(projectId, fileName, accessToken)
+            return await createFile(projectId, storageId, fileName, accessToken)
         }
     } catch (err) {
         console.error("Error in getFileId:", err)
@@ -396,29 +412,18 @@ export async function getFileId(projectId: number, fileName: string, accessToken
     }
 }
 
-export async function createFile(projectId: number, fileName: string, accessToken: string): Promise<number> {
-    try {
-        const storageId = await getStorageId(fileName, accessToken)
-
-        const fileRes = await fetch(`${API_URL}/projects/${projectId}/files`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                name: fileName,
-                storageId,
-                type: "xliff",
-            }),
-        })
-
-        const fileData = (await fileRes.json()) as FileResponse
-        return fileData.data.id
-    } catch (err) {
-        console.error("Error in createFile:", err)
-        throw err
-    }
+export async function createFile(projectId: number, storageId: number, filename: string, accessToken: string) {
+    return fetch(`${API_URL}/projects/${projectId}/files`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            storageId,
+            name: filename,
+        }),
+    });
 }
 
 export function downloadBlob(value: string, filename: string, type: string) {

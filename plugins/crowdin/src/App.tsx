@@ -6,9 +6,8 @@ import hero from "./assets/hero.png"
 import { Loading } from "./components/Loading"
 import {
     createValuesBySourceFromXliff,
-    downloadBlob,
+    ensureSourceFile,
     generateXliff,
-    getFileId,
     parseXliff,
     updateTranslation,
     uploadStorage,
@@ -20,6 +19,7 @@ interface Project {
     readonly id: number
     readonly name: string
 }
+
 interface CrowdinStorageResponse {
     data: {
         id: string
@@ -138,13 +138,22 @@ export function App({
             framer.notify(`Successfully imported localizations for ${targetLocale.name}`)
         } catch (err) {
             console.error("Error importing from Crowdin:", err)
-            framer.notify("Error importing from Crowdin Could be because translation missing in CrowdIn. Please check the source", { variant: "error" })
+            framer.notify(
+                "Error importing from Crowdin Could be because translation missing in CrowdIn. Please check the source",
+                { variant: "error" }
+            )
         } finally {
             setIsLoading(false)
         }
     }
 
-    // ------------------ Export to Crowdin ------------------
+    // =============================
+    // Ensure Source File Exists
+    // =============================
+
+    // =============================
+    // Export to Crowdin
+    // =============================
     async function exportToCrowdIn() {
         if (!accessToken || !projectId || !activeLocale) {
             framer.notify("Access Token, Project ID, or active locale missing", {
@@ -157,23 +166,16 @@ export function App({
         try {
             const groups = await framer.getLocalizationGroups()
             const defaultLocale = await framer.getDefaultLocale()
+
+            // Ensure source file exists
+            const fileId = await ensureSourceFile(projectId, accessToken, defaultLocale, groups)
+
+            // Generate translation xliff
             const xliffContent = generateXliff(defaultLocale, activeLocale, groups)
             const filename = `translations-${activeLocale.code}.xliff`
-            downloadBlob(xliffContent, filename, "application/x-xliff+xml")
-            if (!xliffContent) {
-                framer.notify("No translation content found for active locale", {
-                    variant: "error",
-                })
-                return
-            }
 
-            const fileId = await getFileId(projectId, filename, accessToken)
-            if (!fileId) {
-                framer.notify("File not found in Crowdin project", { variant: "error" })
-                return
-            }
-            // Upload file content to Crowdin storage
-            const storageRes = await uploadStorage(xliffContent, accessToken, activeLocale)
+            // Upload storage
+            const storageRes = await uploadStorage(xliffContent, accessToken, filename)
             if (!storageRes.ok) {
                 framer.notify("Failed to upload file to Crowdin storage", {
                     variant: "error",
@@ -183,9 +185,9 @@ export function App({
             const storageData = (await storageRes.json()) as CrowdinStorageResponse
             const storageId = storageData.data.id
 
-            // Upload translation for that locale
+            // Upload translation
             const uploadRes = await updateTranslation(projectId, storageId, fileId, accessToken, activeLocale)
-            if (!uploadRes.ok) {
+            if (uploadRes && !uploadRes.ok) {
                 const errMsg = await uploadRes.text()
                 framer.notify(`Crowdin upload failed: ${errMsg}`, { variant: "error" })
                 return

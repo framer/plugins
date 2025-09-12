@@ -249,7 +249,8 @@ async function getItems(
                         const parsedValue = v.parse(v.array(v.string()), value)
                         const fieldId = v.parse(v.string(), field.id)
 
-                        const galleryFieldId = v.parse(v.string(), field.fields[0].id)
+                        const fields = v.parse(v.array(v.object({ id: v.string() })), field.fields)
+                        const galleryFieldId = v.parse(v.string(), fields[0]?.id)
 
                         // prevent breaking if some images are not valid
                         let validUrls: string[] = []
@@ -317,19 +318,23 @@ export async function syncCollection(
     fields: readonly PrCoField[],
     slugField: ManagedCollectionFieldInput
 ): Promise<void> {
-    const existingItemsIds = await collection.getItemIds()
-    const items = await getItems(dataSource, fields, {
-        pressRoomId: pressRoomId,
-        slugFieldId: slugField.id,
-    })
+    const [existingItemsIds, items] = await Promise.all([
+        collection.getItemIds(),
+        getItems(dataSource, fields, {
+            pressRoomId: pressRoomId,
+            slugFieldId: slugField.id,
+        }),
+    ])
     const itemIds = new Set(items.map(item => item.id))
     const unsyncedItemsIds = existingItemsIds.filter(existingItemId => !itemIds.has(existingItemId))
 
-    await collection.removeItems(unsyncedItemsIds)
-    await collection.addItems(items)
-    await collection.setPluginData(pressRoomIdPluginKey, pressRoomId)
-    await collection.setPluginData(dataSourceIdPluginKey, dataSource.id)
-    await collection.setPluginData(slugFieldIdPluginKey, slugField.id)
+    await Promise.all([
+        collection.removeItems(unsyncedItemsIds),
+        collection.addItems(items),
+        collection.setPluginData(pressRoomIdPluginKey, pressRoomId),
+        collection.setPluginData(dataSourceIdPluginKey, dataSource.id),
+        collection.setPluginData(slugFieldIdPluginKey, slugField.id),
+    ])
 }
 
 export const syncMethods = [
@@ -360,15 +365,17 @@ export async function syncExistingCollection(
     }
 
     try {
-        const dataSource = await getDataSource(previousPressRoomId, previousDataSourceId)
-        const existingFields = await collection.getFields()
+        const [dataSource, existingFields] = await Promise.all([
+            getDataSource(previousPressRoomId, previousDataSourceId),
+            collection.getFields(),
+        ])
         const mappedFields = dataSource.fields.filter(field =>
             existingFields.some(existingField => existingField.id === field.id)
         )
 
         const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
-            framer.notify(`No field matches the slug field id “${previousSlugFieldId}”. Sync will not be performed.`, {
+            framer.notify(`No field matches the slug field ID “${previousSlugFieldId}”. Sync will not be performed.`, {
                 variant: "error",
             })
             return { didSync: false }

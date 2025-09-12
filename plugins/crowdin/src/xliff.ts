@@ -260,8 +260,11 @@ async function checkAndCreateLanguage(projectId: number, languageCode: string, a
         const res = await fetch(`${API_URL}/projects/${projectId}`, {
             headers: { Authorization: `Bearer ${accessToken}` },
         })
-        const data = await res.json()
+        const data: unknown = await res.json()
         const parsed = v.parse(ProjectsSchema, data)
+        if (!parsed.data) {
+            throw new Error("Failed to parse Crowdin project response")
+        }
         const languagePresent = parsed.data.targetLanguages.find(l => l.id === languageCode)
         if (!languagePresent) {
             framer.notify(
@@ -277,7 +280,7 @@ async function checkAndCreateLanguage(projectId: number, languageCode: string, a
 export async function updateTranslation(
     projectId: number,
     storageId: string,
-    fileId: string,
+    fileId: number,
     accessToken: string,
     activeLocale: Locale
 ) {

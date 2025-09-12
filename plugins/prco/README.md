@@ -1,7 +1,7 @@
-# pr.co Plugin
+# PR.co Plugin
 
-Plugin for syncing pr.co data into the Framer CMS.
+Plugin for syncing PR.co data into the Framer CMS.
 
 **By:** @sushilzore, @clementroche
 
-![prCo Image](./src/assets/hero.png)
+![PR.co Image](./src/assets/hero.png)

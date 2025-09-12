@@ -171,7 +171,7 @@ function wrapIfHtml(text: string): string {
     }
     return escapeXml(text)
 }
-export function generateSourceXliff(defaultLocale: any, groups: any[]) {
+export function generateSourceXliff(defaultLocale: Locale, groups: readonly LocalizationGroup[]) {
     let units = ""
     for (const group of groups) {
         for (const source of group.sources) {
@@ -192,7 +192,7 @@ ${units}    </body>
 </xliff>`
 }
 
-export function generateXliff(defaultLocale: any, targetLocale: any, groups: readonly LocalizationGroup[]) {
+export function generateXliff(defaultLocale: Locale, targetLocale: Locale, groups: readonly LocalizationGroup[]) {
     let units = ""
 
     for (const group of groups) {
@@ -238,7 +238,12 @@ export async function uploadStorage(content: string, accessToken: string, fileNa
         body: new Blob([content], { type: "application/x-xliff+xml" }),
     })
 }
-export async function ensureSourceFile(projectId: number, accessToken: string, defaultLocale: any, groups: any[]) {
+export async function ensureSourceFile(
+    projectId: number,
+    accessToken: string,
+    defaultLocale: Locale,
+    groups: readonly LocalizationGroup[]
+): Promise<number> {
     const filename = `framer-source-${defaultLocale.code}.xliff`
     // check if already exists
     const existingFileId = await getFileId(projectId, filename, accessToken)
@@ -247,9 +252,7 @@ export async function ensureSourceFile(projectId: number, accessToken: string, d
     // upload new
     const xliffContent = generateSourceXliff(defaultLocale, groups)
     await uploadStorage(xliffContent, accessToken, filename)
-    const fileRes = await createFile(projectId, filename, accessToken)
-    const fileData = await fileRes.json()
-    return fileData.data.id
+    return await createFile(projectId, filename, accessToken)
 }
 
 async function checkAndCreateLanguage(projectId: number, languageCode: string, accessToken: string) {
@@ -276,7 +279,7 @@ export async function updateTranslation(
     storageId: string,
     fileId: string,
     accessToken: string,
-    activeLocale: any
+    activeLocale: Locale
 ) {
     const langIsPresent = await checkAndCreateLanguage(projectId, activeLocale.code, accessToken)
     if (langIsPresent) {

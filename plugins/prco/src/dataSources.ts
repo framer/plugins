@@ -190,7 +190,7 @@ const ClippingDataSource = createDataSource(
         },
         {
             id: "sizes",
-            name: "Sizes",
+            name: "Image",
             type: "image",
             getValue: value => {
                 const parsed = v.parse(ImageSizesSchema, value)
@@ -260,7 +260,7 @@ const ImageDataSource = createDataSource(
         { id: "file_size", name: "File Size", type: "number" },
         {
             id: "sizes",
-            name: "Sizes",
+            name: "Image",
             type: "image",
             getValue: value => {
                 const parsed = v.parse(ImageSizesSchema, value)
@@ -292,11 +292,10 @@ const MovieDataSource = createDataSource(
         { id: "content_type", name: "Content Type", type: "string" },
         { id: "file_size", name: "File Size", type: "number" },
         { id: "url", name: "URL", type: "link" },
-        { id: "webm_url", name: "Webm URL", type: "link" },
+        { id: "webm_url", name: "WebM URL", type: "link" },
         { id: "mp4_url", name: "MP4 URL", type: "link" },
         { id: "mp4_1080p_url", name: "MP4 1080P URL", type: "link" },
         { id: "thumbnail_url", name: "Thumbnail", type: "image" },
-        { id: "thumbnail_1080p_url", name: "Thumbnail 1080P URL", type: "image" },
     ]
 )
 
@@ -324,7 +323,7 @@ const DocumentsDataSource = createDataSource(
         { id: "url", name: "URL", type: "link" },
         {
             id: "sizes",
-            name: "Sizes",
+            name: "Image",
             type: "image",
             getValue: value => {
                 const parsed = v.parse(v.nullable(ImageSizesSchema), value)
@@ -456,7 +455,7 @@ const PressReleaseDataSource = createDataSource(
         { id: "pdf", name: "PDF", type: "link" },
         { id: "show_in_timeline", name: "Show In Timeline", type: "boolean" },
         { id: "show_boilerplate_text", name: "Show Boilerplate Text", type: "boolean" },
-        { id: "freeform_two", name: "Freeform Two", type: "boolean" },
+        { id: "freeform_two", name: "Freeform", type: "boolean" },
         { id: "reading_time", name: "Reading Time", type: "number" },
         { id: "updated_at", name: "Updated At", type: "date" },
     ]

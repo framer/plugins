@@ -7,7 +7,7 @@ import {
     type LocalizedValueStatus,
 } from "framer-plugin"
 import * as v from "valibot"
-import { ProjectsSchema, StoragesSchema } from "./api-types"
+import { CreateFileResponseSchema, FileResponseSchema, ProjectsSchema, StoragesSchema } from "./api-types"
 
 const API_URL = "https://api.crowdin.com/api/v2"
 
@@ -15,10 +15,6 @@ const API_URL = "https://api.crowdin.com/api/v2"
 
 interface StorageResponse {
     data: { id: number; fileName?: string }
-}
-
-interface FileResponse {
-    data: { id: number; name?: string }
 }
 
 type XliffState = "initial" | "translated" | "reviewed" | "final"
@@ -243,7 +239,6 @@ export async function ensureSourceFile(
     projectId: number,
     accessToken: string,
     defaultLocale: Locale,
-    targetLocale: Locale,
     groups: readonly LocalizationGroup[]
 ): Promise<number> {
     // Step 1: Check if file already exists in Crowdin
@@ -257,18 +252,20 @@ export async function ensureSourceFile(
     }
 
     const fileData: unknown = await fileRes.json()
-    const existingFile = fileData.data.find((f: any) => f.data.name === filename)
+    const parsed = v.parse(FileResponseSchema, fileData)
+
+    const existingFile = parsed.data.find(f => f.data.name === filename)
     if (existingFile) {
         console.log(`Source file already exists in Crowdin: ${filename} (id: ${existingFile.data.id})`)
         return existingFile.data.id
     }
     // Step 2: Upload storage for new source file
     const xliffContent = generateSourceXliff(defaultLocale, groups)
-    const storageRes = await uploadStorage(xliffContent, accessToken, filename);
-    const storageData = await storageRes.json() as StorageResponse;
-    const storageId = storageData.data.id;
+    const storageRes = await uploadStorage(xliffContent, accessToken, filename)
+    const storageData = (await storageRes.json()) as StorageResponse
+    const storageId = storageData.data.id
 
-    return await createFile(projectId,storageId, filename, accessToken)
+    return await createFile(projectId, storageId, filename, accessToken)
 }
 
 async function checkAndCreateLanguage(projectId: number, languageCode: string, accessToken: string) {
@@ -377,7 +374,7 @@ export async function createStorage(fileName: string, accessToken: string): Prom
 }
 
 // -------------------- Get or Create File --------------------
-export async function getFileId(projectId: number, fileName: string, accessToken: string): Promise<number | undefined> {
+export async function getFileId(projectId: number, fileName: string, accessToken: string): Promise<number | Response> {
     try {
         const filesRes = await fetch(`${API_URL}/projects/${projectId}/files`, {
             headers: { Authorization: `Bearer ${accessToken}` },
@@ -412,18 +409,32 @@ export async function getFileId(projectId: number, fileName: string, accessToken
     }
 }
 
-export async function createFile(projectId: number, storageId: number, filename: string, accessToken: string) {
-    return fetch(`${API_URL}/projects/${projectId}/files`, {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            storageId,
-            name: filename,
-        }),
-    });
+export async function createFile(
+    projectId: number,
+    storageId: number,
+    filename: string,
+    accessToken: string
+): Promise<number> {
+    try {
+        const fileRes = await fetch(`${API_URL}/projects/${projectId}/files`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                storageId,
+                name: filename,
+            }),
+        })
+
+        const fileData: unknown = await fileRes.json()
+        const parsed = v.parse(CreateFileResponseSchema, fileData)
+        return parsed.data.id
+    } catch (err) {
+        console.error("Error in createFile:", err)
+        throw err
+    }
 }
 
 export function downloadBlob(value: string, filename: string, type: string) {

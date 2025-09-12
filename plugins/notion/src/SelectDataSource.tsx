@@ -10,6 +10,7 @@ enum Status {
     Loading = "loading",
     Ready = "ready",
     Error = "error",
+    Refreshing = "refreshing",
 }
 
 export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
@@ -18,9 +19,9 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
     const [dataSources, setDataSources] = useState<DataSource[]>([])
     const isFirstFocusRef = useRef(true)
 
-    const fetchDataSources = useCallback(async () => {
+    const fetchDataSources = useCallback(async (status: Status) => {
         try {
-            setStatus(Status.Loading)
+            setStatus(status)
             const dataSources = await getDataSources()
             setDataSources(dataSources)
             setStatus(Status.Ready)
@@ -49,11 +50,11 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 isFirstFocusRef.current = false
                 return
             }
-            void fetchDataSources()
+            void fetchDataSources(Status.Refreshing)
         }
 
         window.addEventListener("focus", handleWindowFocus)
-        void fetchDataSources()
+        void fetchDataSources(Status.Loading)
 
         return () => {
             window.removeEventListener("focus", handleWindowFocus)
@@ -96,7 +97,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
             </div>
 
             <form onSubmit={handleSubmit}>
-                <label htmlFor="collection">
+                <label htmlFor="collection" className="collection-label">
                     <select
                         id="collection"
                         onChange={event => {
@@ -114,6 +115,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                             </option>
                         ))}
                     </select>
+                    {status === Status.Refreshing && <div className="framer-spinner" />}
                 </label>
                 <button disabled={!selectedDatabaseId || status === Status.Loading}>
                     {status === Status.Loading ? <div className="framer-spinner" /> : "Next"}

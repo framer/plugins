@@ -23,35 +23,6 @@ interface FileResponse {
 
 type XliffState = "initial" | "translated" | "reviewed" | "final"
 
-// The two functions below have `undefined` in their return types as to future-proof against LocalizedValueStatus and
-// XliffState unions being expanded in minor releases.
-
-function statusToXliffState(status: LocalizedValueStatus): XliffState | undefined {
-    switch (status) {
-        case "new":
-            return "initial"
-        case "needsReview":
-            return "translated"
-        case "warning":
-        case "done":
-            return "final"
-        default:
-            status satisfies never
-    }
-}
-function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined {
-    switch (state) {
-        case "initial":
-            return "new"
-        case "translated":
-            return "needsReview"
-        case "reviewed":
-        case "final":
-            return "done"
-        default:
-            state satisfies never
-    }
-}
 export function parseXliff(xliffText: string, locales: readonly Locale[]): { xliff: Document; targetLocale: Locale } {
     const parser = new DOMParser()
     const xliff = parser.parseFromString(xliffText, "text/xml")
@@ -70,6 +41,19 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
     return { xliff: xliff, targetLocale }
 }
 
+function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined {
+    switch (state) {
+        case "initial":
+            return "new"
+        case "translated":
+            return "needsReview"
+        case "reviewed":
+        case "final":
+            return "done"
+        default:
+            state satisfies never
+    }
+}
 export function createValuesBySourceFromXliff(
     xliffDocument: Document,
     targetLocale: Locale
@@ -99,6 +83,25 @@ export function createValuesBySourceFromXliff(
     }
 
     return valuesBySource
+}
+
+// The two functions below have `undefined` in their return types as to future-proof against LocalizedValueStatus and
+// XliffState unions being expanded in minor releases.
+
+function statusToXliffState(status: LocalizedValueStatus): "new" | "needs-translation" | "translated" | "signed-off" {
+    switch (status) {
+        case "new":
+            return "new"
+        case "needsReview":
+            return "needs-translation"
+        case "done":
+            return "translated"
+        case "warning":
+            // Crowdin doesn’t know “warning”, map it to translated but we can add subState note
+            return "translated"
+        default:
+            return "new"
+    }
 }
 
 export async function getTranslationFileContent(targetLocale: Locale): Promise<string> {
@@ -145,102 +148,150 @@ function escapeXml(unsafe: string): string {
         .replace(/'/g, "&apos;")
 }
 
-export function generateGroup(localizationGroup: LocalizationGroup, targetLocale: Locale) {
-    const units = localizationGroup.sources.map(source => generateUnit(source, targetLocale))
-
-    return `        <group id="${localizationGroup.id}">
-            <notes>
-                <note category="type">${localizationGroup.type}</note>
-                <note category="name">${escapeXml(localizationGroup.name)}</note>
-                <note category="supportsExcludedStatus">${localizationGroup.supportsExcludedStatus.toString()}</note>
-            </notes>
-${units.join("\n")}
-        </group>`
-}
-
-export function generateXliff(
-    defaultLocale: Locale,
-    targetLocale: Locale,
-    localizationGroups: readonly LocalizationGroup[]
-) {
-    const groups = localizationGroups.map(localizationGroup => generateGroup(localizationGroup, targetLocale))
-
-    return `<?xml version="1.0" encoding="UTF-8"?>
-<xliff xmlns="urn:oasis:names:tc:xliff:document:2.0" version="2.0" srcLang="${defaultLocale.code}" trgLang="${targetLocale.code}" source-language="${defaultLocale.code}">
-    <file id="${targetLocale.id}">
-${groups.join("\n")}
-    </file>
-</xliff>`
-}
-
-function generateUnit(source: LocalizationSource, targetLocale: Locale) {
+function generateUnit(source: LocalizationSource, targetLocale: Locale, groupName?: string) {
     const localeData = source.valueByLocale[targetLocale.id]
     if (!localeData) {
         throw new Error(`No locale data found for locale: ${targetLocale.id}`)
     }
 
     const state = statusToXliffState(localeData.status)
-
     const sourceValue = escapeXml(source.value)
     const targetValue = escapeXml(localeData.value ?? "")
 
-    const notes = [`<note category="type">${source.type}</note>`]
-
-    if (localeData.status === "warning") {
-        notes.push(`<note category="warning">${escapeXml(localeData.warning)}</note>`)
+    return `      <trans-unit id="${source.id}">
+        <source>${sourceValue}</source>
+        <target state="${state}">${targetValue}</target>
+        ${groupName ? `<note>${escapeXml(groupName)}</note>` : ""}
+      </trans-unit>`
+}
+function wrapIfHtml(text: string): string {
+    // If text looks like HTML, wrap in CDATA
+    if (/<[a-z][\s\S]*>/i.test(text)) {
+        return `<![CDATA[${text}]]>`
+    }
+    return escapeXml(text)
+}
+export function generateSourceXliff(defaultLocale: any, groups: any[]) {
+    let units = ""
+    for (const group of groups) {
+        for (const source of group.sources) {
+            const sourceValue = wrapIfHtml(source.value)
+            units += `      <trans-unit id="${source.id}">
+        <source>${sourceValue}</source>
+        <note>${escapeXml(group.name)}</note>
+      </trans-unit>\n`
+        }
     }
 
-    if (localeData.status !== "new") {
-        notes.push(`<note category="lastEdited">${localeData.lastEdited}</note>`)
-        notes.push(`<note category="readonly">${localeData.readonly.toString()}</note>`)
-    }
-
-    return `            <unit id="${source.id}">
-                <notes>
-                    ${notes.join("\n                    ")}
-                </notes>
-                <segment state="${state ?? ""}"${localeData.status === "warning" ? ` subState="framer:warning"` : ""}>
-                    <source>${sourceValue}</source>
-                    <target>${targetValue}</target>
-                </segment>
-            </unit>`
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="${defaultLocale.code}" datatype="plaintext" original="framer-export">
+    <body>
+${units}    </body>
+  </file>
+</xliff>`
 }
 
-export async function uploadStorage(
-    xliffContent: string,
-    accessToken: string,
-    activeLocale: Locale
-): Promise<Response> {
-    return await fetch(`${API_URL}/storages`, {
+export function generateXliff(defaultLocale: any, targetLocale: any, groups: readonly LocalizationGroup[]) {
+    let units = ""
+
+    for (const group of groups) {
+        for (const source of group.sources) {
+            const sourceValue = wrapIfHtml(source.value)
+            const targetRaw = source.valueByLocale[targetLocale.id]?.value ?? ""
+            const targetValue = wrapIfHtml(targetRaw)
+
+            units += `      <trans-unit id="${source.id}">
+        <source>${sourceValue}</source>
+        <target state="${targetValue ? "translated" : "needs-translation"}">${targetValue}</target>
+        <note>${escapeXml(group.name)}</note>
+      </trans-unit>\n`
+        }
+    }
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="${defaultLocale.code}" target-language="${targetLocale.code}" datatype="plaintext" original="framer-export">
+    <body>
+${units}    </body>
+  </file>
+</xliff>`
+}
+
+export function generateGroup(localizationGroup: LocalizationGroup, targetLocale: Locale) {
+    const units = localizationGroup.sources.map(source => generateUnit(source, targetLocale))
+
+    return `      <group id="${localizationGroup.id}">
+        <note>${escapeXml(localizationGroup.name)}</note>
+${units.join("\n")}
+      </group>`
+}
+
+export async function uploadStorage(content: string, accessToken: string, fileName: string) {
+    return fetch(`${API_URL}/storages`, {
         method: "POST",
         headers: {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/octet-stream",
-            "Crowdin-API-FileName": `translations-${activeLocale.code}.xliff`,
+            "Crowdin-API-FileName": fileName,
         },
-        body: xliffContent,
+        body: new Blob([content], { type: "application/x-xliff+xml" }),
     })
 }
+export async function ensureSourceFile(projectId: number, accessToken: string, defaultLocale: any, groups: any[]) {
+    const filename = `framer-source-${defaultLocale.code}.xliff`
+    // check if already exists
+    const existingFileId = await getFileId(projectId, filename, accessToken)
+    if (existingFileId) return existingFileId
 
+    // upload new
+    const xliffContent = generateSourceXliff(defaultLocale, groups)
+    await uploadStorage(xliffContent, accessToken, filename)
+    const fileRes = await createFile(projectId, filename, accessToken)
+    const fileData = await fileRes.json()
+    return fileData.data.id
+}
+
+async function checkAndCreateLanguage(projectId: number, languageCode: string, accessToken: string) {
+    try {
+        const res = await fetch(`${API_URL}/projects/${projectId}`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        const data = await res.json()
+        const parsed = v.parse(ProjectsSchema, data)
+        const languagePresent = parsed.data.targetLanguages.find(l => l.id === languageCode)
+        if (!languagePresent) {
+            framer.notify(
+                `Language ${languageCode} is not present in CrowdIn. Please check region and language code in Framer`,
+                { variant: "error" }
+            )
+        }
+        return languagePresent
+    } catch (e) {
+        console.log(e)
+    }
+}
 export async function updateTranslation(
     projectId: number,
     storageId: string,
-    fileId: number,
+    fileId: string,
     accessToken: string,
-    activeLocale: Locale
-): Promise<Response> {
-    return await fetch(`${API_URL}/projects/${projectId}/translations`, {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-            storageId,
-            fileId,
-            languageId: activeLocale.code,
-        }),
-    })
+    activeLocale: any
+) {
+    const langIsPresent = await checkAndCreateLanguage(projectId, activeLocale.code, accessToken)
+    if (langIsPresent) {
+        return fetch(`${API_URL}/projects/${projectId}/translations/${activeLocale.code}`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                storageId,
+                fileId,
+            }),
+        })
+    }
 }
 
 // -------------------- Get or Create Storage --------------------
@@ -352,7 +403,7 @@ export async function createFile(projectId: number, fileName: string, accessToke
             body: JSON.stringify({
                 name: fileName,
                 storageId,
-                type: "json",
+                type: "xliff",
             }),
         })
 

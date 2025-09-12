@@ -80,12 +80,12 @@ const TagDataSource = createDataSource(
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
         { id: "pressroom_id", name: "Press Room ID", type: "string" },
         { id: "description", name: "Description", type: "string" },
-        {
-            id: "layout",
-            name: "Layout",
-            type: "enum",
-            cases: [{ id: "classic", name: "Classic" }],
-        },
+        // {
+        //     id: "layout",
+        //     name: "Layout",
+        //     type: "enum",
+        //     cases: [{ id: "classic", name: "Classic" }],
+        // },
         {
             id: "image",
             name: "Image",
@@ -451,7 +451,7 @@ const PressReleaseDataSource = createDataSource(
         },
         { id: "permalink", name: "Permalink", type: "string" },
         { id: "full_url", name: "Full URL", type: "link" },
-        { id: "state", name: "State", type: "enum", cases: [{ id: "published", name: "Published" }] }, // ideally be a "enum" but API is not documented
+        // { id: "state", name: "State", type: "enum", cases: [{ id: "published", name: "Published" }] }, // ideally be a "enum" but API is not documented
         { id: "pdf", name: "PDF", type: "link" },
         { id: "show_in_timeline", name: "Show In Timeline", type: "boolean" },
         { id: "show_boilerplate_text", name: "Show Boilerplate Text", type: "boolean" },

@@ -108,6 +108,17 @@ form {
     color: var(--framer-color-text-secondary);
 }
 
+.collection-label {
+    position: relative;
+}
+
+.collection-label .framer-spinner {
+    position: absolute;
+    right: 26px;
+    top: 9px;
+    pointer-events: none;
+}
+
 .setup select {
     width: 100%;
 }

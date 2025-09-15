@@ -13,7 +13,7 @@ import { hasOwnProperty } from "./api-types"
 import { dataSources, type PrCoDataSource, type PrCoField } from "./dataSources"
 import { assertNever, isCollectionReference } from "./utils"
 
-// This is to prevent rate limiting.
+// This is to process multiple items at a time.
 const CONCURRENCY_LIMIT = 5
 
 export const slugFieldIdPluginKey = "slugFieldId"
@@ -140,7 +140,9 @@ async function getItems(
     }
 
     const fieldLookup = new Map<string, PrCoField[]>()
-    for (const field of dataSource.fields) {
+    for (const field of dataSource.fields.filter(field =>
+        fieldsToSync.some(fieldToSync => fieldToSync.id === field.id)
+    )) {
         const key = field.key ?? field.id
         if (!fieldLookup.has(key)) {
             fieldLookup.set(key, [])

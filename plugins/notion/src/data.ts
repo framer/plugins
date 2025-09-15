@@ -88,9 +88,23 @@ export async function syncCollection(
     fields: readonly ManagedCollectionFieldInput[],
     slugField: ManagedCollectionFieldInput,
     ignoredFieldIds: Set<string>,
-    lastSynced: string | null
+    lastSynced: string | null,
+    existingFields?: readonly ManagedCollectionFieldInput[]
 ) {
     const fieldsById = new Map(fields.map(field => [field.id, field]))
+
+    // Track which fields have had their type changed
+    const updatedFieldIds = new Set<string>()
+    if (existingFields) {
+        const existingFieldsMap = new Map(existingFields.map(f => [f.id, f]))
+
+        for (const field of fields) {
+            const existingField = existingFieldsMap.get(field.id)
+            if (!existingField || existingField.type !== field.type) {
+                updatedFieldIds.add(field.id)
+            }
+        }
+    }
 
     const seenItemIds = new Set<string>()
 
@@ -101,13 +115,13 @@ export async function syncCollection(
         limit(async () => {
             seenItemIds.add(item.id)
 
-            let skipContent = false
+            let isUnchanged = false
             if (isUnchangedSinceLastSync(item.last_edited_time, lastSynced)) {
                 console.warn({
                     message: `Skipping content update. last updated: ${formatDate(item.last_edited_time)}, last synced: ${lastSynced ? formatDate(lastSynced) : "never"}`,
                     url: item.url,
                 })
-                skipContent = true
+                isUnchanged = true
             }
 
             let slugValue: null | string = null
@@ -124,6 +138,9 @@ export async function syncCollection(
 
                 const field = fieldsById.get(property.id)
                 if (!field) continue
+
+                // Skip field value if the item has not changed and the field type has not changed
+                if (isUnchanged && !updatedFieldIds.has(field.id)) continue
 
                 const fieldEntry = getFieldDataEntryForProperty(property, field)
                 if (fieldEntry) {
@@ -184,12 +201,14 @@ export async function syncCollection(
                 return null
             }
 
+            const skipContent = isUnchanged && !updatedFieldIds.has(pageContentProperty.id)
             if (fieldsById.has(pageContentProperty.id) && item.id && !skipContent) {
                 const contentHTML = await getPageBlocksAsRichText(item.id)
                 fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
             }
 
-            if (fieldsById.has(pageCoverProperty.id)) {
+            const skipCover = isUnchanged && !updatedFieldIds.has(pageCoverProperty.id)
+            if (fieldsById.has(pageCoverProperty.id) && !skipCover) {
                 let coverValue: string | null = null
 
                 if (item.cover) {
@@ -285,7 +304,15 @@ export async function syncExistingCollection(
                 existingFields.some(existingField => existingField.id === field.id) && !ignoredFieldIds.has(field.id)
         )
 
-        await syncCollection(collection, dataSource, fieldsToSync, slugField, ignoredFieldIds, previousLastSynced)
+        await syncCollection(
+            collection,
+            dataSource,
+            fieldsToSync,
+            slugField,
+            ignoredFieldIds,
+            previousLastSynced,
+            existingFields
+        )
         return { didSync: true }
     } catch (error) {
         console.error(error)

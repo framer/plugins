@@ -1,13 +1,10 @@
-import { framer } from "framer-plugin"
-import { useCallback, useMemo } from "react"
+import { useMemo } from "react"
 import { assertNever } from "../utils/assert"
-import { cn } from "../utils/className"
 import type { EntryResult } from "../utils/filter/group-results"
-import { type Range, rangeLength } from "../utils/filter/ranges"
 import { ResultType } from "../utils/filter/types"
 import type { RootNodeType } from "../utils/indexer/types"
-import { truncateFromStart } from "../utils/text"
 import { useFocusHandlers } from "../utils/useFocus"
+import { Match } from "./Match"
 import { IconArrowRight } from "./ui/IconArrowRight"
 import { IconCode } from "./ui/IconCode"
 import { IconCollection } from "./ui/IconCollection"
@@ -81,86 +78,31 @@ function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; resul
             </summary>
             <ul className="flex flex-col">
                 {resultsWithRanges.map(result => {
-                    const targetId =
-                        result.type === ResultType.CollectionItemField
-                            ? result.entry.collectionItemId
-                            : result.entry.nodeId
-
-                    return (
-                        <Match
-                            key={result.id}
-                            targetId={targetId}
-                            text={result.text}
-                            range={result.range}
-                            collectionFieldId={
-                                result.type === ResultType.CollectionItemField ? result.matchingField.id : undefined
-                            }
-                        />
-                    )
+                    switch (result.type) {
+                        case ResultType.CollectionItemField:
+                            return (
+                                <Match
+                                    key={result.id}
+                                    type={ResultType.CollectionItemField}
+                                    collectionFieldId={result.matchingField.id}
+                                    targetId={result.entry.collectionItemId}
+                                    text={result.text}
+                                    range={result.range}
+                                />
+                            )
+                        default:
+                            return (
+                                <Match
+                                    key={result.id}
+                                    type={result.type}
+                                    targetId={result.entry.nodeId}
+                                    text={result.text}
+                                    range={result.range}
+                                />
+                            )
+                    }
                 })}
             </ul>
         </details>
     )
-}
-
-function Match({
-    targetId,
-    text,
-    range,
-    collectionFieldId,
-}: {
-    targetId: string
-    text: string
-    range: Range
-    collectionFieldId: string | undefined
-}) {
-    const navigateToResult = useCallback(() => {
-        framer
-            .navigateTo(targetId, {
-                scrollTo: collectionFieldId ? { collectionFieldId } : undefined,
-                zoomIntoView: {
-                    maxZoom: 1,
-                },
-            })
-            .catch((error: unknown) => {
-                framer.notify(`Failed to go to item. ${error instanceof Error ? error.message : "Unknown error"}`)
-            })
-    }, [targetId, collectionFieldId])
-
-    const { before, highlight, after } = useHighlightedTextWithContext({ text, range })
-    const focusProps = useFocusHandlers({ isSelfSelectable: true })
-
-    return (
-        <button
-            onClick={navigateToResult}
-            className={cn(
-                "text-secondary-light dark:text-secondary-dark text-xs h-6 text-left select-none cursor-pointer pl-5  rounded-lg transition-colors",
-                "hover:bg-option-light/50 dark:hover:bg-option-dark/50 hover:text-primary-light dark:hover:text-primary-dark focus:bg-option-light dark:focus:bg-option-dark focus:text-primary-light dark:focus:text-primary-dark",
-                "focus:outline-none focus:ring-0 focus:ring-offset-0"
-            )}
-            {...focusProps}
-        >
-            <li className="text-ellipsis overflow-hidden whitespace-nowrap">
-                {before}
-                <span className="font-semibold bg-transparent">{highlight}</span>
-                {after}
-            </li>
-        </button>
-    )
-}
-
-const rowLength = 30
-function useHighlightedTextWithContext({ text, range }: { text: string; range: Range }) {
-    const [start, end] = range
-    const maxBeforeLength = Math.floor((rowLength - rangeLength(range)) / 2)
-    const before = text.slice(0, start)
-    const highlight = text.slice(start, end)
-    const after = text.slice(end)
-
-    const limitedBefore = useMemo(
-        () => (text.length < rowLength ? before : truncateFromStart(before, maxBeforeLength)),
-        [before, text, maxBeforeLength]
-    )
-
-    return { before: limitedBefore, highlight: highlight, after }
 }

@@ -30,3 +30,26 @@ export function findRanges(text: string, query: string, isCaseSensitive: boolean
 export function rangeLength([start, end]: Range): number {
     return end - start
 }
+
+/**
+ * Converts a 0-based Range (string indices) to a 1-based CodeFilePosition (line/column numbers).
+ */
+export function rangeToCodeFileLocation([startColumn, endColumn]: Range, text: string) {
+    function getLineAndColumn(index: number): { line: number; column: number } {
+        const textBefore = text.slice(0, index)
+        const allLines = textBefore.split("\n")
+        const lastLine = allLines.at(-1) ?? ""
+
+        return { line: allLines.length, column: lastLine.length + 1 }
+    }
+
+    const start = getLineAndColumn(startColumn)
+    const end = getLineAndColumn(Math.max(endColumn - 1, 0))
+
+    return {
+        startColumn: start.column,
+        endColumn: end.column + 1,
+        startLine: start.line,
+        endLine: end.line,
+    }
+}

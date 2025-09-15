@@ -224,7 +224,7 @@ async function getItems(
                     }
                     break
                 case "array":
-                    throw new Error(`${String(field.type)} field is not supported.`)
+                    throw new Error(`${field.type} field is not supported.`)
                 default:
                     assertNever(
                         field,

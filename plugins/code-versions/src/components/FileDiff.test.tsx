@@ -9,7 +9,7 @@ const REMOVED_ROW_CLASS_NAME = "to-diff-remove/10"
 
 function getCodeElement(content: string) {
     return screen.getByText(
-        (_content, element) => element?.tagName === "CODE" && element.textContent?.trim() === content
+        (_content, element) => element?.tagName === "CODE" && element.textContent.trim() === content
     )
 }
 

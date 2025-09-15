@@ -410,7 +410,7 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                 <NumberInput
                     value={pixelSize}
                     onValueChange={value => {
-                        setPixelSize(Number(value))
+                        setPixelSize(value)
                     }}
                     min={1}
                     max={50}
@@ -422,7 +422,7 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                 <NumberInput
                     value={brightness}
                     onValueChange={value => {
-                        setBrightness(Number(value))
+                        setBrightness(value)
                     }}
                     min={-100}
                     max={100}
@@ -434,7 +434,7 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                 <NumberInput
                     value={quantization}
                     onValueChange={value => {
-                        setQuantization(Number(value))
+                        setQuantization(value)
                     }}
                     min={2}
                     max={8}

@@ -450,9 +450,7 @@ export async function importCSV(collection: Collection, result: ImportResult) {
     }
 
     const finalMessage = messages.join(". ")
-    void framer.closePlugin(
-        messages.length > 1 ? finalMessage + "." : finalMessage || "Successfully imported Collection"
-    )
+    framer.closePlugin(messages.length > 1 ? finalMessage + "." : finalMessage || "Successfully imported Collection")
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

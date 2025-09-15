@@ -15,7 +15,7 @@ document.addEventListener("keydown", event => {
 
     // This will close the plugin, but also show a message that the plugin was closed.
     // We might add a "silent" option later.
-    void framer.closePlugin()
+    framer.closePlugin()
 })
 
 void framer.showUI(getPluginUiOptions({ query: undefined, hasResults: false }))

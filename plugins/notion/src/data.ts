@@ -201,12 +201,14 @@ export async function syncCollection(
                 return null
             }
 
-            if (fieldsById.has(pageContentProperty.id) && item.id && !isUnchanged) {
+            const skipContent = isUnchanged && !updatedFieldIds.has(pageContentProperty.id)
+            if (fieldsById.has(pageContentProperty.id) && item.id && !skipContent) {
                 const contentHTML = await getPageBlocksAsRichText(item.id)
                 fieldData[pageContentProperty.id] = { type: "formattedText", value: contentHTML }
             }
 
-            if (fieldsById.has(pageCoverProperty.id) && !isUnchanged) {
+            const skipCover = isUnchanged && !updatedFieldIds.has(pageCoverProperty.id)
+            if (fieldsById.has(pageCoverProperty.id) && !skipCover) {
                 let coverValue: string | null = null
 
                 if (item.cover) {

@@ -7,7 +7,13 @@ import {
     type LocalizedValueStatus,
 } from "framer-plugin"
 import * as v from "valibot"
-import { CreateFileResponseSchema, FileResponseSchema, ProjectsSchema, StoragesSchema } from "./api-types"
+import {
+    CreateFileResponseSchema,
+    FileResponseSchema,
+    LanguagesResponseSchema,
+    ProjectsSchema,
+    StoragesSchema,
+} from "./api-types"
 
 const API_URL = "https://api.crowdin.com/api/v2"
 
@@ -268,28 +274,89 @@ export async function ensureSourceFile(
     return await createFile(projectId, storageId, filename, accessToken)
 }
 
-async function checkAndCreateLanguage(projectId: number, languageCode: string, accessToken: string) {
+async function checkAndCreateLanguage(projectId: number, language: Locale, accessToken: string) {
     try {
-        const res = await fetch(`${API_URL}/projects/${projectId}`, {
+        const res = await fetch(`${API_URL}/languages?limit=500`, {
             headers: { Authorization: `Bearer ${accessToken}` },
         })
         const data: unknown = await res.json()
-        const parsed = v.parse(ProjectsSchema, data)
-        if (!parsed.data) {
-            throw new Error("Failed to parse Crowdin project response")
-        }
-        const languagePresent = parsed.data.targetLanguages.find(l => l.id === languageCode)
+        const parsed = v.parse(LanguagesResponseSchema, data)
+        const languages = parsed.data.map(l => l.data)
+        const languagePresent = languages.find(l => l.id === language.code)
         if (!languagePresent) {
+            await fetch(`${API_URL}/languages`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name: language.name,
+                    code: language.code,
+                    localeCode: language.code,
+                    textDirection: "ltr",
+                    pluralCategoryNames: ["one", "other"],
+                    threeLettersCode: language.name.substring(0, 3),
+                    twoLettersCode: language.slug,
+                    dialectOf: language.slug,
+                }),
+            })
+
             framer.notify(
-                `Language ${languageCode} is not present in CrowdIn. Please check region and language code in Framer`,
+                `Language ${language.code} is not present in CrowdIn. Please check region and language code in Framer`,
                 { variant: "error" }
             )
         }
+        await ensureLanguageInProject(projectId, language.code, accessToken)
         return languagePresent
     } catch (e) {
         console.log(e)
     }
 }
+
+export async function ensureLanguageInProject(projectId: number, newLanguageId: string, accessToken: string) {
+    const res = await fetch(`${API_URL}/projects/${projectId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!res.ok) {
+        throw new Error(`Failed to fetch project: ${res.statusText}`)
+    }
+
+    const raw: unknown = await res.json()
+    const parsed = v.parse(ProjectsSchema, raw)
+    if (!parsed.data) {
+        throw new Error("Crowdin did not return a project object")
+    }
+    const currentLanguages = parsed.data.targetLanguages.map(l => l.id)
+
+    if (currentLanguages.includes(newLanguageId)) {
+        console.log(`Language ${newLanguageId} already exists in project`)
+        return parsed.data
+    }
+
+    const updatedLanguages = [...currentLanguages, newLanguageId]
+
+    const patchRes = await fetch(`${API_URL}/projects/${projectId}`, {
+        method: "PATCH",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify([
+            {
+                op: "replace",
+                path: "/targetLanguageIds",
+                value: updatedLanguages,
+            },
+        ]),
+    })
+
+    if (!patchRes.ok) {
+        const err = await patchRes.text()
+        throw new Error(`Failed to update languages: ${err}`)
+    }
+}
+
 export async function updateTranslation(
     projectId: number,
     storageId: string,
@@ -297,7 +364,7 @@ export async function updateTranslation(
     accessToken: string,
     activeLocale: Locale
 ) {
-    const langIsPresent = await checkAndCreateLanguage(projectId, activeLocale.code, accessToken)
+    const langIsPresent = await checkAndCreateLanguage(projectId, activeLocale, accessToken)
     if (langIsPresent) {
         return fetch(`${API_URL}/projects/${projectId}/translations/${activeLocale.code}`, {
             method: "POST",

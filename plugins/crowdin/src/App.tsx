@@ -13,7 +13,7 @@ import {
     uploadStorage,
 } from "./xliff"
 
-void framer.showUI({ width: 260, height: 400 })
+void framer.showUI({ width: 260, height: 370 })
 
 interface Project {
     readonly id: number

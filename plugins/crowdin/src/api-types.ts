@@ -46,3 +46,28 @@ export const FileResponseSchema = v.object({
         limit: v.number(),
     }),
 })
+
+export const LanguageSchema = v.object({
+    id: v.string(),
+    name: v.string(),
+    editorCode: v.string(),
+    twoLettersCode: v.string(),
+    threeLettersCode: v.string(),
+    locale: v.string(),
+    androidCode: v.string(),
+    osxCode: v.string(),
+    osxLocale: v.string(),
+    pluralCategoryNames: v.array(v.string()),
+    pluralRules: v.string(),
+    pluralExamples: v.array(v.string()),
+    textDirection: v.string(),
+    dialectOf: v.nullable(v.string()),
+})
+
+export const LanguagesResponseSchema = v.object({
+    data: v.array(v.object({ data: LanguageSchema })),
+    pagination: v.object({
+        offset: v.number(),
+        limit: v.number(),
+    }),
+})

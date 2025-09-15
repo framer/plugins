@@ -96,8 +96,10 @@ export async function syncCollection(
     // Track which fields have had their type changed
     const updatedFieldIds = new Set<string>()
     if (existingFields) {
+        const existingFieldsMap = new Map(existingFields.map(f => [f.id, f]))
+
         for (const field of fields) {
-            const existingField = existingFields.find(f => f.id === field.id)
+            const existingField = existingFieldsMap.get(field.id)
             if (!existingField || existingField.type !== field.type) {
                 updatedFieldIds.add(field.id)
             }

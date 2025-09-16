@@ -10,7 +10,7 @@ import pLimit from "p-limit"
 
 import * as v from "valibot"
 import { hasOwnProperty } from "./api-types"
-import { dataSources, type PrCoDataSource, type PrCoField } from "./dataSources"
+import { dataSources, type PrCoField, type PrcoDataSource } from "./dataSources"
 import { assertNever, isCollectionReference } from "./utils"
 
 // This is to process multiple items at a time.
@@ -21,9 +21,9 @@ export const pressRoomIdPluginKey = "pressRoomId"
 export const dataSourceIdPluginKey = "dataSourceId"
 
 function replaceSupportedCollections(
-    dataSource: PrCoDataSource,
+    dataSource: PrcoDataSource,
     fieldToCollectionsMap: Map<string, ManagedCollection[]>
-): PrCoDataSource {
+): PrcoDataSource {
     const fields = dataSource.fields.map(field => {
         if (!isCollectionReference(field)) return field
 
@@ -43,7 +43,7 @@ function replaceSupportedCollections(
     return { ...dataSource, fields }
 }
 
-export async function getDataSource(pressRoomId: string, dataSourceId: string): Promise<PrCoDataSource> {
+export async function getDataSource(pressRoomId: string, dataSourceId: string): Promise<PrcoDataSource> {
     if (!pressRoomId) {
         throw new Error("No Press Room Id found.")
     }
@@ -103,7 +103,7 @@ const StringifiableSchema = v.union([v.string(), v.number(), v.boolean()])
 const ArrayOfIdsSchema = v.array(v.union([v.string(), v.number()]))
 
 async function getItems(
-    dataSource: PrCoDataSource,
+    dataSource: PrcoDataSource,
     fieldsToSync: readonly PrCoField[],
     { pressRoomId, slugFieldId }: { pressRoomId: string; slugFieldId: string }
 ): Promise<ManagedCollectionItemInput[]> {
@@ -164,7 +164,7 @@ async function getItems(
             }
 
             const fieldData: FieldDataInput = {}
-            for (const [fieldName, rawValue] of Object.entries(item) as [string, unknown][]) {
+            for (const [fieldName, rawValue] of Object.entries(item)) {
                 const isFieldIgnored = !fieldsToSync.find(field => (field.key ?? field.id) === fieldName)
                 const fields = fieldLookup.get(fieldName) ?? []
 
@@ -173,7 +173,7 @@ async function getItems(
                 }
 
                 for (const field of fields) {
-                    const value = field.getValue ? field.getValue(rawValue) : rawValue
+                    const value = field.getValue ? field.getValue(rawValue) : (rawValue as unknown)
 
                     switch (field.type) {
                         case "string":
@@ -302,10 +302,7 @@ async function getItems(
                             break
                         }
                         default:
-                            assertNever(
-                                field,
-                                new Error(`Unsupported field type: ${(field as unknown as { type: string }).type}`)
-                            )
+                            assertNever(field)
                     }
                 }
             }
@@ -327,7 +324,7 @@ async function getItems(
 export async function syncCollection(
     pressRoomId: string,
     collection: ManagedCollection,
-    dataSource: PrCoDataSource,
+    dataSource: PrcoDataSource,
     fields: readonly PrCoField[],
     slugField: ManagedCollectionFieldInput
 ): Promise<void> {

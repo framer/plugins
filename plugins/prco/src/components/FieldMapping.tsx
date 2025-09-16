@@ -1,7 +1,7 @@
 import { framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
 import { type FormEventHandler, useCallback, useEffect, useMemo, useState } from "react"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "../data"
-import { type PrCoDataSource, type PrCoField, removePrCoKeys } from "../dataSources"
+import { type PrcoDataSource, type PrCoField, removePrCoKeys } from "../dataSources"
 import { isCollectionReference, isMissingReferenceField } from "../utils"
 import { ChevronIcon } from "./ChevronIcon"
 import { Loading } from "./Loading"
@@ -82,7 +82,7 @@ const emptyArray: PrCoField[] = []
 interface FieldMappingProps {
     pressRoomId: string
     collection: ManagedCollection
-    dataSource: PrCoDataSource
+    dataSource: PrcoDataSource
     initialSlugFieldId: string | null
 }
 

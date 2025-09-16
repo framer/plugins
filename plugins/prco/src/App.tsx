@@ -6,7 +6,7 @@ import { FieldMapping } from "./components/FieldMapping"
 import { Loading } from "./components/Loading"
 import { SelectDataSource } from "./components/SelectDataSource"
 import { getDataSource, pressRoomIdPluginKey } from "./data"
-import type { PrCoDataSource } from "./dataSources"
+import type { PrcoDataSource } from "./dataSources"
 
 interface AppProps {
     collection: ManagedCollection
@@ -17,7 +17,7 @@ interface AppProps {
 
 export function App({ collection, previousDataSourceId, previousSlugFieldId, previousPressRoomId }: AppProps) {
     const [pressRoomId, setPressRoomId] = useState<string>(previousPressRoomId ?? "")
-    const [dataSource, setDataSource] = useState<PrCoDataSource | null>(null)
+    const [dataSource, setDataSource] = useState<PrcoDataSource | null>(null)
     const [isLoading, setIsLoading] = useState(false)
 
     useLayoutEffect(() => {
@@ -47,7 +47,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
             .finally(() => {
                 setIsLoading(false)
             })
-    }, [previousDataSourceId, previousPressRoomId])
+    }, [previousDataSourceId, previousPressRoomId, pressRoomId])
 
     useEffect(() => {
         if (!pressRoomId) return

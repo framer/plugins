@@ -2,13 +2,13 @@ import { framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useState } from "react"
 import hero from "../assets/hero.png"
 import { getDataSource, syncMethods } from "../data"
-import { dataSources, type PrCoDataSource } from "../dataSources"
+import { dataSources, type PrcoDataSource } from "../dataSources"
 
 interface SelectDataSourceProps {
     previousPressRoomId?: string | null
     onSelectPressRoomId: (pressRoomId: string) => void
     previousDataSourceId?: string | null
-    onSelectDataSource: (dataSource: PrCoDataSource) => void
+    onSelectDataSource: (dataSource: PrcoDataSource) => void
 }
 
 export function SelectDataSource({

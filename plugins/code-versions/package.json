@@ -17,21 +17,21 @@
     "dependencies": {
         "clsx": "^2.1.1",
         "diff": "^8.0.2",
-        "framer-plugin": "^3.6.0-alpha.1",
-        "p-retry": "^6.2.1",
+        "framer-plugin": "3.7.0-alpha.0",
+        "p-retry": "^7.0.0",
         "prismjs": "^1.30.0",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "tailwind-merge": "^3.3.1",
-        "ts-pattern": "^5.7.1"
+        "ts-pattern": "^5.8.0"
     },
     "devDependencies": {
-        "@testing-library/dom": "^10.4.0",
-        "@testing-library/jest-dom": "^6.6.3",
+        "@testing-library/dom": "^10.4.1",
+        "@testing-library/jest-dom": "^6.8.0",
         "@testing-library/react": "^16.3.0",
         "@testing-library/user-event": "^14.6.1",
-        "@types/prismjs": "^1",
-        "@types/react": "^18.3.23",
+        "@types/prismjs": "^1.26.5",
+        "@types/react": "^18.3.24",
         "@types/react-dom": "^18.3.7",
         "@vitest/ui": "^3.2.4",
         "happy-dom": "^18.0.1",

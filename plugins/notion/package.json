@@ -14,14 +14,14 @@
     },
     "dependencies": {
         "@notionhq/client": "^3.1.3",
-        "framer-plugin": "^3.5.2",
+        "framer-plugin": "^3.6.0",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "valibot": "^1.1.0"
     },
     "devDependencies": {
-        "@types/react": "^18.3.18",
-        "@types/react-dom": "^18.3.5",
+        "@types/react": "^18.3.24",
+        "@types/react-dom": "^18.3.7",
         "framer-plugin-tools": "^1.0.0"
     }
 }

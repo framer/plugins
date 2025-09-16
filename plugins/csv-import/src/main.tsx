@@ -11,8 +11,7 @@ if (!root) throw new Error("Root element not found")
 const collection = await framer.getActiveCollection()
 
 if (collection && collection.managedBy !== "user") {
-    void framer.closePlugin("CSV Import can only be used on user-editable collections")
-    throw new Error("Unreachable")
+    framer.closePlugin("CSV Import can only be used on user-editable collections")
 }
 
 ReactDOM.createRoot(root).render(

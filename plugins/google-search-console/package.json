@@ -15,18 +15,18 @@
     "dependencies": {
         "@ataverascrespo/react18-ts-textfit": "^1.0.0",
         "aveta": "^1.5.2",
-        "cheerio": "^1.1.0",
-        "framer-plugin": "^3.5.2",
+        "cheerio": "^1.1.2",
+        "framer-plugin": "^3.6.0",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "react-error-boundary": "^6.0.0",
         "react-feather": "^2.0.10",
         "react-is": "^18.3.1",
-        "recharts": "^3.0.2",
+        "recharts": "^3.2.0",
         "valibot": "^1.1.0"
     },
     "devDependencies": {
-        "@types/react": "^18.3.23",
+        "@types/react": "^18.3.24",
         "@types/react-dom": "^18.3.7",
         "@types/react-is": "^18.3.1"
     }

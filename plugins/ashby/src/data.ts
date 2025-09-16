@@ -118,7 +118,6 @@ async function getItems(
             throw new Error(`No slug field found in data source.`)
         }
 
-        const id = String(item.id)
         const slugValue = item[slugFieldId]
         const slug = typeof slugValue === "string" ? slugValue.trim() : null
 
@@ -128,12 +127,12 @@ async function getItems(
         }
 
         if (!itemIdBySlug.has(slug)) {
-            itemIdBySlug.set(slug, id)
+            itemIdBySlug.set(slug, item.id)
             continue
         }
 
-        const uniqueSlug = `${slug} ${id}`
-        itemIdBySlug.set(uniqueSlug, id)
+        const uniqueSlug = `${slug} ${item.id}`
+        itemIdBySlug.set(uniqueSlug, item.id)
     }
 
     const slugByItemId = new Map<string, string>()
@@ -154,8 +153,7 @@ async function getItems(
     }
 
     for (const item of dataItems) {
-        const id = String(item.id)
-        const slug = slugByItemId.get(id)
+        const slug = slugByItemId.get(item.id)
         if (!slug) {
             continue
         }
@@ -237,7 +235,7 @@ async function getItems(
         }
 
         items.push({
-            id,
+            id: item.id,
             slug,
             draft: false,
             fieldData,

@@ -561,7 +561,7 @@ export function useGLBTexture(
             scene.updateMatrixWorld()
 
             // Calculate rough world bounds to update camera
-            const min = new Vec3(+Infinity)
+            const min = new Vec3(Infinity)
             const max = new Vec3(-Infinity)
             const center = new Vec3()
             const scale = new Vec3()
@@ -587,7 +587,7 @@ export function useGLBTexture(
                     const radius = mesh.geometry.bounds.radius * radiusScale
 
                     boundsMin.set(-radius).add(boundsCenter)
-                    boundsMax.set(+radius).add(boundsCenter)
+                    boundsMax.set(radius).add(boundsCenter)
 
                     // Apply world matrix to bounds
 

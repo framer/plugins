@@ -23,23 +23,3 @@ export function bytesFromCanvas(canvas: HTMLCanvasElement): Promise<Uint8Array |
         })
     })
 }
-
-/**
- * Utility to create a HTMLImageElement from the image data returned by `getData`
- */
-export async function loadBitmap(bytes: Uint8Array): Promise<ImageBitmap> {
-    const url = URL.createObjectURL(new Blob([bytes]))
-
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const img = new Image()
-        img.onload = () => {
-            resolve(img)
-        }
-        img.onerror = () => {
-            reject(new Error("Could not load image"))
-        }
-        img.src = url
-    })
-
-    return createImageBitmap(image)
-}

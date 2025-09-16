@@ -57,16 +57,16 @@ function parseRSS(xmlDoc: Document) {
     if (itemNodes.length === 0) itemNodes = xmlDoc.querySelectorAll("item")
 
     for (const item of itemNodes) {
-        const title = item.querySelector("title")?.textContent?.trim()
+        const title = item.querySelector("title")?.textContent.trim()
         if (!title) continue
 
-        const description = item.querySelector("description")?.textContent?.trim()
+        const description = item.querySelector("description")?.textContent.trim()
         if (!description) continue
 
-        const link = item.querySelector("link")?.textContent?.trim()
+        const link = item.querySelector("link")?.textContent.trim()
         if (!link) continue
 
-        const date = item.querySelector("pubDate")?.textContent?.trim()
+        const date = item.querySelector("pubDate")?.textContent.trim()
 
         items.push({ title, link, date: date ? new Date(date) : null, content: description })
     }

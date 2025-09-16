@@ -14,19 +14,19 @@
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
-        "@tanstack/react-query": "^5.81.5",
+        "@tanstack/react-query": "^5.87.4",
         "blurhash": "^2.0.5",
         "classnames": "^2.5.1",
-        "framer-plugin": "^3.5.2",
+        "framer-plugin": "^3.6.0",
         "react": "^18.3.1",
         "react-blurhash": "^0.3.0",
         "react-dom": "^18.3.1",
         "react-error-boundary": "^6.0.0",
-        "tailwindcss": "^4.1.11",
+        "tailwindcss": "^4.1.13",
         "valibot": "^1.1.0"
     },
     "devDependencies": {
-        "@types/react": "^18.3.23",
+        "@types/react": "^18.3.24",
         "@types/react-dom": "^18.3.7"
     }
 }

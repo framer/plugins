@@ -1,4 +1,5 @@
 import js from "@eslint/js"
+import { defineConfig } from "eslint/config"
 import * as reactHooks from "eslint-plugin-react-hooks"
 import reactRefresh from "eslint-plugin-react-refresh"
 import globals from "globals"
@@ -9,7 +10,7 @@ const TS_GLOB = "**/*.{,d.}{,m,c}ts{,x}"
 const JSX_GLOB = "**/*.{j,t}sx"
 const JS_AND_TS_GLOBS = [JS_GLOB, TS_GLOB]
 
-export default tseslint.config(
+export default defineConfig(
     {
         ignores: ["!**/*", "**/.git", "**/.turbo", "**/.yarn", "**/dist/*", "**/node_modules/*"],
     },

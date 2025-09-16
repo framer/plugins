@@ -9,7 +9,6 @@ if (!isAllowedToUpsertImage) {
 const image = await framer.getImage()
 if (!image) {
     framer.closePlugin("No Image was selected.", { variant: "error" })
-    throw new Error("Unreachable")
 }
 
 try {

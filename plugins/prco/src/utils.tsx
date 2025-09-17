@@ -1,12 +1,12 @@
-import type { PrCoField } from "./dataSources"
+import type { PrcoField } from "./dataSources"
 
 export function isCollectionReference(
-    field: PrCoField
-): field is Extract<PrCoField, { type: "collectionReference" | "multiCollectionReference" }> {
+    field: PrcoField
+): field is Extract<PrcoField, { type: "collectionReference" | "multiCollectionReference" }> {
     return field.type === "collectionReference" || field.type === "multiCollectionReference"
 }
 
-export function isMissingReferenceField(field: PrCoField): boolean {
+export function isMissingReferenceField(field: PrcoField): boolean {
     if (!isCollectionReference(field)) {
         return false
     }

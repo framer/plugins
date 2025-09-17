@@ -8,7 +8,7 @@ import {
     ImageSizesSchema,
     MediaInfoSchema,
     MediaKitsSchema,
-    type PrCoItem,
+    type PrcoItem,
     PressReleasesSchema,
     SocialSchema,
     TagsSchema,
@@ -25,21 +25,21 @@ export interface PrcoDataSource {
      * The first field is the ID field.
      * The rest of the fields are the fields of the data source.
      */
-    fields: readonly PrCoField[]
-    fetch: (pressRoomId: string) => Promise<PrCoItem[]>
+    fields: readonly PrcoField[]
+    fetch: (pressRoomId: string) => Promise<PrcoItem[]>
 }
 
-async function fetchPrCoData(url: string): Promise<unknown> {
+async function fetchPrcoData(url: string): Promise<unknown> {
     try {
         const response = await fetch(url)
         return await response.json()
     } catch (error) {
-        console.error("Error fetching PrCo data:", error)
+        console.error("Error fetching Prco data:", error)
         throw error
     }
 }
 
-export type PrCoField = ManagedCollectionFieldInput & {
+export type PrcoField = ManagedCollectionFieldInput & {
     key?: string
     /** Used to transform the value of the field. Sometimes the value is inside an object, so we need to extract it. */
     getValue?: (value: unknown) => unknown
@@ -61,11 +61,11 @@ const TagDataSource = createDataSource(
         name: "Tags",
         fetch: async (pressRoomId: string) => {
             const url = `${API_URL}/pressrooms/${pressRoomId}/tags.json?limit=9999`
-            const data = v.safeParse(TagSchema, await fetchPrCoData(url))
+            const data = v.safeParse(TagSchema, await fetchPrcoData(url))
 
             if (!data.success) {
-                console.log("Error parsing PrCo data:", data.issues)
-                throw new Error("Error parsing PrCo data")
+                console.log("Error parsing Prco data:", data.issues)
+                throw new Error("Error parsing Prco data")
             }
 
             const dataWithId = data.output.data.map((tag, index) => ({
@@ -107,11 +107,11 @@ const ClippingDataSource = createDataSource(
         name: "Clippings",
         fetch: async (pressRoomId: string) => {
             const url = `${API_URL}/pressrooms/${pressRoomId}/clippings.json?limit=9999`
-            const data = v.safeParse(ClippingSchema, await fetchPrCoData(url))
+            const data = v.safeParse(ClippingSchema, await fetchPrcoData(url))
 
             if (!data.success) {
-                console.log("Error parsing PrCo data:", data.issues)
-                throw new Error("Error parsing PrCo data")
+                console.log("Error parsing Prco data:", data.issues)
+                throw new Error("Error parsing Prco data")
             }
             return data.output.data
         },
@@ -235,11 +235,11 @@ const ImageDataSource = createDataSource(
         name: "Images",
         fetch: async (pressRoomId: string) => {
             const url = `${API_URL}/pressrooms/${pressRoomId}/images.json?limit=9999`
-            const data = v.safeParse(MediaSchema, await fetchPrCoData(url))
+            const data = v.safeParse(MediaSchema, await fetchPrcoData(url))
 
             if (!data.success) {
-                console.log("Error parsing PrCo data:", data.issues)
-                throw new Error("Error parsing PrCo data")
+                console.log("Error parsing Prco data:", data.issues)
+                throw new Error("Error parsing Prco data")
             }
             return data.output.data
         },
@@ -269,11 +269,11 @@ const MovieDataSource = createDataSource(
         name: "Movies",
         fetch: async (pressRoomId: string) => {
             const url = `${API_URL}/pressrooms/${pressRoomId}/movies.json?limit=9999`
-            const data = v.safeParse(MediaSchema, await fetchPrCoData(url))
+            const data = v.safeParse(MediaSchema, await fetchPrcoData(url))
 
             if (!data.success) {
-                console.log("Error parsing PrCo data:", data.issues)
-                throw new Error("Error parsing PrCo data")
+                console.log("Error parsing Prco data:", data.issues)
+                throw new Error("Error parsing Prco data")
             }
             return data.output.data
         },
@@ -298,11 +298,11 @@ const DocumentsDataSource = createDataSource(
         name: "Documents",
         fetch: async (pressRoomId: string) => {
             const url = `${API_URL}/pressrooms/${pressRoomId}/documents.json?limit=9999`
-            const data = v.safeParse(MediaSchema, await fetchPrCoData(url))
+            const data = v.safeParse(MediaSchema, await fetchPrcoData(url))
 
             if (!data.success) {
-                console.log("Error parsing PrCo data:", data.issues)
-                throw new Error("Error parsing PrCo data")
+                console.log("Error parsing Prco data:", data.issues)
+                throw new Error("Error parsing Prco data")
             }
             return data.output.data
         },
@@ -332,11 +332,11 @@ const MediaKitDataSource = createDataSource(
         name: "Media Kits",
         fetch: async (pressRoomId: string) => {
             const url = `${API_URL}/pressrooms/${pressRoomId}/media_kits.json?limit=9999`
-            const data = v.safeParse(MediaKitSchema, await fetchPrCoData(url))
+            const data = v.safeParse(MediaKitSchema, await fetchPrcoData(url))
 
             if (!data.success) {
-                console.log("Error parsing PrCo data:", data.issues)
-                throw new Error("Error parsing PrCo data")
+                console.log("Error parsing Prco data:", data.issues)
+                throw new Error("Error parsing Prco data")
             }
             return data.output.data
         },
@@ -384,11 +384,11 @@ const PressReleaseDataSource = createDataSource(
         name: "Press Releases",
         fetch: async (pressRoomId: string) => {
             const url = `${API_URL}/pressrooms/${pressRoomId}/press_releases.json?includes=featured_images,tags&limit=9999`
-            const data = v.safeParse(PressReleaseSchema, await fetchPrCoData(url))
+            const data = v.safeParse(PressReleaseSchema, await fetchPrcoData(url))
 
             if (!data.success) {
-                console.log("Error parsing PrCo data:", data.issues)
-                throw new Error("Error parsing PrCo data")
+                console.log("Error parsing Prco data:", data.issues)
+                throw new Error("Error parsing Prco data")
             }
             return data.output.data
         },
@@ -470,9 +470,9 @@ function createDataSource(
         fetch,
     }: {
         name: string
-        fetch: (pressRoomId: string) => Promise<PrCoItem[]>
+        fetch: (pressRoomId: string) => Promise<PrcoItem[]>
     },
-    [...fields]: PrCoField[]
+    [...fields]: PrcoField[]
 ): PrcoDataSource {
     return {
         id: name,
@@ -483,12 +483,12 @@ function createDataSource(
 }
 
 /**
- * Remove PrCo-specific keys from the fields. This is used to ensure that the fields are compatible with Framer API.
+ * Remove Prco-specific keys from the fields. This is used to ensure that the fields are compatible with Framer API.
  *
  * @param fields - The fields to remove the keys from.
  * @returns The fields with the keys removed.
  */
-export function removePrCoKeys(fields: PrCoField[]): ManagedCollectionFieldInput[] {
+export function removePrcoKeys(fields: PrcoField[]): ManagedCollectionFieldInput[] {
     return fields.map(originalField => {
         if (originalField.type === "multiCollectionReference" || originalField.type === "collectionReference") {
             const { getValue, key, dataSourceId, supportedCollections, ...field } = originalField

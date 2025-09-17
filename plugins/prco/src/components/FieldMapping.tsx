@@ -1,13 +1,13 @@
 import { framer, type ManagedCollection, useIsAllowedTo } from "framer-plugin"
 import { type FormEventHandler, useCallback, useEffect, useMemo, useState } from "react"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "../data"
-import { type PrcoDataSource, type PrCoField, removePrCoKeys } from "../dataSources"
+import { type PrcoDataSource, type PrcoField, removePrcoKeys } from "../dataSources"
 import { isCollectionReference, isMissingReferenceField } from "../utils"
 import { ChevronIcon } from "./ChevronIcon"
 import { Loading } from "./Loading"
 
 interface FieldMappingRowProps {
-    field: PrCoField
+    field: PrcoField
     originalFieldName: string | undefined
     disabled: boolean
     onToggleDisabled: (fieldId: string) => void
@@ -77,7 +77,7 @@ function FieldMappingRow({
     )
 }
 
-const emptyArray: PrCoField[] = []
+const emptyArray: PrcoField[] = []
 
 interface FieldMappingProps {
     pressRoomId: string
@@ -98,11 +98,11 @@ export function FieldMapping({ pressRoomId, collection, dataSource, initialSlugF
         [dataSource]
     )
 
-    const [selectedSlugField, setSelectedSlugField] = useState<PrCoField | null>(
+    const [selectedSlugField, setSelectedSlugField] = useState<PrcoField | null>(
         possibleSlugFields.find(field => field.id === initialSlugFieldId) ?? possibleSlugFields[0] ?? null
     )
 
-    const [fields, setFields] = useState<PrCoField[]>(emptyArray)
+    const [fields, setFields] = useState<PrcoField[]>(emptyArray)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(() => {
         const initialFieldIds = new Set()
 
@@ -196,7 +196,7 @@ export function FieldMapping({ pressRoomId, collection, dataSource, initialSlugF
 
         setStatus("syncing-collection")
 
-        const fieldsToSync: PrCoField[] = []
+        const fieldsToSync: PrcoField[] = []
 
         for (const field of fields) {
             if (ignoredFieldIds.has(field.id) || isMissingReferenceField(field)) continue
@@ -206,7 +206,7 @@ export function FieldMapping({ pressRoomId, collection, dataSource, initialSlugF
             })
         }
         collection
-            .setFields(removePrCoKeys(fieldsToSync))
+            .setFields(removePrcoKeys(fieldsToSync))
             .then(() => {
                 syncCollection(pressRoomId, collection, dataSource, fieldsToSync, selectedSlugField)
                     .then(() => {

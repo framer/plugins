@@ -140,7 +140,7 @@ export const MediaKitsSchema = v.object({
 })
 export type MediaKits = v.InferOutput<typeof MediaKitsSchema>
 
-export type PrCoItem = PressReleases | Clippings | MediaKits | MediaInfo | Tags
+export type PrcoItem = PressReleases | Clippings | MediaKits | MediaInfo | Tags
 
 export function hasOwnProperty<T extends object, Key extends PropertyKey>(
     object: T,

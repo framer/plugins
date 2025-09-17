@@ -10,7 +10,7 @@ import pLimit from "p-limit"
 
 import * as v from "valibot"
 import { hasOwnProperty } from "./api-types"
-import { dataSources, type PrCoField, type PrcoDataSource } from "./dataSources"
+import { dataSources, type PrcoDataSource, type PrcoField } from "./dataSources"
 import { assertNever, isCollectionReference } from "./utils"
 
 // This is to process multiple items at a time.
@@ -85,9 +85,9 @@ export async function getDataSource(pressRoomId: string, dataSourceId: string): 
 }
 
 export function mergeFieldsWithExistingFields(
-    sourceFields: readonly PrCoField[],
+    sourceFields: readonly PrcoField[],
     existingFields: readonly ManagedCollectionFieldInput[]
-): PrCoField[] {
+): PrcoField[] {
     const existingFieldsMap = new Map(existingFields.map(field => [field.id, field]))
 
     return sourceFields.map(sourceField => {
@@ -104,7 +104,7 @@ const ArrayOfIdsSchema = v.array(v.union([v.string(), v.number()]))
 
 async function getItems(
     dataSource: PrcoDataSource,
-    fieldsToSync: readonly PrCoField[],
+    fieldsToSync: readonly PrcoField[],
     { pressRoomId, slugFieldId }: { pressRoomId: string; slugFieldId: string }
 ): Promise<ManagedCollectionItemInput[]> {
     const items: ManagedCollectionItemInput[] = []
@@ -139,7 +139,7 @@ async function getItems(
         slugByItemId.set(itemId, slug)
     }
 
-    const fieldLookup = new Map<string, PrCoField[]>()
+    const fieldLookup = new Map<string, PrcoField[]>()
     for (const field of dataSource.fields.filter(field =>
         fieldsToSync.some(fieldToSync => fieldToSync.id === field.id)
     )) {
@@ -325,7 +325,7 @@ export async function syncCollection(
     pressRoomId: string,
     collection: ManagedCollection,
     dataSource: PrcoDataSource,
-    fields: readonly PrCoField[],
+    fields: readonly PrcoField[],
     slugField: ManagedCollectionFieldInput
 ): Promise<void> {
     const [existingItemsIds, items] = await Promise.all([

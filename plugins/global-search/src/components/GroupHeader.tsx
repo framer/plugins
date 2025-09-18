@@ -14,12 +14,14 @@ interface GroupHeaderProps extends React.HTMLAttributes<HTMLButtonElement> {
     readonly entry: Pick<PreparedGroup["entry"], "id" | "rootNodeType" | "rootNodeName">
     readonly isExpanded: boolean
     readonly isSticky: boolean
+    readonly showFadeOut: boolean
+    readonly hasTopBorder: boolean
     readonly onToggle: () => void
 }
 
 export const GroupHeader = memo(
     forwardRef<HTMLButtonElement, GroupHeaderProps>(function GroupHeader(
-        { entry, isExpanded, isSticky, onToggle, className, ...props },
+        { entry, isExpanded, isSticky, onToggle, className, showFadeOut, hasTopBorder, ...props },
         ref
     ) {
         const focusProps = useFocusHandlers({ isSelfSelectable: false })
@@ -30,15 +32,20 @@ export const GroupHeader = memo(
                 ref={ref}
                 onClick={onToggle}
                 className={cn(
-                    "group w-full pt-1 focus:outline-none bg-modal-light dark:bg-modal-dark cursor-pointer border-t border-divider-light dark:border-divider-dark transition-colors text-left h-7 mt-[4px] box-border",
-                    isSticky ? "sticky top-0 z-1 border-t-transparent" : "",
-
+                    "group w-full focus:outline-none bg-modal-light dark:bg-modal-dark cursor-pointer transition-colors text-left",
+                    isSticky ? "sticky -top-px z-1" : "",
+                    showFadeOut &&
+                        "after:content-[] after:absolute after:top-7 after:left-0 after:right-0 after:h-3 after:z-10 after:pointer-events-none after:bg-gradient-to-b after:from-modal-light dark:after:from-modal-dark after:to-transparent",
                     className
                 )}
                 aria-expanded={isExpanded}
                 {...focusProps}
                 {...props}
             >
+                <hr
+                    className="border-divider-light dark:border-divider-dark aria-hidden:opacity-0 mb-1"
+                    aria-hidden={!hasTopBorder}
+                />
                 <div className="h-6 flex flex-row gap-2 rounded-lg justify-start items-center select-none overflow-hidden ps-2 group-focus-visible:bg-option-light dark:group-focus-visible:bg-option-dark group-focus-visible:text-primary-light dark:group-focus-visible:text-primary-dark">
                     <div className="flex-shrink-0 flex gap-2 justify-start items-center">
                         <IconArrowRight

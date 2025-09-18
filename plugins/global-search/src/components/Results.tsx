@@ -23,7 +23,12 @@ export function ResultsList({ groups }: ResultsProps) {
         estimateSize: index => {
             const item = virtualItems[index]
             if (!item) return 0
-            return item.type === "group-header" ? 40 : 30
+            const nextItem = virtualItems[index + 1]
+            const isLastMatchInGroup = nextItem?.groupId !== item.groupId
+
+            if (item.type === "group-header") return isLastMatchInGroup ? 40 : 35
+
+            return isLastMatchInGroup ? 35 : 30
         },
         rangeExtractor: range => {
             // TODO: This sticky index could be added and put into the result more efficiently
@@ -45,6 +50,8 @@ export function ResultsList({ groups }: ResultsProps) {
                     const item = virtualItems[virtualRow.index]
                     if (!item) return null
 
+                    const isLastMatchInGroup = virtualItems[virtualRow.index + 1]?.groupId !== item.groupId
+
                     const rowStyle = {
                         transform: `translateY(${virtualRow.start}px)`,
                     } satisfies CSSProperties
@@ -53,10 +60,12 @@ export function ResultsList({ groups }: ResultsProps) {
                     const rowClassName = cn(
                         "w-full left-0",
                         isSticky ? "sticky" : "absolute",
-                        item.type === "group-header" ? "z-2" : "z-0"
+                        item.type === "group-header" ? "z-2" : "z-0",
+                        isLastMatchInGroup && "mb-1"
                     )
 
                     if (item.type === "group-header") {
+                        const hasScrolled = (scrollElementRef.current?.scrollTop ?? 0) > 0
                         return (
                             <GroupHeader
                                 key={virtualRow.key}
@@ -67,6 +76,8 @@ export function ResultsList({ groups }: ResultsProps) {
                                     toggleGroup(item.groupId)
                                 }}
                                 isSticky={isSticky}
+                                showFadeOut={isSticky && hasScrolled}
+                                hasTopBorder={isSticky ? hasScrolled : true}
                                 style={!isSticky ? rowStyle : undefined}
                                 className={rowClassName}
                             />

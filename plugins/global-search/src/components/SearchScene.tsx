@@ -73,7 +73,7 @@ export function SearchScene() {
                     </Menu>
                 </div>
                 <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden not-empty:pb-3">
-                    {queryToUse && hasResults && <ResultsList groupedResults={results} />}
+                    {queryToUse && hasResults && <ResultsList groups={results} />}
                     {queryToUse && !hasResults && !isIndexing && !isFilterRunning && <NoResults />}
                 </div>
             </FocusScope>

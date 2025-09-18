@@ -1,108 +1,181 @@
-import { useMemo } from "react"
-import { assertNever } from "../utils/assert"
-import type { EntryResult } from "../utils/filter/group-results"
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
+import { type CSSProperties, useCallback, useMemo, useRef, useState } from "react"
+import { cn } from "../utils/className"
+import type { PreparedGroup, PreparedResult } from "../utils/filter/group-results"
 import { ResultType } from "../utils/filter/types"
-import type { RootNodeType } from "../utils/indexer/types"
-import { useFocusHandlers } from "../utils/useFocus"
+import { GroupHeader } from "./GroupHeader"
 import { Match } from "./Match"
-import { IconArrowRight } from "./ui/IconArrowRight"
-import { IconCode } from "./ui/IconCode"
-import { IconCollection } from "./ui/IconCollection"
-import { IconComponent } from "./ui/IconComponent"
-import { IconWebPage } from "./ui/IconWebPage"
 
 interface ResultsProps {
-    groupedResults: readonly EntryResult[]
+    readonly groups: readonly PreparedGroup[]
 }
 
-export function ResultsList({ groupedResults }: ResultsProps) {
+export function ResultsList({ groups }: ResultsProps) {
+    const scrollElementRef = useRef<HTMLDivElement>(null)
+    const activeStickyIndexRef = useRef(0)
+    const { collapsedGroups, toggleGroup } = useCollapsedGroups()
+    const { virtualItems, stickyIndexes } = useProcessedResults(groups, collapsedGroups)
+
+    const rowVirtualizer = useVirtualizer({
+        overscan: 10,
+        count: virtualItems.length,
+        getScrollElement: () => scrollElementRef.current,
+        estimateSize: index => {
+            const item = virtualItems[index]
+            if (!item) return 0
+            return item.type === "group-header" ? 40 : 30
+        },
+        rangeExtractor: range => {
+            // TODO: This sticky index could be added and put into the result more efficiently
+            activeStickyIndexRef.current = stickyIndexes.findLast(index => range.startIndex >= index) ?? 0
+            const next = new Set([activeStickyIndexRef.current, ...defaultRangeExtractor(range)])
+            return [...next].sort((a, b) => a - b)
+        },
+        getItemKey: index => {
+            const item = virtualItems[index]
+            if (!item) return index
+            return item.type === "group-header" ? `header:${item.groupId}` : `result:${item.resultId}`
+        },
+    })
+
     return (
-        <div className="flex flex-col divide-y divide-divider-light dark:divide-divider-dark">
-            {groupedResults.map(group => (
-                <ResultPerEntry key={group.entry.id} entry={group.entry} results={group.results} />
-            ))}
+        <div ref={scrollElementRef} className="flex-1 min-h-0 overflow-auto scrollbar-hidden contain-strict">
+            <div className="relative w-full" style={{ height: rowVirtualizer.getTotalSize() }}>
+                {rowVirtualizer.getVirtualItems().map(virtualRow => {
+                    const item = virtualItems[virtualRow.index]
+                    if (!item) return null
+
+                    const rowStyle = {
+                        transform: `translateY(${virtualRow.start}px)`,
+                    } satisfies CSSProperties
+
+                    const isSticky = activeStickyIndexRef.current === virtualRow.index
+                    const rowClassName = cn(
+                        "w-full left-0",
+                        isSticky ? "sticky" : "absolute",
+                        item.type === "group-header" ? "z-2" : "z-0"
+                    )
+
+                    if (item.type === "group-header") {
+                        return (
+                            <GroupHeader
+                                key={virtualRow.key}
+                                ref={rowVirtualizer.measureElement}
+                                entry={item.entry}
+                                isExpanded={item.isExpanded}
+                                onToggle={() => {
+                                    toggleGroup(item.groupId)
+                                }}
+                                isSticky={isSticky}
+                                style={!isSticky ? rowStyle : undefined}
+                                className={rowClassName}
+                            />
+                        )
+                    }
+
+                    if (item.result.type === ResultType.CollectionItemField) {
+                        return (
+                            <Match
+                                key={virtualRow.key}
+                                ref={rowVirtualizer.measureElement}
+                                type={ResultType.CollectionItemField}
+                                collectionFieldId={item.result.matchingField.id}
+                                targetId={item.result.entry.collectionItemId}
+                                text={item.result.text}
+                                range={item.result.range}
+                                style={rowStyle}
+                                className={rowClassName}
+                            />
+                        )
+                    }
+
+                    return (
+                        <Match
+                            key={virtualRow.key}
+                            ref={rowVirtualizer.measureElement}
+                            type={item.result.type}
+                            targetId={item.result.entry.nodeId}
+                            text={item.result.text}
+                            range={item.result.range}
+                            style={rowStyle}
+                            className={rowClassName}
+                        />
+                    )
+                })}
+            </div>
         </div>
     )
 }
 
-const defaultIconClassName = "text-tertiary-light dark:text-tertiary-dark"
-export function ResultIcon({ rootNodeType }: { rootNodeType: RootNodeType }) {
-    switch (rootNodeType) {
-        case "WebPageNode":
-            return <IconWebPage className={defaultIconClassName} />
-        case "Collection":
-            return <IconCollection className={defaultIconClassName} />
-        case "ComponentNode":
-            return <IconComponent className={defaultIconClassName} />
-        case "CodeFile":
-            return <IconCode className={defaultIconClassName} />
-        default:
-            assertNever(rootNodeType)
-    }
+interface BaseVirtualItem {
+    readonly groupId: string
 }
 
-function ResultPerEntry({ entry, results }: { entry: EntryResult["entry"]; results: EntryResult["results"] }) {
-    const resultsWithRanges = useMemo(() => {
-        // each result could have multiple ranges, but we want to show each range as a separate result
-        return results.flatMap(result => {
-            return result.ranges.map(range => ({
-                ...result,
-                id: `${result.id}-${range.join("-")}`,
-                range,
-            }))
+interface GroupHeaderVirtualItem extends BaseVirtualItem {
+    readonly type: "group-header"
+    readonly entry: Pick<PreparedGroup["entry"], "id" | "rootNodeType" | "rootNodeName">
+    readonly isExpanded: boolean
+}
+
+interface ResultVirtualItem extends BaseVirtualItem {
+    readonly type: "result"
+    readonly result: PreparedResult
+    readonly resultId: string
+}
+
+type VirtualItem = GroupHeaderVirtualItem | ResultVirtualItem
+
+function useCollapsedGroups(): { collapsedGroups: ReadonlySet<string>; toggleGroup: (groupId: string) => void } {
+    const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set())
+
+    const toggleGroup = useCallback((groupId: string) => {
+        setCollapsedGroups(prev => {
+            const next = new Set(prev)
+            if (next.has(groupId)) {
+                next.delete(groupId)
+            } else {
+                next.add(groupId)
+            }
+            return next
         })
-    }, [results])
+    }, [])
 
-    const focusProps = useFocusHandlers({ isSelfSelectable: false })
+    return { collapsedGroups, toggleGroup }
+}
 
-    return (
-        <details open className="group flex flex-col not-last:pb-2">
-            <summary
-                className="pt-2 sticky top-0 group focus:outline-none bg-modal-light dark:bg-modal-dark cursor-pointer"
-                {...focusProps}
-            >
-                <div className="flex flex-row gap-2 rounded-lg justify-start items-center h-6 select-none overflow-hidden ps-2 group-focus-visible:bg-option-light dark:group-focus-visible:bg-option-dark group-focus-visible:text-primary-light dark:group-focus-visible:text-primary-dark">
-                    <div className="flex-shrink-0 flex gap-2 justify-start items-center">
-                        <IconArrowRight
-                            className="text-tertiary-light dark:text-tertiary-dark  transition-transform duration-200 ease-in-out group-open:rotate-90"
-                            aria-hidden="true"
-                        />
+function useProcessedResults(
+    groupedResults: readonly PreparedGroup[],
+    collapsedGroups: ReadonlySet<string>
+): { virtualItems: readonly VirtualItem[]; stickyIndexes: readonly number[] } {
+    return useMemo(() => {
+        const virtualItems: VirtualItem[] = []
+        const stickyIndexes: number[] = []
 
-                        <ResultIcon rootNodeType={entry.rootNodeType} aria-hidden="true" />
-                    </div>
+        for (const group of groupedResults) {
+            const isExpanded = !collapsedGroups.has(group.entry.id)
 
-                    <div className="text-xs text-secondary-light dark:text-secondary-dark whitespace-nowrap text-ellipsis flex-1 overflow-hidden">
-                        {entry.rootNodeName ?? `Unnamed ${entry.rootNodeType}`}
-                    </div>
-                </div>
-            </summary>
-            <ul className="flex flex-col">
-                {resultsWithRanges.map(result => {
-                    switch (result.type) {
-                        case ResultType.CollectionItemField:
-                            return (
-                                <Match
-                                    key={result.id}
-                                    type={ResultType.CollectionItemField}
-                                    collectionFieldId={result.matchingField.id}
-                                    targetId={result.entry.collectionItemId}
-                                    text={result.text}
-                                    range={result.range}
-                                />
-                            )
-                        default:
-                            return (
-                                <Match
-                                    key={result.id}
-                                    type={result.type}
-                                    targetId={result.entry.nodeId}
-                                    text={result.text}
-                                    range={result.range}
-                                />
-                            )
-                    }
-                })}
-            </ul>
-        </details>
-    )
+            stickyIndexes.push(virtualItems.length)
+
+            virtualItems.push({
+                type: "group-header",
+                groupId: group.entry.id,
+                entry: group.entry,
+                isExpanded,
+            })
+
+            // Add results to virtual items only if expanded
+            if (isExpanded) {
+                for (const processed of group.matches) {
+                    virtualItems.push({
+                        type: "result",
+                        groupId: group.entry.id,
+                        result: processed,
+                        resultId: processed.id,
+                    })
+                }
+            }
+        }
+
+        return { virtualItems, stickyIndexes }
+    }, [groupedResults, collapsedGroups])
 }

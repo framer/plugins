@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import type { GlobalSearchDatabase } from "../db"
 import type { RootNodeType } from "../indexer/types"
 import { IdleCallbackAsyncProcessor } from "./AsyncProcessor"
@@ -31,6 +31,7 @@ export function useAsyncFilter(
         error: null,
         running: false,
     })
+    const [, startTransition] = useTransition()
 
     const itemProcessor = useMemo((): FilterFunction => {
         const matchers = [{ type: MatcherType.Text, query, caseSensitive: false }]

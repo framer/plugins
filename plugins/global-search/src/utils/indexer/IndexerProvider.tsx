@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { GlobalSearchDatabase } from "../db"
 import { IndexerContext } from "./context"
 import type { IndexerEvents } from "./indexer"
@@ -28,6 +28,7 @@ export function IndexerProvider({
     const [isIndexing, setIsIndexing] = useState(false)
     const [isCanvasRootChanging, setIsCanvasRootChanging] = useState(false)
     const [dataVersion, setDataVersion] = useState(0)
+    const [, startTransition] = useTransition()
 
     useEffect(() => {
         const onProgress = () => {

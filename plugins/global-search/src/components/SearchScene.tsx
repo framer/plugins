@@ -46,9 +46,13 @@ export function SearchScene() {
 
     useEffect(() => {
         void framer.showUI(
-            getPluginUiOptions({ query: queryToUse, hasResults, areResultsFinal: !isIndexing && !isFilterRunning })
+            getPluginUiOptions({
+                query: queryToUse,
+                hasResults,
+                areResultsFinal: !isIndexingWithMinimumDuration && !isFilterRunning,
+            })
         )
-    }, [queryToUse, hasResults, isFilterRunning, isIndexing])
+    }, [queryToUse, hasResults, isIndexingWithMinimumDuration, isFilterRunning])
 
     return (
         <main className="flex flex-col h-full">
@@ -77,7 +81,7 @@ export function SearchScene() {
                     {queryToUse && hasResults && <ResultsList groups={results} />}
                     {queryToUse &&
                         !hasResults &&
-                        (isIndexing ? (
+                        (isIndexingWithMinimumDuration && !isFilterRunning ? (
                             <ResultMessage>Searching…</ResultMessage>
                         ) : (
                             <ResultMessage>No Results</ResultMessage>

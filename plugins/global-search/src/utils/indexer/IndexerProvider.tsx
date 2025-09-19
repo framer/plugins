@@ -17,6 +17,7 @@ export function IndexerProvider({
     projectId: string
     projectName: string
 }) {
+    const [error, setError] = useState<Error | null>(null)
     const dbRef = useRef<GlobalSearchDatabase>()
     dbRef.current ??= new GlobalSearchDatabase(projectId, projectName)
     const db = dbRef.current
@@ -29,6 +30,22 @@ export function IndexerProvider({
     const [isCanvasRootChanging, setIsCanvasRootChanging] = useState(false)
     const [dataVersion, setDataVersion] = useState(0)
     const [, startTransition] = useTransition()
+    const [hasCompletedInitialIndex, setHasCompletedInitialIndex] = useState(false)
+
+    useEffect(() => {
+        db.hasCompletedInitialIndex()
+            .then(hasCompleted => {
+                setHasCompletedInitialIndex(hasCompleted)
+            })
+            .catch((error: unknown) => {
+                setError(error instanceof Error ? error : new Error(String(error), { cause: error }))
+            })
+    }, [db])
+
+    if (error) {
+        console.error(error)
+        throw error
+    }
 
     useEffect(() => {
         const onProgress = () => {
@@ -43,9 +60,11 @@ export function IndexerProvider({
         }
 
         const onCompleted = () => {
+            void db.setInitialIndexCompleted(Date.now())
             startTransition(() => {
                 setIsIndexing(false)
                 setDataVersion(prev => prev + 1)
+                setHasCompletedInitialIndex(true)
             })
         }
 
@@ -102,8 +121,14 @@ export function IndexerProvider({
     }, [indexer, db])
 
     const data = useMemo(
-        () => ({ isIndexing: isIndexing || isCanvasRootChanging, indexerInstance: indexer, db, dataVersion }),
-        [isIndexing, isCanvasRootChanging, indexer, db, dataVersion]
+        () => ({
+            isIndexing: isIndexing || isCanvasRootChanging,
+            indexerInstance: indexer,
+            db,
+            dataVersion,
+            hasCompletedInitialIndex,
+        }),
+        [isIndexing, isCanvasRootChanging, indexer, db, dataVersion, hasCompletedInitialIndex]
     )
 
     return <IndexerContext.Provider value={data}>{children}</IndexerContext.Provider>

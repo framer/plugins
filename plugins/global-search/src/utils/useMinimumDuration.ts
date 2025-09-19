@@ -12,14 +12,14 @@ import { useEffect, useRef, useState } from "react"
  */
 export function useMinimumDuration(value: boolean, minDuration: number): boolean {
     const [delayedValue, setDelayedValue] = useState(value)
-    const timeoutRef = useRef<number>()
+    const timeoutRef = useRef<ReturnType<typeof setTimeout>>()
 
     useEffect(() => {
         if (value) {
             clearTimeout(timeoutRef.current)
             setDelayedValue(true)
         } else if (delayedValue) {
-            timeoutRef.current = window.setTimeout(() => {
+            timeoutRef.current = setTimeout(() => {
                 setDelayedValue(false)
             }, minDuration)
         }

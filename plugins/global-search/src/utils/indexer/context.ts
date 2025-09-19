@@ -7,4 +7,5 @@ export const IndexerContext = createContext<{
     indexerInstance: GlobalSearchIndexer
     db: GlobalSearchDatabase
     dataVersion: number
+    hasCompletedInitialIndex: boolean
 } | null>(null)

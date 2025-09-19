@@ -10,18 +10,19 @@ import { entries } from "../utils/object"
 import { getPluginUiOptions } from "../utils/plugin-ui"
 import { useDebounceValue } from "../utils/useDebounceValue"
 import { useMinimumDuration } from "../utils/useMinimumDuration"
-import { NoResults } from "./NoResults"
+import { ResultMessage } from "./ResultMessage"
 import { ResultsList } from "./Results"
 import { SearchInput } from "./SearchInput"
 import { IconEllipsis } from "./ui/IconEllipsis"
 import { Menu } from "./ui/Menu"
 
 export function SearchScene() {
-    const { isIndexing, db, dataVersion } = useIndexer()
+    const { isIndexing, db, dataVersion, hasCompletedInitialIndex } = useIndexer()
     const [query, setQuery] = useState("")
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
     const deferredQuery = useDeferredValue(query)
-    const isIndexingWithMinimumDuration = useMinimumDuration(isIndexing, 500)
+    const isInitialIndexing = isIndexing && !hasCompletedInitialIndex
+    const isIndexingWithMinimumDuration = useMinimumDuration(isInitialIndexing, 250)
     const debouncedQuery = useDebounceValue(deferredQuery, 250)
     // if the query is shorter than 3 characters, we use the deferred query to avoid rendering long lists when the user is typing
     const queryToUse = deferredQuery.length <= 3 ? debouncedQuery : deferredQuery
@@ -33,6 +34,7 @@ export function SearchScene() {
     } = useAsyncFilter(queryToUse, searchOptions, db, dataVersion)
 
     const hasResults = results.length > 0
+    const noResultsState = useNoResultsState(queryToUse, hasResults, isFilterRunning, isIndexingWithMinimumDuration)
 
     if (filterError) {
         console.error(filterError)
@@ -45,9 +47,13 @@ export function SearchScene() {
 
     useEffect(() => {
         void framer.showUI(
-            getPluginUiOptions({ query: queryToUse, hasResults, areResultsFinal: !isIndexing && !isFilterRunning })
+            getPluginUiOptions({
+                query: queryToUse,
+                hasResults,
+                withMessage: noResultsState !== false,
+            })
         )
-    }, [queryToUse, hasResults, isFilterRunning, isIndexing])
+    }, [queryToUse, hasResults, noResultsState])
 
     return (
         <main className="flex flex-col h-full">
@@ -74,7 +80,8 @@ export function SearchScene() {
                 </div>
                 <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden">
                     {queryToUse && hasResults && <ResultsList groups={results} />}
-                    {queryToUse && !hasResults && !isIndexing && !isFilterRunning && <NoResults />}
+                    {noResultsState === "searching" && <ResultMessage>Searching…</ResultMessage>}
+                    {noResultsState === "no-results" && <ResultMessage>No Results</ResultMessage>}
                 </div>
             </FocusScope>
         </main>
@@ -128,4 +135,27 @@ function useOptionsMenuItems() {
     }, [searchOptions])
 
     return { searchOptions, optionsMenuItems }
+}
+
+function useNoResultsState(
+    queryToUse: string,
+    hasResults: boolean,
+    isFilterRunning: boolean,
+    isIndexingWithMinimumDuration: boolean
+) {
+    const [noResultsState, setNoResultsState] = useState<"searching" | "no-results" | false>(false)
+
+    useEffect(() => {
+        if (queryToUse && !hasResults) {
+            if (isFilterRunning || isIndexingWithMinimumDuration) {
+                setNoResultsState("searching")
+            } else {
+                setNoResultsState("no-results")
+            }
+        } else {
+            setNoResultsState(false)
+        }
+    }, [queryToUse, hasResults, isFilterRunning, isIndexingWithMinimumDuration])
+
+    return noResultsState
 }

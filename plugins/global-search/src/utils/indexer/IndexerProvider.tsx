@@ -29,6 +29,15 @@ export function IndexerProvider({
     const [isCanvasRootChanging, setIsCanvasRootChanging] = useState(false)
     const [dataVersion, setDataVersion] = useState(0)
     const [, startTransition] = useTransition()
+    const [hasCompletedInitialIndex, setHasCompletedInitialIndex] = useState(false)
+
+    useEffect(() => {
+        const loadInitialState = async () => {
+            const hasCompleted = await db.hasCompletedInitialIndex()
+            setHasCompletedInitialIndex(hasCompleted)
+        }
+        void loadInitialState()
+    }, [db])
 
     useEffect(() => {
         const onProgress = () => {
@@ -43,9 +52,11 @@ export function IndexerProvider({
         }
 
         const onCompleted = () => {
+            void db.setInitialIndexCompleted(Date.now())
             startTransition(() => {
                 setIsIndexing(false)
                 setDataVersion(prev => prev + 1)
+                setHasCompletedInitialIndex(true)
             })
         }
 
@@ -102,8 +113,14 @@ export function IndexerProvider({
     }, [indexer, db])
 
     const data = useMemo(
-        () => ({ isIndexing: isIndexing || isCanvasRootChanging, indexerInstance: indexer, db, dataVersion }),
-        [isIndexing, isCanvasRootChanging, indexer, db, dataVersion]
+        () => ({
+            isIndexing: isIndexing || isCanvasRootChanging,
+            indexerInstance: indexer,
+            db,
+            dataVersion,
+            hasCompletedInitialIndex,
+        }),
+        [isIndexing, isCanvasRootChanging, indexer, db, dataVersion, hasCompletedInitialIndex]
     )
 
     return <IndexerContext.Provider value={data}>{children}</IndexerContext.Provider>

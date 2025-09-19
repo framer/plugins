@@ -2,6 +2,15 @@ import { type DBSchema, type IDBPDatabase, openDB } from "idb"
 import type { ResumableAsyncIterable } from "./filter/AsyncProcessor"
 import type { IndexEntry } from "./indexer/types"
 
+interface IndexMetadata {
+    fullyIndexedOn: number
+}
+
+interface MetadataEntry {
+    key: "index"
+    value: IndexMetadata
+}
+
 interface GlobalSearchDB extends DBSchema {
     entries: {
         key: string
@@ -13,6 +22,10 @@ interface GlobalSearchDB extends DBSchema {
             addedInIndexRun: number
             rootNodeIdVersion: [string, number]
         }
+    }
+    metadata: {
+        key: string
+        value: MetadataEntry
     }
 }
 
@@ -27,7 +40,7 @@ export class GlobalSearchDatabase implements ResumableAsyncIterable<IndexEntry> 
     async open(): Promise<IDBPDatabase<GlobalSearchDB>> {
         if (this.db) return this.db
 
-        this.db = await openDB<GlobalSearchDB>(this.dbName, 2, {
+        this.db = await openDB<GlobalSearchDB>(this.dbName, 3, {
             upgrade(db, oldVersion, _newVersion, transaction) {
                 if (oldVersion < 1) {
                     const entriesStore = db.createObjectStore("entries", { keyPath: "id" })
@@ -40,6 +53,10 @@ export class GlobalSearchDatabase implements ResumableAsyncIterable<IndexEntry> 
                     const entriesStore = transaction.objectStore("entries")
                     // Add compound index for [rootNodeId, addedInIndexRun] - this is all we need
                     entriesStore.createIndex("rootNodeIdVersion", ["rootNodeId", "addedInIndexRun"])
+                }
+
+                if (oldVersion < 3) {
+                    db.createObjectStore("metadata", { keyPath: "key" })
                 }
             },
         })
@@ -131,4 +148,36 @@ export class GlobalSearchDatabase implements ResumableAsyncIterable<IndexEntry> 
 
         await tx.done
     }
+
+    async setInitialIndexCompleted(timestamp: number): Promise<void> {
+        const db = await this.open()
+        const tx = db.transaction("metadata", "readwrite")
+        await tx.store.put({
+            key: "index",
+            value: {
+                fullyIndexedOn: timestamp,
+            },
+        })
+        await tx.done
+    }
+
+    async getIndexMetadata(): Promise<IndexMetadata | null> {
+        const db = await this.open()
+        const tx = db.transaction("metadata", "readonly")
+        const result = await tx.store.get("index")
+        return result?.value ?? null
+    }
+
+    async hasCompletedInitialIndex(): Promise<boolean> {
+        const metadata = await this.getIndexMetadata()
+        const fullyIndexedOn = metadata?.fullyIndexedOn
+        if (fullyIndexedOn === undefined) return false
+
+        // Consider the index valid if it was completed within the last month
+        const currentTime = Date.now()
+        const oneMonthAgo = currentTime - ONE_MONTH_IN_MS
+        return fullyIndexedOn >= oneMonthAgo
+    }
 }
+
+const ONE_MONTH_IN_MS = 1000 * 60 * 60 * 24 * 30

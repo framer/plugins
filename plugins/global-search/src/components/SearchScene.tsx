@@ -10,18 +10,19 @@ import { entries } from "../utils/object"
 import { getPluginUiOptions } from "../utils/plugin-ui"
 import { useDebounceValue } from "../utils/useDebounceValue"
 import { useMinimumDuration } from "../utils/useMinimumDuration"
-import { NoResults } from "./NoResults"
+import { ResultMessage } from "./ResultMessage"
 import { ResultsList } from "./Results"
 import { SearchInput } from "./SearchInput"
 import { IconEllipsis } from "./ui/IconEllipsis"
 import { Menu } from "./ui/Menu"
 
 export function SearchScene() {
-    const { isIndexing, db, dataVersion } = useIndexer()
+    const { isIndexing, db, dataVersion, hasCompletedInitialIndex } = useIndexer()
     const [query, setQuery] = useState("")
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
     const deferredQuery = useDeferredValue(query)
-    const isIndexingWithMinimumDuration = useMinimumDuration(isIndexing, 500)
+    const isInitialIndexing = isIndexing && !hasCompletedInitialIndex
+    const isIndexingWithMinimumDuration = useMinimumDuration(isInitialIndexing, 250)
     const debouncedQuery = useDebounceValue(deferredQuery, 250)
     // if the query is shorter than 3 characters, we use the deferred query to avoid rendering long lists when the user is typing
     const queryToUse = deferredQuery.length <= 3 ? debouncedQuery : deferredQuery
@@ -74,7 +75,13 @@ export function SearchScene() {
                 </div>
                 <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden">
                     {queryToUse && hasResults && <ResultsList groups={results} />}
-                    {queryToUse && !hasResults && !isIndexing && !isFilterRunning && <NoResults />}
+                    {queryToUse &&
+                        !hasResults &&
+                        (isIndexing ? (
+                            <ResultMessage>Searching…</ResultMessage>
+                        ) : (
+                            <ResultMessage>No Results</ResultMessage>
+                        ))}
                 </div>
             </FocusScope>
         </main>

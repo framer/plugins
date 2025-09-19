@@ -17,6 +17,7 @@ export function IndexerProvider({
     projectId: string
     projectName: string
 }) {
+    const [error, setError] = useState<Error | null>(null)
     const dbRef = useRef<GlobalSearchDatabase>()
     dbRef.current ??= new GlobalSearchDatabase(projectId, projectName)
     const db = dbRef.current
@@ -32,12 +33,19 @@ export function IndexerProvider({
     const [hasCompletedInitialIndex, setHasCompletedInitialIndex] = useState(false)
 
     useEffect(() => {
-        const loadInitialState = async () => {
-            const hasCompleted = await db.hasCompletedInitialIndex()
-            setHasCompletedInitialIndex(hasCompleted)
-        }
-        void loadInitialState()
+        db.hasCompletedInitialIndex()
+            .then(hasCompleted => {
+                setHasCompletedInitialIndex(hasCompleted)
+            })
+            .catch((error: unknown) => {
+                setError(error instanceof Error ? error : new Error(String(error), { cause: error }))
+            })
     }, [db])
+
+    if (error) {
+        console.error(error)
+        throw error
+    }
 
     useEffect(() => {
         const onProgress = () => {

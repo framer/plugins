@@ -14,6 +14,7 @@
         "check-vitest": "run g:check-vitest"
     },
     "dependencies": {
+        "@tanstack/react-virtual": "^3.13.12",
         "clsx": "^2.1.1",
         "framer-plugin": "3.7.0-alpha.0",
         "idb": "^8.0.3",

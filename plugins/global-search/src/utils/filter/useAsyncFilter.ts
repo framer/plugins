@@ -1,14 +1,14 @@
-import { startTransition, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import type { GlobalSearchDatabase } from "../db"
 import type { RootNodeType } from "../indexer/types"
 import { IdleCallbackAsyncProcessor } from "./AsyncProcessor"
 import { createFilterFunction, type FilterFunction } from "./execute-filter"
-import type { EntryResult } from "./group-results"
-import { groupResults } from "./group-results"
+import type { PreparedGroup } from "./group-results"
+import { groupResults as groupResults } from "./group-results"
 import { FilterType, MatcherType, type Result } from "./types"
 
 export interface AsyncFilterState {
-    readonly results: readonly EntryResult[]
+    readonly results: readonly PreparedGroup[]
     readonly hasResults: boolean
     readonly error: Error | null
     readonly running: boolean
@@ -31,6 +31,7 @@ export function useAsyncFilter(
         error: null,
         running: false,
     })
+    const [, startTransition] = useTransition()
 
     const itemProcessor = useMemo((): FilterFunction => {
         const matchers = [{ type: MatcherType.Text, query, caseSensitive: false }]

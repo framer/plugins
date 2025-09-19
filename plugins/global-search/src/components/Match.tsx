@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import { useCallback, useMemo } from "react"
+import { type CSSProperties, forwardRef, useCallback, useMemo } from "react"
 import { cn } from "../utils/className"
 import { type Range, rangeLength, rangeToCodeFileLocation } from "../utils/filter/ranges"
 import { ResultType } from "../utils/filter/types"
@@ -10,6 +10,8 @@ interface CommonMatchProps {
     targetId: string
     text: string
     range: Range
+    style?: CSSProperties | undefined
+    className?: string | undefined
 }
 
 type TypedMatchProps =
@@ -24,7 +26,8 @@ type TypedMatchProps =
 
 export type MatchProps = CommonMatchProps & TypedMatchProps
 
-export function Match({ targetId, text, range, ...props }: MatchProps) {
+export const Match = forwardRef<HTMLButtonElement, MatchProps>(function Match(props, ref) {
+    const { targetId, text, range, style, className } = props
     const navigateToResult = useCallback(() => {
         framer
             .navigateTo(targetId, {
@@ -43,13 +46,16 @@ export function Match({ targetId, text, range, ...props }: MatchProps) {
 
     return (
         <button
+            ref={ref}
             onClick={navigateToResult}
             className={cn(
-                "text-secondary-light dark:text-secondary-dark text-xs h-6 text-left select-none cursor-pointer pl-5  rounded-lg transition-colors",
+                "text-secondary-light dark:text-secondary-dark text-xs w-full text-left select-none cursor-pointer pl-5 rounded-lg transition-colors h-6 left-0",
                 "hover:bg-option-light/50 dark:hover:bg-option-dark/50 hover:text-primary-light dark:hover:text-primary-dark focus:bg-option-light dark:focus:bg-option-dark focus:text-primary-light dark:focus:text-primary-dark",
-                "focus:outline-none focus:ring-0 focus:ring-offset-0"
+                "focus:outline-none focus:ring-0 focus:ring-offset-0",
+                className
             )}
             {...focusProps}
+            style={style}
         >
             <li className="text-ellipsis overflow-hidden whitespace-nowrap">
                 {before}
@@ -58,7 +64,7 @@ export function Match({ targetId, text, range, ...props }: MatchProps) {
             </li>
         </button>
     )
-}
+})
 
 function getScrollToForMatch(range: Range, text: string, typedMatchProps: TypedMatchProps) {
     switch (typedMatchProps.type) {

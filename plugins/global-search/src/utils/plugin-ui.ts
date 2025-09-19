@@ -6,11 +6,11 @@ import type { UIOptions } from "framer-plugin"
 export function getPluginUiOptions({
     query,
     hasResults,
-    areResultsFinal,
+    withMessage: withMessage,
 }: {
     query?: string
     hasResults?: boolean
-    areResultsFinal?: boolean
+    withMessage?: boolean
 }): UIOptions {
     const uiOptions: UIOptions = {
         height: 50,
@@ -21,7 +21,7 @@ export function getPluginUiOptions({
     if (query && hasResults) {
         uiOptions.height = 320
         uiOptions.resizable = "height"
-    } else if (query && !hasResults && areResultsFinal) {
+    } else if (withMessage) {
         uiOptions.height = 140
     } else {
         uiOptions.height = 50

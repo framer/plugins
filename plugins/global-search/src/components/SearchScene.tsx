@@ -34,6 +34,7 @@ export function SearchScene() {
     } = useAsyncFilter(queryToUse, searchOptions, db, dataVersion)
 
     const hasResults = results.length > 0
+    const noResultsState = useNoResultsState(queryToUse, hasResults, isFilterRunning, isIndexingWithMinimumDuration)
 
     if (filterError) {
         console.error(filterError)
@@ -49,10 +50,10 @@ export function SearchScene() {
             getPluginUiOptions({
                 query: queryToUse,
                 hasResults,
-                areResultsFinal: !isIndexingWithMinimumDuration && !isFilterRunning,
+                withMessage: noResultsState !== false,
             })
         )
-    }, [queryToUse, hasResults, isIndexingWithMinimumDuration, isFilterRunning])
+    }, [queryToUse, hasResults, noResultsState])
 
     return (
         <main className="flex flex-col h-full">
@@ -79,13 +80,8 @@ export function SearchScene() {
                 </div>
                 <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden">
                     {queryToUse && hasResults && <ResultsList groups={results} />}
-                    {queryToUse &&
-                        !hasResults &&
-                        (isIndexingWithMinimumDuration && !isFilterRunning ? (
-                            <ResultMessage>Searching…</ResultMessage>
-                        ) : (
-                            <ResultMessage>No Results</ResultMessage>
-                        ))}
+                    {noResultsState === "searching" && <ResultMessage>Searching…</ResultMessage>}
+                    {noResultsState === "no-results" && <ResultMessage>No Results</ResultMessage>}
                 </div>
             </FocusScope>
         </main>
@@ -139,4 +135,27 @@ function useOptionsMenuItems() {
     }, [searchOptions])
 
     return { searchOptions, optionsMenuItems }
+}
+
+function useNoResultsState(
+    queryToUse: string,
+    hasResults: boolean,
+    isFilterRunning: boolean,
+    isIndexingWithMinimumDuration: boolean
+) {
+    const [noResultsState, setNoResultsState] = useState<"searching" | "no-results" | false>(false)
+
+    useEffect(() => {
+        if (queryToUse && !hasResults) {
+            if (isFilterRunning || isIndexingWithMinimumDuration) {
+                setNoResultsState("searching")
+            } else {
+                setNoResultsState("no-results")
+            }
+        } else {
+            setNoResultsState(false)
+        }
+    }, [queryToUse, hasResults, isFilterRunning, isIndexingWithMinimumDuration])
+
+    return noResultsState
 }

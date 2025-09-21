@@ -1,5 +1,6 @@
+import { framer } from "framer-plugin"
 import { type OGLRenderingContext, Program, Texture, Vec2 } from "ogl"
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useState } from "react"
 import { GLSL } from "../glsl"
 import { ColorInput } from "../inputs/color-input"
 import { NumberInput } from "../inputs/number-input"
@@ -238,6 +239,23 @@ const MATRICES = [
 
 const SHOW_DEV_TOOLS = false as boolean
 
+enum ColorMode {
+    RGB = 1,
+    Grayscale = 0,
+    Palette = 2,
+}
+
+const DEFAULT_VALUES = {
+    mode: "BAYER_4x4",
+    colorMode: ColorMode.RGB,
+    quantization: 3,
+    isRandom: false,
+    pixelSize: 2,
+    color1: "#FFFFFF",
+    color2: "#E30613",
+    brightness: 0,
+}
+
 export interface OrderedDitherRef {
     program: OrderedDitherMaterial
     setPixelSize: (value: number) => void
@@ -247,14 +265,16 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
     { gl },
     ref
 ) {
-    const [mode, setMode] = useState<string>("BAYER_4x4")
-    const [colorMode, setColorMode] = useState(1)
-    const [quantization, setQuantization] = useState(3)
-    const [isRandom, setIsRandom] = useState(false)
-    const [pixelSize, setPixelSize] = useState(2)
-    const [colors, setColors] = useState(["#FFFFFF", "#E30613"] as string[])
-
+    const [mode, setMode] = useState<string>(DEFAULT_VALUES.mode)
+    const [colorMode, setColorMode] = useState(DEFAULT_VALUES.colorMode)
+    const [quantization, setQuantization] = useState(DEFAULT_VALUES.quantization)
+    const [isRandom, setIsRandom] = useState(DEFAULT_VALUES.isRandom)
+    const [pixelSize, setPixelSize] = useState(DEFAULT_VALUES.pixelSize)
+    const [color1, setColor1] = useState(DEFAULT_VALUES.color1)
+    const [color2, setColor2] = useState(DEFAULT_VALUES.color2)
     const [brightness, setBrightness] = useState(0)
+
+    const colors = useMemo(() => [color1, color2], [color1, color2])
 
     useGradientTexture(gl, { colors, quantization }, (texture: Texture) => {
         program.paletteTexture = texture
@@ -302,6 +322,76 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
         [program, setPixelSize]
     )
 
+    function showRowContextMenu(e: React.MouseEvent<HTMLDivElement>, property: keyof typeof DEFAULT_VALUES) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        let enabled = true
+        let onAction: (() => void) | undefined = undefined
+
+        switch (property) {
+            case "mode":
+                enabled = mode !== DEFAULT_VALUES.mode || isRandom
+                onAction = () => {
+                    setMode(DEFAULT_VALUES.mode)
+                    setIsRandom(false)
+                }
+                break
+            case "colorMode":
+                enabled = colorMode !== DEFAULT_VALUES.colorMode
+                onAction = () => {
+                    setColorMode(DEFAULT_VALUES.colorMode)
+                }
+                break
+            case "quantization":
+                enabled = quantization !== DEFAULT_VALUES.quantization
+                onAction = () => {
+                    setQuantization(DEFAULT_VALUES.quantization)
+                }
+                break
+            case "pixelSize":
+                enabled = pixelSize !== DEFAULT_VALUES.pixelSize
+                onAction = () => {
+                    setPixelSize(DEFAULT_VALUES.pixelSize)
+                }
+                break
+            case "color1":
+                enabled = color1 !== DEFAULT_VALUES.color1
+                onAction = () => {
+                    setColor1(DEFAULT_VALUES.color1)
+                }
+                break
+            case "color2":
+                enabled = color2 !== DEFAULT_VALUES.color2
+                onAction = () => {
+                    setColor2(DEFAULT_VALUES.color2)
+                }
+                break
+            case "brightness":
+                enabled = brightness !== DEFAULT_VALUES.brightness
+                onAction = () => {
+                    setBrightness(DEFAULT_VALUES.brightness)
+                }
+                break
+        }
+
+        void framer.showContextMenu(
+            [
+                {
+                    label: "Reset to Default",
+                    enabled,
+                    onAction,
+                },
+            ],
+            {
+                location: {
+                    x: e.clientX,
+                    y: e.clientY,
+                },
+            }
+        )
+    }
+
     return (
         <>
             {process.env.NODE_ENV === "development" && SHOW_DEV_TOOLS && (
@@ -332,9 +422,15 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                     />
                 </>
             )}
-            <div className="gui-row">
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    showRowContextMenu(e, "mode")
+                }}
+            >
                 <label className="gui-label">Mode</label>
                 <select
+                    value={isRandom ? "RANDOM" : mode}
                     onChange={e => {
                         const value = e.target.value
 
@@ -346,7 +442,6 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                         }
                     }}
                     className="gui-select"
-                    defaultValue={mode}
                 >
                     <option value="RANDOM">Random</option>
                     {MATRICES.map(({ title, id }) => (
@@ -357,55 +452,67 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                 </select>
             </div>
 
-            <div className="gui-row">
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    showRowContextMenu(e, "colorMode")
+                }}
+            >
                 <label className="gui-label">Color Mode</label>
                 <select
                     onChange={e => {
-                        setColorMode(Number(e.target.value))
+                        setColorMode(Number(e.target.value) as ColorMode)
                     }}
                     className="gui-select"
                     value={colorMode}
                 >
-                    <option value="1">RGB</option>
-                    <option value="0">Grayscale</option>
-                    <option value="2">Palette</option>
+                    <option value={ColorMode.RGB}>RGB</option>
+                    <option value={ColorMode.Grayscale}>Grayscale</option>
+                    <option value={ColorMode.Palette}>Palette</option>
                 </select>
             </div>
 
-            {[2].includes(colorMode) && (
+            {colorMode === ColorMode.Palette && (
                 <>
-                    <div className="gui-row">
+                    <div
+                        className="gui-row"
+                        onContextMenu={e => {
+                            showRowContextMenu(e, "color1")
+                        }}
+                    >
                         <label className="gui-label">Color A</label>
                         <ColorInput
-                            value={colors[0] ?? ""}
+                            value={color1}
                             onChange={color => {
                                 if (typeof color !== "string") return
-                                setColors(v => {
-                                    const newColors = [...v]
-                                    newColors[0] = color
-                                    return newColors
-                                })
+                                setColor1(color)
                             }}
                         />
                     </div>
-                    <div className="gui-row">
+                    <div
+                        className="gui-row"
+                        onContextMenu={e => {
+                            showRowContextMenu(e, "color2")
+                        }}
+                    >
                         <label className="gui-label">Color B</label>
                         <ColorInput
-                            value={colors[1] ?? ""}
+                            value={color2}
                             onChange={color => {
                                 if (typeof color !== "string") return
-                                setColors(v => {
-                                    const newColors = [...v]
-                                    newColors[1] = color
-                                    return newColors
-                                })
+                                setColor2(color)
                             }}
                         />
                     </div>
                 </>
             )}
 
-            <div className="gui-row">
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    showRowContextMenu(e, "pixelSize")
+                }}
+            >
                 <label className="gui-label">Pixelation</label>
                 <NumberInput
                     value={pixelSize}
@@ -417,7 +524,12 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                     step={1}
                 />
             </div>
-            <div className="gui-row">
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    showRowContextMenu(e, "brightness")
+                }}
+            >
                 <label className="gui-label">Brightness</label>
                 <NumberInput
                     value={brightness}
@@ -429,7 +541,12 @@ export const OrderedDither = forwardRef<OrderedDitherRef, { gl: OGLRenderingCont
                     step={1}
                 />
             </div>
-            <div className="gui-row">
+            <div
+                className="gui-row"
+                onContextMenu={e => {
+                    showRowContextMenu(e, "quantization")
+                }}
+            >
                 <label className="gui-label">Quantization</label>
                 <NumberInput
                     value={quantization}

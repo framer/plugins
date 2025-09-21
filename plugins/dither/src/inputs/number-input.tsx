@@ -1,4 +1,3 @@
-import * as Slider from "@radix-ui/react-slider"
 import { useEffect, useState } from "react"
 
 function numDigitsAfterDecimal(x: number) {
@@ -65,21 +64,22 @@ export function NumberInput({
                 }}
             />
 
-            <Slider.Root
+            <input
+                type="range"
                 className="SliderRoot"
                 min={min}
                 max={max}
                 step={step}
-                value={[value]}
-                onValueChange={value => {
-                    onValueChange?.(Number(value[0]))
+                value={value}
+                onChange={e => {
+                    onValueChange?.(Number(e.target.value))
                 }}
-            >
-                <Slider.Track className="SliderTrack strokeWidth">
-                    <Slider.Range className="SliderRange" />
-                </Slider.Track>
-                <Slider.Thumb className="SliderThumb" />
-            </Slider.Root>
+                style={
+                    {
+                        "--progress": `${((value - min) / (max - min)) * 100}%`,
+                    } as React.CSSProperties
+                }
+            />
         </>
     )
 }

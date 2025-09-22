@@ -1,6 +1,6 @@
-import { type AnyNode, ComponentNode, isTextNode, TextNode, WebPageNode } from "framer-plugin"
+import { type AnyNode, ComponentNode, DesignPageNode, isTextNode, TextNode, WebPageNode } from "framer-plugin"
 
-export type IndexNodeRootNode = ComponentNode | WebPageNode
+export type IndexNodeRootNode = ComponentNode | WebPageNode | DesignPageNode
 export type IndexNodeRootNodeType = IndexNodeRootNode["__class"]
 
 export type IndexableNode = TextNode

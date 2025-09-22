@@ -73,6 +73,7 @@ const defaultIconClassName = "text-tertiary-light dark:text-tertiary-dark"
 export function ResultIcon({ rootNodeType }: { rootNodeType: RootNodeType }) {
     switch (rootNodeType) {
         case "WebPageNode":
+        case "DesignPageNode":
             return <IconWebPage className={defaultIconClassName} />
         case "Collection":
             return <IconCollection className={defaultIconClassName} />

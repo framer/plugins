@@ -88,30 +88,25 @@ export function SearchScene() {
     )
 }
 
-/**
- * Contains if you can filter by a root node type.
- *
- * During current state of the plugin, not all types are indexed yet.
- */
-const optionsEnabled = {
+const searchOptions: Record<RootNodeType, true> = {
     ComponentNode: true,
     WebPageNode: true,
     Collection: true,
     CodeFile: true,
+    DesignPageNode: true,
 }
 
-const defaultSearchOptions = entries(optionsEnabled)
-    .filter(([, enabled]) => enabled)
-    .map(([rootNode]) => rootNode)
+const defaultSearchOptions = entries(searchOptions).map(([rootNode]) => rootNode)
 
 const optionsMenuLabels = {
     ComponentNode: "Components",
     WebPageNode: "Pages",
+    DesignPageNode: "Designs",
     Collection: "Collections",
     CodeFile: "Code",
 } as const satisfies Record<RootNodeType, string>
 
-const sortedRootNodeTypes = entries(optionsEnabled).sort(([a], [b]) => compareRootNodeTypeByPriority(a, b))
+const sortedRootNodeTypes = entries(searchOptions).sort(([a], [b]) => compareRootNodeTypeByPriority(a, b))
 
 function useOptionsMenuItems() {
     const [searchOptions, setSearchOptions] = useState<readonly RootNodeType[]>(defaultSearchOptions)

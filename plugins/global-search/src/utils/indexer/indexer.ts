@@ -4,6 +4,7 @@ import {
     type Collection,
     framer,
     isComponentNode,
+    isDesignPageNode,
     isFrameNode,
     isTextNode,
     isWebPageNode,
@@ -25,6 +26,10 @@ async function getNodeName(node: AnyNode): Promise<string | null> {
         if (node.path === "/") return "Home"
         if (!node.path) return "Web Page"
         return node.path
+    }
+
+    if (isDesignPageNode(node)) {
+        return node.name ?? "Design"
     }
 
     if (isComponentNode(node)) {
@@ -203,7 +208,9 @@ export class GlobalSearchIndexer {
         rootNodes: readonly CanvasRootNode[],
         abortSignal?: AbortSignal
     ) {
-        const validRootNodes = rootNodes.filter(rootNode => isComponentNode(rootNode) || isWebPageNode(rootNode))
+        const validRootNodes = rootNodes.filter(
+            rootNode => isComponentNode(rootNode) || isWebPageNode(rootNode) || isDesignPageNode(rootNode)
+        )
 
         for await (const batch of this.crawlNodes(currentIndexRun, validRootNodes)) {
             if (this.abortRequested || abortSignal?.aborted) break
@@ -258,10 +265,11 @@ export class GlobalSearchIndexer {
             const lastIndexRun = await this.db.getLastIndexRun()
             const currentIndexRun = lastIndexRun + 1
 
-            const [pages, components, canvasRoot] = await Promise.all([
+            const [canvasRoot, ...rootNodes] = await Promise.all([
+                framer.getCanvasRoot(),
                 framer.getNodesWithType("WebPageNode"),
                 framer.getNodesWithType("ComponentNode"),
-                framer.getCanvasRoot(),
+                framer.getNodesWithType("DesignPageNode"),
             ])
 
             this.abortRequested = false
@@ -273,9 +281,7 @@ export class GlobalSearchIndexer {
 
             // Remove the current open canvas root from the list of root nodes to index
             // as it's already being indexed by the canvas root watcher
-            const rootNodesWithoutCurrentRoot = [...pages, ...components].filter(
-                rootNode => rootNode.id !== canvasRoot.id
-            )
+            const rootNodesWithoutCurrentRoot = rootNodes.flat().filter(rootNode => rootNode.id !== canvasRoot.id)
 
             await Promise.all([
                 this.processNodes(currentIndexRun, rootNodesWithoutCurrentRoot),

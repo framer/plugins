@@ -81,7 +81,13 @@ export async function groupResults(
     return groups.sort((a, b) => compareRootNodeTypeByPriority(a.entry.rootNodeType, b.entry.rootNodeType))
 }
 
-const orderOfResults = ["WebPageNode", "Collection", "ComponentNode", "CodeFile"] satisfies RootNodeType[]
+const orderOfResults = [
+    "WebPageNode",
+    "DesignPageNode",
+    "Collection",
+    "ComponentNode",
+    "CodeFile",
+] satisfies RootNodeType[]
 
 export function compareRootNodeTypeByPriority(a: RootNodeType, b: RootNodeType): number {
     return orderOfResults.indexOf(a) - orderOfResults.indexOf(b)

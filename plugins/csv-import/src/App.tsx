@@ -220,7 +220,7 @@ export function App({ collection }: { collection: Collection | null }) {
 
                 await importItems(result)
             } catch (error) {
-                if (error instanceof FramerPluginClosedError) return
+                if (error instanceof FramerPluginClosedError) throw error
 
                 console.error(error)
 
@@ -299,11 +299,14 @@ export function App({ collection }: { collection: Collection | null }) {
                     framer.notify("Unable to access clipboard content", {
                         variant: "error",
                     })
+                    return
                 }
 
                 try {
                     await processAndImport(csv)
                 } catch (error) {
+                    if (error instanceof FramerPluginClosedError) return
+
                     console.error("Error importing CSV:", error)
                     framer.notify("Error importing CSV", {
                         variant: "error",

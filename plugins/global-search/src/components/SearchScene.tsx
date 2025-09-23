@@ -1,6 +1,5 @@
 import { framer, type MenuItem } from "framer-plugin"
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react"
-import { FocusScope } from "react-aria"
 import { cn } from "../utils/className"
 import { compareRootNodeTypeByPriority } from "../utils/filter/group-results"
 import { useAsyncFilter } from "../utils/filter/useAsyncFilter"
@@ -8,6 +7,7 @@ import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
 import { getPluginUiOptions } from "../utils/plugin-ui"
+import { SelectionProvider } from "../utils/selection/SelectionProvider"
 import { useDebounceValue } from "../utils/useDebounceValue"
 import { useMinimumDuration } from "../utils/useMinimumDuration"
 import { ResultMessage } from "./ResultMessage"
@@ -57,7 +57,7 @@ export function SearchScene() {
 
     return (
         <main className="flex flex-col h-full">
-            <FocusScope>
+            <SelectionProvider>
                 <div
                     className={cn(
                         "flex gap-2 border-divider-light dark:border-divider-dark border-y py-3 mx-3 transition-colors items-center",
@@ -83,7 +83,7 @@ export function SearchScene() {
                     {noResultsState === "searching" && <ResultMessage>Searching…</ResultMessage>}
                     {noResultsState === "no-results" && <ResultMessage>No Results</ResultMessage>}
                 </div>
-            </FocusScope>
+            </SelectionProvider>
         </main>
     )
 }

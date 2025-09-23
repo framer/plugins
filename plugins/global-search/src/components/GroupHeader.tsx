@@ -3,7 +3,8 @@ import { assertNever } from "../utils/assert"
 import { cn } from "../utils/className"
 import type { PreparedGroup } from "../utils/filter/group-results"
 import type { RootNodeType } from "../utils/indexer/types"
-import { useFocusHandlers } from "../utils/useFocus"
+import { headerId } from "../utils/selection/constants"
+import { useSelection } from "../utils/selection/useSelection"
 import { IconArrowRight } from "./ui/IconArrowRight"
 import { IconCode } from "./ui/IconCode"
 import { IconCollection } from "./ui/IconCollection"
@@ -24,7 +25,7 @@ export const GroupHeader = memo(
         { entry, isExpanded, isSticky, onToggle, className, showFadeOut, hasTopBorder, ...props },
         ref
     ) {
-        const focusProps = useFocusHandlers({ isSelfSelectable: false })
+        const { getFocusProps } = useSelection()
         const displayName = entry.rootNodeName ?? `Unnamed ${entry.rootNodeType}`
 
         return (
@@ -39,8 +40,8 @@ export const GroupHeader = memo(
                     className
                 )}
                 aria-expanded={isExpanded}
-                {...focusProps}
                 {...props}
+                {...getFocusProps(headerId(entry.id))}
             >
                 <hr
                     className="border-divider-light dark:border-divider-dark aria-hidden:opacity-0 mb-1"

@@ -7,7 +7,7 @@ import { IconSearch } from "./ui/IconSearch"
 type SearchInputProps = DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>
 
 export function SearchInput({ className, ...props }: SearchInputProps) {
-    const { inputFocusProps, activeId } = useSelection()
+    const { inputFocusProps, activeId, inputRef } = useSelection()
     const activeDescendant = activeId && !isHeader(activeId) ? activeId : undefined
 
     return (
@@ -19,6 +19,7 @@ export function SearchInput({ className, ...props }: SearchInputProps) {
                 className="flex-1 h-[18px] bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-xs p-0 text-primary-light dark:text-primary-dark placeholder:text-tertiary-light dark:placeholder:text-tertiary-dark"
                 placeholder="Search..."
                 autoFocus
+                ref={inputRef}
                 aria-activedescendant={activeDescendant}
                 onKeyDown={e => {
                     inputFocusProps.onKeyDown(e)

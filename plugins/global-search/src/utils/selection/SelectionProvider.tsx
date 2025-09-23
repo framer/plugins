@@ -5,6 +5,7 @@ import { SelectionContext } from "./context"
 export function SelectionProvider({ children }: { children: React.ReactNode }) {
     const [activeId, setActiveId] = useState<string | null>(null)
     const idsRef = useRef<readonly string[]>([])
+    const inputRef = useRef<HTMLInputElement | null>(null)
 
     // scroll to active id
     useLayoutEffect(() => {
@@ -49,6 +50,8 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
         (event: React.KeyboardEvent<HTMLElement>) => {
             if (event.key === "ArrowDown" || event.key === "ArrowUp") {
                 event.preventDefault()
+                // Ensure the search input retains focus while navigating, prevents other elements from being focused
+                inputRef.current?.focus()
                 const currentIndex = activeId ? idsRef.current.indexOf(activeId) : null
                 const direction = event.key === "ArrowDown" ? NavigationDirection.Down : NavigationDirection.Up
                 const nextId = findNextSelectable(currentIndex, direction)
@@ -75,6 +78,9 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
                 onKeyDown: handleKeyDown,
             }),
             inputFocusProps: { onKeyDown: handleKeyDown },
+            inputRef: (el: HTMLInputElement | null) => {
+                inputRef.current = el
+            },
         }),
         [activeId, setItems, handleKeyDown]
     )

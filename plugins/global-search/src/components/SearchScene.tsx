@@ -32,9 +32,15 @@ export function SearchScene() {
         running: isFilterRunning,
         error: filterError,
     } = useAsyncFilter(queryToUse, searchOptions, db, dataVersion)
+    const isFilterRunningWithMinimumDuration = useMinimumDuration(isFilterRunning, 500)
 
     const hasResults = results.length > 0
-    const noResultsState = useNoResultsState(queryToUse, hasResults, isFilterRunning, isIndexingWithMinimumDuration)
+    const noResultsState = useNoResultsState(
+        queryToUse,
+        hasResults,
+        isFilterRunningWithMinimumDuration,
+        isIndexingWithMinimumDuration
+    )
 
     if (filterError) {
         console.error(filterError)
@@ -132,17 +138,12 @@ function useOptionsMenuItems() {
     return { searchOptions, optionsMenuItems }
 }
 
-function useNoResultsState(
-    queryToUse: string,
-    hasResults: boolean,
-    isFilterRunning: boolean,
-    isIndexingWithMinimumDuration: boolean
-) {
+function useNoResultsState(queryToUse: string, hasResults: boolean, isFilterRunning: boolean, isIndexing: boolean) {
     const [noResultsState, setNoResultsState] = useState<"searching" | "no-results" | false>(false)
 
     useEffect(() => {
         if (queryToUse && !hasResults) {
-            if (isFilterRunning || isIndexingWithMinimumDuration) {
+            if (isFilterRunning || isIndexing) {
                 setNoResultsState("searching")
             } else {
                 setNoResultsState("no-results")
@@ -150,7 +151,7 @@ function useNoResultsState(
         } else {
             setNoResultsState(false)
         }
-    }, [queryToUse, hasResults, isFilterRunning, isIndexingWithMinimumDuration])
+    }, [queryToUse, hasResults, isFilterRunning, isIndexing])
 
     return noResultsState
 }

@@ -65,7 +65,9 @@ export const Match = forwardRef<HTMLButtonElement, MatchProps>(function Match(pr
         >
             <div className="text-ellipsis overflow-hidden whitespace-nowrap">
                 {before}
-                <span className="font-semibold bg-transparent">{highlight}</span>
+                <span className="font-semibold bg-transparent text-primary-light dark:text-primary-dark">
+                    {highlight}
+                </span>
                 {after}
             </div>
         </button>

@@ -57,7 +57,7 @@ export function ResultsList({ groups }: ResultsProps) {
             role="listbox"
             aria-label="Search results"
         >
-            <div className="relative w-full" style={{ height: rowVirtualizer.getTotalSize() }}>
+            <div className="relative w-full mb-3" style={{ height: rowVirtualizer.getTotalSize() }}>
                 {rowVirtualizer.getVirtualItems().map(virtualRow => {
                     const item = virtualItems[virtualRow.index]
                     if (!item) return null

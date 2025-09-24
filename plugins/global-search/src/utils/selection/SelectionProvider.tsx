@@ -10,7 +10,7 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
     // scroll to active id
     useLayoutEffect(() => {
         if (!activeId) return
-        document.getElementById(activeId)?.scrollIntoView({ behavior: "smooth", block: "center" })
+        document.getElementById(activeId)?.scrollIntoView({ behavior: "smooth", block: "nearest" })
     }, [activeId])
 
     const setItems = useCallback(

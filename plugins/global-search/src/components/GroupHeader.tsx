@@ -34,7 +34,7 @@ export const GroupHeader = memo(
                 ref={ref}
                 onClick={onToggle}
                 className={cn(
-                    "group w-full focus:outline-none bg-modal-light dark:bg-modal-dark cursor-pointer transition-colors text-left",
+                    "group w-full focus:outline-none bg-modal-light dark:bg-modal-dark cursor-pointer text-left",
                     isSticky ? "sticky -top-px z-1" : "",
                     showFadeOut &&
                         "after:content-[] after:absolute after:top-7 after:left-0 after:right-0 after:h-3 after:z-10 after:pointer-events-none after:bg-gradient-to-b after:from-modal-light dark:after:from-modal-dark after:to-transparent",

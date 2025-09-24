@@ -5,9 +5,9 @@
 const idleTimeThreshold = 7
 
 const getIdleCallback =
-    // Unfortunately Safari doesn't support requestIdleCallback, so we need to shim it
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    requestIdleCallback ??
+    // Safari doesn't support requestIdleCallback, so we need to shim it
+    // This affects Safari versions before 16.4 (released March 2023)
+    (typeof requestIdleCallback !== "undefined" ? requestIdleCallback : null) ??
     ((cb: IdleRequestCallback) => {
         const start = performance.now()
         return setTimeout(() => {

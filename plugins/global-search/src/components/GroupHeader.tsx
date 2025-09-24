@@ -30,6 +30,7 @@ export const GroupHeader = memo(
 
         return (
             <button
+                tabIndex={-1}
                 ref={ref}
                 onClick={onToggle}
                 className={cn(

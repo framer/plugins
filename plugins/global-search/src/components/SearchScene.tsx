@@ -78,7 +78,7 @@ export function SearchScene() {
                         <IconEllipsis className="text-framer-text-tertiary-light dark:text-framer-text-tertiary-dark" />
                     </Menu>
                 </div>
-                <div className="overflow-y-auto px-3 flex flex-col flex-1 scrollbar-hidden">
+                <div className="px-3 flex flex-col flex-1 scrollbar-hidden">
                     {queryToUse && hasResults && <ResultsList groups={results} />}
                     {noResultsState === "searching" && <ResultMessage>Searching…</ResultMessage>}
                     {noResultsState === "no-results" && <ResultMessage>No Results</ResultMessage>}

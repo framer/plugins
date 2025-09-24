@@ -49,6 +49,7 @@ export const Match = forwardRef<HTMLButtonElement, MatchProps>(function Match(pr
     return (
         <button
             ref={ref}
+            tabIndex={-1}
             onClick={navigateToResult}
             className={cn(
                 "text-secondary-light dark:text-secondary-dark text-xs w-full text-left select-none cursor-pointer pl-5 rounded-lg transition-colors h-6 left-0",

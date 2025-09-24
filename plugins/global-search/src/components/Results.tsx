@@ -1,8 +1,10 @@
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
-import { type CSSProperties, useCallback, useMemo, useRef, useState } from "react"
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "../utils/className"
 import type { PreparedGroup, PreparedResult } from "../utils/filter/group-results"
 import { ResultType } from "../utils/filter/types"
+import { headerId } from "../utils/selection/constants"
+import { useSelection } from "../utils/selection/useSelection"
 import { GroupHeader } from "./GroupHeader"
 import { Match } from "./Match"
 
@@ -14,7 +16,8 @@ export function ResultsList({ groups }: ResultsProps) {
     const scrollElementRef = useRef<HTMLDivElement>(null)
     const activeStickyIndexRef = useRef(0)
     const { collapsedGroups, toggleGroup } = useCollapsedGroups()
-    const { virtualItems, stickyIndexes } = useProcessedResults(groups, collapsedGroups)
+    const { virtualItems, virtualItemIds, stickyIndexes } = useProcessedResults(groups, collapsedGroups)
+    const { setItems } = useSelection()
 
     const rowVirtualizer = useVirtualizer({
         overscan: 10,
@@ -43,8 +46,17 @@ export function ResultsList({ groups }: ResultsProps) {
         },
     })
 
+    useEffect(() => {
+        setItems(virtualItemIds)
+    }, [virtualItemIds, setItems])
+
     return (
-        <div ref={scrollElementRef} className="flex-1 min-h-0 overflow-auto scrollbar-hidden contain-strict">
+        <div
+            ref={scrollElementRef}
+            className="flex-1 min-h-0 overflow-auto scrollbar-hidden contain-strict focus-visible:outline-focus-ring-light focus-visible:dark:outline-focus-ring-dark focus-visible:outline-2 rounded-lg"
+            role="listbox"
+            aria-label="Search results"
+        >
             <div className="relative w-full" style={{ height: rowVirtualizer.getTotalSize() }}>
                 {rowVirtualizer.getVirtualItems().map(virtualRow => {
                     const item = virtualItems[virtualRow.index]
@@ -91,6 +103,7 @@ export function ResultsList({ groups }: ResultsProps) {
                                 ref={rowVirtualizer.measureElement}
                                 type={ResultType.CollectionItemField}
                                 collectionFieldId={item.result.matchingField.id}
+                                resultId={item.resultId}
                                 targetId={item.result.entry.collectionItemId}
                                 text={item.result.text}
                                 range={item.result.range}
@@ -105,6 +118,7 @@ export function ResultsList({ groups }: ResultsProps) {
                             key={virtualRow.key}
                             ref={rowVirtualizer.measureElement}
                             type={item.result.type}
+                            resultId={item.resultId}
                             targetId={item.result.entry.nodeId}
                             text={item.result.text}
                             range={item.result.range}
@@ -157,9 +171,10 @@ function useCollapsedGroups(): { collapsedGroups: ReadonlySet<string>; toggleGro
 function useProcessedResults(
     groupedResults: readonly PreparedGroup[],
     collapsedGroups: ReadonlySet<string>
-): { virtualItems: readonly VirtualItem[]; stickyIndexes: readonly number[] } {
+): { virtualItems: readonly VirtualItem[]; stickyIndexes: readonly number[]; virtualItemIds: readonly string[] } {
     return useMemo(() => {
         const virtualItems: VirtualItem[] = []
+        const virtualItemIds: string[] = []
         const stickyIndexes: number[] = []
 
         for (const group of groupedResults) {
@@ -167,6 +182,7 @@ function useProcessedResults(
 
             stickyIndexes.push(virtualItems.length)
 
+            virtualItemIds.push(headerId(group.entry.id))
             virtualItems.push({
                 type: "group-header",
                 groupId: group.entry.id,
@@ -177,6 +193,7 @@ function useProcessedResults(
             // Add results to virtual items only if expanded
             if (isExpanded) {
                 for (const processed of group.matches) {
+                    virtualItemIds.push(processed.id)
                     virtualItems.push({
                         type: "result",
                         groupId: group.entry.id,
@@ -187,6 +204,6 @@ function useProcessedResults(
             }
         }
 
-        return { virtualItems, stickyIndexes }
+        return { virtualItems, stickyIndexes, virtualItemIds }
     }, [groupedResults, collapsedGroups])
 }

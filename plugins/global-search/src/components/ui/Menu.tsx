@@ -42,7 +42,7 @@ export const Menu = memo(function Menu({ items, children, className }: MenuProps
                 ref={buttonRef}
                 onMouseDown={toggleMenu}
                 onKeyDown={toggleMenu}
-                className="group h-full -mx-2 px-2 -my-3 py-3 text-white rounded-md flex-shrink-0 flex items-center justify-center bg-transparent focus:outline-none hover:text-primary-light dark:hover:text-primary-dark focus:text-primary-light dark:focus:text-primary-dark disabled:opacity-50 disabled:pointer-events-none disabled:cursor-default visible"
+                className="group h-full -mx-2 px-2 -my-3 py-3 text-white rounded-md flex-shrink-0 flex items-center justify-center bg-transparent outline-focus-ring-light dark:outline-focus-ring-dark hover:text-primary-light dark:hover:text-primary-dark focus:text-primary-light dark:focus:text-primary-dark disabled:opacity-50 disabled:pointer-events-none disabled:cursor-default visible"
                 aria-haspopup="true"
             >
                 <div className="flex items-center justify-center w-fit h-fit flex-shrink-0 bg-transparent text-tertiary-light dark:text-tertiary-dark group-hover:text-primary-light dark:group-hover:text-primary-dark group-focus:text-primary-light dark:group-focus:text-primary-dark">

@@ -28,6 +28,9 @@
     --color-modal-light: #ffffff;
     --color-modal-dark: #111111;
 
+    --color-focus-ring-light: #0099ff;
+    --color-focus-ring-dark: #0099ff;
+
     /* Spacing */
     --spacing: 5px;
 }

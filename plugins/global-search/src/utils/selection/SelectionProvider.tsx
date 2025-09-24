@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react"
+import React, { useCallback, useMemo, useRef, useState } from "react"
 import { isHeader, NavigationDirection } from "./constants"
 import { SelectionContext } from "./context"
 
@@ -6,12 +6,6 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
     const [activeId, setActiveId] = useState<string | null>(null)
     const idsRef = useRef<readonly string[]>([])
     const inputRef = useRef<HTMLInputElement | null>(null)
-
-    // scroll to active id
-    useLayoutEffect(() => {
-        if (!activeId) return
-        document.getElementById(activeId)?.scrollIntoView({ behavior: "smooth", block: "center" })
-    }, [activeId])
 
     const setItems = useCallback(
         (ids: readonly string[]) => {
@@ -58,6 +52,7 @@ export function SelectionProvider({ children }: { children: React.ReactNode }) {
                 // end on the last or first item when repeating
                 if (event.repeat && nextId === null) return
                 setActiveId(nextId)
+                if (nextId) document.getElementById(nextId)?.scrollIntoView({ behavior: "instant", block: "center" })
             } else if (event.key === "Enter" && activeId && !isHeader(activeId)) {
                 document.getElementById(activeId)?.click()
                 event.preventDefault()

@@ -53,11 +53,11 @@ export function ResultsList({ groups }: ResultsProps) {
     return (
         <div
             ref={scrollElementRef}
-            className="flex-1 min-h-0 overflow-auto scrollbar-hidden contain-strict focus-visible:outline-focus-ring-light focus-visible:dark:outline-focus-ring-dark focus-visible:outline-2 rounded-lg"
+            className="flex-1 min-h-0 overflow-auto scrollbar-hidden contain-strict focus-visible:outline-focus-ring-light focus-visible:dark:outline-focus-ring-dark focus-visible:outline-2 focus-visible:rounded-lg"
             role="listbox"
             aria-label="Search results"
         >
-            <div className="relative w-full" style={{ height: rowVirtualizer.getTotalSize() }}>
+            <div className="relative w-full mb-3" style={{ height: rowVirtualizer.getTotalSize() }}>
                 {rowVirtualizer.getVirtualItems().map(virtualRow => {
                     const item = virtualItems[virtualRow.index]
                     if (!item) return null

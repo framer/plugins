@@ -52,9 +52,9 @@ export const Match = forwardRef<HTMLButtonElement, MatchProps>(function Match(pr
             tabIndex={-1}
             onClick={navigateToResult}
             className={cn(
-                "text-secondary-light dark:text-secondary-dark text-xs w-full text-left select-none cursor-pointer pl-5 rounded-lg transition-colors h-6 left-0",
+                "text-secondary-light dark:text-secondary-dark text-xs w-full text-left select-none pl-5 pr-1 rounded-lg h-6 left-0 scroll-m-8",
                 "hover:bg-option-light/50 dark:hover:bg-option-dark/50 hover:text-primary-light dark:hover:text-primary-dark",
-                isActive ? "bg-option-light dark:bg-option-dark text-primary-light dark:text-primary-dark" : "",
+                "aria-selected:bg-option-light dark:aria-selected:bg-option-dark aria-selected:text-primary-light dark:aria-selected:text-primary-dark",
                 "focus:outline-none focus:ring-0 focus:ring-offset-0",
                 className
             )}
@@ -65,7 +65,9 @@ export const Match = forwardRef<HTMLButtonElement, MatchProps>(function Match(pr
         >
             <div className="text-ellipsis overflow-hidden whitespace-nowrap">
                 {before}
-                <span className="font-semibold bg-transparent">{highlight}</span>
+                <span className="font-semibold bg-transparent text-primary-light dark:text-primary-dark">
+                    {highlight}
+                </span>
                 {after}
             </div>
         </button>

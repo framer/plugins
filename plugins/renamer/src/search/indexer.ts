@@ -1,4 +1,12 @@
-import { type CanvasRootNode, framer, isComponentNode, isFrameNode, isTextNode, isWebPageNode } from "framer-plugin"
+import {
+    type CanvasRootNode,
+    framer,
+    isComponentNode,
+    isDesignPageNode,
+    isFrameNode,
+    isTextNode,
+    isWebPageNode,
+} from "framer-plugin"
 import { isCanvasNode } from "./traits"
 import type { CanvasNode, IndexEntry } from "./types"
 
@@ -104,15 +112,16 @@ export class Indexer {
 
     private async getRootNodes(): Promise<CanvasRootNode[]> {
         if (this.scope === "project") {
-            const [webPages, componentNodes] = await Promise.all([
+            const [webPages, componentNodes, designPages] = await Promise.all([
                 framer.getNodesWithType("WebPageNode"),
                 framer.getNodesWithType("ComponentNode"),
+                framer.getNodesWithType("DesignPageNode"),
             ])
-            return [...webPages, ...componentNodes]
+            return [...webPages, ...componentNodes, ...designPages]
         }
 
         const root = await framer.getCanvasRoot()
-        if (!isWebPageNode(root) && !isComponentNode(root)) return []
+        if (!isWebPageNode(root) && !isComponentNode(root) && !isDesignPageNode(root)) return []
 
         return [root]
     }

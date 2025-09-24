@@ -1,5 +1,5 @@
 import type { Collection } from "framer-plugin"
-import { framer, useIsAllowedTo } from "framer-plugin"
+import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ImportResult, ImportResultItem } from "./csv"
 import "./App.css"
@@ -220,13 +220,14 @@ export function App({ collection }: { collection: Collection | null }) {
 
                 await importItems(result)
             } catch (error) {
+                if (error instanceof FramerPluginClosedError) throw error
+
                 console.error(error)
 
                 if (error instanceof ImportError || error instanceof Error) {
                     framer.closePlugin(error.message, {
                         variant: "error",
                     })
-                    return
                 }
 
                 framer.closePlugin("Error processing CSV file. Check console for details.", {
@@ -288,13 +289,26 @@ export function App({ collection }: { collection: Collection | null }) {
             if (!clipboardData) return
 
             const task = async () => {
+                let csv = ""
+
                 try {
-                    const csv = clipboardData.getData("text/plain")
+                    csv = clipboardData.getData("text/plain")
                     if (!csv) return
-                    await processAndImport(csv)
                 } catch (error) {
                     console.error("Error accessing clipboard data:", error)
                     framer.notify("Unable to access clipboard content", {
+                        variant: "error",
+                    })
+                    return
+                }
+
+                try {
+                    await processAndImport(csv)
+                } catch (error) {
+                    if (error instanceof FramerPluginClosedError) return
+
+                    console.error("Error importing CSV:", error)
+                    framer.notify("Error importing CSV", {
                         variant: "error",
                     })
                 }

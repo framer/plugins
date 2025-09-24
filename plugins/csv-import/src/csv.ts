@@ -153,9 +153,7 @@ function getFieldDataEntryInputForField(
             if (!isValidDate(date)) {
                 return new ConversionError(`Invalid value for field “${field.name}” expected a valid date`)
             }
-            const isoDate = date.toISOString().split("T")[0]
-            assert(isoDate, `Invalid value for field “${field.name}” expected a valid date`)
-            return { type: "date", value: new Date(isoDate).toJSON() }
+            return { type: "date", value: date.toJSON() }
         }
 
         case "enum": {

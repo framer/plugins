@@ -18,7 +18,9 @@ export function useAsyncFilter(
     query: string,
     rootNodes: readonly RootNodeType[],
     database: GlobalSearchDatabase,
-    dataVersion: number
+    {
+        dataVersion,
+    }: { restartOnVersionChange: true; dataVersion: number } | { restartOnVersionChange: false; dataVersion?: never }
 ): AsyncFilterState {
     const processorRef = useRef<IdleCallbackAsyncProcessor<Result> | null>(null)
     /** If this matches the current query and root nodes, we don't update the results with each progress update but instead wait for the completed event */
@@ -92,7 +94,6 @@ export function useAsyncFilter(
         })
     }
 
-    // start processing
     useEffect(() => {
         const processor = processorRef.current
         if (!processor) return

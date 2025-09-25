@@ -31,7 +31,12 @@ export function SearchScene() {
         results,
         running: isFilterRunning,
         error: filterError,
-    } = useAsyncFilter(queryToUse, searchOptions, db, dataVersion)
+    } = useAsyncFilter(
+        queryToUse,
+        searchOptions,
+        db,
+        isInitialIndexing ? { restartOnVersionChange: true, dataVersion } : { restartOnVersionChange: false }
+    )
     const isFilterRunningWithMinimumDuration = useMinimumDuration(isFilterRunning, 500)
 
     const hasResults = results.length > 0

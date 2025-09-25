@@ -9,5 +9,3 @@ A Framer plugin that synchronizes localization strings between **Framer** and **
 - Simple UI with **two buttons**:
     - `Export to Crowdin`
     - `Import from Crowdin`
-
-

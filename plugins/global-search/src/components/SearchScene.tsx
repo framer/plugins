@@ -21,6 +21,8 @@ export function SearchScene() {
     const deferredQuery = useDeferredValue(query)
     const isInitialIndexing = isIndexing && !hasCompletedInitialIndex
 
+    const inputIdleDelayPassed = useIdleDelayPassed(deferredQuery)
+
     const {
         results,
         status: filterStatus,
@@ -32,6 +34,9 @@ export function SearchScene() {
         db,
         isInitialIndexing ? { restartOnVersionChange: true, dataVersion } : { restartOnVersionChange: false }
     )
+    const isFiltererRunning = filterStatus === AsyncFilterStatus.Running
+    const showFiltererIndicator = isFiltererRunning && inputIdleDelayPassed
+    const showSpinner = !!deferredQuery && (isInitialIndexing || showFiltererIndicator)
 
     const hasResults = results.length > 0
     const { showNoResults } = useNoResults({
@@ -73,13 +78,8 @@ export function SearchScene() {
 
                     <div
                         title="Searching…"
-                        className={cn(
-                            "aria-hidden:opacity-0 transition-opacity flex items-center justify-center",
-                            !isInitialIndexing && "delay-500"
-                        )}
-                        aria-hidden={
-                            !deferredQuery || (!isInitialIndexing && filterStatus !== AsyncFilterStatus.Running)
-                        }
+                        className="aria-hidden:opacity-0 transition-opacity flex items-center justify-center"
+                        aria-hidden={!showSpinner}
                     >
                         <div className="framer-spinner bg-black dark:bg-white animate-[spin_0.8s_linear_infinite]"></div>
                     </div>
@@ -168,4 +168,20 @@ function useNoResults({
     }, [query, results, status, resultsForQuery])
 
     return { showNoResults }
+}
+
+function useIdleDelayPassed(query: string) {
+    const [idleDelayPassed, setIdleDelayPassed] = useState(false)
+
+    useEffect(() => {
+        setIdleDelayPassed(false)
+        const id = setTimeout(() => {
+            setIdleDelayPassed(true)
+        }, 500)
+        return () => {
+            clearTimeout(id)
+        }
+    }, [query])
+
+    return idleDelayPassed
 }

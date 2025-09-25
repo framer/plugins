@@ -7,11 +7,17 @@ import type { PreparedGroup } from "./group-results"
 import { groupResults as groupResults } from "./group-results"
 import { FilterType, MatcherType, type Result } from "./types"
 
+export enum AsyncFilterStatus {
+    Initial,
+    Running,
+    Completed,
+}
+
 export interface AsyncFilterState {
     readonly results: readonly PreparedGroup[]
-    readonly hasResults: boolean
+    readonly resultsForQuery: string
     readonly error: Error | null
-    readonly running: boolean
+    readonly status: AsyncFilterStatus
 }
 
 export function useAsyncFilter(
@@ -25,13 +31,14 @@ export function useAsyncFilter(
     const processorRef = useRef<IdleCallbackAsyncProcessor<Result> | null>(null)
     /** If this matches the current query and root nodes, we don't update the results with each progress update but instead wait for the completed event */
     const finalisedResultsForQueryRef = useRef<[string, readonly RootNodeType[]] | null>(null)
+    const queryRef = useRef(query)
     const groupingAbortControllerRef = useRef<AbortController | null>(null)
 
     const [state, setState] = useState<AsyncFilterState>({
         results: [],
-        hasResults: false,
+        resultsForQuery: query,
         error: null,
-        running: false,
+        status: AsyncFilterStatus.Initial,
     })
     const [, startTransition] = useTransition()
 
@@ -49,7 +56,12 @@ export function useAsyncFilter(
         processor.on("started", () => {
             // Not resetting the results here to avoid flickering
             startTransition(() => {
-                setState(prev => ({ ...prev, error: null, running: true }))
+                setState(prev => ({
+                    ...prev,
+                    error: null,
+                    status: AsyncFilterStatus.Running,
+                    resultsForQuery: queryRef.current,
+                }))
             })
         })
 
@@ -67,7 +79,7 @@ export function useAsyncFilter(
                     setState(state => ({
                         ...state,
                         results,
-                        hasResults: results.length > 0,
+                        status: AsyncFilterStatus.Running,
                         error: null,
                     }))
                 })
@@ -83,14 +95,19 @@ export function useAsyncFilter(
                 void groupResults(results, controller.signal).then(results => {
                     startTransition(() => {
                         finalisedResultsForQueryRef.current = [query, rootNodes]
-                        setState(state => ({ ...state, results, running: false }))
+                        setState(state => ({
+                            ...state,
+                            results,
+                            status: AsyncFilterStatus.Completed,
+                            error: null,
+                        }))
                     })
                 })
             })
         })
 
         processor.on("error", error => {
-            setState(prev => ({ ...prev, error, running: false }))
+            setState(prev => ({ ...prev, error, status: AsyncFilterStatus.Completed }))
         })
     }
 
@@ -98,12 +115,13 @@ export function useAsyncFilter(
         const processor = processorRef.current
         if (!processor) return
 
+        queryRef.current = query
         void processor.start(database, itemProcessor)
 
         return () => {
             processor.abort()
         }
-    }, [database, itemProcessor, dataVersion])
+    }, [database, itemProcessor, dataVersion, query])
 
     return state
 }

@@ -78,9 +78,12 @@ export function SearchScene() {
                     <SearchInput value={query} onChange={handleQueryChange} />
 
                     <div
-                        title="Indexing..."
-                        className="aria-hidden:opacity-0 transition flex items-center justify-center"
-                        aria-hidden={!queryToUse || !isInitialIndexing}
+                        title="Searching…"
+                        className={cn(
+                            "aria-hidden:opacity-0 transition-opacity flex items-center justify-center",
+                            !isInitialIndexing && "delay-500"
+                        )}
+                        aria-hidden={!queryToUse || (!isInitialIndexing && !isFilterRunning)}
                     >
                         <div className="framer-spinner bg-black dark:bg-white animate-[spin_0.8s_linear_infinite]"></div>
                     </div>

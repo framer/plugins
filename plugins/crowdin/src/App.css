@@ -11,7 +11,6 @@ main {
     user-select: none;
     -webkit-user-select: none;
 }
-
 .form-field {
     display: flex;
     flex-direction: column;
@@ -71,7 +70,7 @@ main {
 }
 
 .setup img {
-    height: 150px;
+    height: 180px;
     width: 100%;
     border-radius: 10px;
     background-color: #15372c;
@@ -235,4 +234,19 @@ input[type="checkbox"]:checked {
 
 a {
     color: currentColor;
+}
+.button-stack {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+}
+.button-stack button {
+    flex: 1;
+}
+.crowdin-button-primary {
+    color: var(--framer-color-text-reversed);
+    background-color: var(--framer-color-text);
+}
+.crowdin-button-primary:hover, .crowdin-button-primary:focus{
+    background-color: var(--framer-color-text);
 }

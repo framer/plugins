@@ -13,7 +13,7 @@ import {
     uploadStorage,
 } from "./xliff"
 
-void framer.showUI({ width: 260, height: 370 })
+void framer.showUI({ width: 325, height: 325 })
 
 interface Project {
     readonly id: number
@@ -146,14 +146,6 @@ export function App({
             setIsLoading(false)
         }
     }
-
-    // =============================
-    // Ensure Source File Exists
-    // =============================
-
-    // =============================
-    // Export to Crowdin
-    // =============================
     async function exportToCrowdIn() {
         if (!accessToken || !projectId || !activeLocale) {
             framer.notify("Access Token, Project ID, or active locale missing", {
@@ -211,9 +203,8 @@ export function App({
                         <Loading />
                     </div>
                 )}
-
                 <label className="show">
-                    <p>Token</p>
+                    <p>Access Token</p>
                     <input
                         type="text"
                         placeholder="Enter Access Token…"
@@ -223,7 +214,6 @@ export function App({
                         }}
                     />
                 </label>
-
                 <label className="show">
                     <p>Project</p>
                     <select
@@ -241,15 +231,6 @@ export function App({
                         ))}
                     </select>
                 </label>
-
-                {activeLocale && (
-                    <label className="show">
-                        <p>
-                            <strong>Active Locale:</strong> {activeLocale.name} ({activeLocale.code})
-                        </p>
-                    </label>
-                )}
-
                 <div className="button-stack">
                     <button
                         type="button"
@@ -264,7 +245,7 @@ export function App({
 
                     <button
                         type="button"
-                        className="framer-button-primary"
+                        className="crowdin-button-primary"
                         onClick={() => {
                             void exportToCrowdIn()
                         }}

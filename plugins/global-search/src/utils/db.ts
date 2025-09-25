@@ -40,6 +40,9 @@ export class GlobalSearchDatabase implements ResumableAsyncIterable<IndexEntry> 
     async open(): Promise<IDBPDatabase<GlobalSearchDB>> {
         if (this.db) return this.db
 
+        // cirumsail a potential issue in electron, where the first open fails
+        await openDB("empty", 1)
+
         this.db = await openDB<GlobalSearchDB>(this.dbName, 3, {
             upgrade(db, oldVersion, _newVersion, transaction) {
                 if (oldVersion < 1) {

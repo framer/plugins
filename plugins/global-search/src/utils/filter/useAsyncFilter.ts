@@ -15,7 +15,6 @@ export enum AsyncFilterStatus {
 
 export interface AsyncFilterState {
     readonly results: readonly PreparedGroup[]
-    readonly resultsForQuery: string
     readonly error: Error | null
     readonly status: AsyncFilterStatus
 }
@@ -29,14 +28,10 @@ export function useAsyncFilter(
     }: { restartOnVersionChange: true; dataVersion: number } | { restartOnVersionChange: false; dataVersion?: never }
 ): AsyncFilterState {
     const processorRef = useRef<IdleCallbackAsyncProcessor<Result> | null>(null)
-    /** If this matches the current query and root nodes, we don't update the results with each progress update but instead wait for the completed event */
-    const finalisedResultsForQueryRef = useRef<[string, readonly RootNodeType[]] | null>(null)
-    const queryRef = useRef(query)
     const groupingAbortControllerRef = useRef<AbortController | null>(null)
 
     const [state, setState] = useState<AsyncFilterState>({
         results: [],
-        resultsForQuery: query,
         error: null,
         status: AsyncFilterStatus.Initial,
     })
@@ -60,29 +55,7 @@ export function useAsyncFilter(
                     ...prev,
                     error: null,
                     status: AsyncFilterStatus.Running,
-                    resultsForQuery: queryRef.current,
                 }))
-            })
-        })
-
-        processor.on("progress", ({ results }) => {
-            const [finalisedQuery, finalisedRootNodes] = finalisedResultsForQueryRef.current ?? [null, null]
-            // Final = we can wait for the completed event. There is already a lot of results to look through
-            if (finalisedQuery === query && Object.is(finalisedRootNodes, rootNodes)) return
-
-            groupingAbortControllerRef.current?.abort()
-            const controller = new AbortController()
-            groupingAbortControllerRef.current = controller
-
-            void groupResults(results, controller.signal).then(results => {
-                startTransition(() => {
-                    setState(state => ({
-                        ...state,
-                        results,
-                        status: AsyncFilterStatus.Running,
-                        error: null,
-                    }))
-                })
             })
         })
 
@@ -94,7 +67,6 @@ export function useAsyncFilter(
 
                 void groupResults(results, controller.signal).then(results => {
                     startTransition(() => {
-                        finalisedResultsForQueryRef.current = [query, rootNodes]
                         setState(state => ({
                             ...state,
                             results,
@@ -114,11 +86,10 @@ export function useAsyncFilter(
     useEffect(() => {
         const processor = processorRef.current
         if (!processor) return
-        queryRef.current = query
 
         if (query === "") {
             startTransition(() => {
-                setState(prev => ({ ...prev, results: [], status: AsyncFilterStatus.Initial, resultsForQuery: query }))
+                setState(prev => ({ ...prev, results: [], status: AsyncFilterStatus.Initial }))
             })
         } else {
             void processor.start(database, itemProcessor)

@@ -27,7 +27,6 @@ export function SearchScene() {
         results,
         status: filterStatus,
         error: filterError,
-        resultsForQuery,
     } = useAsyncFilter(
         deferredQuery,
         searchOptions,
@@ -43,7 +42,6 @@ export function SearchScene() {
         query: deferredQuery,
         results,
         status: filterStatus,
-        resultsForQuery,
     })
 
     if (filterError) {
@@ -148,12 +146,10 @@ function useNoResults({
     query,
     results,
     status,
-    resultsForQuery,
 }: {
     readonly query: string
     readonly results: readonly PreparedGroup[]
     readonly status: AsyncFilterStatus
-    readonly resultsForQuery: string
 }): {
     readonly showNoResults: boolean
 } {
@@ -162,10 +158,10 @@ function useNoResults({
     useEffect(() => {
         if (query.length === 0 || results.length > 0) {
             setShowNoResults(false)
-        } else if (query === resultsForQuery && status === AsyncFilterStatus.Completed) {
+        } else if (status === AsyncFilterStatus.Completed) {
             setShowNoResults(true)
         }
-    }, [query, results, status, resultsForQuery])
+    }, [query, results, status])
 
     return { showNoResults }
 }

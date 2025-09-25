@@ -3,6 +3,7 @@ import {
     type CanvasRootNode,
     framer,
     isComponentNode,
+    isDesignPageNode,
     isVectorSetNode,
     isWebPageNode,
     supportsPins,
@@ -105,7 +106,12 @@ function useGroundNodeRects() {
                     const parent = await node.getParent()
                     if (!parent) continue
                     if (!active) return
-                    if (isWebPageNode(parent) || isComponentNode(parent) || isVectorSetNode(parent)) {
+                    if (
+                        isWebPageNode(parent) ||
+                        isComponentNode(parent) ||
+                        isVectorSetNode(parent) ||
+                        isDesignPageNode(parent)
+                    ) {
                         groundNodes.push(node)
                     }
                 }

@@ -4604,6 +4604,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"framer-plugin@npm:^3.7.0":
+  version: 3.7.0
+  resolution: "framer-plugin@npm:3.7.0"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/30b7231daafc1142df63859a1eadcd193faa6a9c97dac254868ca1381cdb1d1b53841390ba14b596b7d75c7fdc4b3602a85b79a911b8528fbb206ded61a8ac0b
+  languageName: node
+  linkType: hard
+
 "fs-minipass@npm:^3.0.0":
   version: 3.0.3
   resolution: "fs-minipass@npm:3.0.3"
@@ -6393,7 +6403,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     classnames: "npm:^2.5.1"
-    framer-plugin: "npm:^3.6.0"
+    framer-plugin: "npm:^3.7.0"
     framer-plugin-tools: "npm:^1.0.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -6807,7 +6817,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.6.0"
+    framer-plugin: "npm:^3.7.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.1.0"

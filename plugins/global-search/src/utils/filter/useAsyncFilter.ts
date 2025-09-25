@@ -114,9 +114,15 @@ export function useAsyncFilter(
     useEffect(() => {
         const processor = processorRef.current
         if (!processor) return
-
         queryRef.current = query
-        void processor.start(database, itemProcessor)
+
+        if (query === "") {
+            startTransition(() => {
+                setState(prev => ({ ...prev, results: [], status: AsyncFilterStatus.Initial, resultsForQuery: query }))
+            })
+        } else {
+            void processor.start(database, itemProcessor)
+        }
 
         return () => {
             processor.abort()

@@ -80,7 +80,7 @@ export function SearchScene() {
                     <div
                         title="Indexing..."
                         className="aria-hidden:opacity-0 transition flex items-center justify-center"
-                        aria-hidden={!isIndexingWithMinimumDuration}
+                        aria-hidden={!queryToUse || !isInitialIndexing}
                     >
                         <div className="framer-spinner bg-black dark:bg-white animate-[spin_0.8s_linear_infinite]"></div>
                     </div>

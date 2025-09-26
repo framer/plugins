@@ -7,6 +7,7 @@ import { useSelection } from "../utils/selection/useSelection"
 import { truncateFromStart } from "../utils/text"
 
 interface CommonMatchProps {
+    index: number
     targetId: string
     text: string
     range: Range
@@ -28,7 +29,7 @@ type TypedMatchProps =
 export type MatchProps = CommonMatchProps & TypedMatchProps
 
 export const Match = forwardRef<HTMLButtonElement, MatchProps>(function Match(props, ref) {
-    const { targetId, text, range, style, className, resultId } = props
+    const { targetId, text, range, style, className, resultId, index } = props
     const navigateToResult = useCallback(() => {
         framer
             .navigateTo(targetId, {
@@ -61,6 +62,7 @@ export const Match = forwardRef<HTMLButtonElement, MatchProps>(function Match(pr
             style={style}
             role="option"
             aria-selected={isActive}
+            data-index={index}
             {...getFocusProps(resultId)}
         >
             <div className="text-ellipsis overflow-hidden whitespace-nowrap">

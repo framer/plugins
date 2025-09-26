@@ -1,0 +1,258 @@
+.export-collection {
+    position: relative; /* ensure stacking over preview area */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: left;
+    height: 100%;
+    padding: 0 15px 15px 15px;
+    z-index: 1; /* sits above preview container */
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    user-select: none;
+    pointer-events: none;
+}
+
+/* Divider under the titlebar. */
+.empty-state::before {
+    content: "";
+    border-top: 1px solid var(--framer-color-divider);
+    position: absolute;
+    width: 100%;
+    top: 0;
+}
+
+.empty-state-image { width: 180px; }
+.empty-state-message { color: var(--framer-color-text-tertiary); width: 140px; text-align: center; }
+
+.footer { display: flex; flex-direction: column; gap: 10px; }
+.footer-actions { display: flex; gap: 10px; }
+
+.footer-select { width: 100%; min-width: 0; } /* allow truncation */
+[data-framer-theme="light"] .footer-select--unselected { color: #999999; }
+[data-framer-theme="dark"] .footer-select--unselected { color: #666666; }
+.footer-actions button { flex-shrink: 1; }
+
+.preview-container { position: relative; height: 100%; z-index: 0; }
+.preview-container-image, .preview-container-table { position: absolute; inset: 0; opacity: 0; transition: opacity 300ms; }
+.visible { opacity: 1; }
+
+/* ---------- small UI primitives ---------- */
+
+.panel { background: var(--framer-color-bg); border: 1px solid var(--framer-color-divider); border-radius: 8px; padding: 8px; }
+.panelHeader { font-weight: 600; font-size: 12px; color: var(--framer-color-text-secondary); margin-bottom: 6px; }
+
+.button { height: 36px; border-radius: 8px; background: var(--framer-color-text); color: var(--framer-color-bg); border: 1px solid var(--framer-color-divider); font-weight: 600; }
+.button:disabled { opacity: 0.5; }
+
+/* ---------- mapper grid ---------- */
+
+.mapperGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Source | Destination */
+    gap: 6px 14px;                  /* extra gap so focus rings never touch */
+    max-height: 280px;
+    overflow-y: auto;   /* vertical scroll only */
+    overflow-x: hidden; /* no horizontal scrollbar */
+    padding: 6px;
+    border: 1px solid var(--framer-color-divider);
+    border-radius: 8px;
+    background: var(--framer-color-bg); /* block any bleed-through */
+}
+
+.mapperHead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--framer-color-bg);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--framer-color-text-secondary);
+    padding-bottom: 2px;
+}
+
+.mapperRow { display: contents; }
+
+/* Source & Destination cells get their own opaque bg to prevent ghosting */
+.mapperSrc,
+.mapperDest {
+    background: var(--framer-color-bg);
+    border-radius: 6px;
+    padding: 2px 4px;
+    min-width: 0; /* enable ellipsis instead of overflow */
+}
+
+/* --- SOURCE CELL --- */
+/* clip the select's focus ring/box-shadow so it can't bleed right */
+.mapperSrc {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: clip;     /* clips box-shadow in modern browsers */
+    contain: paint;     /* isolate paint so focus ring stays inside */
+}
+
+/* remove native outline; Framer uses a box-shadow ring */
+.mapperSrc .footer-select:focus, 
+.mapperSrc .footer-select:focus-visible {
+    outline: none;
+}
+
+/* --- DESTINATION CELL --- */
+.mapperDest {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--framer-color-text);
+    gap: 8px;
+}
+.mapperDestLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* mismatch badge */
+.typeBadge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--framer-color-error), transparent 40%);
+    background: color-mix(in srgb, var(--framer-color-error), transparent 80%);
+    color: color-mix(in srgb, var(--framer-color-error), var(--framer-color-text) 50%);
+    white-space: nowrap;
+    max-width: 220px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+/* ---------- mismatch row styling ---------- */
+.mapperGrid .mismatchCell {
+    background: rgba(255, 196, 0, 0.18);
+    border: 1px solid rgba(255, 196, 0, 0.45);
+    border-left: 3px solid rgba(255, 196, 0, 0.75);
+    border-radius: 6px;
+}
+
+/* stronger cue on the select control */
+.selectWarn {
+    border: 1px solid rgba(255, 196, 0, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(255, 196, 0, 0.25);
+}
+
+/* ---------- conflict policy ---------- */
+
+.conflictPanel {
+    margin-top: 10px;
+    padding: 8px;
+    border: 1px solid var(--framer-color-divider);
+    border-radius: 8px;
+    background: var(--framer-color-bg);
+}
+.conflictTitle {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--framer-color-text-secondary);
+    margin-bottom: 6px;
+}
+.conflictGroup {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.conflictOption {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 12px;
+}
+.conflictOption input[type="radio"] {
+    accent-color: var(--framer-color-text);
+}
+.conflictDisabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ---------- preflight / stats ---------- */
+
+.preflight {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid color-mix(in srgb, var(--framer-color-warning), transparent 60%);
+    background: color-mix(in srgb, var(--framer-color-warning), transparent 90%);
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+.preflight-title { font-weight: 600; }
+.preflight-list { color: var(--framer-color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.statsRow { display: flex; gap: 10px; margin-top: 8px; font-size: 12px; }
+
+/* ---------- Preview buttons / inline summary ---------- */
+
+.inlineActions { display: flex; gap: 8px; }
+.inlineActions .button { flex: 1; }
+
+.previewBox {
+  margin-top: 8px;
+  border: 1px solid var(--framer-color-divider);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 12px;
+}
+
+/* ---------- Modal (Preview full list) ---------- */
+
+.modalOverlay {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--framer-color-bg), transparent 10%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+}
+
+.modalPanel {
+    width: 100%;
+    max-width: 760px;
+    max-height: 90%;
+    background: var(--framer-color-bg);
+    border: 1px solid var(--framer-color-divider);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.modalHeader { padding: 10px 12px; border-bottom: 1px solid var(--framer-color-divider); font-weight: 700; }
+.modalBody { padding: 12px; font-size: 12px; display: flex; flex-direction: column; gap: 8px; }
+.modalMeta { display: flex; gap: 12px; color: var(--framer-color-text); }
+
+.slugsBox { border: 1px solid var(--framer-color-divider); border-radius: 8px; overflow: hidden; }
+.slugsHead { background: color-mix(in srgb, transparent, var(--framer-color-bg-tertiary) 10%); padding: 8px 10px; font-weight: 600; }
+.slugsScroll { max-height: 360px; overflow: auto; padding: 6px 10px; }
+.slugsEmpty { color: var(--framer-color-text-secondary); }
+
+.slugsList { margin: 0; padding-left: 18px; }
+.slugsListItem { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; line-height: 22px; }
+
+.modalFooter { padding: 10px; border-top: 1px solid var(--framer-color-divider); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ---------- slim progress bar (batch X/Y) ---------- */
+
+.progressBar { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.progressTrack { height: 6px; background: color-mix(in srgb, var(--framer-color-bg-tertiary), transparent 40%); border-radius: 999px; overflow: hidden; }
+.progressFill { height: 100%; background: var(--framer-color-text); border-radius: 999px; width: 0%; transition: width 200ms ease; }
+.progressMeta { font-size: 11px; color: var(--framer-color-text-secondary); align-self: flex-end; }

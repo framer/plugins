@@ -3559,6 +3559,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"cms-sync@workspace:plugins/cms-sync":
+  version: 0.0.0-use.local
+  resolution: "cms-sync@workspace:plugins/cms-sync"
+  dependencies:
+    "@types/react": "npm:^18.3.24"
+    "@types/react-dom": "npm:^18.3.7"
+    framer-plugin: "npm:^3.6.0"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+  languageName: unknown
+  linkType: soft
+
 "code-versions@workspace:plugins/code-versions":
   version: 0.0.0-use.local
   resolution: "code-versions@workspace:plugins/code-versions"

@@ -26,7 +26,12 @@ interface PreviewPlan {
     slugs: string[]
 }
 
-interface ProgressState { b: number; bt: number; n: number; N: number } // batch, batchTotal, itemsDone, itemsTotal
+interface ProgressState {
+    b: number
+    bt: number
+    n: number
+    N: number
+} // batch, batchTotal, itemsDone, itemsTotal
 type ConflictPolicy = "skip" | "update"
 
 /** storage helpers (scoped keys) */
@@ -127,7 +132,10 @@ export function App() {
         const task = async () => {
             setLoadingFields(true)
             try {
-                const [sFields, dFields] = await Promise.all([selectedCollection.getFields(), destinationCollection.getFields()])
+                const [sFields, dFields] = await Promise.all([
+                    selectedCollection.getFields(),
+                    destinationCollection.getFields(),
+                ])
 
                 const toOpt = (f: unknown): FieldOption => {
                     const obj = f as { id: string; name: string; type: string }
@@ -150,7 +158,9 @@ export function App() {
                 } else {
                     const fm: Record<string, string | undefined> = {}
                     for (const df of dstOpts) {
-                        const exact = srcOpts.find(sf => sf.name.toLowerCase() === df.name.toLowerCase() && sf.type === df.type)
+                        const exact = srcOpts.find(
+                            sf => sf.name.toLowerCase() === df.name.toLowerCase() && sf.type === df.type
+                        )
                         const byName = exact ?? srcOpts.find(sf => sf.name.toLowerCase() === df.name.toLowerCase())
                         fm[df.id] = byName?.id
                     }
@@ -174,7 +184,13 @@ export function App() {
     }
 
     const slugify = (s: string) =>
-        s.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").slice(0, 120)
+        s
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, "")
+            .replace(/\s+/g, "-")
+            .replace(/-+/g, "-")
+            .slice(0, 120)
 
     // no-any helper for slug extraction
     const rawToStringForSlug = (raw: unknown): string => {
@@ -344,7 +360,9 @@ export function App() {
                     const toSend = batch.splice(0, batch.length)
 
                     // update progress BEFORE network call
-                    setProgress(p => (p ? { ...p, b: Math.min(batchIndex + 1, p.bt), n: Math.min(p.n + toSend.length, p.N) } : p))
+                    setProgress(p =>
+                        p ? { ...p, b: Math.min(batchIndex + 1, p.bt), n: Math.min(p.n + toSend.length, p.N) } : p
+                    )
 
                     try {
                         await destinationCollection.addItems(toSend)
@@ -407,10 +425,7 @@ export function App() {
     }
 
     // ---------- derived ----------
-    const unmapped = useMemo(
-        () => dstFields.filter(df => !mapping[df.id]).map(df => df.name),
-        [dstFields, mapping]
-    )
+    const unmapped = useMemo(() => dstFields.filter(df => !mapping[df.id]).map(df => df.name), [dstFields, mapping])
 
     return (
         <div className="export-collection">
@@ -418,15 +433,19 @@ export function App() {
             {showPreviewModal && preview && (
                 <div className="modalOverlay" role="dialog" aria-modal="true">
                     <div className="modalPanel">
-                        <div className="modalHeader">
-                            Preview — Items to be added ({preview.toAdd})
-                        </div>
+                        <div className="modalHeader">Preview — Items to be added ({preview.toAdd})</div>
 
                         <div className="modalBody">
                             <div className="modalMeta">
-                                <span>Scanned: <b>{preview.scanned}</b></span>
-                                <span>Skipped: <b>{preview.skipped}</b></span>
-                                <span>To add: <b>{preview.toAdd}</b></span>
+                                <span>
+                                    Scanned: <b>{preview.scanned}</b>
+                                </span>
+                                <span>
+                                    Skipped: <b>{preview.skipped}</b>
+                                </span>
+                                <span>
+                                    To add: <b>{preview.toAdd}</b>
+                                </span>
                             </div>
 
                             <div className="slugsBox">
@@ -448,7 +467,13 @@ export function App() {
                         </div>
 
                         <div className="modalFooter">
-                            <button className="button" onClick={() => { setShowPreviewModal(false); }} style={{ minWidth: 88 }}>
+                            <button
+                                className="button"
+                                onClick={() => {
+                                    setShowPreviewModal(false)
+                                }}
+                                style={{ minWidth: 88 }}
+                            >
                                 OK
                             </button>
                         </div>
@@ -589,7 +614,10 @@ export function App() {
                                                 {df.name}
                                             </span>
                                             {mismatch && (
-                                                <span className="typeBadge" title={`Mapped types do not match: ${srcType} → ${df.type}`}>
+                                                <span
+                                                    className="typeBadge"
+                                                    title={`Mapped types do not match: ${srcType} → ${df.type}`}
+                                                >
                                                     {srcType} → {df.type}
                                                 </span>
                                             )}
@@ -609,7 +637,9 @@ export function App() {
                                     type="radio"
                                     name="conflict"
                                     checked={conflictPolicy === "skip"}
-                                    onChange={() => { setConflictPolicy("skip"); }}
+                                    onChange={() => {
+                                        setConflictPolicy("skip")
+                                    }}
                                 />
                                 <span>Skip if slug exists</span>
                             </label>
@@ -640,7 +670,12 @@ export function App() {
                             <button
                                 className="button"
                                 onClick={syncNow}
-                                disabled={!selectedCollection || !destinationCollection || dstFields.length === 0 || syncLoading}
+                                disabled={
+                                    !selectedCollection ||
+                                    !destinationCollection ||
+                                    dstFields.length === 0 ||
+                                    syncLoading
+                                }
                             >
                                 {syncLoading ? "Syncing…" : "Sync"}
                             </button>
@@ -667,7 +702,8 @@ export function App() {
                         {preview && !showPreviewModal && (
                             <div className="previewBox">
                                 <div>
-                                    Preview plan → Scanned: <b>{preview.scanned}</b>, Skipped: <b>{preview.skipped}</b>, To add: <b>{preview.toAdd}</b>
+                                    Preview plan → Scanned: <b>{preview.scanned}</b>, Skipped: <b>{preview.skipped}</b>,
+                                    To add: <b>{preview.toAdd}</b>
                                 </div>
                             </div>
                         )}

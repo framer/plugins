@@ -29,37 +29,90 @@
     top: 0;
 }
 
-.empty-state-image { width: 180px; }
-.empty-state-message { color: var(--framer-color-text-tertiary); width: 140px; text-align: center; }
+.empty-state-image {
+    width: 180px;
+}
+.empty-state-message {
+    color: var(--framer-color-text-tertiary);
+    width: 140px;
+    text-align: center;
+}
 
-.footer { display: flex; flex-direction: column; gap: 10px; }
-.footer-actions { display: flex; gap: 10px; }
+.footer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.footer-actions {
+    display: flex;
+    gap: 10px;
+}
 
-.footer-select { width: 100%; min-width: 0; } /* allow truncation */
-[data-framer-theme="light"] .footer-select--unselected { color: #999999; }
-[data-framer-theme="dark"] .footer-select--unselected { color: #666666; }
-.footer-actions button { flex-shrink: 1; }
+.footer-select {
+    width: 100%;
+    min-width: 0;
+} /* allow truncation */
+[data-framer-theme="light"] .footer-select--unselected {
+    color: #999999;
+}
+[data-framer-theme="dark"] .footer-select--unselected {
+    color: #666666;
+}
+.footer-actions button {
+    flex-shrink: 1;
+}
 
-.preview-container { position: relative; height: 100%; z-index: 0; }
-.preview-container-image, .preview-container-table { position: absolute; inset: 0; opacity: 0; transition: opacity 300ms; }
-.visible { opacity: 1; }
+.preview-container {
+    position: relative;
+    height: 100%;
+    z-index: 0;
+}
+.preview-container-image,
+.preview-container-table {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 300ms;
+}
+.visible {
+    opacity: 1;
+}
 
 /* ---------- small UI primitives ---------- */
 
-.panel { background: var(--framer-color-bg); border: 1px solid var(--framer-color-divider); border-radius: 8px; padding: 8px; }
-.panelHeader { font-weight: 600; font-size: 12px; color: var(--framer-color-text-secondary); margin-bottom: 6px; }
+.panel {
+    background: var(--framer-color-bg);
+    border: 1px solid var(--framer-color-divider);
+    border-radius: 8px;
+    padding: 8px;
+}
+.panelHeader {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--framer-color-text-secondary);
+    margin-bottom: 6px;
+}
 
-.button { height: 36px; border-radius: 8px; background: var(--framer-color-text); color: var(--framer-color-bg); border: 1px solid var(--framer-color-divider); font-weight: 600; }
-.button:disabled { opacity: 0.5; }
+.button {
+    height: 36px;
+    border-radius: 8px;
+    background: var(--framer-color-text);
+    color: var(--framer-color-bg);
+    border: 1px solid var(--framer-color-divider);
+    font-weight: 600;
+}
+.button:disabled {
+    opacity: 0.5;
+}
 
 /* ---------- mapper grid ---------- */
 
 .mapperGrid {
     display: grid;
     grid-template-columns: 1fr 1fr; /* Source | Destination */
-    gap: 6px 14px;                  /* extra gap so focus rings never touch */
+    gap: 6px 14px; /* extra gap so focus rings never touch */
     max-height: 280px;
-    overflow-y: auto;   /* vertical scroll only */
+    overflow-y: auto; /* vertical scroll only */
     overflow-x: hidden; /* no horizontal scrollbar */
     padding: 6px;
     border: 1px solid var(--framer-color-divider);
@@ -78,7 +131,9 @@
     padding-bottom: 2px;
 }
 
-.mapperRow { display: contents; }
+.mapperRow {
+    display: contents;
+}
 
 /* Source & Destination cells get their own opaque bg to prevent ghosting */
 .mapperSrc,
@@ -95,12 +150,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    overflow: clip;     /* clips box-shadow in modern browsers */
-    contain: paint;     /* isolate paint so focus ring stays inside */
+    overflow: clip; /* clips box-shadow in modern browsers */
+    contain: paint; /* isolate paint so focus ring stays inside */
 }
 
 /* remove native outline; Framer uses a box-shadow ring */
-.mapperSrc .footer-select:focus, 
+.mapperSrc .footer-select:focus,
 .mapperSrc .footer-select:focus-visible {
     outline: none;
 }
@@ -114,7 +169,11 @@
     color: var(--framer-color-text);
     gap: 8px;
 }
-.mapperDestLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapperDestLabel {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
 /* mismatch badge */
 .typeBadge {
@@ -192,22 +251,39 @@
     margin-bottom: 8px;
     font-size: 12px;
 }
-.preflight-title { font-weight: 600; }
-.preflight-list { color: var(--framer-color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preflight-title {
+    font-weight: 600;
+}
+.preflight-list {
+    color: var(--framer-color-text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-.statsRow { display: flex; gap: 10px; margin-top: 8px; font-size: 12px; }
+.statsRow {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 12px;
+}
 
 /* ---------- Preview buttons / inline summary ---------- */
 
-.inlineActions { display: flex; gap: 8px; }
-.inlineActions .button { flex: 1; }
+.inlineActions {
+    display: flex;
+    gap: 8px;
+}
+.inlineActions .button {
+    flex: 1;
+}
 
 .previewBox {
-  margin-top: 8px;
-  border: 1px solid var(--framer-color-divider);
-  border-radius: 8px;
-  padding: 8px;
-  font-size: 12px;
+    margin-top: 8px;
+    border: 1px solid var(--framer-color-divider);
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 12px;
 }
 
 /* ---------- Modal (Preview full list) ---------- */
@@ -233,26 +309,88 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
-.modalHeader { padding: 10px 12px; border-bottom: 1px solid var(--framer-color-divider); font-weight: 700; }
-.modalBody { padding: 12px; font-size: 12px; display: flex; flex-direction: column; gap: 8px; }
-.modalMeta { display: flex; gap: 12px; color: var(--framer-color-text); }
+.modalHeader {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--framer-color-divider);
+    font-weight: 700;
+}
+.modalBody {
+    padding: 12px;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.modalMeta {
+    display: flex;
+    gap: 12px;
+    color: var(--framer-color-text);
+}
 
-.slugsBox { border: 1px solid var(--framer-color-divider); border-radius: 8px; overflow: hidden; }
-.slugsHead { background: color-mix(in srgb, transparent, var(--framer-color-bg-tertiary) 10%); padding: 8px 10px; font-weight: 600; }
-.slugsScroll { max-height: 360px; overflow: auto; padding: 6px 10px; }
-.slugsEmpty { color: var(--framer-color-text-secondary); }
+.slugsBox {
+    border: 1px solid var(--framer-color-divider);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.slugsHead {
+    background: color-mix(in srgb, transparent, var(--framer-color-bg-tertiary) 10%);
+    padding: 8px 10px;
+    font-weight: 600;
+}
+.slugsScroll {
+    max-height: 360px;
+    overflow: auto;
+    padding: 6px 10px;
+}
+.slugsEmpty {
+    color: var(--framer-color-text-secondary);
+}
 
-.slugsList { margin: 0; padding-left: 18px; }
-.slugsListItem { white-space: nowrap; text-overflow: ellipsis; overflow: hidden; line-height: 22px; }
+.slugsList {
+    margin: 0;
+    padding-left: 18px;
+}
+.slugsListItem {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    line-height: 22px;
+}
 
-.modalFooter { padding: 10px; border-top: 1px solid var(--framer-color-divider); display: flex; justify-content: flex-end; gap: 8px; }
+.modalFooter {
+    padding: 10px;
+    border-top: 1px solid var(--framer-color-divider);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
 
 /* ---------- slim progress bar (batch X/Y) ---------- */
 
-.progressBar { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
-.progressTrack { height: 6px; background: color-mix(in srgb, var(--framer-color-bg-tertiary), transparent 40%); border-radius: 999px; overflow: hidden; }
-.progressFill { height: 100%; background: var(--framer-color-text); border-radius: 999px; width: 0%; transition: width 200ms ease; }
-.progressMeta { font-size: 11px; color: var(--framer-color-text-secondary); align-self: flex-end; }
+.progressBar {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.progressTrack {
+    height: 6px;
+    background: color-mix(in srgb, var(--framer-color-bg-tertiary), transparent 40%);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.progressFill {
+    height: 100%;
+    background: var(--framer-color-text);
+    border-radius: 999px;
+    width: 0%;
+    transition: width 200ms ease;
+}
+.progressMeta {
+    font-size: 11px;
+    color: var(--framer-color-text-secondary);
+    align-self: flex-end;
+}

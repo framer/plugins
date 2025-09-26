@@ -1,13 +1,11 @@
 // Optional global flag you can flip in DevTools: window.__CMS_SYNC_DEBUG__ = true
 declare global {
-   
-  interface Window {
-    __CMS_SYNC_DEBUG__?: boolean
-  }
+    interface Window {
+        __CMS_SYNC_DEBUG__?: boolean
+    }
 }
 
-const DEBUG: boolean =
-  typeof window !== "undefined" && !!window.__CMS_SYNC_DEBUG__
+const DEBUG: boolean = typeof window !== "undefined" && !!window.__CMS_SYNC_DEBUG__
 
 import type { Collection, CollectionItem, Field, FieldDataEntryInput, FieldDataInput } from "framer-plugin"
 import { framer } from "framer-plugin"
@@ -138,7 +136,7 @@ export function buildFieldDataForItem(
 
         // Debug trace for image values
         if (dst.type === "image") {
-            if (DEBUG) console.log("[CMS Sync] Image raw value for", dst.name, "=>", raw);
+            if (DEBUG) console.log("[CMS Sync] Image raw value for", dst.name, "=>", raw)
         }
 
         // Reference slug -> id conversion
@@ -200,7 +198,7 @@ export function buildFieldDataForItem(
         const entry = toFieldDataEntryInputForField(dst, raw)
 
         if (dst.type === "image") {
-            if (DEBUG) console.log("[CMS Sync] Image normalized entry for", dst.name, "=>", entry);
+            if (DEBUG) console.log("[CMS Sync] Image normalized entry for", dst.name, "=>", entry)
         }
 
         if (entry !== undefined) {

@@ -68,7 +68,7 @@ export function SearchScene() {
             <SelectionProvider>
                 <div
                     className={cn(
-                        "flex gap-2 border-divider-light dark:border-divider-dark border-y py-3 mx-3 transition-colors items-center",
+                        "flex z-10 gap-2 border-divider-light dark:border-divider-dark border-y py-3 mx-3 transition-colors items-center bg-modal-light dark:bg-modal-dark",
                         !deferredQuery && "border-b-transparent dark:border-b-transparent"
                     )}
                 >

@@ -1,6 +1,5 @@
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { cn } from "../utils/className"
 import type { PreparedGroup, PreparedResult } from "../utils/filter/group-results"
 import { ResultType } from "../utils/filter/types"
 import { headerId } from "../utils/selection/constants"
@@ -26,12 +25,9 @@ export function ResultsList({ groups }: ResultsProps) {
         estimateSize: index => {
             const item = virtualItems[index]
             if (!item) return 0
-            const nextItem = virtualItems[index + 1]
-            const isLastMatchInGroup = nextItem?.groupId !== item.groupId
-
-            if (item.type === "group-header") return isLastMatchInGroup ? 40 : 35
-
-            return isLastMatchInGroup ? 35 : 30
+            if (index === 0) return 40 // first item doesn't have top border
+            if (item.type === "group-header") return 41 // Height plus 1px border
+            return 30
         },
         rangeExtractor: range => {
             // TODO: This sticky index could be added and put into the result more efficiently
@@ -53,7 +49,7 @@ export function ResultsList({ groups }: ResultsProps) {
     return (
         <div
             ref={scrollElementRef}
-            className="flex-1 min-h-0 overflow-auto scrollbar-hidden contain-strict focus-visible:outline-focus-ring-light focus-visible:dark:outline-focus-ring-dark focus-visible:outline-2 focus-visible:rounded-lg"
+            className="flex-1 min-h-0 -mt-1 overflow-auto scrollbar-hidden contain-strict focus-visible:outline-focus-ring-light focus-visible:dark:outline-focus-ring-dark focus-visible:outline-2 focus-visible:rounded-lg"
             role="listbox"
             aria-label="Search results"
         >
@@ -62,24 +58,18 @@ export function ResultsList({ groups }: ResultsProps) {
                     const item = virtualItems[virtualRow.index]
                     if (!item) return null
 
-                    const isLastMatchInGroup = virtualItems[virtualRow.index + 1]?.groupId !== item.groupId
-
                     const rowStyle = {
                         transform: `translateY(${virtualRow.start}px)`,
+                        height: virtualRow.size,
                     } satisfies CSSProperties
 
                     const isSticky = activeStickyIndexRef.current === virtualRow.index
-                    const rowClassName = cn(
-                        "w-full left-0",
-                        isSticky ? "sticky" : "absolute",
-                        item.type === "group-header" ? "z-2" : "z-0",
-                        isLastMatchInGroup && "mb-1"
-                    )
 
                     if (item.type === "group-header") {
                         const hasScrolled = (scrollElementRef.current?.scrollTop ?? 0) > 0
                         return (
                             <GroupHeader
+                                index={virtualRow.index}
                                 key={virtualRow.key}
                                 ref={rowVirtualizer.measureElement}
                                 entry={item.entry}
@@ -89,9 +79,7 @@ export function ResultsList({ groups }: ResultsProps) {
                                 }}
                                 isSticky={isSticky}
                                 showFadeOut={isSticky && hasScrolled}
-                                hasTopBorder={isSticky ? hasScrolled : true}
-                                style={!isSticky ? rowStyle : undefined}
-                                className={rowClassName}
+                                style={isSticky ? { height: virtualRow.size } : rowStyle}
                             />
                         )
                     }
@@ -99,6 +87,7 @@ export function ResultsList({ groups }: ResultsProps) {
                     if (item.result.type === ResultType.CollectionItemField) {
                         return (
                             <Match
+                                index={virtualRow.index}
                                 key={virtualRow.key}
                                 ref={rowVirtualizer.measureElement}
                                 type={ResultType.CollectionItemField}
@@ -108,13 +97,13 @@ export function ResultsList({ groups }: ResultsProps) {
                                 text={item.result.text}
                                 range={item.result.range}
                                 style={rowStyle}
-                                className={rowClassName}
                             />
                         )
                     }
 
                     return (
                         <Match
+                            index={virtualRow.index}
                             key={virtualRow.key}
                             ref={rowVirtualizer.measureElement}
                             type={item.result.type}
@@ -123,7 +112,6 @@ export function ResultsList({ groups }: ResultsProps) {
                             text={item.result.text}
                             range={item.result.range}
                             style={rowStyle}
-                            className={rowClassName}
                         />
                     )
                 })}

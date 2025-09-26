@@ -54,12 +54,11 @@ export const GroupHeader = memo(
                         <div className="flex-shrink-0 flex gap-2 justify-start items-center">
                             <IconArrowRight
                                 className={cn(
-                                    "text-tertiary-light dark:text-tertiary-dark transition-transform duration-200 ease-in-out",
+                                    "text-tertiary-light dark:text-secondary-dark transition-transform duration-200 ease-in-out",
                                     isExpanded && "rotate-90"
                                 )}
                                 aria-hidden="true"
                             />
-
                             <ResultIcon rootNodeType={entry.rootNodeType} aria-hidden="true" />
                         </div>
 
@@ -73,7 +72,7 @@ export const GroupHeader = memo(
     })
 )
 
-const defaultIconClassName = "text-tertiary-light dark:text-tertiary-dark"
+const defaultIconClassName = "text-tertiary-light dark:text-secondary-dark"
 
 export function ResultIcon({ rootNodeType }: { rootNodeType: RootNodeType }) {
     switch (rootNodeType) {

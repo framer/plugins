@@ -34,12 +34,13 @@ export const GroupHeader = memo(
                 ref={ref}
                 onClick={onToggle}
                 className={cn(
-                    "group w-full focus:outline-none cursor-pointer text-left",
-                    isSticky ? "sticky -top-px z-1" : "",
+                    "group w-full focus:outline-none cursor-pointer text-left data-[header=normal]:absolute data-[header=normal]:left-0 data-[header=sticky]:sticky data-[header=sticky]:-top-px data-[header=sticky]:z-10 z-20",
+                    index === 0 && "data-[header=sticky]:top-0",
                     showFadeOut &&
-                        "after:content-[] after:absolute after:top-7 after:left-0 after:right-0 after:h-3 after:z-10 after:pointer-events-none after:bg-gradient-to-b after:from-modal-light dark:after:from-modal-dark after:to-transparent",
+                        "after:content-[] after:absolute after:top-8 after:left-0 after:right-0 after:h-3 after:z-10 after:pointer-events-none after:bg-gradient-to-b after:from-modal-light dark:after:from-modal-dark after:to-transparent",
                     className
                 )}
+                data-header={isSticky ? "sticky" : "normal"}
                 aria-expanded={isExpanded}
                 data-index={index}
                 {...props}

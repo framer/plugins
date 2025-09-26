@@ -53,7 +53,7 @@ export const Match = forwardRef<HTMLButtonElement, MatchProps>(function Match(pr
             tabIndex={-1}
             onClick={navigateToResult}
             className={cn(
-                "text-secondary-light dark:text-secondary-dark text-xs w-full text-left select-none pl-5 pr-1 rounded-lg h-6 left-0 scroll-m-8",
+                "absolute text-secondary-light dark:text-secondary-dark text-xs w-full text-left select-none pl-5 pr-1 rounded-lg h-6 left-0 scroll-m-8",
                 "hover:bg-option-light/50 dark:hover:bg-option-dark/50 hover:text-primary-light dark:hover:text-primary-dark",
                 "aria-selected:bg-option-light dark:aria-selected:bg-option-dark aria-selected:text-primary-light dark:aria-selected:text-primary-dark",
                 "focus:outline-none focus:ring-0 focus:ring-offset-0",
@@ -93,7 +93,7 @@ function useHighlightedTextWithContext({ text, range }: { text: string; range: R
     const maxBeforeLength = Math.floor((rowLength - rangeLength(range)) / 2)
     const before = text.slice(0, start)
     const highlight = text.slice(start, end)
-    const after = text.slice(end)
+    const after = text.slice(end).slice(0, rowLength)
 
     const limitedBefore = useMemo(
         () => (text.length < rowLength ? before : truncateFromStart(before, maxBeforeLength)),

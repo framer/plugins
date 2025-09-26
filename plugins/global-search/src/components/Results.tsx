@@ -1,6 +1,5 @@
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual"
 import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { cn } from "../utils/className"
 import type { PreparedGroup, PreparedResult } from "../utils/filter/group-results"
 import { ResultType } from "../utils/filter/types"
 import { headerId } from "../utils/selection/constants"
@@ -26,6 +25,7 @@ export function ResultsList({ groups }: ResultsProps) {
         estimateSize: index => {
             const item = virtualItems[index]
             if (!item) return 0
+            if (index === 0) return 40 // first item doesn't have top border
             if (item.type === "group-header") return 41 // Height plus 1px border
             return 30
         },
@@ -64,11 +64,6 @@ export function ResultsList({ groups }: ResultsProps) {
                     } satisfies CSSProperties
 
                     const isSticky = activeStickyIndexRef.current === virtualRow.index
-                    const rowClassName = cn(
-                        "w-full left-0",
-                        isSticky ? "sticky" : "absolute",
-                        item.type === "group-header" ? "z-2" : "z-0"
-                    )
 
                     if (item.type === "group-header") {
                         const hasScrolled = (scrollElementRef.current?.scrollTop ?? 0) > 0
@@ -84,8 +79,7 @@ export function ResultsList({ groups }: ResultsProps) {
                                 }}
                                 isSticky={isSticky}
                                 showFadeOut={isSticky && hasScrolled}
-                                style={!isSticky ? rowStyle : undefined}
-                                className={rowClassName}
+                                style={isSticky ? { height: virtualRow.size } : rowStyle}
                             />
                         )
                     }
@@ -103,7 +97,6 @@ export function ResultsList({ groups }: ResultsProps) {
                                 text={item.result.text}
                                 range={item.result.range}
                                 style={rowStyle}
-                                className={rowClassName}
                             />
                         )
                     }
@@ -119,7 +112,6 @@ export function ResultsList({ groups }: ResultsProps) {
                             text={item.result.text}
                             range={item.result.range}
                             style={rowStyle}
-                            className={rowClassName}
                         />
                     )
                 })}

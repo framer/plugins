@@ -16,3 +16,4 @@ plugin.zip
 !.yarn/plugins
 !.yarn/sdks
 !.yarn/versions
+.yarn/releases/*.cjs

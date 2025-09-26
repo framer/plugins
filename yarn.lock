@@ -3905,7 +3905,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "dither@workspace:plugins/dither"
   dependencies:
-    "@radix-ui/react-slider": "npm:^1.3.6"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     clsx: "npm:^2.1.1"

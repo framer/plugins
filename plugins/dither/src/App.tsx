@@ -216,6 +216,29 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
         }
     }, [renderer, camera])
 
+    const onResolutionContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        void framer.showContextMenu(
+            [
+                {
+                    label: "Reset to Default",
+                    enabled: exportSize !== DEFAULT_WIDTH,
+                    onAction: () => {
+                        setExportSize(DEFAULT_WIDTH)
+                    },
+                },
+            ],
+            {
+                location: {
+                    x: e.clientX,
+                    y: e.clientY,
+                },
+            }
+        )
+    }
+
     const disabled = !(droppedAsset?.src ?? image)
 
     const uploadRef = useRef<HTMLDivElement>(null)
@@ -226,7 +249,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                 {!disabled ? (
                     <div
                         className="canvas"
-                        style={{ display: "block" }}
                         ref={node => {
                             if (node) {
                                 node.appendChild(gl.canvas)
@@ -288,7 +310,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                     }}
                     gl={gl}
                 />
-                <div className="gui-row">
+                <div className="gui-row" onContextMenu={onResolutionContextMenu}>
                     <label className="gui-label">Resolution</label>
                     <select
                         value={exportSize}

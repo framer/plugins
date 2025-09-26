@@ -1,15 +1,13 @@
 import { framer, type MenuItem } from "framer-plugin"
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react"
 import { cn } from "../utils/className"
-import { compareRootNodeTypeByPriority } from "../utils/filter/group-results"
-import { useAsyncFilter } from "../utils/filter/useAsyncFilter"
+import { compareRootNodeTypeByPriority, type PreparedGroup } from "../utils/filter/group-results"
+import { AsyncFilterStatus, useAsyncFilter } from "../utils/filter/useAsyncFilter"
 import type { RootNodeType } from "../utils/indexer/types"
 import { useIndexer } from "../utils/indexer/useIndexer"
 import { entries } from "../utils/object"
 import { getPluginUiOptions } from "../utils/plugin-ui"
 import { SelectionProvider } from "../utils/selection/SelectionProvider"
-import { useDebounceValue } from "../utils/useDebounceValue"
-import { useMinimumDuration } from "../utils/useMinimumDuration"
 import { ResultMessage } from "./ResultMessage"
 import { ResultsList } from "./Results"
 import { SearchInput } from "./SearchInput"
@@ -22,30 +20,29 @@ export function SearchScene() {
     const { searchOptions, optionsMenuItems } = useOptionsMenuItems()
     const deferredQuery = useDeferredValue(query)
     const isInitialIndexing = isIndexing && !hasCompletedInitialIndex
-    const isIndexingWithMinimumDuration = useMinimumDuration(isInitialIndexing, 250)
-    const debouncedQuery = useDebounceValue(deferredQuery, 250)
-    // if the query is shorter than 3 characters, we use the deferred query to avoid rendering long lists when the user is typing
-    const queryToUse = deferredQuery.length <= 3 ? debouncedQuery : deferredQuery
+
+    const inputIdleDelayPassed = useIdleDelayPassed(deferredQuery)
 
     const {
         results,
-        running: isFilterRunning,
+        status: filterStatus,
         error: filterError,
     } = useAsyncFilter(
-        queryToUse,
+        deferredQuery,
         searchOptions,
         db,
         isInitialIndexing ? { restartOnVersionChange: true, dataVersion } : { restartOnVersionChange: false }
     )
-    const isFilterRunningWithMinimumDuration = useMinimumDuration(isFilterRunning, 500)
+    const isFiltererRunning = filterStatus === AsyncFilterStatus.Running
+    const showFiltererIndicator = isFiltererRunning && inputIdleDelayPassed
+    const showSpinner = !!deferredQuery && (isInitialIndexing || showFiltererIndicator)
 
     const hasResults = results.length > 0
-    const noResultsState = useNoResultsState(
-        queryToUse,
-        hasResults,
-        isFilterRunningWithMinimumDuration,
-        isIndexingWithMinimumDuration
-    )
+    const { showNoResults } = useNoResults({
+        query: deferredQuery,
+        results,
+        status: filterStatus,
+    })
 
     if (filterError) {
         console.error(filterError)
@@ -59,12 +56,12 @@ export function SearchScene() {
     useEffect(() => {
         void framer.showUI(
             getPluginUiOptions({
-                query: queryToUse,
-                hasResults,
-                withMessage: noResultsState !== false,
+                query: deferredQuery,
+                hasResults: hasResults,
+                withMessage: showNoResults,
             })
         )
-    }, [queryToUse, hasResults, noResultsState])
+    }, [deferredQuery, hasResults, showNoResults])
 
     return (
         <main className="flex flex-col h-full">
@@ -72,15 +69,15 @@ export function SearchScene() {
                 <div
                     className={cn(
                         "flex gap-2 border-divider-light dark:border-divider-dark border-y py-3 mx-3 transition-colors items-center",
-                        !queryToUse && "border-b-transparent dark:border-b-transparent"
+                        !deferredQuery && "border-b-transparent dark:border-b-transparent"
                     )}
                 >
                     <SearchInput value={query} onChange={handleQueryChange} />
 
                     <div
-                        title="Indexing..."
-                        className="aria-hidden:opacity-0 transition flex items-center justify-center"
-                        aria-hidden={!isIndexingWithMinimumDuration}
+                        title="Searching…"
+                        className="aria-hidden:opacity-0 transition-opacity flex items-center justify-center"
+                        aria-hidden={!showSpinner}
                     >
                         <div className="framer-spinner bg-black dark:bg-white animate-[spin_0.8s_linear_infinite]"></div>
                     </div>
@@ -90,9 +87,8 @@ export function SearchScene() {
                     </Menu>
                 </div>
                 <div className="px-3 flex flex-col flex-1 scrollbar-hidden">
-                    {queryToUse && hasResults && <ResultsList groups={results} />}
-                    {noResultsState === "searching" && <ResultMessage>Searching…</ResultMessage>}
-                    {noResultsState === "no-results" && <ResultMessage>No Results</ResultMessage>}
+                    {hasResults && <ResultsList groups={results} />}
+                    {showNoResults && <ResultMessage>No Results</ResultMessage>}
                 </div>
             </SelectionProvider>
         </main>
@@ -143,20 +139,45 @@ function useOptionsMenuItems() {
     return { searchOptions, optionsMenuItems }
 }
 
-function useNoResultsState(queryToUse: string, hasResults: boolean, isFilterRunning: boolean, isIndexing: boolean) {
-    const [noResultsState, setNoResultsState] = useState<"searching" | "no-results" | false>(false)
+/**
+ * Debounces the "no results" visibility based on the previous state
+ */
+function useNoResults({
+    query,
+    results,
+    status,
+}: {
+    readonly query: string
+    readonly results: readonly PreparedGroup[]
+    readonly status: AsyncFilterStatus
+}): {
+    readonly showNoResults: boolean
+} {
+    const [showNoResults, setShowNoResults] = useState(false)
 
     useEffect(() => {
-        if (queryToUse && !hasResults) {
-            if (isFilterRunning || isIndexing) {
-                setNoResultsState("searching")
-            } else {
-                setNoResultsState("no-results")
-            }
-        } else {
-            setNoResultsState(false)
+        if (query.length === 0 || results.length > 0) {
+            setShowNoResults(false)
+        } else if (status === AsyncFilterStatus.Completed) {
+            setShowNoResults(true)
         }
-    }, [queryToUse, hasResults, isFilterRunning, isIndexing])
+    }, [query, results, status])
 
-    return noResultsState
+    return { showNoResults }
+}
+
+function useIdleDelayPassed(query: string) {
+    const [idleDelayPassed, setIdleDelayPassed] = useState(false)
+
+    useEffect(() => {
+        setIdleDelayPassed(false)
+        const id = setTimeout(() => {
+            setIdleDelayPassed(true)
+        }, 500)
+        return () => {
+            clearTimeout(id)
+        }
+    }, [query])
+
+    return idleDelayPassed
 }

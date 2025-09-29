@@ -37,7 +37,7 @@ export const GroupHeader = memo(
                     "group w-full focus:outline-none cursor-pointer text-left data-[header=normal]:absolute data-[header=normal]:left-0 data-[header=sticky]:sticky data-[header=sticky]:-top-px data-[header=sticky]:z-10 z-20",
                     index === 0 && "data-[header=sticky]:top-0",
                     showFadeOut &&
-                        "after:content-[] after:absolute after:top-8 after:left-0 after:right-0 after:h-3 after:z-10 after:pointer-events-none after:bg-gradient-to-b after:from-modal-light dark:after:from-modal-dark after:to-transparent",
+                        "after:content-[] after:absolute after:top-10 after:left-0 after:right-0 after:h-3 after:z-10 after:pointer-events-none after:bg-gradient-to-b after:from-modal-light dark:after:from-modal-dark after:to-transparent",
                     className
                 )}
                 data-header={isSticky ? "sticky" : "normal"}
@@ -46,12 +46,12 @@ export const GroupHeader = memo(
                 {...props}
                 {...getFocusProps(headerId(entry.id))}
             >
-                <div className="bg-modal-light dark:bg-modal-dark mt-1">
+                <div className="h-9 mt-1 bg-modal-light dark:bg-modal-dark">
                     <hr
-                        className="border-divider-light dark:border-divider-dark aria-hidden:opacity-0 mb-1"
+                        className="border-divider-light dark:border-divider-dark aria-hidden:border-modal-light dark:aria-hidden:border-modal-dark mb-1"
                         aria-hidden={index === 0}
                     />
-                    <div className="h-6 flex flex-row gap-2 rounded-lg justify-start items-center select-none overflow-hidden ps-2 group-focus-visible:bg-option-light dark:group-focus-visible:bg-option-dark group-focus-visible:text-primary-light dark:group-focus-visible:text-primary-dark">
+                    <div className="h-8 flex flex-row gap-2 rounded-lg justify-start items-center select-none overflow-hidden ps-2 group-focus-visible:bg-option-light dark:group-focus-visible:bg-option-dark group-focus-visible:text-primary-light dark:group-focus-visible:text-primary-dark">
                         <div className="flex-shrink-0 flex gap-2 justify-start items-center">
                             <IconArrowRight
                                 className={cn(

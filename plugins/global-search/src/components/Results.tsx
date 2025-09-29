@@ -25,8 +25,7 @@ export function ResultsList({ groups }: ResultsProps) {
         estimateSize: index => {
             const item = virtualItems[index]
             if (!item) return 0
-            if (index === 0) return 40 // first item doesn't have top border
-            if (item.type === "group-header") return 41 // Height plus 1px border
+            if (item.type === "group-header") return 50
             return 30
         },
         rangeExtractor: range => {

@@ -1,4 +1,3 @@
-@import url("https://use.typekit.net/dba5ktr.css"); /* input mono */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
 @import "tailwindcss";
 
@@ -51,16 +50,6 @@
     to {
         opacity: 1;
         animation-timing-function: cubic-bezier(0.5, 0, 0.5, 1);
-    }
-}
-
-details {
-    & > summary {
-        list-style: none;
-    }
-
-    & > summary::-webkit-details-marker {
-        display: none;
     }
 }
 

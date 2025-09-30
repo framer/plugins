@@ -75,6 +75,26 @@ select:not(:disabled) {
     width: 164px;
 }
 
+.setup-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.setup-error {
+    align-items: center;
+}
+
+.setup-error span {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+    justify-content: center;
+}
+
 .mapping {
     padding-bottom: 0;
 }

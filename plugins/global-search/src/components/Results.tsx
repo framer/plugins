@@ -18,6 +18,12 @@ export function ResultsList({ groups }: ResultsProps) {
     const { virtualItems, virtualItemIds, stickyIndexes } = useProcessedResults(groups, collapsedGroups)
     const { setItems } = useSelection()
 
+    const computedStyles = scrollElementRef.current ? getComputedStyle(scrollElementRef.current) : null
+    const headerValue = computedStyles?.getPropertyValue("--header-height")
+    const itemValue = computedStyles?.getPropertyValue("--item-height")
+    const headerHeight = typeof headerValue === "string" ? Number.parseInt(headerValue, 10) : null
+    const itemHeight = typeof itemValue === "string" ? Number.parseInt(itemValue, 10) : null
+
     const rowVirtualizer = useVirtualizer({
         overscan: 10,
         count: virtualItems.length,
@@ -25,8 +31,8 @@ export function ResultsList({ groups }: ResultsProps) {
         estimateSize: index => {
             const item = virtualItems[index]
             if (!item) return 0
-            if (item.type === "group-header") return 50
-            return 30
+            if (item.type === "group-header") return headerHeight ?? 48
+            return itemHeight ?? 30
         },
         rangeExtractor: range => {
             // TODO: This sticky index could be added and put into the result more efficiently

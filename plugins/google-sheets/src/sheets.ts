@@ -25,7 +25,7 @@ const PLUGIN_SLUG_COLUMN_KEY = "sheetsPluginSlugColumn"
 
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
 const HEADER_ROW_DELIMITER = "OIhpKTpp"
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:?\d{2})?)?$/
 
 interface UserInfo {
     displayName: string

@@ -4767,7 +4767,6 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
-    react-intersection-observer: "npm:^9.16.0"
     tailwindcss: "npm:^4.1.13"
     valibot: "npm:^1.1.0"
   languageName: unknown
@@ -6170,19 +6169,6 @@ __metadata:
   peerDependencies:
     react: ">=16.8.6"
   checksum: 10/2f5948a67d6b8f49836a8784aeb1bb9a07cbf2460c64a1893a25b98a0ca5366067c2bdc9dc9df3954f694b509f110012a2ebdd23b725eac742e72a8fc1167b3d
-  languageName: node
-  linkType: hard
-
-"react-intersection-observer@npm:^9.16.0":
-  version: 9.16.0
-  resolution: "react-intersection-observer@npm:9.16.0"
-  peerDependencies:
-    react: ^17.0.0 || ^18.0.0 || ^19.0.0
-    react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
-  peerDependenciesMeta:
-    react-dom:
-      optional: true
-  checksum: 10/ded14524d9311cfb9dd9e65eb04748d07a1868f8c40dd628bec8a8474d43ee2373604fdc1e6a7d468a8e2e680638e41b91048ab9669555d50217c5c0c51247e0
   languageName: node
   linkType: hard
 

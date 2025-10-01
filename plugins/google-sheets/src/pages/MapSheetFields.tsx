@@ -260,7 +260,7 @@ export function MapSheetFieldsPage({
             <div className="grid grid-cols items-center grid-cols-field-picker gap-2.5 mb-auto overflow-hidden mt-[10px]">
                 <span className="col-span-2">Column</span>
                 <span>Type</span>
-                <span>Field</span>
+                <span>Name</span>
                 {fieldConfig.map((field, i) => {
                     const isDisabled = disabledColumns.has(field.id)
 

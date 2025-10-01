@@ -6,7 +6,9 @@ import { Button } from "../components/Button"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { IconChevron } from "../components/Icons"
 import type { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
-import { assert, generateUniqueNames, syncMethods } from "../utils"
+import { assert, generateUniqueNames, isDefined, syncMethods } from "../utils"
+
+type FieldConfig = ManagedCollectionFieldInput | null
 
 interface FieldTypeOption {
     type: CollectionFieldType
@@ -103,8 +105,11 @@ const createFieldConfig = (
     uniqueColumnNames: string[],
     context: PluginContext,
     row?: Row
-): ManagedCollectionFieldInput[] => {
-    return headerRow.map((_, columnIndex) => {
+): FieldConfig[] => {
+    return headerRow.map((header, columnIndex) => {
+        // Return null for columns with empty header cells to preserve column positions
+        if (String(header).trim() === "") return null
+
         const sanitizedName = uniqueColumnNames[columnIndex]
         assert(sanitizedName, "Sanitized name is undefined")
 
@@ -127,8 +132,10 @@ const getFieldNameOverrides = (context: PluginContext): Record<string, string> =
     return result
 }
 
-const getPossibleSlugFields = (fieldConfig: ManagedCollectionFieldInput[]): ManagedCollectionFieldInput[] => {
-    return fieldConfig.filter(field => field.type === "string")
+const getPossibleSlugFields = (fieldConfig: FieldConfig[]): ManagedCollectionFieldInput[] => {
+    return fieldConfig.filter(
+        (field): field is ManagedCollectionFieldInput => field !== null && field.type === "string"
+    )
 }
 
 interface Props {
@@ -153,16 +160,13 @@ export function MapSheetFieldsPage({
     const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
 
     const uniqueColumnNames = useMemo(() => generateUniqueNames(headerRow), [headerRow])
-    const [fieldConfig, setFieldConfig] = useState<ManagedCollectionFieldInput[]>(() =>
+    const [fieldConfig, setFieldConfig] = useState<FieldConfig[]>(() =>
         createFieldConfig(headerRow, uniqueColumnNames, pluginContext, rows[0])
     )
     const [disabledColumns, setDisabledColumns] = useState(
         () => new Set<string>(pluginContext.type === "update" ? pluginContext.ignoredColumns : [])
     )
-    const slugFields = useMemo(
-        () => getPossibleSlugFields(fieldConfig).filter(fieldConfig => !disabledColumns.has(fieldConfig.id)),
-        [fieldConfig, disabledColumns]
-    )
+    const slugFields = useMemo(() => getPossibleSlugFields(fieldConfig), [fieldConfig])
     const [slugColumn, setSlugColumn] = useState<string>(() => getInitialSlugColumn(pluginContext, slugFields))
     const [fieldNameOverrides, setFieldNameOverrides] = useState<Record<string, string>>(() =>
         getFieldNameOverrides(pluginContext)
@@ -176,26 +180,15 @@ export function MapSheetFieldsPage({
 
                 // If we're re-enabling a string field and there's currently no valid slug column,
                 // set this field as the slug column
-                const field = fieldConfig.find(config => config.id === id)
+                const field = fieldConfig.find(config => config && config.id === id)
                 if (field?.type === "string") {
-                    const currentSlugField = fieldConfig.find(config => config.id === slugColumn)
-                    if (!currentSlugField || nextSet.has(slugColumn)) {
+                    const currentSlugField = fieldConfig.find(config => config && config.id === slugColumn)
+                    if (!currentSlugField) {
                         setSlugColumn(id)
                     }
                 }
             } else {
                 nextSet.add(id)
-
-                // If the disabled column is the slug column, we need to update it to the next
-                // possible slug field
-                if (id === slugColumn) {
-                    const nextSlugField = getPossibleSlugFields(fieldConfig).find(
-                        field => field.id !== id && !nextSet.has(field.id)
-                    )
-                    if (nextSlugField) {
-                        setSlugColumn(nextSlugField.id)
-                    }
-                }
             }
             return nextSet
         })
@@ -211,7 +204,7 @@ export function MapSheetFieldsPage({
     const handleFieldTypeChange = (id: string, type: CollectionFieldType) => {
         setFieldConfig(current =>
             current.map(field => {
-                if (field.id === id) {
+                if (field && field.id === id) {
                     return {
                         ...field,
                         type,
@@ -228,7 +221,7 @@ export function MapSheetFieldsPage({
         if (isPending) return
 
         const allFields = fieldConfig
-            .filter(field => !disabledColumns.has(field.id))
+            .filter((field): field is ManagedCollectionFieldInput => field !== null && !disabledColumns.has(field.id))
             .map(field => {
                 const maybeOverride = fieldNameOverrides[field.id]
                 if (maybeOverride) {
@@ -246,7 +239,7 @@ export function MapSheetFieldsPage({
             fields: allFields,
             spreadsheetId,
             sheetTitle,
-            colFieldTypes: fieldConfig.map(field => field.type),
+            colFieldTypes: fieldConfig.map(field => field?.type ?? null),
             ignoredColumns: Array.from(disabledColumns),
             slugColumn,
             lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),
@@ -283,7 +276,7 @@ export function MapSheetFieldsPage({
                 <span className="col-span-2">Column</span>
                 <span>Field</span>
                 <span>Type</span>
-                {fieldConfig.map((field, i) => {
+                {fieldConfig.filter(isDefined).map((field, i) => {
                     const isDisabled = disabledColumns.has(field.id)
 
                     return (

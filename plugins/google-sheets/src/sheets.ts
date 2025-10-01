@@ -243,7 +243,7 @@ export interface SyncResult extends SyncStatus {
 }
 
 interface ProcessSheetRowParams {
-    fieldTypes: CollectionFieldType[]
+    fieldTypes: (CollectionFieldType | null)[]
     row: Row
     rowIndex: number
     uniqueHeaderRowNames: string[]
@@ -260,7 +260,7 @@ export interface SyncMutationOptions {
     fields: ManagedCollectionFieldInput[]
     slugColumn: string | null
     ignoredColumns: string[]
-    colFieldTypes: CollectionFieldType[]
+    colFieldTypes: (CollectionFieldType | null)[]
     lastSyncedTime: string | null
 }
 
@@ -369,15 +369,16 @@ function processSheetRow({
     for (const [colIndex, cell] of row.entries()) {
         if (ignoredFieldColumnIndexes.includes(colIndex)) continue
 
-        // +1 as zero-indexed, another +1 to account for header row
-        const location = `${columnToLetter(colIndex + 1)}${rowIndex + 2}`
-
+        // Skip columns that don't have a field type (null for empty headers)
         const fieldType = fieldTypes[colIndex]
-        assert(isDefined(fieldType), "Field type must be defined")
+        if (fieldType === null) continue
 
-        const fieldDataEntryInput = getFieldDataEntryInput(fieldType, cell)
+        const fieldDataEntryInput = getFieldDataEntryInput(fieldType as CollectionFieldType, cell)
 
         if (fieldDataEntryInput === null) {
+            // +1 as zero-indexed, another +1 to account for header row
+            const location = `${columnToLetter(colIndex + 1)}${rowIndex + 2}`
+
             status.warnings.push({
                 rowIndex,
                 message: `Invalid cell value at ${location}.`,
@@ -483,8 +484,10 @@ export async function syncSheet({
 
     // Ignore columns with empty header cells
     for (let i = 0; i < maxRowLength; i++) {
-        const header = i >= headerRow.length ? "" : String(headerRow[i]).trim()
-        if (header === "") {
+        if (ignoredFieldColumnIndexes.includes(i)) continue
+
+        const header = i >= headerRow.length ? null : headerRow[i]
+        if (!isDefined(header) || String(header).trim() === "") {
             ignoredFieldColumnIndexes.push(i)
         }
     }

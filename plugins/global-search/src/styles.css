@@ -32,6 +32,8 @@
 
     /* Spacing */
     --spacing: 5px;
+    --header-height: 48px;
+    --item-height: 30px;
 }
 
 @utility scrollbar-hidden {

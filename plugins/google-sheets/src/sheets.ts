@@ -25,6 +25,7 @@ const PLUGIN_SLUG_COLUMN_KEY = "sheetsPluginSlugColumn"
 
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
 const HEADER_ROW_DELIMITER = "OIhpKTpp"
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?)?$/
 
 interface UserInfo {
     displayName: string
@@ -287,6 +288,22 @@ function extractDateFromSerialNumber(serialNumber: number) {
     return new Date(baseDate.getTime() + wholeDays * MS_PER_DAY + milliseconds)
 }
 
+/**
+ * Validates if a string is a valid ISO date format.
+ * Returns true if valid, false otherwise.
+ */
+function isValidISODate(dateString: string): boolean {
+    try {
+        // Check if the string matches basic ISO 8601 format patterns
+        if (!ISO_DATE_REGEX.test(dateString)) return false
+
+        const date = new Date(dateString)
+        return !isNaN(date.getTime())
+    } catch {
+        return false
+    }
+}
+
 function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue): FieldDataEntryInput | null {
     switch (type) {
         case "number": {
@@ -301,13 +318,25 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
             return { type, value: CELL_BOOLEAN_VALUES.includes(cellValue) }
         }
         case "date": {
-            if (typeof cellValue !== "number") return null
-            try {
-                const date = extractDateFromSerialNumber(cellValue)
-                return { type, value: date.toISOString() }
-            } catch {
+            // Google Sheets numeric date values
+            if (typeof cellValue === "number") {
+                try {
+                    const date = extractDateFromSerialNumber(cellValue)
+                    return { type, value: date.toISOString() }
+                } catch {
+                    return null
+                }
+            }
+
+            // ISO date format
+            if (typeof cellValue === "string") {
+                if (isValidISODate(cellValue)) {
+                    return { type, value: cellValue }
+                }
                 return null
             }
+
+            return null
         }
         case "enum":
         case "image":
@@ -444,14 +473,27 @@ export async function syncSheet({
     const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
     const [headerRow, ...rows] = sheet.values
 
+    // Find the longest row length to handle cases where any sheet rows are longer than the header row
+    const maxRowLength = Math.max(...sheet.values.map(row => row.length))
+
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
     const headerRowHash = generateHeaderRowHash(headerRow, ignoredColumns)
+
+    const ignoredFieldColumnIndexes = ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col))
+
+    // Ignore columns with empty header cells
+    for (let i = 0; i < maxRowLength; i++) {
+        const header = i >= headerRow.length ? "" : String(headerRow[i]).trim()
+        if (header === "") {
+            ignoredFieldColumnIndexes.push(i)
+        }
+    }
 
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
         unsyncedRowIds: unsyncedItemIds,
         fieldTypes: colFieldTypes,
-        ignoredFieldColumnIndexes: ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col)),
+        ignoredFieldColumnIndexes,
         slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
     })
 

@@ -70,7 +70,7 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
     }
 
     return (
-        <div className="col-lg">
+        <main className="col-lg">
             <Hero />
             <div className="col pl-[15px]">
                 <div className="row justify-between items-center">
@@ -110,6 +110,6 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
             >
                 Next
             </button>
-        </div>
+        </main>
     )
 }

@@ -69,7 +69,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     }
 
     return (
-        <div className="col-lg pb-[15px]">
+        <main className="col-lg pb-[15px]">
             <Hero />
             <ol className="list-decimal list-inside space-y-2.5 marker:text-secondary *:text-content *:leading-none *:tracking-normal py-[7px]">
                 <li>
@@ -91,6 +91,6 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                     </>
                 )}
             </button>
-        </div>
+        </main>
     )
 }

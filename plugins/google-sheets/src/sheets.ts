@@ -367,11 +367,15 @@ function processSheetRow({
     let itemId: string | null = null
 
     for (const [colIndex, cell] of row.entries()) {
-        if (ignoredFieldColumnIndexes.includes(colIndex)) continue
-
         // Skip columns that don't have a field type (null for empty headers)
         const fieldType = fieldTypes[colIndex]
         if (fieldType === null) continue
+
+        // Skip processing ignored columns unless they are the slug field
+        const isIgnored = ignoredFieldColumnIndexes.includes(colIndex)
+        const isSlugField = colIndex === slugFieldColumnIndex
+
+        if (isIgnored && !isSlugField) continue
 
         const fieldDataEntryInput = getFieldDataEntryInput(fieldType as CollectionFieldType, cell)
 
@@ -386,7 +390,8 @@ function processSheetRow({
             continue
         }
 
-        if (colIndex === slugFieldColumnIndex) {
+        // Always process the slug column, even if it's ignored
+        if (isSlugField) {
             if (typeof fieldDataEntryInput.value !== "string") {
                 continue
             }
@@ -397,6 +402,8 @@ function processSheetRow({
             // Mark row as seen
             unsyncedRowIds.delete(itemId)
         }
+
+        if (isIgnored) continue
 
         const fieldName = uniqueHeaderRowNames[colIndex]
         assert(isDefined(fieldName), "Field name must be defined")

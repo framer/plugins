@@ -248,7 +248,6 @@ interface ProcessSheetRowParams {
     rowIndex: number
     maxRowLength: number
     uniqueHeaderRowNames: string[]
-    unsyncedRowIds: Set<string>
     slugFieldColumnIndex: number
     ignoredFieldColumnIndexes: number[]
     status: SyncStatus
@@ -357,7 +356,6 @@ function processSheetRow({
     row,
     rowIndex,
     maxRowLength,
-    unsyncedRowIds,
     uniqueHeaderRowNames,
     ignoredFieldColumnIndexes,
     slugFieldColumnIndex,
@@ -437,9 +435,6 @@ function processSheetRow({
 
             slugValue = slugify(fieldDataEntryInput.value)
             itemId = generateHashId(fieldDataEntryInput.value)
-
-            // Mark row as seen
-            unsyncedRowIds.delete(itemId)
         }
 
         if (isIgnored) continue
@@ -466,10 +461,7 @@ function processSheetRow({
     }
 }
 
-function processSheet(
-    rows: Row[],
-    processRowParams: Omit<ProcessSheetRowParams, "row" | "rowIndex" | "status" | "fieldType">
-) {
+function processSheet(rows: Row[], processRowParams: Omit<ProcessSheetRowParams, "row" | "rowIndex" | "status">) {
     const status: SyncStatus = {
         info: [],
         warnings: [],
@@ -485,8 +477,36 @@ function processSheet(
     )
     const collectionItems = result.filter(isDefined)
 
+    // Handle duplicate slugs by adding numeric suffixes
+    const allSlugs = new Set(collectionItems.map(item => item.slug))
+    const usedSlugs = new Set<string>()
+
+    const processedItems = collectionItems.map(item => {
+        let uniqueSlug = item.slug
+        let counter = 2
+
+        // Increment counter until we find a unique slug
+        while (usedSlugs.has(uniqueSlug) || (uniqueSlug !== item.slug && allSlugs.has(uniqueSlug))) {
+            uniqueSlug = `${item.slug}-${counter}`
+            counter++
+        }
+
+        usedSlugs.add(uniqueSlug)
+
+        // If slug changed, also update the item ID because it's based on the slug
+        if (uniqueSlug !== item.slug) {
+            return {
+                ...item,
+                slug: uniqueSlug,
+                id: generateHashId(uniqueSlug),
+            }
+        }
+
+        return item
+    })
+
     return {
-        collectionItems,
+        collectionItems: processedItems,
         status,
     }
 }
@@ -515,8 +535,6 @@ export async function syncSheet({
 
     const collection = await framer.getActiveManagedCollection()
 
-    const unsyncedItemIds = new Set(await collection.getItemIds())
-
     const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
     const [headerRow, ...rows] = sheet.values
 
@@ -540,17 +558,25 @@ export async function syncSheet({
 
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
-        unsyncedRowIds: unsyncedItemIds,
         fieldTypes: colFieldTypes,
         ignoredFieldColumnIndexes,
         slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
         maxRowLength,
     })
 
-    const itemsToDelete = Array.from(unsyncedItemIds)
-    await collection.removeItems(itemsToDelete)
-    await collection.addItems(collectionItems)
-    await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
+    // Calculate items to delete based on what's in the collection vs what we processed
+    const existingItemIds = new Set(await collection.getItemIds())
+    const processedItemIds = new Set(collectionItems.map(item => item.id))
+    const itemsToDelete = Array.from(existingItemIds).filter(id => !processedItemIds.has(id))
+
+    if (itemsToDelete.length > 0) {
+        await collection.removeItems(itemsToDelete)
+    }
+
+    if (collectionItems.length > 0) {
+        await collection.addItems(collectionItems)
+        await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
+    }
 
     const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
     const sheetId = spreadsheetInfo.sheets.find(x => x.properties.title === sheetTitle)?.properties.sheetId

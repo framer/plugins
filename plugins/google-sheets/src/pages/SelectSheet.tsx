@@ -1,5 +1,6 @@
+import cx from "classnames"
 import { framer } from "framer-plugin"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Hero } from "../components/Hero"
 import { useSpreadsheetInfoQuery } from "../sheets"
 
@@ -12,14 +13,29 @@ interface Props {
 }
 
 export function SelectSheetPage({ onError, onSheetSelected }: Props) {
-    const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState<string>()
-    const [selectedSheetTitle, setSelectedSheetTitle] = useState<string>()
+    const [spreadsheetUrl, setSpreadsheetUrl] = useState<string>("")
+    const [selectedSheetTitle, setSelectedSheetTitle] = useState<string>("")
+
+    const selectedSpreadsheetId = useMemo(() => {
+        if (!spreadsheetUrl) return ""
+
+        try {
+            const url = new URL(spreadsheetUrl)
+            if (url.hostname !== "docs.google.com") throw new Error("Not a Google Sheets URL")
+
+            const id = url.pathname.replace("/spreadsheets/d/", "").replace("/edit", "")
+
+            return id
+        } catch (err) {
+            return ""
+        }
+    }, [spreadsheetUrl])
 
     const {
         data: spreadsheetInfo,
         isFetching: isFetchingSheets,
         isError: isSpreadSheetInfoError,
-    } = useSpreadsheetInfoQuery(selectedSpreadsheetId ?? "")
+    } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
 
     useEffect(() => {
         if (isSpreadSheetInfoError) {
@@ -36,30 +52,21 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
         setSelectedSheetTitle(firstSheet.properties.title)
     }, [spreadsheetInfo])
 
-    const handleSheetSelect = (e: SelectChangeEvent) => {
+    const handleSpreadsheetUrlChange = (e: InputChangeEvent) => {
+        setSpreadsheetUrl(e.target.value)
+    }
+
+    const handleSheetChange = (e: SelectChangeEvent) => {
         setSelectedSheetTitle(e.target.value)
     }
 
-    const handleSheetSelected = () => {
-        if (selectedSpreadsheetId === undefined || selectedSheetTitle === undefined) {
+    const handleNextClick = () => {
+        if (!selectedSpreadsheetId || !selectedSheetTitle) {
             framer.notify("Please select a spreadsheet and sheet", { variant: "error" })
             return
         }
 
         onSheetSelected(selectedSpreadsheetId, selectedSheetTitle)
-    }
-
-    const handleSheetURLChange = (e: InputChangeEvent) => {
-        try {
-            const url = new URL(e.target.value)
-            if (url.hostname !== "docs.google.com") throw new Error("Not a Google Sheets URL")
-
-            const id = url.pathname.replace("/spreadsheets/d/", "").replace("/edit", "")
-
-            setSelectedSpreadsheetId(id)
-        } catch (err) {
-            setSelectedSpreadsheetId(undefined)
-        }
     }
 
     return (
@@ -68,16 +75,21 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
             <div className="col pl-[15px]">
                 <div className="row justify-between items-center">
                     <p>Spreadsheet</p>
-                    <input placeholder="Sheet URL…" onChange={handleSheetURLChange} />
+                    <input
+                        autoFocus
+                        placeholder="Sheet URL…"
+                        value={spreadsheetUrl}
+                        onChange={handleSpreadsheetUrlChange}
+                    />
                 </div>
                 <div className="row justify-between items-center">
                     <p>Sheet</p>
 
                     <select
-                        onChange={handleSheetSelect}
+                        onChange={handleSheetChange}
                         value={selectedSheetTitle ?? ""}
                         disabled={!spreadsheetInfo?.sheets.length}
-                        className="px[16px] py-0"
+                        className={cx(!spreadsheetInfo?.sheets.length && "opacity-50")}
                     >
                         <option value="" disabled>
                             {isFetchingSheets ? "Loading..." : "Choose..."}
@@ -92,7 +104,12 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
                 </div>
             </div>
 
-            <button onClick={handleSheetSelected}>Next</button>
+            <button
+                disabled={isFetchingSheets || !selectedSpreadsheetId || !selectedSheetTitle}
+                onClick={handleNextClick}
+            >
+                Next
+            </button>
         </div>
     )
 }

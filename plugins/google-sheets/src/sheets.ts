@@ -51,7 +51,7 @@ interface SpreadsheetInfo {
     sheets: SpreadsheetInfoSheet[]
 }
 
-export type CellValue = string | number | boolean
+export type CellValue = string | number | boolean | null
 
 export type Row = CellValue[]
 
@@ -246,6 +246,7 @@ interface ProcessSheetRowParams {
     fieldTypes: (CollectionFieldType | null)[]
     row: Row
     rowIndex: number
+    maxRowLength: number
     uniqueHeaderRowNames: string[]
     unsyncedRowIds: Set<string>
     slugFieldColumnIndex: number
@@ -315,7 +316,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
             return { type, value: num }
         }
         case "boolean": {
-            return { type, value: CELL_BOOLEAN_VALUES.includes(cellValue) }
+            return isDefined(cellValue) ? { type, value: CELL_BOOLEAN_VALUES.includes(cellValue) } : null
         }
         case "date": {
             // Google Sheets numeric date values
@@ -338,13 +339,13 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
 
             return null
         }
-        case "enum":
         case "image":
         case "link":
         case "file":
         case "formattedText":
         case "color":
         case "string": {
+            if (!isDefined(cellValue)) return null
             return { type, value: String(cellValue) }
         }
         default:
@@ -355,6 +356,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
 function processSheetRow({
     row,
     rowIndex,
+    maxRowLength,
     unsyncedRowIds,
     uniqueHeaderRowNames,
     ignoredFieldColumnIndexes,
@@ -366,22 +368,59 @@ function processSheetRow({
     let slugValue: string | null = null
     let itemId: string | null = null
 
-    for (const [colIndex, cell] of row.entries()) {
+    for (let i = 0; i < maxRowLength; i++) {
+        const cell = row[i] ?? null
+
         // Skip columns that don't have a field type (null for empty headers)
-        const fieldType = fieldTypes[colIndex]
+        const fieldType = fieldTypes[i]
         if (fieldType === null) continue
 
         // Skip processing ignored columns unless they are the slug field
-        const isIgnored = ignoredFieldColumnIndexes.includes(colIndex)
-        const isSlugField = colIndex === slugFieldColumnIndex
+        const isIgnored = ignoredFieldColumnIndexes.includes(i)
+        const isSlugField = i === slugFieldColumnIndex
 
         if (isIgnored && !isSlugField) continue
 
-        const fieldDataEntryInput = getFieldDataEntryInput(fieldType as CollectionFieldType, cell)
+        let fieldDataEntryInput = getFieldDataEntryInput(fieldType as CollectionFieldType, cell)
 
-        if (fieldDataEntryInput === null) {
+        // Set to default value for type if no value is provided
+        if (!fieldDataEntryInput) {
+            switch (fieldType) {
+                case "string":
+                case "formattedText":
+                    fieldDataEntryInput = {
+                        value: "",
+                        type: fieldType,
+                    }
+                    break
+                case "boolean":
+                    fieldDataEntryInput = {
+                        value: false,
+                        type: "boolean",
+                    }
+                    break
+                case "number":
+                    fieldDataEntryInput = {
+                        value: 0,
+                        type: "number",
+                    }
+                    break
+                case "image":
+                case "file":
+                case "link":
+                case "date":
+                case "color":
+                    fieldDataEntryInput = {
+                        value: null,
+                        type: fieldType,
+                    }
+                    break
+            }
+        }
+
+        if (!fieldDataEntryInput) {
             // +1 as zero-indexed, another +1 to account for header row
-            const location = `${columnToLetter(colIndex + 1)}${rowIndex + 2}`
+            const location = `${columnToLetter(i + 1)}${rowIndex + 2}`
 
             status.warnings.push({
                 rowIndex,
@@ -405,7 +444,7 @@ function processSheetRow({
 
         if (isIgnored) continue
 
-        const fieldName = uniqueHeaderRowNames[colIndex]
+        const fieldName = uniqueHeaderRowNames[i]
         assert(isDefined(fieldName), "Field name must be defined")
 
         fieldData[fieldName] = fieldDataEntryInput
@@ -505,6 +544,7 @@ export async function syncSheet({
         fieldTypes: colFieldTypes,
         ignoredFieldColumnIndexes,
         slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
+        maxRowLength,
     })
 
     await collection.addItems(collectionItems)

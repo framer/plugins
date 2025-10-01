@@ -82,14 +82,15 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                     <span className="pl-[10px]">Map the column fields to the CMS</span>
                 </li>
             </ol>
-            <Button
-                variant="secondary"
-                onClick={login}
-                isLoading={isLoading}
-                className="w-full inline-flex gap-[8px] items-center"
-            >
-                <GoogleLogo /> <span className="relative">Sign In</span>
-            </Button>
+            <button onClick={login} className="flex flex-row gap-[8px]">
+                {isLoading ? (
+                    <div className="framer-spinner" />
+                ) : (
+                    <>
+                        <GoogleLogo /> Sign In
+                    </>
+                )}
+            </button>
         </div>
     )
 }

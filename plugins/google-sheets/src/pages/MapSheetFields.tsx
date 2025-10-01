@@ -310,15 +310,12 @@ export function MapSheetFieldsPage({
                 <div ref={scrollRef} className="h-0 w-0 bg-red-500 "></div>
             </div>
             <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full overflow-hidden">
-                <Button
-                    variant="secondary"
-                    isLoading={isPending}
-                    className="w-full"
+                <button
                     disabled={!isAllowedToManage}
                     title={isAllowedToManage ? undefined : "Insufficient permissions"}
                 >
-                    {`Import from ${sheetTitle}`}
-                </Button>
+                    {isPending ? <div className="framer-spinner" /> : `Import from ${sheetTitle}`}
+                </button>
             </div>
         </form>
     )

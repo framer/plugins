@@ -7,6 +7,8 @@ main {
     user-select: none;
 
     --framer-color-tint: #00c43e;
+    --framer-color-tint-dark: #00b539;
+    --framer-color-tint-extra-dark: #00ab36;
 }
 
 @theme inline {

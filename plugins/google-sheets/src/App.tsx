@@ -1,7 +1,6 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
 import auth from "./auth"
-import { CenteredSpinner } from "./components/CenteredSpinner"
 import { logSyncResult, PLUGIN_LOG_SYNC_KEY } from "./debug"
 import { Authenticate } from "./pages/Authenticate"
 import { MapSheetFieldsPage } from "./pages/MapSheetFields"
@@ -141,7 +140,13 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
         )
     }
 
-    if (isSheetPending) return <CenteredSpinner />
+    if (isSheetPending) {
+        return (
+            <div className="size-full flex items-center justify-center">
+                <div className="framer-spinner" />
+            </div>
+        )
+    }
 
     const [headerRow, ...rows] = sheet?.values ?? []
     if (!headerRow) {

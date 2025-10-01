@@ -484,7 +484,7 @@ function processSheet(rows: Row[], processRowParams: Omit<ProcessSheetRowParams,
     )
     const collectionItems = result.filter(isDefined)
 
-    // Detect duplicate slugs and report errors
+    // Detect duplicate slugs and report error if any are found
     const slugCounts = new Map<string, number>()
     const duplicateSlugs = new Set<string>()
 
@@ -542,16 +542,12 @@ export async function syncSheet({
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
     const headerRowHash = generateHeaderRowHash(headerRow, ignoredColumns)
 
-    const ignoredFieldColumnIndexes = ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col))
-
-    // Find the longest row length to check for cases where any sheet rows are longer than the header row
+    // Find the longest row length to check if any sheet rows are longer than the header row
     const maxRowLength = Math.max(...sheet.values.map(row => row.length))
 
     // Check for empty header row cells and collect all empty columns
     const emptyHeaderColumns: string[] = []
     for (let i = 0; i < maxRowLength; i++) {
-        if (ignoredFieldColumnIndexes.includes(i)) continue
-
         const header = headerRow[i]
         if (!isDefined(header) || header.trim() === "") {
             const columnLetter = columnToLetter(i + 1)
@@ -571,7 +567,7 @@ export async function syncSheet({
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
         fieldTypes: colFieldTypes,
-        ignoredFieldColumnIndexes,
+        ignoredFieldColumnIndexes: ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col)),
         slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
         rowLength: headerRow.length,
     })

@@ -72,7 +72,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                 <li>Map the table fields to the CMS</li>
             </ol>
 
-            <button className="action-button" type="submit">
+            <button className="action-button" type="submit" aria-label={isLoading ? "Logging in" : "Log in"}>
                 {isLoading ? <div className="framer-spinner" /> : "Log In"}
             </button>
         </form>

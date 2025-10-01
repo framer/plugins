@@ -1,7 +1,6 @@
 import { framer } from "framer-plugin"
 import { useLayoutEffect, useRef, useState } from "react"
 import auth from "../auth"
-import { Button } from "../components/Button"
 import { GoogleLogo } from "../components/GoogleLogo"
 import { Hero } from "../components/Hero"
 import { getPluginContext, type PluginContext } from "../sheets"

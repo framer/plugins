@@ -235,7 +235,7 @@ export function App({ pluginContext }: AppProps) {
                 <p className="text-content">
                     Your Google Account does not have access to the synced spreadsheet. Check your access and try again
                     or{" "}
-                    <a href="#" className="text-sheets-green" onClick={() => void auth.logout()}>
+                    <a href="#" onClick={() => void auth.logout()}>
                         log out
                     </a>{" "}
                     and try a different account.

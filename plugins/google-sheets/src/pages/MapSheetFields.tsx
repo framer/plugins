@@ -259,8 +259,8 @@ export function MapSheetFieldsPage({
             </div>
             <div className="grid grid-cols items-center grid-cols-field-picker gap-2.5 mb-auto overflow-hidden mt-[10px]">
                 <span className="col-span-2">Column</span>
-                <span>Field</span>
                 <span>Type</span>
+                <span>Field</span>
                 {fieldConfig.map((field, i) => {
                     const isDisabled = disabledColumns.has(field.id)
 
@@ -278,20 +278,8 @@ export function MapSheetFieldsPage({
                             <div className="flex items-center justify-center">
                                 <IconChevron />
                             </div>
-                            <input
-                                type="text"
-                                className={cx("w-full", {
-                                    "opacity-50": isDisabled || !isAllowedToManage,
-                                })}
-                                disabled={isDisabled || !isAllowedToManage}
-                                placeholder={field.name}
-                                value={fieldNameOverrides[field.id] ?? ""}
-                                onChange={e => {
-                                    handleFieldNameChange(field.id, e.target.value)
-                                }}
-                            />
                             <select
-                                className={cx("w-full", !isAllowedToManage && "opacity-50")}
+                                className={cx("w-full", (isDisabled || !isAllowedToManage) && "opacity-50")}
                                 disabled={isDisabled || !isAllowedToManage}
                                 value={field.type}
                                 onChange={e => {
@@ -305,6 +293,16 @@ export function MapSheetFieldsPage({
                                     </option>
                                 ))}
                             </select>
+                            <input
+                                type="text"
+                                className={cx("w-full", (isDisabled || !isAllowedToManage) && "opacity-50")}
+                                disabled={isDisabled || !isAllowedToManage}
+                                placeholder={field.name}
+                                value={fieldNameOverrides[field.id] ?? ""}
+                                onChange={e => {
+                                    handleFieldNameChange(field.id, e.target.value)
+                                }}
+                            />
                         </Fragment>
                     )
                 })}

@@ -3,6 +3,12 @@
 
 @custom-variant dark (&:where([data-framer-theme="dark"], [data-framer-theme="dark"] *));
 
+main {
+    user-select: none;
+
+    --framer-color-tint: #00c43e;
+}
+
 @theme inline {
     --background-color-primary: var(--framer-color-bg);
     --background-color-secondary: var(--framer-color-bg-secondary);
@@ -20,7 +26,6 @@
     --color-tertiary: var(--framer-color-text-tertiary);
     --color-inverted: var(--framer-color-text-inverted);
     --color-content: #999;
-    --color-sheets-green: #00c43e;
     --color-framer-red: #ff3366;
 
     --border-color-divider: var(--framer-color-divider);

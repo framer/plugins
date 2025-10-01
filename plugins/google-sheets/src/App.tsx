@@ -208,8 +208,6 @@ export function App({ pluginContext }: AppProps) {
                 fields,
                 // Determine if the field type is already configured, otherwise default to "string"
                 colFieldTypes: headerRow.map(colName => {
-                    // Use null for empty headers
-                    if (colName.trim() === "") return null
                     const field = fields.find(field => field.name === colName)
                     return field?.type ?? "string"
                 }),

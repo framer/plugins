@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 import {
-    type CollectionItem,
     type FieldDataEntryInput,
     type FieldDataInput,
     framer,
@@ -11,7 +10,15 @@ import * as v from "valibot"
 import auth from "./auth"
 import { logSyncResult } from "./debug.ts"
 import { queryClient } from "./main.tsx"
-import { assert, columnToLetter, generateHashId, generateUniqueNames, isDefined, slugify } from "./utils"
+import {
+    assert,
+    columnToLetter,
+    formatListWithAnd,
+    generateHashId,
+    generateUniqueNames,
+    isDefined,
+    slugify,
+} from "./utils"
 
 const USER_INFO_API_URL = "https://www.googleapis.com/oauth2/v1"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
@@ -244,7 +251,7 @@ export interface SyncResult extends SyncStatus {
 }
 
 interface ProcessSheetRowParams {
-    fieldTypes: (CollectionFieldType | null)[]
+    fieldTypes: CollectionFieldType[]
     row: Row
     rowIndex: number
     maxRowLength: number
@@ -261,7 +268,7 @@ export interface SyncMutationOptions {
     fields: ManagedCollectionFieldInput[]
     slugColumn: string | null
     ignoredColumns: string[]
-    colFieldTypes: (CollectionFieldType | null)[]
+    colFieldTypes: CollectionFieldType[]
     lastSyncedTime: string | null
 }
 
@@ -370,7 +377,6 @@ function processSheetRow({
     for (let i = 0; i < maxRowLength; i++) {
         const cell = row[i] ?? null
 
-        // Skip columns that don't have a field type (null for empty headers)
         const fieldType = fieldTypes[i]
         if (!fieldType) continue
 
@@ -484,7 +490,7 @@ function processSheet(rows: Row[], processRowParams: Omit<ProcessSheetRowParams,
 
     // Count occurrences of each slug
     collectionItems.forEach(item => {
-        const count = slugCounts.get(item.slug) || 0
+        const count = slugCounts.get(item.slug) ?? 0
         slugCounts.set(item.slug, count + 1)
 
         if (count > 0) {
@@ -493,9 +499,9 @@ function processSheet(rows: Row[], processRowParams: Omit<ProcessSheetRowParams,
     })
 
     if (duplicateSlugs.size > 0) {
-        throw new Error(
-            `Duplicate slug${duplicateSlugs.size === 1 ? "" : "s"} found: ${Array.from(duplicateSlugs).join(", ")}. Each item must have a unique slug.`
-        )
+        const slugList = formatListWithAnd(Array.from(duplicateSlugs))
+        const pluralSuffix = duplicateSlugs.size > 1 ? "s" : ""
+        throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
     }
 
     const processedItems = collectionItems
@@ -541,20 +547,31 @@ export async function syncSheet({
 
     const ignoredFieldColumnIndexes = ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col))
 
-    // Ignore columns with empty header cells
-    for (let i = 0; i < maxRowLength; i++) {
-        if (ignoredFieldColumnIndexes.includes(i)) continue
-
-        const header = i >= headerRow.length ? null : headerRow[i]
-        if (!isDefined(header) || header.trim() === "") {
-            ignoredFieldColumnIndexes.push(i)
-        }
-    }
-
     let collectionItems = null
     let status = null
 
     try {
+        // Check for empty header row cells and collect all empty columns
+        const emptyHeaderColumns: string[] = []
+        for (let i = 0; i < maxRowLength; i++) {
+            if (ignoredFieldColumnIndexes.includes(i)) continue
+
+            const header = headerRow[i]
+            if (!isDefined(header) || header.trim() === "") {
+                const columnLetter = columnToLetter(i + 1)
+                emptyHeaderColumns.push(columnLetter)
+            }
+        }
+
+        // Throw error if any empty header columns were found
+        if (emptyHeaderColumns.length > 0) {
+            const columnList = formatListWithAnd(emptyHeaderColumns)
+            const pluralSuffix = emptyHeaderColumns.length > 1 ? "s" : ""
+            throw new Error(
+                `Empty header cell${pluralSuffix} found in column${pluralSuffix} ${columnList}. All header row cells must contain values.`
+            )
+        }
+
         const result = processSheet(rows, {
             uniqueHeaderRowNames,
             fieldTypes: colFieldTypes,

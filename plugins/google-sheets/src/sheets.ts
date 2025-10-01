@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
 import {
+    type CollectionItem,
     type FieldDataEntryInput,
     type FieldDataInput,
     framer,
@@ -477,33 +478,27 @@ function processSheet(rows: Row[], processRowParams: Omit<ProcessSheetRowParams,
     )
     const collectionItems = result.filter(isDefined)
 
-    // Handle duplicate slugs by adding numeric suffixes
-    const allSlugs = new Set(collectionItems.map(item => item.slug))
-    const usedSlugs = new Set<string>()
+    // Detect duplicate slugs and report errors
+    const slugCounts = new Map<string, number>()
+    const duplicateSlugs = new Set<string>()
 
-    const processedItems = collectionItems.map(item => {
-        let uniqueSlug = item.slug
-        let counter = 2
+    // Count occurrences of each slug
+    collectionItems.forEach(item => {
+        const count = slugCounts.get(item.slug) || 0
+        slugCounts.set(item.slug, count + 1)
 
-        // Increment counter until we find a unique slug
-        while (usedSlugs.has(uniqueSlug) || (uniqueSlug !== item.slug && allSlugs.has(uniqueSlug))) {
-            uniqueSlug = `${item.slug}-${counter}`
-            counter++
+        if (count > 0) {
+            duplicateSlugs.add(item.slug)
         }
-
-        usedSlugs.add(uniqueSlug)
-
-        // If slug changed, also update the item ID because it's based on the slug
-        if (uniqueSlug !== item.slug) {
-            return {
-                ...item,
-                slug: uniqueSlug,
-                id: generateHashId(uniqueSlug),
-            }
-        }
-
-        return item
     })
+
+    if (duplicateSlugs.size > 0) {
+        throw new Error(
+            `Duplicate slug${duplicateSlugs.size === 1 ? "" : "s"} found: ${Array.from(duplicateSlugs).join(", ")}. Each item must have a unique slug.`
+        )
+    }
+
+    const processedItems = collectionItems
 
     return {
         collectionItems: processedItems,
@@ -556,13 +551,25 @@ export async function syncSheet({
         }
     }
 
-    const { collectionItems, status } = processSheet(rows, {
-        uniqueHeaderRowNames,
-        fieldTypes: colFieldTypes,
-        ignoredFieldColumnIndexes,
-        slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
-        maxRowLength,
-    })
+    let collectionItems = null
+    let status = null
+
+    try {
+        const result = processSheet(rows, {
+            uniqueHeaderRowNames,
+            fieldTypes: colFieldTypes,
+            ignoredFieldColumnIndexes,
+            slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
+            maxRowLength,
+        })
+
+        collectionItems = result.collectionItems
+        status = result.status
+    } catch (error) {
+        framer.closePlugin(error instanceof Error ? error.message : "An error occurred while syncing the sheet", {
+            variant: "error",
+        })
+    }
 
     // Calculate items to delete based on what's in the collection vs what we processed
     const existingItemIds = new Set(await collection.getItemIds())

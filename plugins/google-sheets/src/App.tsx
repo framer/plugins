@@ -142,7 +142,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
 
     if (isSheetPending) {
         return (
-            <main className="size-full flex items-center justify-center">
+            <main className="size-full flex items-center justify-center select-none">
                 <div className="framer-spinner" />
             </main>
         )

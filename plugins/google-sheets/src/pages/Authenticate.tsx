@@ -68,7 +68,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     }
 
     return (
-        <main className="col-lg pb-[15px]">
+        <main className="col-lg pb-[15px] select-none">
             <Hero />
             <ol className="list-decimal list-inside space-y-2.5 marker:text-secondary *:text-content *:leading-none *:tracking-normal py-[7px]">
                 <li>

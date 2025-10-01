@@ -39,7 +39,7 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
     }
 
     return (
-        <main className="flex flex-col gap-[15px]">
+        <main className="flex flex-col gap-[15px] select-none">
             {children}
             <div className="inline-flex items-center gap-[10px]">
                 <button className="flex-1" onClick={handleRetryClick}>

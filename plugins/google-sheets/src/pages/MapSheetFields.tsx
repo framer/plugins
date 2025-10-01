@@ -233,7 +233,7 @@ export function MapSheetFieldsPage({
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
     return (
-        <main>
+        <main className="select-none w-full">
             <form onSubmit={handleSubmit} className="col gap-[15px] h-full text-tertiary">
                 <div className="h-px border-b border-divider sticky top-0" />
                 <div className="flex flex-col gap-4 h-fit">

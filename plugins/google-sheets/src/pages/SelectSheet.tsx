@@ -70,7 +70,7 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
     }
 
     return (
-        <main className="col-lg">
+        <main className="col-lg select-none">
             <Hero />
             <div className="col pl-[15px]">
                 <div className="row justify-between items-center">

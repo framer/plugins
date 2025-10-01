@@ -97,9 +97,9 @@ export function generateUniqueNames(names: string[]): string[] {
 export function formatListWithAnd(items: string[]): string {
     if (items.length === 0) return ""
     if (items.length === 1) return items[0] ?? ""
-    if (items.length === 2) return `${items[0]} and ${items[1]}`
+    if (items.length === 2) return `${items[0] ?? ""} and ${items[1] ?? ""}`
 
-    const lastItem = items[items.length - 1]
+    const lastItem = items[items.length - 1] ?? ""
     const otherItems = items.slice(0, -1).join(", ")
     return `${otherItems}, and ${lastItem}`
 }

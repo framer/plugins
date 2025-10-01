@@ -6,7 +6,7 @@ import { Button } from "../components/Button"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { IconChevron } from "../components/Icons"
 import type { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
-import { assert, generateUniqueNames, isDefined, syncMethods } from "../utils"
+import { generateUniqueNames, isDefined, syncMethods } from "../utils"
 
 interface FieldTypeOption {
     type: CollectionFieldType

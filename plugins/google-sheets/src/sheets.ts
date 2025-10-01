@@ -254,7 +254,7 @@ interface ProcessSheetRowParams {
     fieldTypes: CollectionFieldType[]
     row: Row
     rowIndex: number
-    maxRowLength: number
+    rowLength: number
     uniqueHeaderRowNames: string[]
     slugFieldColumnIndex: number
     ignoredFieldColumnIndexes: number[]
@@ -363,7 +363,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
 function processSheetRow({
     row,
     rowIndex,
-    maxRowLength,
+    rowLength,
     uniqueHeaderRowNames,
     ignoredFieldColumnIndexes,
     slugFieldColumnIndex,
@@ -374,7 +374,7 @@ function processSheetRow({
     let slugValue: string | null = null
     let itemId: string | null = null
 
-    for (let i = 0; i < maxRowLength; i++) {
+    for (let i = 0; i < rowLength; i++) {
         const cell = row[i] ?? null
 
         const fieldType = fieldTypes[i]
@@ -539,9 +539,6 @@ export async function syncSheet({
     const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
     const [headerRow, ...rows] = sheet.values
 
-    // Find the longest row length to handle cases where any sheet rows are longer than the header row
-    const maxRowLength = Math.max(...sheet.values.map(row => row.length))
-
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
     const headerRowHash = generateHeaderRowHash(headerRow, ignoredColumns)
 
@@ -551,6 +548,9 @@ export async function syncSheet({
     let status = null
 
     try {
+        // Find the longest row length to check for cases where any sheet rows are longer than the header row
+        const maxRowLength = Math.max(...sheet.values.map(row => row.length))
+
         // Check for empty header row cells and collect all empty columns
         const emptyHeaderColumns: string[] = []
         for (let i = 0; i < maxRowLength; i++) {
@@ -577,7 +577,7 @@ export async function syncSheet({
             fieldTypes: colFieldTypes,
             ignoredFieldColumnIndexes,
             slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
-            maxRowLength,
+            rowLength: headerRow.length,
         })
 
         collectionItems = result.collectionItems

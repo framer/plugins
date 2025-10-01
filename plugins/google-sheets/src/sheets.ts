@@ -547,10 +547,9 @@ export async function syncSheet({
         maxRowLength,
     })
 
-    await collection.addItems(collectionItems)
-
     const itemsToDelete = Array.from(unsyncedItemIds)
     await collection.removeItems(itemsToDelete)
+    await collection.addItems(collectionItems)
     await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
 
     const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)

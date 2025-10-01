@@ -1,7 +1,7 @@
 import "./App.css"
 
 import { framer } from "framer-plugin"
-import { useLayoutEffect, useRef } from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import auth from "./auth"
 import { showLoginUI } from "./ui"
 
@@ -10,6 +10,7 @@ interface AuthenticationProps {
 }
 
 export function Authenticate({ onAuthenticated }: AuthenticationProps) {
+    const [isLoading, setIsLoading] = useState(false)
     const pollInterval = useRef<number | ReturnType<typeof setInterval>>()
 
     useLayoutEffect(() => {
@@ -35,6 +36,8 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     const login = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
+        setIsLoading(true)
+
         const task = async () => {
             try {
                 // Retrieve the auth URL and a set of read and write keys
@@ -49,6 +52,8 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                 onAuthenticated()
             } catch (e) {
                 framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
+            } finally {
+                setIsLoading(false)
             }
         }
 
@@ -68,7 +73,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
             </ol>
 
             <button className="action-button" type="submit">
-                Log In
+                {isLoading ? <div className="framer-spinner" /> : "Log In"}
             </button>
         </form>
     )

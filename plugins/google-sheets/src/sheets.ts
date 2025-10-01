@@ -254,7 +254,7 @@ interface ProcessSheetRowParams {
     fieldTypes: CollectionFieldType[]
     row: Row
     rowIndex: number
-    rowLength: number
+    columnCount: number
     uniqueHeaderRowNames: string[]
     slugFieldColumnIndex: number
     ignoredFieldColumnIndexes: number[]
@@ -326,7 +326,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
             return isDefined(cellValue) ? { type, value: CELL_BOOLEAN_VALUES.includes(cellValue) } : null
         }
         case "date": {
-            // Google Sheets numeric date values
+            // Google Sheets numeric date values (Lotus 1-2-3 format)
             if (typeof cellValue === "number") {
                 try {
                     const date = extractDateFromSerialNumber(cellValue)
@@ -337,11 +337,8 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
             }
 
             // ISO date format
-            if (typeof cellValue === "string") {
-                if (isValidISODate(cellValue)) {
-                    return { type, value: cellValue }
-                }
-                return null
+            if (typeof cellValue === "string" && isValidISODate(cellValue)) {
+                return { type, value: cellValue }
             }
 
             return null
@@ -363,7 +360,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
 function processSheetRow({
     row,
     rowIndex,
-    rowLength,
+    columnCount,
     uniqueHeaderRowNames,
     ignoredFieldColumnIndexes,
     slugFieldColumnIndex,
@@ -374,7 +371,7 @@ function processSheetRow({
     let slugValue: string | null = null
     let itemId: string | null = null
 
-    for (let i = 0; i < rowLength; i++) {
+    for (let i = 0; i < columnCount; i++) {
         const cell = row[i] ?? null
 
         const fieldType = fieldTypes[i]
@@ -484,19 +481,17 @@ function processSheet(rows: Row[], processRowParams: Omit<ProcessSheetRowParams,
     )
     const collectionItems = result.filter(isDefined)
 
-    // Detect duplicate slugs and report error if any are found
-    const slugCounts = new Map<string, number>()
+    // Find duplicate slugs and report error if any are found
+    const seenSlugs = new Set<string>()
     const duplicateSlugs = new Set<string>()
 
-    // Count occurrences of each slug
-    collectionItems.forEach(item => {
-        const count = slugCounts.get(item.slug) ?? 0
-        slugCounts.set(item.slug, count + 1)
-
-        if (count > 0) {
+    for (const item of collectionItems) {
+        if (seenSlugs.has(item.slug)) {
             duplicateSlugs.add(item.slug)
+        } else {
+            seenSlugs.add(item.slug)
         }
-    })
+    }
 
     if (duplicateSlugs.size > 0) {
         const slugList = formatListWithAnd(Array.from(duplicateSlugs))
@@ -504,10 +499,8 @@ function processSheet(rows: Row[], processRowParams: Omit<ProcessSheetRowParams,
         throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
     }
 
-    const processedItems = collectionItems
-
     return {
-        collectionItems: processedItems,
+        collectionItems,
         status,
     }
 }
@@ -569,7 +562,7 @@ export async function syncSheet({
         fieldTypes: colFieldTypes,
         ignoredFieldColumnIndexes: ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col)),
         slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
-        rowLength: headerRow.length,
+        columnCount: headerRow.length,
     })
 
     // Calculate items to delete based on what's in the collection vs what we processed

@@ -177,16 +177,6 @@ export function MapSheetFieldsPage({
             const nextSet = new Set(current)
             if (nextSet.has(id)) {
                 nextSet.delete(id)
-
-                // If we're re-enabling a string field and there's currently no valid slug column,
-                // set this field as the slug column
-                const field = fieldConfig.find(config => config && config.id === id)
-                if (field?.type === "string") {
-                    const currentSlugField = fieldConfig.find(config => config && config.id === slugColumn)
-                    if (!currentSlugField) {
-                        setSlugColumn(id)
-                    }
-                }
             } else {
                 nextSet.add(id)
             }

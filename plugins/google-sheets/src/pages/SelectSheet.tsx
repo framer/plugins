@@ -87,7 +87,7 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
 
                     <select
                         onChange={handleSheetChange}
-                        value={selectedSheetTitle ?? ""}
+                        value={selectedSheetTitle}
                         disabled={!spreadsheetInfo?.sheets.length}
                         className={cx(!spreadsheetInfo?.sheets.length && "opacity-50")}
                     >

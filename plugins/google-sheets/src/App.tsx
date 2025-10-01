@@ -72,7 +72,6 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
 
             if (result.status === "success") {
                 framer.closePlugin("Synchronization successful")
-                return
             }
         },
         onError: e => framer.notify(e.message, { variant: "error" }),

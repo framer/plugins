@@ -151,8 +151,6 @@ export function MapSheetFieldsPage({
     isPending,
     rows,
 }: Props) {
-    const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
-
     const uniqueColumnNames = useMemo(() => generateUniqueNames(headerRow), [headerRow])
     const [fieldConfig, setFieldConfig] = useState<ManagedCollectionFieldInput[]>(() =>
         createFieldConfig(headerRow, uniqueColumnNames, pluginContext, rows[0])
@@ -233,31 +231,29 @@ export function MapSheetFieldsPage({
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
     return (
-        <main className="select-none w-full">
-            <form onSubmit={handleSubmit} className="col gap-[15px] h-full text-tertiary">
+        <main className="select-none w-full min-h-full">
+            <form onSubmit={handleSubmit} className="col gap-[15px] h-full text-tertiary min-h-full">
                 <div className="h-px border-b border-divider sticky top-0" />
-                <div className="flex flex-col gap-4 h-fit">
-                    <div className="flex flex-col gap-2 w-full">
-                        <label htmlFor="collectionName">Slug Field</label>
-                        <select
-                            className={cx("w-full", !isAllowedToManage && "opacity-50")}
-                            value={slugColumn}
-                            onChange={e => {
-                                setSlugColumn(e.target.value)
-                            }}
-                            required
-                            disabled={!isAllowedToManage}
-                            title={isAllowedToManage ? undefined : "Insufficient permissions"}
-                        >
-                            {slugFields.map(field => (
-                                <option key={field.id} value={field.id}>
-                                    {field.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                <div className="flex flex-col gap-[10px] w-full">
+                    <label htmlFor="collectionName">Slug Field</label>
+                    <select
+                        className={cx("w-full", !isAllowedToManage && "opacity-50")}
+                        value={slugColumn}
+                        onChange={e => {
+                            setSlugColumn(e.target.value)
+                        }}
+                        required
+                        disabled={!isAllowedToManage}
+                        title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                    >
+                        {slugFields.map(field => (
+                            <option key={field.id} value={field.id}>
+                                {field.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
-                <div className="grid grid-cols items-center grid-cols-field-picker gap-2.5 mb-auto overflow-hidden mt-[10px]">
+                <div className="grid grid-cols items-center grid-cols-field-picker gap-[10px] overflow-hidden pt-[5px] pb-[10px] mb-auto">
                     <span className="col-span-2">Column</span>
                     <span>Type</span>
                     <span>Name</span>
@@ -306,10 +302,9 @@ export function MapSheetFieldsPage({
                             </Fragment>
                         )
                     })}
-                    {fieldConfig.length > 4 && !isAtBottom && <div className="scroll-fade"></div>}
-                    <div ref={scrollRef} className="h-0 w-0 bg-red-500 "></div>
                 </div>
-                <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full overflow-hidden">
+                <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-[15px] border-t border-divider border-opacity-20 items-center max-w-full">
+                    <div className="scroll-fade"></div>
                     <button
                         disabled={!isAllowedToManage}
                         title={isAllowedToManage ? undefined : "Insufficient permissions"}

@@ -9,6 +9,10 @@ main {
     --framer-color-tint-extra-dark: #00ab36;
 }
 
+select:not(:disabled) {
+    cursor: pointer;
+}
+
 @theme inline {
     --background-color-primary: var(--framer-color-bg);
     --background-color-secondary: var(--framer-color-bg-secondary);
@@ -97,15 +101,9 @@ main {
     z-index: 10;
     position: absolute;
     left: 0;
-    bottom: 63px;
-
-    [data-framer-theme="light"] & {
-        background: linear-gradient(to bottom, transparent, white);
-    }
-
-    [data-framer-theme="dark"] & {
-        background: linear-gradient(180deg, rgba(18, 18, 18, 0) 0%, rgb(17, 17, 17) 97.8%);
-    }
+    bottom: 61px;
+    background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
+    pointer-events: none;
 }
 
 #root {

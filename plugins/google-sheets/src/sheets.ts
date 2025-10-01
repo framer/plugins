@@ -371,7 +371,7 @@ function processSheetRow({
 
         // Skip columns that don't have a field type (null for empty headers)
         const fieldType = fieldTypes[i]
-        if (fieldType === null) continue
+        if (!fieldType) continue
 
         // Skip processing ignored columns unless they are the slug field
         const isIgnored = ignoredFieldColumnIndexes.includes(i)
@@ -379,7 +379,7 @@ function processSheetRow({
 
         if (isIgnored && !isSlugField) continue
 
-        let fieldDataEntryInput = getFieldDataEntryInput(fieldType as CollectionFieldType, cell)
+        let fieldDataEntryInput = getFieldDataEntryInput(fieldType, cell)
 
         // Set to default value for type if no value is provided
         if (!fieldDataEntryInput) {
@@ -551,7 +551,7 @@ export async function syncSheet({
         if (ignoredFieldColumnIndexes.includes(i)) continue
 
         const header = i >= headerRow.length ? null : headerRow[i]
-        if (!isDefined(header) || String(header).trim() === "") {
+        if (!isDefined(header) || header.trim() === "") {
             ignoredFieldColumnIndexes.push(i)
         }
     }

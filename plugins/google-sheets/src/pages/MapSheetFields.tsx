@@ -108,7 +108,7 @@ const createFieldConfig = (
 ): FieldConfig[] => {
     return headerRow.map((header, columnIndex) => {
         // Return null for columns with empty header cells to preserve column positions
-        if (String(header).trim() === "") return null
+        if (header.trim() === "") return null
 
         const sanitizedName = uniqueColumnNames[columnIndex]
         assert(sanitizedName, "Sanitized name is undefined")

@@ -544,49 +544,37 @@ export async function syncSheet({
 
     const ignoredFieldColumnIndexes = ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col))
 
-    let collectionItems = null
-    let status = null
+    // Find the longest row length to check for cases where any sheet rows are longer than the header row
+    const maxRowLength = Math.max(...sheet.values.map(row => row.length))
 
-    try {
-        // Find the longest row length to check for cases where any sheet rows are longer than the header row
-        const maxRowLength = Math.max(...sheet.values.map(row => row.length))
+    // Check for empty header row cells and collect all empty columns
+    const emptyHeaderColumns: string[] = []
+    for (let i = 0; i < maxRowLength; i++) {
+        if (ignoredFieldColumnIndexes.includes(i)) continue
 
-        // Check for empty header row cells and collect all empty columns
-        const emptyHeaderColumns: string[] = []
-        for (let i = 0; i < maxRowLength; i++) {
-            if (ignoredFieldColumnIndexes.includes(i)) continue
-
-            const header = headerRow[i]
-            if (!isDefined(header) || header.trim() === "") {
-                const columnLetter = columnToLetter(i + 1)
-                emptyHeaderColumns.push(columnLetter)
-            }
+        const header = headerRow[i]
+        if (!isDefined(header) || header.trim() === "") {
+            const columnLetter = columnToLetter(i + 1)
+            emptyHeaderColumns.push(columnLetter)
         }
-
-        // Throw error if any empty header columns were found
-        if (emptyHeaderColumns.length > 0) {
-            const columnList = formatListWithAnd(emptyHeaderColumns)
-            const pluralSuffix = emptyHeaderColumns.length > 1 ? "s" : ""
-            throw new Error(
-                `Empty header cell${pluralSuffix} found in column${pluralSuffix} ${columnList}. All header row cells must contain values.`
-            )
-        }
-
-        const result = processSheet(rows, {
-            uniqueHeaderRowNames,
-            fieldTypes: colFieldTypes,
-            ignoredFieldColumnIndexes,
-            slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
-            rowLength: headerRow.length,
-        })
-
-        collectionItems = result.collectionItems
-        status = result.status
-    } catch (error) {
-        framer.closePlugin(error instanceof Error ? error.message : "An error occurred while syncing the sheet", {
-            variant: "error",
-        })
     }
+
+    // Throw error if any empty header columns were found
+    if (emptyHeaderColumns.length > 0) {
+        const columnList = formatListWithAnd(emptyHeaderColumns)
+        const pluralSuffix = emptyHeaderColumns.length > 1 ? "s" : ""
+        throw new Error(
+            `Empty header cell${pluralSuffix} found in column${pluralSuffix} ${columnList}. All header row cells must contain values.`
+        )
+    }
+
+    const { collectionItems, status } = processSheet(rows, {
+        uniqueHeaderRowNames,
+        fieldTypes: colFieldTypes,
+        ignoredFieldColumnIndexes,
+        slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
+        rowLength: headerRow.length,
+    })
 
     // Calculate items to delete based on what's in the collection vs what we processed
     const existingItemIds = new Set(await collection.getItemIds())

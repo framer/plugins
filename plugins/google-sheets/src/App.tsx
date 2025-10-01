@@ -198,22 +198,30 @@ export function App({ pluginContext }: AppProps) {
         const [headerRow] = sheet.values
 
         const task = async () => {
-            await syncSheet({
-                ignoredColumns,
-                slugColumn,
-                fetchedSheet: sheet,
-                lastSyncedTime,
-                spreadsheetId,
-                sheetTitle,
-                fields,
-                // Determine if the field type is already configured, otherwise default to "string"
-                colFieldTypes: headerRow.map(colName => {
-                    const field = fields.find(field => field.name === colName)
-                    return field?.type ?? "string"
-                }),
-            })
+            try {
+                await syncSheet({
+                    ignoredColumns,
+                    slugColumn,
+                    fetchedSheet: sheet,
+                    lastSyncedTime,
+                    spreadsheetId,
+                    sheetTitle,
+                    fields,
+                    // Determine if the field type is already configured, otherwise default to "string"
+                    colFieldTypes: headerRow.map(colName => {
+                        const field = fields.find(field => field.name === colName)
+                        return field?.type ?? "string"
+                    }),
+                })
 
-            framer.closePlugin()
+                framer.closePlugin("Synchronization successful", { variant: "success" })
+            } catch (error) {
+                console.error(error)
+                framer.closePlugin(
+                    error instanceof Error ? error.message : "An error occurred while syncing the sheet",
+                    { variant: "error" }
+                )
+            }
         }
 
         void task()

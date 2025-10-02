@@ -73,7 +73,7 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
                 framer.closePlugin("Synchronization successful")
             }
         },
-        onError: e => framer.notify(e.message, { variant: "error" }),
+        onError: e => framer.notify(e.message, { variant: "error", durationMs: Infinity }),
     })
 
     useEffect(() => {

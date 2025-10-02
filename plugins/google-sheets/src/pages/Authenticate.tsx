@@ -81,6 +81,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                     <span className="pl-[10px]">Map the column fields to the CMS</span>
                 </li>
             </ol>
+            {/* Don't disable button because we want to allow the user to reopen the log in page if they close it without finishing */}
             <button onClick={login} className="flex flex-row gap-[8px]">
                 {isLoading ? (
                     <div className="framer-spinner" />

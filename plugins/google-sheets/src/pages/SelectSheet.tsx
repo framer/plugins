@@ -17,7 +17,7 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
     const [selectedSheetTitle, setSelectedSheetTitle] = useState<string>("")
 
     const selectedSpreadsheetId = useMemo(() => {
-        if (!spreadsheetUrl) return ""
+        if (!spreadsheetUrl) return null
 
         try {
             const url = new URL(spreadsheetUrl)
@@ -27,7 +27,7 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
 
             return id
         } catch (err) {
-            return ""
+            return null
         }
     }, [spreadsheetUrl])
 
@@ -35,7 +35,7 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
         data: spreadsheetInfo,
         isFetching: isFetchingSheets,
         isError: isSpreadSheetInfoError,
-    } = useSpreadsheetInfoQuery(selectedSpreadsheetId)
+    } = useSpreadsheetInfoQuery(selectedSpreadsheetId ?? "")
 
     useEffect(() => {
         if (isSpreadSheetInfoError) {

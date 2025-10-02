@@ -1,7 +1,6 @@
 import { framer } from "framer-plugin"
 import { useLayoutEffect, useRef, useState } from "react"
 import auth from "../auth"
-import { Button } from "../components/Button"
 import { GoogleLogo } from "../components/GoogleLogo"
 import { Hero } from "../components/Hero"
 import { getPluginContext, type PluginContext } from "../sheets"
@@ -69,7 +68,7 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
     }
 
     return (
-        <div className="col-lg pb-[15px]">
+        <main className="col-lg pb-[15px] select-none">
             <Hero />
             <ol className="list-decimal list-inside space-y-2.5 marker:text-secondary *:text-content *:leading-none *:tracking-normal py-[7px]">
                 <li>
@@ -82,14 +81,16 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
                     <span className="pl-[10px]">Map the column fields to the CMS</span>
                 </li>
             </ol>
-            <Button
-                variant="secondary"
-                onClick={login}
-                isLoading={isLoading}
-                className="w-full inline-flex gap-[8px] items-center"
-            >
-                <GoogleLogo /> <span className="relative">Sign In</span>
-            </Button>
-        </div>
+            {/* Don't disable button because we want to allow the user to reopen the log in page if they close it without finishing */}
+            <button onClick={login} className="flex flex-row gap-[8px]">
+                {isLoading ? (
+                    <div className="framer-spinner" />
+                ) : (
+                    <>
+                        <GoogleLogo /> Sign In
+                    </>
+                )}
+            </button>
+        </main>
     )
 }

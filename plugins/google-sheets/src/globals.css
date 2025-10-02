@@ -3,6 +3,16 @@
 
 @custom-variant dark (&:where([data-framer-theme="dark"], [data-framer-theme="dark"] *));
 
+main {
+    --framer-color-tint: #00c43e;
+    --framer-color-tint-dark: #00b539;
+    --framer-color-tint-extra-dark: #00ab36;
+}
+
+select:not(:disabled) {
+    cursor: pointer;
+}
+
 @theme inline {
     --background-color-primary: var(--framer-color-bg);
     --background-color-secondary: var(--framer-color-bg-secondary);
@@ -20,7 +30,6 @@
     --color-tertiary: var(--framer-color-text-tertiary);
     --color-inverted: var(--framer-color-text-inverted);
     --color-content: #999;
-    --color-sheets-green: #00c43e;
     --color-framer-red: #ff3366;
 
     --border-color-divider: var(--framer-color-divider);
@@ -92,21 +101,9 @@
     z-index: 10;
     position: absolute;
     left: 0;
-    bottom: 63px;
-
-    [data-framer-theme="light"] & {
-        background: linear-gradient(to bottom, transparent, white);
-    }
-
-    [data-framer-theme="dark"] & {
-        background: linear-gradient(180deg, rgba(18, 18, 18, 0) 0%, rgb(17, 17, 17) 97.8%);
-    }
-}
-
-@layer components {
-    [data-framer-theme="dark"] input[type="checkbox"]:checked {
-        background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMiIgaGVpZ2h0PSIxMiI+PHBhdGggZD0iTSAzIDYgTCA1IDggTCA5IDQiIGZpbGw9InRyYW5zcGFyZW50IiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlPSIjMmIyYjJiIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS1kYXNoYXJyYXk9IiI+PC9wYXRoPjwvc3ZnPg==");
-    }
+    bottom: 61px;
+    background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
+    pointer-events: none;
 }
 
 #root {

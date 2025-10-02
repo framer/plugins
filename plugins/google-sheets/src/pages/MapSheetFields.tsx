@@ -1,8 +1,6 @@
 import cx from "classnames"
 import { type ManagedCollectionFieldInput, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
-import { useInView } from "react-intersection-observer"
-import { Button } from "../components/Button"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { IconChevron } from "../components/Icons"
 import type { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
@@ -152,8 +150,6 @@ export function MapSheetFieldsPage({
     isPending,
     rows,
 }: Props) {
-    const { ref: scrollRef, inView: isAtBottom } = useInView({ threshold: 1 })
-
     const uniqueColumnNames = useMemo(() => generateUniqueNames(headerRow), [headerRow])
     const [fieldConfig, setFieldConfig] = useState<ManagedCollectionFieldInput[]>(() =>
         createFieldConfig(headerRow, uniqueColumnNames, pluginContext, rows[0])
@@ -234,10 +230,10 @@ export function MapSheetFieldsPage({
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
     return (
-        <form onSubmit={handleSubmit} className="col gap-[15px] flex-1 text-tertiary">
-            <div className="h-px border-b border-divider sticky top-0" />
-            <div className="flex flex-col gap-4 h-fit">
-                <div className="flex flex-col gap-2 w-full">
+        <main className="select-none w-full min-h-full">
+            <form onSubmit={handleSubmit} className="col gap-[15px] h-full text-tertiary min-h-full">
+                <div className="h-px border-b border-divider sticky top-0" />
+                <div className="flex flex-col gap-[10px] w-full">
                     <label htmlFor="collectionName">Slug Field</label>
                     <select
                         className={cx("w-full", !isAllowedToManage && "opacity-50")}
@@ -256,72 +252,66 @@ export function MapSheetFieldsPage({
                         ))}
                     </select>
                 </div>
-            </div>
-            <div className="grid grid-cols items-center grid-cols-field-picker gap-2.5 mb-auto overflow-hidden mt-[10px]">
-                <span className="col-span-2">Column</span>
-                <span>Field</span>
-                <span>Type</span>
-                {fieldConfig.map((field, i) => {
-                    const isDisabled = disabledColumns.has(field.id)
+                <div className="grid grid-cols items-center grid-cols-field-picker gap-[10px] overflow-hidden pt-[5px] pb-[10px] mb-auto min-h-fit">
+                    <span className="col-span-2">Column</span>
+                    <span>Type</span>
+                    <span>Name</span>
+                    {fieldConfig.map((field, i) => {
+                        const isDisabled = disabledColumns.has(field.id)
 
-                    return (
-                        <Fragment key={i}>
-                            <CheckboxTextfield
-                                value={field.name}
-                                darken={isDisabled || !isAllowedToManage}
-                                checked={!isDisabled}
-                                onChange={() => {
-                                    handleFieldToggle(field.id)
-                                }}
-                                disabled={!isAllowedToManage}
-                            />
-                            <div className="flex items-center justify-center">
-                                <IconChevron />
-                            </div>
-                            <input
-                                type="text"
-                                className={cx("w-full", {
-                                    "opacity-50": isDisabled || !isAllowedToManage,
-                                })}
-                                disabled={isDisabled || !isAllowedToManage}
-                                placeholder={field.name}
-                                value={fieldNameOverrides[field.id] ?? ""}
-                                onChange={e => {
-                                    handleFieldNameChange(field.id, e.target.value)
-                                }}
-                            />
-                            <select
-                                className={cx("w-full", !isAllowedToManage && "opacity-50")}
-                                disabled={isDisabled || !isAllowedToManage}
-                                value={field.type}
-                                onChange={e => {
-                                    handleFieldTypeChange(field.id, e.target.value as CollectionFieldType)
-                                }}
-                                title={isAllowedToManage ? undefined : "Insufficient permissions"}
-                            >
-                                {fieldTypeOptions.map(({ type, label }) => (
-                                    <option key={type} value={type}>
-                                        {label}
-                                    </option>
-                                ))}
-                            </select>
-                        </Fragment>
-                    )
-                })}
-                {fieldConfig.length > 4 && !isAtBottom && <div className="scroll-fade"></div>}
-                <div ref={scrollRef} className="h-0 w-0 bg-red-500 "></div>
-            </div>
-            <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-4 border-t border-divider border-opacity-20 items-center max-w-full overflow-hidden">
-                <Button
-                    variant="secondary"
-                    isLoading={isPending}
-                    className="w-full"
-                    disabled={!isAllowedToManage}
-                    title={isAllowedToManage ? undefined : "Insufficient permissions"}
-                >
-                    {`Import from ${sheetTitle}`}
-                </Button>
-            </div>
-        </form>
+                        return (
+                            <Fragment key={i}>
+                                <CheckboxTextfield
+                                    value={field.name}
+                                    darken={isDisabled || !isAllowedToManage}
+                                    checked={!isDisabled}
+                                    onChange={() => {
+                                        handleFieldToggle(field.id)
+                                    }}
+                                    disabled={!isAllowedToManage}
+                                />
+                                <div className="flex items-center justify-center">
+                                    <IconChevron />
+                                </div>
+                                <select
+                                    className={cx("w-full", (isDisabled || !isAllowedToManage) && "opacity-50")}
+                                    disabled={isDisabled || !isAllowedToManage}
+                                    value={field.type}
+                                    onChange={e => {
+                                        handleFieldTypeChange(field.id, e.target.value as CollectionFieldType)
+                                    }}
+                                    title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                                >
+                                    {fieldTypeOptions.map(({ type, label }) => (
+                                        <option key={type} value={type}>
+                                            {label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="text"
+                                    className={cx("w-full", (isDisabled || !isAllowedToManage) && "opacity-50")}
+                                    disabled={isDisabled || !isAllowedToManage}
+                                    placeholder={field.name}
+                                    value={fieldNameOverrides[field.id] ?? ""}
+                                    onChange={e => {
+                                        handleFieldNameChange(field.id, e.target.value)
+                                    }}
+                                />
+                            </Fragment>
+                        )
+                    })}
+                </div>
+                <div className="sticky left-0 bottom-0 flex justify-between bg-primary py-[15px] border-t border-divider border-opacity-20 items-center max-w-full">
+                    <div className="scroll-fade"></div>
+                    <button
+                        disabled={!isAllowedToManage}
+                        title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                    >
+                        {isPending ? <div className="framer-spinner" /> : `Import from ${sheetTitle}`}
+                    </button>
+                </div>
+            </form>
+        </main>
     )
 }

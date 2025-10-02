@@ -19,9 +19,10 @@ export function CheckboxTextfield({ value, darken, checked, onChange, disabled }
 
     return (
         <div
-            className={cx("flex bg-tertiary rounded-lg items-center pl-[10px] select-none", {
-                "opacity-50": darken,
-            })}
+            className={cx(
+                "flex bg-tertiary rounded-lg items-center pl-[10px] select-none h-[30px] cursor-pointer",
+                darken && "opacity-50"
+            )}
             onClick={disabled ? undefined : toggle}
             role={disabled ? undefined : "button"}
         >
@@ -32,15 +33,10 @@ export function CheckboxTextfield({ value, darken, checked, onChange, disabled }
                 onClick={e => {
                     e.stopPropagation()
                 }}
-                className="checked:bg-sheets-green! focus:ring-1 focus:ring-sheets-green checked:border-none dark:bg-[#777]! bg-[#CCC]!"
                 disabled={disabled}
+                className="cursor-pointer"
             />
-            <input
-                className="bg-transparent w-full shrink pointer-events-none select-none"
-                type="text"
-                disabled
-                value={value}
-            />
+            <span className="w-full pl-2 text-primary">{value}</span>
         </div>
     )
 }

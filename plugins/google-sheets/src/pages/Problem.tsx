@@ -1,6 +1,5 @@
 import { framer } from "framer-plugin"
 import { type PropsWithChildren, useLayoutEffect, useState } from "react"
-import { Button } from "../components/Button"
 import { getPluginContext, type PluginContext } from "../sheets"
 
 interface Props extends PropsWithChildren {
@@ -40,21 +39,18 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
     }
 
     return (
-        <div className="flex flex-col gap-[15px]">
+        <main className="flex flex-col gap-[15px] select-none">
             {children}
             <div className="inline-flex items-center gap-[10px]">
-                <Button variant="secondary" className="w-auto flex-1" onClick={handleRetryClick} isLoading={isRetrying}>
-                    Retry
-                </Button>
+                <button className="flex-1" onClick={handleRetryClick}>
+                    {isRetrying ? <div className="framer-spinner" /> : "Retry"}
+                </button>
                 {spreadsheetId && (
-                    <Button
-                        className="w-auto flex-1 bg-[#15C43E]! text-white hover:bg-[#15C43E]"
-                        onClick={handleOpenClick}
-                    >
+                    <button className="framer-button-primary flex-1" onClick={handleOpenClick}>
                         Open Sheet
-                    </Button>
+                    </button>
                 )}
             </div>
-        </div>
+        </main>
     )
 }

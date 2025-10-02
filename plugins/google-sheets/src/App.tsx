@@ -1,7 +1,6 @@
 import { framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
 import auth from "./auth"
-import { CenteredSpinner } from "./components/CenteredSpinner"
 import { logSyncResult, PLUGIN_LOG_SYNC_KEY } from "./debug"
 import { Authenticate } from "./pages/Authenticate"
 import { MapSheetFieldsPage } from "./pages/MapSheetFields"
@@ -72,10 +71,9 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
 
             if (result.status === "success") {
                 framer.closePlugin("Synchronization successful")
-                return
             }
         },
-        onError: e => framer.notify(e.message, { variant: "error" }),
+        onError: e => framer.notify(e.message, { variant: "error", durationMs: Infinity }),
     })
 
     useEffect(() => {
@@ -142,7 +140,13 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
         )
     }
 
-    if (isSheetPending) return <CenteredSpinner />
+    if (isSheetPending) {
+        return (
+            <main className="size-full flex items-center justify-center select-none">
+                <div className="framer-spinner" />
+            </main>
+        )
+    }
 
     const [headerRow, ...rows] = sheet?.values ?? []
     if (!headerRow) {
@@ -235,7 +239,7 @@ export function App({ pluginContext }: AppProps) {
                 <p className="text-content">
                     Your Google Account does not have access to the synced spreadsheet. Check your access and try again
                     or{" "}
-                    <a href="#" className="text-sheets-green" onClick={() => void auth.logout()}>
+                    <a href="#" onClick={() => void auth.logout()}>
                         log out
                     </a>{" "}
                     and try a different account.

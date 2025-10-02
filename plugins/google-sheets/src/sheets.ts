@@ -10,7 +10,15 @@ import * as v from "valibot"
 import auth from "./auth"
 import { logSyncResult } from "./debug.ts"
 import { queryClient } from "./main.tsx"
-import { assert, columnToLetter, generateHashId, generateUniqueNames, isDefined, slugify } from "./utils"
+import {
+    assert,
+    columnToLetter,
+    formatListWithAnd,
+    generateHashId,
+    generateUniqueNames,
+    isDefined,
+    slugify,
+} from "./utils"
 
 const USER_INFO_API_URL = "https://www.googleapis.com/oauth2/v1"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
@@ -25,6 +33,7 @@ const PLUGIN_SLUG_COLUMN_KEY = "sheetsPluginSlugColumn"
 
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
 const HEADER_ROW_DELIMITER = "OIhpKTpp"
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:?\d{2})?)?$/
 
 interface UserInfo {
     displayName: string
@@ -50,7 +59,7 @@ interface SpreadsheetInfo {
     sheets: SpreadsheetInfoSheet[]
 }
 
-export type CellValue = string | number | boolean
+export type CellValue = string | number | boolean | null
 
 export type Row = CellValue[]
 
@@ -245,8 +254,8 @@ interface ProcessSheetRowParams {
     fieldTypes: CollectionFieldType[]
     row: Row
     rowIndex: number
+    columnCount: number
     uniqueHeaderRowNames: string[]
-    unsyncedRowIds: Set<string>
     slugFieldColumnIndex: number
     ignoredFieldColumnIndexes: number[]
     status: SyncStatus
@@ -287,6 +296,22 @@ function extractDateFromSerialNumber(serialNumber: number) {
     return new Date(baseDate.getTime() + wholeDays * MS_PER_DAY + milliseconds)
 }
 
+/**
+ * Validates if a string is a valid ISO date format.
+ * Returns true if valid, false otherwise.
+ */
+function isValidISODate(dateString: string): boolean {
+    try {
+        // Check if the string matches basic ISO 8601 format patterns
+        if (!ISO_DATE_REGEX.test(dateString)) return false
+
+        const date = new Date(dateString)
+        return !isNaN(date.getTime())
+    } catch {
+        return false
+    }
+}
+
 function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue): FieldDataEntryInput | null {
     switch (type) {
         case "number": {
@@ -298,24 +323,33 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
             return { type, value: num }
         }
         case "boolean": {
-            return { type, value: CELL_BOOLEAN_VALUES.includes(cellValue) }
+            return isDefined(cellValue) ? { type, value: CELL_BOOLEAN_VALUES.includes(cellValue) } : null
         }
         case "date": {
-            if (typeof cellValue !== "number") return null
-            try {
-                const date = extractDateFromSerialNumber(cellValue)
-                return { type, value: date.toISOString() }
-            } catch {
-                return null
+            // Google Sheets numeric date values (Lotus 1-2-3 format)
+            if (typeof cellValue === "number") {
+                try {
+                    const date = extractDateFromSerialNumber(cellValue)
+                    return { type, value: date.toISOString() }
+                } catch {
+                    return null
+                }
             }
+
+            // ISO date format
+            if (typeof cellValue === "string" && isValidISODate(cellValue)) {
+                return { type, value: cellValue }
+            }
+
+            return null
         }
-        case "enum":
         case "image":
         case "link":
         case "file":
         case "formattedText":
         case "color":
         case "string": {
+            if (!isDefined(cellValue)) return null
             return { type, value: String(cellValue) }
         }
         default:
@@ -326,7 +360,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
 function processSheetRow({
     row,
     rowIndex,
-    unsyncedRowIds,
+    columnCount,
     uniqueHeaderRowNames,
     ignoredFieldColumnIndexes,
     slugFieldColumnIndex,
@@ -337,18 +371,59 @@ function processSheetRow({
     let slugValue: string | null = null
     let itemId: string | null = null
 
-    for (const [colIndex, cell] of row.entries()) {
-        if (ignoredFieldColumnIndexes.includes(colIndex)) continue
+    for (let i = 0; i < columnCount; i++) {
+        const cell = row[i] ?? null
 
-        // +1 as zero-indexed, another +1 to account for header row
-        const location = `${columnToLetter(colIndex + 1)}${rowIndex + 2}`
+        const fieldType = fieldTypes[i]
+        if (!fieldType) continue
 
-        const fieldType = fieldTypes[colIndex]
-        assert(isDefined(fieldType), "Field type must be defined")
+        // Skip processing ignored columns unless they are the slug field
+        const isIgnored = ignoredFieldColumnIndexes.includes(i)
+        const isSlugField = i === slugFieldColumnIndex
 
-        const fieldDataEntryInput = getFieldDataEntryInput(fieldType, cell)
+        if (isIgnored && !isSlugField) continue
 
-        if (fieldDataEntryInput === null) {
+        let fieldDataEntryInput = getFieldDataEntryInput(fieldType, cell)
+
+        // Set to default value for type if no value is provided
+        if (!fieldDataEntryInput) {
+            switch (fieldType) {
+                case "string":
+                case "formattedText":
+                    fieldDataEntryInput = {
+                        value: "",
+                        type: fieldType,
+                    }
+                    break
+                case "boolean":
+                    fieldDataEntryInput = {
+                        value: false,
+                        type: "boolean",
+                    }
+                    break
+                case "number":
+                    fieldDataEntryInput = {
+                        value: 0,
+                        type: "number",
+                    }
+                    break
+                case "image":
+                case "file":
+                case "link":
+                case "date":
+                case "color":
+                    fieldDataEntryInput = {
+                        value: null,
+                        type: fieldType,
+                    }
+                    break
+            }
+        }
+
+        if (!fieldDataEntryInput) {
+            // +1 as zero-indexed, another +1 to account for header row
+            const location = `${columnToLetter(i + 1)}${rowIndex + 2}`
+
             status.warnings.push({
                 rowIndex,
                 message: `Invalid cell value at ${location}.`,
@@ -356,19 +431,19 @@ function processSheetRow({
             continue
         }
 
-        if (colIndex === slugFieldColumnIndex) {
+        // Always process the slug column, even if it's ignored
+        if (isSlugField) {
             if (typeof fieldDataEntryInput.value !== "string") {
                 continue
             }
 
             slugValue = slugify(fieldDataEntryInput.value)
             itemId = generateHashId(fieldDataEntryInput.value)
-
-            // Mark row as seen
-            unsyncedRowIds.delete(itemId)
         }
 
-        const fieldName = uniqueHeaderRowNames[colIndex]
+        if (isIgnored) continue
+
+        const fieldName = uniqueHeaderRowNames[i]
         assert(isDefined(fieldName), "Field name must be defined")
 
         fieldData[fieldName] = fieldDataEntryInput
@@ -390,10 +465,7 @@ function processSheetRow({
     }
 }
 
-function processSheet(
-    rows: Row[],
-    processRowParams: Omit<ProcessSheetRowParams, "row" | "rowIndex" | "status" | "fieldType">
-) {
+function processSheet(rows: Row[], processRowParams: Omit<ProcessSheetRowParams, "row" | "rowIndex" | "status">) {
     const status: SyncStatus = {
         info: [],
         warnings: [],
@@ -408,6 +480,24 @@ function processSheet(
         })
     )
     const collectionItems = result.filter(isDefined)
+
+    // Find duplicate slugs and report error if any are found
+    const seenSlugs = new Set<string>()
+    const duplicateSlugs = new Set<string>()
+
+    for (const item of collectionItems) {
+        if (seenSlugs.has(item.slug)) {
+            duplicateSlugs.add(item.slug)
+        } else {
+            seenSlugs.add(item.slug)
+        }
+    }
+
+    if (duplicateSlugs.size > 0) {
+        const slugList = formatListWithAnd(Array.from(duplicateSlugs))
+        const pluralSuffix = duplicateSlugs.size > 1 ? "s" : ""
+        throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
+    }
 
     return {
         collectionItems,
@@ -439,27 +529,55 @@ export async function syncSheet({
 
     const collection = await framer.getActiveManagedCollection()
 
-    const unsyncedItemIds = new Set(await collection.getItemIds())
-
     const sheet = fetchedSheet ?? (await fetchSheetWithClient(spreadsheetId, sheetTitle))
     const [headerRow, ...rows] = sheet.values
 
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
     const headerRowHash = generateHeaderRowHash(headerRow, ignoredColumns)
 
+    // Find the longest row length to check if any sheet rows are longer than the header row
+    const maxRowLength = Math.max(...sheet.values.map(row => row.length))
+
+    // Check for empty header row cells and collect all empty columns
+    const emptyHeaderColumns: string[] = []
+    for (let i = 0; i < maxRowLength; i++) {
+        const header = headerRow[i]
+        if (!isDefined(header) || header.trim() === "") {
+            const columnLetter = columnToLetter(i + 1)
+            emptyHeaderColumns.push(columnLetter)
+        }
+    }
+
+    // Throw error if any empty header columns were found
+    if (emptyHeaderColumns.length > 0) {
+        const columnList = formatListWithAnd(emptyHeaderColumns)
+        const pluralSuffix = emptyHeaderColumns.length > 1 ? "s" : ""
+        throw new Error(
+            `Empty header cell${pluralSuffix} found in column${pluralSuffix} ${columnList}. All header row cells must contain values.`
+        )
+    }
+
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
-        unsyncedRowIds: unsyncedItemIds,
         fieldTypes: colFieldTypes,
         ignoredFieldColumnIndexes: ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col)),
         slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
+        columnCount: headerRow.length,
     })
 
-    await collection.addItems(collectionItems)
+    // Calculate items to delete based on what's in the collection vs what we processed
+    const existingItemIds = new Set(await collection.getItemIds())
+    const processedItemIds = new Set(collectionItems.map(item => item.id))
+    const itemsToDelete = Array.from(existingItemIds).filter(id => !processedItemIds.has(id))
 
-    const itemsToDelete = Array.from(unsyncedItemIds)
-    await collection.removeItems(itemsToDelete)
-    await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
+    if (itemsToDelete.length > 0) {
+        await collection.removeItems(itemsToDelete)
+    }
+
+    if (collectionItems.length > 0) {
+        await collection.addItems(collectionItems)
+        await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
+    }
 
     const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
     const sheetId = spreadsheetInfo.sheets.find(x => x.properties.title === sheetTitle)?.properties.sheetId

@@ -43,19 +43,20 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
     return { xliff: xliff, targetLocale }
 }
 
-function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined {
-    switch (state) {
-        case "initial":
-            return "new"
-        case "translated":
-            return "needsReview"
-        case "reviewed":
-        case "final":
-            return "done"
-        default:
-            state satisfies never
-    }
-}
+// function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined {
+//     switch (state) {
+//         case "initial":
+//             return "new"
+//         case "translated":
+//             return "needsReview"
+//         case "reviewed":
+//         case "final":
+//             return "done"
+//         default:
+//             state satisfies never
+//     }
+// }
+
 export function createValuesBySourceFromXliff(
     xliffDocument: Document,
     targetLocale: Locale

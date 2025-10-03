@@ -23,7 +23,7 @@ interface StorageResponse {
     data: { id: number; fileName?: string }
 }
 
-type XliffState = "initial" | "translated" | "reviewed" | "final"
+// type XliffState = "initial" | "translated" | "reviewed" | "final"
 
 export function parseXliff(xliffText: string, locales: readonly Locale[]): { xliff: Document; targetLocale: Locale } {
     const parser = new DOMParser()

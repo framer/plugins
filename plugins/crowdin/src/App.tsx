@@ -1,4 +1,4 @@
-import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
+import { framer, type Locale, type LocalizationGroup, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
@@ -27,17 +27,7 @@ interface CrowdinStorageResponse {
 }
 
 // ----- App component -----
-export function App({
-    activeLocale,
-    locales,
-    groups,
-}: {
-    activeLocale: Locale | null
-    locales: readonly Locale[]
-    groups: readonly LocalizationGroup[]
-}) {
-    console.log({ activeLocale, locales, groups })
-
+export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
 
     const [accessToken, setAccessToken] = useState<string>("")
@@ -45,7 +35,7 @@ export function App({
     const [projectId, setProjectId] = useState<number>(0)
     const [isLoading, setIsLoading] = useState(false)
 
-    const validateAccessToken = useCallback(async (token: string) => {
+    const validateAccessToken = useCallback((token: string) => {
         setAccessToken(token)
         setIsLoading(true)
 
@@ -83,7 +73,7 @@ export function App({
             const storedToken = await framer.getPluginData("accessToken")
             if (storedToken) {
                 setAccessToken(storedToken)
-                await validateAccessToken(storedToken)
+                validateAccessToken(storedToken)
             }
         }
         void loadStoredToken()
@@ -109,8 +99,6 @@ export function App({
 
         setIsLoading(true)
         const client = createCrowdinClient(accessToken)
-
-        console.log(client.translations)
 
         try {
             const exportRes = await client.translations.exportProjectTranslation(projectId, {
@@ -210,7 +198,7 @@ export function App({
                         placeholder="Enter Access Token…"
                         value={accessToken}
                         onChange={e => {
-                            void validateAccessToken(e.target.value)
+                            validateAccessToken(e.target.value)
                         }}
                     />
                 </label>

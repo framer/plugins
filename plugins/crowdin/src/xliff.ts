@@ -68,9 +68,9 @@ export function createValuesBySourceFromXliff(
         const target = unit.querySelector("target")
         if (!id || !target) continue
         const targetValue = target.textContent
-        const state = target.getAttribute("state") as XliffState | null
-        const status = xliffStateToStatus(state ?? "final")
-        const needsReview = status === "needsReview"
+        // const state = target.getAttribute("state") as XliffState | null
+        // const status = xliffStateToStatus(state ?? "final")
+        // const needsReview = status === "needsReview"
 
         // Ignore missing or empty values
         if (!targetValue) continue
@@ -79,7 +79,8 @@ export function createValuesBySourceFromXliff(
             [targetLocale.id]: {
                 action: "set",
                 value: targetValue,
-                needsReview: needsReview ? needsReview : undefined,
+                // needsReview: needsReview ? needsReview : undefined,
+                needsReview: false,
             },
         }
     }
@@ -396,7 +397,7 @@ export async function getStorageId(fileName: string, accessToken: string): Promi
             throw new Error("Invalid storage response")
         }
 
-        const existingStorage = parsed.output.data.find(item => item?.data?.fileName?.includes(fileName))
+        const existingStorage = parsed.output.data.find(item => item.data?.fileName?.includes(fileName))
 
         if (existingStorage) {
             return Number(existingStorage.data?.id ?? "")

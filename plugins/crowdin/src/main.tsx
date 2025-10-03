@@ -10,10 +10,9 @@ if (!root) throw new Error("Root element not found")
 
 const activeLocale = await framer.getActiveLocale()
 const locales = await framer.getLocales()
-const groups = await framer.getLocalizationGroups()
 
 ReactDOM.createRoot(root).render(
     <React.StrictMode>
-        <App activeLocale={activeLocale} locales={locales} groups={groups} />
+        <App activeLocale={activeLocale} locales={locales} />
     </React.StrictMode>
 )

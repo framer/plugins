@@ -269,7 +269,7 @@ export function FieldMapping({
                     error instanceof Error
                         ? error.message
                         : `Failed to sync collection “${dataSource.name ?? dataSource.id}”`,
-                    { variant: "error" }
+                    { variant: "error", durationMs: Infinity }
                 )
             } finally {
                 setStatus("mapping-fields")

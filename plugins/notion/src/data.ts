@@ -338,7 +338,7 @@ export async function syncExistingCollection(
             error instanceof Error
                 ? error.message
                 : `Failed to sync database “${previousDatabaseName ?? previousDatabaseId}”`,
-            { variant: "error" }
+            { variant: "error", durationMs: Infinity }
         )
         return { didSync: false }
     }

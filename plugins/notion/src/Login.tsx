@@ -55,7 +55,9 @@ export function Authenticate({ onAuthenticated }: AuthenticationProps) {
 
                 onAuthenticated()
             } catch (e) {
-                framer.notify(e instanceof Error ? e.message : "An unknown error ocurred")
+                framer.notify(`Error logging in: ${e instanceof Error ? e.message : "Unknown error"}`, {
+                    variant: "error",
+                })
             } finally {
                 setIsLoading(false)
             }

@@ -265,9 +265,12 @@ export function FieldMapping({
                 framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
                 console.error(error)
-                framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
-                    variant: "error",
-                })
+                framer.notify(
+                    error instanceof Error
+                        ? error.message
+                        : `Failed to sync collection “${dataSource.name ?? dataSource.id}”`,
+                    { variant: "error" }
+                )
             } finally {
                 setStatus("mapping-fields")
             }

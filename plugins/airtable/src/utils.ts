@@ -31,6 +31,20 @@ export function richTextToHTML(cellValue: string): string {
     })
 }
 
+// Match everything except for letters, numbers and parentheses.
+const nonSlugCharactersRegExp = /[^\p{Letter}\p{Number}()]+/gu
+// Match leading/trailing dashes, for trimming purposes.
+const trimSlugRegExp = /^-+|-+$/gu
+
+/**
+ * Takes a freeform string and removes all characters except letters, numbers,
+ * and parentheses. Also makes it lower case, and separates words by dashes.
+ * This makes the value URL safe.
+ */
+export function slugify(value: string): string {
+    return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
+}
+
 /**
  * Formats an array of items into a grammatically correct list with "and" before the last item.
  * Examples:

@@ -21,7 +21,7 @@ import {
 } from "./api"
 import type { PossibleField } from "./fields"
 import { inferFields } from "./fields"
-import { assert, formatListWithAnd, richTextToHTML } from "./utils"
+import { assert, formatListWithAnd, richTextToHTML, slugify } from "./utils"
 
 export const PLUGIN_KEYS = {
     BASE_ID: "airtablePluginBaseId",
@@ -413,7 +413,7 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
             }
         }
 
-        itemsData.push({ id: item.id, slugValue: slugField.value as string, fieldData })
+        itemsData.push({ id: item.id, slugValue: slugify(slugField.value as string), fieldData })
     }
 
     return itemsData

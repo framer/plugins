@@ -268,7 +268,7 @@ export function FieldMapping({
                 framer.notify(
                     error instanceof Error
                         ? error.message
-                        : `Failed to sync collection “${dataSource.name ?? dataSource.id}”`,
+                        : `Failed to sync collection “${dataSource.name || dataSource.id}”`,
                     { variant: "error", durationMs: Infinity }
                 )
             } finally {

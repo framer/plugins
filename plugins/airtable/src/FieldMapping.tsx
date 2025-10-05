@@ -320,7 +320,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 framer.notify(
                     error instanceof Error
                         ? error.message
-                        : `Failed to sync collection “${dataSource.tableName ?? dataSource.tableId}”`,
+                        : `Failed to sync collection “${dataSource.tableName || dataSource.tableId}”`,
                     { variant: "error", durationMs: Infinity }
                 )
             } finally {

@@ -40,7 +40,7 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
         throw new Error(`No locale found for language code: ${targetLanguage}`)
     }
 
-    return { xliff: xliff, targetLocale }
+    return { xliff, targetLocale }
 }
 
 // function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined {

@@ -1,4 +1,4 @@
-import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
+import { framer, type Locale } from "framer-plugin"
 import { useCallback, useEffect, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"

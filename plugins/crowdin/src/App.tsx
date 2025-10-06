@@ -28,8 +28,6 @@ interface CrowdinStorageResponse {
 
 // ----- App component -----
 export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
-    const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
-
     const [accessToken, setAccessToken] = useState<string>("")
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
@@ -241,8 +239,6 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         onClick={() => {
                             void importFromCrowdIn()
                         }}
-                        disabled={!isAllowedToSetLocalizationData || !activeLocale}
-                        title={isAllowedToSetLocalizationData ? undefined : "Insufficient permissions"}
                     >
                         Import
                     </button>
@@ -253,7 +249,6 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         onClick={() => {
                             void exportToCrowdIn()
                         }}
-                        disabled={!activeLocale}
                     >
                         Export
                     </button>

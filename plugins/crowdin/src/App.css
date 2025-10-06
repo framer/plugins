@@ -11,6 +11,7 @@ main {
     user-select: none;
     -webkit-user-select: none;
 }
+
 .form-field {
     display: flex;
     flex-direction: column;
@@ -46,30 +47,18 @@ main {
     border-radius: 8px;
 }
 
-.setup {
-    align-items: center;
-}
-
-.setup select {
-    font-weight: 600;
-}
-
 .setup img {
     height: 180px;
     width: 100%;
     border-radius: 10px;
     background-color: #263238;
     object-fit: contain;
-}
-
-.setup button {
-    margin-top: 5px;
-}
-
-.setup img {
     user-select: none;
     -webkit-user-select: none;
     pointer-events: none;
+}
+.setup button {
+    margin-top: 5px;
 }
 
 .setup label {
@@ -81,10 +70,6 @@ main {
     justify-content: space-between;
     color: var(--framer-color-text-secondary);
     padding-left: 15px;
-}
-
-.setup select {
-    width: 100%;
 }
 
 .setup input,
@@ -99,12 +84,8 @@ main {
     align-items: start;
     gap: 15px;
     width: 100%;
-}
-
-.setup {
     padding-bottom: 15px;
 }
-
 a {
     color: currentColor;
 }
@@ -120,8 +101,8 @@ a {
     color: var(--framer-color-text-reversed);
     background-color: #263238;
 }
-.crowdin-button-primary:hover,
-.crowdin-button-primary:focus {
+.crowdin-button-primary:not(:disabled):hover,
+.crowdin-button-primary:not(:disabled):focus {
     background-color: var(--framer-color-text);
     color: #222222;
 }

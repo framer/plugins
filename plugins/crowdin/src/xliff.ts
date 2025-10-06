@@ -43,20 +43,6 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
     return { xliff, targetLocale }
 }
 
-// function xliffStateToStatus(state: XliffState): LocalizedValueStatus | undefined {
-//     switch (state) {
-//         case "initial":
-//             return "new"
-//         case "translated":
-//             return "needsReview"
-//         case "reviewed":
-//         case "final":
-//             return "done"
-//         default:
-//             state satisfies never
-//     }
-// }
-
 export function createValuesBySourceFromXliff(
     xliffDocument: Document,
     targetLocale: Locale
@@ -69,9 +55,6 @@ export function createValuesBySourceFromXliff(
         const target = unit.querySelector("target")
         if (!id || !target) continue
         const targetValue = target.textContent
-        // const state = target.getAttribute("state") as XliffState | null
-        // const status = xliffStateToStatus(state ?? "final")
-        // const needsReview = status === "needsReview"
 
         // Ignore missing or empty values
         if (!targetValue) continue
@@ -80,7 +63,6 @@ export function createValuesBySourceFromXliff(
             [targetLocale.id]: {
                 action: "set",
                 value: targetValue,
-                // needsReview: needsReview ? needsReview : undefined,
                 needsReview: false,
             },
         }
@@ -305,7 +287,7 @@ async function checkAndCreateLanguage(projectId: number, language: Locale, acces
             })
 
             framer.notify(
-                `Language ${language.code} is not present in CrowdIn. Please check region and language code in Framer`,
+                `Language ${language.code} is not present in Crowdin. Please check your locale's region and language code in Framer`,
                 { variant: "error" }
             )
         }
@@ -394,7 +376,7 @@ export async function getStorageId(fileName: string, accessToken: string): Promi
         // Validate response with valibot
         const parsed = v.safeParse(v.object({ data: v.array(StoragesSchema) }), storageData)
         if (!parsed.success) {
-            console.error("Error parsing CrowdIn storages:", parsed.issues)
+            console.error("Error parsing Crowdin storages:", parsed.issues)
             throw new Error("Invalid storage response")
         }
 
@@ -451,7 +433,7 @@ export async function getFileId(projectId: number, fileName: string, accessToken
         const filesData = (await filesRes.json()) as unknown
         const parsed = v.safeParse(v.object({ data: v.array(ProjectsSchema) }), filesData)
         if (!parsed.success) {
-            console.error("Error parsing CrowdIn files:", parsed.issues)
+            console.error("Error parsing Crowdin files:", parsed.issues)
             throw new Error("Invalid file response")
         }
 

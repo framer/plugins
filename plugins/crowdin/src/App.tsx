@@ -49,7 +49,10 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 .withFetchAll()
                 .listProjects()
                 .then(response => {
-                    console.log(response.data)
+                    // Only log in development
+                    if (window.location.hostname === "localhost") {
+                        console.log(response.data)
+                    }
                     const projects = response.data.map(({ data }: { data: Project }) => ({
                         id: data.id,
                         name: data.name,
@@ -78,10 +81,6 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         }
         void loadStoredToken()
     }, [validateAccessToken])
-
-    // const crowdinClient = new crowdin({
-    //     token: accessToken,
-    // })
 
     const createCrowdinClient = (token: string) => ({
         projects: new ProjectsGroups({ token }),
@@ -123,11 +122,11 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 throw new Error(`Import errors: ${result.valuesBySource.errors.map(error => error.error).join(", ")}`)
             }
 
-            framer.notify(`Successfully imported localizations for ${targetLocale.name}`)
-        } catch (err) {
-            console.error("Error importing from Crowdin:", err)
+            framer.notify(`Successfully imported localizations for ${targetLocale.name}`, { variant: "success" })
+        } catch (error) {
+            console.error("Error importing from Crowdin:", error)
             framer.notify(
-                "Error importing from Crowdin Could be because translation missing in CrowdIn. Please check the source",
+                `Error importing from Crowdin: ${error instanceof Error ? error.message : "An unknown error occurred"}`,
                 { variant: "error" }
             )
         } finally {
@@ -184,9 +183,12 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             }
 
             framer.notify("Export to Crowdin complete", { variant: "success" })
-        } catch (err) {
-            console.error("Error exporting to Crowdin:", err)
-            framer.notify("Error exporting to Crowdin", { variant: "error" })
+        } catch (error) {
+            console.error("Error exporting to Crowdin:", error)
+            framer.notify(
+                `Error exporting to Crowdin: ${error instanceof Error ? error.message : "An unknown error occurred"}`,
+                { variant: "error" }
+            )
         } finally {
             setIsLoading(false)
         }
@@ -195,7 +197,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     return (
         <main className="framer-hide-scrollbar setup">
             <img src={hero} alt="Crowdin Hero" />
-            <div className="form-field" style={{ position: "relative" }}>
+            <div className="form-field">
                 {isLoading && (
                     <div className="loader">
                         <Loading />
@@ -205,7 +207,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     <p>Access Token</p>
                     <input
                         type="text"
-                        placeholder="Enter Access Token…"
+                        placeholder="Enter Token…"
                         value={accessToken}
                         onChange={e => {
                             validateAccessToken(e.target.value)
@@ -221,7 +223,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         }}
                         disabled={!accessToken}
                     >
-                        <option value="">Choose Project…</option>
+                        <option value="" disabled>
+                            Choose Project…
+                        </option>
                         {projectList.map(p => (
                             <option key={p.id} value={p.id}>
                                 {p.name}

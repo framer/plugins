@@ -61,6 +61,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 })
                 .catch((err: unknown) => {
                     console.error(err)
+                    setProjectList([])
+                    framer.notify("Invalid access token", { variant: "error" })
                 })
                 .finally(() => {
                     setIsLoading(false)

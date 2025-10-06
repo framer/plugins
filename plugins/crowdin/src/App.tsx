@@ -135,8 +135,18 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         }
     }
     async function exportToCrowdIn() {
-        if (!accessToken || !projectId || !activeLocale) {
-            framer.notify("Access Token, Project ID, or active locale missing", {
+        if (!accessToken) {
+            framer.notify("Access Token is missing", {
+                variant: "error",
+            })
+            return
+        } else if (!projectId) {
+            framer.notify("Project ID is missing", {
+                variant: "error",
+            })
+            return
+        } else if (!activeLocale) {
+            framer.notify("Active locale is missing", {
                 variant: "error",
             })
             return

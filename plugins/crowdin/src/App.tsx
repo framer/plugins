@@ -178,7 +178,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
             // Upload translation
             const uploadRes = await updateTranslation(projectId, storageId, fileId, accessToken, activeLocale)
-            if (uploadRes && !uploadRes.ok) {
+            if (!uploadRes.ok) {
                 const errMsg = await uploadRes.text()
                 framer.notify(`Crowdin upload failed: ${errMsg}`, { variant: "error" })
                 return
@@ -241,8 +241,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         onClick={() => {
                             void importFromCrowdIn()
                         }}
-                        disabled={!isAllowedToSetLocalizationData}
-                        title={!isAllowedToSetLocalizationData ? "Insufficient permissions" : undefined}
+                        disabled={!isAllowedToSetLocalizationData || !accessToken || !projectId}
                     >
                         Import
                     </button>
@@ -253,6 +252,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         onClick={() => {
                             void exportToCrowdIn()
                         }}
+                        disabled={!accessToken || !projectId}
                     >
                         Export
                     </button>

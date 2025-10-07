@@ -67,6 +67,11 @@ export function generateRandomId() {
     return id
 }
 
+export const listFormatter = new Intl.ListFormat("en", {
+    style: "long",
+    type: "conjunction",
+})
+
 export const syncMethods = [
     "ManagedCollection.removeItems",
     "ManagedCollection.addItems",

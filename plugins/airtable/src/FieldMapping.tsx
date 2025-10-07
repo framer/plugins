@@ -317,9 +317,12 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                 })
             } catch (error) {
                 console.error(error)
-                framer.notify(`Failed to sync collection "${dataSource.tableName}". Check the logs for more details.`, {
-                    variant: "error",
-                })
+                framer.notify(
+                    error instanceof Error
+                        ? error.message
+                        : `Failed to sync collection “${dataSource.tableName || dataSource.tableId}”`,
+                    { variant: "error", durationMs: Infinity }
+                )
             } finally {
                 setStatus("mapping-fields")
             }

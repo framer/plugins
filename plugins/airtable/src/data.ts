@@ -21,7 +21,7 @@ import {
 } from "./api"
 import type { PossibleField } from "./fields"
 import { inferFields } from "./fields"
-import { assert, richTextToHTML } from "./utils"
+import { assert, listFormatter, richTextToHTML, slugify } from "./utils"
 
 export const PLUGIN_KEYS = {
     BASE_ID: "airtablePluginBaseId",
@@ -413,7 +413,7 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
             }
         }
 
-        itemsData.push({ id: item.id, slugValue: slugField.value as string, fieldData })
+        itemsData.push({ id: item.id, slugValue: slugify(slugField.value as string), fieldData })
     }
 
     return itemsData
@@ -483,6 +483,24 @@ export async function syncCollection(
         })
 
         unsyncedItems.delete(item.id)
+    }
+
+    // Find duplicate slugs and report error if any are found
+    const seenSlugs = new Set<string>()
+    const duplicateSlugs = new Set<string>()
+
+    for (const item of items) {
+        if (seenSlugs.has(item.slug)) {
+            duplicateSlugs.add(item.slug)
+        } else {
+            seenSlugs.add(item.slug)
+        }
+    }
+
+    if (duplicateSlugs.size > 0) {
+        const slugList = listFormatter.format(Array.from(duplicateSlugs))
+        const pluralSuffix = duplicateSlugs.size > 1 ? "s" : ""
+        throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
     }
 
     await collection.removeItems(Array.from(unsyncedItems))
@@ -560,8 +578,10 @@ export async function syncExistingCollection(
     } catch (error) {
         console.error(error)
         framer.notify(
-            `Failed to sync collection “${previousTableName ?? "NULL"}”. Check browser console for more details.`,
-            { variant: "error" }
+            error instanceof Error
+                ? error.message
+                : `Failed to sync collection “${previousTableName ?? previousTableId}”`,
+            { variant: "error", durationMs: Infinity }
         )
         return { didSync: false }
     }

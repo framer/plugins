@@ -31,6 +31,25 @@ export function richTextToHTML(cellValue: string): string {
     })
 }
 
+// Match everything except for letters, numbers and parentheses.
+const nonSlugCharactersRegExp = /[^\p{Letter}\p{Number}()]+/gu
+// Match leading/trailing dashes, for trimming purposes.
+const trimSlugRegExp = /^-+|-+$/gu
+
+/**
+ * Takes a freeform string and removes all characters except letters, numbers,
+ * and parentheses. Also makes it lower case, and separates words by dashes.
+ * This makes the value URL safe.
+ */
+export function slugify(value: string): string {
+    return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
+}
+
+export const listFormatter = new Intl.ListFormat("en", {
+    style: "long",
+    type: "conjunction",
+})
+
 // Allowed file types for attachments
 export const ALLOWED_FILE_TYPES = [
     "jpg",

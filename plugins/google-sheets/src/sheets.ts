@@ -10,15 +10,7 @@ import * as v from "valibot"
 import auth from "./auth"
 import { logSyncResult } from "./debug.ts"
 import { queryClient } from "./main.tsx"
-import {
-    assert,
-    columnToLetter,
-    formatListWithAnd,
-    generateHashId,
-    generateUniqueNames,
-    isDefined,
-    slugify,
-} from "./utils"
+import { assert, columnToLetter, generateHashId, generateUniqueNames, isDefined, listFormatter, slugify } from "./utils"
 
 const USER_INFO_API_URL = "https://www.googleapis.com/oauth2/v1"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
@@ -494,7 +486,7 @@ function processSheet(rows: Row[], processRowParams: Omit<ProcessSheetRowParams,
     }
 
     if (duplicateSlugs.size > 0) {
-        const slugList = formatListWithAnd(Array.from(duplicateSlugs))
+        const slugList = listFormatter.format(Array.from(duplicateSlugs))
         const pluralSuffix = duplicateSlugs.size > 1 ? "s" : ""
         throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
     }
@@ -550,7 +542,7 @@ export async function syncSheet({
 
     // Throw error if any empty header columns were found
     if (emptyHeaderColumns.length > 0) {
-        const columnList = formatListWithAnd(emptyHeaderColumns)
+        const columnList = listFormatter.format(emptyHeaderColumns)
         const pluralSuffix = emptyHeaderColumns.length > 1 ? "s" : ""
         throw new Error(
             `Empty header cell${pluralSuffix} found in column${pluralSuffix} ${columnList}. All header row cells must contain values.`

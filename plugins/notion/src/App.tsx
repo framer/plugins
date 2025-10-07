@@ -53,7 +53,9 @@ export function App({
                 }
             } catch (error) {
                 console.error(error)
-                framer.notify(`Error opening plugin. Check the logs for more details.`, { variant: "error" })
+                framer.notify(`Error opening plugin: ${error instanceof Error ? error.message : "Unknown error"}`, {
+                    variant: "error",
+                })
             }
         }
 
@@ -86,7 +88,7 @@ export function App({
                     setHasAccessError(true)
                 } else {
                     framer.notify(
-                        `Error loading previously configured database "${previousDatabaseName ?? previousDatabaseId}". Check the logs for more details.`,
+                        `Error loading previously configured database "${previousDatabaseName ?? previousDatabaseId}": ${error instanceof Error ? error.message : "Unknown error"}`,
                         { variant: "error" }
                     )
                 }

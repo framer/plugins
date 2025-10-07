@@ -25,7 +25,7 @@ import {
     richTextToPlainText,
 } from "./api"
 import { richTextToHtml } from "./blocksToHtml"
-import { formatDate, isNotNull, slugify, syncMethods } from "./utils"
+import { formatDate, isNotNull, listFormatter, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -239,6 +239,24 @@ export async function syncCollection(
     const result = await Promise.all(promises)
     const items = result.filter(isNotNull)
 
+    // Find duplicate slugs and report error if any are found
+    const seenSlugs = new Set<string>()
+    const duplicateSlugs = new Set<string>()
+
+    for (const item of items) {
+        if (seenSlugs.has(item.slug)) {
+            duplicateSlugs.add(item.slug)
+        } else {
+            seenSlugs.add(item.slug)
+        }
+    }
+
+    if (duplicateSlugs.size > 0) {
+        const slugList = listFormatter.format(Array.from(duplicateSlugs))
+        const pluralSuffix = duplicateSlugs.size > 1 ? "s" : ""
+        throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
+    }
+
     const itemIdsToDelete = new Set(await collection.getItemIds())
     for (const itemId of seenItemIds) {
         itemIdsToDelete.delete(itemId)
@@ -317,8 +335,10 @@ export async function syncExistingCollection(
     } catch (error) {
         console.error(error)
         framer.notify(
-            `Failed to sync database “${previousDatabaseName ?? previousDatabaseId}”. Check browser console for more details.`,
-            { variant: "error" }
+            error instanceof Error
+                ? error.message
+                : `Failed to sync database “${previousDatabaseName ?? previousDatabaseId}”`,
+            { variant: "error", durationMs: Infinity }
         )
         return { didSync: false }
     }

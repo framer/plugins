@@ -45,22 +45,10 @@ export function slugify(value: string): string {
     return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
 }
 
-/**
- * Formats an array of items into a grammatically correct list with "and" before the last item.
- * Examples:
- * - ["A"] -> "A"
- * - ["A", "B"] -> "A and B"
- * - ["A", "B", "C"] -> "A, B, and C"
- */
-export function formatListWithAnd(items: string[]): string {
-    if (items.length === 0) return ""
-    if (items.length === 1) return items[0] ?? ""
-    if (items.length === 2) return `${items[0] ?? ""} and ${items[1] ?? ""}`
-
-    const lastItem = items[items.length - 1] ?? ""
-    const otherItems = items.slice(0, -1).join(", ")
-    return `${otherItems}, and ${lastItem}`
-}
+export const listFormatter = new Intl.ListFormat("en", {
+    style: "long",
+    type: "conjunction",
+})
 
 // Allowed file types for attachments
 export const ALLOWED_FILE_TYPES = [

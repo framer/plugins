@@ -25,7 +25,7 @@ import {
     richTextToPlainText,
 } from "./api"
 import { richTextToHtml } from "./blocksToHtml"
-import { formatDate, formatListWithAnd, isNotNull, slugify, syncMethods } from "./utils"
+import { formatDate, isNotNull, listFormatter, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -252,7 +252,7 @@ export async function syncCollection(
     }
 
     if (duplicateSlugs.size > 0) {
-        const slugList = formatListWithAnd(Array.from(duplicateSlugs))
+        const slugList = listFormatter.format(Array.from(duplicateSlugs))
         const pluralSuffix = duplicateSlugs.size > 1 ? "s" : ""
         throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
     }

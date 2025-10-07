@@ -245,7 +245,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
                     <button
                         type="button"
-                        className="crowdin-button-primary"
+                        className="framer-button-primary"
                         onClick={() => {
                             void exportToCrowdIn()
                         }}

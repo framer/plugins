@@ -1,5 +1,17 @@
 /* Your Plugin CSS */
 
+[data-framer-theme="light"] #root {
+    --framer-color-tint: #263238;
+    --framer-color-tint-dark: #33424a;
+    --framer-color-tint-extra-dark: #3d4e57;
+}
+[data-framer-theme="dark"] #root {
+    --framer-color-tint: #fff;
+    --framer-color-tint-dark: #e3e3e3;
+    --framer-color-tint-extra-dark: #c3c3c3;
+    --framer-color-text-reversed: #000;
+}
+
 main {
     display: flex;
     flex-direction: column;
@@ -96,13 +108,4 @@ a {
 }
 .button-stack button {
     flex: 1;
-}
-.crowdin-button-primary {
-    color: var(--framer-color-text-reversed);
-    background-color: #263238;
-}
-.crowdin-button-primary:not(:disabled):hover,
-.crowdin-button-primary:not(:disabled):focus {
-    background-color: var(--framer-color-text);
-    color: #222222;
 }

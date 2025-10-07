@@ -1,4 +1,4 @@
-import { framer, type Locale } from "framer-plugin"
+import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
@@ -28,6 +28,8 @@ interface CrowdinStorageResponse {
 
 // ----- App component -----
 export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
+    const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
+
     const [accessToken, setAccessToken] = useState<string>("")
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
@@ -239,6 +241,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         onClick={() => {
                             void importFromCrowdIn()
                         }}
+                        disabled={!isAllowedToSetLocalizationData}
+                        title={!isAllowedToSetLocalizationData ? "Insufficient permissions" : undefined}
                     >
                         Import
                     </button>

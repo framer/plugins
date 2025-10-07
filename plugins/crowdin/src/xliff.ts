@@ -23,8 +23,6 @@ interface StorageResponse {
     data: { id: number; fileName?: string }
 }
 
-// type XliffState = "initial" | "translated" | "reviewed" | "final"
-
 export function parseXliff(xliffText: string, locales: readonly Locale[]): { xliff: Document; targetLocale: Locale } {
     const parser = new DOMParser()
     const xliff = parser.parseFromString(xliffText, "text/xml")
@@ -259,43 +257,22 @@ export async function ensureSourceFile(
 }
 
 async function checkAndCreateLanguage(projectId: number, language: Locale, accessToken: string) {
-    try {
-        const res = await fetch(`${API_URL}/languages?limit=500`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-        })
-        const data: unknown = await res.json()
-        const parsed = v.parse(LanguagesResponseSchema, data)
-        const languages = parsed.data.map(l => l.data)
-        const languagePresent = languages.find(l => l.id === language.code)
-        if (!languagePresent) {
-            await fetch(`${API_URL}/languages`, {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    name: language.name,
-                    code: language.code,
-                    localeCode: language.code,
-                    textDirection: "ltr",
-                    pluralCategoryNames: ["one", "other"],
-                    threeLettersCode: language.name.substring(0, 3),
-                    twoLettersCode: language.slug,
-                    dialectOf: language.slug,
-                }),
-            })
+    const res = await fetch(`${API_URL}/languages?limit=500`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    const data: unknown = await res.json()
+    const parsed = v.parse(LanguagesResponseSchema, data)
+    const languages = parsed.data.map(l => l.data)
 
-            framer.notify(
-                `Language ${language.code} is not present in Crowdin. Please check your locale's region and language code in Framer`,
-                { variant: "error" }
-            )
-        }
-        await ensureLanguageInProject(projectId, language.code, accessToken)
-        return languagePresent
-    } catch (e) {
-        console.log(e)
+    const targetLanguage = languages.find(l => l.id === language.code)
+
+    if (!targetLanguage) {
+        console.log("no target language found")
+        throw new Error(
+            `Language "${language.code}" is not available in Crowdin. Please check your locale's region and language code in Framer`
+        )
     }
+    await ensureLanguageInProject(projectId, language.code, accessToken)
 }
 
 export async function ensureLanguageInProject(projectId: number, newLanguageId: string, accessToken: string) {
@@ -348,20 +325,18 @@ export async function updateTranslation(
     accessToken: string,
     activeLocale: Locale
 ) {
-    const langIsPresent = await checkAndCreateLanguage(projectId, activeLocale, accessToken)
-    if (langIsPresent) {
-        return fetch(`${API_URL}/projects/${projectId}/translations/${activeLocale.code}`, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                storageId,
-                fileId,
-            }),
-        })
-    }
+    await checkAndCreateLanguage(projectId, activeLocale, accessToken)
+    return fetch(`${API_URL}/projects/${projectId}/translations/${activeLocale.code}`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            storageId,
+            fileId,
+        }),
+    })
 }
 
 // -------------------- Get or Create Storage --------------------

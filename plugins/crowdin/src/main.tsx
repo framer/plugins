@@ -11,6 +11,8 @@ if (!root) throw new Error("Root element not found")
 const activeLocale = await framer.getActiveLocale()
 const locales = await framer.getLocales()
 
+console.log({ activeLocale, locales })
+
 if (!activeLocale) {
     framer.closePlugin("No active locale found", { variant: "error" })
 } else {

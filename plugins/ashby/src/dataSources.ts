@@ -128,7 +128,7 @@ const jobsDataSource = createDataSource(
 
                 const address = v.parse(JobAddressSchema, value).postalAddress
 
-                return address.addressRegion?.trim()
+                return address.addressRegion?.trim() ?? ""
             },
         },
         {
@@ -141,7 +141,7 @@ const jobsDataSource = createDataSource(
 
                 const address = v.parse(JobAddressSchema, value).postalAddress
 
-                return address.addressCountry?.trim()
+                return address.addressCountry?.trim() ?? ""
             },
         },
         {
@@ -154,7 +154,7 @@ const jobsDataSource = createDataSource(
 
                 const address = v.parse(JobAddressSchema, value).postalAddress
 
-                return address.addressLocality?.trim()
+                return address.addressLocality?.trim() ?? ""
             },
         },
     ]

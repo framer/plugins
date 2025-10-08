@@ -54,7 +54,7 @@ export const JobSchema = v.object({
     descriptionPlain: v.string(),
     publishedAt: v.string(),
     employmentType: v.string(),
-    address: JobAddressSchema,
+    address: v.nullable(JobAddressSchema),
     jobUrl: v.string(),
     applyUrl: v.string(),
     compensation: CompensationSchema,

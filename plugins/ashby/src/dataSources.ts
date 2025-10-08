@@ -104,6 +104,8 @@ const jobsDataSource = createDataSource(
             name: "Address",
             type: "string",
             getValue: (value: unknown) => {
+                if (!value) return ""
+
                 const address = v.parse(JobAddressSchema, value).postalAddress
 
                 const parts = [
@@ -113,7 +115,7 @@ const jobsDataSource = createDataSource(
                 ].filter(Boolean)
 
                 // use Set to remove duplicates (e.g. "San Francisco, CA, CA")
-                return parts.length > 0 ? [...new Set(parts)].join(", ") : null
+                return parts.length > 0 ? [...new Set(parts)].join(", ") : ""
             },
         },
         {
@@ -122,9 +124,11 @@ const jobsDataSource = createDataSource(
             name: "Region",
             type: "string",
             getValue: (value: unknown) => {
+                if (!value) return ""
+
                 const address = v.parse(JobAddressSchema, value).postalAddress
 
-                return address.addressRegion?.trim()
+                return address.addressRegion?.trim() ?? ""
             },
         },
         {
@@ -133,9 +137,11 @@ const jobsDataSource = createDataSource(
             name: "Country",
             type: "string",
             getValue: (value: unknown) => {
+                if (!value) return ""
+
                 const address = v.parse(JobAddressSchema, value).postalAddress
 
-                return address.addressCountry?.trim()
+                return address.addressCountry?.trim() ?? ""
             },
         },
         {
@@ -144,9 +150,11 @@ const jobsDataSource = createDataSource(
             name: "Locality",
             type: "string",
             getValue: (value: unknown) => {
+                if (!value) return ""
+
                 const address = v.parse(JobAddressSchema, value).postalAddress
 
-                return address.addressLocality?.trim()
+                return address.addressLocality?.trim() ?? ""
             },
         },
     ]

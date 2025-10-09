@@ -1,0 +1,6 @@
+{
+    "id": "cr0d1n",
+    "name": "Crowdin",
+    "modes": ["localization"],
+    "icon": "/icon.svg"
+}

@@ -132,7 +132,7 @@ function escapeXml(unsafe: string): string {
         .replace(/'/g, "&apos;")
 }
 
-function generateUnit(source: LocalizationSource, targetLocale: Locale, groupName?: string) {
+function generateUnit(source: LocalizationSource, targetLocale: Locale, groupName?: string): string {
     const localeData = source.valueByLocale[targetLocale.id]
     if (!localeData) {
         throw new Error(`No locale data found for locale: ${targetLocale.id}`)
@@ -155,7 +155,7 @@ function wrapIfHtml(text: string): string {
     }
     return escapeXml(text)
 }
-export function generateSourceXliff(defaultLocale: Locale, groups: readonly LocalizationGroup[]) {
+export function generateSourceXliff(defaultLocale: Locale, groups: readonly LocalizationGroup[]): string {
     let units = ""
     for (const group of groups) {
         for (const source of group.sources) {
@@ -176,7 +176,11 @@ ${units}    </body>
 </xliff>`
 }
 
-export function generateXliff(defaultLocale: Locale, targetLocale: Locale, groups: readonly LocalizationGroup[]) {
+export function generateXliff(
+    defaultLocale: Locale,
+    targetLocale: Locale,
+    groups: readonly LocalizationGroup[]
+): string {
     let units = ""
 
     for (const group of groups) {
@@ -202,7 +206,7 @@ ${units}    </body>
 </xliff>`
 }
 
-export function generateGroup(localizationGroup: LocalizationGroup, targetLocale: Locale) {
+export function generateGroup(localizationGroup: LocalizationGroup, targetLocale: Locale): string {
     const units = localizationGroup.sources.map(source => generateUnit(source, targetLocale))
 
     return `      <group id="${localizationGroup.id}">
@@ -211,7 +215,7 @@ ${units.join("\n")}
       </group>`
 }
 
-export async function uploadStorage(content: string, accessToken: string, fileName: string) {
+export async function uploadStorage(content: string, accessToken: string, fileName: string): Promise<Response> {
     return fetch(`${API_URL}/storages`, {
         method: "POST",
         headers: {
@@ -256,7 +260,7 @@ export async function ensureSourceFile(
     return await createFile(projectId, storageId, filename, accessToken)
 }
 
-async function checkAndCreateLanguage(projectId: number, language: Locale, accessToken: string) {
+async function checkAndCreateLanguage(projectId: number, language: Locale, accessToken: string): Promise<void> {
     const res = await fetch(`${API_URL}/languages?limit=500`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     })
@@ -275,7 +279,11 @@ async function checkAndCreateLanguage(projectId: number, language: Locale, acces
     await ensureLanguageInProject(projectId, language.code, accessToken)
 }
 
-export async function ensureLanguageInProject(projectId: number, newLanguageId: string, accessToken: string) {
+export async function ensureLanguageInProject(
+    projectId: number,
+    newLanguageId: string,
+    accessToken: string
+): Promise<void> {
     const res = await fetch(`${API_URL}/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     })
@@ -292,7 +300,7 @@ export async function ensureLanguageInProject(projectId: number, newLanguageId: 
 
     if (currentLanguages.includes(newLanguageId)) {
         console.log(`Language ${newLanguageId} already exists in project`)
-        return parsed.data
+        return
     }
 
     const updatedLanguages = [...currentLanguages, newLanguageId]
@@ -320,11 +328,11 @@ export async function ensureLanguageInProject(projectId: number, newLanguageId: 
 
 export async function updateTranslation(
     projectId: number,
-    storageId: string,
+    storageId: number,
     fileId: number,
     accessToken: string,
     activeLocale: Locale
-) {
+): Promise<Response> {
     await checkAndCreateLanguage(projectId, activeLocale, accessToken)
     return fetch(`${API_URL}/projects/${projectId}/translations/${activeLocale.code}`, {
         method: "POST",
@@ -463,7 +471,7 @@ export async function createFile(
     }
 }
 
-export function downloadBlob(value: string, filename: string, type: string) {
+export function downloadBlob(value: string, filename: string, type: string): void {
     const blob = new Blob([value], { type })
     const url = URL.createObjectURL(blob)
 

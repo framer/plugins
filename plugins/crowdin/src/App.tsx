@@ -1,5 +1,5 @@
 import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
 import hero from "./assets/hero.png"
@@ -22,7 +22,17 @@ interface Project {
 
 interface CrowdinStorageResponse {
     data: {
-        id: string
+        id: number
+    }
+}
+
+function useDebouncedCallback<T extends (...args: never[]) => void>(fn: T, ms = 300) {
+    const timeoutRef = useRef<NodeJS.Timeout>()
+    return (...args: Parameters<T>) => {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = setTimeout(() => {
+            fn(...args)
+        }, ms)
     }
 }
 
@@ -35,8 +45,16 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [projectId, setProjectId] = useState<number>(0)
     const [isLoading, setIsLoading] = useState(false)
 
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    // Blur the input when loading
+    useEffect(() => {
+        if (isLoading && inputRef.current) {
+            inputRef.current.blur()
+        }
+    }, [isLoading])
+
     const validateAccessToken = useCallback((token: string) => {
-        setAccessToken(token)
         setIsLoading(true)
 
         if (token) {
@@ -53,6 +71,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     if (window.location.hostname === "localhost") {
                         console.log(response.data)
                     }
+                    setAccessToken(token)
                     const projects = response.data.map(({ data }: { data: Project }) => ({
                         id: data.id,
                         name: data.name,
@@ -73,6 +92,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         }
     }, [])
 
+    // Debounce the access token change to prevent too many requests
+    const onAccessTokenChange = useDebouncedCallback(validateAccessToken, 300)
+
     useEffect(() => {
         async function loadStoredToken() {
             const storedToken = await framer.getPluginData("accessToken")
@@ -91,11 +113,22 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
     // ------------------ Import from Crowdin ------------------
     async function importFromCrowdIn() {
-        if (!accessToken || !projectId || !activeLocale) {
-            framer.notify("Access Token, Project ID, or active locale missing", {
+        if (!isAllowedToSetLocalizationData) {
+            return framer.notify("You are not allowed to set localization data", {
                 variant: "error",
             })
-            return
+        } else if (!accessToken) {
+            return framer.notify("Access Token is missing", {
+                variant: "error",
+            })
+        } else if (!projectId) {
+            return framer.notify("Project ID is missing", {
+                variant: "error",
+            })
+        } else if (!activeLocale) {
+            return framer.notify("Active locale is missing", {
+                variant: "error",
+            })
         }
 
         setIsLoading(true)
@@ -136,21 +169,22 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         }
     }
     async function exportToCrowdIn() {
-        if (!accessToken) {
-            framer.notify("Access Token is missing", {
+        if (!isAllowedToSetLocalizationData) {
+            return framer.notify("You are not allowed to set localization data", {
                 variant: "error",
             })
-            return
+        } else if (!accessToken) {
+            return framer.notify("Access Token is missing", {
+                variant: "error",
+            })
         } else if (!projectId) {
-            framer.notify("Project ID is missing", {
+            return framer.notify("Project ID is missing", {
                 variant: "error",
             })
-            return
         } else if (!activeLocale) {
-            framer.notify("Active locale is missing", {
+            return framer.notify("Active locale is missing", {
                 variant: "error",
             })
-            return
         }
 
         setIsLoading(true)
@@ -164,6 +198,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             // Generate translation xliff
             const xliffContent = generateXliff(defaultLocale, activeLocale, groups)
             const filename = `translations-${activeLocale.code}.xliff`
+
+            console.log(xliffContent)
 
             // Upload storage
             const storageRes = await uploadStorage(xliffContent, accessToken, filename)
@@ -208,11 +244,12 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 <label className="show">
                     <p>Access Token</p>
                     <input
+                        ref={inputRef}
                         type="text"
                         placeholder="Enter Token…"
-                        value={accessToken}
+                        defaultValue={accessToken}
                         onChange={e => {
-                            validateAccessToken(e.target.value)
+                            onAccessTokenChange(e.target.value)
                         }}
                     />
                 </label>
@@ -223,7 +260,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         onChange={e => {
                             setProjectId(Number(e.target.value))
                         }}
-                        disabled={!accessToken}
+                        disabled={!accessToken || !projectList.length}
                     >
                         <option value="" disabled>
                             Choose Project…

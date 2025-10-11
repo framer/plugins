@@ -23,7 +23,7 @@
     "devDependencies": {
         "@types/react": "^18.3.24",
         "@types/react-dom": "^18.3.7",
-        "happy-dom": "^18.0.1",
+        "happy-dom": "^20.0.0",
         "vitest": "^3.2.4"
     }
 }

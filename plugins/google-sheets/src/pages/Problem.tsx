@@ -40,7 +40,7 @@ export function Problem({ height, spreadsheetId, setContext, children }: Props) 
 
     return (
         <main className="flex flex-col gap-[15px] select-none h-full justify-between pb-[15px]">
-            <p className="text-content">{children}</p>
+            {children}
             <div className="inline-flex items-center gap-[10px]">
                 <button className="flex-1" onClick={handleRetryClick}>
                     {isRetrying ? <div className="framer-spinner" /> : "Retry"}

@@ -144,7 +144,7 @@ const request = async ({ path, service = "sheets", method = "get", query, body }
 
     if (!res.ok) {
         const errorData = json as GoogleApiErrorResponse
-        const errorMessage = errorData.error?.message || "Unknown error"
+        const errorMessage = errorData.error?.message ?? "Unknown error"
         const errorStatus = errorData.error?.status
 
         throw new GoogleSheetsApiError(errorMessage, errorStatus)

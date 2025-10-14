@@ -273,7 +273,7 @@ export function App({ pluginContext }: AppProps) {
 
         return (
             <Problem height={height} spreadsheetId={context.spreadsheetId} setContext={setContext}>
-                {errorContent}
+                <p className="text-content">{errorContent}</p>
             </Problem>
         )
     }
@@ -281,19 +281,22 @@ export function App({ pluginContext }: AppProps) {
     if (context.type === "sheet-by-title-missing") {
         return (
             <Problem height={157} spreadsheetId={context.spreadsheetId} setContext={setContext}>
-                Unable to access the synced sheet:{" "}
-                <div
-                    className="my-1 font-black truncate cursor-pointer"
-                    title="Click to copy"
-                    onClick={() =>
-                        void navigator.clipboard.writeText(context.title).then(() => {
-                            framer.notify("Sheet title copied")
-                        })
-                    }
-                >
-                    {context.title}
-                </div>{" "}
-                If the sheet was recently renamed, temporarily revert to the previous name, retry, then update the name.
+                <p className="text-content">
+                    Unable to access the synced sheet:{" "}
+                    <div
+                        className="my-1 font-black truncate cursor-pointer"
+                        title="Click to copy"
+                        onClick={() =>
+                            void navigator.clipboard.writeText(context.title).then(() => {
+                                framer.notify("Sheet title copied")
+                            })
+                        }
+                    >
+                        {context.title}
+                    </div>{" "}
+                    If the sheet was recently renamed, temporarily revert to the previous name, retry, then update the
+                    name.
+                </p>
             </Problem>
         )
     }

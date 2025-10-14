@@ -80,6 +80,8 @@ export function generateUniqueNames(names: string[]): string[] {
     const nameCount = new Map<string, number>()
 
     return names.map(name => {
+        if (!name) return ""
+
         const count = nameCount.get(name) ?? 0
         nameCount.set(name, count + 1)
 

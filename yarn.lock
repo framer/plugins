@@ -3133,7 +3133,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.6.0"
-    happy-dom: "npm:^18.0.1"
+    happy-dom: "npm:^20.0.2"
     marked: "npm:^16.3.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -3574,7 +3574,7 @@ __metadata:
     clsx: "npm:^2.1.1"
     diff: "npm:^8.0.2"
     framer-plugin: "npm:3.7.0-alpha.0"
-    happy-dom: "npm:^18.0.1"
+    happy-dom: "npm:^20.0.2"
     p-retry: "npm:^7.0.0"
     prismjs: "npm:^1.30.0"
     react: "npm:^18.3.1"
@@ -4710,7 +4710,7 @@ __metadata:
     "@vitest/ui": "npm:^3.2.4"
     clsx: "npm:^2.1.1"
     framer-plugin: "npm:3.7.0-alpha.1"
-    happy-dom: "npm:^18.0.1"
+    happy-dom: "npm:^20.0.2"
     idb: "npm:^8.0.3"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -4806,14 +4806,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"happy-dom@npm:^18.0.1":
-  version: 18.0.1
-  resolution: "happy-dom@npm:18.0.1"
+"happy-dom@npm:^20.0.2":
+  version: 20.0.2
+  resolution: "happy-dom@npm:20.0.2"
   dependencies:
     "@types/node": "npm:^20.0.0"
     "@types/whatwg-mimetype": "npm:^3.0.2"
     whatwg-mimetype: "npm:^3.0.0"
-  checksum: 10/27f6638d7b8bc67f97ddde7f004e47785ae1487e14065d7c6119adbb9ba7d8a53935d5714d37d9f60efef7f9b180a41c2b7fbbdffcea57b6d04060360a1a1d03
+  checksum: 10/dd0d739ac51477038822afaf5a1435a2715e661c449ff1f85467992ed5fc44b290863a8c1eaeb805ce83c30f85146f719268120ead63d72dc0bf9f1a2759b594
   languageName: node
   linkType: hard
 

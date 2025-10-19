@@ -117,10 +117,10 @@ function resolveDuplicateSlugs(items: { id: string; slug: string; draft: boolean
     // Log information about resolved duplicates
     if (duplicateSlugsResolved.length > 0) {
         console.log(`Resolved ${duplicateSlugsResolved.length} duplicate slug(s):`, duplicateSlugsResolved)
-            framer.notify(
-                `Resolved ${duplicateSlugsResolved.length} duplicate slug${duplicateSlugsResolved.length > 1 ? "s" : ""} by appending counter suffixes.`,
-                { variant: "info", durationMs: 5000 }
-            )
+        framer.notify(
+            `Resolved ${duplicateSlugsResolved.length} duplicate slug${duplicateSlugsResolved.length > 1 ? "s" : ""} by appending counter suffixes.`,
+            { variant: "info", durationMs: 5000 }
+        )
     }
 
     return resolvedItems

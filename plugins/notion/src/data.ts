@@ -25,7 +25,7 @@ import {
     richTextToPlainText,
 } from "./api"
 import { richTextToHtml } from "./blocksToHtml"
-import { formatDate, isNotNull, slugify, syncMethods } from "./utils"
+import { formatDate, isNotNull, listFormatter, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -116,9 +116,17 @@ function resolveDuplicateSlugs(items: { id: string; slug: string; draft: boolean
 
     // Log information about resolved duplicates
     if (duplicateSlugsResolved.length > 0) {
+        const originalSlugs = [
+            ...new Set(
+                duplicateSlugsResolved
+                    .map(entry => entry.split(" → ")[0])
+                    .filter((slug): slug is string => Boolean(slug))
+            ),
+        ]
+        const slugList = listFormatter.format(originalSlugs)
         console.log(`Resolved ${duplicateSlugsResolved.length} duplicate slug(s):`, duplicateSlugsResolved)
         framer.notify(
-            `Resolved ${duplicateSlugsResolved.length} duplicate slug${duplicateSlugsResolved.length > 1 ? "s" : ""} by appending counter suffixes.`,
+            `Resolved duplicate slug${duplicateSlugsResolved.length > 1 ? "s" : ""} found: ${slugList}. Counter suffixes were added to make them unique.`,
             { variant: "info", durationMs: 5000 }
         )
     }

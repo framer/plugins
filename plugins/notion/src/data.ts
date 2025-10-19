@@ -25,7 +25,7 @@ import {
     richTextToPlainText,
 } from "./api"
 import { richTextToHtml } from "./blocksToHtml"
-import { formatDate, isNotNull, listFormatter, slugify, syncMethods } from "./utils"
+import { formatDate, isNotNull, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -80,6 +80,50 @@ export function mergeFieldsInfoWithExistingFields(
         }
         return sourceFieldInfo
     })
+}
+
+/**
+ * Resolves duplicate slugs by appending a counter suffix (e.g., "my-slug-2", "my-slug-3")
+ * and logs information about the resolution process.
+ */
+function resolveDuplicateSlugs(items: { id: string; slug: string; draft: boolean; fieldData: FieldDataInput }[]) {
+    const seenSlugs = new Map<string, number>()
+    const resolvedItems = []
+    const duplicateSlugsResolved: string[] = []
+
+    for (const item of items) {
+        let resolvedSlug = item.slug
+        let counter = 1
+
+        // If we've seen this slug before, append a counter
+        if (seenSlugs.has(item.slug)) {
+            const existingCounter = seenSlugs.get(item.slug)
+            if (existingCounter !== undefined) {
+                counter = existingCounter + 1
+                resolvedSlug = `${item.slug}-${counter}`
+                duplicateSlugsResolved.push(`${item.slug} → ${resolvedSlug}`)
+            }
+        }
+
+        // Update the count for the original slug
+        seenSlugs.set(item.slug, counter)
+
+        resolvedItems.push({
+            ...item,
+            slug: resolvedSlug,
+        })
+    }
+
+    // Log information about resolved duplicates
+    if (duplicateSlugsResolved.length > 0) {
+        console.log(`Resolved ${duplicateSlugsResolved.length} duplicate slug(s):`, duplicateSlugsResolved)
+            framer.notify(
+                `Resolved ${duplicateSlugsResolved.length} duplicate slug${duplicateSlugsResolved.length > 1 ? "s" : ""} by appending counter suffixes.`,
+                { variant: "info", durationMs: 5000 }
+            )
+    }
+
+    return resolvedItems
 }
 
 export async function syncCollection(
@@ -239,23 +283,8 @@ export async function syncCollection(
     const result = await Promise.all(promises)
     const items = result.filter(isNotNull)
 
-    // Find duplicate slugs and report error if any are found
-    const seenSlugs = new Set<string>()
-    const duplicateSlugs = new Set<string>()
-
-    for (const item of items) {
-        if (seenSlugs.has(item.slug)) {
-            duplicateSlugs.add(item.slug)
-        } else {
-            seenSlugs.add(item.slug)
-        }
-    }
-
-    if (duplicateSlugs.size > 0) {
-        const slugList = listFormatter.format(Array.from(duplicateSlugs))
-        const pluralSuffix = duplicateSlugs.size > 1 ? "s" : ""
-        throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
-    }
+    // Resolve duplicate slugs by appending a counter suffix
+    const resolvedItems = resolveDuplicateSlugs(items)
 
     const itemIdsToDelete = new Set(await collection.getItemIds())
     for (const itemId of seenItemIds) {
@@ -263,7 +292,7 @@ export async function syncCollection(
     }
 
     await collection.removeItems(Array.from(itemIdsToDelete))
-    await collection.addItems(items)
+    await collection.addItems(resolvedItems)
 
     await Promise.all([
         collection.setPluginData(

@@ -14,7 +14,7 @@
     "dependencies": {
         "@tailwindcss/vite": "^4.1.13",
         "@vitejs/plugin-react-swc": "^4.0.1",
-        "vite": "^7.1.5",
+        "vite": "^7.1.11",
         "vite-plugin-framer": "^1.0.7",
         "vite-plugin-mkcert": "^1.17.8"
     }

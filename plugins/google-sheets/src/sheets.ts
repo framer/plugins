@@ -195,11 +195,15 @@ export const useSpreadsheetInfoQuery = (spreadsheetId: string) => {
         enabled: !!spreadsheetId,
     })
 
-    return {
-        ...query,
-        errorStatus: isGoogleSheetsApiError(query.error) ? query.error.status : undefined,
-        errorMessage: isGoogleSheetsApiError(query.error) ? query.error.message : undefined,
+    if (isGoogleSheetsApiError(query.error)) {
+        return {
+            ...query,
+            errorStatus: query.error.status,
+            errorMessage: query.error.message,
+        }
     }
+
+    return query
 }
 
 export const useSheetQuery = (spreadsheetId: string, sheetTitle: string, range?: string) => {
@@ -659,11 +663,18 @@ export async function getPluginContext(): Promise<PluginContext> {
     try {
         spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
     } catch (error) {
+        if (isGoogleSheetsApiError(error)) {
+            return {
+                type: "no-sheet-access",
+                spreadsheetId,
+                errorStatus: error.status,
+                errorMessage: error.message,
+            }
+        }
+
         return {
             type: "no-sheet-access",
             spreadsheetId,
-            errorStatus: isGoogleSheetsApiError(error) ? error.status : undefined,
-            errorMessage: isGoogleSheetsApiError(error) ? error.message : undefined,
         }
     }
 

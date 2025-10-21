@@ -243,7 +243,7 @@ export function App({ pluginContext }: AppProps) {
         let height = 150
 
         if (context.errorStatus === "FAILED_PRECONDITION") {
-            height = 132
+            height = 114
             errorContent = <>Office/Excel files are not supported. Please use a regular Google Sheet instead.</>
         } else if (context.errorStatus === "PERMISSION_DENIED") {
             height = 132

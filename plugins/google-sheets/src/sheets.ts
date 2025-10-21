@@ -203,7 +203,11 @@ export const useSpreadsheetInfoQuery = (spreadsheetId: string) => {
         }
     }
 
-    return query
+    return {
+        ...query,
+        errorStatus: undefined,
+        errorMessage: undefined,
+    }
 }
 
 export const useSheetQuery = (spreadsheetId: string, sheetTitle: string, range?: string) => {

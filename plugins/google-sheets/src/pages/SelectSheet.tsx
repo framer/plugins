@@ -8,7 +8,7 @@ type InputChangeEvent = React.ChangeEvent<HTMLInputElement>
 type SelectChangeEvent = React.ChangeEvent<HTMLSelectElement>
 
 interface Props {
-    onError: () => void
+    onError: (errorStatus?: string, errorMessage?: string) => void
     onSheetSelected: (spreadsheetId: string, sheetId: string) => void
 }
 
@@ -35,13 +35,15 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
         data: spreadsheetInfo,
         isFetching: isFetchingSheets,
         isError: isSpreadSheetInfoError,
+        errorStatus,
+        errorMessage,
     } = useSpreadsheetInfoQuery(selectedSpreadsheetId ?? "")
 
     useEffect(() => {
         if (isSpreadSheetInfoError) {
-            onError()
+            onError(errorStatus, errorMessage)
         }
-    }, [isSpreadSheetInfoError, onError])
+    }, [isSpreadSheetInfoError, errorStatus, errorMessage, onError])
 
     useEffect(() => {
         const firstSheet = spreadsheetInfo?.sheets[0]

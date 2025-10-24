@@ -57,7 +57,10 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     const [sheetTitle, setSheetTitle] = useState<string | null>(
         pluginContext.type === "update" ? pluginContext.sheetTitle : null
     )
-    const [isSelectSheetError, setIsSelectSheetError] = useState(false)
+    const [selectSheetError, setSelectSheetError] = useState<{
+        errorStatus?: string
+        errorMessage?: string
+    } | null>(null)
 
     const { isError: isUserInfoError } = useFetchUserInfo()
 
@@ -77,13 +80,15 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     })
 
     useEffect(() => {
-        if (isUserInfoError || isSelectSheetError) {
+        if (isUserInfoError || selectSheetError) {
             setContext({
                 type: "no-sheet-access",
                 spreadsheetId: "",
+                errorStatus: selectSheetError?.errorStatus,
+                errorMessage: selectSheetError?.errorMessage,
             })
         }
-    }, [isUserInfoError, isSelectSheetError, setContext])
+    }, [isUserInfoError, selectSheetError, setContext])
 
     useLayoutEffect(() => {
         const showUI = async () => {
@@ -129,8 +134,8 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     if (!spreadsheetId || sheetTitle === null) {
         return (
             <SelectSheetPage
-                onError={() => {
-                    setIsSelectSheetError(true)
+                onError={(errorStatus, errorMessage) => {
+                    setSelectSheetError({ errorStatus, errorMessage })
                 }}
                 onSheetSelected={(selectedSpreadsheetId, selectedSheetTitle) => {
                     setSpreadsheetId(selectedSpreadsheetId)
@@ -234,16 +239,36 @@ export function App({ pluginContext }: AppProps) {
     if (shouldSyncOnly) return null
 
     if (context.type === "no-sheet-access") {
-        return (
-            <Problem height={132} spreadsheetId={context.spreadsheetId} setContext={setContext}>
-                <p className="text-content">
+        let errorContent: React.ReactNode
+        let height = 150
+
+        if (context.errorStatus === "FAILED_PRECONDITION") {
+            height = 114
+            errorContent = <>Office/Excel files are not supported. Please use a regular Google Sheet instead.</>
+        } else if (context.errorStatus === "PERMISSION_DENIED") {
+            height = 132
+            errorContent = (
+                <>
                     Your Google Account does not have access to the synced spreadsheet. Check your access and try again
                     or{" "}
                     <a href="#" onClick={() => void auth.logout()}>
                         log out
                     </a>{" "}
                     and try a different account.
-                </p>
+                </>
+            )
+        } else if (context.errorMessage) {
+            errorContent = <>An error occurred while accessing the spreadsheet: {context.errorMessage}</>
+        } else {
+            height = 114
+            errorContent = (
+                <>An error occurred while accessing the spreadsheet. Please try again or select a different sheet.</>
+            )
+        }
+
+        return (
+            <Problem height={height} spreadsheetId={context.spreadsheetId} setContext={setContext}>
+                <p className="text-content">{errorContent}</p>
             </Problem>
         )
     }

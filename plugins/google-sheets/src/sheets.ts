@@ -27,6 +27,27 @@ const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
 const HEADER_ROW_DELIMITER = "OIhpKTpp"
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:?\d{2})?)?$/
 
+interface GoogleApiErrorResponse {
+    error?: {
+        message?: string
+        status?: string
+    }
+}
+
+class GoogleSheetsApiError extends Error {
+    constructor(
+        message: string,
+        public readonly status?: string
+    ) {
+        super(message)
+        this.name = "GoogleSheetsApiError"
+    }
+}
+
+function isGoogleSheetsApiError(error: unknown): error is GoogleSheetsApiError {
+    return error instanceof GoogleSheetsApiError
+}
+
 interface UserInfo {
     displayName: string
 }
@@ -122,8 +143,11 @@ const request = async ({ path, service = "sheets", method = "get", query, body }
     const json = (await res.json()) as unknown
 
     if (!res.ok) {
-        const errorMessage = (json as { error: { message: string } }).error.message
-        throw new Error("Failed to fetch Google Sheets API: " + errorMessage)
+        const errorData = json as GoogleApiErrorResponse
+        const errorMessage = errorData.error?.message ?? "Unknown error"
+        const errorStatus = errorData.error?.status
+
+        throw new GoogleSheetsApiError(errorMessage, errorStatus)
     }
 
     return json
@@ -165,11 +189,25 @@ export const useFetchUserInfo = () => {
 }
 
 export const useSpreadsheetInfoQuery = (spreadsheetId: string) => {
-    return useQuery<SpreadsheetInfo>({
+    const query = useQuery<SpreadsheetInfo>({
         queryKey: ["spreadsheet", spreadsheetId],
         queryFn: () => fetchSpreadsheetInfo(spreadsheetId),
         enabled: !!spreadsheetId,
     })
+
+    if (isGoogleSheetsApiError(query.error)) {
+        return {
+            ...query,
+            errorStatus: query.error.status,
+            errorMessage: query.error.message,
+        }
+    }
+
+    return {
+        ...query,
+        errorStatus: undefined,
+        errorMessage: undefined,
+    }
 }
 
 export const useSheetQuery = (spreadsheetId: string, sheetTitle: string, range?: string) => {
@@ -213,6 +251,8 @@ export interface PluginContextUpdate {
 export interface PluginContextNoSheetAccess {
     type: "no-sheet-access"
     spreadsheetId: string
+    errorStatus?: string
+    errorMessage?: string
 }
 
 export interface PluginContextSheetByTitleMissing {
@@ -627,7 +667,19 @@ export async function getPluginContext(): Promise<PluginContext> {
     try {
         spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)
     } catch (error) {
-        return { type: "no-sheet-access", spreadsheetId }
+        if (isGoogleSheetsApiError(error)) {
+            return {
+                type: "no-sheet-access",
+                spreadsheetId,
+                errorStatus: error.status,
+                errorMessage: error.message,
+            }
+        }
+
+        return {
+            type: "no-sheet-access",
+            spreadsheetId,
+        }
     }
 
     const sheetId = parseInt(storedSheetId)

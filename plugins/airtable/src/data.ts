@@ -449,7 +449,7 @@ export function mergeFieldsWithExistingFields(
                 case "file":
                     return {
                         ...field,
-                        allowedFileTypes: existingField.allowedFileTypes,
+                        allowedFileTypes: [],
                     }
                 case "array":
                     return {

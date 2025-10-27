@@ -50,28 +50,6 @@ export const listFormatter = new Intl.ListFormat("en", {
     type: "conjunction",
 })
 
-// Allowed file types for attachments
-export const ALLOWED_FILE_TYPES = [
-    "jpg",
-    "jpeg",
-    "png",
-    "gif",
-    "tiff",
-    "webp",
-    "pdf",
-    "doc",
-    "docx",
-    "ppt",
-    "pptx",
-    "xls",
-    "xlsx",
-    "txt",
-    "mp3",
-    "aac",
-    "mp4",
-    "webm",
-]
-
 /**
  * Checks if a field is a collection reference.
  *

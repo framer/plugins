@@ -4,7 +4,7 @@ import { memo, useEffect, useMemo, useState } from "react"
 import type { DataSource } from "./data"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 import type { PossibleField } from "./fields"
-import { ALLOWED_FILE_TYPES, isCollectionReference } from "./utils"
+import { isCollectionReference } from "./utils"
 
 function ChevronIcon() {
     return (
@@ -233,7 +233,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                         return {
                             ...field,
                             type: "file",
-                            allowedFileTypes: ALLOWED_FILE_TYPES,
+                            allowedFileTypes: [],
                         } as PossibleField
                     case "image":
                         return { ...field, type: "image" } as PossibleField

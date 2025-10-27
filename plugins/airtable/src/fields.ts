@@ -427,7 +427,7 @@ async function inferFormulaField(
             userEditable: false,
             airtableType: fieldSchema.type,
             type: "file",
-            allowedFileTypes: ALLOWED_FILE_TYPES,
+            allowedFileTypes: [],
             allowedTypes: ["file", "image", "array"],
             ...createFieldMetadata(fieldSchema),
         }

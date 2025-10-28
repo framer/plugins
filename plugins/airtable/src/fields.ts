@@ -3,7 +3,6 @@ import type { ManagedCollection, ManagedCollectionFieldInput } from "framer-plug
 import { framer } from "framer-plugin"
 import type { AirtableFieldSchema } from "./api"
 import { PLUGIN_KEYS } from "./data"
-import { ALLOWED_FILE_TYPES } from "./utils"
 
 type AllowedType = ManagedCollectionFieldInput["type"] | "unsupported"
 type FieldSchema<T extends AirtableFieldSchema["type"]> = Extract<AirtableFieldSchema, { type: T }>
@@ -427,7 +426,7 @@ async function inferFormulaField(
             userEditable: false,
             airtableType: fieldSchema.type,
             type: "file",
-            allowedFileTypes: ALLOWED_FILE_TYPES,
+            allowedFileTypes: [],
             allowedTypes: ["file", "image", "array"],
             ...createFieldMetadata(fieldSchema),
         }

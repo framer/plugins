@@ -1,5 +1,11 @@
 import classNames from "classnames"
-import { framer, type ManagedCollection, type ManagedCollectionField, useIsAllowedTo } from "framer-plugin"
+import {
+    FramerPluginClosedError,
+    framer,
+    type ManagedCollection,
+    type ManagedCollectionField,
+    useIsAllowedTo,
+} from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
 import {
     type FieldId,
@@ -264,6 +270,7 @@ export function FieldMapping({
                 )
                 framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
+                if (error instanceof FramerPluginClosedError) return
                 console.error(error)
                 framer.notify(
                     error instanceof Error

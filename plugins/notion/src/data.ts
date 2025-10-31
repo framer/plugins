@@ -117,7 +117,7 @@ export async function syncCollection(
 
             let isUnchanged = false
             if (isUnchangedSinceLastSync(item.last_edited_time, lastSynced)) {
-                if (import.meta.env.MODE  === "development") {
+                if (import.meta.env.MODE === "development") {
                     console.warn({
                         message: `Skipping content update. last updated: ${formatDate(item.last_edited_time)}, last synced: ${lastSynced ? formatDate(lastSynced) : "never"}`,
                         url: item.url,

@@ -150,8 +150,12 @@ const offersDataSource = createDataSource(
             name: "Tags",
             type: "string",
             getValue: value => {
-                const list = v.parse(v.array(v.object({ name: v.string() })), value)
-                return list.map(item => item.name).join(", ")
+                const parsedTags = v.safeParse(v.array(v.object({ name: v.string() })), value ?? [])
+                if (!parsedTags.success) {
+                    return ""
+                }
+
+                return parsedTags.output.map(item => item.name).join(", ")
             },
         },
         { id: "url", name: "URL", type: "link" },

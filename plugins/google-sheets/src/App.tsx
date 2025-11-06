@@ -1,4 +1,4 @@
-import { framer } from "framer-plugin"
+import { FramerPluginClosedError, framer } from "framer-plugin"
 import { useEffect, useLayoutEffect, useState } from "react"
 import auth from "./auth"
 import { logSyncResult, PLUGIN_LOG_SYNC_KEY } from "./debug"
@@ -225,6 +225,8 @@ export function App({ pluginContext }: AppProps) {
 
                 framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
+                if (error instanceof FramerPluginClosedError) return
+
                 console.error(error)
                 framer.closePlugin(
                     error instanceof Error ? error.message : "An error occurred while syncing the sheet",

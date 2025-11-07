@@ -57,8 +57,8 @@ const isInputPending =
         ? (navigator.scheduling as { isInputPending: () => boolean }).isInputPending.bind(navigator.scheduling)
         : () => false
 
-async function queueYieldCallback(resolve: VoidFunction, shouldWaitForLoad: boolean) {
-    pendingResolvers.add(resolve)
+async function queueYieldCallback(callback: VoidFunction, shouldWaitForLoad: boolean) {
+    pendingResolvers.add(callback)
 
     let timeStamp: number | undefined
     if (DEBUG) {
@@ -77,24 +77,24 @@ async function queueYieldCallback(resolve: VoidFunction, shouldWaitForLoad: bool
         }
     }
 
-    const callback = () => {
+    const run = () => {
         lowPriorityCallback(() => {
             if (DEBUG)
                 // @ts-expect-error TS(2554): TS doesn't know about the new syntax yet
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 console.timeStamp(`yield-${timeStamp}`, timeStamp, performance.now(), "GTM yield", "GTM yield")
 
-            pendingResolvers.delete(resolve)
-            resolve()
+            pendingResolvers.delete(callback)
+            callback()
         })
     }
 
     queueAfterPaintCallback(() => {
         if (isInputPending()) {
             // Input is pending, so let's wait for the next paint afterwards.
-            queueAfterPaintCallback(callback)
+            queueAfterPaintCallback(run)
         } else {
-            callback()
+            run()
         }
     })
 }
@@ -104,15 +104,14 @@ async function queueYieldCallback(resolve: VoidFunction, shouldWaitForLoad: bool
  * The difference is, we batch calls to `requestAnimationFrame` manually and only support lowest priority
  * (`setTimeout(fn, 1)`/postTask background priority)
  */
-async function yieldUnlessUrgent(shouldWaitForLoad = false) {
+function yieldUnlessUrgent(callback: VoidFunction, shouldWaitForLoad = false) {
     if (document.hidden) {
         resolvePendingPromises()
+        callback()
         return
     }
 
-    return new Promise<void>(resolve => {
-        void queueYieldCallback(resolve, shouldWaitForLoad)
-    })
+    void queueYieldCallback(callback, shouldWaitForLoad)
 }
 
 let globalWaitingForClickPromise: Promise<void> | undefined
@@ -218,7 +217,9 @@ document.addEventListener = function (
                     eventBefore = JSON.stringify(event)
                 }
 
-                // If the event is a `mousedown` and the left mouse button was clicked, we wait for the next `click` event before we yield
+                // If the event is a `mousedown` and the left mouse button was clicked, we wait for the next `click`
+                // event before we yield
+                // If click never fires, the promise eventually resolves at pagehide/visibilitychange.
                 if (
                     event.type === "mousedown" &&
                     (event as unknown as MouseEvent).button === 0 /* primary / left mouse button */
@@ -226,17 +227,17 @@ document.addEventListener = function (
                     await globalWaitingForClickPromise
                 }
 
-                await yieldUnlessUrgent()
+                yieldUnlessUrgent(() => {
+                    if (DEBUG) {
+                        logEventDiff(JSON.parse(eventBefore ?? "{}") as Event, event)
+                    }
 
-                if (DEBUG) {
-                    logEventDiff(JSON.parse(eventBefore ?? "{}") as Event, event)
-                }
-
-                if (typeof listener === "function") {
-                    listener.call(this, event)
-                } else {
-                    listener.handleEvent(event)
-                }
+                    if (typeof listener === "function") {
+                        listener.call(this, event)
+                    } else {
+                        listener.handleEvent(event)
+                    }
+                })
             },
             options
         )
@@ -254,10 +255,10 @@ function wrapDataLayerPush(push: DataLayer["push"]) {
     // The `...args` spread is needed so the call results in the exactly same result as the original.
     // The function syntax is important here so we keep the correct `this`.
     return function yieldingPush(this: DataLayer, ...args: object[]) {
-        void yieldUnlessUrgent(true).then(() => {
+        yieldUnlessUrgent(() => {
             // The arrow FN is important here so we keep the correct `this`.
             push.apply(this, args)
-        })
+        }, true)
         return true
     }
 }
@@ -367,7 +368,7 @@ function wrapListener(originalMethod: Function, value: Function) {
         callOriginalMethod.call(this, originalMethod, args)
 
         // If `method` is overriden N times, it creates N yield points (as overrides might be chained)
-        void yieldUnlessUrgent().then(() => {
+        yieldUnlessUrgent(() => {
             // The arrow FN is important here so we keep the correct `this`.
             value.apply(this, args)
         })

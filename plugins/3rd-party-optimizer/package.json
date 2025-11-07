@@ -1,7 +1,7 @@
 {
     "name": "3rd-party-optimizer",
     "private": true,
-    "version": "1.0.1",
+    "version": "1.0.2",
     "type": "module",
     "scripts": {
         "dev": "VITE_CONFIG_PATH=$(pwd)/vite.config.ts run g:dev",

@@ -1,5 +1,5 @@
 import type { Field, ManagedCollection, ManagedCollectionFieldInput } from "framer-plugin"
-import { framer, useIsAllowedTo } from "framer-plugin"
+import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { memo, useEffect, useMemo, useState } from "react"
 import type { DataSource } from "./data"
 import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
@@ -316,6 +316,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     variant: "success",
                 })
             } catch (error) {
+                if (error instanceof FramerPluginClosedError) return
+
                 console.error(error)
                 framer.notify(
                     error instanceof Error

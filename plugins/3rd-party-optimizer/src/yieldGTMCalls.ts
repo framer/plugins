@@ -57,8 +57,8 @@ const isInputPending =
         ? (navigator.scheduling as { isInputPending: () => boolean }).isInputPending.bind(navigator.scheduling)
         : () => false
 
-async function queueYieldCallback(resolve: VoidFunction, shouldWaitForLoad: boolean) {
-    pendingResolvers.add(resolve)
+async function queueYieldCallback(callback: VoidFunction, shouldWaitForLoad: boolean) {
+    pendingResolvers.add(callback)
 
     let timeStamp: number | undefined
     if (DEBUG) {
@@ -77,24 +77,24 @@ async function queueYieldCallback(resolve: VoidFunction, shouldWaitForLoad: bool
         }
     }
 
-    const callback = () => {
+    const run = () => {
         lowPriorityCallback(() => {
             if (DEBUG)
                 // @ts-expect-error TS(2554): TS doesn't know about the new syntax yet
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 console.timeStamp(`yield-${timeStamp}`, timeStamp, performance.now(), "GTM yield", "GTM yield")
 
-            pendingResolvers.delete(resolve)
-            resolve()
+            pendingResolvers.delete(callback)
+            callback()
         })
     }
 
     queueAfterPaintCallback(() => {
         if (isInputPending()) {
             // Input is pending, so let's wait for the next paint afterwards.
-            queueAfterPaintCallback(callback)
+            queueAfterPaintCallback(run)
         } else {
-            callback()
+            run()
         }
     })
 }
@@ -104,15 +104,14 @@ async function queueYieldCallback(resolve: VoidFunction, shouldWaitForLoad: bool
  * The difference is, we batch calls to `requestAnimationFrame` manually and only support lowest priority
  * (`setTimeout(fn, 1)`/postTask background priority)
  */
-async function yieldUnlessUrgent(shouldWaitForLoad = false) {
+function yieldUnlessUrgent(callback: VoidFunction, shouldWaitForLoad = false) {
     if (document.hidden) {
         resolvePendingPromises()
+        callback()
         return
     }
 
-    return new Promise<void>(resolve => {
-        void queueYieldCallback(resolve, shouldWaitForLoad)
-    })
+    void queueYieldCallback(callback, shouldWaitForLoad)
 }
 
 let globalWaitingForClickPromise: Promise<void> | undefined
@@ -175,93 +174,52 @@ type DataLayer = Omit<object[], "push"> & {
     push: DataLayerPush
     __f?: boolean // flag to indicate if the push function has been overridden
 }
-interface CloneEvent extends Event {
-    __originalEvent: Event
-}
 
-function cloneEvent(event: Event): CloneEvent {
-    // @ts-expect-error TS(2339): We already cloned this event
-    if (event.__originalEvent) return event
-
-    // @ts-expect-error TS(2351): TS doesn't know that event.constructor is a function
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    const newEvent = new event.constructor(event.type, event) as CloneEvent
-
-    // the following need to be set to read-only or they get overridden when dispatching
-    const keysToDefine = ["target", "srcElement", "offsetX", "offsetY", "layerX", "layerY", "toElement"] as const
-    for (const key of keysToDefine) {
-        if (key in event) {
-            Object.defineProperty(newEvent, key, {
-                writable: false, // Needed to prevent write, else this gets overridden when dispatching.
-                value: event[key as keyof Event],
-            })
-        }
-    }
-
-    newEvent.__originalEvent = event
-
-    if (DEBUG) {
-        console.log(event, newEvent)
-        const readOnlyProps = [
-            "__originalEvent",
-            "isTrusted",
-            "currentTarget",
-            "eventPhase",
-            "defaultPrevented",
-            "composed",
-            "timeStamp",
-            "bubbles",
-            "cancelable",
-            "cancelBubble",
-        ]
-        const differentProps: string[] = []
-        const missingProps: string[] = []
-        let prop: keyof Event
-        for (prop in event) {
-            if (typeof event[prop] === "function" || readOnlyProps.includes(prop)) continue
-
-            const newEventProp = newEvent[prop]
-            if (newEventProp === undefined) {
-                missingProps.push(prop)
-            } else if (event[prop] !== newEventProp) {
-                differentProps.push(prop)
-            }
-        }
-        if (differentProps.length || missingProps.length) {
-            console.log(`Different: ${differentProps.join(", ")}`, `Missing: ${missingProps.join(", ")}`)
-        }
-    }
-
-    return newEvent
-}
-
-// #region capturing listener interceptor
-// Intercept event listeners during capture phase.
+// #region document event listener interceptor
 // eslint-disable-next-line @typescript-eslint/unbound-method
 const originalAddEventListener = document.addEventListener
 const typesToIntercept = ["click", "auxclick", "mousedown", "keyup", "submit"] as const
 type EventType = (typeof typesToIntercept)[number]
+
+function logEventDiff(event: Event, newEvent: Event) {
+    const differentProps: string[] = []
+    const missingProps: string[] = []
+    let prop: keyof Event
+    for (prop in event) {
+        if (typeof event[prop] === "function") continue
+
+        const newEventProp = newEvent[prop]
+        if (newEventProp === undefined) {
+            missingProps.push(prop)
+        } else if (event[prop] !== newEventProp) {
+            differentProps.push(prop)
+        }
+    }
+    if (differentProps.length || missingProps.length) {
+        console.log(`Different: ${differentProps.join(", ")}`, `Missing: ${missingProps.join(", ")}`)
+    }
+}
 
 document.addEventListener = function (
     type: string,
     listener: EventListenerOrEventListenerObject,
     options: boolean | AddEventListenerOptions | undefined
 ) {
-    if (
-        typesToIntercept.includes(type as EventType) &&
-        (options === true || (typeof options === "object" && options.capture))
-    ) {
+    if (typesToIntercept.includes(type as EventType)) {
         if (DEBUG) console.log(`Overriding ${type} listener`, listener)
 
         originalAddEventListener.call(
             this,
             type,
-            async function overriddenEventListener(this: unknown, e) {
-                // @ts-expect-error TS(2339): Used to skip events that have already been handled by the bubble phase interceptor.
-                if (e.__f) return
+            async function overriddenEventListener(this: unknown, event: Event) {
+                let eventBefore: string | undefined
+                if (DEBUG) {
+                    eventBefore = JSON.stringify(event)
+                }
 
-                const event = cloneEvent(e) // Clone at the time of interception
-
+                // If the event is a `mousedown` and the left mouse button was clicked, we wait for the next `click`
+                // event before we yield
+                // If click never fires, the promise eventually resolves at pagehide/visibilitychange.
                 if (
                     event.type === "mousedown" &&
                     (event as unknown as MouseEvent).button === 0 /* primary / left mouse button */
@@ -269,57 +227,26 @@ document.addEventListener = function (
                     await globalWaitingForClickPromise
                 }
 
-                await yieldUnlessUrgent()
+                yieldUnlessUrgent(() => {
+                    if (DEBUG) {
+                        logEventDiff(JSON.parse(eventBefore ?? "{}") as Event, event)
+                    }
 
-                if (typeof listener === "function") {
-                    listener.call(this, event)
-                } else {
-                    listener.handleEvent(event)
-                }
+                    if (typeof listener === "function") {
+                        listener.call(this, event)
+                    } else {
+                        listener.handleEvent(event)
+                    }
+                })
             },
             options
         )
         return
     }
 
-    // If not capturing, we can just call the original addEventListener function
+    // Otherwise, we call the original addEventListener function
     originalAddEventListener.call(this, type, listener, options)
 }
-
-// #region body interceptor
-// readystatechange runs exactly before DOMContentLoaded, which is needed to ensure we call stopPropagation early (first
-// listener added runs first)
-// This runs at the bubble phase.
-document.addEventListener("readystatechange", () => {
-    if (document.readyState !== "interactive") return
-
-    const body = document.body
-    async function interceptEvent(e: Event) {
-        e.stopPropagation()
-
-        const event = cloneEvent(e) // Clone at the time of interception
-
-        if (
-            event.type === "mousedown" &&
-            (event as unknown as MouseEvent).button === 0 /* primary / left mouse button */
-        ) {
-            await globalWaitingForClickPromise
-        }
-
-        await yieldUnlessUrgent()
-
-        // @ts-expect-error TS(2339): Used to mark the event as having been handled by the bubble phase interceptor.
-        event.__f = true
-        // We don't dispatch at the body, so that non-capturing event listeners don't receive the event twice.
-        document.dispatchEvent(event)
-    }
-
-    // Intercept `document` level listeners that are not capturing.
-    for (const element of typesToIntercept) {
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
-        body.addEventListener(element, interceptEvent)
-    }
-})
 
 // #region GTM override
 function wrapDataLayerPush(push: DataLayer["push"]) {
@@ -328,10 +255,10 @@ function wrapDataLayerPush(push: DataLayer["push"]) {
     // The `...args` spread is needed so the call results in the exactly same result as the original.
     // The function syntax is important here so we keep the correct `this`.
     return function yieldingPush(this: DataLayer, ...args: object[]) {
-        void yieldUnlessUrgent(true).then(() => {
+        yieldUnlessUrgent(() => {
             // The arrow FN is important here so we keep the correct `this`.
             push.apply(this, args)
-        })
+        }, true)
         return true
     }
 }
@@ -441,7 +368,7 @@ function wrapListener(originalMethod: Function, value: Function) {
         callOriginalMethod.call(this, originalMethod, args)
 
         // If `method` is overriden N times, it creates N yield points (as overrides might be chained)
-        void yieldUnlessUrgent().then(() => {
+        yieldUnlessUrgent(() => {
             // The arrow FN is important here so we keep the correct `this`.
             value.apply(this, args)
         })

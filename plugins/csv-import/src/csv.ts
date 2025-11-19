@@ -120,8 +120,9 @@ function getFieldDataEntryInputForField(
 ): FieldDataEntryInput | ConversionError {
     switch (field.type) {
         case "string":
-        case "formattedText":
             return { type: field.type, value: value ?? "" }
+        case "formattedText":
+            return { type: field.type, value: value ?? "", contentType: "auto" }
 
         case "color":
         case "link":

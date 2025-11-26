@@ -88,7 +88,7 @@ export function SearchScene() {
                 </div>
                 <div className="px-3 flex flex-col flex-1 scrollbar-hidden">
                     {hasResults && <ResultsList groups={results} />}
-                    {showNoResults && <ResultMessage>No Results</ResultMessage>}
+                    {showNoResults && <ResultMessage>No Search Results</ResultMessage>}
                 </div>
             </SelectionProvider>
         </main>
@@ -140,7 +140,7 @@ function useOptionsMenuItems() {
 }
 
 /**
- * Debounces the "no results" visibility based on the previous state
+ * Debounces the "no search results" visibility based on the previous state
  */
 function useNoResults({
     query,

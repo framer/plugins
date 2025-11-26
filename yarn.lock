@@ -3137,7 +3137,7 @@ __metadata:
     marked: "npm:^16.3.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
     vitest: "npm:^3.2.4"
   languageName: unknown
   linkType: soft
@@ -3248,7 +3248,7 @@ __metadata:
     framer-plugin: "npm:^3.6.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -3716,7 +3716,7 @@ __metadata:
     framer-plugin: "npm:^3.8.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -4761,7 +4761,7 @@ __metadata:
     react-feather: "npm:^2.0.10"
     react-is: "npm:^18.3.1"
     recharts: "npm:^3.2.0"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -4778,7 +4778,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
     tailwindcss: "npm:^4.1.13"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -4805,7 +4805,7 @@ __metadata:
     framer-plugin: "npm:^3.6.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -4896,7 +4896,7 @@ __metadata:
     react-error-boundary: "npm:^6.0.0"
     tailwindcss: "npm:^4.1.13"
     usehooks-ts: "npm:^3.1.1"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
     wouter: "npm:^3.7.1"
   languageName: unknown
   linkType: soft
@@ -5655,7 +5655,7 @@ __metadata:
     framer-plugin-tools: "npm:^1.0.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -5941,7 +5941,7 @@ __metadata:
     framer-plugin: "npm:^3.6.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -6353,7 +6353,7 @@ __metadata:
     framer-plugin: "npm:^3.6.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -6828,7 +6828,7 @@ __metadata:
     framer-plugin: "npm:^3.7.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -7106,7 +7106,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
     tailwindcss: "npm:^4.1.13"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -7184,15 +7184,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"valibot@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "valibot@npm:1.1.0"
+"valibot@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "valibot@npm:1.2.0"
   peerDependencies:
     typescript: ">=5"
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 10/667c99e3ec2825ea97c20f37add7fe7eb9d15fb338c5f49c166ffba13a6f4516c77c060083e1c6bda77a2275c4d37400b711d284bbea03fd4ae160bbca34112c
+  checksum: 10/5f9c15e6f5a2b8eae75332a3317e46e995a1763efe1b91e57bc5064e36f0feba734367c88013d53255bdf09fb9204bf3598d2ca0c3f468c8726095b1c3551926
   languageName: node
   linkType: hard
 

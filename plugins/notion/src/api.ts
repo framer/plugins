@@ -269,7 +269,7 @@ export function getSlugValue(property: PageObjectResponse["properties"][string])
                 }
                 case "number": {
                     const number = property.formula.number
-                    return typeof number === "number" && !isNaN(number) ? String(number) : null
+                    return Number.isFinite(number) ? String(number) : null
                 }
                 case "boolean": {
                     const boolean = property.formula.boolean

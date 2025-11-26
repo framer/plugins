@@ -62,7 +62,7 @@ export const pageCoverProperty: FieldInfo = {
 }
 
 // The valid field types that can be used as a slug, in order of preference
-const slugFieldTypes: NotionProperty["type"][] = ["title", "rich_text", "unique_id"]
+const slugFieldTypes: NotionProperty["type"][] = ["title", "rich_text", "unique_id", "formula"]
 
 export const supportedCMSTypeByNotionPropertyType = {
     checkbox: ["boolean"],
@@ -262,6 +262,25 @@ export function getSlugValue(property: PageObjectResponse["properties"][string])
             return property.unique_id.prefix
                 ? `${property.unique_id.prefix}-${String(property.unique_id.number)}`
                 : String(property.unique_id.number)
+        case "formula":
+            switch (property.formula.type) {
+                case "string": {
+                    return property.formula.string ?? null
+                }
+                case "number": {
+                    const number = property.formula.number
+                    return typeof number === "number" && !isNaN(number) ? String(number) : null
+                }
+                case "boolean": {
+                    const boolean = property.formula.boolean
+                    return typeof boolean === "boolean" ? String(boolean) : null
+                }
+                case "date": {
+                    return property.formula.date?.start ?? null
+                }
+                default:
+                    return null
+            }
         default:
             return null
     }

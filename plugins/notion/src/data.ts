@@ -255,20 +255,37 @@ export async function syncCollection(
 
     const results = await Promise.allSettled(promises)
 
-    // Collect successful items and track failures
-    const items = []
-    let failedCount = 0
-    for (const result of results) {
+    // Collect successful items and track failures with item identifiers
+    interface SyncError {
+        itemId: string
+        itemIndex: number
+        error: unknown
+    }
+
+    const items: { id: string; slug: string; draft: boolean; fieldData: FieldDataInput }[] = []
+    const syncErrors: SyncError[] = []
+
+    results.forEach((result, index) => {
+        const item = databaseItems[index]
+        if (!item) return
+
         if (result.status === "fulfilled" && result.value !== null) {
             items.push(result.value)
         } else if (result.status === "rejected") {
-            failedCount++
-            console.error("Failed to sync item:", result.reason)
+            syncErrors.push({
+                itemId: item.id,
+                itemIndex: index,
+                error: result.reason,
+            })
         }
-    }
+    })
 
-    if (failedCount > 0) {
-        console.warn(`${failedCount} items failed to sync`)
+    if (syncErrors.length > 0) {
+        console.warn(`${syncErrors.length} items failed to sync:`)
+        for (const { itemId, itemIndex, error } of syncErrors) {
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            console.error(`  - Item ${itemIndex + 1} (ID: ${itemId}): ${errorMessage}`)
+        }
     }
 
     // Find duplicate slugs and report error if any are found

@@ -92,17 +92,48 @@ export function isAuthenticated() {
 let notionClientSingleton: Client | null = null
 
 /**
- * Global rate limit coordinator to synchronize backoff across all concurrent requests.
+ * Rate limiter to ensure we don't exceed Notion's API limits (~3 requests/second).
+ * Uses a simple queue-based approach with minimum time between requests.
+ */
+const MIN_REQUEST_INTERVAL_MS = 350 // ~3 requests per second with small buffer
+let lastRequestTime = 0
+let requestQueue: Promise<void> = Promise.resolve()
+
+/**
+ * Ensures requests are spaced out to respect Notion's rate limits.
+ * Returns a promise that resolves when it's safe to make the next request.
+ */
+function waitForRateLimit(): Promise<void> {
+    requestQueue = requestQueue.then(async () => {
+        const now = Date.now()
+        const timeSinceLastRequest = now - lastRequestTime
+        const waitTime = Math.max(0, MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest)
+
+        if (waitTime > 0) {
+            await new Promise(resolve => setTimeout(resolve, waitTime))
+        }
+
+        lastRequestTime = Date.now()
+    })
+
+    return requestQueue
+}
+
+/**
+ * Global rate limit coordinator for handling 429 responses.
  * When any request hits a 429, all requests wait for the same backoff period.
  */
 let rateLimitPausePromise: Promise<void> | null = null
 
 async function fetchWithRetry(url: string, options?: RequestInit, maxRetries = 5): Promise<Response> {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        // Wait if we're globally rate limited
+        // Wait if we're globally rate limited (429 response)
         if (rateLimitPausePromise) {
             await rateLimitPausePromise
         }
+
+        // Proactively wait to respect rate limits
+        await waitForRateLimit()
 
         const response = await fetch(url, options)
 

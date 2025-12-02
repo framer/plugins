@@ -25,7 +25,7 @@ import {
     richTextToPlainText,
 } from "./api"
 import { richTextToHtml } from "./blocksToHtml"
-import { formatDate, isNotNull, listFormatter, slugify, syncMethods } from "./utils"
+import { formatDate, listFormatter, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -82,6 +82,11 @@ export function mergeFieldsInfoWithExistingFields(
     })
 }
 
+export interface SyncProgress {
+    current: number
+    total: number
+}
+
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
@@ -89,7 +94,8 @@ export async function syncCollection(
     slugField: ManagedCollectionFieldInput,
     ignoredFieldIds: Set<string>,
     lastSynced: string | null,
-    existingFields?: readonly ManagedCollectionFieldInput[]
+    existingFields?: readonly ManagedCollectionFieldInput[],
+    onProgress?: (progress: SyncProgress) => void
 ) {
     const fieldsById = new Map(fields.map(field => [field.id, field]))
 
@@ -110,6 +116,10 @@ export async function syncCollection(
 
     const databaseItems = await getDatabaseItems(dataSource.database)
     const limit = pLimit(CONCURRENCY_LIMIT)
+
+    // Progress tracking
+    let processedCount = 0
+    const totalItems = databaseItems.length
 
     const promises = databaseItems.map((item, index) =>
         limit(async () => {
@@ -200,6 +210,8 @@ export async function syncCollection(
 
             if (!slugValue) {
                 console.warn(`Skipping item at index ${index} because it doesn't have a valid slug`)
+                processedCount++
+                onProgress?.({ current: processedCount, total: totalItems })
                 return null
             }
 
@@ -228,6 +240,9 @@ export async function syncCollection(
 
                 fieldData[pageCoverProperty.id] = { type: "image", value: coverValue }
             }
+
+            processedCount++
+            onProgress?.({ current: processedCount, total: totalItems })
 
             return {
                 id: item.id,

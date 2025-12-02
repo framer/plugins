@@ -91,6 +91,24 @@ export function isAuthenticated() {
 
 let notionClientSingleton: Client | null = null
 
+async function fetchWithRetry(url: string, options?: RequestInit, maxRetries = 5): Promise<Response> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        const response = await fetch(url, options)
+
+        if (response.status === 429) {
+            const retryAfter = parseInt(response.headers.get("Retry-After") ?? "1", 10)
+            const backoffTime = Math.min(retryAfter * 1000, Math.pow(2, attempt) * 1000)
+            console.log(`Rate limited, waiting ${backoffTime}ms before retry...`)
+            await new Promise(resolve => setTimeout(resolve, backoffTime))
+            continue
+        }
+
+        return response
+    }
+
+    throw new Error("Max retries exceeded")
+}
+
 export function getNotionClient(): Client {
     if (notionClientSingleton) {
         return notionClientSingleton
@@ -103,50 +121,20 @@ export function getNotionClient(): Client {
         fetch: async (url, fetchInit) => {
             const urlObj = new URL(url)
             const fullUrl = `${API_BASE_URL}/notion${urlObj.pathname}${urlObj.search}`
-            const MAX_RETRIES = 10
 
-            for (let i = 0; i < MAX_RETRIES; i++) {
-                try {
-                    const resp = await fetch(fullUrl, fetchInit)
+            const resp = await fetchWithRetry(fullUrl, fetchInit)
 
-                    if (resp.status === 429) {
-                        const retryAfter = resp.headers.get("Retry-After")
-                        let waitMs = 1000 * Math.pow(2, i) // Default exponential backoff
-
-                        if (retryAfter) {
-                            const seconds = parseInt(retryAfter, 10)
-                            if (!isNaN(seconds)) {
-                                waitMs = seconds * 1000
-                            }
-                        }
-
-                        // Add some jitter to prevent thundering herd
-                        waitMs += Math.random() * 1000
-
-                        console.warn(`Rate limited. Retrying in ${waitMs}ms... (Attempt ${i + 1}/${MAX_RETRIES})`)
-                        await new Promise(resolve => setTimeout(resolve, waitMs))
-                        continue
-                    }
-
-                    // If status is unauthorized, clear the token
-                    // And we close the plugin (for now)
-                    // TODO: Improve this flow in the plugin.
-                    if (resp.status === 401) {
-                        localStorage.removeItem(PLUGIN_KEYS.BEARER_TOKEN)
-                        framer.closePlugin("Notion Authorization Failed. Re-open the plugin to re-authorize.", {
-                            variant: "error",
-                        })
-                        return resp
-                    }
-
-                    return resp
-                } catch (error) {
-                    console.log("Notion API error", error)
-                    throw error
-                }
+            // If status is unauthorized, clear the token
+            // And we close the plugin (for now)
+            // TODO: Improve this flow in the plugin.
+            if (resp.status === 401) {
+                localStorage.removeItem(PLUGIN_KEYS.BEARER_TOKEN)
+                framer.closePlugin("Notion Authorization Failed. Re-open the plugin to re-authorize.", {
+                    variant: "error",
+                })
             }
 
-            throw new Error(`Request failed after ${MAX_RETRIES} retries due to rate limiting.`)
+            return resp
         },
         auth: token,
     })

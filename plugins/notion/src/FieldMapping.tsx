@@ -299,9 +299,7 @@ export function FieldMapping({
         )
     }
 
-    const progressPercent = syncProgress 
-    ? ((syncProgress.current / syncProgress.total) * 100).toFixed(1)
-    : null
+    const progressPercent = syncProgress ? ((syncProgress.current / syncProgress.total) * 100).toFixed(1) : null
 
     return (
         <main className="framer-hide-scrollbar mapping">
@@ -357,14 +355,7 @@ export function FieldMapping({
                         title={!isAllowedToManage ? "Insufficient permissions" : undefined}
                     >
                         {isSyncing ? (
-                            <>
-                                
-                                {!syncProgress ? (<div className="framer-spinner" />) : (
-                                    <span>
-                                        {progressPercent}%
-                                    </span>
-                                )}
-                            </>
+                            <>{!syncProgress ? <div className="framer-spinner" /> : <span>{progressPercent}%</span>}</>
                         ) : (
                             <span>Import from {dataSourceName.trim() ? dataSourceName : "Untitled"}</span>
                         )}

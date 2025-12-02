@@ -141,7 +141,7 @@ async function fetchWithRetry(url: string, options?: RequestInit, maxRetries = 5
             // Only set up global pause if not already paused
             if (!rateLimitPausePromise) {
                 const retryAfter = parseInt(response.headers.get("Retry-After") ?? "1", 10)
-                const backoffTime = Math.min(retryAfter * 1000, Math.pow(2, attempt) * 1000)
+                const backoffTime = Math.max(retryAfter * 1000, Math.pow(2, attempt) * 1000)
                 console.log(`Rate limited, waiting ${backoffTime}ms before retry...`)
 
                 rateLimitPausePromise = new Promise(resolve => {

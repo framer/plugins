@@ -238,8 +238,23 @@ export async function syncCollection(
         })
     )
 
-    const result = await Promise.all(promises)
-    const items = result.filter(isNotNull)
+    const results = await Promise.allSettled(promises)
+
+    // Collect successful items and track failures
+    const items = []
+    let failedCount = 0
+    for (const result of results) {
+        if (result.status === "fulfilled" && result.value !== null) {
+            items.push(result.value)
+        } else if (result.status === "rejected") {
+            failedCount++
+            console.error("Failed to sync item:", result.reason)
+        }
+    }
+
+    if (failedCount > 0) {
+        console.warn(`${failedCount} items failed to sync`)
+    }
 
     // Find duplicate slugs and report error if any are found
     const seenSlugs = new Set<string>()

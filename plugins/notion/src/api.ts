@@ -91,15 +91,38 @@ export function isAuthenticated() {
 
 let notionClientSingleton: Client | null = null
 
+/**
+ * Global rate limit coordinator to synchronize backoff across all concurrent requests.
+ * When any request hits a 429, all requests wait for the same backoff period.
+ */
+let rateLimitPausePromise: Promise<void> | null = null
+
 async function fetchWithRetry(url: string, options?: RequestInit, maxRetries = 5): Promise<Response> {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        // Wait if we're globally rate limited
+        if (rateLimitPausePromise) {
+            await rateLimitPausePromise
+        }
+
         const response = await fetch(url, options)
 
         if (response.status === 429) {
-            const retryAfter = parseInt(response.headers.get("Retry-After") ?? "1", 10)
-            const backoffTime = Math.min(retryAfter * 1000, Math.pow(2, attempt) * 1000)
-            console.log(`Rate limited, waiting ${backoffTime}ms before retry...`)
-            await new Promise(resolve => setTimeout(resolve, backoffTime))
+            // Only set up global pause if not already paused
+            if (!rateLimitPausePromise) {
+                const retryAfter = parseInt(response.headers.get("Retry-After") ?? "1", 10)
+                const backoffTime = Math.min(retryAfter * 1000, Math.pow(2, attempt) * 1000)
+                console.log(`Rate limited, waiting ${backoffTime}ms before retry...`)
+
+                rateLimitPausePromise = new Promise(resolve => {
+                    setTimeout(() => {
+                        rateLimitPausePromise = null
+                        resolve()
+                    }, backoffTime)
+                })
+            }
+
+            // All requests wait on the same promise
+            await rateLimitPausePromise
             continue
         }
 

@@ -87,6 +87,19 @@ export interface SyncProgress {
     total: number
 }
 
+export interface CollectionItem {
+    id: string
+    slug: string
+    draft: boolean
+    fieldData: FieldDataInput
+}
+
+export interface SyncError {
+    itemId: string
+    itemIndex: number
+    error: unknown
+}
+
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
@@ -256,13 +269,7 @@ export async function syncCollection(
     const results = await Promise.allSettled(promises)
 
     // Collect successful items and track failures with item identifiers
-    interface SyncError {
-        itemId: string
-        itemIndex: number
-        error: unknown
-    }
-
-    const items: { id: string; slug: string; draft: boolean; fieldData: FieldDataInput }[] = []
+    const items: CollectionItem[] = []
     const syncErrors: SyncError[] = []
 
     results.forEach((result, index) => {

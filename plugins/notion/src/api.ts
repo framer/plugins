@@ -91,6 +91,83 @@ export function isAuthenticated() {
 
 let notionClientSingleton: Client | null = null
 
+/**
+ * Rate limiter to ensure we don't exceed Notion's API limits (~3 requests/second).
+ * Uses a simple queue-based approach with minimum time between requests.
+ */
+const REQUEST_INTERVAL_MS = 350 // ~3 requests per second with small buffer
+let lastRequestTime = 0
+let requestQueue: Promise<void> = Promise.resolve()
+
+/**
+ * Ensures requests are spaced out to respect Notion's rate limits.
+ * Returns a promise that resolves when it's safe to make the next request.
+ */
+function waitForRateLimit(): Promise<void> {
+    requestQueue = requestQueue.then(async () => {
+        const now = Date.now()
+        const timeSinceLastRequest = now - lastRequestTime
+        const waitTime = Math.max(0, REQUEST_INTERVAL_MS - timeSinceLastRequest)
+
+        if (waitTime > 0) {
+            await new Promise(resolve => setTimeout(resolve, waitTime))
+        }
+
+        lastRequestTime = Date.now()
+    })
+
+    return requestQueue
+}
+
+/**
+ * Global rate limit coordinator for handling 429 responses.
+ * When any request hits a 429, all requests wait for the same backoff period.
+ * After waiting, we reset lastRequestTime so requests can resume immediately
+ * through the normal rate limiter.
+ */
+let rateLimitPausePromise: Promise<void> | null = null
+
+async function fetchWithRetry(url: string, options?: RequestInit, maxRetries = 10): Promise<Response> {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        // Wait if we're globally rate limited (429 response)
+        if (rateLimitPausePromise) {
+            await rateLimitPausePromise
+        }
+
+        // Proactively wait to respect rate limits
+        await waitForRateLimit()
+
+        const response = await fetch(url, options)
+
+        if (response.status === 429) {
+            // Only set up global pause if not already paused
+            if (!rateLimitPausePromise) {
+                const retryAfter = parseInt(response.headers.get("Retry-After") ?? "1", 10)
+                // Use server's Retry-After, with exponential backoff as minimum fallback
+                const backoffTime = Math.max(retryAfter * 1000, 1000 * Math.pow(2, attempt))
+                console.log(`Rate limited (attempt ${attempt + 1}/${maxRetries + 1}), waiting ${backoffTime}ms...`)
+
+                rateLimitPausePromise = new Promise(resolve => {
+                    setTimeout(() => {
+                        rateLimitPausePromise = null
+                        // Reset the rate limiter timing so queued requests can proceed
+                        lastRequestTime = 0
+                        resolve()
+                    }, backoffTime)
+                })
+            }
+
+            // All requests wait on the same promise
+            await rateLimitPausePromise
+            continue
+        }
+
+        return response
+    }
+
+    throw new Error("Max retries exceeded")
+}
+
 export function getNotionClient(): Client {
     if (notionClientSingleton) {
         return notionClientSingleton
@@ -102,26 +179,21 @@ export function getNotionClient(): Client {
     notionClientSingleton = new Client({
         fetch: async (url, fetchInit) => {
             const urlObj = new URL(url)
+            const fullUrl = `${API_BASE_URL}/notion${urlObj.pathname}${urlObj.search}`
 
-            try {
-                const resp = await fetch(`${API_BASE_URL}/notion${urlObj.pathname}${urlObj.search}`, fetchInit)
+            const resp = await fetchWithRetry(fullUrl, fetchInit)
 
-                // If status is unauthorized, clear the token
-                // And we close the plugin (for now)
-                // TODO: Improve this flow in the plugin.
-                if (resp.status === 401) {
-                    localStorage.removeItem(PLUGIN_KEYS.BEARER_TOKEN)
-                    framer.closePlugin("Notion Authorization Failed. Re-open the plugin to re-authorize.", {
-                        variant: "error",
-                    })
-                    return resp
-                }
-
-                return resp
-            } catch (error) {
-                console.log("Notion API error", error)
-                throw error
+            // If status is unauthorized, clear the token
+            // And we close the plugin (for now)
+            // TODO: Improve this flow in the plugin.
+            if (resp.status === 401) {
+                localStorage.removeItem(PLUGIN_KEYS.BEARER_TOKEN)
+                framer.closePlugin("Notion Authorization Failed. Re-open the plugin to re-authorize.", {
+                    variant: "error",
+                })
             }
+
+            return resp
         },
         auth: token,
     })

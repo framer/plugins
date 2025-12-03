@@ -20,6 +20,7 @@ import {
     fieldsInfoToCollectionFields,
     mergeFieldsInfoWithExistingFields,
     parseIgnoredFieldIds,
+    type SyncProgress,
     syncCollection,
 } from "./data"
 import { assert, syncMethods } from "./utils"
@@ -174,6 +175,7 @@ export function FieldMapping({
     const [fieldsInfo, setFieldsInfo] = useState(initialFieldsInfo)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(parseIgnoredFieldIds(previousIgnoredFieldIds))
     const [existingFields, setExistingFields] = useState<ManagedCollectionField[]>([])
+    const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null)
 
     useEffect(() => {
         const abortController = new AbortController()
@@ -248,6 +250,7 @@ export function FieldMapping({
         const task = async () => {
             try {
                 setStatus("syncing-collection")
+                setSyncProgress(null)
 
                 const fields = fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
                 const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))
@@ -266,7 +269,8 @@ export function FieldMapping({
                     slugField,
                     ignoredFieldIds,
                     previousLastSynced,
-                    existingFields
+                    existingFields,
+                    setSyncProgress
                 )
                 framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
@@ -275,11 +279,12 @@ export function FieldMapping({
                 framer.notify(
                     error instanceof Error
                         ? error.message
-                        : `Failed to sync collection “${dataSource.name || dataSource.id}”`,
+                        : `Failed to sync collection "${dataSource.name || dataSource.id}"`,
                     { variant: "error", durationMs: Infinity }
                 )
             } finally {
                 setStatus("mapping-fields")
+                setSyncProgress(null)
             }
         }
 
@@ -293,6 +298,8 @@ export function FieldMapping({
             </main>
         )
     }
+
+    const progressPercent = syncProgress ? ((syncProgress.current / syncProgress.total) * 100).toFixed(1) : null
 
     return (
         <main className="framer-hide-scrollbar mapping">
@@ -348,7 +355,7 @@ export function FieldMapping({
                         title={!isAllowedToManage ? "Insufficient permissions" : undefined}
                     >
                         {isSyncing ? (
-                            <div className="framer-spinner" />
+                            <>{!syncProgress ? <div className="framer-spinner" /> : <span>{progressPercent}%</span>}</>
                         ) : (
                             <span>Import from {dataSourceName.trim() ? dataSourceName : "Untitled"}</span>
                         )}

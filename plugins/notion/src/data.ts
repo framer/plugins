@@ -25,7 +25,7 @@ import {
     richTextToPlainText,
 } from "./api"
 import { richTextToHtml } from "./blocksToHtml"
-import { formatDate, isNotNull, listFormatter, slugify, syncMethods } from "./utils"
+import { formatDate, listFormatter, slugify, syncMethods } from "./utils"
 
 // Maximum number of concurrent requests to Notion API
 // This is to prevent rate limiting.
@@ -82,6 +82,24 @@ export function mergeFieldsInfoWithExistingFields(
     })
 }
 
+export interface SyncProgress {
+    current: number
+    total: number
+}
+
+export interface CollectionItem {
+    id: string
+    slug: string
+    draft: boolean
+    fieldData: FieldDataInput
+}
+
+export interface SyncError {
+    itemId: string
+    itemIndex: number
+    error: unknown
+}
+
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
@@ -89,7 +107,8 @@ export async function syncCollection(
     slugField: ManagedCollectionFieldInput,
     ignoredFieldIds: Set<string>,
     lastSynced: string | null,
-    existingFields?: readonly ManagedCollectionFieldInput[]
+    existingFields?: readonly ManagedCollectionFieldInput[],
+    onProgress?: (progress: SyncProgress) => void
 ) {
     const fieldsById = new Map(fields.map(field => [field.id, field]))
 
@@ -110,6 +129,10 @@ export async function syncCollection(
 
     const databaseItems = await getDatabaseItems(dataSource.database)
     const limit = pLimit(CONCURRENCY_LIMIT)
+
+    // Progress tracking
+    let processedCount = 0
+    const totalItems = databaseItems.length
 
     const promises = databaseItems.map((item, index) =>
         limit(async () => {
@@ -200,6 +223,8 @@ export async function syncCollection(
 
             if (!slugValue) {
                 console.warn(`Skipping item at index ${index} because it doesn't have a valid slug`)
+                processedCount++
+                onProgress?.({ current: processedCount, total: totalItems })
                 return null
             }
 
@@ -229,6 +254,9 @@ export async function syncCollection(
                 fieldData[pageCoverProperty.id] = { type: "image", value: coverValue }
             }
 
+            processedCount++
+            onProgress?.({ current: processedCount, total: totalItems })
+
             return {
                 id: item.id,
                 slug: slugValue,
@@ -238,8 +266,34 @@ export async function syncCollection(
         })
     )
 
-    const result = await Promise.all(promises)
-    const items = result.filter(isNotNull)
+    const results = await Promise.allSettled(promises)
+
+    // Collect successful items and track failures with item identifiers
+    const items: CollectionItem[] = []
+    const syncErrors: SyncError[] = []
+
+    results.forEach((result, index) => {
+        const item = databaseItems[index]
+        if (!item) return
+
+        if (result.status === "fulfilled" && result.value !== null) {
+            items.push(result.value)
+        } else if (result.status === "rejected") {
+            syncErrors.push({
+                itemId: item.id,
+                itemIndex: index,
+                error: result.reason,
+            })
+        }
+    })
+
+    if (syncErrors.length > 0) {
+        console.warn(`${syncErrors.length} items failed to sync:`)
+        for (const { itemId, itemIndex, error } of syncErrors) {
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            console.error(`  - Item ${itemIndex + 1} (ID: ${itemId}): ${errorMessage}`)
+        }
+    }
 
     // Find duplicate slugs and report error if any are found
     const seenSlugs = new Set<string>()

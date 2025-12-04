@@ -1,4 +1,3 @@
-import { marked } from "marked"
 import type { PossibleField } from "./fields"
 
 /**
@@ -15,20 +14,6 @@ export function assert(condition: boolean, message?: string): asserts condition 
     if (!condition) {
         throw new Error(message ?? "Assertion failed")
     }
-}
-
-/**
- * Converts markdown-style rich text to HTML
- */
-export function richTextToHTML(cellValue: string): string {
-    return marked.parse(cellValue, {
-        // This is needed for proper typing.
-        async: false,
-        // This adds support for tables and code blocks with language tags (```javascript ... ```).
-        gfm: true,
-        // This ensures single-line line breaks are preserved.
-        breaks: true,
-    })
 }
 
 // Match everything except for letters, numbers and parentheses.

@@ -21,7 +21,7 @@ import {
 } from "./api"
 import type { PossibleField } from "./fields"
 import { inferFields } from "./fields"
-import { assert, listFormatter, richTextToHTML, slugify } from "./utils"
+import { assert, listFormatter, slugify } from "./utils"
 
 export const PLUGIN_KEYS = {
     BASE_ID: "airtablePluginBaseId",
@@ -254,8 +254,9 @@ export function getFieldDataEntryForFieldSchema(
         case "formattedText":
             if (typeof value !== "string") return null
             return {
-                value: richTextToHTML(value),
+                value: value,
                 type: "formattedText",
+                contentType: fieldSchema.originalAirtableType === "richText" ? "markdown" : "html",
             }
 
         case "enum": {

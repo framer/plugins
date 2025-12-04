@@ -14,8 +14,7 @@
         "check-vitest": "vitest run"
     },
     "dependencies": {
-        "framer-plugin": "^3.6.0",
-        "marked": "^16.3.0",
+        "framer-plugin": "^3.8.0",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "valibot": "^1.2.0"

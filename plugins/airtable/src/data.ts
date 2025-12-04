@@ -256,7 +256,7 @@ export function getFieldDataEntryForFieldSchema(
             return {
                 value: value,
                 type: "formattedText",
-                contentType: fieldSchema.originalAirtableType === "richText" ? "markdown" : "html",
+                contentType: fieldSchema.airtableType === "richText" ? "markdown" : "html",
             }
 
         case "enum": {

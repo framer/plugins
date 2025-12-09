@@ -1,4 +1,4 @@
-import type { Field, ManagedCollection, ManagedCollectionFieldInput } from "framer-plugin"
+import type { Field, ManagedCollection, ManagedCollectionField, ManagedCollectionFieldInput } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { memo, useEffect, useMemo, useState } from "react"
 import type { DataSource } from "./data"
@@ -310,7 +310,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             field.collectionId !== ""
                     )
 
-                await collection.setFields(fieldsToSync)
+                await collection.setFields(extractFields(fieldsToSync))
                 await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField.id)
                 framer.closePlugin("Synchronization successful", {
                     variant: "success",
@@ -428,4 +428,46 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             </footer>
         </form>
     )
+}
+
+// Remove Airtable-specific keys from the fields.
+function extractFields(fields: PossibleField[]): ManagedCollectionField[] {
+    return fields
+        .map(field => {
+            if (field.type === "unsupported") return null
+
+            const value = {
+                id: field.id,
+                userEditable: field.userEditable ?? false,
+                name: field.name,
+                type: field.type,
+            }
+
+            switch (field.type) {
+                case "array":
+                    return {
+                        ...value,
+                        fields: field.fields,
+                    }
+                case "collectionReference":
+                case "multiCollectionReference":
+                    return {
+                        ...value,
+                        collectionId: field.collectionId,
+                    }
+                case "file":
+                    return {
+                        ...value,
+                        allowedFileTypes: field.allowedFileTypes,
+                    }
+                case "enum":
+                    return {
+                        ...value,
+                        cases: field.cases,
+                    }
+            }
+
+            return value
+        })
+        .filter((field): field is ManagedCollectionField => field !== null)
 }

@@ -310,7 +310,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             field.collectionId !== ""
                     )
 
-                await collection.setFields(extractFields(fieldsToSync))
+                await collection.setFields(processFields(fieldsToSync))
                 await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField.id)
                 framer.closePlugin("Synchronization successful", {
                     variant: "success",
@@ -431,7 +431,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 }
 
 // Remove Airtable-specific keys from the fields.
-function extractFields(fields: PossibleField[]): ManagedCollectionField[] {
+function processFields(fields: PossibleField[]): ManagedCollectionField[] {
     return fields
         .map(field => {
             if (field.type === "unsupported") return null

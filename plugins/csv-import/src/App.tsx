@@ -1,186 +1,13 @@
 import type { Collection } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
-import type { ImportResult, ImportResultItem } from "./csv"
+import type { ImportResult } from "./csv"
 import "./App.css"
 import { ImportError, importCSV, parseCSV, processRecords } from "./csv"
-
-function ImportIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none">
-            <path
-                d="M 9 1.4 C 12.59 1.4 15.5 2.799 15.5 4.525 C 15.5 6.251 12.59 7.65 9 7.65 C 5.41 7.65 2.5 6.251 2.5 4.525 C 2.5 2.799 5.41 1.4 9 1.4 Z M 15.5 8.9 C 15.5 10.626 12.59 12.025 9 12.025 C 5.41 12.025 2.5 10.626 2.5 8.9 C 2.5 8.037 2.5 6.4 2.5 6.4 C 2.5 8.126 5.41 9.525 9 9.525 C 12.59 9.525 15.5 8.126 15.5 6.4 C 15.5 6.4 15.5 8.037 15.5 8.9 Z M 15.5 13.275 C 15.5 15.001 12.59 16.4 9 16.4 C 5.41 16.4 2.5 15.001 2.5 13.275 C 2.5 12.412 2.5 10.775 2.5 10.775 C 2.5 12.501 5.41 13.9 9 13.9 C 12.59 13.9 15.5 12.501 15.5 10.775 C 15.5 10.775 15.5 12.412 15.5 13.275 Z"
-                fill="rgb(0, 153, 255)"
-            ></path>
-        </svg>
-    )
-}
-
-interface ManageConflictsProps {
-    records: ImportResultItem[]
-    onAllConflictsResolved: (items: ImportResultItem[]) => void
-}
-
-function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsProps) {
-    const [recordsIterator] = useState(() => records.filter(record => record.action === "conflict").values())
-    const [currentRecord, setCurrentRecord] = useState(() => recordsIterator.next().value)
-
-    const [applyToAll, setApplyToAll] = useState(false)
-
-    const fixedRecords = useRef<ImportResultItem[]>(records)
-
-    const moveToNextRecord = useCallback(() => {
-        const next = recordsIterator.next()
-        if (next.done) {
-            onAllConflictsResolved(fixedRecords.current)
-        } else {
-            setCurrentRecord(next.value)
-        }
-    }, [recordsIterator, onAllConflictsResolved])
-
-    const setAction = useCallback(
-        (record: ImportResultItem, action: "onConflictUpdate" | "onConflictSkip") => {
-            if (!currentRecord) return
-
-            fixedRecords.current = fixedRecords.current.map(existingRecord => {
-                if (existingRecord.slug === record.slug) {
-                    return { ...existingRecord, action }
-                }
-                return existingRecord
-            })
-        },
-        [currentRecord]
-    )
-
-    const applyAction = useCallback(
-        (action: "onConflictUpdate" | "onConflictSkip") => {
-            if (!currentRecord) return
-
-            if (!applyToAll) {
-                setAction(currentRecord, action)
-                moveToNextRecord()
-                return
-            }
-
-            let current = currentRecord
-            while (true) {
-                setAction(current, action)
-                const next = recordsIterator.next()
-                if (next.done) {
-                    onAllConflictsResolved(fixedRecords.current)
-                    break
-                }
-                current = next.value
-            }
-        },
-        [currentRecord, applyToAll, setAction, moveToNextRecord, recordsIterator, onAllConflictsResolved]
-    )
-
-    if (!currentRecord) return null
-
-    return (
-        <form
-            onSubmit={event => {
-                event.preventDefault()
-                applyAction("onConflictUpdate")
-            }}
-            className="manage-conflicts"
-        >
-            <div className="content">
-                <div className="message">
-                    <span style={{ color: "var(--framer-color-text)", fontWeight: 600 }}>“{currentRecord.slug}”</span>
-                    <p>An item with this slug field value already exists in this Collection.</p>
-                </div>
-
-                <label className="apply-to-all">
-                    <input
-                        type="checkbox"
-                        id="apply-to-all"
-                        checked={applyToAll}
-                        onChange={event => {
-                            setApplyToAll(event.currentTarget.checked)
-                        }}
-                    />
-                    Apply to all
-                </label>
-            </div>
-
-            <hr />
-
-            <div className="actions">
-                <button
-                    type="button"
-                    onClick={() => {
-                        applyAction("onConflictSkip")
-                    }}
-                >
-                    Skip Item
-                </button>
-                <button type="submit" className="framer-button-primary">
-                    Update Item
-                </button>
-            </div>
-        </form>
-    )
-}
-
-function PlusIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor">
-            <path d="M5.75 1a.75.75 0 0 0-1.5 0v3.25H1a.75.75 0 0 0 0 1.5h3.25V9a.75.75 0 0 0 1.5 0V5.75H9a.75.75 0 0 0 0-1.5H5.75V1Z" />
-        </svg>
-    )
-}
-
-interface CreateCollectionDialogProps {
-    onCancel: () => void
-    onSubmit: (name: string) => Promise<void>
-}
-
-function CreateCollectionDialog({ onCancel, onSubmit }: CreateCollectionDialogProps) {
-    const [name, setName] = useState("")
-    const inputRef = useRef<HTMLInputElement>(null)
-
-    useEffect(() => {
-        inputRef.current?.focus()
-    }, [])
-
-    const handleSubmit = async (event: React.FormEvent) => {
-        event.preventDefault()
-        const trimmedName = name.trim()
-        if (trimmedName) {
-            await onSubmit(trimmedName)
-        }
-    }
-
-    return (
-        <div className="dialog-overlay">
-            <form className="dialog" onSubmit={e => void handleSubmit(e)}>
-                <div className="dialog-content">
-                    <h3>Create Collection</h3>
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={name}
-                        onChange={e => {
-                            setName(e.target.value)
-                        }}
-                        placeholder="Collection name"
-                        className="dialog-input"
-                    />
-                </div>
-                <div className="dialog-actions">
-                    <button type="button" onClick={onCancel}>
-                        Cancel
-                    </button>
-                    <button type="submit" className="framer-button-primary" disabled={!name.trim()}>
-                        Create
-                    </button>
-                </div>
-            </form>
-        </div>
-    )
-}
+import { ImportIcon } from "./ImportIcon"
+import { PlusIcon } from "./PlusIcon"
+import { ManageConflicts } from "./ManageConflicts"
+import { CreateCollectionDialog } from "./CreateCollectionDialog"
 
 export function App({ collection: initialCollection }: { collection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
@@ -440,7 +267,7 @@ export function App({ collection: initialCollection }: { collection: Collection 
             />
         )
     }
-    console.log({ collection })
+
     return (
         <>
             <form ref={form} className="import-collection" onSubmit={handleSubmit}>

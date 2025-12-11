@@ -124,11 +124,20 @@ function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsPro
     )
 }
 
+function PlusIcon() {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="currentColor">
+            <path d="M5.75 1a.75.75 0 0 0-1.5 0v3.25H1a.75.75 0 0 0 0 1.5h3.25V9a.75.75 0 0 0 1.5 0V5.75H9a.75.75 0 0 0 0-1.5H5.75V1Z" />
+        </svg>
+    )
+}
+
 export function App({ collection }: { collection: Collection | null }) {
     const [collections, setCollections] = useState<Collection[]>([])
     const [selectedCollection, setSelectedCollection] = useState<Collection | null>(collection)
 
     const isAllowedToAddItems = useIsAllowedTo("Collection.addItems")
+    const isAllowedToCreateCollection = useIsAllowedTo("createCollection")
 
     const form = useRef<HTMLFormElement>(null)
     const inputOpenedFromImportButton = useRef(false)
@@ -148,9 +157,6 @@ export function App({ collection }: { collection: Collection | null }) {
     }, [])
 
     useEffect(() => {
-        // Only load collections if opened without a collection already selected
-        if (collection) return
-
         const abortController = new AbortController()
 
         const task = async () => {
@@ -355,12 +361,23 @@ export function App({ collection }: { collection: Collection | null }) {
         [selectedCollection]
     )
 
-    const selectCollection = (event: ChangeEvent<HTMLSelectElement>) => {
+    const selectCollection = async (event: ChangeEvent<HTMLSelectElement>) => {
         const collection = collections.find(collection => collection.id === event.currentTarget.value)
         if (!collection) return
 
         setSelectedCollection(collection)
+        await collection.setAsActive()
     }
+
+    const createNewCollection = useCallback(async () => {
+        const name = prompt("Enter collection name:")
+        if (!name) return
+
+        const newCollection2 = await framer.createCollection(name)
+
+        setSelectedCollection(collection)
+        await newCollection2.setAsActive()
+    }, [collection])
 
     if (result && itemsWithConflict.length > 0) {
         return (
@@ -378,6 +395,37 @@ export function App({ collection }: { collection: Collection | null }) {
 
     return (
         <form ref={form} className="import-collection" onSubmit={handleSubmit}>
+            {/* Show collection selector at the top if opened without a collection already selected */}
+            { (
+                <div className="collection-selector">
+                    <select
+                        className="collection-select"
+                        value={selectedCollection?.id ?? ""}
+                        onChange={void selectCollection}
+                        autoFocus
+                    >
+                        <option value="" disabled>
+                            Select Collection…
+                        </option>
+
+                        {collections.map(collection => (
+                            <option key={collection.id} value={collection.id}>
+                                {collection.name}
+                            </option>
+                        ))}
+                    </select>
+                    <button
+                        type="button"
+                        className="create-collection-button"
+                        onClick={void createNewCollection}
+                        disabled={!isAllowedToCreateCollection}
+                        title={isAllowedToCreateCollection ? "Create new collection" : "Insufficient permissions"}
+                    >
+                        <PlusIcon />
+                    </button>
+                </div>
+            )}
+
             <input
                 id="file-input"
                 type="file"
@@ -414,26 +462,6 @@ export function App({ collection }: { collection: Collection | null }) {
                             <p>Make sure your collection fields in Framer match the names of your CSV fields.</p>
                         </div>
                     </div>
-
-                    {/* Show collection dropdown if opened without a collection already selected */}
-                    {!collection && (
-                        <select
-                            className="collection-select"
-                            value={selectedCollection?.id ?? ""}
-                            onChange={selectCollection}
-                            autoFocus
-                        >
-                            <option value="" disabled>
-                                Select Collection…
-                            </option>
-
-                            {collections.map(collection => (
-                                <option key={collection.id} value={collection.id}>
-                                    {collection.name}
-                                </option>
-                            ))}
-                        </select>
-                    )}
 
                     <button
                         className="framer-button-primary"

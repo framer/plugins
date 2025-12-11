@@ -100,9 +100,26 @@
     color: var(--framer-color-text-tertiary);
 }
 
-.collection-select {
+.collection-selector {
+    display: flex;
+    gap: 8px;
     width: 100%;
-    margin-bottom: 10px;
+    padding-top: 15px;
+}
+
+.collection-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.create-collection-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    flex-shrink: 0;
 }
 
 /* Manage conflicts screen */

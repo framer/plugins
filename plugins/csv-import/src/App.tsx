@@ -396,7 +396,7 @@ export function App({ collection }: { collection: Collection | null }) {
     return (
         <form ref={form} className="import-collection" onSubmit={handleSubmit}>
             {/* Show collection selector at the top if opened without a collection already selected */}
-            { (
+            {
                 <div className="collection-selector">
                     <select
                         className="collection-select"
@@ -424,7 +424,7 @@ export function App({ collection }: { collection: Collection | null }) {
                         <PlusIcon />
                     </button>
                 </div>
-            )}
+            }
 
             <input
                 id="file-input"

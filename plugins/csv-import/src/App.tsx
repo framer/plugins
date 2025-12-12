@@ -3,11 +3,11 @@ import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ImportResult } from "./csv"
 import "./App.css"
+import { CreateCollectionDialog } from "./CreateCollectionDialog"
 import { ImportError, importCSV, parseCSV, processRecords } from "./csv"
 import { ImportIcon } from "./ImportIcon"
-import { PlusIcon } from "./PlusIcon"
 import { ManageConflicts } from "./ManageConflicts"
-import { CreateCollectionDialog } from "./CreateCollectionDialog"
+import { PlusIcon } from "./PlusIcon"
 
 export function App({ collection: initialCollection }: { collection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)

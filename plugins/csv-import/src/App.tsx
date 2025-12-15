@@ -3,19 +3,15 @@ import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { ImportResult } from "./csv"
 import "./App.css"
-import { CreateCollectionDialog } from "./CreateCollectionDialog"
+import { CollectionSelector } from "./CollectionSelector"
 import { ImportError, importCSV, parseCSV, processRecords } from "./csv"
 import { ImportIcon } from "./ImportIcon"
 import { ManageConflicts } from "./ManageConflicts"
-import { PlusIcon } from "./PlusIcon"
 
 export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
-    const [collections, setCollections] = useState<Collection[]>([])
-    const [showCreateCollectionDialog, setShowCreateCollectionDialog] = useState(false)
 
     const isAllowedToAddItems = useIsAllowedTo("Collection.addItems")
-    const isAllowedToCreateCollection = useIsAllowedTo("createCollection")
 
     const form = useRef<HTMLFormElement>(null)
     const inputOpenedFromImportButton = useRef(false)
@@ -33,34 +29,6 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             resizable: false,
         })
     }, [])
-
-    useEffect(() => {
-        const abortController = new AbortController()
-
-        const task = async () => {
-            try {
-                const collections = await framer.getCollections()
-
-                // Check if component was unmounted before setting state
-                if (abortController.signal.aborted) return
-
-                const writableCollections = collections.filter(collection => collection.managedBy === "user")
-                setCollections(writableCollections)
-            } catch (error) {
-                // Only handle error if component is still mounted
-                if (abortController.signal.aborted) return
-
-                console.error(error)
-                framer.notify("Failed to load collections", { variant: "error" })
-            }
-        }
-
-        void task()
-
-        return () => {
-            abortController.abort()
-        }
-    }, [collection])
 
     useEffect(() => {
         if (itemsWithConflict.length === 0) {
@@ -167,10 +135,16 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
     useEffect(() => {
         if (!collection) return
         if (!isAllowedToAddItems) return
-        if (showCreateCollectionDialog) return
 
-        const handlePaste = ({ clipboardData }: ClipboardEvent) => {
+        const handlePaste = (event: ClipboardEvent) => {
+            const { clipboardData } = event
             if (!clipboardData) return
+
+            // Check if the paste event originated from within an input element
+            const target = event.target as HTMLElement
+            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+                return
+            }
 
             const task = async () => {
                 let csv = ""
@@ -206,7 +180,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
         return () => {
             window.removeEventListener("paste", handlePaste)
         }
-    }, [isAllowedToAddItems, processAndImport, collection, showCreateCollectionDialog])
+    }, [isAllowedToAddItems, processAndImport, collection])
 
     const handleSubmit = useCallback(
         (event: React.FormEvent<HTMLFormElement>) => {
@@ -239,21 +213,6 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
         [collection]
     )
 
-    const selectCollection = async (event: ChangeEvent<HTMLSelectElement>) => {
-        const collection = collections.find(collection => collection.id === event.currentTarget.value)
-        if (!collection) return
-
-        await collection.setAsActive()
-        setCollection(collection)
-    }
-
-    const createNewCollection = useCallback(async (name: string) => {
-        const newCollection = await framer.createCollection(name)
-
-        await newCollection.setAsActive()
-        setCollection(newCollection)
-    }, [])
-
     if (result && itemsWithConflict.length > 0) {
         return (
             <ManageConflicts
@@ -270,106 +229,67 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
 
     return (
         <>
-            <form ref={form} className="import-collection" onSubmit={handleSubmit}>
-                {
-                    <div className="collection-selector">
-                        <select
-                            className="collection-select"
-                            value={collection?.id ?? ""}
-                            onChange={e => void selectCollection(e)}
-                            autoFocus
-                        >
-                            <option value="" disabled>
-                                Select Collection…
-                            </option>
+            <div className="import-collection">
+                <CollectionSelector collection={collection} onCollectionChange={setCollection} />
 
-                            {collections.map(collection => (
-                                <option key={collection.id} value={collection.id}>
-                                    {collection.name}
-                                </option>
-                            ))}
-                        </select>
-                        {isAllowedToCreateCollection && (
-                            <button
-                                type="button"
-                                className="create-collection-button"
-                                onClick={() => {
-                                    setShowCreateCollectionDialog(true)
-                                }}
-                                title="Create new collection"
-                            >
-                                <PlusIcon />
-                            </button>
-                        )}
-                    </div>
-                }
+                <form ref={form} className="import-form" onSubmit={handleSubmit}>
+                    <input
+                        id="file-input"
+                        type="file"
+                        name="file"
+                        className="file-input"
+                        accept=".csv"
+                        required
+                        onChange={handleFileChange}
+                        disabled={!isAllowedToAddItems}
+                        style={{
+                            position: "absolute",
+                            inset: 0,
+                            width: "100%",
+                            height: "100%",
+                            opacity: 0,
+                            cursor: "pointer",
+                        }}
+                    />
 
-                <input
-                    id="file-input"
-                    type="file"
-                    name="file"
-                    className="file-input"
-                    accept=".csv"
-                    required
-                    onChange={handleFileChange}
-                    disabled={!isAllowedToAddItems}
-                    style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: "100%",
-                        height: "100%",
-                        opacity: 0,
-                        cursor: "pointer",
-                    }}
-                />
-
-                {isDragging && (
-                    <div className="dropzone dragging">
-                        <p>Drop CSV file to import</p>
-                    </div>
-                )}
-
-                {!isDragging && (
-                    <>
-                        <div className="intro">
-                            <div className="logo">
-                                <ImportIcon />
-                            </div>
-                            <div className="content">
-                                <h2>Upload CSV</h2>
-                                <p>Make sure your collection fields in Framer match the names of your CSV fields.</p>
-                            </div>
+                    {isDragging && (
+                        <div className="dropzone dragging">
+                            <p>Drop CSV file to import</p>
                         </div>
+                    )}
 
-                        <button
-                            className="framer-button-primary"
-                            onClick={event => {
-                                event.preventDefault()
-                                inputOpenedFromImportButton.current = true
+                    {!isDragging && (
+                        <>
+                            <div className="intro">
+                                <div className="logo">
+                                    <ImportIcon />
+                                </div>
+                                <div className="content">
+                                    <h2>Upload CSV</h2>
+                                    <p>
+                                        Make sure your collection fields in Framer match the names of your CSV fields.
+                                    </p>
+                                </div>
+                            </div>
 
-                                const input = document.getElementById("file-input") as HTMLInputElement
-                                input.click()
-                            }}
-                            disabled={!isAllowedToAddItems || !collection}
-                            title={isAllowedToAddItems ? undefined : "Insufficient permissions"}
-                        >
-                            Upload File
-                        </button>
-                    </>
-                )}
-            </form>
+                            <button
+                                className="framer-button-primary"
+                                onClick={event => {
+                                    event.preventDefault()
+                                    inputOpenedFromImportButton.current = true
 
-            {showCreateCollectionDialog && (
-                <CreateCollectionDialog
-                    onCancel={() => {
-                        setShowCreateCollectionDialog(false)
-                    }}
-                    onSubmit={async name => {
-                        await createNewCollection(name)
-                        setShowCreateCollectionDialog(false)
-                    }}
-                />
-            )}
+                                    const input = document.getElementById("file-input") as HTMLInputElement
+                                    input.click()
+                                }}
+                                disabled={!isAllowedToAddItems || !collection}
+                                title={isAllowedToAddItems ? undefined : "Insufficient permissions"}
+                            >
+                                Upload File
+                            </button>
+                        </>
+                    )}
+                </form>
+            </div>
         </>
     )
 }

@@ -12,6 +12,15 @@
     align-items: center;
 }
 
+.import-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+    position: relative;
+}
+
 .manage-conflicts {
     gap: 10px;
 }
@@ -122,6 +131,54 @@
     flex-shrink: 0;
 }
 
+.create-collection-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.create-collection-icon.active {
+    transform: rotate(45deg);
+}
+
+.create-collection-section {
+    width: 100%;
+    max-height: 0;
+    overflow: hidden;
+    transition:
+        max-height 0.3s ease,
+        opacity 0.3s ease;
+    opacity: 0;
+}
+
+.create-collection-section.expanded {
+    max-height: 100px;
+    opacity: 1;
+}
+
+.create-collection-form {
+    display: flex;
+    gap: 8px;
+    padding-top: 8px;
+    width: 100%;
+}
+
+.create-collection-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.create-collection-submit-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    flex-shrink: 0;
+}
+
 /* Manage conflicts screen */
 
 .manage-conflicts .content {
@@ -144,53 +201,4 @@
     cursor: pointer;
     width: fit-content;
     color: var(--framer-color-text-secondary);
-}
-
-/* Create collection dialog */
-
-.dialog-overlay {
-    position: fixed;
-    inset: 0;
-    background-color: rgba(0, 0, 0, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-}
-
-.dialog {
-    background-color: var(--framer-color-bg);
-    border-radius: 8px;
-    padding: 15px;
-    width: calc(100% - 30px);
-    max-width: 230px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.dialog-content {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.dialog-content h3 {
-    font-size: 1em;
-    font-weight: 600;
-    margin: 0;
-    color: var(--framer-color-text-primary);
-}
-
-.dialog-input {
-    width: 100%;
-}
-
-.dialog-actions {
-    display: flex;
-    gap: 10px;
-}
-
-.dialog-actions button {
-    flex: 1;
 }

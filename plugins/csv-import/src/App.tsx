@@ -109,9 +109,8 @@ export function App({ collection: initialCollection }: { collection: Collection 
                 console.error(error)
 
                 if (error instanceof ImportError || error instanceof Error) {
-                    framer.closePlugin(error.message, {
-                        variant: "error",
-                    })
+                    framer.notify(error.message, { variant: "error" })
+                    return
                 }
 
                 framer.closePlugin("Error processing CSV file. Check console for details.", {
@@ -168,6 +167,7 @@ export function App({ collection: initialCollection }: { collection: Collection 
     useEffect(() => {
         if (!collection) return
         if (!isAllowedToAddItems) return
+        if (showCreateCollectionDialog) return
 
         const handlePaste = ({ clipboardData }: ClipboardEvent) => {
             if (!clipboardData) return
@@ -206,7 +206,7 @@ export function App({ collection: initialCollection }: { collection: Collection 
         return () => {
             window.removeEventListener("paste", handlePaste)
         }
-    }, [isAllowedToAddItems, processAndImport, collection])
+    }, [isAllowedToAddItems, processAndImport, collection, showCreateCollectionDialog])
 
     const handleSubmit = useCallback(
         (event: React.FormEvent<HTMLFormElement>) => {

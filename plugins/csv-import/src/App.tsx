@@ -9,7 +9,7 @@ import { ImportIcon } from "./ImportIcon"
 import { ManageConflicts } from "./ManageConflicts"
 import { PlusIcon } from "./PlusIcon"
 
-export function App({ collection: initialCollection }: { collection: Collection | null }) {
+export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
     const [collections, setCollections] = useState<Collection[]>([])
     const [showCreateCollectionDialog, setShowCreateCollectionDialog] = useState(false)
@@ -271,7 +271,6 @@ export function App({ collection: initialCollection }: { collection: Collection 
     return (
         <>
             <form ref={form} className="import-collection" onSubmit={handleSubmit}>
-                {/* Show collection selector at the top if opened without a collection already selected */}
                 {
                     <div className="collection-selector">
                         <select

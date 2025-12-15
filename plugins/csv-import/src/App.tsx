@@ -10,6 +10,7 @@ import { ManageConflicts } from "./ManageConflicts"
 import { SelectCSVFile } from "./SelectCSVFile"
 import type { InferredField } from "./typeInference"
 import { inferFieldsFromCSV } from "./typeInference"
+import { useMiniRouter } from "./minirouter"
 
 type WorkflowStep = "select-collection" | "select-file" | "field-mapping" | "manage-conflicts"
 
@@ -17,6 +18,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
     const isAllowedToAddItems = useIsAllowedTo("Collection.addItems")
 
+    const router = useMiniRouter()
     const [workflowStep, setWorkflowStep] = useState<WorkflowStep>(
         initialCollection ? "select-file" : "select-collection"
     )

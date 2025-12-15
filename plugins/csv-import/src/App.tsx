@@ -1,46 +1,141 @@
 import type { Collection } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
-import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { ImportResult } from "./csv"
 import "./App.css"
 import { CollectionSelector } from "./CollectionSelector"
-import { ImportError, importCSV, parseCSV, processRecords } from "./csv"
-import { ImportIcon } from "./ImportIcon"
+import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from "./csv"
+import { FieldMapping } from "./FieldMapping"
 import { ManageConflicts } from "./ManageConflicts"
+import { SelectCSVFile } from "./SelectCSVFile"
+import type { InferredField } from "./typeInference"
+import { inferFieldsFromCSV } from "./typeInference"
+
+type WorkflowStep = "select-collection" | "select-file" | "field-mapping" | "manage-conflicts"
 
 export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
-
     const isAllowedToAddItems = useIsAllowedTo("Collection.addItems")
 
-    const form = useRef<HTMLFormElement>(null)
-    const inputOpenedFromImportButton = useRef(false)
-
+    const [workflowStep, setWorkflowStep] = useState<WorkflowStep>(
+        initialCollection ? "select-file" : "select-collection"
+    )
+    const [csvRecords, setCsvRecords] = useState<Record<string, string>[]>([])
+    const [inferredFields, setInferredFields] = useState<InferredField[]>([])
     const [result, setResult] = useState<ImportResult | null>(null)
 
     const itemsWithConflict = useMemo(() => result?.items.filter(item => item.action === "conflict") ?? [], [result])
 
-    const [isDragging, setIsDragging] = useState(false)
-
     useEffect(() => {
-        void framer.showUI({
-            width: 260,
-            height: 330,
-            resizable: false,
-        })
-    }, [])
-
-    useEffect(() => {
-        if (itemsWithConflict.length === 0) {
-            return
+        // Adjust UI size based on workflow step
+        if (workflowStep === "field-mapping") {
+            void framer.showUI({
+                width: 400,
+                height: 600,
+                resizable: true,
+            })
+        } else if (workflowStep === "manage-conflicts") {
+            void framer.showUI({
+                width: 260,
+                height: 165,
+                resizable: false,
+            })
+        } else {
+            void framer.showUI({
+                width: 260,
+                height: 330,
+                resizable: false,
+            })
         }
+    }, [workflowStep])
 
-        void framer.showUI({
-            width: 260,
-            height: 165,
-            resizable: false,
-        })
-    }, [itemsWithConflict])
+    useEffect(() => {
+        // Update workflow step based on collection selection
+        if (collection && workflowStep === "select-collection") {
+            setWorkflowStep("select-file")
+        }
+    }, [collection, workflowStep])
+
+    useEffect(() => {
+        // Update workflow step when conflicts are detected
+        if (itemsWithConflict.length > 0 && workflowStep !== "manage-conflicts") {
+            setWorkflowStep("manage-conflicts")
+        }
+    }, [itemsWithConflict, workflowStep])
+
+    const handleFileSelected = useCallback(
+        async (csvContent: string) => {
+            if (!collection) return
+            if (!isAllowedToAddItems) return
+
+            try {
+                const records = await parseCSV(csvContent)
+                if (records.length === 0) {
+                    throw new Error("No records found in CSV")
+                }
+
+                // Infer field types from CSV data
+                const fields = inferFieldsFromCSV(records)
+
+                setCsvRecords(records)
+                setInferredFields(fields)
+                setWorkflowStep("field-mapping")
+            } catch (error) {
+                if (error instanceof FramerPluginClosedError) throw error
+
+                console.error(error)
+
+                if (error instanceof ImportError || error instanceof Error) {
+                    framer.notify(error.message, { variant: "error" })
+                    return
+                }
+
+                framer.notify("Error processing CSV file. Check console for details.", {
+                    variant: "error",
+                })
+            }
+        },
+        [collection, isAllowedToAddItems]
+    )
+
+    const handleFieldMappingSubmit = useCallback(
+        async (fields: InferredField[], ignoredFieldNames: Set<string>, slugFieldName: string) => {
+            if (!collection) return
+            if (!isAllowedToAddItems) return
+
+            try {
+                const result = await processRecordsWithFieldMapping(
+                    collection,
+                    csvRecords,
+                    fields,
+                    ignoredFieldNames,
+                    slugFieldName
+                )
+                setResult(result)
+
+                if (result.items.some(item => item.action === "conflict")) {
+                    return
+                }
+
+                await framer.hideUI()
+                await importCSV(collection, result)
+            } catch (error) {
+                if (error instanceof FramerPluginClosedError) throw error
+
+                console.error(error)
+
+                if (error instanceof ImportError || error instanceof Error) {
+                    framer.notify(error.message, { variant: "error" })
+                    return
+                }
+
+                framer.notify("Error processing CSV file. Check console for details.", {
+                    variant: "error",
+                })
+            }
+        },
+        [collection, csvRecords, isAllowedToAddItems]
+    )
 
     const importItems = useCallback(
         async (result: ImportResult) => {
@@ -52,168 +147,8 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
         [collection]
     )
 
-    const processAndImport = useCallback(
-        async (csv: string) => {
-            if (!collection) return
-            if (!isAllowedToAddItems) return
-
-            try {
-                const csvRecords = await parseCSV(csv)
-                if (csvRecords.length === 0) {
-                    throw new Error("No records found in CSV")
-                }
-
-                const result = await processRecords(collection, csvRecords)
-                setResult(result)
-
-                if (result.items.some(item => item.action === "conflict")) {
-                    return
-                }
-
-                await importItems(result)
-            } catch (error) {
-                if (error instanceof FramerPluginClosedError) throw error
-
-                console.error(error)
-
-                if (error instanceof ImportError || error instanceof Error) {
-                    framer.notify(error.message, { variant: "error" })
-                    return
-                }
-
-                framer.closePlugin("Error processing CSV file. Check console for details.", {
-                    variant: "error",
-                })
-            }
-        },
-        [isAllowedToAddItems, collection, importItems]
-    )
-
-    useEffect(() => {
-        if (!collection) return
-        if (!isAllowedToAddItems) return
-
-        const formElement = form.current
-        if (!formElement) return
-
-        const handleDragOver = (event: DragEvent) => {
-            event.preventDefault()
-            setIsDragging(true)
-        }
-
-        const handleDragLeave = (event: DragEvent) => {
-            if (!event.relatedTarget) {
-                setIsDragging(false)
-            }
-        }
-
-        const handleDrop = (event: DragEvent) => {
-            event.preventDefault()
-            setIsDragging(false)
-
-            const file = event.dataTransfer?.files[0]
-            if (!file?.name.endsWith(".csv")) return
-
-            const input = document.getElementById("file-input") as HTMLInputElement
-            const dataTransfer = new DataTransfer()
-            dataTransfer.items.add(file)
-            input.files = dataTransfer.files
-            formElement.requestSubmit()
-        }
-
-        formElement.addEventListener("dragover", handleDragOver)
-        formElement.addEventListener("dragleave", handleDragLeave)
-        formElement.addEventListener("drop", handleDrop)
-
-        return () => {
-            formElement.removeEventListener("dragover", handleDragOver)
-            formElement.removeEventListener("dragleave", handleDragLeave)
-            formElement.removeEventListener("drop", handleDrop)
-        }
-    }, [isAllowedToAddItems, collection])
-
-    useEffect(() => {
-        if (!collection) return
-        if (!isAllowedToAddItems) return
-
-        const handlePaste = (event: ClipboardEvent) => {
-            const { clipboardData } = event
-            if (!clipboardData) return
-
-            // Check if the paste event originated from within an input element
-            const target = event.target as HTMLElement
-            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
-                return
-            }
-
-            const task = async () => {
-                let csv = ""
-
-                try {
-                    csv = clipboardData.getData("text/plain")
-                    if (!csv) return
-                } catch (error) {
-                    console.error("Error accessing clipboard data:", error)
-                    framer.notify("Unable to access clipboard content", {
-                        variant: "error",
-                    })
-                    return
-                }
-
-                try {
-                    await processAndImport(csv)
-                } catch (error) {
-                    if (error instanceof FramerPluginClosedError) return
-
-                    console.error("Error importing CSV:", error)
-                    framer.notify("Error importing CSV", {
-                        variant: "error",
-                    })
-                }
-            }
-
-            void task()
-        }
-
-        window.addEventListener("paste", handlePaste)
-
-        return () => {
-            window.removeEventListener("paste", handlePaste)
-        }
-    }, [isAllowedToAddItems, processAndImport, collection])
-
-    const handleSubmit = useCallback(
-        (event: React.FormEvent<HTMLFormElement>) => {
-            if (!collection) return
-            if (!isAllowedToAddItems) return
-            event.preventDefault()
-
-            if (!form.current) throw new Error("Form ref not set")
-
-            const formData = new FormData(form.current)
-            const fileValue = formData.get("file")
-
-            if (!fileValue || typeof fileValue === "string") return
-
-            const file = fileValue
-
-            void file.text().then(processAndImport)
-        },
-        [isAllowedToAddItems, processAndImport, collection]
-    )
-
-    const handleFileChange = useCallback(
-        (event: ChangeEvent<HTMLInputElement>) => {
-            if (!collection) return
-            if (!event.currentTarget.files?.[0]) return
-            if (inputOpenedFromImportButton.current) {
-                form.current?.requestSubmit()
-            }
-        },
-        [collection]
-    )
-
-    if (result && itemsWithConflict.length > 0) {
+    // Handle conflicts
+    if (workflowStep === "manage-conflicts" && result && itemsWithConflict.length > 0) {
         return (
             <ManageConflicts
                 records={itemsWithConflict}
@@ -227,69 +162,39 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
         )
     }
 
-    return (
-        <>
+    // Field mapping step
+    if (workflowStep === "field-mapping" && collection) {
+        return (
+            <FieldMapping
+                inferredFields={inferredFields}
+                csvRecords={csvRecords}
+                onSubmit={handleFieldMappingSubmit}
+                onCancel={() => {
+                    setWorkflowStep("select-file")
+                    setCsvRecords([])
+                    setInferredFields([])
+                }}
+            />
+        )
+    }
+
+    // File selection step
+    if (workflowStep === "select-file" && collection) {
+        return (
             <div className="import-collection">
                 <CollectionSelector collection={collection} onCollectionChange={setCollection} />
-
-                <form ref={form} className="import-form" onSubmit={handleSubmit}>
-                    <input
-                        id="file-input"
-                        type="file"
-                        name="file"
-                        className="file-input"
-                        accept=".csv"
-                        required
-                        onChange={handleFileChange}
-                        disabled={!isAllowedToAddItems}
-                        style={{
-                            position: "absolute",
-                            inset: 0,
-                            width: "100%",
-                            height: "100%",
-                            opacity: 0,
-                            cursor: "pointer",
-                        }}
-                    />
-
-                    {isDragging && (
-                        <div className="dropzone dragging">
-                            <p>Drop CSV file to import</p>
-                        </div>
-                    )}
-
-                    {!isDragging && (
-                        <>
-                            <div className="intro">
-                                <div className="logo">
-                                    <ImportIcon />
-                                </div>
-                                <div className="content">
-                                    <h2>Upload CSV</h2>
-                                    <p>
-                                        Make sure your collection fields in Framer match the names of your CSV fields.
-                                    </p>
-                                </div>
-                            </div>
-
-                            <button
-                                className="framer-button-primary"
-                                onClick={event => {
-                                    event.preventDefault()
-                                    inputOpenedFromImportButton.current = true
-
-                                    const input = document.getElementById("file-input") as HTMLInputElement
-                                    input.click()
-                                }}
-                                disabled={!isAllowedToAddItems || !collection}
-                                title={isAllowedToAddItems ? undefined : "Insufficient permissions"}
-                            >
-                                Upload File
-                            </button>
-                        </>
-                    )}
-                </form>
+                <SelectCSVFile onFileSelected={handleFileSelected} />
             </div>
-        </>
+        )
+    }
+
+    // Collection selection step
+    return (
+        <div className="import-collection">
+            <CollectionSelector collection={collection} onCollectionChange={setCollection} />
+            <div className="intro">
+                <p>Select a collection to import CSV data into.</p>
+            </div>
+        </div>
     )
 }

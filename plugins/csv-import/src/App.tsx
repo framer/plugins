@@ -290,17 +290,18 @@ export function App({ collection: initialCollection }: { collection: Collection 
                                 </option>
                             ))}
                         </select>
-                        <button
-                            type="button"
-                            className="create-collection-button"
-                            onClick={() => {
-                                setShowCreateCollectionDialog(true)
-                            }}
-                            disabled={!isAllowedToCreateCollection}
-                            title={isAllowedToCreateCollection ? "Create new collection" : "Insufficient permissions"}
-                        >
-                            <PlusIcon />
-                        </button>
+                        {isAllowedToCreateCollection && (
+                            <button
+                                type="button"
+                                className="create-collection-button"
+                                onClick={() => {
+                                    setShowCreateCollectionDialog(true)
+                                }}
+                                title="Create new collection"
+                            >
+                                <PlusIcon />
+                            </button>
+                        )}
                     </div>
                 }
 

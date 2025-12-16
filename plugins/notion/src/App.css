@@ -319,6 +319,7 @@ select:not(:disabled) {
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    color: var(--framer-color-text-tertiary);
 }
 
 .progress-bar {

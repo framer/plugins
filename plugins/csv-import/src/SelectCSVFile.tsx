@@ -20,7 +20,7 @@ export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
         }
 
         const handleDragLeave = (event: DragEvent) => {
-            if (event.relatedTarget) {
+            if (!formElement.contains(event.relatedTarget as Node)) {
                 setIsDragging(false)
             }
         }

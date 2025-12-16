@@ -253,6 +253,8 @@ select:not(:disabled) {
     height: 100%;
     padding: 0px 15px 15px 15px;
     gap: 15px;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .login-image {

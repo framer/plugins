@@ -4,7 +4,7 @@ import { framer } from "framer-plugin"
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { App } from "./App.tsx"
-import { MiniRouterProvider } from "./minirouter.tsx"
+import { MiniRouterProvider } from "./utils/minirouter.tsx"
 
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")

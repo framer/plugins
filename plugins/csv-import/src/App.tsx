@@ -1,16 +1,15 @@
 import type { Collection } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useState } from "react"
-import type { ImportResult } from "./csv"
+import type { ImportResult } from "./utils/csv"
 import "./App.css"
-import { CollectionSelector } from "./CollectionSelector"
-import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from "./csv"
-import { FieldMapping } from "./FieldMapping"
-import { ManageConflicts } from "./ManageConflicts"
-import { useMiniRouter } from "./minirouter"
-import { SelectCSVFile } from "./SelectCSVFile"
-import type { InferredField } from "./typeInference"
-import { inferFieldsFromCSV } from "./typeInference"
+import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from "./utils/csv"
+import { Home } from "./routes/Home"
+import { FieldMapping } from "./routes/FieldMapping"
+import { ManageConflicts } from "./routes/ManageConflicts"
+import { useMiniRouter } from "./utils/minirouter"
+import type { InferredField } from "./utils/typeInference"
+import { inferFieldsFromCSV } from "./utils/typeInference"
 
 export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
@@ -110,23 +109,13 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
 
     switch (currentRoute.uid) {
         case "home": {
-            if (collection) {
-                return (
-                    <div className="import-collection">
-                        <CollectionSelector collection={collection} onCollectionChange={setCollection} />
-                        <SelectCSVFile onFileSelected={handleFileSelected} />
-                    </div>
-                )
-            } else {
-                return (
-                    <div className="import-collection">
-                        <CollectionSelector collection={collection} onCollectionChange={setCollection} />
-                        <div className="intro no-border">
-                            <p>Select a collection to import CSV data into.</p>
-                        </div>
-                    </div>
-                )
-            }
+            return (
+                <Home
+                    collection={collection}
+                    onCollectionChange={setCollection}
+                    onFileSelected={handleFileSelected}
+                />
+            )
         }
         case "manage-conflicts": {
             return (

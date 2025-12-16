@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react"
-import type { ImportResultItem } from "./csv"
+import type { ImportResultItem } from "../utils/csv"
 
 interface ManageConflictsProps {
     records: ImportResultItem[]

@@ -1,7 +1,7 @@
 import type { Field } from "framer-plugin"
 import { framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useMemo, useState } from "react"
-import type { InferredField } from "./typeInference"
+import type { InferredField } from "../utils/typeInference"
 
 const labelByFieldTypeOption: Record<Field["type"], string> = {
     boolean: "Toggle",

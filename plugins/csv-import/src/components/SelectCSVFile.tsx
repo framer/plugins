@@ -1,5 +1,5 @@
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from "react"
-import { ImportIcon } from "./ImportIcon"
+import { ImportIcon } from "../components/ImportIcon"
 
 interface SelectCSVFileProps {
     onFileSelected: (csvContent: string) => Promise<void>

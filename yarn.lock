@@ -3713,7 +3713,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     csv-parse: "npm:^6.1.0"
-    framer-plugin: "npm:^3.8.0"
+    framer-plugin: "npm:3.9.0-beta.1"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.2.0"
@@ -4590,6 +4590,16 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
   checksum: 10/f253047cf9b4f0fe9cf61aa27dd0651a6e1d3b13cd4cde0b8b467700ccd45189f4e134f665875a8a727c5c5ba36be5d2d83ad074781768281b1772f0077aa140
+  languageName: node
+  linkType: hard
+
+"framer-plugin@npm:3.9.0-beta.1":
+  version: 3.9.0-beta.1
+  resolution: "framer-plugin@npm:3.9.0-beta.1"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/1f58b75683d5cfedb812422916bcf6e4a63c6141b3f0df49eb13551894929edecabe8cb9ebbcb0b5d693efb277412e08e32b7652c41bea58f14b8bd0949106fe
   languageName: node
   linkType: hard
 

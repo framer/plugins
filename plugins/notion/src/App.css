@@ -308,3 +308,31 @@ select:not(:disabled) {
     flex: 1;
     width: 100%;
 }
+
+/* Progress State */
+
+.progress-bar-text {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.progress-bar {
+    height: 3px;
+    width: 100%;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background-color: var(--framer-color-bg-tertiary);
+    position: relative;
+}
+
+.progress-bar-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 10px;
+    background-color: var(--framer-color-tint);
+}

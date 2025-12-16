@@ -7,7 +7,7 @@ export function Progress({ current, total }: { current: number; total: number })
     return (
         <main>
             <div className="progress-bar-text">
-                <span>{progressPercent}%</span>
+                <span className="progress-bar-percent">{progressPercent}%</span>
                 <span>
                     {formattedCurrent} / {formattedTotal}
                 </span>

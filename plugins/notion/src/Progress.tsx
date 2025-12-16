@@ -13,7 +13,6 @@ export function Progress({ current, total }: { current: number; total: number })
                 <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }} />
             </div>
             <p>Syncing... please keep the plugin open until the process is complete.</p>
-            <button>Cancel</button>
         </main>
     )
 }

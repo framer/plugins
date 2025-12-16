@@ -322,6 +322,11 @@ select:not(:disabled) {
     color: var(--framer-color-text-tertiary);
 }
 
+.progress-bar-percent {
+    font-weight: 600;
+    color: var(--framer-color-text);
+}
+
 .progress-bar {
     height: 3px;
     width: 100%;

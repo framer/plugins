@@ -1,5 +1,7 @@
 import { framer, type UIOptions } from "framer-plugin"
-import { createContext, type ReactNode, useContext, useMemo, useState } from "react"
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import type { ImportResult } from "./csv"
+import type { InferredField } from "./typeInference"
 
 type Route =
     | {
@@ -7,16 +9,18 @@ type Route =
           opts: undefined
       }
     | {
-          uid: "select-file"
-          opts: undefined
-      }
-    | {
           uid: "field-mapping"
-          opts: undefined
+          opts: {
+              csvRecords: Record<string, string>[]
+              inferredFields: InferredField[]
+          }
       }
     | {
           uid: "manage-conflicts"
-          opts: undefined
+          opts: {
+              conflicts: ImportResult["items"]
+              result: ImportResult
+          }
       }
 
 const fallbackUiOptions: UIOptions = { width: 260, height: 330, resizable: false }
@@ -41,17 +45,22 @@ interface MiniRouterProviderProps {
 export function MiniRouterProvider({ children }: MiniRouterProviderProps) {
     const [currentRoute, setCurrentRoute] = useState<Route>({ uid: "home", opts: undefined })
 
+    useEffect(() => {
+        const uiOptions = defaultUiOptions[currentRoute.uid] ?? fallbackUiOptions
+        void framer.showUI(uiOptions)
+    }, [currentRoute.uid])
+
+    // eslint-disable-next-line @typescript-eslint/require-await -- async for forward compatibility
+    const navigate = useCallback(async (route: Route) => {
+        setCurrentRoute(route)
+    }, [])
+
     const value: MiniRouterContextType = useMemo(() => {
         return {
             currentRoute,
-            navigate: async route => {
-                const uiOptions = defaultUiOptions[route.uid] ?? fallbackUiOptions
-                await framer.showUI(uiOptions)
-
-                setCurrentRoute(route)
-            },
+            navigate,
         }
-    }, [currentRoute])
+    }, [currentRoute, navigate])
 
     return <MiniRouterContext.Provider value={value}>{children}</MiniRouterContext.Provider>
 }

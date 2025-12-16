@@ -1,6 +1,6 @@
 import type { Collection } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useState } from "react"
 import type { ImportResult } from "./csv"
 import "./App.css"
 import { CollectionSelector } from "./CollectionSelector"
@@ -12,58 +12,11 @@ import { SelectCSVFile } from "./SelectCSVFile"
 import type { InferredField } from "./typeInference"
 import { inferFieldsFromCSV } from "./typeInference"
 
-type WorkflowStep = "select-collection" | "select-file" | "field-mapping" | "manage-conflicts"
-
 export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
     const isAllowedToAddItems = useIsAllowedTo("Collection.addItems")
 
-    const router = useMiniRouter()
-    const [workflowStep, setWorkflowStep] = useState<WorkflowStep>(
-        initialCollection ? "select-file" : "select-collection"
-    )
-    const [csvRecords, setCsvRecords] = useState<Record<string, string>[]>([])
-    const [inferredFields, setInferredFields] = useState<InferredField[]>([])
-    const [result, setResult] = useState<ImportResult | null>(null)
-
-    const itemsWithConflict = useMemo(() => result?.items.filter(item => item.action === "conflict") ?? [], [result])
-
-    useEffect(() => {
-        // Adjust UI size based on workflow step
-        if (workflowStep === "field-mapping") {
-            void framer.showUI({
-                width: 400,
-                height: 600,
-                resizable: true,
-            })
-        } else if (workflowStep === "manage-conflicts") {
-            void framer.showUI({
-                width: 260,
-                height: 165,
-                resizable: false,
-            })
-        } else {
-            void framer.showUI({
-                width: 260,
-                height: 330,
-                resizable: false,
-            })
-        }
-    }, [workflowStep])
-
-    useEffect(() => {
-        // Update workflow step based on collection selection
-        if (collection && workflowStep === "select-collection") {
-            setWorkflowStep("select-file")
-        }
-    }, [collection, workflowStep])
-
-    useEffect(() => {
-        // Update workflow step when conflicts are detected
-        if (itemsWithConflict.length > 0 && workflowStep !== "manage-conflicts") {
-            setWorkflowStep("manage-conflicts")
-        }
-    }, [itemsWithConflict, workflowStep])
+    const { currentRoute, navigate } = useMiniRouter()
 
     const handleFileSelected = useCallback(
         async (csvContent: string) => {
@@ -79,9 +32,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 // Infer field types from CSV data
                 const fields = inferFieldsFromCSV(records)
 
-                setCsvRecords(records)
-                setInferredFields(fields)
-                setWorkflowStep("field-mapping")
+                await navigate({ uid: "field-mapping", opts: { csvRecords: records, inferredFields: fields } })
             } catch (error) {
                 if (error instanceof FramerPluginClosedError) throw error
 
@@ -97,30 +48,38 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 })
             }
         },
-        [collection, isAllowedToAddItems]
+        [collection, isAllowedToAddItems, navigate]
     )
 
     const handleFieldMappingSubmit = useCallback(
-        async (fields: InferredField[], ignoredFieldNames: Set<string>, slugFieldName: string) => {
+        async (opts: {
+            csvRecords: Record<string, string>[]
+            fields: InferredField[]
+            ignoredFieldNames: Set<string>
+            slugFieldName: string
+        }) => {
             if (!collection) return
             if (!isAllowedToAddItems) return
 
             try {
                 const result = await processRecordsWithFieldMapping(
                     collection,
-                    csvRecords,
-                    fields,
-                    ignoredFieldNames,
-                    slugFieldName
+                    opts.csvRecords,
+                    opts.fields,
+                    opts.ignoredFieldNames,
+                    opts.slugFieldName
                 )
-                setResult(result)
 
-                if (result.items.some(item => item.action === "conflict")) {
+                const itemsWithConflict = result.items.filter(item => item.action === "conflict")
+                if (itemsWithConflict.length > 0) {
+                    await navigate({ uid: "manage-conflicts", opts: { conflicts: itemsWithConflict, result } })
+
                     return
-                }
+                } else {
+                    await importCSV(collection, result)
 
-                await framer.hideUI()
-                await importCSV(collection, result)
+                    await framer.hideUI()
+                }
             } catch (error) {
                 if (error instanceof FramerPluginClosedError) throw error
 
@@ -136,7 +95,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 })
             }
         },
-        [collection, csvRecords, isAllowedToAddItems]
+        [collection, isAllowedToAddItems, navigate]
     )
 
     const importItems = useCallback(
@@ -149,54 +108,59 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
         [collection]
     )
 
-    // Handle conflicts
-    if (workflowStep === "manage-conflicts" && result && itemsWithConflict.length > 0) {
-        return (
-            <ManageConflicts
-                records={itemsWithConflict}
-                onAllConflictsResolved={resolvedItems => {
-                    const updatedItems = result.items.map(
-                        item => resolvedItems.find(resolved => resolved.slug === item.slug) ?? item
-                    )
-                    void importItems({ ...result, items: updatedItems })
-                }}
-            />
-        )
+    switch (currentRoute.uid) {
+        case "home": {
+            if (collection) {
+                return (
+                    <div className="import-collection">
+                        <CollectionSelector collection={collection} onCollectionChange={setCollection} />
+                        <SelectCSVFile onFileSelected={handleFileSelected} />
+                    </div>
+                )
+            } else {
+                return (
+                    <div className="import-collection">
+                        <CollectionSelector collection={collection} onCollectionChange={setCollection} />
+                        <div className="intro no-border">
+                            <p>Select a collection to import CSV data into.</p>
+                        </div>
+                    </div>
+                )
+            }
+        }
+        case "manage-conflicts": {
+            return (
+                <ManageConflicts
+                    records={currentRoute.opts.conflicts}
+                    onAllConflictsResolved={resolvedItems => {
+                        const updatedItems = currentRoute.opts.result.items.map(
+                            item => resolvedItems.find(resolved => resolved.slug === item.slug) ?? item
+                        )
+                        void importItems({ ...currentRoute.opts.result, items: updatedItems })
+                    }}
+                />
+            )
+        }
+        case "field-mapping":
+            return (
+                <FieldMapping
+                    inferredFields={currentRoute.opts.inferredFields}
+                    csvRecords={currentRoute.opts.csvRecords}
+                    onSubmit={(fields, ignoredFieldNames, slugFieldName) =>
+                        handleFieldMappingSubmit({
+                            csvRecords: currentRoute.opts.csvRecords,
+                            fields,
+                            ignoredFieldNames,
+                            slugFieldName,
+                        })
+                    }
+                    onCancel={async () => {
+                        await navigate({ uid: "home", opts: undefined })
+                    }}
+                />
+            )
+        default:
+            // @ts-expect-error -- exhaustive switch
+            return <div>Unknown route {currentRoute.uid}</div>
     }
-
-    // Field mapping step
-    if (workflowStep === "field-mapping" && collection) {
-        return (
-            <FieldMapping
-                inferredFields={inferredFields}
-                csvRecords={csvRecords}
-                onSubmit={handleFieldMappingSubmit}
-                onCancel={() => {
-                    setWorkflowStep("select-file")
-                    setCsvRecords([])
-                    setInferredFields([])
-                }}
-            />
-        )
-    }
-
-    // File selection step
-    if (workflowStep === "select-file" && collection) {
-        return (
-            <div className="import-collection">
-                <CollectionSelector collection={collection} onCollectionChange={setCollection} />
-                <SelectCSVFile onFileSelected={handleFileSelected} />
-            </div>
-        )
-    }
-
-    // Collection selection step
-    return (
-        <div className="import-collection">
-            <CollectionSelector collection={collection} onCollectionChange={setCollection} />
-            <div className="intro no-border">
-                <p>Select a collection to import CSV data into.</p>
-            </div>
-        </div>
-    )
 }

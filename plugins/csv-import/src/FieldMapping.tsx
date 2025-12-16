@@ -111,7 +111,7 @@ interface FieldMappingProps {
     inferredFields: InferredField[]
     csvRecords: Record<string, string>[]
     onSubmit: (fields: InferredField[], ignoredFieldNames: Set<string>, slugFieldName: string) => Promise<void>
-    onCancel: () => void
+    onCancel: () => Promise<void>
 }
 
 export function FieldMapping({ inferredFields, csvRecords, onSubmit, onCancel }: FieldMappingProps) {
@@ -216,7 +216,7 @@ export function FieldMapping({ inferredFields, csvRecords, onSubmit, onCancel }:
                 <footer>
                     <hr className="sticky-top" />
                     <div className="actions">
-                        <button type="button" onClick={onCancel} disabled={!isAllowedToManage}>
+                        <button type="button" onClick={() => void onCancel()} disabled={!isAllowedToManage}>
                             Cancel
                         </button>
                         <button

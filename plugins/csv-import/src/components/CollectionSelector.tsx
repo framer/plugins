@@ -65,6 +65,7 @@ export function CollectionSelector({ collection, onCollectionChange }: Collectio
                         </option>
                     ))}
                 </select>
+
                 {isAllowedToCreateCollection && (
                     <button
                         type="button"
@@ -101,6 +102,7 @@ export function CollectionSelector({ collection, onCollectionChange }: Collectio
                         placeholder="Collection name"
                         className="create-collection-input"
                     />
+
                     <button
                         type="submit"
                         className="create-collection-submit-button framer-button-primary"

@@ -13,8 +13,9 @@
     justify-content: space-between;
     text-align: left;
     height: 100%;
-    padding: 0 15px 5px 15px;
+    padding: 10px;
     align-items: center;
+    gap: 5px;
 }
 
 .import-form {
@@ -85,7 +86,6 @@
     gap: 15px;
 
     padding: 20px;
-    margin: 10px;
     aspect-ratio: 1 / 1;
     border: 2px dashed rgba(255, 255, 255, 0.2);
     border-radius: 12px;
@@ -127,7 +127,6 @@
     display: flex;
     gap: 8px;
     width: 100%;
-    padding-top: 15px;
 }
 
 .collection-select {

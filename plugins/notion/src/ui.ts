@@ -31,9 +31,9 @@ export async function showLoginUI() {
 export async function showProgressUI() {
     await framer.showUI({
         width: 260,
-        height: 147,
+        height: 102,
         minWidth: 260,
-        minHeight: 147,
+        minHeight: 102,
         resizable: false,
     })
 }

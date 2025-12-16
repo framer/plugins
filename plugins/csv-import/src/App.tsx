@@ -7,10 +7,10 @@ import { CollectionSelector } from "./CollectionSelector"
 import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from "./csv"
 import { FieldMapping } from "./FieldMapping"
 import { ManageConflicts } from "./ManageConflicts"
+import { useMiniRouter } from "./minirouter"
 import { SelectCSVFile } from "./SelectCSVFile"
 import type { InferredField } from "./typeInference"
 import { inferFieldsFromCSV } from "./typeInference"
-import { useMiniRouter } from "./minirouter"
 
 type WorkflowStep = "select-collection" | "select-file" | "field-mapping" | "manage-conflicts"
 

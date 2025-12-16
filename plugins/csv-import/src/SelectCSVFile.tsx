@@ -20,7 +20,7 @@ export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
         }
 
         const handleDragLeave = (event: DragEvent) => {
-            if (!event.relatedTarget) {
+            if (event.relatedTarget) {
                 setIsDragging(false)
             }
         }
@@ -124,7 +124,7 @@ export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
             />
 
             {isDragging && (
-                <div className="dropzone dragging">
+                <div className="intro dropzone">
                     <p>Drop CSV file to import</p>
                 </div>
             )}
@@ -137,7 +137,7 @@ export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
                         </div>
                         <div className="content">
                             <h2>Upload CSV</h2>
-                            <p>Select a CSV file to import. You'll be able to map fields in the next step.</p>
+                            <p>Select a CSV file to import, paste CSV data, or drag and drop a CSV file.</p>
                         </div>
                     </div>
 

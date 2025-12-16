@@ -194,7 +194,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
     return (
         <div className="import-collection">
             <CollectionSelector collection={collection} onCollectionChange={setCollection} />
-            <div className="intro">
+            <div className="intro no-border">
                 <p>Select a collection to import CSV data into.</p>
             </div>
         </div>

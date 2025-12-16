@@ -37,6 +37,10 @@ form {
     gap: 10px;
 }
 
+p a {
+    cursor: pointer;
+}
+
 .sticky-divider {
     position: sticky;
     top: 0;
@@ -294,6 +298,10 @@ select:not(:disabled) {
     flex-direction: row;
     gap: 10px;
     width: 100%;
+}
+
+.actions a {
+    display: contents;
 }
 
 .action-button {

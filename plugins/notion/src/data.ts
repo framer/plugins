@@ -134,6 +134,8 @@ export async function syncCollection(
     let processedCount = 0
     const totalItems = databaseItems.length
 
+    onProgress?.({ current: processedCount, total: totalItems })
+
     const promises = databaseItems.map((item, index) =>
         limit(async () => {
             seenItemIds.add(item.id)

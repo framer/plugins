@@ -1,4 +1,3 @@
-.import-collection,
 .manage-conflicts {
     display: flex;
     flex-direction: column;
@@ -9,6 +8,12 @@
 }
 
 .import-collection {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    text-align: left;
+    height: 100%;
+    padding: 0 15px 5px 15px;
     align-items: center;
 }
 
@@ -97,6 +102,12 @@
 
 .intro p {
     color: var(--framer-color-text-tertiary);
+}
+
+.intro .content {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
 }
 
 .dropzone {

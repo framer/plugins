@@ -139,20 +139,20 @@ export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
                             <h2>Upload CSV</h2>
                             <p>Select a CSV file to import, paste CSV data, or drag and drop a CSV file.</p>
                         </div>
+
+                        <button
+                            className="framer-button-primary"
+                            onClick={event => {
+                                event.preventDefault()
+                                inputOpenedFromImportButton.current = true
+
+                                const input = document.getElementById("file-input") as HTMLInputElement
+                                input.click()
+                            }}
+                        >
+                            Upload File
+                        </button>
                     </div>
-
-                    <button
-                        className="framer-button-primary"
-                        onClick={event => {
-                            event.preventDefault()
-                            inputOpenedFromImportButton.current = true
-
-                            const input = document.getElementById("file-input") as HTMLInputElement
-                            input.click()
-                        }}
-                    >
-                        Upload File
-                    </button>
                 </>
             )}
         </form>

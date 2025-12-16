@@ -359,7 +359,7 @@ export function FieldMapping({
                 <footer>
                     <hr className="sticky-top" />
                     <button
-                        disabled={isSyncing || !isAllowedToManage}
+                        disabled={!isAllowedToManage}
                         tabIndex={0}
                         title={!isAllowedToManage ? "Insufficient permissions" : undefined}
                     >

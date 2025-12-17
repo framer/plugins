@@ -72,9 +72,6 @@ program
       }
     }
 
-    // Auto-enable debug in development unless overridden
-    const isDev = process.env.NODE_ENV === "development"
-
     if (options.logLevel) {
       const levelMap: Record<string, LogLevel> = {
         debug: LogLevel.DEBUG,
@@ -86,7 +83,7 @@ program
       if (level !== undefined) {
         setLogLevel(level)
       }
-    } else if (options.verbose ?? isDev) {
+    } else if (options.verbose) {
       setLogLevel(LogLevel.DEBUG)
     }
 

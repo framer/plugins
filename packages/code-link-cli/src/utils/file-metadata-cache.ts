@@ -103,19 +103,18 @@ export class FileMetadataCache {
   }
 
   private schedulePersist(): void {
-    if (!this.projectDir) {
+    const projectDir = this.projectDir
+    if (!projectDir) {
       return
     }
 
-    if (!this.pendingPersist) {
-      this.pendingPersist = (async () => {
-        try {
-          await Promise.resolve()
-          await savePersistedState(this.projectDir as string, this.persisted)
-        } finally {
-          this.pendingPersist = null
-        }
-      })()
-    }
+    this.pendingPersist ??= (async () => {
+      try {
+        await Promise.resolve()
+        await savePersistedState(projectDir, this.persisted)
+      } finally {
+        this.pendingPersist = null
+      }
+    })()
   }
 }

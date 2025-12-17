@@ -267,7 +267,7 @@ describe("State Machine", () => {
 
       expect(result.state.mode).toBe("snapshot_processing")
       expect(result.state.queuedDiffs).toHaveLength(1)
-      expect(result.state.queuedDiffs[0]).toEqual(file)
+      expect(result.state.queuedDiffs).toContainEqual(file)
       expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(false)
     })
   })

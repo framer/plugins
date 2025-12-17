@@ -33,15 +33,13 @@ export class CodeFilesAPI {
     private async getAllCodeFiles() {
         const codeFiles = await framer.getCodeFiles()
 
-        return Promise.all(
-            codeFiles.map(async file => {
-                const source = file.path ?? file.name
-                return {
-                    name: toCliFileName(source),
-                    content: file.content,
-                }
-            })
-        )
+        return codeFiles.map(file => {
+            const source = file.path || file.name
+            return {
+                name: toCliFileName(source),
+                content: file.content,
+            }
+        })
     }
 
     async publishSnapshot(socket: WebSocket) {
@@ -122,7 +120,7 @@ export class CodeFilesAPI {
     }
 
     async fetchConflictVersions(requests: { fileName: string; lastSyncedAt?: number }[]) {
-        log.debug(`Fetching versions for ${requests.length} files`)
+        log.debug(`Fetching versions for ${String(requests.length)} files`)
 
         // @TODO why only handle errors here...
         let codeFiles
@@ -153,7 +151,7 @@ export class CodeFilesAPI {
             try {
                 // We need to find the timestamp for the last save to know if we can auto-resolve safetly
                 const versions = await file.getVersions()
-                if (versions && versions.length > 0) {
+                if (versions.length > 0) {
                     const latestRemoteVersionMs = Date.parse(versions[0].createdAt)
                     log.debug(`${request.fileName}: ${versions[0].createdAt} (${latestRemoteVersionMs})`)
                     return {
@@ -172,7 +170,7 @@ export class CodeFilesAPI {
         })
 
         const results = await Promise.all(versionPromises)
-        log.debug(`Returning version data for ${results.length} files`)
+        log.debug(`Returning version data for ${String(results.length)} files`)
         return results
     }
 }
@@ -187,7 +185,7 @@ async function upsertFramerFile(fileName: string, content: string): Promise<numb
     const normalizedTarget = canonicalFileName(fileName)
     // @TODO: investigate if we should keep codeFileHandles around rather than getCodeFiles each time
     const codeFiles = await framer.getCodeFiles()
-    const existing = codeFiles.find(file => canonicalFileName(file.path ?? file.name) === canonicalFileName(fileName))
+    const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalizedTarget)
 
     if (existing) {
         await existing.setFileContent(content)
@@ -204,7 +202,7 @@ async function upsertFramerFile(fileName: string, content: string): Promise<numb
 async function deleteFramerFile(fileName: string) {
     const normalizedTarget = canonicalFileName(fileName)
     const codeFiles = await framer.getCodeFiles()
-    const existing = codeFiles.find(file => canonicalFileName(file.path ?? file.name) === normalizedTarget)
+    const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalizedTarget)
 
     if (existing) {
         await existing.remove()

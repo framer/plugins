@@ -112,7 +112,7 @@ export async function detectConflicts(
     persistedState?.get(normalizeForComparison(fileName)) ??
     persistedState?.get(fileName)
 
-  debug(`Detecting conflicts for ${remoteFiles.length} remote files`)
+  debug(`Detecting conflicts for ${String(remoteFiles.length)} remote files`)
 
   // Build a snapshot of all local files (keyed by lowercase for case-insensitive matching)
   const localFiles = await listFiles(filesDir)
@@ -156,7 +156,7 @@ export async function detectConflicts(
           localContent: null,
           remoteContent: remote.content,
           remoteModifiedAt: remote.modifiedAt,
-          lastSyncedAt: persisted?.timestamp,
+          lastSyncedAt: persisted.timestamp,
         })
       } else {
         // New file from remote (never synced before): download
@@ -213,14 +213,14 @@ export async function detectConflicts(
         const localHash = hashFileContent(local.content)
         const localClean = localHash === persisted.contentHash
         debug(
-          `Conflict: ${local.name} deleted in Framer (localClean=${localClean})`
+          `Conflict: ${local.name} deleted in Framer (localClean=${String(localClean)})`
         )
         conflicts.push({
           fileName: local.name,
           localContent: local.content,
           remoteContent: null,
           localModifiedAt: local.modifiedAt,
-          lastSyncedAt: persisted?.timestamp,
+          lastSyncedAt: persisted.timestamp,
           localClean,
         })
       } else {
@@ -391,7 +391,7 @@ export async function deleteLocalFile(
   } catch (err) {
     const nodeError = err as NodeJS.ErrnoException
 
-    if (nodeError?.code === "ENOENT") {
+    if (nodeError.code === "ENOENT") {
       // Treat missing files as already deleted to keep hash tracker in sync
       hashTracker.forget(normalized.relativePath)
       debug(`File already deleted: ${normalized.relativePath}`)
@@ -429,7 +429,6 @@ export function filterEchoedFiles(
   hashTracker: ReturnType<typeof createHashTracker>
 ): FileInfo[] {
   return files.filter((file) => {
-    if (file.content === undefined) return true
     return !hashTracker.shouldSkip(file.name, file.content)
   })
 }

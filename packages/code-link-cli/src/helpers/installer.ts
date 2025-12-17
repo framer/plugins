@@ -14,6 +14,24 @@ export interface InstallerConfig {
   allowUnsupportedNpm?: boolean
 }
 
+/** npm registry package.json exports field value */
+interface NpmExportValue {
+  import?: string
+  require?: string
+  types?: string
+}
+
+/** npm registry API response for a single package version */
+interface NpmPackageVersion {
+  exports?: Record<string, string | NpmExportValue>
+}
+
+/** npm registry API response */
+interface NpmRegistryResponse {
+  "dist-tags"?: { latest?: string }
+  versions?: Record<string, NpmPackageVersion>
+}
+
 const FETCH_TIMEOUT_MS = 60_000
 const MAX_FETCH_RETRIES = 3
 const REACT_TYPES_VERSION = "18.3.12"
@@ -66,43 +84,43 @@ export class Installer {
           // intentionally noop – progress noise is not helpful in CLI output
         },
         finished: (files) => {
-          if (files && files.size > 0) {
+          if (files.size > 0) {
             debug("ATA: type acquisition complete")
           }
         },
         errorMessage: (message: string, error: Error) => {
           warn(`ATA warning: ${message}`, error)
         },
-        receivedFile: async (code: string, receivedPath: string) => {
-          const normalized = receivedPath.replace(/^\//, "")
-          const destination = path.join(this.projectDir, normalized)
+        receivedFile: (code: string, receivedPath: string) => {
+          void (async () => {
+            const normalized = receivedPath.replace(/^\//, "")
+            const destination = path.join(this.projectDir, normalized)
 
-          const pkgMatch = receivedPath.match(
-            /\/node_modules\/(@?[^\/]+(?:\/[^\/]+)?)\//
-          )
+            const pkgMatch = /\/node_modules\/(@?[^/]+(?:\/[^/]+)?)\//.exec(
+              receivedPath
+            )
 
-          // Check if file already exists with same content
-          let isFromCache = false
-          try {
-            const existing = await fs.readFile(destination, "utf-8")
-            if (existing === code) {
-              isFromCache = true
-              if (pkgMatch && !seenPackages.has(pkgMatch[1])) {
-                seenPackages.add(pkgMatch[1])
-                debug(`📦 Types: ${pkgMatch[1]} (from disk cache)`)
+            // Check if file already exists with same content
+            try {
+              const existing = await fs.readFile(destination, "utf-8")
+              if (existing === code) {
+                if (pkgMatch && !seenPackages.has(pkgMatch[1])) {
+                  seenPackages.add(pkgMatch[1])
+                  debug(`📦 Types: ${pkgMatch[1]} (from disk cache)`)
+                }
+                return // Skip write if identical
               }
-              return // Skip write if identical
+            } catch {
+              // File doesn't exist or can't be read, proceed with write
             }
-          } catch {
-            // File doesn't exist or can't be read, proceed with write
-          }
 
-          if (pkgMatch && !seenPackages.has(pkgMatch[1])) {
-            seenPackages.add(pkgMatch[1])
-            debug(`📦 Types: ${pkgMatch[1]}`)
-          }
+            if (pkgMatch && !seenPackages.has(pkgMatch[1])) {
+              seenPackages.add(pkgMatch[1])
+              debug(`📦 Types: ${pkgMatch[1]}`)
+            }
 
-          await this.writeTypeFile(receivedPath, code)
+            await this.writeTypeFile(receivedPath, code)
+          })()
         },
       },
     })
@@ -122,7 +140,7 @@ export class Installer {
       .then(() => {
         debug("Type installer initialization complete")
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         this.initializationPromise = null
         throw err
       })
@@ -143,7 +161,7 @@ export class Installer {
       .then(async () => {
         await this.processImports(fileName, content)
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         debug(`Type installer failed for ${fileName}`, err)
       })
   }
@@ -170,7 +188,7 @@ export class Installer {
         ).join("\n")
         await this.ata(coreImports)
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         debug("Type installation failed", err)
       })
   }
@@ -266,7 +284,7 @@ export class Installer {
       return
     }
 
-    if (normalized.match(/node_modules\/@types\/[^\/]+\/index\.d\.ts$/)) {
+    if (/node_modules\/@types\/[^/]+\/index\.d\.ts$/.exec(normalized)) {
       await this.ensureTypesPackageJson(normalized)
     }
 
@@ -276,7 +294,7 @@ export class Installer {
   }
 
   private async ensureTypesPackageJson(normalizedPath: string): Promise<void> {
-    const pkgMatch = normalizedPath.match(/node_modules\/(@types\/[^\/]+)\//)
+    const pkgMatch = /node_modules\/(@types\/[^/]+)\//.exec(normalizedPath)
     if (!pkgMatch) return
 
     const pkgName = pkgMatch[1]
@@ -287,35 +305,14 @@ export class Installer {
       const response = await fetch(`https://registry.npmjs.org/${pkgName}`)
       if (!response.ok) return
 
-      const npmData = await response.json()
+      const npmData = (await response.json()) as NpmRegistryResponse
       const version = npmData["dist-tags"]?.latest
       if (!version || !npmData.versions?.[version]) return
 
       const pkg = npmData.versions[version]
-
-      if (pkg.exports && typeof pkg.exports === "object") {
-        const fixExport = (value: any): any => {
-          if (typeof value === "string") {
-            const tsPath = value
-              .replace(/\.js$/, ".d.ts")
-              .replace(/\.cjs$/, ".d.cts")
-            return { types: tsPath }
-          }
-
-          if (value && typeof value === "object") {
-            if ((value.import || value.require) && !value.types) {
-              const base = value.import || value.require
-              value.types = base
-                .replace(/\.js$/, ".d.ts")
-                .replace(/\.cjs$/, ".d.cts")
-            }
-          }
-
-          return value
-        }
-
+      if (pkg.exports) {
         for (const key of Object.keys(pkg.exports)) {
-          pkg.exports[key] = fixExport(pkg.exports[key])
+          pkg.exports[key] = fixExportTypes(pkg.exports[key])
         }
       }
 
@@ -336,7 +333,7 @@ export class Installer {
       const overloadPattern =
         /function useRef<T>\(initialValue: T \| undefined\): RefObject<T \| undefined>;/
 
-      if (!overloadPattern.test(content)) {
+      if (!content.includes("function useRef<T>(initialValue: T | undefined)")) {
         return
       }
 
@@ -495,7 +492,7 @@ declare module "*.json"
     try {
       const pkgJsonPath = path.join(destinationDir, "package.json")
       const pkgJson = await fs.readFile(pkgJsonPath, "utf-8")
-      const parsed = JSON.parse(pkgJson)
+      const parsed = JSON.parse(pkgJson) as { version?: string }
 
       if (parsed.version !== version) {
         return false
@@ -547,19 +544,52 @@ declare module "*.json"
 }
 
 // -----------------------------------------------------------------------------
-// Fetch helpers
+// Helpers
 // -----------------------------------------------------------------------------
+
+/**
+ * Transform package.json exports to include .d.ts type paths
+ */
+function fixExportTypes(
+  value: string | NpmExportValue
+): string | NpmExportValue {
+  if (typeof value === "string") {
+    return {
+      types: value.replace(/\.js$/, ".d.ts").replace(/\.cjs$/, ".d.cts"),
+    }
+  }
+
+  if ((value.import ?? value.require) && !value.types) {
+    const base = value.import ?? value.require
+    value.types = base?.replace(/\.js$/, ".d.ts").replace(/\.cjs$/, ".d.cts")
+  }
+
+  return value
+}
+
+interface FetchError extends Error {
+  cause?: { code?: string }
+}
 
 async function fetchWithRetry(
   url: string | URL | Request,
   init?: RequestInit,
   retries = MAX_FETCH_RETRIES
 ): Promise<Response> {
-  const urlString = typeof url === "string" ? url : url.toString()
+  let urlString: string
+  if (typeof url === "string") {
+    urlString = url
+  } else if (url instanceof URL) {
+    urlString = url.href
+  } else {
+    urlString = url.url
+  }
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+    const timeout = setTimeout(() => {
+      controller.abort()
+    }, FETCH_TIMEOUT_MS)
 
     try {
       const response = await fetch(url, {
@@ -568,19 +598,20 @@ async function fetchWithRetry(
       })
       clearTimeout(timeout)
       return response
-    } catch (error: any) {
+    } catch (err: unknown) {
       clearTimeout(timeout)
+      const error = err as FetchError
 
       const isRetryable =
-        error?.cause?.code === "ECONNRESET" ||
-        error?.cause?.code === "ETIMEDOUT" ||
-        error?.cause?.code === "UND_ERR_CONNECT_TIMEOUT" ||
-        error?.message?.includes("timeout")
+        error.cause?.code === "ECONNRESET" ||
+        error.cause?.code === "ETIMEDOUT" ||
+        error.cause?.code === "UND_ERR_CONNECT_TIMEOUT" ||
+        error.message.includes("timeout")
 
       if (attempt < retries && isRetryable) {
         const delay = attempt * 1_000
         warn(
-          `Fetch failed (${error?.cause?.code || error?.message}) for ${urlString}, retrying in ${delay}ms...`
+          `Fetch failed (${error.cause?.code ?? error.message}) for ${urlString}, retrying in ${delay}ms...`
         )
         await new Promise((resolve) => setTimeout(resolve, delay))
         continue

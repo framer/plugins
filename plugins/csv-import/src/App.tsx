@@ -7,7 +7,7 @@ import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from
 import { Home } from "./routes/Home"
 import { FieldMapping } from "./routes/FieldMapping"
 import { ManageConflicts } from "./routes/ManageConflicts"
-import { useMiniRouter } from "./utils/minirouter"
+import { useMiniRouter } from "./minirouter"
 import type { InferredField } from "./utils/typeInference"
 import { inferFieldsFromCSV } from "./utils/typeInference"
 
@@ -110,11 +110,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
     switch (currentRoute.uid) {
         case "home": {
             return (
-                <Home
-                    collection={collection}
-                    onCollectionChange={setCollection}
-                    onFileSelected={handleFileSelected}
-                />
+                <Home collection={collection} onCollectionChange={setCollection} onFileSelected={handleFileSelected} />
             )
         }
         case "manage-conflicts": {

@@ -123,8 +123,8 @@ export function FieldMapping({ inferredFields, csvRecords, onSubmit, onCancel }:
 
     // Determine possible slug fields (string or formattedText types)
     const possibleSlugFields = useMemo(() => {
-        return fields.filter(field => field.inferredType === "string" || field.inferredType === "formattedText")
-    }, [fields])
+        return fields.filter(field => csvRecords.every(record => record[field.originalName]))
+    }, [csvRecords, fields])
 
     useEffect(() => {
         // Auto-select first possible slug field

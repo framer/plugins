@@ -16,7 +16,7 @@ export function extractImports(code: string): ImportInfo[] {
   const seen = new Set<string>()
 
   const npmRegex =
-    /import\s+(?:(?:\*\s+as\s+\w+)|(?:\w+)|(?:\{[^}]*\}))\s+from\s+['"]([^.\/][^'"]+)['"]/g
+    /import\s+(?:(?:\*\s+as\s+\w+)|(?:\w+)|(?:\{[^}]*\}))\s+from\s+['"]([^./][^'"]+)['"]/g
   const urlRegex =
     /import\s+(?:(?:\*\s+as\s+\w+)|(?:\w+)|(?:\{[^}]*\}))\s+from\s+['"]https?:\/\/[^'"]+['"]/g
 
@@ -57,6 +57,6 @@ export function extractImports(code: string): ImportInfo[] {
  * Attempt to derive an npm-style package specifier from a URL import.
  */
 export function extractPackageFromUrl(url: string): string | null {
-  const match = url.match(/\/(@?[^@\/]+(?:\/[^@\/]+)?)/)
+  const match = /\/(@?[^@/]+(?:\/[^@/]+)?)/.exec(url)
   return match?.[1] ?? null
 }

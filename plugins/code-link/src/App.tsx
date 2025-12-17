@@ -2,8 +2,8 @@ import {
     type ConflictSummary,
     createSyncTracker,
     getPortFromHash,
-    isIncomingMessage,
     type IncomingMessage,
+    isIncomingMessage,
     type Mode,
     type PendingDelete,
     type ProjectInfo,
@@ -397,13 +397,15 @@ function InfoPanel({ command }: InfoPanelProps) {
     const copyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     const handleCopy = async () => {
-        if (copyTimeout.current) clearTimeout(copyTimeout.current) 
+        if (copyTimeout.current) clearTimeout(copyTimeout.current)
         if (!command) return
-        
-        try {   
+
+        try {
             await copyToClipboard(command)
             setCopyState("copied")
-            copyTimeout.current = setTimeout(() => { setCopyState("returning"); }, 2000)
+            copyTimeout.current = setTimeout(() => {
+                setCopyState("returning")
+            }, 2000)
         } catch {
             // Don't animate when failing
         }
@@ -596,8 +598,19 @@ function ConflictPanel({ conflicts, onResolve }: ConflictPanelProps) {
             </ul>
             <div className="framer-divider" />
             <div className="actions">
-                <button onClick={() => { onResolve("local"); }}>Keep Local</button>
-                <button className="framer-button-primary" onClick={() => { onResolve("remote"); }}>
+                <button
+                    onClick={() => {
+                        onResolve("local")
+                    }}
+                >
+                    Keep Local
+                </button>
+                <button
+                    className="framer-button-primary"
+                    onClick={() => {
+                        onResolve("remote")
+                    }}
+                >
                     Keep Framer
                 </button>
             </div>

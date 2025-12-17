@@ -17,13 +17,13 @@ class PluginDisconnectedError extends Error {
   }
 }
 
-type PendingAction<T> = {
+interface PendingAction<T> {
   resolve: (value: T) => void
   reject: (error: Error) => void
 }
 
 export class UserActionCoordinator {
-  private pendingActions = new Map<string, PendingAction<any>>()
+  private pendingActions = new Map<string, PendingAction<unknown>>()
 
   /**
    * Sends the delete request to the plugin and awaits the user's decision
@@ -134,7 +134,7 @@ export class UserActionCoordinator {
   /**
    * Handle incoming confirmation response
    */
-  handleConfirmation<T>(actionId: string, value: T): boolean {
+  handleConfirmation(actionId: string, value: unknown): boolean {
     const pending = this.pendingActions.get(actionId)
     if (!pending) {
       debug(`Unexpected confirmation for ${actionId}`)

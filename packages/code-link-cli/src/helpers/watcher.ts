@@ -25,10 +25,10 @@ export interface Watcher {
  * Initializes a file watcher for the given directory
  */
 export function initWatcher(filesDir: string): Watcher {
-  const handlers: Array<(event: WatcherEvent) => void> = []
+  const handlers: ((event: WatcherEvent) => void)[] = []
 
   const watcher = chokidar.watch(filesDir, {
-    ignored: /(^|[\/\\])\../, // ignore dotfiles
+    ignored: /(^|[/\\])\.\./, // ignore dotfiles
     persistent: true,
     ignoreInitial: false, // Emit add events for existing files so we can sanitize them
   })
@@ -90,15 +90,19 @@ export function initWatcher(filesDir: string): Watcher {
     }
   }
 
-  watcher.on("add", (filePath) => emitEvent("add", filePath))
-  watcher.on("change", (filePath) => emitEvent("change", filePath))
-  watcher.on("unlink", (filePath) => emitEvent("delete", filePath))
+  watcher.on("add", (filePath) => {
+    void emitEvent("add", filePath)
+  })
+  watcher.on("change", (filePath) => {
+    void emitEvent("change", filePath)
+  })
+  watcher.on("unlink", (filePath) => {
+    void emitEvent("delete", filePath)
+  })
 
   return {
-    on(event: "change", handler: (event: WatcherEvent) => void): void {
-      if (event === "change") {
-        handlers.push(handler)
-      }
+    on(_event: "change", handler: (event: WatcherEvent) => void): void {
+      handlers.push(handler)
     },
 
     async close(): Promise<void> {

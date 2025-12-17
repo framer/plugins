@@ -55,7 +55,7 @@ export async function loadPersistedState(
 
   try {
     const data = await fs.readFile(statePath, "utf-8")
-    const parsed: PersistedState = JSON.parse(data)
+    const parsed = JSON.parse(data) as PersistedState
 
     if (parsed.version !== CURRENT_VERSION) {
       warn(

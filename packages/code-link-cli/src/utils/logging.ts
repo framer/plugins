@@ -112,7 +112,9 @@ export function debug(message: string, ...args: unknown[]): void {
 export function info(message: string, ...args: unknown[]): void {
   if (currentLevel <= LogLevel.INFO) {
     const formatted = args.length > 0 ? `${message} ${args.join(" ")}` : message
-    logWithDedupe(formatted, () => console.log(formatted))
+    logWithDedupe(formatted, () => {
+      console.log(formatted)
+    })
   }
 }
 
@@ -155,21 +157,27 @@ export function success(message: string, ...args: unknown[]): void {
 export function fileDown(fileName: string): void {
   if (currentLevel <= LogLevel.INFO) {
     const msg = `  ${pc.blue("↓")} ${fileName}`
-    logWithDedupe(msg, () => console.log(msg))
+    logWithDedupe(msg, () => {
+      console.log(msg)
+    })
   }
 }
 
 export function fileUp(fileName: string): void {
   if (currentLevel <= LogLevel.INFO) {
     const msg = `  ${pc.green("↑")} ${fileName}`
-    logWithDedupe(msg, () => console.log(msg))
+    logWithDedupe(msg, () => {
+      console.log(msg)
+    })
   }
 }
 
 export function fileDelete(fileName: string): void {
   if (currentLevel <= LogLevel.INFO) {
     const msg = `  ${pc.red("×")} ${fileName}`
-    logWithDedupe(msg, () => console.log(msg))
+    logWithDedupe(msg, () => {
+      console.log(msg)
+    })
   }
 }
 

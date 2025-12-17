@@ -16,14 +16,14 @@ import { getPortFromHash } from "@code-link/shared"
 import { getProjectHashFromCwd } from "./utils/project.js"
 
 const require = createRequire(import.meta.url)
-const { version } = require("../package.json")
+const { version } = require("../package.json") as { version: string }
 
 const program = new Command()
 
 program.exitOverride((err) => {
   if (err.code === "commander.missingArgument") {
     console.error("Missing Project ID. Copy command via Code Link Plugin.")
-    process.exit(err.exitCode ?? 1)
+    process.exit(err.exitCode)
   }
   throw err
 })
@@ -48,7 +48,14 @@ program
     "--unsupported-npm",
     "Allow type acquisition for unsupported npm packages"
   )
-  .action(async (projectHash: string | undefined, options) => {
+  .action(async (projectHash: string | undefined, options: {
+    name?: string
+    dir?: string
+    verbose?: boolean
+    logLevel?: string
+    dangerouslyAutoDelete?: boolean
+    unsupportedNpm?: boolean
+  }) => {
     // If no projectHash provided, try to read from cwd's package.json
     if (!projectHash) {
       const detected = await getProjectHashFromCwd()
@@ -75,11 +82,11 @@ program
         warn: LogLevel.WARN,
         error: LogLevel.ERROR,
       }
-      const level = levelMap[options.logLevel.toLowerCase()]
+      const level = levelMap[options.logLevel.toLowerCase()] as LogLevel | undefined
       if (level !== undefined) {
         setLogLevel(level)
       }
-    } else if (options.verbose || isDev) {
+    } else if (options.verbose ?? isDev) {
       setLogLevel(LogLevel.DEBUG)
     }
 

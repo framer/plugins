@@ -2,27 +2,36 @@ import { describe, expect, it, vi, afterEach } from "vitest"
 import fs from "fs/promises"
 import os from "os"
 import path from "path"
-import { initWatcher } from "./watcher.js"
+import { initWatcher, type Watcher } from "./watcher.js"
+import type { WatcherEvent } from "../types.js"
 
-const createdWatchers: any[] = []
+interface MockWatcher {
+  on: (event: "add" | "change" | "unlink", handler: (file: string) => void) => MockWatcher
+  __emit: (event: "add" | "change" | "unlink", filePath: string) => Promise<void>
+  close: ReturnType<typeof vi.fn>
+}
+
+const createdWatchers: MockWatcher[] = []
 
 vi.mock("chokidar", () => {
-  const createMockWatcher = () => {
-    const handlers: Record<string, Array<(filePath: string) => any>> = {
+  const createMockWatcher = (): MockWatcher => {
+    const handlers: Record<string, ((filePath: string) => void)[]> = {
       add: [],
       change: [],
       unlink: [],
     }
 
     return {
-      on(event: "add" | "change" | "unlink", handler: (file: string) => any) {
-        handlers[event]?.push(handler)
+      on(event: "add" | "change" | "unlink", handler: (file: string) => void) {
+        handlers[event].push(handler)
         return this
       },
       async __emit(event: "add" | "change" | "unlink", filePath: string) {
         for (const handler of handlers[event] ?? []) {
-          await handler(filePath)
+          handler(filePath)
         }
+        // Allow async handlers to complete
+        await new Promise((resolve) => setTimeout(resolve, 10))
       },
       close: vi.fn().mockResolvedValue(undefined),
     }
@@ -44,10 +53,11 @@ describe("initWatcher", () => {
 
   it("ignores unsupported extensions and sanitizes added files", async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
-    const events: any[] = []
-    const watcher = initWatcher(tmpDir)
+    const events: WatcherEvent[] = []
+    const watcher: Watcher = initWatcher(tmpDir)
     watcher.on("change", (event) => events.push(event))
-    const rawWatcher = createdWatchers.at(-1)!
+    const rawWatcher = createdWatchers.at(-1)
+    if (!rawWatcher) throw new Error("No watcher created")
 
     const unsupportedPath = path.join(tmpDir, "note.txt")
     await fs.writeFile(unsupportedPath, "hello", "utf-8")

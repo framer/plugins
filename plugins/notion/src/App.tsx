@@ -8,7 +8,7 @@ import { type DatabaseIdMap, type DataSource, getDataSource } from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { NoTableAccess } from "./NoAccess"
 import { SelectDataSource } from "./SelectDataSource"
-import { showAccessErrorUI, showFieldMappingUI, showLoginUI } from "./ui"
+import { showAccessErrorUI, showFieldMappingUI, showLoginUI, showProgressUI } from "./ui"
 
 interface AppProps {
     collection: ManagedCollection
@@ -32,6 +32,7 @@ export function App({
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDatabaseId))
     const [hasAccessError, setHasAccessError] = useState(false)
+    const [isSyncing, setIsSyncing] = useState(false)
 
     // Support self-referencing databases by allowing the current collection to be referenced.
     const databaseIdMap = useMemo(() => {
@@ -46,6 +47,8 @@ export function App({
             try {
                 if (hasAccessError) {
                     await showAccessErrorUI()
+                } else if (isSyncing) {
+                    await showProgressUI()
                 } else if (dataSource || isLoadingDataSource) {
                     await showFieldMappingUI()
                 } else {
@@ -60,7 +63,7 @@ export function App({
         }
 
         void showUI()
-    }, [dataSource, isLoadingDataSource, hasAccessError])
+    }, [dataSource, isLoadingDataSource, hasAccessError, isSyncing])
 
     useEffect(() => {
         if (!previousDatabaseId) {
@@ -149,6 +152,7 @@ export function App({
             previousLastSynced={previousLastSynced}
             previousIgnoredFieldIds={previousIgnoredFieldIds}
             databaseIdMap={databaseIdMap}
+            setIsSyncing={setIsSyncing}
         />
     )
 }

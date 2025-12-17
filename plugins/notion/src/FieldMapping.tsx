@@ -23,6 +23,7 @@ import {
     type SyncProgress,
     syncCollection,
 } from "./data"
+import { Progress } from "./Progress"
 import { assert, syncMethods } from "./utils"
 
 const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
@@ -144,6 +145,7 @@ interface FieldMappingProps {
     previousLastSynced: string | null
     previousIgnoredFieldIds: string | null
     databaseIdMap: DatabaseIdMap
+    setIsSyncing: (isSyncing: boolean) => void
 }
 
 export function FieldMapping({
@@ -153,6 +155,7 @@ export function FieldMapping({
     previousLastSynced,
     previousIgnoredFieldIds,
     databaseIdMap,
+    setIsSyncing,
 }: FieldMappingProps) {
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
@@ -250,6 +253,7 @@ export function FieldMapping({
         const task = async () => {
             try {
                 setStatus("syncing-collection")
+                setIsSyncing(true)
                 setSyncProgress(null)
 
                 const fields = fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
@@ -284,6 +288,7 @@ export function FieldMapping({
                 )
             } finally {
                 setStatus("mapping-fields")
+                setIsSyncing(false)
                 setSyncProgress(null)
             }
         }
@@ -299,7 +304,9 @@ export function FieldMapping({
         )
     }
 
-    const progressPercent = syncProgress ? ((syncProgress.current / syncProgress.total) * 100).toFixed(1) : null
+    if (isSyncing) {
+        return <Progress current={syncProgress?.current ?? 0} total={syncProgress?.total ?? 0} />
+    }
 
     return (
         <main className="framer-hide-scrollbar mapping">
@@ -350,15 +357,11 @@ export function FieldMapping({
                 <footer>
                     <hr className="sticky-top" />
                     <button
-                        disabled={isSyncing || !isAllowedToManage}
+                        disabled={!isAllowedToManage}
                         tabIndex={0}
                         title={!isAllowedToManage ? "Insufficient permissions" : undefined}
                     >
-                        {isSyncing ? (
-                            <>{!syncProgress ? <div className="framer-spinner" /> : <span>{progressPercent}%</span>}</>
-                        ) : (
-                            <span>Import from {dataSourceName.trim() ? dataSourceName : "Untitled"}</span>
-                        )}
+                        <span>Import from {dataSourceName.trim() ? dataSourceName : "Untitled"}</span>
                     </button>
                 </footer>
             </form>

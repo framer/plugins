@@ -59,9 +59,9 @@ function hasValidExtension(fileName: string): boolean {
 }
 
 function splitExtension(fileName: string): [string, string] {
-  const match = fileName.match(/^(.+?)(\.[^.]+)?$/)
+  const match = /^(.+?)(\.[^.]+)?$/.exec(fileName)
   if (!match) return [fileName, ""]
-  return [match[1], match[2]?.slice(1) || ""]
+  return [match[1], match[2].slice(1)]
 }
 
 function dirname(filePath: string): string {
@@ -146,8 +146,8 @@ export function sanitizeFilePath(
   capitalizeReactComponent = true
 ): SanitizedNameResult {
   const trimmed = input.trim()
-  let [inputName, extension] = splitExtension(filename(trimmed))
-  if (extension) extension = `.${extension}`
+  const [inputName, extension] = splitExtension(filename(trimmed))
+  const extensionWithDot = extension ? `.${extension}` : ""
 
   const dirName = dirname(trimmed)
     .split("/")

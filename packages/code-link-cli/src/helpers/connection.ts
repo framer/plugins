@@ -98,7 +98,7 @@ export function initConnection(port: number): Promise<Connection> {
 
         ws.on("close", (code, reason) => {
           debug(
-            `Client disconnected (code: ${code}, reason: ${reason?.toString() || "none"})`
+            `Client disconnected (code: ${code}, reason: ${reason.toString()})`
           )
           handlers.onDisconnect?.()
         })
@@ -109,25 +109,27 @@ export function initConnection(port: number): Promise<Connection> {
       })
 
       resolve({
-        on(
-          event: "handshake" | "message" | "disconnect" | "error",
-          handler: any
-        ): void {
-          if (event === "handshake") {
-            handlers.onHandshake = handler
-          } else if (event === "message") {
-            handlers.onMessage = handler
-          } else if (event === "disconnect") {
-            handlers.onDisconnect = handler
-          } else if (event === "error") {
-            handlers.onError = handler
+        on(event, handler) {
+          switch (event) {
+            case "handshake":
+              handlers.onHandshake = handler as ConnectionCallbacks["onHandshake"]
+              break
+            case "message":
+              handlers.onMessage = handler as ConnectionCallbacks["onMessage"]
+              break
+            case "disconnect":
+              handlers.onDisconnect = handler as ConnectionCallbacks["onDisconnect"]
+              break
+            case "error":
+              handlers.onError = handler as ConnectionCallbacks["onError"]
+              break
           }
         },
 
         close(): void {
           wss.close()
         },
-      })
+      } satisfies Connection)
     })
   })
 }

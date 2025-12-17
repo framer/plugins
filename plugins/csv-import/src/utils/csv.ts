@@ -413,9 +413,9 @@ export async function processRecordsWithFieldMapping(
     // Create field mapping from inferred fields to CSV column names
     const csvToFieldMapping = new Map<string, string>()
     for (const field of inferredFields) {
-        if (!ignoredFieldNames.has(field.originalName)) {
+        if (!ignoredFieldNames.has(field.columnName)) {
             // Map CSV column name to the field name user wants to use
-            csvToFieldMapping.set(field.originalName, field.name || field.originalName)
+            csvToFieldMapping.set(field.columnName, field.name || field.columnName)
         }
     }
 

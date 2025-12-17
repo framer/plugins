@@ -2,7 +2,7 @@ import type { Field } from "framer-plugin"
 
 export interface InferredField {
     name: string
-    originalName: string
+    columnName: string
     inferredType: Field["type"]
     allowedTypes: Field["type"][]
 }
@@ -149,7 +149,7 @@ export function inferFieldsFromCSV(records: Record<string, string>[]): InferredF
 
         inferredFields.push({
             name: fieldName,
-            originalName: fieldName,
+            columnName: fieldName,
             inferredType,
             allowedTypes,
         })

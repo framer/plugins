@@ -38,7 +38,7 @@ function FieldMappingRow({
     onNameChange,
     onFieldTypeChange,
 }: FieldMappingRowProps) {
-    const { originalName, name, inferredType, allowedTypes } = field
+    const { columnName: originalName, name, inferredType, allowedTypes } = field
     const disabled = ignored || !isAllowedToManage
 
     return (
@@ -123,26 +123,26 @@ export function FieldMapping({ inferredFields, csvRecords, onSubmit, onCancel }:
 
     // Determine possible slug fields (string or formattedText types)
     const possibleSlugFields = useMemo(() => {
-        return fields.filter(field => csvRecords.every(record => record[field.originalName]))
+        return fields.filter(field => csvRecords.every(record => record[field.columnName]))
     }, [csvRecords, fields])
 
     useEffect(() => {
         // Auto-select first possible slug field
         if (possibleSlugFields.length > 0 && !selectedSlugFieldName) {
-            setSelectedSlugFieldName(possibleSlugFields[0]?.originalName ?? null)
+            setSelectedSlugFieldName(possibleSlugFields[0]?.columnName ?? null)
         }
     }, [possibleSlugFields, selectedSlugFieldName])
 
     const changeFieldName = (originalName: string, name: string) => {
         setFields(prevFields =>
-            prevFields.map(field => (field.originalName === originalName ? { ...field, name } : field))
+            prevFields.map(field => (field.columnName === originalName ? { ...field, name } : field))
         )
     }
 
     const changeFieldType = (originalName: string, type: Field["type"]) => {
         setFields(prevFields =>
             prevFields.map(field =>
-                field.originalName === originalName && field.allowedTypes.includes(type)
+                field.columnName === originalName && field.allowedTypes.includes(type)
                     ? { ...field, inferredType: type }
                     : field
             )
@@ -189,8 +189,8 @@ export function FieldMapping({ inferredFields, csvRecords, onSubmit, onCancel }:
                         }}
                     >
                         {possibleSlugFields.map(field => (
-                            <option key={`slug-field-${field.originalName}`} value={field.originalName}>
-                                {field.name || field.originalName}
+                            <option key={`slug-field-${field.columnName}`} value={field.columnName}>
+                                {field.name || field.columnName}
                             </option>
                         ))}
                     </select>
@@ -202,9 +202,9 @@ export function FieldMapping({ inferredFields, csvRecords, onSubmit, onCancel }:
                     <span>Name</span>
                     {fields.map(field => (
                         <FieldMappingRow
-                            key={`field-${field.originalName}`}
+                            key={`field-${field.columnName}`}
                             field={field}
-                            ignored={ignoredFieldNames.has(field.originalName)}
+                            ignored={ignoredFieldNames.has(field.columnName)}
                             isAllowedToManage={isAllowedToManage}
                             onToggleIgnored={toggleFieldIgnoredState}
                             onNameChange={changeFieldName}

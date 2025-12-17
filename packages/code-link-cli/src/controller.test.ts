@@ -11,7 +11,7 @@ describe("State Machine", () => {
         mode: "disconnected" as const,
         socket: null,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -39,7 +39,7 @@ describe("State Machine", () => {
         mode: "watching" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -74,7 +74,7 @@ describe("State Machine", () => {
             },
           ],
         ]),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -98,7 +98,7 @@ describe("State Machine", () => {
         mode: "handshaking" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -113,7 +113,7 @@ describe("State Machine", () => {
       })
 
       expect(result.state.mode).toBe("snapshot_processing")
-      expect(result.state.queuedDiffs).toEqual(remoteFiles)
+      expect(result.state.pendingRemoteChanges).toEqual(remoteFiles)
       expect(result.effects).toHaveLength(2)
       expect(result.effects[0]).toMatchObject({
         type: "LOG",
@@ -130,7 +130,7 @@ describe("State Machine", () => {
         mode: "watching" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -156,7 +156,7 @@ describe("State Machine", () => {
         mode: "snapshot_processing" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -188,7 +188,7 @@ describe("State Machine", () => {
         mode: "snapshot_processing" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -224,7 +224,7 @@ describe("State Machine", () => {
         mode: "watching" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -249,7 +249,7 @@ describe("State Machine", () => {
         mode: "snapshot_processing" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -266,8 +266,8 @@ describe("State Machine", () => {
       })
 
       expect(result.state.mode).toBe("snapshot_processing")
-      expect(result.state.queuedDiffs).toHaveLength(1)
-      expect(result.state.queuedDiffs).toContainEqual(file)
+      expect(result.state.pendingRemoteChanges).toHaveLength(1)
+      expect(result.state.pendingRemoteChanges).toContainEqual(file)
       expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(false)
     })
   })
@@ -287,7 +287,7 @@ describe("State Machine", () => {
             },
           ],
         ]),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -316,7 +316,7 @@ describe("State Machine", () => {
         mode: "snapshot_processing" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -338,7 +338,7 @@ describe("State Machine", () => {
         mode: "disconnected" as const,
         socket: null,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -358,7 +358,7 @@ describe("State Machine", () => {
     })
   })
 
-  describe("REMOTE_DELETE_CONFIRMED transition", () => {
+  describe("LOCAL_DELETE_APPROVED transition", () => {
     it("applies the delete and persists state", () => {
       const initialState = {
         mode: "watching" as const,
@@ -373,13 +373,13 @@ describe("State Machine", () => {
             },
           ],
         ]),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
 
       const result = transition(initialState, {
-        type: "REMOTE_DELETE_CONFIRMED",
+        type: "LOCAL_DELETE_APPROVED",
         fileName: "Test.tsx",
       })
 
@@ -391,19 +391,19 @@ describe("State Machine", () => {
     })
   })
 
-  describe("REMOTE_DELETE_CANCELLED transition", () => {
+  describe("LOCAL_DELETE_REJECTED transition", () => {
     it("restores the file", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
 
       const result = transition(initialState, {
-        type: "REMOTE_DELETE_CANCELLED",
+        type: "LOCAL_DELETE_REJECTED",
         fileName: "Test.tsx",
         content: "restored content",
       })
@@ -429,7 +429,7 @@ describe("State Machine", () => {
         mode: "watching" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -449,7 +449,7 @@ describe("State Machine", () => {
         mode: "disconnected" as const,
         socket: null,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -474,7 +474,7 @@ describe("State Machine", () => {
         mode: "watching" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -507,7 +507,7 @@ describe("State Machine", () => {
         mode: "watching" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -530,7 +530,7 @@ describe("State Machine", () => {
         mode: "handshaking" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -554,7 +554,7 @@ describe("State Machine", () => {
         mode: "disconnected" as const,
         socket: null,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -588,7 +588,7 @@ describe("State Machine", () => {
             },
           ],
         ]),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -609,7 +609,7 @@ describe("State Machine", () => {
         mode: "watching" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -644,7 +644,7 @@ describe("State Machine", () => {
         socket: {} as WebSocket,
         files: new Map(),
         pendingConflicts: [conflict1, conflict2],
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -694,7 +694,7 @@ describe("State Machine", () => {
         socket: {} as WebSocket,
         files: new Map(),
         pendingConflicts: [conflict1, conflict2],
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -732,7 +732,7 @@ describe("State Machine", () => {
         mode: "watching" as const,
         socket: {} as WebSocket,
         files: new Map(),
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -765,7 +765,7 @@ describe("State Machine", () => {
         mode: "conflict_resolution" as const,
         socket: {} as WebSocket,
         pendingConflicts: [conflict],
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -799,7 +799,7 @@ describe("State Machine", () => {
         mode: "conflict_resolution" as const,
         socket: {} as WebSocket,
         pendingConflicts: [conflict],
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }
@@ -830,7 +830,7 @@ describe("State Machine", () => {
         mode: "conflict_resolution" as const,
         socket: {} as WebSocket,
         pendingConflicts: [conflict],
-        queuedDiffs: [],
+        pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
       }

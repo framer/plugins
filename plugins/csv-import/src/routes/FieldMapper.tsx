@@ -21,6 +21,41 @@ const labelByFieldType: Record<Field["type"], string> = {
     unsupported: "Unsupported",
 }
 
+/**
+ * Check if a CSV column's inferred type can be imported into a target field type.
+ * Some field types are more general and can accept values from other types.
+ *
+ * - Plain Text & Formatted Text: accept anything (most general)
+ * - Link: accepts link, string
+ * - Image: accepts image, link, string
+ * - File: accepts file, image, link, string
+ * - Number, Boolean, Date, Color: only accept their own type
+ */
+function isTypeCompatible(sourceType: Field["type"], targetType: Field["type"]): boolean {
+    // Same type is always compatible
+    if (sourceType === targetType) return true
+
+    // Plain Text and Formatted Text can accept anything
+    if (targetType === "string" || targetType === "formattedText") return true
+
+    // Link can accept strings (URLs are detected as strings sometimes)
+    if (targetType === "link" && sourceType === "string") return true
+
+    // Image can accept link or string
+    if (targetType === "image" && (sourceType === "link" || sourceType === "string")) return true
+
+    // File can accept image, link, or string
+    if (targetType === "file" && (sourceType === "image" || sourceType === "link" || sourceType === "string")) {
+        return true
+    }
+
+    // Enum can accept strings
+    if (targetType === "enum" && sourceType === "string") return true
+
+    // Strict types: number, boolean, date, color only accept their own type
+    return false
+}
+
 export type MappingAction = "create" | "map" | "ignore"
 
 export interface FieldMappingItem {
@@ -200,7 +235,7 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
 
                     if (matchingField) {
                         // Found a match - check type compatibility
-                        const hasTypeMismatch = matchingField.type !== inferredField.inferredType
+                        const hasTypeMismatch = !isTypeCompatible(inferredField.inferredType, matchingField.type)
                         return {
                             inferredField,
                             action: "map" as const,
@@ -278,7 +313,9 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
 
                     // Map to existing field
                     const targetField = existingFields.find(f => f.id === targetFieldId)
-                    const hasTypeMismatch = targetField ? targetField.type !== item.inferredField.inferredType : false
+                    const hasTypeMismatch = targetField
+                        ? !isTypeCompatible(item.inferredField.inferredType, targetField.type)
+                        : false
 
                     return {
                         ...item,

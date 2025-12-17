@@ -1113,7 +1113,7 @@ async function executeEffect(
 
     case "LOG": {
       const logFns = { info, warn, success, debug }
-      const logFn = logFns[effect.level] ?? debug
+      const logFn = logFns[effect.level]
       logFn(effect.message)
       return []
     }
@@ -1188,7 +1188,7 @@ export async function start(config: Config): Promise<void> {
   const connection = await initConnection(config.port)
 
   // Handle initial handshake
-  connection.on("handshake", async (client: WebSocket, message) => {
+  connection.on("handshake", (client: WebSocket, message) => {
     debug(`Received handshake: ${message.projectName} (${message.projectId})`)
 
     // Validate project hash (normalize both to short hash for comparison)
@@ -1202,36 +1202,38 @@ export async function start(config: Config): Promise<void> {
       return
     }
 
-    // Process handshake through state machine
-    await processEvent({
-      type: "HANDSHAKE",
-      socket: client,
-      projectInfo: {
-        projectId: message.projectId,
-        projectName: message.projectName,
-      },
-    })
-
-    // Initialize installer if needed
-    if (config.projectDir && !installer) {
-      installer = new Installer({
-        projectDir: config.projectDir,
-        allowUnsupportedNpm: config.allowUnsupportedNpm,
+    void (async () => {
+      // Process handshake through state machine
+      await processEvent({
+        type: "HANDSHAKE",
+        socket: client,
+        projectInfo: {
+          projectId: message.projectId,
+          projectName: message.projectName,
+        },
       })
-      await installer.initialize()
-      // Start file watcher now that we have a directory
-      startWatcher()
-    }
 
-    // Cancel any pending disconnect message (fast reconnect)
-    cancelDisconnectMessage()
+      // Initialize installer if needed
+      if (config.projectDir && !installer) {
+        installer = new Installer({
+          projectDir: config.projectDir,
+          allowUnsupportedNpm: config.allowUnsupportedNpm,
+        })
+        await installer.initialize()
+        // Start file watcher now that we have a directory
+        startWatcher()
+      }
 
-    // Only show "Connected" on initial connection, not reconnects
-    // Reconnect confirmation happens in SYNC_COMPLETE
-    const wasDisconnected = wasRecentlyDisconnected()
-    if (!wasDisconnected && !didShowDisconnect()) {
-      success(`Connected to ${message.projectName}`)
-    }
+      // Cancel any pending disconnect message (fast reconnect)
+      cancelDisconnectMessage()
+
+      // Only show "Connected" on initial connection, not reconnects
+      // Reconnect confirmation happens in SYNC_COMPLETE
+      const wasDisconnected = wasRecentlyDisconnected()
+      if (!wasDisconnected && !didShowDisconnect()) {
+        success(`Connected to ${message.projectName}`)
+      }
+    })()
   })
 
   // Message Handler
@@ -1343,26 +1345,28 @@ export async function start(config: Config): Promise<void> {
         return
     }
 
-    if (event) {
-      await processEvent(event)
-    }
+    await processEvent(event)
   }
 
-  connection.on("message", async (message: IncomingMessage) => {
-    try {
-      await handleMessage(message)
-    } catch (err) {
-      error("Error handling message:", err)
-    }
+  connection.on("message", (message: IncomingMessage) => {
+    void (async () => {
+      try {
+        await handleMessage(message)
+      } catch (err) {
+        error("Error handling message:", err)
+      }
+    })()
   })
 
-  connection.on("disconnect", async () => {
+  connection.on("disconnect", () => {
     // Schedule disconnect message with delay - if reconnect happens quickly, we skip it
     scheduleDisconnectMessage(() => {
       status("Disconnected, waiting to reconnect...")
     })
-    await processEvent({ type: "DISCONNECT" })
-    userActions.cleanup()
+    void (async () => {
+      await processEvent({ type: "DISCONNECT" })
+      userActions.cleanup()
+    })()
   })
 
   connection.on("error", (err) => {
@@ -1377,20 +1381,22 @@ export async function start(config: Config): Promise<void> {
     if (!config.filesDir || watcher) return
     watcher = initWatcher(config.filesDir)
 
-    watcher.on("change", async (event) => {
-      await processEvent({ type: "WATCHER_EVENT", event })
+    watcher.on("change", (event) => {
+      void processEvent({ type: "WATCHER_EVENT", event })
     })
   }
 
   // Graceful shutdown
-  process.on("SIGINT", async () => {
+  process.on("SIGINT", () => {
     console.log() // newline after ^C
     status("Shutting down...")
-    if (watcher) {
-      await watcher.close()
-    }
-    connection.close()
-    process.exit(0)
+    void (async () => {
+      if (watcher) {
+        await watcher.close()
+      }
+      connection.close()
+      process.exit(0)
+    })()
   })
 }
 

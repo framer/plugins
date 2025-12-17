@@ -1,6 +1,6 @@
 import { framer, type UIOptions } from "framer-plugin"
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react"
-import type { ImportResult } from "./utils/csv"
+import type { ImportResult, ImportResultItem } from "./utils/csv"
 import type { InferredField } from "./utils/typeInference"
 
 type Route =
@@ -20,6 +20,7 @@ type Route =
           opts: {
               conflicts: ImportResult["items"]
               result: ImportResult
+              onComplete: (items: ImportResultItem[]) => void
           }
       }
 

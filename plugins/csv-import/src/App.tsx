@@ -1,7 +1,7 @@
 import type { Collection } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useState } from "react"
-import type { ImportResult } from "./utils/csv"
+import type { ImportResult, ImportResultItem } from "./utils/csv"
 import "./App.css"
 import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from "./utils/csv"
 import { Home } from "./routes/Home"
@@ -33,7 +33,9 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
 
                 await navigate({ uid: "field-mapping", opts: { csvRecords: records, inferredFields: fields } })
             } catch (error) {
-                if (error instanceof FramerPluginClosedError) throw error
+                if (error instanceof FramerPluginClosedError) {
+                    throw error
+                }
 
                 console.error(error)
 
@@ -71,16 +73,31 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
 
                 const itemsWithConflict = result.items.filter(item => item.action === "conflict")
                 if (itemsWithConflict.length > 0) {
-                    await navigate({ uid: "manage-conflicts", opts: { conflicts: itemsWithConflict, result } })
+                    const resolutions = await new Promise<ImportResultItem[]>(resolve => {
+                        void navigate({
+                            uid: "manage-conflicts",
+                            opts: {
+                                conflicts: itemsWithConflict,
+                                result,
+                                onComplete(items) {
+                                    resolve(items)
+                                },
+                            },
+                        })
+                    })
 
-                    return
-                } else {
-                    await importCSV(collection, result)
-
-                    await framer.hideUI()
+                    result.items = result.items.map(
+                        item => resolutions.find(resolved => resolved.slug === item.slug) ?? item
+                    )
                 }
+
+                await importCSV(collection, result)
+
+                await framer.hideUI()
             } catch (error) {
-                if (error instanceof FramerPluginClosedError) throw error
+                if (error instanceof FramerPluginClosedError) {
+                    throw error
+                }
 
                 console.error(error)
 
@@ -97,16 +114,6 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
         [collection, isAllowedToAddItems, navigate]
     )
 
-    const importItems = useCallback(
-        async (result: ImportResult) => {
-            if (!collection) return
-
-            await framer.hideUI()
-            await importCSV(collection, result)
-        },
-        [collection]
-    )
-
     switch (currentRoute.uid) {
         case "home": {
             return (
@@ -117,12 +124,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             return (
                 <ManageConflicts
                     records={currentRoute.opts.conflicts}
-                    onAllConflictsResolved={resolvedItems => {
-                        const updatedItems = currentRoute.opts.result.items.map(
-                            item => resolvedItems.find(resolved => resolved.slug === item.slug) ?? item
-                        )
-                        void importItems({ ...currentRoute.opts.result, items: updatedItems })
-                    }}
+                    onAllConflictsResolved={currentRoute.opts.onComplete}
                 />
             )
         }

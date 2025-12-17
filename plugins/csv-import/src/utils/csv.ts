@@ -9,6 +9,8 @@ import {
 } from "framer-plugin"
 
 import * as v from "valibot"
+import type { FieldReconciliationItem } from "../routes/FieldReconciliation"
+import { getMappedFieldName } from "./fieldReconciliation"
 import type { InferredField } from "./typeInference"
 
 const CSVRecordSchema = v.record(v.string(), v.string())
@@ -392,7 +394,8 @@ export async function processRecordsWithFieldMapping(
     records: CSVRecord[],
     inferredFields: InferredField[],
     ignoredFieldNames: Set<string>,
-    slugFieldName: string
+    slugFieldName: string,
+    reconciliation?: FieldReconciliationItem[]
 ): Promise<ImportResult> {
     if (!collection.slugFieldName) {
         throw new ImportError("error", "Import failed. No slug field was found in your CMS Collection.")
@@ -412,15 +415,25 @@ export async function processRecordsWithFieldMapping(
 
     // Create field mapping from inferred fields to CSV column names
     const csvToFieldMapping = new Map<string, string>()
+
+    // Get collection fields (may have been updated by reconciliation)
+    const fields = await collection.getFields()
+
     for (const field of inferredFields) {
         if (!ignoredFieldNames.has(field.columnName)) {
-            // Map CSV column name to the field name user wants to use
-            csvToFieldMapping.set(field.columnName, field.name || field.columnName)
+            // If we have reconciliation data, use it to determine the mapping
+            if (reconciliation) {
+                const mappedName = getMappedFieldName(field.columnName, reconciliation, fields)
+                if (mappedName) {
+                    csvToFieldMapping.set(field.columnName, mappedName)
+                }
+            } else {
+                // Fallback to original behavior
+                csvToFieldMapping.set(field.columnName, field.name || field.columnName)
+            }
         }
     }
 
-    // Get collection fields
-    const fields = await collection.getFields()
     const allItemIdBySlug = new Map<string, Map<string, string>>()
 
     // Build reference maps for collection reference fields

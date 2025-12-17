@@ -1,5 +1,6 @@
-import { framer, type UIOptions } from "framer-plugin"
+import { type Collection, framer, type UIOptions } from "framer-plugin"
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import type { FieldReconciliationItem } from "./routes/FieldReconciliation"
 import type { ImportResult, ImportResultItem } from "./utils/csv"
 import type { InferredField } from "./utils/typeInference"
 
@@ -16,6 +17,15 @@ type Route =
           }
       }
     | {
+          uid: "field-reconciliation"
+          opts: {
+              collection: Collection
+              csvRecords: Record<string, string>[]
+              inferredFields: InferredField[]
+              onSubmit: (reconciliation: FieldReconciliationItem[]) => Promise<void>
+          }
+      }
+    | {
           uid: "manage-conflicts"
           opts: {
               conflicts: ImportResult["items"]
@@ -28,6 +38,7 @@ const fallbackUiOptions: UIOptions = { width: 260, height: 330, resizable: false
 const defaultUiOptions = {
     home: fallbackUiOptions,
     "field-mapping": { width: 400, height: 600, resizable: true },
+    "field-reconciliation": { width: 500, height: 700, resizable: true },
     "manage-conflicts": { width: 260, height: 165, resizable: false },
 } as Record<Route["uid"], UIOptions | undefined>
 

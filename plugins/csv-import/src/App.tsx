@@ -1,13 +1,15 @@
 import type { Collection } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useState } from "react"
-import type { ImportResult, ImportResultItem } from "./utils/csv"
+import type { ImportResultItem } from "./utils/csv"
 import "./App.css"
-import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from "./utils/csv"
-import { Home } from "./routes/Home"
-import { FieldMapping } from "./routes/FieldMapping"
-import { ManageConflicts } from "./routes/ManageConflicts"
 import { useMiniRouter } from "./minirouter"
+import { FieldMapping } from "./routes/FieldMapping"
+import { FieldReconciliation, type FieldReconciliationItem } from "./routes/FieldReconciliation"
+import { Home } from "./routes/Home"
+import { ManageConflicts } from "./routes/ManageConflicts"
+import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from "./utils/csv"
+import { reconcileFields } from "./utils/fieldReconciliation"
 import type { InferredField } from "./utils/typeInference"
 import { inferFieldsFromCSV } from "./utils/typeInference"
 
@@ -63,12 +65,67 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             if (!isAllowedToAddItems) return
 
             try {
+                // Navigate to field reconciliation step
+                await navigate({
+                    uid: "field-reconciliation",
+                    opts: {
+                        collection,
+                        csvRecords: opts.csvRecords,
+                        inferredFields: opts.fields.filter(f => !opts.ignoredFieldNames.has(f.columnName)),
+                        onSubmit: async (reconciliation: FieldReconciliationItem[]) => {
+                            await handleFieldReconciliationSubmit({
+                                csvRecords: opts.csvRecords,
+                                fields: opts.fields,
+                                ignoredFieldNames: opts.ignoredFieldNames,
+                                slugFieldName: opts.slugFieldName,
+                                reconciliation,
+                            })
+                        },
+                    },
+                })
+            } catch (error) {
+                if (error instanceof FramerPluginClosedError) {
+                    throw error
+                }
+
+                console.error(error)
+
+                if (error instanceof ImportError || error instanceof Error) {
+                    framer.notify(error.message, { variant: "error" })
+                    return
+                }
+
+                framer.notify("Error processing CSV file. Check console for details.", {
+                    variant: "error",
+                })
+            }
+        },
+        [collection, isAllowedToAddItems, navigate]
+    )
+
+    const handleFieldReconciliationSubmit = useCallback(
+        async (opts: {
+            csvRecords: Record<string, string>[]
+            fields: InferredField[]
+            ignoredFieldNames: Set<string>
+            slugFieldName: string
+            reconciliation: FieldReconciliationItem[]
+        }) => {
+            if (!collection) return
+            if (!isAllowedToAddItems) return
+
+            try {
+                // Apply field reconciliation changes
+                await reconcileFields(collection, opts.reconciliation)
+
+                // Process records with field mapping
                 const result = await processRecordsWithFieldMapping(
                     collection,
                     opts.csvRecords,
                     opts.fields,
                     opts.ignoredFieldNames,
-                    opts.slugFieldName
+                    opts.slugFieldName,
+                    opts.reconciliation
                 )
 
                 const itemsWithConflict = result.items.filter(item => item.action === "conflict")
@@ -120,14 +177,6 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 <Home collection={collection} onCollectionChange={setCollection} onFileSelected={handleFileSelected} />
             )
         }
-        case "manage-conflicts": {
-            return (
-                <ManageConflicts
-                    records={currentRoute.opts.conflicts}
-                    onAllConflictsResolved={currentRoute.opts.onComplete}
-                />
-            )
-        }
         case "field-mapping":
             return (
                 <FieldMapping
@@ -146,6 +195,26 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                     }}
                 />
             )
+        case "field-reconciliation":
+            return (
+                <FieldReconciliation
+                    collection={currentRoute.opts.collection}
+                    inferredFields={currentRoute.opts.inferredFields}
+                    csvRecords={currentRoute.opts.csvRecords}
+                    onSubmit={currentRoute.opts.onSubmit}
+                    onCancel={async () => {
+                        await navigate({ uid: "home", opts: undefined })
+                    }}
+                />
+            )
+        case "manage-conflicts": {
+            return (
+                <ManageConflicts
+                    records={currentRoute.opts.conflicts}
+                    onAllConflictsResolved={currentRoute.opts.onComplete}
+                />
+            )
+        }
         default:
             // @ts-expect-error -- exhaustive switch
             return <div>Unknown route {currentRoute.uid}</div>

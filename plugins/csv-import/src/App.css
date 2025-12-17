@@ -338,3 +338,208 @@ select:disabled {
 select:not(:disabled) {
     cursor: pointer;
 }
+
+/* Field Reconciliation */
+
+.reconciliation {
+    padding: 0 15px 0;
+    height: 100%;
+}
+
+.reconciliation form {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.reconciliation .sticky-divider {
+    position: sticky;
+    top: 0;
+    margin: 0 -15px 15px;
+    border: none;
+    border-top: 1px solid var(--framer-color-divider);
+}
+
+.reconciliation-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: auto;
+    padding-bottom: 10px;
+    overflow-y: auto;
+}
+
+.reconciliation-header {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.reconciliation-header h3 {
+    margin: 0;
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--framer-color-text);
+}
+
+.reconciliation-description {
+    margin: 0;
+    font-size: 0.875em;
+    color: var(--framer-color-text-tertiary);
+}
+
+.reconciliation-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.section-title {
+    margin: 0;
+    font-size: 0.875em;
+    font-weight: 600;
+    color: var(--framer-color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.field-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.field-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: var(--framer-color-bg-tertiary);
+}
+
+.field-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.field-name {
+    font-weight: 500;
+    color: var(--framer-color-text);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.field-type {
+    font-size: 0.875em;
+    color: var(--framer-color-text-tertiary);
+    white-space: nowrap;
+}
+
+.field-mapping {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.field-mapping svg {
+    flex-shrink: 0;
+    color: var(--framer-color-text-tertiary);
+}
+
+.field-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.field-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.field-actions-full {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.field-actions-full .action-select {
+    width: 100%;
+}
+
+.field-actions-full .action-button {
+    width: 100%;
+}
+
+.action-button {
+    font-size: 0.875em;
+    padding: 4px 8px;
+    height: auto;
+}
+
+.action-button.secondary {
+    background-color: transparent;
+    color: var(--framer-color-text-secondary);
+}
+
+.action-button.secondary:hover:not(:disabled) {
+    background-color: var(--framer-color-bg-tertiary);
+}
+
+.action-select {
+    width: 100%;
+    font-size: 0.875em;
+}
+
+.field-warning {
+    font-size: 0.875em;
+    color: var(--framer-color-warning);
+    padding: 6px 8px;
+    background-color: rgba(255, 153, 0, 0.1);
+    border-radius: 6px;
+}
+
+.new-field {
+    border-left: 3px solid var(--framer-color-tint);
+}
+
+.mapped-field {
+    border-left: 3px solid var(--framer-color-warning);
+}
+
+.updated-field {
+    border-left: 3px solid #ff6b35;
+}
+
+.existing-field {
+    opacity: 0.7;
+}
+
+.type-change {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.type-change .old-type {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.type-change .new-type {
+    font-weight: 600;
+    color: var(--framer-color-tint);
+}
+
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--framer-color-text-tertiary);
+}

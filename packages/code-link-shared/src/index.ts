@@ -8,6 +8,7 @@ export type {
   IncomingMessage,
   OutgoingMessage,
 } from "./types.js"
+export { isIncomingMessage } from "./types.js"
 
 // Utilities
 export { getPortFromHash } from "./ports.js"

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { isNumber } from "./isNumber"
 
 import "./Stepper.css"
@@ -36,8 +37,33 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function Stepper({ value = 0, min = 0, step: stepAmount = 1, onChange }: Props) {
+    const [inputValue, setInputValue] = useState<string>(() => String(value))
+
+    useEffect(() => {
+        setInputValue(String(value))
+    }, [value])
+
     const step = (direction: -1 | 1) => {
-        onChange(clamp(value + stepAmount * direction, 0, Infinity))
+        onChange(clamp(value + stepAmount * direction, min, Infinity))
+    }
+
+    const commitInput = () => {
+        const trimmed = inputValue.trim()
+        if (trimmed === "") {
+            setInputValue(String(value))
+            return
+        }
+
+        const parsed = Number(trimmed)
+        if (!isNumber(parsed)) {
+            setInputValue(String(value))
+            return
+        }
+
+        const snapped = Math.round(clamp(parsed, min, Infinity))
+
+        setInputValue(String(snapped))
+        onChange(snapped)
     }
 
     return (
@@ -45,14 +71,17 @@ export function Stepper({ value = 0, min = 0, step: stepAmount = 1, onChange }: 
             <input
                 className="stepper-input"
                 type="number"
-                value={value}
+                value={inputValue}
                 min={min}
                 step={stepAmount}
                 onChange={event => {
-                    const numberValue = event.currentTarget.valueAsNumber
-                    const value = isNumber(numberValue) ? numberValue : 0
-
-                    onChange(value)
+                    setInputValue(event.currentTarget.value)
+                }}
+                onBlur={commitInput}
+                onKeyDown={event => {
+                    if (event.key === "Enter") {
+                        commitInput()
+                    }
                 }}
             />
 

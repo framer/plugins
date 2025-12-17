@@ -339,7 +339,7 @@ const SortingSchema = v.union(allSortings.map(sorting => v.literal(sorting)))
 type Sorting = v.InferOutput<typeof SortingSchema>
 
 const ColumnCountSchema = v.pipe(v.number(), v.integer(), v.minValue(1))
-const GapSchema = v.pipe(v.number(), v.integer(), v.minValue(0), v.multipleOf(10))
+const GapSchema = v.pipe(v.number(), v.integer(), v.minValue(0))
 
 export function App() {
     const isAllowedToSetAttributes = useIsAllowedTo("setAttributes")

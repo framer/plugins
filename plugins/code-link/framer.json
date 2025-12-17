@@ -1,0 +1,7 @@
+{
+  "id": "40c32f",
+  "name": "Code Link",
+  "modes": ["canvas", "code"],
+  "disableEditViaPlugin": ["code"],
+  "icon": "/icon.svg"
+}

@@ -1,13 +1,13 @@
 /* Your Plugin CSS */
 
 body main {
-  /* @TODO dark mode? */
-  --framer-color-tint: #000000;
-  --framer-color-tint-dimmed: #666;
-  --framer-color-tint-dark: #222;
-  --framer-color-tint-extra-dark: #444;
+    /* @TODO dark mode? */
+    --framer-color-tint: #000000;
+    --framer-color-tint-dimmed: #666;
+    --framer-color-tint-dark: #222;
+    --framer-color-tint-extra-dark: #444;
 
-  /* --color-framer-tint: var(--framer-color-tint, light-dark(#0099ff, #0099ff));
+    /* --color-framer-tint: var(--framer-color-tint, light-dark(#0099ff, #0099ff));
   --color-framer-tint-dimmed: var(
       --framer-color-tint-dimmed,
       light-dark(rgba(0, 153, 255, 0.1), rgba(0, 153, 255, 0.15))
@@ -17,76 +17,78 @@ body main {
 }
 
 main {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
-  width: 100%;
-  padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    width: 100%;
+    padding: 15px;
 }
 
 .info {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
 
 .info h1 {
-  font-size: 12px;
-  margin-bottom: 8px;
+    font-size: 12px;
+    margin-bottom: 8px;
 }
 
 .info p {
-  color: var(--framer-color-text-tertiary);
-  max-width: 210px;
+    color: var(--framer-color-text-tertiary);
+    max-width: 210px;
 }
 
 .plugin-icon {
-  width: 30px;
-  height: 30px;
-  background-color: var(--framer-color-tint);
-  border-radius: 8px;
-  margin-bottom: 15px;
+    width: 30px;
+    height: 30px;
+    background-color: var(--framer-color-tint);
+    border-radius: 8px;
+    margin-bottom: 15px;
 }
 
 .command-container {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 
-  gap: 10px;
+    gap: 10px;
 }
 
 .command-block {
-  position: relative;
-  display: flex;
-  overflow: hidden;
-  padding: 0 10px;
-  height: 30px;
-  align-items: center;
-  background: #f5f5f5;
-  border-radius: 8px;
-  word-break: break-all;
-  width: 100%;
-  box-sizing: border-box;
-  font-weight: 600;
+    position: relative;
+    display: flex;
+    overflow: hidden;
+    padding: 0 10px;
+    height: 30px;
+    align-items: center;
+    background: #f5f5f5;
+    border-radius: 8px;
+    word-break: break-all;
+    width: 100%;
+    box-sizing: border-box;
+    font-weight: 600;
 }
 
 .command-block .mask {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 20%;
-  height: 100%;
-  background: linear-gradient(to right, transparent, #f5f5f5);
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20%;
+    height: 100%;
+    background: linear-gradient(to right, transparent, #f5f5f5);
 }
 
-body, html, #root {
+body,
+html,
+#root {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -97,168 +99,168 @@ body, html, #root {
 /* Destructive Button */
 
 .destructive-button {
-  background: #ff3366;
-  color: #fff;
+    background: #ff3366;
+    color: #fff;
 }
 
 .destructive-button:hover {
-  background: #e7315e;
+    background: #e7315e;
 }
 
 .destructive-button:active {
-  background: #cf2e55;
+    background: #cf2e55;
 }
 /* Copy Button */
 .copy-button {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  justify-content: center;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
 }
 
 .copy-label-animate {
-  animation: copyFadeIn 0.2s cubic-bezier(0.77, 0, 0.175, 1) forwards;
+    animation: copyFadeIn 0.2s cubic-bezier(0.77, 0, 0.175, 1) forwards;
 }
 
 @keyframes copyFadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .checkmark-path {
-  stroke-dasharray: 14;
-  stroke-dashoffset: 14;
-  animation: checkmarkDraw 0.25s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+    stroke-dasharray: 14;
+    stroke-dashoffset: 14;
+    animation: checkmarkDraw 0.25s cubic-bezier(0.65, 0, 0.35, 1) forwards;
 }
 
 @keyframes checkmarkDraw {
-  to {
-    stroke-dashoffset: 0;
-  }
+    to {
+        stroke-dashoffset: 0;
+    }
 }
 
 /* Conflict/Delete Views */
 
 .user-action-view {
-  padding-top: 0;
-  justify-content: start;
+    padding-top: 0;
+    justify-content: start;
 }
 
 .user-action-view h1 {
-  font-size: 12px;
-  margin-bottom: 8px;
+    font-size: 12px;
+    margin-bottom: 8px;
 }
 
 .user-action-view p {
-  color: var(--framer-color-text-tertiary);
+    color: var(--framer-color-text-tertiary);
 }
 
 .user-action-view header {
-  padding: 15px 0;
-  max-width: 285px;
+    padding: 15px 0;
+    max-width: 285px;
 }
 
 .actions {
-  display: flex;
-  gap: 10px;
-  padding-top: 15px;
-  background: var(--framer-color-background);
+    display: flex;
+    gap: 10px;
+    padding-top: 15px;
+    background: var(--framer-color-background);
 }
 
 /* Look into why we need class-name specificity */
 .actions button {
-  flex: 1;
+    flex: 1;
 }
 
 .single-file-view {
-  display: flex;
+    display: flex;
 
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 15px;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
 }
 
 .list-header {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 40px;
 }
 
 .list-titles {
-  display: grid;
-  grid-template-columns: 3fr 1fr 1fr;
-  gap: 10px;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 600;
-  font-size: 12px;
-  color: var(--framer-color-text-tertiary);
+    display: grid;
+    grid-template-columns: 3fr 1fr 1fr;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--framer-color-text-tertiary);
 }
 
 .list {
-  list-style: none;
-  padding: 5px 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  flex: 1;
+    list-style: none;
+    padding: 5px 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex: 1;
 }
 
 .list li {
-  display: grid;
-  height: 32px;
-  gap: 10px;
-  align-items: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  grid-template-columns: 3fr 1fr 1fr;
+    display: grid;
+    height: 32px;
+    gap: 10px;
+    align-items: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    grid-template-columns: 3fr 1fr 1fr;
 }
 
 .list .file-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .list .lines-changed {
-  font-variant-numeric: tabular-nums;
+    font-variant-numeric: tabular-nums;
 }
 
-.delete-confirmation .list-titles  { 
-  grid-template-columns: 3fr  1fr;
+.delete-confirmation .list-titles {
+    grid-template-columns: 3fr 1fr;
 }
 
-.delete-confirmation .list li { 
-  grid-template-columns: 3fr  1fr;
+.delete-confirmation .list li {
+    grid-template-columns: 3fr 1fr;
 }
 
 /* Line change badges */
 .line-badge {
-  padding: 2px 4px;
-  border-radius: 5px;
-  font-weight: 500;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
+    padding: 2px 4px;
+    border-radius: 5px;
+    font-weight: 500;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
 }
 
 .line-badge.added {
-  color: #00BB77;
-  background: rgba(0, 187, 119, 0.15);
+    color: #00bb77;
+    background: rgba(0, 187, 119, 0.15);
 }
 
 .line-badge.removed {
-  color: #FF3366;
-  background: rgba(255, 51, 102, 0.15);
+    color: #ff3366;
+    background: rgba(255, 51, 102, 0.15);
 }
 
 .line-badge.unchanged {
-  color: #999999;
-  background: rgba(153, 153, 153, 0.15);
+    color: #999999;
+    background: rgba(153, 153, 153, 0.15);
 }

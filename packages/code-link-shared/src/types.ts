@@ -44,9 +44,26 @@ export type IncomingMessage =
   | { type: "conflicts-detected"; conflicts: ConflictSummary[] }
   | {
       type: "conflict-version-request"
-      conflicts: Array<{ fileName: string; lastSyncedAt?: number }>
+      conflicts: { fileName: string; lastSyncedAt?: number }[]
     }
   | { type: "sync-complete" }
+
+const incomingMessageTypes = [
+  "request-files",
+  "file-change",
+  "file-delete",
+  "conflicts-detected",
+  "conflict-version-request",
+  "sync-complete",
+] as const
+
+export function isIncomingMessage(data: unknown): data is IncomingMessage {
+  if (typeof data !== "object" || data === null) return false
+  if (!("type" in data) || typeof data.type !== "string") return false
+  return incomingMessageTypes.includes(
+    data.type as (typeof incomingMessageTypes)[number]
+  )
+}
 
 // Plugin → CLI messages
 export type OutgoingMessage =
@@ -64,5 +81,5 @@ export type OutgoingMessage =
     }
   | {
       type: "conflict-version-response"
-      versions: Array<{ fileName: string; latestRemoteVersionMs?: number }>
+      versions: { fileName: string; latestRemoteVersionMs?: number }[]
     }

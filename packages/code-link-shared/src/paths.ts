@@ -59,9 +59,9 @@ function hasValidExtension(fileName: string): boolean {
 }
 
 function splitExtension(fileName: string): [string, string] {
-  const match = /^(.+?)(\.[^.]+)?$/.exec(fileName)
-  if (!match) return [fileName, ""]
-  return [match[1], match[2].slice(1)]
+  const lastDot = fileName.lastIndexOf(".")
+  if (lastDot <= 0) return [fileName, ""]
+  return [fileName.slice(0, lastDot), fileName.slice(lastDot + 1)]
 }
 
 function dirname(filePath: string): string {

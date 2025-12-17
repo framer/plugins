@@ -2,7 +2,7 @@
  * User Action Coordinator
  *
  * Provides a clean awaitable API for user confirmations via the Plugin.
- * Just coordinates the request/response - all business logic stays in the controller.
+ * Maybe unneeded abstraction, but lets keep until we see if we need more user actions.
  */
 
 import type { WebSocket } from "ws"
@@ -17,13 +17,26 @@ class PluginDisconnectedError extends Error {
   }
 }
 
-interface PendingAction<T> {
-  resolve: (value: T) => void
+interface PendingAction {
+  resolve: (value: unknown) => void
   reject: (error: Error) => void
 }
 
 export class UserActionCoordinator {
-  private pendingActions = new Map<string, PendingAction<unknown>>()
+  private pendingActions = new Map<string, PendingAction>()
+
+  /**
+   * Register a pending action and return a typed promise
+   */
+  private awaitAction<T>(actionId: string, description: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      this.pendingActions.set(actionId, {
+        resolve: resolve as (value: unknown) => void,
+        reject,
+      })
+      debug(`Awaiting ${description}: ${actionId}`)
+    })
+  }
 
   /**
    * Sends the delete request to the plugin and awaits the user's decision
@@ -40,7 +53,7 @@ export class UserActionCoordinator {
     }
 
     if (requireConfirmation) {
-      const confirmationPromise = this.awaitConfirmation<boolean>(
+      const confirmationPromise = this.awaitAction<boolean>(
         `delete:${fileName}`,
         "delete confirmation"
       )
@@ -90,7 +103,7 @@ export class UserActionCoordinator {
 
     const pending = conflicts.map((conflict) => ({
       fileName: conflict.fileName,
-      promise: this.awaitConfirmation<"local" | "remote">(
+      promise: this.awaitAction<"local" | "remote">(
         `conflict:${conflict.fileName}`,
         "conflict resolution"
       ),
@@ -119,22 +132,9 @@ export class UserActionCoordinator {
   }
 
   /**
-   * Generic confirmation awaiter
-   */
-  private awaitConfirmation<T>(
-    actionId: string,
-    description: string
-  ): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-      this.pendingActions.set(actionId, { resolve, reject })
-      debug(`Awaiting ${description}: ${actionId}`)
-    })
-  }
-
-  /**
    * Handle incoming confirmation response
    */
-  handleConfirmation(actionId: string, value: unknown): boolean {
+  handleConfirmation(actionId: string, value: boolean): boolean {
     const pending = this.pendingActions.get(actionId)
     if (!pending) {
       debug(`Unexpected confirmation for ${actionId}`)

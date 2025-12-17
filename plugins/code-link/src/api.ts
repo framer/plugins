@@ -1,5 +1,5 @@
 import { canonicalFileName, ensureExtension, type SyncTracker, sanitizeFilePath } from "@code-link/shared"
-import { CodeFile, framer } from "framer-plugin"
+import { framer } from "framer-plugin"
 import * as log from "./utils/logger"
 
 // TODO:
@@ -16,7 +16,7 @@ import * as log from "./utils/logger"
 
 export class CodeFilesAPI {
     private lastSnapshot = new Map<string, string>()
-    private codeFiles = new Map<string, CodeFile>()
+    // private codeFiles = new Map<string, CodeFile>()
 
     // @TODO figure out if good idea
     // private async getPossiblyStableCodeFileHandle(name: string) {
@@ -151,7 +151,7 @@ export class CodeFilesAPI {
             try {
                 // We need to find the timestamp for the last save to know if we can auto-resolve safetly
                 const versions = await file.getVersions()
-                if (versions.length > 0) {
+                if (versions.length > 0 && versions[0]?.createdAt) {
                     const latestRemoteVersionMs = Date.parse(versions[0].createdAt)
                     log.debug(`${request.fileName}: ${versions[0].createdAt} (${latestRemoteVersionMs})`)
                     return {

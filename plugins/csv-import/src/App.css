@@ -745,3 +745,68 @@ select:not(:disabled) {
     font-size: 0.75em;
     color: var(--framer-color-warning, #ff9500);
 }
+
+/* Unmapped required fields warning */
+
+.unmapped-required-section {
+    margin-top: 16px;
+    padding: 12px;
+    background-color: rgba(255, 153, 0, 0.08);
+    border: 1px solid rgba(255, 153, 0, 0.25);
+    border-radius: 8px;
+}
+
+.unmapped-required-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.875em;
+    color: var(--framer-color-warning, #ff9500);
+    margin-bottom: 10px;
+}
+
+.warning-icon {
+    font-size: 1em;
+}
+
+.warning-icon-small {
+    font-size: 0.875em;
+    color: var(--framer-color-warning, #ff9500);
+}
+
+.stat-warning {
+    color: var(--framer-color-warning, #ff9500);
+}
+
+.unmapped-required-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.unmapped-required-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background-color: var(--framer-color-bg);
+    border-radius: 6px;
+    font-size: 0.875em;
+}
+
+.unmapped-required-item .field-name {
+    font-weight: 500;
+    color: var(--framer-color-text);
+}
+
+.unmapped-required-item .field-type {
+    color: var(--framer-color-text-tertiary);
+    font-size: 0.875em;
+}
+
+.unmapped-required-hint {
+    margin: 10px 0 0;
+    font-size: 0.75em;
+    color: var(--framer-color-text-tertiary);
+}

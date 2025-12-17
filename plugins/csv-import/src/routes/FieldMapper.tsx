@@ -344,8 +344,24 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
             return
         }
 
+        // Check if all required fields are mapped
+        if (unmappedRequiredFields.length > 0) {
+            framer.notify("All required fields must be mapped before importing.", { variant: "warning" })
+            return
+        }
+
         await onSubmit(mappings, selectedSlugFieldName)
     }
+
+    // Find required fields that are not mapped to any CSV column
+    const unmappedRequiredFields = useMemo(() => {
+        const mappedFieldIds = new Set(
+            mappings.filter(m => m.action === "map" && m.targetFieldId).map(m => m.targetFieldId)
+        )
+        return existingFields.filter(field => "required" in field && field.required && !mappedFieldIds.has(field.id))
+    }, [existingFields, mappings])
+
+    const canSubmit = isAllowedToManage && unmappedRequiredFields.length === 0
 
     // Summary stats
     const stats = useMemo(() => {
@@ -356,8 +372,9 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
             creating: mappings.filter(m => m.action === "create").length,
             matched: active.filter(m => m.action === "map" && !m.hasTypeMismatch).length,
             mismatched: active.filter(m => m.action === "map" && m.hasTypeMismatch).length,
+            unmappedRequired: unmappedRequiredFields.length,
         }
-    }, [mappings])
+    }, [mappings, unmappedRequiredFields])
 
     if (loading) {
         return (
@@ -396,6 +413,12 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                             <span className="stat stat-ignored">
                                 <StatusDot status="ignored" />
                                 {stats.ignored} ignored
+                            </span>
+                        )}
+                        {stats.unmappedRequired > 0 && (
+                            <span className="stat stat-warning">
+                                <span className="warning-icon-small">⚠</span>
+                                {stats.unmappedRequired} required
                             </span>
                         )}
                     </div>
@@ -441,6 +464,26 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                     ))}
                 </div>
 
+                {unmappedRequiredFields.length > 0 && (
+                    <div className="unmapped-required-section">
+                        <div className="unmapped-required-header">
+                            <span className="warning-icon">⚠</span>
+                            <span>Required fields without data</span>
+                        </div>
+                        <div className="unmapped-required-list">
+                            {unmappedRequiredFields.map(field => (
+                                <div key={field.id} className="unmapped-required-item">
+                                    <span className="field-name">{field.name}</span>
+                                    <span className="field-type">{labelByFieldType[field.type]}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <p className="unmapped-required-hint">
+                            Map a CSV column to these fields, or imported items will have empty values.
+                        </p>
+                    </div>
+                )}
+
                 <footer>
                     <hr className="sticky-top" />
                     <div className="actions">
@@ -450,8 +493,14 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                         <button
                             type="submit"
                             className="framer-button-primary"
-                            disabled={!isAllowedToManage}
-                            title={!isAllowedToManage ? "Insufficient permissions" : undefined}
+                            disabled={!canSubmit}
+                            title={
+                                !isAllowedToManage
+                                    ? "Insufficient permissions"
+                                    : unmappedRequiredFields.length > 0
+                                      ? "Map all required fields to continue"
+                                      : undefined
+                            }
                         >
                             Import {csvRecords.length} {csvRecords.length === 1 ? "item" : "items"}
                         </button>

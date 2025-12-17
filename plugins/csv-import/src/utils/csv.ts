@@ -9,8 +9,7 @@ import {
 } from "framer-plugin"
 
 import * as v from "valibot"
-import type { FieldReconciliationItem } from "../routes/FieldReconciliation"
-import { getMappedFieldName } from "./fieldReconciliation"
+import { type FieldReconciliationItem, getMappedFieldName } from "./fieldReconciliation"
 import type { InferredField } from "./typeInference"
 
 const CSVRecordSchema = v.record(v.string(), v.string())

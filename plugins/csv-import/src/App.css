@@ -543,3 +543,205 @@ select:not(:disabled) {
     height: 100%;
     color: var(--framer-color-text-tertiary);
 }
+
+/* Field Mapper (unified view) */
+
+.field-mapper {
+    padding: 0 15px 0;
+    height: 100%;
+}
+
+.field-mapper form {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.field-mapper .sticky-divider {
+    position: sticky;
+    top: 0;
+    margin: 0 -15px 15px;
+    border: none;
+    border-top: 1px solid var(--framer-color-divider);
+}
+
+.field-mapper .slug-field {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--framer-color-text-tertiary);
+    padding-bottom: 10px;
+}
+
+.field-mapper footer {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--framer-color-bg);
+    margin-top: auto;
+    padding-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.field-mapper footer .sticky-top {
+    border: none;
+    border-top: 1px solid var(--framer-color-divider);
+}
+
+.mapper-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.mapper-header h3 {
+    margin: 0;
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--framer-color-text);
+}
+
+.mapper-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75em;
+    color: var(--framer-color-text-secondary);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.mapper-table-header {
+    display: grid;
+    grid-template-columns: 28px 1fr 20px 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 0 0 8px;
+    font-size: 0.75em;
+    font-weight: 600;
+    color: var(--framer-color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--framer-color-divider);
+}
+
+.mapper-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: auto;
+    padding: 8px 0 10px;
+}
+
+.mapper-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 20px 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+    border-radius: 6px;
+    transition: opacity 0.15s ease;
+}
+
+.mapper-row.ignored {
+    opacity: 0.4;
+}
+
+.mapper-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.mapper-checkbox input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.mapper-checkbox input[type="checkbox"]:focus {
+    box-shadow: none;
+}
+
+[data-framer-theme="light"] .mapper-checkbox input[type="checkbox"]:not(:checked) {
+    background: #ccc;
+}
+
+[data-framer-theme="dark"] .mapper-checkbox input[type="checkbox"]:not(:checked) {
+    background: #666;
+}
+
+.mapper-source {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 6px 10px;
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 6px;
+}
+
+.mapper-source .column-name {
+    font-weight: 500;
+    color: var(--framer-color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.mapper-source .inferred-type {
+    font-size: 0.75em;
+    color: var(--framer-color-text-tertiary);
+    white-space: nowrap;
+}
+
+.mapper-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--framer-color-text-tertiary);
+    flex-shrink: 0;
+}
+
+.mapper-target {
+    width: 100%;
+    min-width: 0;
+}
+
+.mapper-mismatch-row {
+    grid-column: 2 / -1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background-color: rgba(255, 153, 0, 0.12);
+    border: 1px solid rgba(255, 153, 0, 0.3);
+    border-radius: 6px;
+    margin-top: 4px;
+}
+
+.mismatch-hint {
+    font-size: 0.75em;
+    color: var(--framer-color-warning, #ff9500);
+}

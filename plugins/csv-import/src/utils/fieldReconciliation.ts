@@ -1,5 +1,15 @@
 import type { Collection, CreateField, Field } from "framer-plugin"
-import type { FieldReconciliationItem } from "../routes/FieldReconciliation"
+import type { InferredField } from "./typeInference"
+
+export type FieldAction = "add" | "update" | "keep" | "remove" | "map"
+
+export interface FieldReconciliationItem {
+    inferredField?: InferredField
+    existingField?: Field
+    action: FieldAction
+    /** For mapping: which existing field this CSV column should map to */
+    mapToFieldId?: string
+}
 
 /**
  * Apply field reconciliation changes to a collection

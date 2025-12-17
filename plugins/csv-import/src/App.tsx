@@ -4,14 +4,49 @@ import { useCallback, useState } from "react"
 import type { ImportResultItem } from "./utils/csv"
 import "./App.css"
 import { useMiniRouter } from "./minirouter"
-import { FieldMapping } from "./routes/FieldMapping"
-import { FieldReconciliation, type FieldReconciliationItem } from "./routes/FieldReconciliation"
+import { FieldMapper, type FieldMappingItem } from "./routes/FieldMapper"
 import { Home } from "./routes/Home"
 import { ManageConflicts } from "./routes/ManageConflicts"
 import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from "./utils/csv"
+import type { FieldReconciliationItem } from "./utils/fieldReconciliation"
 import { reconcileFields } from "./utils/fieldReconciliation"
-import type { InferredField } from "./utils/typeInference"
 import { inferFieldsFromCSV } from "./utils/typeInference"
+
+/**
+ * Convert FieldMappingItem to FieldReconciliationItem for the reconcileFields function
+ */
+function convertToReconciliation(
+    mappings: FieldMappingItem[],
+    existingFields: { id: string; name: string; type: string }[]
+): FieldReconciliationItem[] {
+    const items: FieldReconciliationItem[] = []
+
+    for (const mapping of mappings) {
+        if (mapping.action === "ignore") {
+            // Ignored fields are not included in reconciliation
+            continue
+        }
+
+        if (mapping.action === "create") {
+            items.push({
+                inferredField: mapping.inferredField,
+                action: "add",
+            })
+        } else if (mapping.action === "map" && mapping.targetFieldId) {
+            const existingField = existingFields.find(f => f.id === mapping.targetFieldId)
+            if (existingField) {
+                items.push({
+                    inferredField: mapping.inferredField,
+                    existingField: existingField as FieldReconciliationItem["existingField"],
+                    action: mapping.hasTypeMismatch ? "keep" : "keep",
+                    mapToFieldId: mapping.targetFieldId,
+                })
+            }
+        }
+    }
+
+    return items
+}
 
 export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
@@ -33,55 +68,9 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 // Infer field types from CSV data
                 const fields = inferFieldsFromCSV(records)
 
-                await navigate({ uid: "field-mapping", opts: { csvRecords: records, inferredFields: fields } })
-            } catch (error) {
-                if (error instanceof FramerPluginClosedError) {
-                    throw error
-                }
-
-                console.error(error)
-
-                if (error instanceof ImportError || error instanceof Error) {
-                    framer.notify(error.message, { variant: "error" })
-                    return
-                }
-
-                framer.notify("Error processing CSV file. Check console for details.", {
-                    variant: "error",
-                })
-            }
-        },
-        [collection, isAllowedToAddItems, navigate]
-    )
-
-    const handleFieldMappingSubmit = useCallback(
-        async (opts: {
-            csvRecords: Record<string, string>[]
-            fields: InferredField[]
-            ignoredFieldNames: Set<string>
-            slugFieldName: string
-        }) => {
-            if (!collection) return
-            if (!isAllowedToAddItems) return
-
-            try {
-                // Navigate to field reconciliation step
                 await navigate({
-                    uid: "field-reconciliation",
-                    opts: {
-                        collection,
-                        csvRecords: opts.csvRecords,
-                        inferredFields: opts.fields.filter(f => !opts.ignoredFieldNames.has(f.columnName)),
-                        onSubmit: async (reconciliation: FieldReconciliationItem[]) => {
-                            await handleFieldReconciliationSubmit({
-                                csvRecords: opts.csvRecords,
-                                fields: opts.fields,
-                                ignoredFieldNames: opts.ignoredFieldNames,
-                                slugFieldName: opts.slugFieldName,
-                                reconciliation,
-                            })
-                        },
-                    },
+                    uid: "field-mapper",
+                    opts: { collection, csvRecords: records, inferredFields: fields },
                 })
             } catch (error) {
                 if (error instanceof FramerPluginClosedError) {
@@ -103,29 +92,41 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
         [collection, isAllowedToAddItems, navigate]
     )
 
-    const handleFieldReconciliationSubmit = useCallback(
+    const handleFieldMapperSubmit = useCallback(
         async (opts: {
+            collection: Collection
             csvRecords: Record<string, string>[]
-            fields: InferredField[]
-            ignoredFieldNames: Set<string>
+            mappings: FieldMappingItem[]
             slugFieldName: string
-            reconciliation: FieldReconciliationItem[]
         }) => {
-            if (!collection) return
             if (!isAllowedToAddItems) return
 
             try {
-                // Apply field reconciliation changes
-                await reconcileFields(collection, opts.reconciliation)
+                // Get existing fields to convert mappings
+                const existingFields = await opts.collection.getFields()
+
+                // Convert mappings to reconciliation format
+                const reconciliation = convertToReconciliation(opts.mappings, existingFields)
+
+                // Get the set of ignored field names
+                const ignoredFieldNames = new Set(
+                    opts.mappings.filter(m => m.action === "ignore").map(m => m.inferredField.columnName)
+                )
+
+                // Get the list of inferred fields (excluding ignored ones)
+                const fields = opts.mappings.filter(m => m.action !== "ignore").map(m => m.inferredField)
+
+                // Apply field reconciliation changes (add new fields)
+                await reconcileFields(opts.collection, reconciliation)
 
                 // Process records with field mapping
                 const result = await processRecordsWithFieldMapping(
-                    collection,
+                    opts.collection,
                     opts.csvRecords,
-                    opts.fields,
-                    opts.ignoredFieldNames,
+                    fields,
+                    ignoredFieldNames,
                     opts.slugFieldName,
-                    opts.reconciliation
+                    reconciliation
                 )
 
                 const itemsWithConflict = result.items.filter(item => item.action === "conflict")
@@ -148,7 +149,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                     )
                 }
 
-                await importCSV(collection, result)
+                await importCSV(opts.collection, result)
 
                 await framer.hideUI()
             } catch (error) {
@@ -168,7 +169,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 })
             }
         },
-        [collection, isAllowedToAddItems, navigate]
+        [isAllowedToAddItems, navigate]
     )
 
     switch (currentRoute.uid) {
@@ -177,31 +178,20 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 <Home collection={collection} onCollectionChange={setCollection} onFileSelected={handleFileSelected} />
             )
         }
-        case "field-mapping":
+        case "field-mapper":
             return (
-                <FieldMapping
-                    inferredFields={currentRoute.opts.inferredFields}
-                    csvRecords={currentRoute.opts.csvRecords}
-                    onSubmit={(fields, ignoredFieldNames, slugFieldName) =>
-                        handleFieldMappingSubmit({
-                            csvRecords: currentRoute.opts.csvRecords,
-                            fields,
-                            ignoredFieldNames,
-                            slugFieldName,
-                        })
-                    }
-                    onCancel={async () => {
-                        await navigate({ uid: "home", opts: undefined })
-                    }}
-                />
-            )
-        case "field-reconciliation":
-            return (
-                <FieldReconciliation
+                <FieldMapper
                     collection={currentRoute.opts.collection}
                     inferredFields={currentRoute.opts.inferredFields}
                     csvRecords={currentRoute.opts.csvRecords}
-                    onSubmit={currentRoute.opts.onSubmit}
+                    onSubmit={(mappings, slugFieldName) =>
+                        handleFieldMapperSubmit({
+                            collection: currentRoute.opts.collection,
+                            csvRecords: currentRoute.opts.csvRecords,
+                            mappings,
+                            slugFieldName,
+                        })
+                    }
                     onCancel={async () => {
                         await navigate({ uid: "home", opts: undefined })
                     }}

@@ -163,7 +163,7 @@ export function sanitizeFilePath(
     name = capitalizeFirstLetter(name)
   }
 
-  const sanitizedPath = pathJoin(dirName, name + extension)
+  const sanitizedPath = pathJoin(dirName, name + extensionWithDot)
   return { path: sanitizedPath, dirName, name, extension }
 }
 

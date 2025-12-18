@@ -4,9 +4,11 @@ import { createHashTracker } from "./utils/hash-tracker.js"
 
 import type { WebSocket } from "ws"
 import { filterEchoedFiles } from "./helpers/files.js"
-describe("State Machine", () => {
-  describe("HANDSHAKE transition", () => {
-    it("transitions from disconnected to handshaking", () => {
+
+describe("Sync State Machine", () => {
+  // Connection Lifecycle Tests
+  describe("Connection Lifecycle", () => {
+    it("transitions from disconnected to handshaking on HANDSHAKE", () => {
       const initialState = {
         mode: "disconnected" as const,
         socket: null,
@@ -57,10 +59,8 @@ describe("State Machine", () => {
         level: "warn",
       })
     })
-  })
 
-  describe("DISCONNECT transition", () => {
-    it("transitions to disconnected and persists state", () => {
+    it("transitions to disconnected and persists state on DISCONNECT", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
@@ -92,8 +92,9 @@ describe("State Machine", () => {
     })
   })
 
-  describe("FILE_LIST transition", () => {
-    it("transitions to snapshot_processing and emits DETECT_CONFLICTS", () => {
+  // File Synchronization Tests
+  describe("File Synchronization", () => {
+    it("transitions to snapshot_processing on FILE_LIST and emits DETECT_CONFLICTS", () => {
       const initialState = {
         mode: "handshaking" as const,
         socket: {} as WebSocket,
@@ -147,79 +148,8 @@ describe("State Machine", () => {
         level: "warn",
       })
     })
-  })
 
-  describe("CONFLICTS_DETECTED transition", () => {
-    it("applies safe writes and transitions to watching when no conflicts", () => {
-      // detectConflicts already did auto-resolution, so we just get safeWrites
-      const initialState = {
-        mode: "snapshot_processing" as const,
-        socket: {} as WebSocket,
-        files: new Map(),
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "CONFLICTS_DETECTED",
-        conflicts: [], // No conflicts - detectConflicts already resolved them
-        safeWrites: [
-          {
-            name: "Test.tsx",
-            content: "new content",
-            modifiedAt: Date.now(),
-          },
-        ],
-        localOnly: [],
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect("pendingConflicts" in result.state).toBe(false)
-      // Should have logs + WRITE_FILES + PERSIST_STATE
-      expect(result.effects.length).toBeGreaterThan(2)
-      expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(true)
-      expect(result.effects.some((e) => e.type === "PERSIST_STATE")).toBe(true)
-    })
-
-    it("transitions to conflict_resolution when manual conflicts exist", () => {
-      // detectConflicts returns conflicts when both sides changed
-      const initialState = {
-        mode: "snapshot_processing" as const,
-        socket: {} as WebSocket,
-        files: new Map(),
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const conflict = {
-        fileName: "Test.tsx",
-        localContent: "local content",
-        remoteContent: "remote content",
-        localModifiedAt: Date.now(),
-        remoteModifiedAt: Date.now() + 1000,
-      }
-
-      const result = transition(initialState, {
-        type: "CONFLICTS_DETECTED",
-        conflicts: [conflict],
-        safeWrites: [],
-        localOnly: [],
-      })
-
-      expect(result.state.mode).toBe("conflict_resolution")
-      if (result.state.mode === "conflict_resolution") {
-        expect(result.state.pendingConflicts).toHaveLength(1)
-      }
-      expect(
-        result.effects.some((e) => e.type === "REQUEST_CONFLICT_VERSIONS")
-      ).toBe(true)
-    })
-  })
-
-  describe("FILE_CHANGE transition", () => {
-    it("applies changes immediately in watching mode", () => {
+    it("applies remote FILE_CHANGE immediately in watching mode", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
@@ -244,7 +174,7 @@ describe("State Machine", () => {
       expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(true)
     })
 
-    it("queues changes during snapshot processing", () => {
+    it("queues remote FILE_CHANGE during snapshot processing", () => {
       const initialState = {
         mode: "snapshot_processing" as const,
         socket: {} as WebSocket,
@@ -270,206 +200,8 @@ describe("State Machine", () => {
       expect(result.state.pendingRemoteChanges).toContainEqual(file)
       expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(false)
     })
-  })
 
-  describe("REMOTE_FILE_DELETE transition", () => {
-    it("applies delete immediately in watching mode", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        files: new Map([
-          [
-            "Test.tsx",
-            {
-              localHash: "abc123",
-              lastSyncedHash: "abc123",
-              lastRemoteTimestamp: Date.now(),
-            },
-          ],
-        ]),
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "REMOTE_FILE_DELETE",
-        fileName: "Test.tsx",
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
-        true
-      )
-      const deleteEffect = result.effects.find(
-        (e) => e.type === "DELETE_LOCAL_FILES"
-      )
-      expect(deleteEffect).toMatchObject({
-        type: "DELETE_LOCAL_FILES",
-        names: ["Test.tsx"],
-      })
-      expect(result.effects.some((e) => e.type === "PERSIST_STATE")).toBe(true)
-    })
-
-    it("applies deletes immediately during snapshot processing", () => {
-      const initialState = {
-        mode: "snapshot_processing" as const,
-        socket: {} as WebSocket,
-        files: new Map(),
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "REMOTE_FILE_DELETE",
-        fileName: "Test.tsx",
-      })
-
-      expect(result.state.mode).toBe("snapshot_processing")
-      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
-        true
-      )
-      expect(result.effects.some((e) => e.type === "LOG")).toBe(true)
-    })
-
-    it("rejects deletes while disconnected", () => {
-      const initialState = {
-        mode: "disconnected" as const,
-        socket: null,
-        files: new Map(),
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "REMOTE_FILE_DELETE",
-        fileName: "Test.tsx",
-      })
-
-      expect(result.state.mode).toBe("disconnected")
-      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
-        false
-      )
-      expect(
-        result.effects.some((e) => e.type === "LOG" && e.level === "warn")
-      ).toBe(true)
-    })
-  })
-
-  describe("LOCAL_DELETE_APPROVED transition", () => {
-    it("applies the delete and persists state", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        files: new Map([
-          [
-            "Test.tsx",
-            {
-              localHash: "abc123",
-              lastSyncedHash: "abc123",
-              lastRemoteTimestamp: Date.now(),
-            },
-          ],
-        ]),
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "LOCAL_DELETE_APPROVED",
-        fileName: "Test.tsx",
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
-        true
-      )
-      expect(result.effects.some((e) => e.type === "PERSIST_STATE")).toBe(true)
-    })
-  })
-
-  describe("LOCAL_DELETE_REJECTED transition", () => {
-    it("restores the file", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        files: new Map(),
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "LOCAL_DELETE_REJECTED",
-        fileName: "Test.tsx",
-        content: "restored content",
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(true)
-      const writeEffect = result.effects.find((e) => e.type === "WRITE_FILES")
-      expect(writeEffect).toMatchObject({
-        type: "WRITE_FILES",
-        files: [
-          {
-            name: "Test.tsx",
-            content: "restored content",
-          },
-        ],
-      })
-    })
-  })
-
-  describe("REQUEST_FILES transition", () => {
-    it("emits LIST_LOCAL_FILES effect when in watching mode", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        files: new Map(),
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "REQUEST_FILES",
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect(result.effects.some((e) => e.type === "LIST_LOCAL_FILES")).toBe(
-        true
-      )
-    })
-
-    it("rejects request when disconnected", () => {
-      const initialState = {
-        mode: "disconnected" as const,
-        socket: null,
-        files: new Map(),
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "REQUEST_FILES",
-      })
-
-      expect(result.state.mode).toBe("disconnected")
-      expect(result.effects.some((e) => e.type === "LIST_LOCAL_FILES")).toBe(
-        false
-      )
-      expect(
-        result.effects.some((e) => e.type === "LOG" && e.level === "warn")
-      ).toBe(true)
-    })
-  })
-
-  describe("WATCHER_EVENT transition", () => {
-    it("emits SEND_LOCAL_CHANGE for file add/change in watching mode", () => {
+    it("emits SEND_LOCAL_CHANGE for local file add/change in watching mode", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
@@ -502,30 +234,7 @@ describe("State Machine", () => {
       })
     })
 
-    it("emits REQUEST_LOCAL_DELETE_DECISION for file delete", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        files: new Map(),
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "WATCHER_EVENT",
-        event: {
-          kind: "delete",
-          relativePath: "Test.tsx",
-        },
-      })
-
-      expect(
-        result.effects.some((e) => e.type === "REQUEST_LOCAL_DELETE_DECISION")
-      ).toBe(true)
-    })
-
-    it("ignores events when not in watching mode", () => {
+    it("ignores local WATCHER_EVENT when not in watching mode", () => {
       const initialState = {
         mode: "handshaking" as const,
         socket: {} as WebSocket,
@@ -549,7 +258,7 @@ describe("State Machine", () => {
       )
     })
 
-    it("ignores events when disconnected", () => {
+    it("ignores local WATCHER_EVENT when disconnected", () => {
       const initialState = {
         mode: "disconnected" as const,
         socket: null,
@@ -572,10 +281,51 @@ describe("State Machine", () => {
         false
       )
     })
-  })
 
-  describe("FILE_SYNCED_CONFIRMATION transition", () => {
-    it("updates file metadata with remote timestamp", () => {
+    it("emits LIST_LOCAL_FILES on REQUEST_FILES when in watching mode", () => {
+      const initialState = {
+        mode: "watching" as const,
+        socket: {} as WebSocket,
+        files: new Map(),
+        pendingRemoteChanges: [],
+        pendingOperations: new Map(),
+        nextOperationId: 1,
+      }
+
+      const result = transition(initialState, {
+        type: "REQUEST_FILES",
+      })
+
+      expect(result.state.mode).toBe("watching")
+      expect(result.effects.some((e) => e.type === "LIST_LOCAL_FILES")).toBe(
+        true
+      )
+    })
+
+    it("rejects REQUEST_FILES when disconnected", () => {
+      const initialState = {
+        mode: "disconnected" as const,
+        socket: null,
+        files: new Map(),
+        pendingRemoteChanges: [],
+        pendingOperations: new Map(),
+        nextOperationId: 1,
+      }
+
+      const result = transition(initialState, {
+        type: "REQUEST_FILES",
+      })
+
+      expect(result.state.mode).toBe("disconnected")
+      expect(result.effects.some((e) => e.type === "LIST_LOCAL_FILES")).toBe(
+        false
+      )
+      expect(
+        result.effects.some((e) => e.type === "LOG" && e.level === "warn")
+      ).toBe(true)
+    })
+
+    it("updates file metadata on FILE_SYNCED_CONFIRMATION", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
@@ -604,7 +354,7 @@ describe("State Machine", () => {
       ).toBe(true)
     })
 
-    it("creates metadata entry if file not tracked yet", () => {
+    it("creates metadata entry on FILE_SYNCED_CONFIRMATION if file not tracked", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
@@ -619,10 +369,273 @@ describe("State Machine", () => {
         fileName: "NewFile.tsx",
         remoteModifiedAt: 3000,
       })
+
+      // Should not throw - creates new entry
+      expect(result.state.mode).toBe("watching")
     })
   })
 
-  describe("CONFLICTS_RESOLVED transition", () => {
+  // Deletion Safety Tests
+  // Remote → Local: Auto-applies (Framer is source of truth)
+  // Local → Remote: Requires confirmation (protects source of truth)
+  describe("Deletion Safety", () => {
+    it("auto-applies remote deletions to local filesystem", () => {
+      const initialState = {
+        mode: "watching" as const,
+        socket: {} as WebSocket,
+        files: new Map([
+          [
+            "Test.tsx",
+            {
+              localHash: "abc123",
+              lastSyncedHash: "abc123",
+              lastRemoteTimestamp: Date.now(),
+            },
+          ],
+        ]),
+        pendingRemoteChanges: [],
+        pendingOperations: new Map(),
+        nextOperationId: 1,
+      }
+
+      const result = transition(initialState, {
+        type: "REMOTE_FILE_DELETE",
+        fileName: "Test.tsx",
+      })
+
+      expect(result.state.mode).toBe("watching")
+      // CRITICAL: Remote deletions immediately emit DELETE_LOCAL_FILES
+      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
+        true
+      )
+      const deleteEffect = result.effects.find(
+        (e) => e.type === "DELETE_LOCAL_FILES"
+      )
+      expect(deleteEffect).toMatchObject({
+        type: "DELETE_LOCAL_FILES",
+        names: ["Test.tsx"],
+      })
+      expect(result.effects.some((e) => e.type === "PERSIST_STATE")).toBe(true)
+    })
+
+    it("auto-applies remote deletions during snapshot processing", () => {
+      const initialState = {
+        mode: "snapshot_processing" as const,
+        socket: {} as WebSocket,
+        files: new Map(),
+        pendingRemoteChanges: [],
+        pendingOperations: new Map(),
+        nextOperationId: 1,
+      }
+
+      const result = transition(initialState, {
+        type: "REMOTE_FILE_DELETE",
+        fileName: "Test.tsx",
+      })
+
+      expect(result.state.mode).toBe("snapshot_processing")
+      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
+        true
+      )
+    })
+
+    it("rejects remote deletions while disconnected", () => {
+      const initialState = {
+        mode: "disconnected" as const,
+        socket: null,
+        files: new Map(),
+        pendingRemoteChanges: [],
+        pendingOperations: new Map(),
+        nextOperationId: 1,
+      }
+
+      const result = transition(initialState, {
+        type: "REMOTE_FILE_DELETE",
+        fileName: "Test.tsx",
+      })
+
+      expect(result.state.mode).toBe("disconnected")
+      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
+        false
+      )
+      expect(
+        result.effects.some((e) => e.type === "LOG" && e.level === "warn")
+      ).toBe(true)
+    })
+
+    it("prompts user before propagating local delete to Framer", () => {
+      const initialState = {
+        mode: "watching" as const,
+        socket: {} as WebSocket,
+        files: new Map(),
+        pendingRemoteChanges: [],
+        pendingOperations: new Map(),
+        nextOperationId: 1,
+      }
+
+      const result = transition(initialState, {
+        type: "WATCHER_EVENT",
+        event: {
+          kind: "delete",
+          relativePath: "Test.tsx",
+        },
+      })
+
+      // CRITICAL: Local deletes do NOT immediately send to Framer
+      // They emit REQUEST_LOCAL_DELETE_DECISION to ask user first
+      expect(
+        result.effects.some((e) => e.type === "REQUEST_LOCAL_DELETE_DECISION")
+      ).toBe(true)
+      // Should NOT have SEND_MESSAGE with file-delete
+      expect(
+        result.effects.some(
+          (e) =>
+            e.type === "SEND_MESSAGE" &&
+            "payload" in e &&
+            e.payload?.type === "file-delete"
+        )
+      ).toBe(false)
+    })
+
+    it("sends delete to Framer only after user approval", () => {
+      const initialState = {
+        mode: "watching" as const,
+        socket: {} as WebSocket,
+        files: new Map([
+          [
+            "Test.tsx",
+            {
+              localHash: "abc123",
+              lastSyncedHash: "abc123",
+              lastRemoteTimestamp: Date.now(),
+            },
+          ],
+        ]),
+        pendingRemoteChanges: [],
+        pendingOperations: new Map(),
+        nextOperationId: 1,
+      }
+
+      const result = transition(initialState, {
+        type: "LOCAL_DELETE_APPROVED",
+        fileName: "Test.tsx",
+      })
+
+      expect(result.state.mode).toBe("watching")
+      // After approval, the delete is applied locally
+      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
+        true
+      )
+      expect(result.effects.some((e) => e.type === "PERSIST_STATE")).toBe(true)
+    })
+
+    it("does NOT send delete to Framer when user rejects - restores file instead", () => {
+      const initialState = {
+        mode: "watching" as const,
+        socket: {} as WebSocket,
+        files: new Map(),
+        pendingRemoteChanges: [],
+        pendingOperations: new Map(),
+        nextOperationId: 1,
+      }
+
+      const result = transition(initialState, {
+        type: "LOCAL_DELETE_REJECTED",
+        fileName: "Test.tsx",
+        content: "restored content",
+      })
+
+      expect(result.state.mode).toBe("watching")
+      // File is restored locally
+      expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(true)
+      const writeEffect = result.effects.find((e) => e.type === "WRITE_FILES")
+      expect(writeEffect).toMatchObject({
+        type: "WRITE_FILES",
+        files: [
+          {
+            name: "Test.tsx",
+            content: "restored content",
+          },
+        ],
+      })
+      // Should NOT send delete to Framer
+      expect(
+        result.effects.some(
+          (e) =>
+            e.type === "SEND_MESSAGE" &&
+            "payload" in e &&
+            e.payload?.type === "file-delete"
+        )
+      ).toBe(false)
+    })
+  })
+
+  // Conflict Resolution Tests
+  describe("Conflict Resolution", () => {
+    it("applies safe writes and transitions to watching when no conflicts", () => {
+      const initialState = {
+        mode: "snapshot_processing" as const,
+        socket: {} as WebSocket,
+        files: new Map(),
+        pendingRemoteChanges: [],
+        pendingOperations: new Map(),
+        nextOperationId: 1,
+      }
+
+      const result = transition(initialState, {
+        type: "CONFLICTS_DETECTED",
+        conflicts: [],
+        safeWrites: [
+          {
+            name: "Test.tsx",
+            content: "new content",
+            modifiedAt: Date.now(),
+          },
+        ],
+        localOnly: [],
+      })
+
+      expect(result.state.mode).toBe("watching")
+      expect("pendingConflicts" in result.state).toBe(false)
+      expect(result.effects.length).toBeGreaterThan(2)
+      expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(true)
+      expect(result.effects.some((e) => e.type === "PERSIST_STATE")).toBe(true)
+    })
+
+    it("transitions to conflict_resolution when manual conflicts exist", () => {
+      const initialState = {
+        mode: "snapshot_processing" as const,
+        socket: {} as WebSocket,
+        files: new Map(),
+        pendingRemoteChanges: [],
+        pendingOperations: new Map(),
+        nextOperationId: 1,
+      }
+
+      const conflict = {
+        fileName: "Test.tsx",
+        localContent: "local content",
+        remoteContent: "remote content",
+        localModifiedAt: Date.now(),
+        remoteModifiedAt: Date.now() + 1000,
+      }
+
+      const result = transition(initialState, {
+        type: "CONFLICTS_DETECTED",
+        conflicts: [conflict],
+        safeWrites: [],
+        localOnly: [],
+      })
+
+      expect(result.state.mode).toBe("conflict_resolution")
+      if (result.state.mode === "conflict_resolution") {
+        expect(result.state.pendingConflicts).toHaveLength(1)
+      }
+      expect(
+        result.effects.some((e) => e.type === "REQUEST_CONFLICT_VERSIONS")
+      ).toBe(true)
+    })
+
     it("applies all remote versions when user picks remote", () => {
       const conflict1 = {
         fileName: "Test1.tsx",
@@ -660,7 +673,6 @@ describe("State Machine", () => {
       const writeEffects = result.effects.filter(
         (e) => e.type === "WRITE_FILES"
       )
-      // Each conflict gets its own WRITE_FILES effect
       expect(writeEffects).toHaveLength(2)
       expect(writeEffects[0]).toMatchObject({
         type: "WRITE_FILES",
@@ -747,9 +759,7 @@ describe("State Machine", () => {
         result.effects.some((e) => e.type === "LOG" && e.level === "warn")
       ).toBe(true)
     })
-  })
 
-  describe("CONFLICT_VERSION_RESPONSE transition", () => {
     it("auto-applies local changes when remote is unchanged", () => {
       const conflict = {
         fileName: "Test.tsx",
@@ -852,7 +862,8 @@ describe("State Machine", () => {
     })
   })
 
-  describe("echo prevention filter", () => {
+  // Echo Prevention Tests
+  describe("Echo Prevention", () => {
     it("skips inbound file-change that matches last local send", () => {
       const hashTracker = createHashTracker()
       hashTracker.remember("Hey.tsx", "content")

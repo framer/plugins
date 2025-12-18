@@ -1,12 +1,6 @@
-import { canonicalFileName, ensureExtension, type SyncTracker, sanitizeFilePath } from "@code-link/shared"
+import { canonicalFileName, ensureExtension, type SyncTracker } from "@code-link/shared"
 import { framer } from "framer-plugin"
 import * as log from "./utils/logger"
-
-// TODO:
-// - what is CLI file name vs canonical file name
-// - check if the handles can become stale
-// - inconsistent error handling of Framer API calls
-// - other inline comments below
 
 /**
  * Plugin API Handlers
@@ -16,41 +10,31 @@ import * as log from "./utils/logger"
 
 export class CodeFilesAPI {
     private lastSnapshot = new Map<string, string>()
-    // private codeFiles = new Map<string, CodeFile>()
 
-    // @TODO figure out if good idea
-    // private async getPossiblyStableCodeFileHandle(name: string) {
-    //   const file = this.codeFiles.get(name)
-    //   if (file) return file
-
-    //   const allCodeFiles = await framer.getCodeFiles()
-
-    //   this.codeFiles = new Map<string, CodeFile>()
-
-    //   return
-    // }
-
-    private async getAllCodeFiles() {
+    private async getCodeFilesWithCanonicalNames() {
+        // Always all files instead of single file calls.
+        // The API internally does that anyways.
+        // Also ensures everything is fresh.
         const codeFiles = await framer.getCodeFiles()
 
         return codeFiles.map(file => {
             const source = file.path || file.name
             return {
-                name: toCliFileName(source),
+                name: canonicalFileName(source),
                 content: file.content,
             }
         })
     }
 
     async publishSnapshot(socket: WebSocket) {
-        const files = await this.getAllCodeFiles()
+        const files = await this.getCodeFilesWithCanonicalNames()
         socket.send(JSON.stringify({ type: "file-list", files }))
         this.lastSnapshot.clear()
         files.forEach(file => this.lastSnapshot.set(file.name, file.content))
     }
 
     async handleFramerFilesChanged(socket: WebSocket, tracker: SyncTracker) {
-        const files = await this.getAllCodeFiles()
+        const files = await this.getCodeFilesWithCanonicalNames()
         const seen = new Set<string>()
 
         for (const file of files) {
@@ -72,7 +56,6 @@ export class CodeFilesAPI {
             }
         }
 
-        // @TODO: Looping again could be more expensive than diffing.
         for (const fileName of Array.from(this.lastSnapshot.keys())) {
             if (!seen.has(fileName)) {
                 socket.send(
@@ -88,9 +71,9 @@ export class CodeFilesAPI {
     }
 
     async applyRemoteChange(fileName: string, content: string, socket: WebSocket) {
-        const cliName = toCliFileName(fileName)
+        const normalizedName = canonicalFileName(fileName)
         // Update snapshot BEFORE upsert to prevent race with file subscription
-        this.lastSnapshot.set(cliName, content)
+        this.lastSnapshot.set(normalizedName, content)
 
         const updatedAt = await upsertFramerFile(fileName, content)
         // Send file-synced message with timestamp
@@ -101,7 +84,7 @@ export class CodeFilesAPI {
         socket.send(
             JSON.stringify({
                 type: "file-synced",
-                fileName: cliName,
+                fileName: normalizedName,
                 remoteModifiedAt: syncTimestamp,
             })
         )
@@ -109,14 +92,13 @@ export class CodeFilesAPI {
 
     async applyRemoteDelete(fileName: string) {
         await deleteFramerFile(fileName)
-        this.lastSnapshot.delete(toCliFileName(fileName))
+        this.lastSnapshot.delete(canonicalFileName(fileName))
     }
 
     async readCurrentContent(fileName: string) {
-        // @TODO, again, do we need ALL FILES
-        const files = await this.getAllCodeFiles()
-        const cliName = toCliFileName(fileName)
-        return files.find(file => file.name === cliName)?.content
+        const files = await this.getCodeFilesWithCanonicalNames()
+        const normalizedName = canonicalFileName(fileName)
+        return files.find(file => file.name === normalizedName)?.content
     }
 
     async fetchConflictVersions(requests: { fileName: string; lastSyncedAt?: number }[]) {
@@ -135,7 +117,6 @@ export class CodeFilesAPI {
         }
 
         const versionPromises = requests.map(async request => {
-            // @TODO we do this a lot?
             const file = codeFiles.find(
                 f => canonicalFileName(f.path || f.name) === canonicalFileName(request.fileName)
             )
@@ -175,24 +156,17 @@ export class CodeFilesAPI {
     }
 }
 
-// @TODO naming is not clear between all path functions, and when to use which.
-function toCliFileName(filePath: string) {
-    const sanitized = sanitizeFilePath(filePath, false).path
-    return ensureExtension(sanitized || canonicalFileName(filePath))
-}
-
 async function upsertFramerFile(fileName: string, content: string): Promise<number | undefined> {
-    const normalizedTarget = canonicalFileName(fileName)
-    // @TODO: investigate if we should keep codeFileHandles around rather than getCodeFiles each time
+    const normalisedName = canonicalFileName(fileName)
     const codeFiles = await framer.getCodeFiles()
-    const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalizedTarget)
+    const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedName)
 
     if (existing) {
         await existing.setFileContent(content)
         return Date.now()
     }
 
-    await framer.createCodeFile(ensureExtension(normalizedTarget), content, {
+    await framer.createCodeFile(ensureExtension(normalisedName), content, {
         editViaPlugin: false,
     })
 
@@ -200,9 +174,9 @@ async function upsertFramerFile(fileName: string, content: string): Promise<numb
 }
 
 async function deleteFramerFile(fileName: string) {
-    const normalizedTarget = canonicalFileName(fileName)
+    const normalisedName = canonicalFileName(fileName)
     const codeFiles = await framer.getCodeFiles()
-    const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalizedTarget)
+    const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedName)
 
     if (existing) {
         await existing.remove()

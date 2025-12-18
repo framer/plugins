@@ -22,25 +22,36 @@ function convertToReconciliation(
     const items: FieldReconciliationItem[] = []
 
     for (const mapping of mappings) {
-        if (mapping.action === "ignore") {
-            // Ignored fields are not included in reconciliation
-            continue
-        }
-
-        if (mapping.action === "create") {
-            items.push({
-                inferredField: mapping.inferredField,
-                action: "add",
-            })
-        } else if (mapping.action === "map" && mapping.targetFieldId) {
-            const existingField = existingFields.find(f => f.id === mapping.targetFieldId)
-            if (existingField) {
+        switch (mapping.action) {
+            case "ignore": {
+                // Ignored fields are not included in reconciliation
+                continue
+            }
+            case "create": {
                 items.push({
                     inferredField: mapping.inferredField,
-                    existingField: existingField as FieldReconciliationItem["existingField"],
-                    action: mapping.hasTypeMismatch ? "keep" : "keep",
-                    mapToFieldId: mapping.targetFieldId,
+                    action: "add",
                 })
+                break
+            }
+            case "map": {
+                if (mapping.targetFieldId) {
+                    const existingField = existingFields.find(f => f.id === mapping.targetFieldId)
+                    if (existingField) {
+                        items.push({
+                            inferredField: mapping.inferredField,
+                            existingField: existingField as FieldReconciliationItem["existingField"],
+                            action: mapping.hasTypeMismatch ? "keep" : "keep",
+                            mapToFieldId: mapping.targetFieldId,
+                        })
+                    }
+                }
+                break
+            }
+            default: {
+                // Exhaustive switch typecheck
+                // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+                throw new Error(`Unknown mapping action: ${(mapping).action satisfies never}`)
             }
         }
     }
@@ -51,13 +62,16 @@ function convertToReconciliation(
 export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
     const isAllowedToAddItems = useIsAllowedTo("Collection.addItems")
+    const isAllowedToAddFields = useIsAllowedTo("Collection.addFields")
+    const isAllowedToRemoveFields = useIsAllowedTo("Collection.removeFields")
+    const hasAllPermissions = isAllowedToAddItems && isAllowedToAddFields && isAllowedToRemoveFields
 
     const { currentRoute, navigate } = useMiniRouter()
 
     const handleFileSelected = useCallback(
         async (csvContent: string) => {
             if (!collection) return
-            if (!isAllowedToAddItems) return
+            if (!hasAllPermissions) return
 
             try {
                 const records = await parseCSV(csvContent)
@@ -89,7 +103,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 })
             }
         },
-        [collection, isAllowedToAddItems, navigate]
+        [collection, hasAllPermissions, navigate]
     )
 
     const handleFieldMapperSubmit = useCallback(
@@ -100,7 +114,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             slugFieldName: string
             missingFields: MissingFieldItem[]
         }) => {
-            if (!isAllowedToAddItems) return
+            if (!hasAllPermissions) return
 
             try {
                 // Get existing fields to convert mappings
@@ -176,7 +190,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 })
             }
         },
-        [isAllowedToAddItems, navigate]
+        [hasAllPermissions, navigate]
     )
 
     switch (currentRoute.uid) {

@@ -58,6 +58,7 @@ export async function reconcileFields(
     // Collect fields to remove
     const fieldsToRemove = reconciliation
         .filter(item => item.action === "remove" && item.existingField)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         .map(item => item.existingField!.id)
 
     // Remove fields using collection.removeFields()

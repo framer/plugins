@@ -121,7 +121,9 @@ interface GetFieldDataEntryInputForFieldOpts {
     csvRecord: CSVRecord
 }
 
-function getFieldDataEntryInputForField(opts: GetFieldDataEntryInputForFieldOpts): FieldDataEntryInput | ConversionError {
+function getFieldDataEntryInputForField(
+    opts: GetFieldDataEntryInputForFieldOpts
+): FieldDataEntryInput | ConversionError {
     switch (opts.field.type) {
         case "string":
             return { type: opts.field.type, value: opts.value ?? "" }
@@ -168,7 +170,7 @@ function getFieldDataEntryInputForField(opts: GetFieldDataEntryInputForFieldOpts
                 return { type: "enum", value: firstCase.id }
             }
             const matchingCase = opts.field.cases.find(
-                enumCase => collator.compare(enumCase.name, opts.value!) === 0 || enumCase.id === opts.value
+                enumCase => collator.compare(enumCase.name, opts.value ?? "") === 0 || enumCase.id === opts.value
             )
             if (!matchingCase) {
                 return new ConversionError(`Invalid case “${opts.value}” for enum “${opts.field.name}”`)
@@ -401,9 +403,7 @@ export interface ProcessRecordsWithFieldMappingOpts {
     reconciliation?: FieldReconciliationItem[]
 }
 
-export async function processRecordsWithFieldMapping(
-    opts: ProcessRecordsWithFieldMappingOpts
-): Promise<ImportResult> {
+export async function processRecordsWithFieldMapping(opts: ProcessRecordsWithFieldMappingOpts): Promise<ImportResult> {
     if (!opts.collection.slugFieldName) {
         throw new ImportError("error", "Import failed. No slug field was found in your CMS Collection.")
     }
@@ -430,7 +430,11 @@ export async function processRecordsWithFieldMapping(
         if (!opts.ignoredFieldNames.has(field.columnName)) {
             // If we have reconciliation data, use it to determine the mapping
             if (opts.reconciliation) {
-                const mappedName = getMappedFieldName({ csvColumnName: field.columnName, reconciliation: opts.reconciliation, collectionFields: fields })
+                const mappedName = getMappedFieldName({
+                    csvColumnName: field.columnName,
+                    reconciliation: opts.reconciliation,
+                    collectionFields: fields,
+                })
                 if (mappedName) {
                     csvToFieldMapping.set(field.columnName, mappedName)
                 }

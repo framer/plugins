@@ -89,34 +89,22 @@ interface FieldMapperProps {
 
 type MappingStatus = "perfect" | "mismatch" | "create" | "ignored"
 
-function getStatusColor(status: MappingStatus): string {
-    switch (status) {
-        case "perfect":
-            return "var(--framer-color-text-positive, #34C759)"
-        case "mismatch":
-            return "var(--framer-color-warning, #FF9500)"
-        case "create":
-            return "var(--framer-color-tint, #0099FF)"
-        case "ignored":
-            return "var(--framer-color-text-tertiary)"
-    }
+const statusColors: Record<MappingStatus, string> = {
+    perfect: "var(--framer-color-text-positive, #34C759)",
+    mismatch: "var(--framer-color-warning, #FF9500)",
+    create: "var(--framer-color-tint, #0099FF)",
+    ignored: "var(--framer-color-text-tertiary)",
 }
 
+const statusTitles: Record<MappingStatus, string> = {
+    perfect: "Exact match",
+    mismatch: "Type mismatch",
+    create: "New field",
+    ignored: "Ignored",
+}
 function StatusDot({ status }: { status: MappingStatus }) {
     return (
-        <span
-            className="status-dot"
-            style={{ backgroundColor: getStatusColor(status) }}
-            title={
-                status === "perfect"
-                    ? "Exact match"
-                    : status === "mismatch"
-                      ? "Type mismatch"
-                      : status === "create"
-                        ? "New field"
-                        : "Ignored"
-            }
-        />
+        <span className="status-dot" style={{ backgroundColor: statusColors[status] }} title={statusTitles[status]} />
     )
 }
 
@@ -140,14 +128,20 @@ function FieldMapperRow({
     const { inferredField, action, targetFieldId, hasTypeMismatch } = item
     const isIgnored = action === "ignore"
 
-    // Determine visual status
-    const status: MappingStatus = isIgnored
-        ? "ignored"
-        : action === "create"
-          ? "create"
-          : hasTypeMismatch
-            ? "mismatch"
-            : "perfect"
+    const getStatus = (): MappingStatus => {
+        if (isIgnored) {
+            return "ignored"
+        }
+        if (action === "create") {
+            return "create"
+        }
+        if (hasTypeMismatch) {
+            return "mismatch"
+        }
+        return "perfect"
+    }
+
+    const status = getStatus()
 
     // Find the target field for display
     const targetField = targetFieldId ? existingFields.find(f => f.id === targetFieldId) : null

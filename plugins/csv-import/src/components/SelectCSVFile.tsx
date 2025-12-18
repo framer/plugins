@@ -51,7 +51,11 @@ export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
     }, [])
 
     useEffect(() => {
-        const handlePaste = ({ clipboardData }: ClipboardEvent) => {
+        const handlePaste = (event: ClipboardEvent) => {
+            const target = event.target as HTMLElement
+            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return
+
+            const { clipboardData } = event
             if (!clipboardData) return
 
             const task = async () => {

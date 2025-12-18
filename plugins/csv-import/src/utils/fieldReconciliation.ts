@@ -173,15 +173,17 @@ function createFieldConfig(type: Field["type"], name: string): CreateField | nul
     }
 }
 
+export interface GetMappedFieldNameOpts {
+    csvColumnName: string
+    reconciliation: FieldReconciliationItem[]
+    collectionFields: Field[]
+}
+
 /**
  * Get the mapped field name for a CSV column based on reconciliation
  */
-export function getMappedFieldName(
-    csvColumnName: string,
-    reconciliation: FieldReconciliationItem[],
-    existingFields: Field[]
-): string | null {
-    const item = reconciliation.find(r => r.inferredField?.columnName === csvColumnName)
+export function getMappedFieldName(opts: GetMappedFieldNameOpts): string | null {
+    const item = opts.reconciliation.find(r => r.inferredField?.columnName === opts.csvColumnName)
 
     if (!item) {
         return null
@@ -189,7 +191,7 @@ export function getMappedFieldName(
 
     // If it's mapped to an existing field, return that field's name
     if (item.action === "map" && item.mapToFieldId) {
-        const mappedField = existingFields.find(f => f.id === item.mapToFieldId)
+        const mappedField = opts.collectionFields.find(f => f.id === item.mapToFieldId)
         return mappedField?.name ?? null
     }
 

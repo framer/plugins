@@ -74,11 +74,17 @@ export interface MissingFieldItem {
     action: MissingFieldAction
 }
 
+export interface FieldMapperSubmitOpts {
+    mappings: FieldMappingItem[]
+    slugFieldName: string
+    missingFields: MissingFieldItem[]
+}
+
 interface FieldMapperProps {
     collection: Collection
     inferredFields: InferredField[]
     csvRecords: Record<string, string>[]
-    onSubmit: (mappings: FieldMappingItem[], slugFieldName: string, missingFields: MissingFieldItem[]) => Promise<void>
+    onSubmit: (opts: FieldMapperSubmitOpts) => Promise<void>
     onCancel: () => Promise<void>
 }
 
@@ -449,7 +455,7 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
             return
         }
 
-        await onSubmit(mappings, selectedSlugFieldName, missingFields)
+        await onSubmit({ mappings, slugFieldName: selectedSlugFieldName, missingFields })
     }
 
     // Find required fields that are not mapped to any CSV column

@@ -114,89 +114,91 @@ function findRecordValue(record: CSVRecord, key: string) {
 const collator = new Intl.Collator("en", { sensitivity: "base" })
 const BOOLEAN_TRUTHY_VALUES = /1|y(?:es)?|true/iu
 
-function getFieldDataEntryInputForField(
-    field: Field,
-    value: string | null,
-    allItemIdBySlug: Map<string, Map<string, string>>,
-    record: CSVRecord
-): FieldDataEntryInput | ConversionError {
-    switch (field.type) {
+interface GetFieldDataEntryInputForFieldOpts {
+    field: Field
+    value: string | null
+    allItemIdBySlug: Map<string, Map<string, string>>
+    csvRecord: CSVRecord
+}
+
+function getFieldDataEntryInputForField(opts: GetFieldDataEntryInputForFieldOpts): FieldDataEntryInput | ConversionError {
+    switch (opts.field.type) {
         case "string":
-            return { type: field.type, value: value ?? "" }
+            return { type: opts.field.type, value: opts.value ?? "" }
         case "formattedText":
-            return { type: field.type, value: value ?? "", contentType: "auto" }
+            return { type: opts.field.type, value: opts.value ?? "", contentType: "auto" }
 
         case "color":
         case "link":
         case "file":
-            return { type: field.type, value: value ? value.trim() : null }
+            return { type: opts.field.type, value: opts.value ? opts.value.trim() : null }
 
         case "image": {
-            const altText = findRecordValue(record, `${field.name}:alt`)
-            return { type: field.type, value: value ? value.trim() : null, alt: altText ?? undefined }
+            const altText = findRecordValue(opts.csvRecord, `${opts.field.name}:alt`)
+            return { type: opts.field.type, value: opts.value ? opts.value.trim() : null, alt: altText ?? undefined }
         }
 
         case "number": {
-            const number = Number(value)
+            const number = Number(opts.value)
             if (Number.isNaN(number)) {
-                return new ConversionError(`Invalid value for field “${field.name}” expected a number`)
+                return new ConversionError(`Invalid value for field “${opts.field.name}” expected a number`)
             }
             return { type: "number", value: number }
         }
 
         case "boolean": {
-            return { type: "boolean", value: value ? BOOLEAN_TRUTHY_VALUES.test(value) : false }
+            return { type: "boolean", value: opts.value ? BOOLEAN_TRUTHY_VALUES.test(opts.value) : false }
         }
 
         case "date": {
-            if (value === null) {
+            if (opts.value === null) {
                 return { type: "date", value: null }
             }
-            const date = new Date(value)
+            const date = new Date(opts.value)
             if (!isValidDate(date)) {
-                return new ConversionError(`Invalid value for field “${field.name}” expected a valid date`)
+                return new ConversionError(`Invalid value for field “${opts.field.name}” expected a valid date`)
             }
             return { type: "date", value: date.toJSON() }
         }
 
         case "enum": {
-            if (value === null) {
-                const [firstCase] = field.cases
-                assert(firstCase, `No cases found for enum “${field.name}”`)
+            if (opts.value === null) {
+                const [firstCase] = opts.field.cases
+                assert(firstCase, `No cases found for enum “${opts.field.name}”`)
                 return { type: "enum", value: firstCase.id }
             }
-            const matchingCase = field.cases.find(
-                enumCase => collator.compare(enumCase.name, value) === 0 || enumCase.id === value
+            const matchingCase = opts.field.cases.find(
+                enumCase => collator.compare(enumCase.name, opts.value!) === 0 || enumCase.id === opts.value
             )
             if (!matchingCase) {
-                return new ConversionError(`Invalid case “${value}” for enum “${field.name}”`)
+                return new ConversionError(`Invalid case “${opts.value}” for enum “${opts.field.name}”`)
             }
             return { type: "enum", value: matchingCase.id }
         }
 
         case "collectionReference": {
-            if (value === null) {
+            if (opts.value === null) {
                 return { type: "collectionReference", value: null }
             }
 
-            const referencedSlug = value.trim()
-            const referencedId = allItemIdBySlug.get(field.collectionId)?.get(referencedSlug)
+            const referencedSlug = opts.value.trim()
+            const referencedId = opts.allItemIdBySlug.get(opts.field.collectionId)?.get(referencedSlug)
             if (!referencedId) {
-                return new ConversionError(`Invalid Collection reference “${value}”`)
+                return new ConversionError(`Invalid Collection reference “${opts.value}”`)
             }
 
             return { type: "collectionReference", value: referencedId }
         }
 
         case "multiCollectionReference": {
-            if (value === null) {
+            if (opts.value === null) {
                 return { type: "multiCollectionReference", value: null }
             }
-            const referencedSlugs = value.split(",").map(slug => slug.trim())
+            const referencedSlugs = opts.value.split(",").map(slug => slug.trim())
             const referencedIds: string[] = []
 
             for (const slug of referencedSlugs) {
-                const referencedId = allItemIdBySlug.get(field.collectionId)?.get(slug)
+                const referencedId = opts.allItemIdBySlug.get(opts.field.collectionId)?.get(slug)
                 if (!referencedId) {
                     return new ConversionError(`Invalid Collection reference “${slug}”`)
                 }
@@ -209,10 +211,10 @@ function getFieldDataEntryInputForField(
         case "array":
         case "divider":
         case "unsupported":
-            return new ConversionError(`Unsupported field type “${field.type}”`)
+            return new ConversionError(`Unsupported field type “${opts.field.type}”`)
 
         default:
-            field satisfies never
+            opts.field satisfies never
             return new ConversionError("This should not happen")
     }
 }
@@ -231,25 +233,27 @@ function getFirstMatchingIndex(values: string[], name: string | undefined) {
     return -1
 }
 
+interface FindSlugFieldIndexOpts {
+    csvHeader: string[]
+    slugField: { name: string; basedOn?: string | null }
+    collectionFields: Field[]
+}
+
 /**
  * Find the index of the slug field in the CSV header
  * Either matches the slug field directly or finds the field it's based on
  */
-function findSlugFieldIndex(
-    csvHeader: string[],
-    slugField: { name: string; basedOn?: string | null },
-    fields: Field[]
-): { slugIndex: number; basedOnIndex: number } {
+function findSlugFieldIndex(opts: FindSlugFieldIndexOpts): { slugIndex: number; basedOnIndex: number } {
     // Try direct match first
-    const slugIndex = getFirstMatchingIndex(csvHeader, slugField.name)
+    const slugIndex = getFirstMatchingIndex(opts.csvHeader, opts.slugField.name)
 
     // Find the based on field
-    const basedOnField = fields.find(field => field.id === slugField.basedOn)
-    const basedOnIndex = getFirstMatchingIndex(csvHeader, basedOnField?.name)
+    const basedOnField = opts.collectionFields.find(field => field.id === opts.slugField.basedOn)
+    const basedOnIndex = getFirstMatchingIndex(opts.csvHeader, basedOnField?.name)
 
     // If neither field is found, throw error
     if (slugIndex === -1 && basedOnIndex === -1) {
-        throw new ImportError("error", `Import failed. Ensure your CSV has a column named “${slugField.name}”.`)
+        throw new ImportError("error", `Import failed. Ensure your CSV has a column named “${opts.slugField.name}”.`)
     }
 
     return { slugIndex, basedOnIndex }
@@ -280,14 +284,14 @@ export async function processRecords(collection: Collection, records: CSVRecord[
     assert(firstRecord, "No records were found in your CSV.")
 
     const csvHeader = Object.keys(firstRecord)
-    const { slugIndex, basedOnIndex } = findSlugFieldIndex(
+    const { slugIndex, basedOnIndex } = findSlugFieldIndex({
         csvHeader,
-        {
+        slugField: {
             name: collection.slugFieldName,
             basedOn: collection.slugFieldBasedOn,
         },
-        fields
-    )
+        collectionFields: fields,
+    })
 
     // Check if CSV has a draft column
     const hasDraftColumn = csvHeader.includes(":draft")
@@ -355,7 +359,7 @@ export async function processRecords(collection: Collection, records: CSVRecord[
         const fieldData: FieldDataInput = {}
         for (const field of fieldsToImport) {
             const value = findRecordValue(record, field.name)
-            const fieldDataEntry = getFieldDataEntryInputForField(field, value, allItemIdBySlug, record)
+            const fieldDataEntry = getFieldDataEntryInputForField({ field, value, allItemIdBySlug, csvRecord: record })
 
             if (fieldDataEntry instanceof ConversionError) {
                 result.warnings.skippedValueCount++
@@ -388,19 +392,23 @@ export async function processRecords(collection: Collection, records: CSVRecord[
  * Process CSV records with custom field mapping
  * This version maps CSV columns to existing collection fields by name
  */
-export async function processRecordsWithFieldMapping(
-    collection: Collection,
-    records: CSVRecord[],
-    inferredFields: InferredField[],
-    ignoredFieldNames: Set<string>,
-    slugFieldName: string,
+export interface ProcessRecordsWithFieldMappingOpts {
+    collection: Collection
+    csvRecords: CSVRecord[]
+    inferredFields: InferredField[]
+    ignoredFieldNames: Set<string>
+    slugFieldName: string
     reconciliation?: FieldReconciliationItem[]
+}
+
+export async function processRecordsWithFieldMapping(
+    opts: ProcessRecordsWithFieldMappingOpts
 ): Promise<ImportResult> {
-    if (!collection.slugFieldName) {
+    if (!opts.collection.slugFieldName) {
         throw new ImportError("error", "Import failed. No slug field was found in your CMS Collection.")
     }
 
-    const existingItems = await collection.getItems()
+    const existingItems = await opts.collection.getItems()
 
     const result: ImportResult = {
         warnings: {
@@ -416,13 +424,13 @@ export async function processRecordsWithFieldMapping(
     const csvToFieldMapping = new Map<string, string>()
 
     // Get collection fields (may have been updated by reconciliation)
-    const fields = await collection.getFields()
+    const fields = await opts.collection.getFields()
 
-    for (const field of inferredFields) {
-        if (!ignoredFieldNames.has(field.columnName)) {
+    for (const field of opts.inferredFields) {
+        if (!opts.ignoredFieldNames.has(field.columnName)) {
             // If we have reconciliation data, use it to determine the mapping
-            if (reconciliation) {
-                const mappedName = getMappedFieldName(field.columnName, reconciliation, fields)
+            if (opts.reconciliation) {
+                const mappedName = getMappedFieldName({ csvColumnName: field.columnName, reconciliation: opts.reconciliation, collectionFields: fields })
                 if (mappedName) {
                     csvToFieldMapping.set(field.columnName, mappedName)
                 }
@@ -458,7 +466,7 @@ export async function processRecordsWithFieldMapping(
     }
 
     // Check if CSV has a draft column
-    const firstRecord = records[0]
+    const firstRecord = opts.csvRecords[0]
     assert(firstRecord, "No records were found in your CSV.")
     const csvHeader = Object.keys(firstRecord)
     const hasDraftColumn = csvHeader.includes(":draft")
@@ -480,9 +488,9 @@ export async function processRecordsWithFieldMapping(
         return false
     })
 
-    for (const record of records) {
+    for (const record of opts.csvRecords) {
         // Get slug value
-        const slugValue = findRecordValue(record, slugFieldName)
+        const slugValue = findRecordValue(record, opts.slugFieldName)
         if (!slugValue || slugValue.trim() === "") {
             result.warnings.missingSlugCount++
             continue
@@ -517,7 +525,7 @@ export async function processRecordsWithFieldMapping(
             if (!csvColumnName) continue
 
             const value = findRecordValue(record, csvColumnName)
-            const fieldDataEntry = getFieldDataEntryInputForField(field, value, allItemIdBySlug, record)
+            const fieldDataEntry = getFieldDataEntryInputForField({ field, value, allItemIdBySlug, csvRecord: record })
 
             if (fieldDataEntry instanceof ConversionError) {
                 result.warnings.skippedValueCount++

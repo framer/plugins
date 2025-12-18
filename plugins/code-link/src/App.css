@@ -7,7 +7,7 @@ body main {
     --framer-color-tint-extra-dark: #444;
 }
 
-body[data-framer-theme="dark"]  main {
+body[data-framer-theme="dark"] main {
     --framer-color-tint: #ffffff;
     --framer-color-tint-dimmed: #999;
     --framer-color-tint-dark: #e3e3e3;
@@ -57,7 +57,7 @@ main {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .05);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
     content: "";
     pointer-events: none;
 }

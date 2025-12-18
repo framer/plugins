@@ -307,9 +307,7 @@ export async function prepareImportPayload(opts: ProcessRecordsWithFieldMappingO
             draft,
         }
 
-        if (item.action === "add") {
-            newSlugValues.add(slug)
-        }
+        newSlugValues.add(slug)
 
         result.items.push(item)
     }

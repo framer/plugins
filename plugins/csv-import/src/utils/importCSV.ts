@@ -70,7 +70,7 @@ export async function importCSV(collection: Collection, result: ImportPayload) {
         messages.push(
             `Skipped ${result.warnings.doubleSlugCount} ${
                 result.warnings.doubleSlugCount === 1 ? "item" : "items"
-            } because of duplicate slugs`
+            } because of duplicate slugs in the CSV`
         )
     }
 

@@ -767,25 +767,25 @@ select:not(:disabled) {
 /* Unmapped required fields warning */
 
 .unmapped-required-section {
-    margin-top: 16px;
-    padding: 12px;
+    margin-top: 12px;
+    padding: 8px;
     background-color: rgba(255, 153, 0, 0.08);
     border: 1px solid rgba(255, 153, 0, 0.25);
-    border-radius: 8px;
+    border-radius: 6px;
 }
 
 .unmapped-required-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     font-weight: 600;
-    font-size: 0.875em;
+    font-size: 0.75em;
     color: var(--framer-color-warning, #ff9500);
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 }
 
 .warning-icon {
-    font-size: 1em;
+    font-size: 0.875em;
 }
 
 .warning-icon-small {
@@ -800,17 +800,17 @@ select:not(:disabled) {
 .unmapped-required-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 2px;
 }
 
 .unmapped-required-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 10px;
+    padding: 4px 8px;
     background-color: var(--framer-color-bg);
-    border-radius: 6px;
-    font-size: 0.875em;
+    border-radius: 4px;
+    font-size: 0.75em;
 }
 
 .unmapped-required-item .field-name {
@@ -820,12 +820,12 @@ select:not(:disabled) {
 
 .unmapped-required-item .field-type {
     color: var(--framer-color-text-tertiary);
-    font-size: 0.875em;
+    font-size: 1em;
 }
 
 .unmapped-required-hint {
-    margin: 10px 0 0;
-    font-size: 0.75em;
+    margin: 6px 0 0;
+    font-size: 0.6875em;
     color: var(--framer-color-text-tertiary);
 }
 

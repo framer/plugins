@@ -410,14 +410,16 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
                     newMappings.filter(m => m.action === "map" && m.targetFieldId).map(m => m.targetFieldId)
                 )
 
-                setMissingFields(
-                    existingFields
+                setMissingFields(prev => {
+                    const prevActionMap = new Map(prev.map(item => [item.field.id, item.action]))
+
+                    return existingFields
                         .filter(field => !mappedFieldIds.has(field.id))
                         .map(field => ({
                             field,
-                            action: "ignore" as MissingFieldAction,
+                            action: prevActionMap.get(field.id) ?? ("ignore" as MissingFieldAction),
                         }))
-                )
+                })
 
                 return newMappings
             })

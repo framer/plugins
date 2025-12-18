@@ -4,7 +4,7 @@ import { useCallback, useState } from "react"
 import type { ImportResultItem } from "./utils/csv"
 import "./App.css"
 import { useMiniRouter } from "./minirouter"
-import { FieldMapper, type FieldMappingItem } from "./routes/FieldMapper"
+import { FieldMapper, type FieldMappingItem, type MissingFieldItem } from "./routes/FieldMapper"
 import { Home } from "./routes/Home"
 import { ManageConflicts } from "./routes/ManageConflicts"
 import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from "./utils/csv"
@@ -98,6 +98,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             csvRecords: Record<string, string>[]
             mappings: FieldMappingItem[]
             slugFieldName: string
+            missingFields: MissingFieldItem[]
         }) => {
             if (!isAllowedToAddItems) return
 
@@ -115,6 +116,12 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
 
                 // Get the list of inferred fields (excluding ignored ones)
                 const fields = opts.mappings.filter(m => m.action !== "ignore").map(m => m.inferredField)
+
+                // Remove fields that the user marked for removal
+                const fieldsToRemove = opts.missingFields.filter(m => m.action === "remove").map(m => m.field.id)
+                if (fieldsToRemove.length > 0) {
+                    await opts.collection.removeFields(fieldsToRemove)
+                }
 
                 // Apply field reconciliation changes (add new fields)
                 await reconcileFields(opts.collection, reconciliation)
@@ -184,12 +191,13 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                     collection={currentRoute.opts.collection}
                     inferredFields={currentRoute.opts.inferredFields}
                     csvRecords={currentRoute.opts.csvRecords}
-                    onSubmit={(mappings, slugFieldName) =>
+                    onSubmit={(mappings, slugFieldName, missingFields) =>
                         handleFieldMapperSubmit({
                             collection: currentRoute.opts.collection,
                             csvRecords: currentRoute.opts.csvRecords,
                             mappings,
                             slugFieldName,
+                            missingFields,
                         })
                     }
                     onCancel={async () => {

@@ -826,3 +826,74 @@ select:not(:disabled) {
     font-size: 0.75em;
     color: var(--framer-color-text-tertiary);
 }
+
+/* Missing fields section */
+
+.missing-fields-section {
+    margin-top: 16px;
+    padding: 12px;
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+}
+
+.missing-fields-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 0.875em;
+    color: var(--framer-color-text-secondary);
+    margin-bottom: 10px;
+}
+
+.missing-fields-count {
+    font-size: 0.75em;
+    font-weight: 500;
+    color: var(--framer-color-text-tertiary);
+    background-color: var(--framer-color-bg);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.missing-fields-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.missing-field-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background-color: var(--framer-color-bg);
+    border-radius: 6px;
+}
+
+.missing-field-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.missing-field-info .field-name {
+    font-weight: 500;
+    color: var(--framer-color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.missing-field-info .field-type {
+    font-size: 0.75em;
+    color: var(--framer-color-text-tertiary);
+    white-space: nowrap;
+}
+
+.missing-field-action {
+    flex-shrink: 0;
+    min-width: 110px;
+}

@@ -67,11 +67,18 @@ export interface FieldMappingItem {
     hasTypeMismatch: boolean
 }
 
+export type MissingFieldAction = "ignore" | "remove"
+
+export interface MissingFieldItem {
+    field: Field
+    action: MissingFieldAction
+}
+
 interface FieldMapperProps {
     collection: Collection
     inferredFields: InferredField[]
     csvRecords: Record<string, string>[]
-    onSubmit: (mappings: FieldMappingItem[], slugFieldName: string) => Promise<void>
+    onSubmit: (mappings: FieldMappingItem[], slugFieldName: string, missingFields: MissingFieldItem[]) => Promise<void>
     onCancel: () => Promise<void>
 }
 
@@ -228,6 +235,7 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
     const isAllowedToManage = useIsAllowedTo("Collection.addItems")
     const [existingFields, setExistingFields] = useState<Field[]>([])
     const [mappings, setMappings] = useState<FieldMappingItem[]>([])
+    const [missingFields, setMissingFields] = useState<MissingFieldItem[]>([])
     const [selectedSlugFieldName, setSelectedSlugFieldName] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
 
@@ -238,6 +246,9 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                 const fields = await collection.getFields()
                 setExistingFields(fields)
 
+                // Track which existing fields get mapped
+                const mappedFieldIds = new Set<string>()
+
                 // Create initial mappings based on name matching
                 const initialMappings: FieldMappingItem[] = inferredFields.map(inferredField => {
                     // Try to find an existing field with matching name
@@ -246,6 +257,7 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                     if (matchingField) {
                         // Found a match - check type compatibility
                         const hasTypeMismatch = !isTypeCompatible(inferredField.inferredType, matchingField.type)
+                        mappedFieldIds.add(matchingField.id)
                         return {
                             inferredField,
                             action: "map" as const,
@@ -263,6 +275,16 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                 })
 
                 setMappings(initialMappings)
+
+                // Find fields that exist in collection but are not mapped from CSV
+                const initialMissingFields: MissingFieldItem[] = fields
+                    .filter(field => !mappedFieldIds.has(field.id))
+                    .map(field => ({
+                        field,
+                        action: "ignore" as const,
+                    }))
+
+                setMissingFields(initialMissingFields)
             } catch (error) {
                 console.error("Error loading fields:", error)
                 framer.notify("Error loading collection fields", { variant: "error" })
@@ -354,8 +376,8 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
 
     const updateTarget = useCallback(
         (columnName: string, targetFieldId: string | null) => {
-            setMappings(prev =>
-                prev.map(item => {
+            setMappings(prev => {
+                const newMappings = prev.map(item => {
                     if (item.inferredField.columnName !== columnName) return item
 
                     if (targetFieldId === null) {
@@ -381,10 +403,30 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                         hasTypeMismatch,
                     }
                 })
-            )
+
+                // Update missing fields based on new mappings
+                const mappedFieldIds = new Set(
+                    newMappings.filter(m => m.action === "map" && m.targetFieldId).map(m => m.targetFieldId)
+                )
+
+                setMissingFields(
+                    existingFields
+                        .filter(field => !mappedFieldIds.has(field.id))
+                        .map(field => ({
+                            field,
+                            action: "ignore" as MissingFieldAction,
+                        }))
+                )
+
+                return newMappings
+            })
         },
         [existingFields]
     )
+
+    const updateMissingFieldAction = useCallback((fieldId: string, action: MissingFieldAction) => {
+        setMissingFields(prev => prev.map(item => (item.field.id === fieldId ? { ...item, action } : item)))
+    }, [])
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
@@ -407,7 +449,7 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
             return
         }
 
-        await onSubmit(mappings, selectedSlugFieldName)
+        await onSubmit(mappings, selectedSlugFieldName, missingFields)
     }
 
     // Find required fields that are not mapped to any CSV column
@@ -430,8 +472,10 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
             matched: active.filter(m => m.action === "map" && !m.hasTypeMismatch).length,
             mismatched: active.filter(m => m.action === "map" && m.hasTypeMismatch).length,
             unmappedRequired: unmappedRequiredFields.length,
+            missing: missingFields.length,
+            removing: missingFields.filter(m => m.action === "remove").length,
         }
-    }, [mappings, unmappedRequiredFields])
+    }, [mappings, unmappedRequiredFields, missingFields])
 
     if (loading) {
         return (
@@ -476,6 +520,15 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                             <span className="stat stat-warning">
                                 <span className="warning-icon-small">⚠</span>
                                 {stats.unmappedRequired} required
+                            </span>
+                        )}
+                        {stats.missing > 0 && (
+                            <span className="stat stat-missing">
+                                <span
+                                    className="status-dot"
+                                    style={{ backgroundColor: "var(--framer-color-text-tertiary)" }}
+                                />
+                                {stats.missing} missing
                             </span>
                         )}
                     </div>
@@ -528,6 +581,39 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                         />
                     ))}
                 </div>
+
+                {missingFields.length > 0 && (
+                    <div className="missing-fields-section">
+                        <div className="missing-fields-header">
+                            <span>Fields not in CSV</span>
+                            <span className="missing-fields-count">{missingFields.length}</span>
+                        </div>
+                        <div className="missing-fields-list">
+                            {missingFields.map(item => (
+                                <div key={item.field.id} className="missing-field-row">
+                                    <div className="missing-field-info">
+                                        <span className="field-name">{item.field.name}</span>
+                                        <span className="field-type">{labelByFieldType[item.field.type]}</span>
+                                    </div>
+                                    <select
+                                        className="missing-field-action"
+                                        value={item.action}
+                                        disabled={!isAllowedToManage}
+                                        onChange={e => {
+                                            updateMissingFieldAction(
+                                                item.field.id,
+                                                e.target.value as MissingFieldAction
+                                            )
+                                        }}
+                                    >
+                                        <option value="ignore">Keep field</option>
+                                        <option value="remove">Remove field</option>
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {unmappedRequiredFields.length > 0 && (
                     <div className="unmapped-required-section">

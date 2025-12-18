@@ -1,7 +1,6 @@
 import { type Collection, framer, type UIOptions } from "framer-plugin"
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react"
-import type { ImportResult, ImportResultItem } from "./utils/csv"
-import type { InferredField } from "./utils/typeInference"
+import type { ImportPayload, ImportItem } from "./utils/csv"
 
 type Route =
     | {
@@ -13,15 +12,14 @@ type Route =
           opts: {
               collection: Collection
               csvRecords: Record<string, string>[]
-              inferredFields: InferredField[]
           }
       }
     | {
           uid: "manage-conflicts"
           opts: {
-              conflicts: ImportResult["items"]
-              result: ImportResult
-              onComplete: (items: ImportResultItem[]) => void
+              conflicts: ImportPayload["items"]
+              result: ImportPayload
+              onComplete: (items: ImportItem[]) => void
           }
       }
 

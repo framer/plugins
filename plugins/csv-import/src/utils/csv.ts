@@ -9,25 +9,24 @@ import {
 } from "framer-plugin"
 
 import * as v from "valibot"
-import { type FieldReconciliationItem, getMappedFieldName } from "./fieldReconciliation"
-import type { InferredField } from "./typeInference"
+import type { FieldMappingItem } from "../routes/FieldMapper"
 
 const CSVRecordSchema = v.record(v.string(), v.string())
 
 type CSVRecord = v.InferOutput<typeof CSVRecordSchema>
 
-export type ImportResultItem = CollectionItemInput & {
+export type ImportItem = CollectionItemInput & {
     action: "add" | "conflict" | "onConflictUpdate" | "onConflictSkip"
 }
 
-export interface ImportResult {
+export interface ImportPayload {
     warnings: {
         missingSlugCount: number
         doubleSlugCount: number
         skippedValueCount: number
         skippedValueKeys: Set<string>
     }
-    items: ImportResultItem[]
+    items: ImportItem[]
 }
 
 /**
@@ -221,175 +220,6 @@ function getFieldDataEntryInputForField(
     }
 }
 
-function getFirstMatchingIndex(values: string[], name: string | undefined) {
-    if (!name) {
-        return -1
-    }
-
-    for (const [index, value] of values.entries()) {
-        if (collator.compare(value, name) === 0) {
-            return index
-        }
-    }
-
-    return -1
-}
-
-interface FindSlugFieldIndexOpts {
-    csvHeader: string[]
-    slugField: { name: string; basedOn?: string | null }
-    collectionFields: Field[]
-}
-
-/**
- * Find the index of the slug field in the CSV header
- * Either matches the slug field directly or finds the field it's based on
- */
-function findSlugFieldIndex(opts: FindSlugFieldIndexOpts): { slugIndex: number; basedOnIndex: number } {
-    // Try direct match first
-    const slugIndex = getFirstMatchingIndex(opts.csvHeader, opts.slugField.name)
-
-    // Find the based on field
-    const basedOnField = opts.collectionFields.find(field => field.id === opts.slugField.basedOn)
-    const basedOnIndex = getFirstMatchingIndex(opts.csvHeader, basedOnField?.name)
-
-    // If neither field is found, throw error
-    if (slugIndex === -1 && basedOnIndex === -1) {
-        throw new ImportError("error", `Import failed. Ensure your CSV has a column named “${opts.slugField.name}”.`)
-    }
-
-    return { slugIndex, basedOnIndex }
-}
-
-/** Importer for "records": string based values with named keys */
-export async function processRecords(collection: Collection, records: CSVRecord[]) {
-    if (!collection.slugFieldName) {
-        throw new ImportError("error", "Import failed. No slug field was found in your CMS Collection.")
-    }
-
-    const existingItems = await collection.getItems()
-
-    const result: ImportResult = {
-        warnings: {
-            missingSlugCount: 0,
-            doubleSlugCount: 0,
-            skippedValueCount: 0,
-            skippedValueKeys: new Set<string>(),
-        },
-        items: [],
-    }
-
-    const fields = await collection.getFields()
-    const allItemIdBySlug = new Map<string, Map<string, string>>()
-
-    const firstRecord = records[0]
-    assert(firstRecord, "No records were found in your CSV.")
-
-    const csvHeader = Object.keys(firstRecord)
-    const { slugIndex, basedOnIndex } = findSlugFieldIndex({
-        csvHeader,
-        slugField: {
-            name: collection.slugFieldName,
-            basedOn: collection.slugFieldBasedOn,
-        },
-        collectionFields: fields,
-    })
-
-    // Check if CSV has a draft column
-    const hasDraftColumn = csvHeader.includes(":draft")
-
-    for (const field of fields) {
-        if (field.type === "collectionReference" || field.type === "multiCollectionReference") {
-            const collectionIdBySlug = allItemIdBySlug.get(field.collectionId) ?? new Map<string, string>()
-
-            const collection = await framer.getCollection(field.collectionId)
-            if (!collection) {
-                throw new ImportError(
-                    "error",
-                    `Import failed. “${field.name}” references a Collection that doesn’t exist.`
-                )
-            }
-
-            const items = await collection.getItems()
-            for (const item of items) {
-                collectionIdBySlug.set(item.slug, item.id)
-            }
-
-            allItemIdBySlug.set(field.collectionId, collectionIdBySlug)
-        }
-    }
-
-    const newSlugValues = new Set<string>()
-    const existingItemsBySlug = new Map<string, CollectionItem>()
-    for (const item of existingItems) {
-        existingItemsBySlug.set(item.slug, item)
-    }
-
-    const fieldsToImport = fields.filter(field => csvHeader.find(header => collator.compare(header, field.name) === 0))
-
-    for (const record of records) {
-        let slug: string | undefined
-        const values = Object.values(record)
-
-        // Try to get slug from the slug field first
-        if (slugIndex !== -1 && !isUndefined(values[slugIndex])) {
-            slug = slugify(values[slugIndex])
-        }
-
-        // If no slug and we have a basedOn field, try to get slug from that
-        if (!slug && basedOnIndex !== -1 && !isUndefined(values[basedOnIndex])) {
-            slug = slugify(values[basedOnIndex])
-        }
-
-        if (!slug) {
-            result.warnings.missingSlugCount++
-            continue
-        } else if (newSlugValues.has(slug)) {
-            result.warnings.doubleSlugCount++
-            continue
-        }
-
-        // Parse draft status
-        let draft = false
-        if (hasDraftColumn) {
-            const draftValue = findRecordValue(record, ":draft")
-            if (draftValue && draftValue.trim() !== "") {
-                draft = BOOLEAN_TRUTHY_VALUES.test(draftValue.trim())
-            }
-        }
-
-        const fieldData: FieldDataInput = {}
-        for (const field of fieldsToImport) {
-            const value = findRecordValue(record, field.name)
-            const fieldDataEntry = getFieldDataEntryInputForField({ field, value, allItemIdBySlug, csvRecord: record })
-
-            if (fieldDataEntry instanceof ConversionError) {
-                result.warnings.skippedValueCount++
-                result.warnings.skippedValueKeys.add(field.name)
-                continue
-            }
-
-            fieldData[field.id] = fieldDataEntry
-        }
-
-        const item: ImportResultItem = {
-            id: existingItemsBySlug.get(slug)?.id,
-            slug,
-            fieldData,
-            action: existingItemsBySlug.get(slug) ? "conflict" : "add",
-            draft,
-        }
-
-        if (item.action === "add") {
-            newSlugValues.add(slug)
-        }
-
-        result.items.push(item)
-    }
-
-    return result
-}
-
 /**
  * Process CSV records with custom field mapping
  * This version maps CSV columns to existing collection fields by name
@@ -397,20 +227,19 @@ export async function processRecords(collection: Collection, records: CSVRecord[
 export interface ProcessRecordsWithFieldMappingOpts {
     collection: Collection
     csvRecords: CSVRecord[]
-    inferredFields: InferredField[]
-    ignoredFieldNames: Set<string>
     slugFieldName: string
-    reconciliation?: FieldReconciliationItem[]
+    mappings: FieldMappingItem[]
 }
 
-export async function processRecordsWithFieldMapping(opts: ProcessRecordsWithFieldMappingOpts): Promise<ImportResult> {
+export async function prepareImportPayload(opts: ProcessRecordsWithFieldMappingOpts): Promise<ImportPayload> {
     if (!opts.collection.slugFieldName) {
         throw new ImportError("error", "Import failed. No slug field was found in your CMS Collection.")
     }
 
     const existingItems = await opts.collection.getItems()
+    const fields = await opts.collection.getFields()
 
-    const result: ImportResult = {
+    const result: ImportPayload = {
         warnings: {
             missingSlugCount: 0,
             doubleSlugCount: 0,
@@ -420,34 +249,9 @@ export async function processRecordsWithFieldMapping(opts: ProcessRecordsWithFie
         items: [],
     }
 
-    // Create field mapping from inferred fields to CSV column names
-    const csvToFieldMapping = new Map<string, string>()
-
-    // Get collection fields (may have been updated by reconciliation)
-    const fields = await opts.collection.getFields()
-
-    for (const field of opts.inferredFields) {
-        if (!opts.ignoredFieldNames.has(field.columnName)) {
-            // If we have reconciliation data, use it to determine the mapping
-            if (opts.reconciliation) {
-                const mappedName = getMappedFieldName({
-                    csvColumnName: field.columnName,
-                    reconciliation: opts.reconciliation,
-                    collectionFields: fields,
-                })
-                if (mappedName) {
-                    csvToFieldMapping.set(field.columnName, mappedName)
-                }
-            } else {
-                // Fallback to original behavior
-                csvToFieldMapping.set(field.columnName, field.name || field.columnName)
-            }
-        }
-    }
-
     const allItemIdBySlug = new Map<string, Map<string, string>>()
 
-    // Build reference maps for collection reference fields
+    // TODO: what's the significance of this? We can do joins between collections? Needs QA to ensure it still works
     for (const field of fields) {
         if (field.type === "collectionReference" || field.type === "multiCollectionReference") {
             const collectionIdBySlug = allItemIdBySlug.get(field.collectionId) ?? new Map<string, string>()
@@ -469,6 +273,7 @@ export async function processRecordsWithFieldMapping(opts: ProcessRecordsWithFie
         }
     }
 
+    // TODO: QA draft functionality
     // Check if CSV has a draft column
     const firstRecord = opts.csvRecords[0]
     assert(firstRecord, "No records were found in your CSV.")
@@ -481,19 +286,7 @@ export async function processRecordsWithFieldMapping(opts: ProcessRecordsWithFie
         existingItemsBySlug.set(item.slug, item)
     }
 
-    // Find fields to import based on mapping
-    const fieldsToImport = fields.filter(field => {
-        // Check if any CSV column maps to this field name
-        for (const [, mappedName] of csvToFieldMapping) {
-            if (collator.compare(mappedName, field.name) === 0) {
-                return true
-            }
-        }
-        return false
-    })
-
     for (const record of opts.csvRecords) {
-        // Get slug value
         const slugValue = findRecordValue(record, opts.slugFieldName)
         if (!slugValue || slugValue.trim() === "") {
             result.warnings.missingSlugCount++
@@ -506,7 +299,6 @@ export async function processRecordsWithFieldMapping(opts: ProcessRecordsWithFie
             continue
         }
 
-        // Parse draft status
         let draft = false
         if (hasDraftColumn) {
             const draftValue = findRecordValue(record, ":draft")
@@ -516,17 +308,25 @@ export async function processRecordsWithFieldMapping(opts: ProcessRecordsWithFie
         }
 
         const fieldData: FieldDataInput = {}
-        for (const field of fieldsToImport) {
-            // Find the CSV column that maps to this field
-            let csvColumnName: string | undefined
-            for (const [csvColumn, mappedName] of csvToFieldMapping) {
-                if (collator.compare(mappedName, field.name) === 0) {
-                    csvColumnName = csvColumn
-                    break
-                }
+        for (const mapping of opts.mappings) {
+            if (mapping.action === "ignore") {
+                continue
             }
 
-            if (!csvColumnName) continue
+            const csvColumnName = mapping.inferredField.columnName
+
+            // Find the target field
+            let field: Field | undefined
+            if (mapping.action === "map" && mapping.targetFieldId) {
+                field = fields.find(f => f.id === mapping.targetFieldId)
+            } else if (mapping.action === "create") {
+                // For created fields, find by name (case-insensitive)
+                field = fields.find(f => collator.compare(f.name, mapping.inferredField.name) === 0)
+            }
+
+            if (!field) {
+                continue
+            }
 
             const value = findRecordValue(record, csvColumnName)
             const fieldDataEntry = getFieldDataEntryInputForField({ field, value, allItemIdBySlug, csvRecord: record })
@@ -540,7 +340,7 @@ export async function processRecordsWithFieldMapping(opts: ProcessRecordsWithFie
             fieldData[field.id] = fieldDataEntry
         }
 
-        const item: ImportResultItem = {
+        const item: ImportItem = {
             id: existingItemsBySlug.get(slug)?.id,
             slug,
             fieldData,
@@ -558,7 +358,7 @@ export async function processRecordsWithFieldMapping(opts: ProcessRecordsWithFie
     return result
 }
 
-export async function importCSV(collection: Collection, result: ImportResult) {
+export async function importCSV(collection: Collection, result: ImportPayload) {
     const totalItems = result.items.length
     const totalAdded = result.items.filter(item => item.action === "add").length
     const totalUpdated = result.items.filter(item => item.action === "onConflictUpdate").length
@@ -664,7 +464,7 @@ const trimSlugRegExp = /^-+|-+$/gu
  * and parentheses. Also makes it lower case, and separates words by dashes.
  * This makes the value URL safe.
  */
-export function slugify(value: string): string {
+function slugify(value: string): string {
     return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
 }
 
@@ -688,8 +488,4 @@ function assert(condition: unknown, ...msg: unknown[]): asserts condition {
         }
     }
     throw e
-}
-
-function isUndefined(value: unknown): value is undefined {
-    return value === undefined
 }

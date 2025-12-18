@@ -1,7 +1,7 @@
 import type { Collection, Field } from "framer-plugin"
-import { framer, useIsAllowedTo } from "framer-plugin"
+import { framer } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import type { InferredField } from "../utils/typeInference"
+import { type InferredField, inferFieldsFromCSV } from "../utils/typeInference"
 
 const labelByFieldType: Record<Field["type"], string> = {
     boolean: "Toggle",
@@ -82,7 +82,6 @@ export interface FieldMapperSubmitOpts {
 
 interface FieldMapperProps {
     collection: Collection
-    inferredFields: InferredField[]
     csvRecords: Record<string, string>[]
     onSubmit: (opts: FieldMapperSubmitOpts) => Promise<void>
     onCancel: () => Promise<void>
@@ -124,7 +123,6 @@ function StatusDot({ status }: { status: MappingStatus }) {
 interface FieldMapperRowProps {
     item: FieldMappingItem
     existingFields: Field[]
-    isAllowedToManage: boolean
     isSlug: boolean
     onToggleIgnored: () => void
     onSetIgnored: (ignored: boolean) => void
@@ -134,7 +132,6 @@ interface FieldMapperRowProps {
 function FieldMapperRow({
     item,
     existingFields,
-    isAllowedToManage,
     isSlug,
     onToggleIgnored,
     onSetIgnored,
@@ -142,7 +139,6 @@ function FieldMapperRow({
 }: FieldMapperRowProps) {
     const { inferredField, action, targetFieldId, hasTypeMismatch } = item
     const isIgnored = action === "ignore"
-    const disabled = !isAllowedToManage
 
     // Determine visual status
     const status: MappingStatus = isIgnored
@@ -165,7 +161,6 @@ function FieldMapperRow({
                 type="button"
                 className="mapper-checkbox"
                 onClick={onToggleIgnored}
-                disabled={disabled}
                 aria-label={isIgnored ? "Include column" : "Ignore column"}
             >
                 <input type="checkbox" checked={!isIgnored} readOnly tabIndex={-1} />
@@ -199,7 +194,6 @@ function FieldMapperRow({
 
             <select
                 className="mapper-target"
-                disabled={disabled}
                 value={isIgnored ? "__ignore__" : action === "create" ? "__create__" : (targetFieldId ?? "")}
                 onChange={e => {
                     const value = e.target.value
@@ -237,8 +231,7 @@ function FieldMapperRow({
     )
 }
 
-export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, onCancel }: FieldMapperProps) {
-    const isAllowedToManage = useIsAllowedTo("Collection.addItems")
+export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: FieldMapperProps) {
     const [existingFields, setExistingFields] = useState<Field[]>([])
     const [mappings, setMappings] = useState<FieldMappingItem[]>([])
     const [missingFields, setMissingFields] = useState<MissingFieldItem[]>([])
@@ -254,6 +247,8 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
 
                 // Track which existing fields get mapped
                 const mappedFieldIds = new Set<string>()
+
+                const inferredFields = inferFieldsFromCSV(csvRecords)
 
                 // Create initial mappings based on name matching
                 const initialMappings: FieldMappingItem[] = inferredFields.map(inferredField => {
@@ -300,7 +295,7 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
         }
 
         void loadFields()
-    }, [collection, inferredFields])
+    }, [collection, csvRecords])
 
     // Determine possible slug fields (fields that have values in every record)
     const possibleSlugFields = useMemo(() => {
@@ -466,7 +461,7 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
         return existingFields.filter(field => "required" in field && field.required && !mappedFieldIds.has(field.id))
     }, [existingFields, mappings])
 
-    const canSubmit = isAllowedToManage && unmappedRequiredFields.length === 0
+    const canSubmit = unmappedRequiredFields.length === 0
 
     // Summary stats
     const stats = useMemo(() => {
@@ -547,7 +542,6 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                         name="slugField"
                         className="field-input"
                         value={selectedSlugFieldName ?? ""}
-                        disabled={!isAllowedToManage}
                         onChange={event => {
                             setSelectedSlugFieldName(event.target.value)
                         }}
@@ -573,7 +567,6 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                             key={item.inferredField.columnName}
                             item={item}
                             existingFields={existingFields}
-                            isAllowedToManage={isAllowedToManage}
                             isSlug={item.inferredField.columnName === selectedSlugFieldName}
                             onToggleIgnored={() => {
                                 toggleIgnored(item.inferredField.columnName)
@@ -604,7 +597,6 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                                     <select
                                         className="missing-field-action"
                                         value={item.action}
-                                        disabled={!isAllowedToManage}
                                         onChange={e => {
                                             updateMissingFieldAction(
                                                 item.field.id,
@@ -644,19 +636,16 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                 <footer>
                     <hr className="sticky-top" />
                     <div className="actions">
-                        <button type="button" onClick={() => void onCancel()} disabled={!isAllowedToManage}>
+                        <button type="button" onClick={() => void onCancel()}>
                             Cancel
                         </button>
+
                         <button
                             type="submit"
                             className="framer-button-primary"
                             disabled={!canSubmit}
                             title={
-                                !isAllowedToManage
-                                    ? "Insufficient permissions"
-                                    : unmappedRequiredFields.length > 0
-                                      ? "Map all required fields to continue"
-                                      : undefined
+                                unmappedRequiredFields.length > 0 ? "Map all required fields to continue" : undefined
                             }
                         >
                             Import {csvRecords.length} {csvRecords.length === 1 ? "item" : "items"}

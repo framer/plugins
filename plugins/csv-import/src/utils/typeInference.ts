@@ -16,7 +16,7 @@ const IMAGE_URL_PATTERN = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|svg)$/i
 /**
  * Infer the field type from CSV data
  */
-export function inferFieldType(values: (string | null)[]): Field["type"] {
+function inferFieldType(values: (string | null)[]): Field["type"] {
     const nonNullValues = values.filter((v): v is string => v !== null && v.trim() !== "")
 
     if (nonNullValues.length === 0) {
@@ -93,7 +93,7 @@ export function inferFieldType(values: (string | null)[]): Field["type"] {
 /**
  * Get allowed types for a field based on its inferred type
  */
-export function getAllowedTypes(inferredType: Field["type"]): Field["type"][] {
+function getAllowedTypes(inferredType: Field["type"]): Field["type"][] {
     // Define which types can be converted to which other types
     const typeCompatibility: Record<Field["type"], Field["type"][]> = {
         string: ["string", "formattedText", "link", "color", "file", "image"],

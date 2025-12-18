@@ -1,70 +1,21 @@
 import type { Collection } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useState } from "react"
-import type { ImportResultItem } from "./utils/csv"
+import type { ImportItem } from "./utils/csv"
 import "./App.css"
 import { useMiniRouter } from "./minirouter"
 import { FieldMapper, type FieldMappingItem, type MissingFieldItem } from "./routes/FieldMapper"
 import { Home } from "./routes/Home"
 import { ManageConflicts } from "./routes/ManageConflicts"
-import { ImportError, importCSV, parseCSV, processRecordsWithFieldMapping } from "./utils/csv"
-import type { FieldReconciliationItem } from "./utils/fieldReconciliation"
-import { reconcileFields } from "./utils/fieldReconciliation"
-import { inferFieldsFromCSV } from "./utils/typeInference"
-
-/**
- * Convert FieldMappingItem to FieldReconciliationItem for the reconcileFields function
- */
-function convertToReconciliation(
-    mappings: FieldMappingItem[],
-    existingFields: { id: string; name: string; type: string }[]
-): FieldReconciliationItem[] {
-    const items: FieldReconciliationItem[] = []
-
-    for (const mapping of mappings) {
-        switch (mapping.action) {
-            case "ignore": {
-                // Ignored fields are not included in reconciliation
-                continue
-            }
-            case "create": {
-                items.push({
-                    inferredField: mapping.inferredField,
-                    action: "add",
-                })
-                break
-            }
-            case "map": {
-                if (mapping.targetFieldId) {
-                    const existingField = existingFields.find(f => f.id === mapping.targetFieldId)
-                    if (existingField) {
-                        items.push({
-                            inferredField: mapping.inferredField,
-                            existingField: existingField as FieldReconciliationItem["existingField"],
-                            action: mapping.hasTypeMismatch ? "keep" : "keep",
-                            mapToFieldId: mapping.targetFieldId,
-                        })
-                    }
-                }
-                break
-            }
-            default: {
-                // Exhaustive switch typecheck
-                // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-                throw new Error(`Unknown mapping action: ${(mapping).action satisfies never}`)
-            }
-        }
-    }
-
-    return items
-}
+import { ImportError, importCSV as loadDataToCms, parseCSV, prepareImportPayload } from "./utils/csv"
+import {
+    createNewFieldsInCms as applyFieldCreationsToCms,
+    removeFieldsFromCms as applyFieldRemovalsToCms,
+} from "./utils/fieldReconciliation"
 
 export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
-    const isAllowedToAddItems = useIsAllowedTo("Collection.addItems")
-    const isAllowedToAddFields = useIsAllowedTo("Collection.addFields")
-    const isAllowedToRemoveFields = useIsAllowedTo("Collection.removeFields")
-    const hasAllPermissions = isAllowedToAddItems && isAllowedToAddFields && isAllowedToRemoveFields
+    const hasAllPermissions = useIsAllowedTo("Collection.addItems", "Collection.addFields", "Collection.removeFields")
 
     const { currentRoute, navigate } = useMiniRouter()
 
@@ -74,17 +25,14 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             if (!hasAllPermissions) return
 
             try {
-                const records = await parseCSV(csvContent)
-                if (records.length === 0) {
+                const csvRecords = await parseCSV(csvContent)
+                if (csvRecords.length === 0) {
                     throw new Error("No records found in CSV")
                 }
 
-                // Infer field types from CSV data
-                const fields = inferFieldsFromCSV(records)
-
                 await navigate({
                     uid: "field-mapper",
-                    opts: { collection, csvRecords: records, inferredFields: fields },
+                    opts: { collection, csvRecords },
                 })
             } catch (error) {
                 if (error instanceof FramerPluginClosedError) {
@@ -117,47 +65,25 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             if (!hasAllPermissions) return
 
             try {
-                // Get existing fields to convert mappings
-                const existingFields = await opts.collection.getFields()
-
-                // Convert mappings to reconciliation format
-                const reconciliation = convertToReconciliation(opts.mappings, existingFields)
-
-                // Get the set of ignored field names
-                const ignoredFieldNames = new Set(
-                    opts.mappings.filter(m => m.action === "ignore").map(m => m.inferredField.columnName)
-                )
-
-                // Get the list of inferred fields (excluding ignored ones)
-                const inferredFields = opts.mappings.filter(m => m.action !== "ignore").map(m => m.inferredField)
-
-                // Remove fields that the user marked for removal
-                const fieldsToRemove = opts.missingFields.filter(m => m.action === "remove").map(m => m.field.id)
-                if (fieldsToRemove.length > 0) {
-                    await opts.collection.removeFields(fieldsToRemove)
-                }
-
-                // Apply field reconciliation changes (add new fields)
-                await reconcileFields(opts.collection, reconciliation)
+                await applyFieldRemovalsToCms(opts.collection, opts.missingFields)
+                await applyFieldCreationsToCms(opts.collection, opts.mappings)
 
                 // Process records with field mapping
-                const result = await processRecordsWithFieldMapping({
+                const payload = await prepareImportPayload({
                     collection: opts.collection,
                     csvRecords: opts.csvRecords,
-                    inferredFields,
-                    ignoredFieldNames,
                     slugFieldName: opts.slugFieldName,
-                    reconciliation,
+                    mappings: opts.mappings,
                 })
 
-                const itemsWithConflict = result.items.filter(item => item.action === "conflict")
+                const itemsWithConflict = payload.items.filter(item => item.action === "conflict")
                 if (itemsWithConflict.length > 0) {
-                    const resolutions = await new Promise<ImportResultItem[]>(resolve => {
+                    const resolutions = await new Promise<ImportItem[]>(resolve => {
                         void navigate({
                             uid: "manage-conflicts",
                             opts: {
                                 conflicts: itemsWithConflict,
-                                result,
+                                result: payload,
                                 onComplete(items) {
                                     resolve(items)
                                 },
@@ -165,12 +91,14 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                         })
                     })
 
-                    result.items = result.items.map(
+                    payload.items = payload.items.map(
                         item => resolutions.find(resolved => resolved.slug === item.slug) ?? item
                     )
                 }
 
-                await importCSV(opts.collection, result)
+                // TODO: navigate to an import summary screen
+
+                await loadDataToCms(opts.collection, payload)
 
                 await framer.hideUI()
             } catch (error) {
@@ -203,7 +131,6 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             return (
                 <FieldMapper
                     collection={currentRoute.opts.collection}
-                    inferredFields={currentRoute.opts.inferredFields}
                     csvRecords={currentRoute.opts.csvRecords}
                     onSubmit={opts =>
                         handleFieldMapperSubmit({

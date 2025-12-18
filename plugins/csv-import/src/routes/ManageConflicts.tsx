@@ -1,9 +1,9 @@
 import { useCallback, useRef, useState } from "react"
-import type { ImportResultItem } from "../utils/csv"
+import type { ImportItem } from "../utils/csv"
 
 interface ManageConflictsProps {
-    records: ImportResultItem[]
-    onAllConflictsResolved: (items: ImportResultItem[]) => void
+    records: ImportItem[]
+    onAllConflictsResolved: (items: ImportItem[]) => void
 }
 
 export function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsProps) {
@@ -12,7 +12,7 @@ export function ManageConflicts({ records, onAllConflictsResolved }: ManageConfl
 
     const [applyToAll, setApplyToAll] = useState(false)
 
-    const fixedRecords = useRef<ImportResultItem[]>(records)
+    const fixedRecords = useRef<ImportItem[]>(records)
 
     const moveToNextRecord = useCallback(() => {
         const next = recordsIterator.next()
@@ -24,7 +24,7 @@ export function ManageConflicts({ records, onAllConflictsResolved }: ManageConfl
     }, [recordsIterator, onAllConflictsResolved])
 
     const setAction = useCallback(
-        (record: ImportResultItem, action: "onConflictUpdate" | "onConflictSkip") => {
+        (record: ImportItem, action: "onConflictUpdate" | "onConflictSkip") => {
             if (!currentRecord) return
 
             fixedRecords.current = fixedRecords.current.map(existingRecord => {

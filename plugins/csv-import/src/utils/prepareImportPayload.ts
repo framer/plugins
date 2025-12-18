@@ -40,7 +40,6 @@ export interface ImportPayload {
     items: ImportItem[]
 }
 
-/** Used to indicated a value conversion failed */
 class ConversionError extends Error {}
 
 const collator = new Intl.Collator("en", { sensitivity: "base" })

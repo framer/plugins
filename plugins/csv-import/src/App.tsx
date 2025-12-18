@@ -97,7 +97,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                     )
                 }
 
-                // TODO: navigate to an import summary screen
+                await navigate({ uid: "home", opts: undefined })
 
                 await loadDataToCms(opts.collection, payload)
 

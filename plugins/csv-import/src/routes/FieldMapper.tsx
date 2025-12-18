@@ -65,6 +65,8 @@ export interface FieldMappingItem {
     targetFieldId?: string
     /** Whether types are compatible when mapping */
     hasTypeMismatch: boolean
+    /** Override the inferred type when creating a new field */
+    overrideType?: Field["type"]
 }
 
 export type MissingFieldAction = "ignore" | "remove"
@@ -115,6 +117,7 @@ interface FieldMapperRowProps {
     onToggleIgnored: () => void
     onSetIgnored: (ignored: boolean) => void
     onTargetChange: (targetFieldId: string | null) => void
+    onTypeChange: (type: Field["type"]) => void
 }
 
 function FieldMapperRow({
@@ -124,9 +127,11 @@ function FieldMapperRow({
     onToggleIgnored,
     onSetIgnored,
     onTargetChange,
+    onTypeChange,
 }: FieldMapperRowProps) {
-    const { inferredField, action, targetFieldId, hasTypeMismatch } = item
+    const { inferredField, action, targetFieldId, hasTypeMismatch, overrideType } = item
     const isIgnored = action === "ignore"
+    const displayType = overrideType ?? inferredField.inferredType
 
     const getStatus = (): MappingStatus => {
         if (isIgnored) {
@@ -186,32 +191,50 @@ function FieldMapperRow({
                 />
             </svg>
 
-            <select
-                className="mapper-target"
-                value={isIgnored ? "__ignore__" : action === "create" ? "__create__" : (targetFieldId ?? "")}
-                onChange={e => {
-                    const value = e.target.value
-                    if (value === "__ignore__") {
-                        onSetIgnored(true)
-                    } else if (value === "__create__") {
-                        onSetIgnored(false)
-                        onTargetChange(null)
-                    } else {
-                        onSetIgnored(false)
-                        onTargetChange(value)
-                    }
-                }}
-            >
-                <option value="__create__">+ Create field</option>
-                <option value="__ignore__">− Ignore column</option>
-                <optgroup label="Existing fields">
-                    {existingFields.map(field => (
-                        <option key={field.id} value={field.id}>
-                            {field.name} ({labelByFieldType[field.type]})
-                        </option>
-                    ))}
-                </optgroup>
-            </select>
+            <div className="mapper-target-wrapper">
+                <select
+                    className="mapper-target"
+                    value={isIgnored ? "__ignore__" : action === "create" ? "__create__" : (targetFieldId ?? "")}
+                    onChange={e => {
+                        const value = e.target.value
+                        if (value === "__ignore__") {
+                            onSetIgnored(true)
+                        } else if (value === "__create__") {
+                            onSetIgnored(false)
+                            onTargetChange(null)
+                        } else {
+                            onSetIgnored(false)
+                            onTargetChange(value)
+                        }
+                    }}
+                >
+                    <option value="__create__">+ Create field</option>
+                    <option value="__ignore__">− Ignore column</option>
+                    <optgroup label="Existing fields">
+                        {existingFields.map(field => (
+                            <option key={field.id} value={field.id}>
+                                {field.name} ({labelByFieldType[field.type]})
+                            </option>
+                        ))}
+                    </optgroup>
+                </select>
+
+                {action === "create" && inferredField.allowedTypes.length > 1 && (
+                    <select
+                        className="type-selector"
+                        value={displayType}
+                        onChange={e => {
+                            onTypeChange(e.target.value as Field["type"])
+                        }}
+                    >
+                        {inferredField.allowedTypes.map(type => (
+                            <option key={type} value={type}>
+                                {labelByFieldType[type]}
+                            </option>
+                        ))}
+                    </select>
+                )}
+            </div>
 
             {hasTypeMismatch && !isIgnored && targetField && (
                 <div className="mapper-mismatch-row">
@@ -425,6 +448,15 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
         setMissingFields(prev => prev.map(item => (item.field.id === fieldId ? { ...item, action } : item)))
     }, [])
 
+    const updateType = useCallback((columnName: string, type: Field["type"]) => {
+        setMappings(prev =>
+            prev.map(item => {
+                if (item.inferredField.columnName !== columnName) return item
+                return { ...item, overrideType: type }
+            })
+        )
+    }, [])
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
@@ -572,6 +604,9 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
                             }}
                             onTargetChange={targetId => {
                                 updateTarget(item.inferredField.columnName, targetId)
+                            }}
+                            onTypeChange={type => {
+                                updateType(item.inferredField.columnName, type)
                             }}
                         />
                     ))}

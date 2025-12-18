@@ -654,7 +654,7 @@ select:not(:disabled) {
     display: grid;
     grid-template-columns: 28px 1fr 20px 1fr;
     gap: 8px;
-    align-items: center;
+    align-items: start;
     padding: 8px;
     margin: 0 -8px;
     border-radius: 6px;
@@ -689,6 +689,7 @@ select:not(:disabled) {
     background: transparent;
     border: none;
     padding: 0;
+    padding-top: 6px;
     cursor: pointer;
 }
 
@@ -734,12 +735,25 @@ select:not(:disabled) {
     white-space: nowrap;
 }
 
+.mapper-target-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.mapper-target-wrapper .mapper-target,
+.mapper-target-wrapper .type-selector {
+    width: 100%;
+}
+
 .mapper-arrow {
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--framer-color-text-tertiary);
     flex-shrink: 0;
+    margin-top: 8px; /* Center with the target dropdown (28px height - 12px arrow) / 2 */
 }
 
 .mapper-target {

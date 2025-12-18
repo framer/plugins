@@ -11,7 +11,11 @@ export async function removeFieldsFromCms(collection: Collection, missingFields:
 export async function createNewFieldsInCms(collection: Collection, mappings: FieldMappingItem[]): Promise<void> {
     const fieldsToAdd: CreateField[] = mappings
         .filter(mapping => mapping.action === "create")
-        .map(mapping => createFieldConfig(mapping.inferredField.inferredType, mapping.inferredField.name))
+        .map(mapping => {
+            // Use overrideType if user changed the type, otherwise use the inferred type
+            const fieldType = mapping.overrideType ?? mapping.inferredField.inferredType
+            return createFieldConfig(fieldType, mapping.inferredField.name)
+        })
         .filter((fieldConfig): fieldConfig is CreateField => fieldConfig !== null)
 
     // Add new fields using collection.addFields()

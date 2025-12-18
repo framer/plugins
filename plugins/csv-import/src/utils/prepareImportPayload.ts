@@ -8,82 +8,9 @@ import {
     framer,
 } from "framer-plugin"
 
-import * as v from "valibot"
 import type { FieldMappingItem } from "../routes/FieldMapper"
-
-const CSVRecordSchema = v.record(v.string(), v.string())
-
-type CSVRecord = v.InferOutput<typeof CSVRecordSchema>
-
-export type ImportItem = CollectionItemInput & {
-    action: "add" | "conflict" | "onConflictUpdate" | "onConflictSkip"
-}
-
-export interface ImportPayload {
-    warnings: {
-        missingSlugCount: number
-        doubleSlugCount: number
-        skippedValueCount: number
-        skippedValueKeys: Set<string>
-    }
-    items: ImportItem[]
-}
-
-/**
- * Parses a string of CSV data. Does not do any type casting, because we want to
- * apply that based on the fields the data will go into, not the data itself.
- *
- * @param data CSV data, separated by comma or tab.
- * @returns Array of parsed records
- */
-export async function parseCSV(data: string): Promise<CSVRecord[]> {
-    // Lazily import the parser
-    const { parse } = await import("csv-parse/browser/esm/sync")
-
-    let records: CSVRecord[] = []
-    let error
-
-    // Delimiters to try
-    // ,  = pretty much the default
-    // \t = more common when copy-pasting (e.g. Google Sheets)
-    // ;  = what spreadsheet apps (e.g. Numbers) use when you're using a locale
-    //      that already uses , for decimal separation
-    // Check of , and \t will be combined as this will cover most cases, falls back to ;
-    const delimiters = [",", "\t", ";"]
-    const options = { columns: true, skipEmptyLines: true, skipRecordsWithEmptyValues: true }
-
-    for (const delimiter of delimiters) {
-        try {
-            const parsed = parse(data, { ...options, delimiter }) as unknown
-
-            // It can happen that parsing succeeds with the wrong delimiter. For example, a tab separated file could be parsed
-            // successfully with comma separators. If that's the case, we can find it by checking two things:
-            // 1. That the resulting records have more than one column
-            // 2. That if there's only one column, it does not contain delimiters
-            // If both of those conditions are met, we can assume there's a parsing error and should not import the records
-            const firstItemKeys = isArray(parsed) && parsed[0] && isObject(parsed[0]) ? Object.keys(parsed[0]) : []
-            if (firstItemKeys.length < 2) {
-                const delimiterInKey = delimiters.some(del => firstItemKeys[0]?.includes(del))
-                if (delimiterInKey) {
-                    error = new Error("Parsed with incorrect delimiter")
-                    continue
-                }
-            }
-
-            error = undefined
-            records = v.parse(v.array(CSVRecordSchema), parsed)
-            break
-        } catch (innerError) {
-            error = innerError instanceof Error ? innerError : new Error(String(innerError))
-        }
-    }
-
-    if (error) {
-        throw error
-    }
-
-    return records
-}
+import { assert } from "./assert"
+import type { CSVRecord } from "./parseCSV"
 
 /** Error when importing fails, internal to `RecordImporter` */
 export class ImportError extends Error {
@@ -99,8 +26,25 @@ export class ImportError extends Error {
     }
 }
 
-/** Used to indicated a value conversion failed, used by `RecordImporter` and `setValueForVariable` */
+export type ImportItem = CollectionItemInput & {
+    action: "add" | "conflict" | "onConflictUpdate" | "onConflictSkip"
+}
+
+export interface ImportPayload {
+    warnings: {
+        missingSlugCount: number
+        doubleSlugCount: number
+        skippedValueCount: number
+        skippedValueKeys: Set<string>
+    }
+    items: ImportItem[]
+}
+
+/** Used to indicated a value conversion failed */
 class ConversionError extends Error {}
+
+const collator = new Intl.Collator("en", { sensitivity: "base" })
+const BOOLEAN_TRUTHY_VALUES = /1|y(?:es)?|true/iu
 
 function findRecordValue(record: CSVRecord, key: string) {
     const value = Object.entries(record).find(([k]) => collator.compare(k, key) === 0)?.[1]
@@ -110,8 +54,23 @@ function findRecordValue(record: CSVRecord, key: string) {
     return value
 }
 
-const collator = new Intl.Collator("en", { sensitivity: "base" })
-const BOOLEAN_TRUTHY_VALUES = /1|y(?:es)?|true/iu
+function isValidDate(date: Date): boolean {
+    return !Number.isNaN(date.getTime())
+}
+
+// Match everything except for letters, numbers and parentheses.
+const nonSlugCharactersRegExp = /[^\p{Letter}\p{Number}()]+/gu
+// Match leading/trailing dashes, for trimming purposes.
+const trimSlugRegExp = /^-+|-+$/gu
+
+/**
+ * Takes a freeform string and removes all characters except letters, numbers,
+ * and parentheses. Also makes it lower case, and separates words by dashes.
+ * This makes the value URL safe.
+ */
+function slugify(value: string): string {
+    return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
+}
 
 interface GetFieldDataEntryInputForFieldOpts {
     field: Field
@@ -142,7 +101,7 @@ function getFieldDataEntryInputForField(
         case "number": {
             const number = Number(opts.value)
             if (Number.isNaN(number)) {
-                return new ConversionError(`Invalid value for field “${opts.field.name}” expected a number`)
+                return new ConversionError(`Invalid value for field "${opts.field.name}" expected a number`)
             }
             return { type: "number", value: number }
         }
@@ -157,7 +116,7 @@ function getFieldDataEntryInputForField(
             }
             const date = new Date(opts.value)
             if (!isValidDate(date)) {
-                return new ConversionError(`Invalid value for field “${opts.field.name}” expected a valid date`)
+                return new ConversionError(`Invalid value for field "${opts.field.name}" expected a valid date`)
             }
             return { type: "date", value: date.toJSON() }
         }
@@ -165,14 +124,14 @@ function getFieldDataEntryInputForField(
         case "enum": {
             if (opts.value === null) {
                 const [firstCase] = opts.field.cases
-                assert(firstCase, `No cases found for enum “${opts.field.name}”`)
+                assert(firstCase, `No cases found for enum "${opts.field.name}"`)
                 return { type: "enum", value: firstCase.id }
             }
             const matchingCase = opts.field.cases.find(
                 enumCase => collator.compare(enumCase.name, opts.value ?? "") === 0 || enumCase.id === opts.value
             )
             if (!matchingCase) {
-                return new ConversionError(`Invalid case “${opts.value}” for enum “${opts.field.name}”`)
+                return new ConversionError(`Invalid case "${opts.value}" for enum "${opts.field.name}"`)
             }
             return { type: "enum", value: matchingCase.id }
         }
@@ -185,7 +144,7 @@ function getFieldDataEntryInputForField(
             const referencedSlug = opts.value.trim()
             const referencedId = opts.allItemIdBySlug.get(opts.field.collectionId)?.get(referencedSlug)
             if (!referencedId) {
-                return new ConversionError(`Invalid Collection reference “${opts.value}”`)
+                return new ConversionError(`Invalid Collection reference "${opts.value}"`)
             }
 
             return { type: "collectionReference", value: referencedId }
@@ -201,7 +160,7 @@ function getFieldDataEntryInputForField(
             for (const slug of referencedSlugs) {
                 const referencedId = opts.allItemIdBySlug.get(opts.field.collectionId)?.get(slug)
                 if (!referencedId) {
-                    return new ConversionError(`Invalid Collection reference “${slug}”`)
+                    return new ConversionError(`Invalid Collection reference "${slug}"`)
                 }
                 referencedIds.push(referencedId)
             }
@@ -212,7 +171,7 @@ function getFieldDataEntryInputForField(
         case "array":
         case "divider":
         case "unsupported":
-            return new ConversionError(`Unsupported field type “${opts.field.type}”`)
+            return new ConversionError(`Unsupported field type "${opts.field.type}"`)
 
         default:
             opts.field satisfies never
@@ -356,136 +315,4 @@ export async function prepareImportPayload(opts: ProcessRecordsWithFieldMappingO
     }
 
     return result
-}
-
-export async function importCSV(collection: Collection, result: ImportPayload) {
-    const totalItems = result.items.length
-    const totalAdded = result.items.filter(item => item.action === "add").length
-    const totalUpdated = result.items.filter(item => item.action === "onConflictUpdate").length
-    const totalSkipped = result.items.filter(item => item.action === "onConflictSkip").length
-    if (totalItems !== totalAdded + totalUpdated + totalSkipped) {
-        throw new Error("Total items mismatch")
-    }
-
-    await collection.addItems(
-        result.items
-            .filter(item => item.action !== "onConflictSkip")
-            .map(item => {
-                if (item.action === "add") {
-                    assert(item.slug !== undefined, "Item requires a slug")
-                    return {
-                        slug: item.slug,
-                        fieldData: item.fieldData,
-                        draft: item.draft,
-                    }
-                }
-
-                assert(item.id !== undefined, "Item requires an id")
-                return {
-                    id: item.id,
-                    fieldData: item.fieldData,
-                    draft: item.draft,
-                }
-            })
-    )
-
-    const messages: string[] = []
-    if (totalAdded > 0) {
-        messages.push(`Added ${totalAdded} ${totalAdded === 1 ? "item" : "items"}`)
-    }
-    if (totalUpdated > 0) {
-        messages.push(`Updated ${totalUpdated} ${totalUpdated === 1 ? "item" : "items"}`)
-    }
-    if (totalSkipped > 0) {
-        messages.push(`Skipped ${totalSkipped} ${totalSkipped === 1 ? "item" : "items"}`)
-    }
-
-    if (result.warnings.missingSlugCount > 0) {
-        messages.push(
-            `Skipped ${result.warnings.missingSlugCount} ${
-                result.warnings.missingSlugCount === 1 ? "item" : "items"
-            } because of missing slug field`
-        )
-    }
-    if (result.warnings.doubleSlugCount > 0) {
-        messages.push(
-            `Skipped ${result.warnings.doubleSlugCount} ${
-                result.warnings.doubleSlugCount === 1 ? "item" : "items"
-            } because of duplicate slugs`
-        )
-    }
-
-    const { skippedValueCount, skippedValueKeys } = result.warnings
-    if (skippedValueCount > 0) {
-        messages.push(
-            `Skipped ${skippedValueCount} ${skippedValueCount === 1 ? "value" : "values"} for ${
-                skippedValueKeys.size
-            } ${skippedValueKeys.size === 1 ? "field" : "fields"} (${summary([...skippedValueKeys], 3)})`
-        )
-    }
-
-    const finalMessage = messages.join(". ")
-    framer.closePlugin(messages.length > 1 ? finalMessage + "." : finalMessage || "Successfully imported Collection")
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null && !Array.isArray(value)
-}
-
-function isArray(value: unknown): value is unknown[] {
-    return Array.isArray(value)
-}
-
-function isValidDate(date: Date): boolean {
-    return !Number.isNaN(date.getTime())
-}
-
-/** Helper to show a summary of items, truncating after `max` */
-function summary(items: string[], max: number) {
-    const summaryFormatter = new Intl.ListFormat("en", { style: "long", type: "conjunction" })
-
-    if (items.length === 0) {
-        return "none"
-    }
-    // Go one past the max, because we'll add a sentinel anyway
-    if (items.length > max + 1) {
-        items = items.slice(0, max).concat([`${items.length - max} more`])
-    }
-    return summaryFormatter.format(items)
-}
-
-// Match everything except for letters, numbers and parentheses.
-const nonSlugCharactersRegExp = /[^\p{Letter}\p{Number}()]+/gu
-// Match leading/trailing dashes, for trimming purposes.
-const trimSlugRegExp = /^-+|-+$/gu
-
-/**
- * Takes a freeform string and removes all characters except letters, numbers,
- * and parentheses. Also makes it lower case, and separates words by dashes.
- * This makes the value URL safe.
- */
-function slugify(value: string): string {
-    return value.toLowerCase().replace(nonSlugCharactersRegExp, "-").replace(trimSlugRegExp, "")
-}
-
-function assert(condition: unknown, ...msg: unknown[]): asserts condition {
-    if (condition) return
-
-    const e = Error("Assertion Error" + (msg.length > 0 ? ": " + msg.join(" ") : ""))
-    // Hack the stack so the assert call itself disappears. Works in jest and in chrome.
-    if (e.stack) {
-        try {
-            const lines = e.stack.split("\n")
-            if (lines[1]?.includes("assert")) {
-                lines.splice(1, 1)
-                e.stack = lines.join("\n")
-            } else if (lines[0]?.includes("assert")) {
-                lines.splice(0, 1)
-                e.stack = lines.join("\n")
-            }
-        } catch {
-            // nothing
-        }
-    }
-    throw e
 }

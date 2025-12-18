@@ -1,13 +1,14 @@
 import type { Collection } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useState } from "react"
-import type { ImportItem } from "./utils/csv"
 import "./App.css"
 import { useMiniRouter } from "./minirouter"
 import { FieldMapper, type FieldMappingItem, type MissingFieldItem } from "./routes/FieldMapper"
 import { Home } from "./routes/Home"
 import { ManageConflicts } from "./routes/ManageConflicts"
-import { ImportError, importCSV as loadDataToCms, parseCSV, prepareImportPayload } from "./utils/csv"
+import { importCSV as loadDataToCms } from "./utils/importCSV"
+import { parseCSV } from "./utils/parseCSV"
+import { ImportError, prepareImportPayload, type ImportItem } from "./utils/prepareImportPayload"
 import {
     createNewFieldsInCms as applyFieldCreationsToCms,
     removeFieldsFromCms as applyFieldRemovalsToCms,

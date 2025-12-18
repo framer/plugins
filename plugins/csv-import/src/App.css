@@ -655,13 +655,29 @@ select:not(:disabled) {
     grid-template-columns: 28px 1fr 20px 1fr;
     gap: 8px;
     align-items: center;
-    padding: 8px 0;
+    padding: 8px;
+    margin: 0 -8px;
     border-radius: 6px;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
 }
 
 .mapper-row.ignored {
     opacity: 0.4;
+}
+
+.mapper-row.is-slug {
+    background-color: var(--framer-color-tint-10, rgba(0, 153, 255, 0.1));
+    position: relative;
+}
+
+.slug-label {
+    grid-column: 1 / -1;
+    font-size: 0.625em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--framer-color-tint, #0099ff);
+    margin-bottom: 4px;
 }
 
 .mapper-checkbox {

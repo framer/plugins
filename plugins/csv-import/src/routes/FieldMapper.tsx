@@ -112,6 +112,7 @@ interface FieldMapperRowProps {
     item: FieldMappingItem
     existingFields: Field[]
     isAllowedToManage: boolean
+    isSlug: boolean
     onToggleIgnored: () => void
     onSetIgnored: (ignored: boolean) => void
     onTargetChange: (targetFieldId: string | null) => void
@@ -121,6 +122,7 @@ function FieldMapperRow({
     item,
     existingFields,
     isAllowedToManage,
+    isSlug,
     onToggleIgnored,
     onSetIgnored,
     onTargetChange,
@@ -143,8 +145,9 @@ function FieldMapperRow({
 
     return (
         <div
-            className={`mapper-row ${isIgnored ? "ignored" : ""} ${hasTypeMismatch && !isIgnored ? "has-mismatch" : ""}`}
+            className={`mapper-row ${isIgnored ? "ignored" : ""} ${hasTypeMismatch && !isIgnored ? "has-mismatch" : ""} ${isSlug ? "is-slug" : ""}`}
         >
+            {isSlug && <span className="slug-label">Slug</span>}
             <button
                 type="button"
                 className="mapper-checkbox"
@@ -479,7 +482,7 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                 </div>
 
                 <label className="slug-field" htmlFor="slugField">
-                    <span>Slug Field</span>
+                    <span>Slug Field (Used for conflict resolution)</span>
                     <select
                         required
                         name="slugField"
@@ -512,9 +515,16 @@ export function FieldMapper({ collection, inferredFields, csvRecords, onSubmit, 
                             item={item}
                             existingFields={existingFields}
                             isAllowedToManage={isAllowedToManage}
-                            onToggleIgnored={() => toggleIgnored(item.inferredField.columnName)}
-                            onSetIgnored={ignored => setIgnored(item.inferredField.columnName, ignored)}
-                            onTargetChange={targetId => updateTarget(item.inferredField.columnName, targetId)}
+                            isSlug={item.inferredField.columnName === selectedSlugFieldName}
+                            onToggleIgnored={() => {
+                                toggleIgnored(item.inferredField.columnName)
+                            }}
+                            onSetIgnored={ignored => {
+                                setIgnored(item.inferredField.columnName, ignored)
+                            }}
+                            onTargetChange={targetId => {
+                                updateTarget(item.inferredField.columnName, targetId)
+                            }}
                         />
                     ))}
                 </div>

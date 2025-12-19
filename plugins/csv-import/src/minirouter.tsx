@@ -26,7 +26,7 @@ type Route =
 const fallbackUiOptions: UIOptions = { width: 260, height: 330, resizable: false }
 const defaultUiOptions = {
     home: fallbackUiOptions,
-    "field-mapper": { width: 480, height: 600, resizable: true },
+    "field-mapper": { width: 550, height: 600, resizable: true },
     "manage-conflicts": { width: 260, height: 165, resizable: false },
 } as Record<Route["uid"], UIOptions | undefined>
 

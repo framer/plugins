@@ -244,7 +244,6 @@
     justify-content: space-between;
     gap: 10px;
     color: var(--framer-color-text-tertiary);
-    padding-bottom: 10px;
 }
 
 .mapping .fields {
@@ -252,7 +251,6 @@
     grid-template-columns: 1fr 8px 1fr 1fr;
     gap: 10px;
     margin-bottom: auto;
-    padding-bottom: 10px;
     align-items: center;
     color: var(--framer-color-text-tertiary);
 }
@@ -324,6 +322,8 @@
     display: flex;
     flex-direction: column;
     gap: 15px;
+    border-top: 1px solid red;
+    /* border-top: 1px solid var(--framer-color-divider); */
 }
 
 .mapping footer .sticky-top {
@@ -384,7 +384,7 @@ select:not(:disabled) {
 
 .reconciliation-description {
     margin: 0;
-    font-size: 0.875em;
+    font-size: 12px;
     color: var(--framer-color-text-tertiary);
 }
 
@@ -396,7 +396,7 @@ select:not(:disabled) {
 
 .section-title {
     margin: 0;
-    font-size: 0.875em;
+    font-size: 12px;
     font-weight: 600;
     color: var(--framer-color-text-secondary);
     text-transform: uppercase;
@@ -427,7 +427,7 @@ select:not(:disabled) {
 
 .field-name {
     font-weight: 500;
-    color: var(--framer-color-text);
+    /* color: var(--framer-color-text); */
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -435,8 +435,7 @@ select:not(:disabled) {
 }
 
 .field-type {
-    font-size: 0.875em;
-    color: var(--framer-color-text-tertiary);
+    font-size: 12px;
     white-space: nowrap;
 }
 
@@ -477,7 +476,7 @@ select:not(:disabled) {
 }
 
 .action-button {
-    font-size: 0.875em;
+    font-size: 12px;
     padding: 4px 8px;
     height: auto;
 }
@@ -493,11 +492,11 @@ select:not(:disabled) {
 
 .action-select {
     width: 100%;
-    font-size: 0.875em;
+    font-size: 12px;
 }
 
 .field-warning {
-    font-size: 0.875em;
+    font-size: 12px;
     color: var(--framer-color-warning);
     padding: 6px 8px;
     background-color: rgba(255, 153, 0, 0.1);
@@ -544,10 +543,9 @@ select:not(:disabled) {
     color: var(--framer-color-text-tertiary);
 }
 
-/* Field Mapper (unified view) */
+/* Field Mapper */
 
 .field-mapper {
-    padding: 0 15px 0;
     height: 100%;
 }
 
@@ -555,14 +553,53 @@ select:not(:disabled) {
     height: 100%;
     display: flex;
     flex-direction: column;
+    gap: 20px;
+
+    padding: 10px 15px 0;
 }
 
 .field-mapper .sticky-divider {
     position: sticky;
     top: 0;
-    margin: 0 -15px 15px;
+    left: 0;
+    right: 0;
     border: none;
     border-top: 1px solid var(--framer-color-divider);
+}
+
+.field-mapper .mapper-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: var(--framer-color-text-tertiary);
+}
+
+.field-mapper .summary-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+}
+
+.field-mapper .summary-stat strong {
+    font-weight: 600;
+    color: var(--framer-color-text-secondary);
+}
+
+.field-mapper .summary-stat.matched strong {
+    color: var(--framer-color-text-positive, #34c759);
+}
+
+.field-mapper .summary-stat.creating strong {
+    color: var(--framer-color-tint, #0099ff);
+}
+
+.field-mapper .summary-stat.mismatched strong {
+    color: var(--framer-color-warning, #ff9500);
+}
+
+.field-mapper .summary-stat.ignored strong {
+    color: var(--framer-color-text-tertiary);
 }
 
 .field-mapper .slug-field {
@@ -572,7 +609,106 @@ select:not(:disabled) {
     justify-content: space-between;
     gap: 10px;
     color: var(--framer-color-text-tertiary);
-    padding-bottom: 10px;
+}
+
+.field-mapper .fields {
+    display: grid;
+    grid-template-columns: 1fr 8px 1fr 1fr;
+    gap: 10px;
+    margin-bottom: auto;
+    align-items: center;
+    color: var(--framer-color-text-tertiary);
+}
+
+.field-mapper .fields-column {
+    grid-column: span 2 / span 2;
+}
+
+.field-mapper .source-field {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+    white-space: nowrap;
+    font-weight: 500;
+    background-color: var(--framer-color-bg-tertiary);
+    gap: 8px;
+    padding: 0 10px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    color: var(--framer-color-text);
+    width: 100%;
+    text-align: left;
+}
+
+.field-mapper .source-field.ignored,
+.field-mapper .source-field[aria-disabled="true"] {
+    opacity: 0.5;
+}
+
+.field-mapper .source-field.is-slug {
+    box-shadow: inset 0 0 0 1px var(--framer-color-tint);
+}
+
+.field-mapper .source-field:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 1px var(--framer-color-tint);
+}
+
+.field-mapper .source-field input[type="checkbox"] {
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.field-mapper .source-field input[type="checkbox"]:focus {
+    box-shadow: none;
+}
+
+[data-framer-theme="light"] .field-mapper .source-field input[type="checkbox"]:not(:checked) {
+    background: #ccc;
+}
+
+[data-framer-theme="dark"] .field-mapper .source-field input[type="checkbox"]:not(:checked) {
+    background: #666;
+}
+
+.field-mapper .source-field span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.field-mapper .source-field .inferred-type {
+    margin-left: auto;
+    font-size: 0.75em;
+    font-weight: 400;
+    color: var(--framer-color-text-tertiary);
+    flex-shrink: 0;
+}
+
+.field-mapper .field-input {
+    width: 100%;
+    flex-shrink: 1;
+}
+
+.field-mapper .field-input[disabled] {
+    opacity: 0.5;
+}
+
+.field-mapper .field-type {
+    width: 100%;
+}
+
+.field-mapper .mismatch-warning {
+    grid-column: 1 / -1;
+    font-size: 0.75em;
+    color: var(--framer-color-warning, #ff9500);
+    padding: 6px 10px;
+    background-color: rgba(255, 153, 0, 0.1);
+    border-radius: 6px;
+    margin-top: -5px;
 }
 
 .field-mapper footer {
@@ -586,196 +722,12 @@ select:not(:disabled) {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    border-top: 1px solid var(--framer-color-divider);
 }
 
 .field-mapper footer .sticky-top {
     border: none;
     border-top: 1px solid var(--framer-color-divider);
-}
-
-.mapper-header {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 15px;
-}
-
-.mapper-header h3 {
-    margin: 0;
-    font-size: 1em;
-    font-weight: 600;
-    color: var(--framer-color-text);
-}
-
-.mapper-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.stat {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.75em;
-    color: var(--framer-color-text-secondary);
-}
-
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.mapper-table-header {
-    display: grid;
-    grid-template-columns: 28px 1fr 20px 1fr;
-    gap: 8px;
-    align-items: center;
-    padding: 0 0 8px;
-    font-size: 0.75em;
-    font-weight: 600;
-    color: var(--framer-color-text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--framer-color-divider);
-}
-
-.mapper-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-bottom: auto;
-    padding: 8px 0 10px;
-}
-
-.mapper-row {
-    display: grid;
-    grid-template-columns: 28px 1fr 20px 1fr;
-    gap: 8px;
-    align-items: start;
-    padding: 8px;
-    margin: 0 -8px;
-    border-radius: 6px;
-    transition:
-        opacity 0.15s ease,
-        background-color 0.15s ease;
-}
-
-.mapper-row.ignored {
-    opacity: 0.4;
-}
-
-.mapper-row.is-slug {
-    background-color: var(--framer-color-tint-10, rgba(0, 153, 255, 0.1));
-    position: relative;
-}
-
-.slug-label {
-    grid-column: 1 / -1;
-    font-size: 0.625em;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--framer-color-tint, #0099ff);
-    margin-bottom: 4px;
-}
-
-.mapper-checkbox {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: none;
-    padding: 0;
-    padding-top: 6px;
-    cursor: pointer;
-}
-
-.mapper-checkbox input[type="checkbox"] {
-    cursor: pointer;
-}
-
-.mapper-checkbox input[type="checkbox"]:focus {
-    box-shadow: none;
-}
-
-[data-framer-theme="light"] .mapper-checkbox input[type="checkbox"]:not(:checked) {
-    background: #ccc;
-}
-
-[data-framer-theme="dark"] .mapper-checkbox input[type="checkbox"]:not(:checked) {
-    background: #666;
-}
-
-.mapper-source {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-    padding: 6px 10px;
-    background-color: var(--framer-color-bg-tertiary);
-    border-radius: 6px;
-}
-
-.mapper-source .column-name {
-    font-weight: 500;
-    color: var(--framer-color-text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 0;
-}
-
-.mapper-source .inferred-type {
-    font-size: 0.75em;
-    color: var(--framer-color-text-tertiary);
-    white-space: nowrap;
-}
-
-.mapper-target-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-}
-
-.mapper-target-wrapper .mapper-target,
-.mapper-target-wrapper .type-selector {
-    width: 100%;
-}
-
-.mapper-arrow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--framer-color-text-tertiary);
-    flex-shrink: 0;
-    margin-top: 8px; /* Center with the target dropdown (28px height - 12px arrow) / 2 */
-}
-
-.mapper-target {
-    width: 100%;
-    min-width: 0;
-}
-
-.mapper-mismatch-row {
-    grid-column: 2 / -1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 10px;
-    background-color: rgba(255, 153, 0, 0.12);
-    border: 1px solid rgba(255, 153, 0, 0.3);
-    border-radius: 6px;
-    margin-top: 4px;
-}
-
-.mismatch-hint {
-    font-size: 0.75em;
-    color: var(--framer-color-warning, #ff9500);
 }
 
 /* Unmapped required fields warning */
@@ -799,11 +751,11 @@ select:not(:disabled) {
 }
 
 .warning-icon {
-    font-size: 0.875em;
+    font-size: 12px;
 }
 
 .warning-icon-small {
-    font-size: 0.875em;
+    font-size: 12px;
     color: var(--framer-color-warning, #ff9500);
 }
 
@@ -833,7 +785,7 @@ select:not(:disabled) {
 }
 
 .unmapped-required-item .field-type {
-    color: var(--framer-color-text-tertiary);
+    color: var(--framer-color-text);
     font-size: 1em;
 }
 
@@ -843,73 +795,63 @@ select:not(:disabled) {
     color: var(--framer-color-text-tertiary);
 }
 
-/* Missing fields section */
+/* Missing Fields Section - Notion-style */
 
 .missing-fields-section {
-    margin-top: 16px;
-    padding: 12px;
-    background-color: var(--framer-color-bg-tertiary);
-    border-radius: 8px;
+    display: grid;
+    grid-template-columns: 1fr 8px 1fr 1fr;
+    gap: 10px;
+    align-items: center;
 }
 
 .missing-fields-header {
+    grid-column: 1 / -1;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-weight: 600;
-    font-size: 0.875em;
-    color: var(--framer-color-text-secondary);
-    margin-bottom: 10px;
+    padding-bottom: 5px;
 }
 
-.missing-fields-count {
-    font-size: 0.75em;
-    font-weight: 500;
+.missing-fields-header span:first-child {
     color: var(--framer-color-text-tertiary);
-    background-color: var(--framer-color-bg);
-    padding: 2px 8px;
-    border-radius: 10px;
-}
-
-.missing-fields-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
 }
 
 .missing-field-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    background-color: var(--framer-color-bg);
-    border-radius: 6px;
+    display: contents;
 }
 
 .missing-field-info {
     display: flex;
+    flex-direction: row;
     align-items: center;
+    background-color: var(--framer-color-bg-tertiary);
     gap: 8px;
+    padding: 0 10px;
+    height: 30px;
+    border-radius: 8px;
     min-width: 0;
-    flex: 1;
+    overflow: hidden;
 }
 
 .missing-field-info .field-name {
     font-weight: 500;
-    color: var(--framer-color-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0;
 }
 
 .missing-field-info .field-type {
+    margin-left: auto;
     font-size: 0.75em;
     color: var(--framer-color-text-tertiary);
     white-space: nowrap;
+    width: auto;
+    flex-shrink: 0;
 }
 
 .missing-field-action {
-    flex-shrink: 0;
-    min-width: 110px;
+    grid-column: span 2;
+    width: 100%;
 }

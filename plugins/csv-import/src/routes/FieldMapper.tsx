@@ -89,27 +89,6 @@ interface FieldMapperProps {
     onCancel: () => Promise<void>
 }
 
-type MappingStatus = "perfect" | "mismatch" | "create" | "ignored"
-
-const statusColors: Record<MappingStatus, string> = {
-    perfect: "var(--framer-color-text-positive, #34C759)",
-    mismatch: "var(--framer-color-warning, #FF9500)",
-    create: "var(--framer-color-tint, #0099FF)",
-    ignored: "var(--framer-color-text-tertiary)",
-}
-
-const statusTitles: Record<MappingStatus, string> = {
-    perfect: "Exact match",
-    mismatch: "Type mismatch",
-    create: "New field",
-    ignored: "Ignored",
-}
-function StatusDot({ status }: { status: MappingStatus }) {
-    return (
-        <span className="status-dot" style={{ backgroundColor: statusColors[status] }} title={statusTitles[status]} />
-    )
-}
-
 interface FieldMapperRowProps {
     item: FieldMappingItem
     existingFields: Field[]
@@ -131,120 +110,99 @@ function FieldMapperRow({
 }: FieldMapperRowProps) {
     const { inferredField, action, targetFieldId, hasTypeMismatch, overrideType } = item
     const isIgnored = action === "ignore"
-    const displayType = overrideType ?? inferredField.inferredType
 
-    const getStatus = (): MappingStatus => {
-        if (isIgnored) {
-            return "ignored"
-        }
-        if (action === "create") {
-            return "create"
-        }
-        if (hasTypeMismatch) {
-            return "mismatch"
-        }
-        return "perfect"
-    }
-
-    const status = getStatus()
-
-    // Find the target field for display
+    // Find the target field when mapping to an existing field
     const targetField = targetFieldId ? existingFields.find(f => f.id === targetFieldId) : null
 
+    // Determine the type to display in the Type selector
+    const displayType =
+        action === "map" && targetField
+            ? targetField.type // Show existing field's type when mapping
+            : (overrideType ?? inferredField.inferredType) // Show inferred/override type when creating
+
+    // Type selector is editable only when creating a new field with multiple allowed types
+    const canEditType = action === "create" && inferredField.allowedTypes.length > 1
+
     return (
-        <div
-            className={`mapper-row ${isIgnored ? "ignored" : ""} ${hasTypeMismatch && !isIgnored ? "has-mismatch" : ""} ${isSlug ? "is-slug" : ""}`}
-        >
-            {isSlug && <span className="slug-label">Slug</span>}
+        <>
             <button
                 type="button"
-                className="mapper-checkbox"
-                onClick={onToggleIgnored}
-                aria-label={isIgnored ? "Include column" : "Ignore column"}
+                className={`source-field ${isIgnored ? "ignored" : ""} ${isSlug ? "is-slug" : ""}`}
+                aria-disabled={isIgnored}
+                onClick={() => {
+                    onToggleIgnored()
+                }}
+                tabIndex={0}
             >
-                <input type="checkbox" checked={!isIgnored} readOnly tabIndex={-1} />
-            </button>
-
-            <div className="mapper-source">
-                <StatusDot status={status} />
-                <span className="column-name" title={inferredField.columnName}>
-                    {inferredField.columnName}
-                </span>
+                <input type="checkbox" checked={!isIgnored} tabIndex={-1} readOnly />
+                <span>{inferredField.columnName}</span>
                 <span className="inferred-type">{labelByFieldType[inferredField.inferredType]}</span>
-            </div>
-
+            </button>
             <svg
-                className="mapper-arrow"
                 xmlns="http://www.w3.org/2000/svg"
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                style={{ opacity: isIgnored ? 0.3 : 1 }}
+                width="8"
+                height="8"
+                fill="none"
+                style={{ opacity: isIgnored ? 0.5 : 1 }}
             >
                 <path
-                    fill="none"
-                    stroke="currentColor"
+                    fill="transparent"
+                    stroke="#999"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="1.5"
-                    d="M2 6h8m-3-3 3 3-3 3"
+                    d="m2.5 7 3-3-3-3"
                 />
             </svg>
-
-            <div className="mapper-target-wrapper">
-                <select
-                    className="mapper-target"
-                    value={isIgnored ? "__ignore__" : action === "create" ? "__create__" : (targetFieldId ?? "")}
-                    onChange={e => {
-                        const value = e.target.value
-                        if (value === "__ignore__") {
-                            onSetIgnored(true)
-                        } else if (value === "__create__") {
-                            onSetIgnored(false)
-                            onTargetChange(null)
-                        } else {
-                            onSetIgnored(false)
-                            onTargetChange(value)
-                        }
-                    }}
-                >
-                    <option value="__create__">+ Create field</option>
-                    <option value="__ignore__">− Ignore column</option>
-                    <optgroup label="Existing fields">
-                        {existingFields.map(field => (
-                            <option key={field.id} value={field.id}>
-                                {field.name} ({labelByFieldType[field.type]})
-                            </option>
-                        ))}
-                    </optgroup>
-                </select>
-
-                {action === "create" && inferredField.allowedTypes.length > 1 && (
-                    <select
-                        className="type-selector"
-                        value={displayType}
-                        onChange={e => {
-                            onTypeChange(e.target.value as Field["type"])
-                        }}
-                    >
-                        {inferredField.allowedTypes.map(type => (
-                            <option key={type} value={type}>
-                                {labelByFieldType[type]}
-                            </option>
-                        ))}
-                    </select>
+            <select
+                className="field-input"
+                disabled={isIgnored}
+                value={isIgnored ? "__ignore__" : action === "create" ? "__create__" : (targetFieldId ?? "")}
+                onChange={e => {
+                    const value = e.target.value
+                    if (value === "__ignore__") {
+                        onSetIgnored(true)
+                    } else if (value === "__create__") {
+                        onSetIgnored(false)
+                        onTargetChange(null)
+                    } else {
+                        onSetIgnored(false)
+                        onTargetChange(value)
+                    }
+                }}
+            >
+                <option value="__create__">+ Create field</option>
+                <option value="__ignore__">− Ignore column</option>
+                <optgroup label="Existing fields">
+                    {existingFields.map(field => (
+                        <option key={field.id} value={field.id}>
+                            {field.name}
+                        </option>
+                    ))}
+                </optgroup>
+            </select>
+            <select
+                className="field-type"
+                disabled={isIgnored || !canEditType}
+                value={displayType}
+                onChange={e => {
+                    onTypeChange(e.target.value as Field["type"])
+                }}
+            >
+                {canEditType ? (
+                    inferredField.allowedTypes.map(type => (
+                        <option key={type} value={type}>
+                            {labelByFieldType[type]}
+                        </option>
+                    ))
+                ) : (
+                    <option value={displayType}>{labelByFieldType[displayType]}</option>
                 )}
-            </div>
-
-            {hasTypeMismatch && !isIgnored && targetField && (
-                <div className="mapper-mismatch-row">
-                    <span className="mismatch-hint">
-                        Type mismatch ({labelByFieldType[inferredField.inferredType]} →{" "}
-                        {labelByFieldType[targetField.type]}). Incompatible values will be skipped.
-                    </span>
-                </div>
+            </select>
+            {hasTypeMismatch && !isIgnored && (
+                <div className="mismatch-warning">Type mismatch. Incompatible values will be skipped.</div>
             )}
-        </div>
+        </>
     )
 }
 
@@ -500,11 +458,8 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
             creating: mappings.filter(m => m.action === "create").length,
             matched: active.filter(m => m.action === "map" && !m.hasTypeMismatch).length,
             mismatched: active.filter(m => m.action === "map" && m.hasTypeMismatch).length,
-            unmappedRequired: unmappedRequiredFields.length,
-            missing: missingFields.length,
-            removing: missingFields.filter(m => m.action === "remove").length,
         }
-    }, [mappings, unmappedRequiredFields, missingFields])
+    }, [mappings])
 
     if (loading) {
         return (
@@ -518,53 +473,34 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
         <main className="framer-hide-scrollbar field-mapper">
             <hr className="sticky-divider" />
             <form onSubmit={e => void handleSubmit(e)}>
-                <div className="mapper-header">
-                    <h3>Map CSV Columns</h3>
-                    <div className="mapper-stats">
-                        {stats.matched > 0 && (
-                            <span className="stat stat-matched">
-                                <StatusDot status="perfect" />
-                                {stats.matched} matched
-                            </span>
-                        )}
-                        {stats.creating > 0 && (
-                            <span className="stat stat-create">
-                                <StatusDot status="create" />
-                                {stats.creating} new
-                            </span>
-                        )}
-                        {stats.mismatched > 0 && (
-                            <span className="stat stat-mismatch">
-                                <StatusDot status="mismatch" />
-                                {stats.mismatched} type issues
-                            </span>
-                        )}
-                        {stats.ignored > 0 && (
-                            <span className="stat stat-ignored">
-                                <StatusDot status="ignored" />
-                                {stats.ignored} ignored
-                            </span>
-                        )}
-                        {stats.unmappedRequired > 0 && (
-                            <span className="stat stat-warning">
-                                <span className="warning-icon-small">⚠</span>
-                                {stats.unmappedRequired} required
-                            </span>
-                        )}
-                        {stats.missing > 0 && (
-                            <span className="stat stat-missing">
-                                <span
-                                    className="status-dot"
-                                    style={{ backgroundColor: "var(--framer-color-text-tertiary)" }}
-                                />
-                                {stats.missing} missing
-                            </span>
-                        )}
-                    </div>
+                <div className="mapper-summary">
+                    <span className="summary-stat">
+                        <strong>{stats.total}</strong> columns
+                    </span>
+                    {stats.matched > 0 && (
+                        <span className="summary-stat matched">
+                            <strong>{stats.matched}</strong> matched
+                        </span>
+                    )}
+                    {stats.creating > 0 && (
+                        <span className="summary-stat creating">
+                            <strong>{stats.creating}</strong> new
+                        </span>
+                    )}
+                    {stats.mismatched > 0 && (
+                        <span className="summary-stat mismatched">
+                            <strong>{stats.mismatched}</strong> type issues
+                        </span>
+                    )}
+                    {stats.ignored > 0 && (
+                        <span className="summary-stat ignored">
+                            <strong>{stats.ignored}</strong> ignored
+                        </span>
+                    )}
                 </div>
 
                 <label className="slug-field" htmlFor="slugField">
-                    <span>Slug Field (Used for conflict resolution)</span>
+                    <span>Slug Field</span>
                     <select
                         required
                         name="slugField"
@@ -582,14 +518,10 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
                     </select>
                 </label>
 
-                <div className="mapper-table-header">
-                    <span className="col-checkbox" />
-                    <span className="col-source">CSV Column</span>
-                    <span className="col-arrow" />
-                    <span className="col-target">Target Field</span>
-                </div>
-
-                <div className="mapper-list">
+                <div className="fields">
+                    <span className="fields-column">CSV Column</span>
+                    <span>Target Field</span>
+                    <span>Type</span>
                     {mappings.map(item => (
                         <FieldMapperRow
                             key={item.inferredField.columnName}
@@ -615,32 +547,42 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
                 {missingFields.length > 0 && (
                     <div className="missing-fields-section">
                         <div className="missing-fields-header">
-                            <span>Fields not in CSV</span>
-                            <span className="missing-fields-count">{missingFields.length}</span>
+                            <span>Unmapped Fields</span>
                         </div>
-                        <div className="missing-fields-list">
-                            {missingFields.map(item => (
-                                <div key={item.field.id} className="missing-field-row">
-                                    <div className="missing-field-info">
-                                        <span className="field-name">{item.field.name}</span>
-                                        <span className="field-type">{labelByFieldType[item.field.type]}</span>
-                                    </div>
-                                    <select
-                                        className="missing-field-action"
-                                        value={item.action}
-                                        onChange={e => {
-                                            updateMissingFieldAction(
-                                                item.field.id,
-                                                e.target.value as MissingFieldAction
-                                            )
-                                        }}
-                                    >
-                                        <option value="ignore">Keep field</option>
-                                        <option value="remove">Remove field</option>
-                                    </select>
+                        {missingFields.map(item => (
+                            <div key={item.field.id} className="missing-field-row">
+                                <div className="missing-field-info">
+                                    <span className="field-name">{item.field.name}</span>
+                                    <span className="field-type">{labelByFieldType[item.field.type]}</span>
                                 </div>
-                            ))}
-                        </div>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="8"
+                                    height="8"
+                                    fill="none"
+                                    style={{ opacity: 1 }}
+                                >
+                                    <path
+                                        fill="transparent"
+                                        stroke="#999"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="1.5"
+                                        d="m2.5 7 3-3-3-3"
+                                    />
+                                </svg>
+                                <select
+                                    className="missing-field-action"
+                                    value={item.action}
+                                    onChange={e => {
+                                        updateMissingFieldAction(item.field.id, e.target.value as MissingFieldAction)
+                                    }}
+                                >
+                                    <option value="ignore">Keep field</option>
+                                    <option value="remove">Remove field</option>
+                                </select>
+                            </div>
+                        ))}
                     </div>
                 )}
 
@@ -665,7 +607,6 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
                 )}
 
                 <footer>
-                    <hr className="sticky-top" />
                     <div className="actions">
                         <button type="button" onClick={() => void onCancel()}>
                             Cancel

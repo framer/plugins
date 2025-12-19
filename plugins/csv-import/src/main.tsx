@@ -4,6 +4,7 @@ import { framer } from "framer-plugin"
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { App } from "./App.tsx"
+import { MiniRouterProvider } from "./minirouter.tsx"
 
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
@@ -15,6 +16,8 @@ if (collection && collection.managedBy !== "user") {
 
 ReactDOM.createRoot(root).render(
     <React.StrictMode>
-        <App initialCollection={collection} />
+        <MiniRouterProvider>
+            <App initialCollection={collection} />
+        </MiniRouterProvider>
     </React.StrictMode>
 )

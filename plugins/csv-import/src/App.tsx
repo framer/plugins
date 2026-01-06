@@ -123,6 +123,9 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
     )
 
     switch (currentRoute.uid) {
+        case "create-collection": {
+            return <div>Create</div>
+        }
         case "home": {
             return (
                 <Home collection={collection} onCollectionChange={setCollection} onFileSelected={handleFileSelected} />

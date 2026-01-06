@@ -4,6 +4,10 @@ import type { ImportItem, ImportPayload } from "./utils/prepareImportPayload"
 
 type Route =
     | {
+          uid: "create-collection"
+          opts: undefined
+      }
+    | {
           uid: "home"
           opts: undefined
       }
@@ -40,10 +44,11 @@ const MiniRouterContext = createContext<MiniRouterContextType | undefined>(undef
 
 interface MiniRouterProviderProps {
     children: ReactNode
+    initialRoute: Route
 }
 
-export function MiniRouterProvider({ children }: MiniRouterProviderProps) {
-    const [currentRoute, setCurrentRoute] = useState<Route>({ uid: "home", opts: undefined })
+export function MiniRouterProvider({ children, initialRoute }: MiniRouterProviderProps) {
+    const [currentRoute, setCurrentRoute] = useState<Route>(initialRoute)
 
     useEffect(() => {
         const uiOptions = defaultUiOptions[currentRoute.uid] ?? fallbackUiOptions

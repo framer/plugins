@@ -38,7 +38,6 @@ const defaultUiOptions = {
 } as Record<Route["uid"], UIOptions | undefined>
 
 interface MiniRouterContextType {
-    // Define your context properties here
     currentRoute: Route
     navigate: (route: Route) => Promise<void>
 }

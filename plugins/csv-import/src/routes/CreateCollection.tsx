@@ -30,7 +30,14 @@ export function CreateCollection({ reason, onCollectionCreated }: CreateCollecti
     }
 
     return (
-        <form className="create-collection" onSubmit={() => void handleCreate()}>
+        <form
+            className="create-collection"
+            onSubmit={e => {
+                e.preventDefault()
+                e.stopPropagation()
+                void handleCreate()
+            }}
+        >
             <input
                 type="text"
                 value={name}

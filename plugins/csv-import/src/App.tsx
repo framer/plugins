@@ -3,6 +3,7 @@ import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useState } from "react"
 import "./App.css"
 import { useMiniRouter } from "./minirouter"
+import { CreateCollection } from "./routes/CreateCollection"
 import { FieldMapper, type FieldMappingItem, type MissingFieldItem } from "./routes/FieldMapper"
 import { Home } from "./routes/Home"
 import { ManageConflicts } from "./routes/ManageConflicts"
@@ -16,7 +17,12 @@ import { ImportError, type ImportItem, prepareImportPayload } from "./utils/prep
 
 export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
-    const hasAllPermissions = useIsAllowedTo("Collection.addItems", "Collection.addFields", "Collection.removeFields")
+    const hasAllPermissions = useIsAllowedTo(
+        "Collection.addItems",
+        "Collection.addFields",
+        "Collection.removeFields",
+        "createCollection"
+    )
 
     const { currentRoute, navigate } = useMiniRouter()
 
@@ -124,7 +130,15 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
 
     switch (currentRoute.uid) {
         case "create-collection": {
-            return <div>Create</div>
+            return (
+                <CreateCollection
+                    reason={currentRoute.opts.reason}
+                    onCollectionCreated={collection => {
+                        setCollection(collection)
+                        void navigate({ uid: "home", opts: undefined })
+                    }}
+                />
+            )
         }
         case "home": {
             return (

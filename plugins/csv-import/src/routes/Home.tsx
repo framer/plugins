@@ -1,6 +1,7 @@
 import type { Collection } from "framer-plugin"
 import { CollectionSelector } from "../components/CollectionSelector"
 import { SelectCSVFile } from "../components/SelectCSVFile"
+import { useMiniRouter } from "../minirouter"
 
 interface HomeProps {
     collection: Collection | null
@@ -9,9 +10,17 @@ interface HomeProps {
 }
 
 export function Home({ collection, onCollectionChange, onFileSelected }: HomeProps) {
+    const { navigate } = useMiniRouter()
+
     return (
         <div className="import-collection">
-            <CollectionSelector collection={collection} onCollectionChange={onCollectionChange} />
+            <CollectionSelector
+                collection={collection}
+                onCollectionChange={onCollectionChange}
+                onCreateCollection={() => {
+                    void navigate({ uid: "create-collection", opts: { reason: "user" } })
+                }}
+            />
 
             {collection ? (
                 <SelectCSVFile onFileSelected={onFileSelected} />

@@ -16,14 +16,15 @@ if (collection && collection.managedBy !== "user") {
 
 // This API is unstable and will change without warning, we do not recommend using it until we publish a stable version.
 const initialState = framer[$framerInternal.initialState]
-
 const shouldCreate = initialState.action === "collection/import"
 
 ReactDOM.createRoot(root).render(
     <React.StrictMode>
         <MiniRouterProvider
             initialRoute={
-                shouldCreate ? { uid: "create-collection", opts: undefined } : { uid: "home", opts: undefined }
+                shouldCreate
+                    ? { uid: "create-collection", opts: { reason: "initialState" } }
+                    : { uid: "home", opts: undefined }
             }
         >
             <App initialCollection={collection} />

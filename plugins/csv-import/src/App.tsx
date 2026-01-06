@@ -133,9 +133,9 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             return (
                 <CreateCollection
                     reason={currentRoute.opts.reason}
-                    onCollectionCreated={collection => {
+                    onCollectionCreated={async collection => {
                         setCollection(collection)
-                        void navigate({ uid: "home", opts: undefined })
+                        await navigate({ uid: "home", opts: undefined })
                     }}
                 />
             )

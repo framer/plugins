@@ -5,7 +5,7 @@ import { useMiniRouter } from "../minirouter"
 
 interface CreateCollectionProps {
     reason: "initialState" | "user"
-    onCollectionCreated: (collection: Collection) => void
+    onCollectionCreated: (collection: Collection) => Promise<void>
 }
 
 export function CreateCollection({ reason, onCollectionCreated }: CreateCollectionProps) {
@@ -18,14 +18,14 @@ export function CreateCollection({ reason, onCollectionCreated }: CreateCollecti
 
         const newCollection = await framer.createCollection(trimmedName)
         await newCollection.setAsActive()
-        onCollectionCreated(newCollection)
+        await onCollectionCreated(newCollection)
     }
 
-    const handleCancel = () => {
+    const handleCancel = async () => {
         if (reason === "initialState") {
             framer.closePlugin(undefined, { silent: true })
         } else {
-            void navigate({ uid: "home", opts: undefined })
+            await navigate({ uid: "home", opts: undefined })
         }
     }
 
@@ -47,7 +47,7 @@ export function CreateCollection({ reason, onCollectionCreated }: CreateCollecti
                 <button
                     type="button"
                     onClick={() => {
-                        handleCancel()
+                        void handleCancel()
                     }}
                 >
                     Cancel

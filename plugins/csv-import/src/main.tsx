@@ -23,8 +23,8 @@ ReactDOM.createRoot(root).render(
         <MiniRouterProvider
             initialRoute={
                 shouldCreate
-                    ? { uid: "create-collection", opts: { reason: "initialState" } }
-                    : { uid: "home", opts: undefined }
+                    ? { uid: "home", opts: { forceCreateCollection: true } }
+                    : { uid: "home", opts: { forceCreateCollection: false } }
             }
         >
             <App initialCollection={collection} />

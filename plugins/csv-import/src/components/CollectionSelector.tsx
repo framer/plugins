@@ -1,24 +1,86 @@
 import type { Collection } from "framer-plugin"
 import { framer, useIsAllowedTo } from "framer-plugin"
-import { type ChangeEvent, useEffect, useState } from "react"
-import { PlusIcon } from "./PlusIcon"
+import { type ChangeEvent, useEffect, useRef, useState } from "react"
 
 interface CollectionSelectorProps {
+    forceCreate?: boolean
     collection: Collection | null
     onCollectionChange: (collection: Collection) => void
-    onCreateCollection: () => void
 }
 
-export function CollectionSelector({ collection, onCollectionChange, onCreateCollection }: CollectionSelectorProps) {
+const NEW_COLLECTION_VALUE = "__new_collection__"
+
+export function CollectionSelector({ forceCreate, collection, onCollectionChange }: CollectionSelectorProps) {
     const isAllowedToCreateCollection = useIsAllowedTo("createCollection")
     const collections = useCollections(collection)
+    const [isCreatingNew, setIsCreatingNew] = useState(forceCreate)
+    const [newCollectionName, setNewCollectionName] = useState("")
+    const inputRef = useRef<HTMLInputElement>(null)
+
+    useEffect(() => {
+        if (isCreatingNew && inputRef.current) {
+            inputRef.current.focus()
+        }
+    }, [isCreatingNew])
 
     const selectCollection = async (event: ChangeEvent<HTMLSelectElement>) => {
-        const selectedCollection = collections.find(c => c.id === event.currentTarget.value)
+        const value = event.currentTarget.value
+
+        if (value === NEW_COLLECTION_VALUE) {
+            setIsCreatingNew(true)
+            setNewCollectionName("")
+            return
+        }
+
+        const selectedCollection = collections.find(c => c.id === value)
         if (!selectedCollection) return
 
         await selectedCollection.setAsActive()
         onCollectionChange(selectedCollection)
+    }
+
+    const handleCreateCollection = async () => {
+        const trimmedName = newCollectionName.trim()
+        if (!trimmedName) return
+
+        const newCollection = await framer.createCollection(trimmedName)
+        await newCollection.setAsActive()
+        onCollectionChange(newCollection)
+        setIsCreatingNew(false)
+        setNewCollectionName("")
+    }
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === "Escape") {
+            setIsCreatingNew(false)
+            setNewCollectionName("")
+        } else if (event.key === "Enter") {
+            event.preventDefault()
+            void handleCreateCollection()
+        }
+    }
+
+    if (isCreatingNew) {
+        return (
+            <div className="collection-selector">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    className="collection-select"
+                    value={newCollectionName}
+                    onChange={e => {
+                        setNewCollectionName(e.target.value)
+                    }}
+                    onKeyDown={handleKeyDown}
+                    onBlur={() => {
+                        if (newCollectionName.trim()) {
+                            void handleCreateCollection()
+                        }
+                    }}
+                    placeholder="Collection name"
+                />
+            </div>
+        )
     }
 
     return (
@@ -38,20 +100,9 @@ export function CollectionSelector({ collection, onCollectionChange, onCreateCol
                         {collection.name}
                     </option>
                 ))}
-            </select>
 
-            {isAllowedToCreateCollection && (
-                <button
-                    type="button"
-                    className="create-collection-button"
-                    onClick={onCreateCollection}
-                    title="Create new collection"
-                >
-                    <span className="create-collection-icon">
-                        <PlusIcon />
-                    </span>
-                </button>
-            )}
+                {isAllowedToCreateCollection && <option value={NEW_COLLECTION_VALUE}>New Collection</option>}
+            </select>
         </div>
     )
 }

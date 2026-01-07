@@ -1,5 +1,4 @@
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from "react"
-import { ImportIcon } from "../components/ImportIcon"
 
 interface SelectCSVFileProps {
     onFileSelected: (csvContent: string) => Promise<void>
@@ -136,16 +135,13 @@ export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
             {!isDragging && (
                 <>
                     <div className="intro">
-                        <div className="logo">
-                            <ImportIcon />
-                        </div>
                         <div className="content">
-                            <h2>Upload CSV</h2>
-                            <p>Select a CSV file to import, paste CSV data, or drag and drop a CSV file.</p>
+                            <h2>CSV Import</h2>
+                            <p>Select a CMS collection and upload or drop your CSV here.</p>
                         </div>
 
                         <button
-                            className="framer-button-primary"
+                            className="framer-button-primary upload-button"
                             onClick={event => {
                                 event.preventDefault()
                                 inputOpenedFromImportButton.current = true

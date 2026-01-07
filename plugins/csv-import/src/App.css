@@ -94,9 +94,7 @@
 
     padding: 20px;
     aspect-ratio: 1 / 1;
-    border: 2px dashed rgba(255, 255, 255, 0.2);
     border-radius: 12px;
-    background-color: rgba(255, 255, 255, 0.05);
 }
 
 .intro h2 {
@@ -114,16 +112,21 @@
 .intro .content {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
+    gap: 10px;
 }
 
 .dropzone {
-    border-color: var(--framer-color-tint);
+    border: 1px solid color-mix(in srgb, var(--framer-color-tint) 40%, transparent);
+    background-color: color-mix(in srgb, var(--framer-color-tint) 5%, transparent);
 }
 
 .dropzone p {
     color: var(--framer-color-tint);
     font-weight: 600;
+}
+
+.upload-button {
+    width: auto;
 }
 
 .no-border {

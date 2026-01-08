@@ -1,17 +1,24 @@
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from "react"
 
 interface SelectCSVFileProps {
+    disabled?: boolean
     onFileSelected: (csvContent: string) => Promise<void>
 }
 
-export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
+export function SelectCSVFile({ onFileSelected, disabled }: SelectCSVFileProps) {
     const form = useRef<HTMLFormElement>(null)
     const inputOpenedFromImportButton = useRef(false)
     const [isDragging, setIsDragging] = useState(false)
 
     useEffect(() => {
+        if (disabled) {
+            return
+        }
+
         const formElement = form.current
-        if (!formElement) return
+        if (!formElement) {
+            return
+        }
 
         const handleDragOver = (event: DragEvent) => {
             event.preventDefault()
@@ -47,7 +54,7 @@ export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
             formElement.removeEventListener("dragleave", handleDragLeave)
             formElement.removeEventListener("drop", handleDrop)
         }
-    }, [])
+    }, [disabled])
 
     useEffect(() => {
         const handlePaste = (event: ClipboardEvent) => {
@@ -140,6 +147,7 @@ export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
 
                         <button
                             className="framer-button-primary upload-button"
+                            disabled={disabled}
                             onClick={event => {
                                 event.preventDefault()
                                 inputOpenedFromImportButton.current = true

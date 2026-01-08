@@ -22,7 +22,7 @@ export function Home({ collection, onCollectionChange, onFileSelected, forceCrea
 
             <hr />
 
-            <SelectCSVFile onFileSelected={onFileSelected} />
+            <SelectCSVFile disabled={!collection} onFileSelected={onFileSelected} />
         </div>
     )
 }

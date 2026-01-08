@@ -373,6 +373,13 @@ select:not(:disabled) {
     color: var(--framer-color-text-tertiary);
 }
 
+.field-mapper .subheading {
+    color: var(--framer-color-text);
+}
+.field-mapper .subheading.negmargin {
+    margin-bottom: -10px;
+}
+
 .field-mapper .fields {
     display: grid;
     grid-template-columns: 1fr 8px 1fr 1fr;
@@ -581,10 +588,6 @@ select:not(:disabled) {
     align-items: center;
     justify-content: space-between;
     padding-bottom: 5px;
-}
-
-.missing-fields-header span:first-child {
-    color: var(--framer-color-text-tertiary);
 }
 
 .missing-field-row {

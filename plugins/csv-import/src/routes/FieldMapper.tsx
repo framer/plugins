@@ -473,7 +473,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
             <hr className="sticky-divider" />
             <form onSubmit={e => void handleSubmit(e)}>
                 <label className="slug-field" htmlFor="slugField">
-                    <span>Slug Field</span>
+                    <span className="subheading">Slug Field</span>
                     <select
                         required
                         name="slugField"
@@ -491,6 +491,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                     </select>
                 </label>
 
+                <span className="subheading negmargin">Columns Mapping</span>
                 <div className="fields">
                     <span className="fields-column">CSV Column</span>
                     <span>CMS Field</span>
@@ -520,7 +521,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                 {missingFields.length > 0 && (
                     <div className="missing-fields-section">
                         <div className="missing-fields-header">
-                            <span>Unmapped CMS Fields</span>
+                            <span className="subheading">Unmapped CMS Fields</span>
                         </div>
                         {missingFields.map(item => (
                             <div key={item.field.id} className="missing-field-row">

@@ -165,6 +165,7 @@
     border-color: #f36;
     color: #f36;
     background-color: color-mix(in srgb, #f36 10%, transparent);
+    box-shadow: none;
 }
 
 .error-message {

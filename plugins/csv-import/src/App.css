@@ -298,7 +298,7 @@ select:not(:disabled) {
     flex: 1;
     gap: 20px;
 
-    padding: 10px 15px 0;
+    padding: 15px 15px 0;
 }
 
 .field-mapper .sticky-divider {
@@ -310,6 +310,12 @@ select:not(:disabled) {
     margin-right: 15px;
     border: none;
     border-top: 1px solid var(--framer-color-divider);
+}
+
+.field-mapper .mapper-summary-container {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
 .field-mapper .mapper-summary {

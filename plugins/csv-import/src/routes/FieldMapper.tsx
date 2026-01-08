@@ -473,30 +473,37 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
         <main className="framer-hide-scrollbar field-mapper">
             <hr className="sticky-divider" />
             <form onSubmit={e => void handleSubmit(e)}>
-                <div className="mapper-summary">
-                    <span className="summary-stat">
-                        <strong>{stats.total}</strong> columns
-                    </span>
-                    {stats.matched > 0 && (
-                        <span className="summary-stat matched">
-                            <strong>{stats.matched}</strong> matched
+                <div className="mapper-summary-container">
+                    <div className="mapper-summary">
+                        <span className="summary-stat">
+                            <strong>{stats.total}</strong> columns
                         </span>
-                    )}
-                    {stats.creating > 0 && (
-                        <span className="summary-stat creating">
-                            <strong>{stats.creating}</strong> new
+                        {stats.matched > 0 && (
+                            <span className="summary-stat matched">
+                                <strong>{stats.matched}</strong> matched
+                            </span>
+                        )}
+                        {stats.creating > 0 && (
+                            <span className="summary-stat creating">
+                                <strong>{stats.creating}</strong> new
+                            </span>
+                        )}
+                        {stats.mismatched > 0 && (
+                            <span className="summary-stat mismatched">
+                                <strong>{stats.mismatched}</strong> type issues
+                            </span>
+                        )}
+                        {stats.ignored > 0 && (
+                            <span className="summary-stat ignored">
+                                <strong>{stats.ignored}</strong> ignored
+                            </span>
+                        )}
+                    </div>
+                    <div className="mapper-summary">
+                        <span className="summary-stat">
+                            <strong>{csvRecords.length}</strong> rows
                         </span>
-                    )}
-                    {stats.mismatched > 0 && (
-                        <span className="summary-stat mismatched">
-                            <strong>{stats.mismatched}</strong> type issues
-                        </span>
-                    )}
-                    {stats.ignored > 0 && (
-                        <span className="summary-stat ignored">
-                            <strong>{stats.ignored}</strong> ignored
-                        </span>
-                    )}
+                    </div>
                 </div>
 
                 <label className="slug-field" htmlFor="slugField">
@@ -620,7 +627,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
                                 unmappedRequiredFields.length > 0 ? "Map all required fields to continue" : undefined
                             }
                         >
-                            Import {csvRecords.length} {csvRecords.length === 1 ? "item" : "items"}
+                            Import
                         </button>
                     </div>
                 </footer>

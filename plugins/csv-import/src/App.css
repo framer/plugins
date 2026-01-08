@@ -479,7 +479,9 @@ select:not(:disabled) {
     padding-top: 15px;
     padding-bottom: 15px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     gap: 15px;
     border-top: 1px solid var(--framer-color-divider);
 }
@@ -487,6 +489,25 @@ select:not(:disabled) {
 .field-mapper footer .sticky-top {
     border: none;
     border-top: 1px solid var(--framer-color-divider);
+}
+
+.field-mapper .footer-stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    color: var(--framer-color-text-tertiary);
+    font-size: 12px;
+}
+
+.field-mapper .summary-divider {
+    color: var(--framer-color-text-tertiary);
+    opacity: 0.5;
+}
+
+.field-mapper footer button {
+    width: auto;
+    flex-shrink: 0;
 }
 
 /* Unmapped required fields warning */

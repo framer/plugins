@@ -86,7 +86,6 @@ interface FieldMapperProps {
     collection: Collection
     csvRecords: Record<string, string>[]
     onSubmit: (opts: FieldMapperSubmitOpts) => Promise<void>
-    onCancel: () => Promise<void>
 }
 
 interface FieldMapperRowProps {
@@ -206,7 +205,7 @@ function FieldMapperRow({
     )
 }
 
-export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: FieldMapperProps) {
+export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperProps) {
     const [existingFields, setExistingFields] = useState<Field[]>([])
     const [mappings, setMappings] = useState<FieldMappingItem[]>([])
     const [missingFields, setMissingFields] = useState<MissingFieldItem[]>([])
@@ -473,39 +472,6 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
         <main className="framer-hide-scrollbar field-mapper">
             <hr className="sticky-divider" />
             <form onSubmit={e => void handleSubmit(e)}>
-                <div className="mapper-summary-container">
-                    <div className="mapper-summary">
-                        <span className="summary-stat">
-                            <strong>{stats.total}</strong> columns
-                        </span>
-                        {stats.matched > 0 && (
-                            <span className="summary-stat matched">
-                                <strong>{stats.matched}</strong> matched
-                            </span>
-                        )}
-                        {stats.creating > 0 && (
-                            <span className="summary-stat creating">
-                                <strong>{stats.creating}</strong> new
-                            </span>
-                        )}
-                        {stats.mismatched > 0 && (
-                            <span className="summary-stat mismatched">
-                                <strong>{stats.mismatched}</strong> type issues
-                            </span>
-                        )}
-                        {stats.ignored > 0 && (
-                            <span className="summary-stat ignored">
-                                <strong>{stats.ignored}</strong> ignored
-                            </span>
-                        )}
-                    </div>
-                    <div className="mapper-summary">
-                        <span className="summary-stat">
-                            <strong>{csvRecords.length}</strong> rows
-                        </span>
-                    </div>
-                </div>
-
                 <label className="slug-field" htmlFor="slugField">
                     <span>Slug Field</span>
                     <select
@@ -527,7 +493,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
 
                 <div className="fields">
                     <span className="fields-column">CSV Column</span>
-                    <span>Target Field</span>
+                    <span>CMS Field</span>
                     <span>Type</span>
                     {mappings.map(item => (
                         <FieldMapperRow
@@ -554,7 +520,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
                 {missingFields.length > 0 && (
                     <div className="missing-fields-section">
                         <div className="missing-fields-header">
-                            <span>Unmapped Fields</span>
+                            <span>Unmapped CMS Fields</span>
                         </div>
                         {missingFields.map(item => (
                             <div key={item.field.id} className="missing-field-row">
@@ -585,8 +551,8 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
                                         updateMissingFieldAction(item.field.id, e.target.value as MissingFieldAction)
                                     }}
                                 >
-                                    <option value="ignore">Keep Field</option>
-                                    <option value="remove">Remove Field</option>
+                                    <option value="ignore">Keep Empty</option>
+                                    <option value="remove">Remove</option>
                                 </select>
                             </div>
                         ))}
@@ -614,22 +580,43 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
                 )}
 
                 <footer>
-                    <div className="actions">
-                        <button type="button" onClick={() => void onCancel()}>
-                            Cancel
-                        </button>
-
-                        <button
-                            type="submit"
-                            className="framer-button-primary"
-                            disabled={!canSubmit}
-                            title={
-                                unmappedRequiredFields.length > 0 ? "Map all required fields to continue" : undefined
-                            }
-                        >
-                            Import
-                        </button>
+                    <div className="footer-stats">
+                        <span className="summary-stat">
+                            <strong>{stats.total}</strong> Columns
+                        </span>
+                        {stats.matched > 0 && (
+                            <span className="summary-stat matched">
+                                <strong>{stats.matched}</strong> Matched
+                            </span>
+                        )}
+                        {stats.creating > 0 && (
+                            <span className="summary-stat creating">
+                                <strong>{stats.creating}</strong> New
+                            </span>
+                        )}
+                        {stats.mismatched > 0 && (
+                            <span className="summary-stat mismatched">
+                                <strong>{stats.mismatched}</strong> Type Issues
+                            </span>
+                        )}
+                        {stats.ignored > 0 && (
+                            <span className="summary-stat ignored">
+                                <strong>{stats.ignored}</strong> Ignored
+                            </span>
+                        )}
+                        <span className="summary-divider">|</span>
+                        <span className="summary-stat">
+                            <strong>{csvRecords.length}</strong> Items
+                        </span>
                     </div>
+                    <button
+                        type="submit"
+                        className="framer-button-primary"
+                        disabled={!canSubmit}
+                        title={unmappedRequiredFields.length > 0 ? "Map all required fields to continue" : undefined}
+                    >
+                        Import
+                    </button>
                 </footer>
             </form>
         </main>

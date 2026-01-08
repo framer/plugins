@@ -18,11 +18,11 @@ export function ManageConflicts({ records, onAllConflictsResolved }: ManageConfl
 
     const moveToNextRecord = useCallback(() => {
         setRemainingRecords(prev => {
-            if (prev.length === 0) {
+            const [, ...rest] = prev
+            if (rest.length === 0) {
                 onAllConflictsResolved(fixedRecords.current)
                 return prev
             }
-            const [, ...rest] = prev
             return rest
         })
     }, [onAllConflictsResolved])

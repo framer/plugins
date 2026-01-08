@@ -463,6 +463,7 @@ select:not(:disabled) {
     width: 100%;
     background-color: var(--framer-color-bg);
     margin-top: auto;
+    padding-top: 15px;
     padding-bottom: 15px;
     display: flex;
     flex-direction: column;

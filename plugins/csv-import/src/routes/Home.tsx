@@ -29,7 +29,7 @@ export function Home({ collection, onCollectionChange, onFileSelected, forceCrea
                     <SelectCSVFile onFileSelected={onFileSelected} />
                 ) : (
                     <div className="intro no-border">
-                        <p>Select a collection to import CSV data into.</p>
+                        <p>Select a collection to continue...</p>
                     </div>
                 )}
             </div>

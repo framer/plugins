@@ -1,6 +1,7 @@
 import type { Collection } from "framer-plugin"
 import { framer, useIsAllowedTo } from "framer-plugin"
 import { type ChangeEvent, useEffect, useRef, useState } from "react"
+import { CollectionIcon } from "./CollectionIcon"
 
 interface CollectionSelectorProps {
     forceCreate?: boolean
@@ -75,6 +76,8 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
     if (isCreatingNew) {
         return (
             <div className="collection-selector">
+                <CollectionIcon />
+
                 <input
                     ref={inputRef}
                     type="text"
@@ -97,6 +100,8 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
 
     return (
         <div className="collection-selector">
+            <CollectionIcon />
+
             <select className="collection-select" value={collection?.id ?? ""} onChange={e => void selectCollection(e)}>
                 {!collection && (
                     <option value="" disabled>
@@ -106,7 +111,11 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
 
                 {isAllowedToCreateCollection && <option value={NEW_COLLECTION_VALUE}>New Collection...</option>}
 
-                {collections.length > 0 && <option disabled>──────────</option>}
+                {collections.length > 0 && (
+                    <option style={{ border: "1px solid red" }} disabled>
+                        --------------------------------
+                    </option>
+                )}
                 {collections.length > 0 &&
                     collections.map(collection => (
                         <option key={collection.id} value={collection.id}>

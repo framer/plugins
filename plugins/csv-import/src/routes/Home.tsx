@@ -22,13 +22,7 @@ export function Home({ collection, onCollectionChange, onFileSelected, forceCrea
 
             <hr />
 
-            {collection ? (
-                <SelectCSVFile onFileSelected={onFileSelected} />
-            ) : (
-                <div className="intro no-border">
-                    <p>Select a collection to continue...</p>
-                </div>
-            )}
+            <SelectCSVFile onFileSelected={onFileSelected} />
         </div>
     )
 }

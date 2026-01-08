@@ -206,6 +206,15 @@ function FieldMapperRow({
 export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperProps) {
     const [existingFields, setExistingFields] = useState<Field[]>([])
     const [mappings, setMappings] = useState<FieldMappingItem[]>([])
+    const [_possibleSlugFields, setPossibleSlugFields] = useState<InferredField[]>([])
+    const possibleSlugFields = useMemo(
+        () =>
+            _possibleSlugFields.filter(field =>
+                mappings.some(m => m.inferredField.columnName === field.columnName && m.action !== "ignore")
+            ),
+        [_possibleSlugFields, mappings]
+    )
+
     const [missingFields, setMissingFields] = useState<MissingFieldItem[]>([])
     const [selectedSlugFieldName, setSelectedSlugFieldName] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
@@ -247,7 +256,13 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                     }
                 })
 
+                const possibleSlugFields = initialMappings
+                    .filter(m => csvRecords.every(record => record[m.inferredField.columnName]))
+                    .map(m => m.inferredField)
+
                 setMappings(initialMappings)
+                setPossibleSlugFields(possibleSlugFields)
+                setSelectedSlugFieldName(possibleSlugFields[0]?.columnName ?? null)
 
                 // Find fields that exist in collection but are not mapped from CSV
                 const initialMissingFields: MissingFieldItem[] = fields
@@ -269,21 +284,6 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
         void loadFields()
     }, [collection, csvRecords])
 
-    // Determine possible slug fields (fields that have values in every record)
-    const possibleSlugFields = useMemo(() => {
-        return mappings
-            .filter(m => m.action !== "ignore")
-            .filter(m => csvRecords.every(record => record[m.inferredField.columnName]))
-            .map(m => m.inferredField)
-    }, [csvRecords, mappings])
-
-    // Auto-select first possible slug field
-    useEffect(() => {
-        if (possibleSlugFields.length > 0 && !selectedSlugFieldName) {
-            setSelectedSlugFieldName(possibleSlugFields[0]?.columnName ?? null)
-        }
-    }, [possibleSlugFields, selectedSlugFieldName])
-
     const toggleIgnored = useCallback(
         (columnName: string) => {
             setMappings(prev => {
@@ -304,17 +304,13 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
 
                 // If ignoring the current slug field, switch to another available one
                 if (willBeIgnored && columnName === selectedSlugFieldName) {
-                    const newSlugField = newMappings
-                        .filter(m => m.action !== "ignore")
-                        .find(m => csvRecords.every(record => record[m.inferredField.columnName]))
-
-                    setSelectedSlugFieldName(newSlugField?.inferredField.columnName ?? null)
+                    setSelectedSlugFieldName(null)
                 }
 
                 return newMappings
             })
         },
-        [selectedSlugFieldName, csvRecords]
+        [selectedSlugFieldName]
     )
 
     const setIgnored = useCallback(
@@ -481,6 +477,11 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                             setSelectedSlugFieldName(event.target.value)
                         }}
                     >
+                        {!selectedSlugFieldName && (
+                            <option value="" disabled>
+                                Select a slug field...
+                            </option>
+                        )}
                         {possibleSlugFields.map(field => (
                             <option key={`slug-field-${field.columnName}`} value={field.columnName}>
                                 {field.name || field.columnName}

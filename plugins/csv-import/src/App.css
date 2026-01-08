@@ -159,13 +159,11 @@
     flex: 1;
     min-width: 0;
     height: 28px;
-    border: 1px solid transparent;
 }
 .collection-select.error {
-    border-color: #f36;
     color: #f36;
     background-color: color-mix(in srgb, #f36 10%, transparent);
-    box-shadow: none;
+    box-shadow: inset 0 0 0 1px #f36;
 }
 
 .error-message {

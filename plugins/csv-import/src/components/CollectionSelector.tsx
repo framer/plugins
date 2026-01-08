@@ -26,6 +26,23 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         }
     }, [isCreatingNew])
 
+    // Validate for duplicates on initial render and when collections change
+    useEffect(() => {
+        if (isCreatingNew) {
+            const trimmedName = newCollectionName.trim()
+            if (trimmedName) {
+                const isDuplicate = collections.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())
+                if (isDuplicate) {
+                    setCreationError("Name already exists")
+                } else {
+                    setCreationError(undefined)
+                }
+            } else {
+                setCreationError(undefined)
+            }
+        }
+    }, [isCreatingNew, newCollectionName, collections])
+
     const selectCollection = async (event: ChangeEvent<HTMLSelectElement>) => {
         const value = event.currentTarget.value
 
@@ -45,6 +62,13 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
     const handleCreateCollection = async () => {
         const trimmedName = newCollectionName.trim()
         if (!trimmedName) return
+
+        // Check for duplicates before attempting to create
+        const isDuplicate = collections.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())
+        if (isDuplicate) {
+            setCreationError("Name already exists")
+            return
+        }
 
         let newCollection: Collection
         try {
@@ -71,6 +95,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         if (event.key === "Escape") {
             setIsCreatingNew(false)
             setNewCollectionName("Collection")
+            setCreationError(undefined)
         } else if (event.key === "Enter") {
             event.preventDefault()
             void handleCreateCollection()
@@ -91,7 +116,23 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
                         className={creationError ? "collection-select error" : "collection-select"}
                         value={newCollectionName}
                         onChange={e => {
-                            setNewCollectionName(e.target.value)
+                            const value = e.target.value
+                            setNewCollectionName(value)
+
+                            // Validate for duplicate names while typing
+                            const trimmedValue = value.trim()
+                            if (trimmedValue) {
+                                const isDuplicate = collections.some(
+                                    c => c.name.toLowerCase() === trimmedValue.toLowerCase()
+                                )
+                                if (isDuplicate) {
+                                    setCreationError("Name already exists")
+                                } else {
+                                    setCreationError(undefined)
+                                }
+                            } else {
+                                setCreationError(undefined)
+                            }
                         }}
                         onKeyDown={handleKeyDown}
                         onBlur={() => {

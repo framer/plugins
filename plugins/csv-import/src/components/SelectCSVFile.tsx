@@ -135,10 +135,8 @@ export function SelectCSVFile({ onFileSelected }: SelectCSVFileProps) {
             {!isDragging && (
                 <>
                     <div className="intro">
-                        <div className="content">
-                            <h2>CSV Import</h2>
-                            <p>Select a CMS collection and upload or drop your CSV here.</p>
-                        </div>
+                        <h2>CSV Import</h2>
+                        <p>Select a CMS collection and upload or drop your CSV here.</p>
 
                         <button
                             className="framer-button-primary upload-button"

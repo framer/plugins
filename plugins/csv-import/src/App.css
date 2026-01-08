@@ -101,7 +101,7 @@
     line-height: 1;
     font-size: 1em;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: -5px;
     color: var(--framer-color-text-primary);
 }
 

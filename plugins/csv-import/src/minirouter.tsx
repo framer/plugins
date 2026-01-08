@@ -23,11 +23,12 @@ type Route =
           }
       }
 
-const fallbackUiOptions: UIOptions = { width: 260, height: 330, resizable: false }
+const PRIMARY_SIZE: UIOptions = { width: 260, height: 330, resizable: false }
+const SECONDARY_SIZE: UIOptions = { width: 550, height: 600, resizable: true }
 const defaultUiOptions = {
-    home: fallbackUiOptions,
-    "field-mapper": { width: 550, height: 600, resizable: true },
-    "manage-conflicts": { width: 260, height: 165, resizable: false },
+    home: PRIMARY_SIZE,
+    "field-mapper": SECONDARY_SIZE,
+    "manage-conflicts": PRIMARY_SIZE,
 } as Record<Route["uid"], UIOptions | undefined>
 
 interface MiniRouterContextType {
@@ -46,7 +47,7 @@ export function MiniRouterProvider({ children, initialRoute }: MiniRouterProvide
     const [currentRoute, setCurrentRoute] = useState<Route>(initialRoute)
 
     useEffect(() => {
-        const uiOptions = defaultUiOptions[currentRoute.uid] ?? fallbackUiOptions
+        const uiOptions = defaultUiOptions[currentRoute.uid] ?? PRIMARY_SIZE
         void framer.showUI(uiOptions)
     }, [currentRoute.uid])
 

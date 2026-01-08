@@ -91,17 +91,21 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
                 onChange={e => void selectCollection(e)}
                 autoFocus
             >
-                <option value="" disabled>
-                    Select Collection…
-                </option>
-
-                {collections.map(collection => (
-                    <option key={collection.id} value={collection.id}>
-                        {collection.name}
+                {!collection && (
+                    <option value="" disabled>
+                        Select Collection…
                     </option>
-                ))}
+                )}
 
-                {isAllowedToCreateCollection && <option value={NEW_COLLECTION_VALUE}>New Collection</option>}
+                {isAllowedToCreateCollection && <option value={NEW_COLLECTION_VALUE}>New Collection...</option>}
+
+                {collections.length > 0 && <option disabled>──────────</option>}
+                {collections.length > 0 &&
+                    collections.map(collection => (
+                        <option key={collection.id} value={collection.id}>
+                            {collection.name}
+                        </option>
+                    ))}
             </select>
         </div>
     )

@@ -13,19 +13,9 @@
     align-items: center;
     text-align: left;
     height: 100%;
-    gap: 8px;
-}
-
-.import-collection .padded {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-    flex: 0 0 auto;
-
-    width: 100%;
-    padding-left: 10px;
-    padding-right: 10px;
+    gap: 15px;
+    padding-left: 15px;
+    padding-right: 15px;
 }
 
 .create-collection {
@@ -146,8 +136,16 @@
 .collection-selector {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
+}
+
+.collection-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
 }
 
 .collection-select {

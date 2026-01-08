@@ -12,27 +12,23 @@ interface HomeProps {
 export function Home({ collection, onCollectionChange, onFileSelected, forceCreateCollection }: HomeProps) {
     return (
         <div className="import-collection">
-            <hr className="sticky-divider" />
+            <hr />
 
-            <div className="padded">
-                <CollectionSelector
-                    forceCreate={forceCreateCollection}
-                    collection={collection}
-                    onCollectionChange={onCollectionChange}
-                />
-            </div>
+            <CollectionSelector
+                forceCreate={forceCreateCollection}
+                collection={collection}
+                onCollectionChange={onCollectionChange}
+            />
 
-            <hr className="sticky-divider" />
+            <hr />
 
-            <div className="padded">
-                {collection ? (
-                    <SelectCSVFile onFileSelected={onFileSelected} />
-                ) : (
-                    <div className="intro no-border">
-                        <p>Select a collection to continue...</p>
-                    </div>
-                )}
-            </div>
+            {collection ? (
+                <SelectCSVFile onFileSelected={onFileSelected} />
+            ) : (
+                <div className="intro no-border">
+                    <p>Select a collection to continue...</p>
+                </div>
+            )}
         </div>
     )
 }

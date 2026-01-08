@@ -77,7 +77,9 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
     if (isCreatingNew) {
         return (
             <div className="collection-selector">
-                <CollectionIcon />
+                <div className="collection-icon-container">
+                    <CollectionIcon />
+                </div>
 
                 <input
                     ref={inputRef}
@@ -101,7 +103,9 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
 
     return (
         <div className="collection-selector">
-            <CollectionIcon />
+            <div className="collection-icon-container">
+                <CollectionIcon />
+            </div>
 
             <select className="collection-select" value={collection?.id ?? ""} onChange={e => void selectCollection(e)}>
                 {!collection && (

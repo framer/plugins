@@ -91,7 +91,6 @@ interface FieldMapperProps {
 interface FieldMapperRowProps {
     item: FieldMappingItem
     existingFields: Field[]
-    isSlug: boolean
     onToggleIgnored: () => void
     onSetIgnored: (ignored: boolean) => void
     onTargetChange: (targetFieldId: string | null) => void
@@ -101,7 +100,6 @@ interface FieldMapperRowProps {
 function FieldMapperRow({
     item,
     existingFields,
-    isSlug,
     onToggleIgnored,
     onSetIgnored,
     onTargetChange,
@@ -501,7 +499,6 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                             key={item.inferredField.columnName}
                             item={item}
                             existingFields={existingFields}
-                            isSlug={item.inferredField.columnName === selectedSlugFieldName}
                             onToggleIgnored={() => {
                                 toggleIgnored(item.inferredField.columnName)
                             }}

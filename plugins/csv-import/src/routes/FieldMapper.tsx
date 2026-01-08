@@ -127,7 +127,7 @@ function FieldMapperRow({
         <>
             <button
                 type="button"
-                className={`source-field ${isIgnored ? "ignored" : ""} ${isSlug ? "is-slug" : ""}`}
+                className={`source-field ${isIgnored ? "ignored" : ""}`}
                 aria-disabled={isIgnored}
                 onClick={() => {
                     onToggleIgnored()

@@ -15,12 +15,13 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
     const isAllowedToCreateCollection = useIsAllowedTo("createCollection")
     const collections = useCollections(collection)
     const [isCreatingNew, setIsCreatingNew] = useState(forceCreate)
-    const [newCollectionName, setNewCollectionName] = useState("")
+    const [newCollectionName, setNewCollectionName] = useState("Collection")
     const inputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         if (isCreatingNew && inputRef.current) {
             inputRef.current.focus()
+            inputRef.current.select()
         }
     }, [isCreatingNew])
 
@@ -29,7 +30,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
 
         if (value === NEW_COLLECTION_VALUE) {
             setIsCreatingNew(true)
-            setNewCollectionName("")
+            setNewCollectionName("Collection")
             return
         }
 
@@ -60,13 +61,13 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         await newCollection.setAsActive()
         onCollectionChange(newCollection)
         setIsCreatingNew(false)
-        setNewCollectionName("")
+        setNewCollectionName("Collection")
     }
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === "Escape") {
             setIsCreatingNew(false)
-            setNewCollectionName("")
+            setNewCollectionName("Collection")
         } else if (event.key === "Enter") {
             event.preventDefault()
             void handleCreateCollection()

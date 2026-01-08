@@ -171,8 +171,8 @@ function FieldMapperRow({
                     }
                 }}
             >
-                <option value="__create__">+ Create field</option>
-                <option value="__ignore__">− Ignore column</option>
+                <option value="__create__">New Field...</option>
+                {isIgnored && <option value="__ignore__"></option>}
                 <optgroup label="Existing fields">
                     {existingFields.map(field => (
                         <option key={field.id} value={field.id}>
@@ -585,8 +585,8 @@ export function FieldMapper({ collection, csvRecords, onSubmit, onCancel }: Fiel
                                         updateMissingFieldAction(item.field.id, e.target.value as MissingFieldAction)
                                     }}
                                 >
-                                    <option value="ignore">Keep field</option>
-                                    <option value="remove">Remove field</option>
+                                    <option value="ignore">Keep Field</option>
+                                    <option value="remove">Remove Field</option>
                                 </select>
                             </div>
                         ))}

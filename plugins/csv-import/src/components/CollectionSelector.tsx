@@ -43,7 +43,19 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         const trimmedName = newCollectionName.trim()
         if (!trimmedName) return
 
-        const newCollection = await framer.createCollection(trimmedName)
+        let newCollection: Collection
+        try {
+            newCollection = await framer.createCollection(trimmedName)
+        } catch (error) {
+            if (String(error).includes(`collection with the name "${trimmedName}" already exists`)) {
+                framer.notify(`A collection named "${trimmedName}" already exists. Please choose a different name.`, {
+                    variant: "error",
+                })
+            }
+
+            throw error
+        }
+
         await newCollection.setAsActive()
         onCollectionChange(newCollection)
         setIsCreatingNew(false)
@@ -77,7 +89,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
                             void handleCreateCollection()
                         }
                     }}
-                    placeholder="Collection name"
+                    placeholder="Enter new collection name..."
                 />
             </div>
         )

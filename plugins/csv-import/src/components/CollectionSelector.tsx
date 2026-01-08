@@ -15,6 +15,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
     const isAllowedToCreateCollection = useIsAllowedTo("createCollection")
     const collections = useCollections(collection)
     const [isCreatingNew, setIsCreatingNew] = useState(forceCreate)
+    const [creationError, setCreationError] = useState<string | undefined>(undefined)
     const [newCollectionName, setNewCollectionName] = useState("Collection")
     const inputRef = useRef<HTMLInputElement>(null)
 
@@ -50,13 +51,15 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
             newCollection = await framer.createCollection(trimmedName)
         } catch (error) {
             if (String(error).includes(`collection with the name "${trimmedName}" already exists`)) {
-                framer.notify(`A collection named "${trimmedName}" already exists. Please choose a different name.`, {
-                    variant: "error",
-                })
+                setCreationError("Name already exists")
+            } else {
+                setCreationError("Unknown error")
             }
 
             throw error
         }
+
+        setCreationError(undefined)
 
         await newCollection.setAsActive()
         onCollectionChange(newCollection)
@@ -76,27 +79,31 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
 
     if (isCreatingNew) {
         return (
-            <div className="collection-selector">
-                <div className="collection-icon-container">
-                    <CollectionIcon />
+            <div className="collection-creation-container">
+                <div className="collection-selector">
+                    <div className="collection-icon-container">
+                        <CollectionIcon />
+                    </div>
+
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        className={creationError ? "collection-select error" : "collection-select"}
+                        value={newCollectionName}
+                        onChange={e => {
+                            setNewCollectionName(e.target.value)
+                        }}
+                        onKeyDown={handleKeyDown}
+                        onBlur={() => {
+                            if (newCollectionName.trim()) {
+                                void handleCreateCollection()
+                            }
+                        }}
+                        placeholder="Enter new collection name..."
+                    />
                 </div>
 
-                <input
-                    ref={inputRef}
-                    type="text"
-                    className="collection-select"
-                    value={newCollectionName}
-                    onChange={e => {
-                        setNewCollectionName(e.target.value)
-                    }}
-                    onKeyDown={handleKeyDown}
-                    onBlur={() => {
-                        if (newCollectionName.trim()) {
-                            void handleCreateCollection()
-                        }
-                    }}
-                    placeholder="Enter new collection name..."
-                />
+                {creationError && <div className="error-message">{creationError}</div>}
             </div>
         )
     }

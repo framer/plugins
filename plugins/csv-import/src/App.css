@@ -148,10 +148,28 @@
     height: 20px;
 }
 
+.collection-creation-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 5px;
+}
+
 .collection-select {
     flex: 1;
     min-width: 0;
     height: 28px;
+    border: 1px solid transparent;
+}
+.collection-select.error {
+    border-color: #f36;
+    color: #f36;
+    background-color: color-mix(in srgb, #f36 10%, transparent);
+}
+
+.error-message {
+    color: #f36;
+    padding-left: 30px;
 }
 
 .create-collection-button {

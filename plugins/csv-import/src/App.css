@@ -271,13 +271,15 @@ select:not(:disabled) {
 /* Field Mapper */
 
 .field-mapper {
+    display: flex;
+    flex-direction: column;
     height: 100%;
 }
 
 .field-mapper form {
-    height: 100%;
     display: flex;
     flex-direction: column;
+    flex: 1;
     gap: 20px;
 
     padding: 10px 15px 0;

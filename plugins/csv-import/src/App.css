@@ -42,7 +42,7 @@
 }
 
 .manage-conflicts {
-    gap: 10px;
+    gap: 15px;
 }
 
 .actions {
@@ -236,6 +236,7 @@
 .manage-conflicts .content {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 10px;
     height: 100%;
 }
@@ -243,16 +244,26 @@
 .manage-conflicts .message {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    flex: 1;
     gap: 5px;
+}
+
+.manage-conflicts .message p {
+    opacity: 0.5;
+    max-width: 200px;
 }
 
 .manage-conflicts .apply-to-all {
     display: flex;
     align-items: center;
+
     gap: 8px;
     cursor: pointer;
     width: fit-content;
-    color: var(--framer-color-text-secondary);
+    color: var(--framer-color-text-tertiary);
 }
 
 select:disabled {

@@ -7,21 +7,25 @@ interface ManageConflictsProps {
 }
 
 export function ManageConflicts({ records, onAllConflictsResolved }: ManageConflictsProps) {
-    const [recordsIterator] = useState(() => records.filter(record => record.action === "conflict").values())
-    const [currentRecord, setCurrentRecord] = useState(() => recordsIterator.next().value)
+    const [remainingRecords, setRemainingRecords] = useState(() =>
+        records.filter(record => record.action === "conflict")
+    )
+    const currentRecord = remainingRecords[0]
 
     const [applyToAll, setApplyToAll] = useState(false)
 
     const fixedRecords = useRef<ImportItem[]>(records)
 
     const moveToNextRecord = useCallback(() => {
-        const next = recordsIterator.next()
-        if (next.done) {
-            onAllConflictsResolved(fixedRecords.current)
-        } else {
-            setCurrentRecord(next.value)
-        }
-    }, [recordsIterator, onAllConflictsResolved])
+        setRemainingRecords(prev => {
+            if (prev.length === 0) {
+                onAllConflictsResolved(fixedRecords.current)
+                return prev
+            }
+            const [, ...rest] = prev
+            return rest
+        })
+    }, [onAllConflictsResolved])
 
     const setAction = useCallback(
         (record: ImportItem, action: "onConflictUpdate" | "onConflictSkip") => {
@@ -47,18 +51,16 @@ export function ManageConflicts({ records, onAllConflictsResolved }: ManageConfl
                 return
             }
 
-            let current = currentRecord
-            while (true) {
-                setAction(current, action)
-                const next = recordsIterator.next()
-                if (next.done) {
-                    onAllConflictsResolved(fixedRecords.current)
-                    break
+            setAction(currentRecord, action)
+            setRemainingRecords(prev => {
+                for (const record of prev) {
+                    setAction(record, action)
                 }
-                current = next.value
-            }
+                onAllConflictsResolved(fixedRecords.current)
+                return []
+            })
         },
-        [currentRecord, applyToAll, setAction, moveToNextRecord, recordsIterator, onAllConflictsResolved]
+        [currentRecord, applyToAll, setAction, moveToNextRecord, onAllConflictsResolved]
     )
 
     if (!currentRecord) return null
@@ -73,8 +75,10 @@ export function ManageConflicts({ records, onAllConflictsResolved }: ManageConfl
         >
             <div className="content">
                 <div className="message">
-                    <span style={{ color: "var(--framer-color-text)", fontWeight: 600 }}>"{currentRecord.slug}"</span>
-                    <p>An item with this slug field value already exists in this Collection.</p>
+                    <span style={{ color: "var(--framer-color-text)", fontWeight: 600 }}>
+                        Slug: "{currentRecord.slug}"
+                    </span>
+                    <p>An item with this slug value already exists.</p>
                 </div>
 
                 <label className="apply-to-all">
@@ -86,7 +90,7 @@ export function ManageConflicts({ records, onAllConflictsResolved }: ManageConfl
                             setApplyToAll(event.currentTarget.checked)
                         }}
                     />
-                    Apply to all
+                    All ({remainingRecords.length} items)
                 </label>
             </div>
 
@@ -99,10 +103,10 @@ export function ManageConflicts({ records, onAllConflictsResolved }: ManageConfl
                         applyAction("onConflictSkip")
                     }}
                 >
-                    Skip Item
+                    Skip
                 </button>
                 <button type="submit" className="framer-button-primary">
-                    Update Item
+                    Update
                 </button>
             </div>
         </form>

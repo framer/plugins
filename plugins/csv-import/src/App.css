@@ -10,12 +10,22 @@
 .import-collection {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    align-items: center;
     text-align: left;
     height: 100%;
-    padding: 10px;
-    align-items: center;
     gap: 8px;
+}
+
+.import-collection .padded {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    flex: 0 0 auto;
+
+    width: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
 }
 
 .create-collection {

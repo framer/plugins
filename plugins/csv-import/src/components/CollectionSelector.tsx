@@ -97,12 +97,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
 
     return (
         <div className="collection-selector">
-            <select
-                className="collection-select"
-                value={collection?.id ?? ""}
-                onChange={e => void selectCollection(e)}
-                autoFocus
-            >
+            <select className="collection-select" value={collection?.id ?? ""} onChange={e => void selectCollection(e)}>
                 {!collection && (
                     <option value="" disabled>
                         Select Collection…

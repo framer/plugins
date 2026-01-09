@@ -1,7 +1,6 @@
-import "framer-plugin/framer.css"
-
-import { framer, $framerInternal } from "framer-plugin"
 import React from "react"
+import "framer-plugin/framer.css"
+import { $framerInternal, framer } from "framer-plugin"
 import ReactDOM from "react-dom/client"
 import { App } from "./App.tsx"
 import { MiniRouterProvider } from "./minirouter.tsx"

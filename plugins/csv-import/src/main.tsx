@@ -15,7 +15,7 @@ if (collection && collection.managedBy !== "user") {
 
 // This API is unstable and will change without warning, we do not recommend using it until we publish a stable version.
 const initialState = framer[$framerInternal.initialState]
-const shouldCreate = initialState.action === "collection/import"
+const shouldCreate = initialState.intent === "collection/add"
 
 ReactDOM.createRoot(root).render(
     <React.StrictMode>

@@ -458,14 +458,26 @@ select:not(:disabled) {
     flex-shrink: 1;
 }
 
-.field-mapper .field-input:user-invalid {
+.field-mapper .field-input[disabled] {
+    opacity: 0.5;
+}
+
+.field-mapper .slug-field-input {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999999' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 28px;
+}
+
+.field-mapper .slug-field-input:user-invalid {
     color: #f36;
     background-color: color-mix(in srgb, #f36 10%, transparent);
     box-shadow: inset 0 0 0 1px #f36;
-}
-
-.field-mapper .field-input[disabled] {
-    opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ff3366' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
 }
 
 .field-mapper .field-type {

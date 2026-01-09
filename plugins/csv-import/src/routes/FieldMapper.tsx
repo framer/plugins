@@ -471,7 +471,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                     <select
                         required
                         name="slugField"
-                        className="field-input"
+                        className="slug-field-input"
                         value={selectedSlugFieldName ?? ""}
                         onChange={event => {
                             setSelectedSlugFieldName(event.target.value)

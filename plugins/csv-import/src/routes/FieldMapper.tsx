@@ -170,13 +170,13 @@ function FieldMapperRow({
             >
                 <option value="__create__">New Field...</option>
                 {isIgnored && <option value="__ignore__"></option>}
-                <optgroup label="Existing fields">
-                    {existingFields.map(field => (
-                        <option key={field.id} value={field.id}>
-                            {field.name}
-                        </option>
-                    ))}
-                </optgroup>
+
+                {existingFields.length > 0 && <option disabled>-------------------------</option>}
+                {existingFields.map(field => (
+                    <option key={field.id} value={field.id}>
+                        {field.name}
+                    </option>
+                ))}
             </select>
             <select
                 className="field-type"
@@ -479,7 +479,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                     >
                         {!selectedSlugFieldName && (
                             <option value="" disabled>
-                                Select a slug field...
+                                Select...
                             </option>
                         )}
                         {possibleSlugFields.map(field => (

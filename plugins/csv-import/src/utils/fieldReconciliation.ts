@@ -1,5 +1,6 @@
 import type { Collection, CreateField, Field } from "framer-plugin"
-import type { FieldMappingItem, MissingFieldItem } from "../routes/FieldMapper"
+import type { FieldMappingItem } from "../components/FieldMapperRow"
+import type { MissingFieldItem } from "../routes/FieldMapper"
 
 export async function removeFieldsFromCms(collection: Collection, missingFields: MissingFieldItem[]): Promise<void> {
     const fieldsToRemove = missingFields.filter(m => m.action === "remove").map(m => m.field.id)

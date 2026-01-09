@@ -7,8 +7,7 @@ import {
     type FieldDataInput,
     framer,
 } from "framer-plugin"
-
-import type { FieldMappingItem } from "../routes/FieldMapper"
+import type { FieldMappingItem } from "../components/FieldMapperRow"
 import { assert } from "./assert"
 import type { CSVRecord } from "./parseCSV"
 

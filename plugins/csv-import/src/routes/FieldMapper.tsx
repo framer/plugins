@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { FieldMapperRow, type FieldMappingItem } from "../components/FieldMapperRow"
 import { labelByFieldType } from "../utils/fieldLabels"
 import { isTypeCompatible } from "../utils/typeCompatibility"
-import { type InferredField, inferFieldsFromCSV } from "../utils/typeInference"
+import { inferFieldsFromCSV } from "../utils/typeInference"
 
 export type MissingFieldAction = "ignore" | "remove"
 

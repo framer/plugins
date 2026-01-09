@@ -152,9 +152,6 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                             missingFields: opts.missingFields,
                         })
                     }
-                    onCancel={async () => {
-                        await navigate({ uid: "home", opts: undefined })
-                    }}
                 />
             )
         case "manage-conflicts": {

@@ -1,7 +1,7 @@
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from "react"
 
 interface SelectCSVFileProps {
-    disabled?: boolean
+    disabled: boolean
     onFileSelected: (csvContent: string) => Promise<void>
 }
 
@@ -9,6 +9,8 @@ export function SelectCSVFile({ onFileSelected, disabled }: SelectCSVFileProps) 
     const form = useRef<HTMLFormElement>(null)
     const inputOpenedFromImportButton = useRef(false)
     const [isDragging, setIsDragging] = useState(false)
+
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         if (disabled) {
@@ -36,9 +38,15 @@ export function SelectCSVFile({ onFileSelected, disabled }: SelectCSVFileProps) 
             setIsDragging(false)
 
             const file = event.dataTransfer?.files[0]
-            if (!file?.name.endsWith(".csv")) return
+            if (!file?.name.endsWith(".csv")) {
+                return
+            }
 
-            const input = document.getElementById("file-input") as HTMLInputElement
+            const input = fileInputRef.current
+            if (!input) {
+                return
+            }
+
             const dataTransfer = new DataTransfer()
             dataTransfer.items.add(file)
             input.files = dataTransfer.files
@@ -131,6 +139,7 @@ export function SelectCSVFile({ onFileSelected, disabled }: SelectCSVFileProps) 
                     opacity: 0,
                     cursor: "pointer",
                 }}
+                ref={fileInputRef}
             />
 
             {isDragging && (
@@ -152,8 +161,7 @@ export function SelectCSVFile({ onFileSelected, disabled }: SelectCSVFileProps) 
                                 event.preventDefault()
                                 inputOpenedFromImportButton.current = true
 
-                                const input = document.getElementById("file-input") as HTMLInputElement
-                                input.click()
+                                fileInputRef.current?.click()
                             }}
                         >
                             Upload File

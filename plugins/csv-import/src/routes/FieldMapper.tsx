@@ -187,7 +187,7 @@ function FieldMapperRow({
                 <option value="__create__">New Field...</option>
                 {isIgnored && <option value="__ignore__"></option>}
 
-                {existingFields.length > 0 && <option disabled>-------------------------</option>}
+                {existingFields.length > 0 && <hr />}
                 {existingFields.map(field => (
                     <option key={field.id} value={field.id}>
                         {field.name}
@@ -253,15 +253,11 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                     const matchingField = fields.find(f => f.name.toLowerCase() === inferredField.name.toLowerCase())
 
                     if (matchingField) {
-                        // Found a match - check type compatibility
                         const hasTypeMismatch = !isTypeCompatible(inferredField.inferredType, matchingField.type)
-                        if (hasTypeMismatch) {
-                            console.log(hasTypeMismatch, inferredField, matchingField)
-                        }
                         mappedFieldIds.add(matchingField.id)
                         return {
                             inferredField,
-                            action: "map" as const,
+                            action: "map",
                             targetFieldId: matchingField.id,
                             hasTypeMismatch,
                         }
@@ -270,7 +266,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                     // No match - create new field
                     return {
                         inferredField,
-                        action: "create" as const,
+                        action: "create",
                         hasTypeMismatch: false,
                     }
                 })

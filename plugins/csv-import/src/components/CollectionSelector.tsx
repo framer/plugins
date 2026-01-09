@@ -59,7 +59,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         onCollectionChange(selectedCollection)
     }
 
-    const handleCreateCollection = async () => {
+    const createCollection = async () => {
         const trimmedName = newCollectionName.trim()
         if (!trimmedName) return
 
@@ -74,7 +74,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         try {
             newCollection = await framer.createCollection(trimmedName)
         } catch (error) {
-            if (String(error).includes(`collection with the name "${trimmedName}" already exists`)) {
+            if (/collection.*already exists/.test(String(error))) {
                 setCreationError("Name already exists")
             } else {
                 setCreationError("Unknown error")
@@ -98,7 +98,25 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
             setCreationError(undefined)
         } else if (event.key === "Enter") {
             event.preventDefault()
-            void handleCreateCollection()
+            void createCollection()
+        }
+    }
+
+    function handleCollectionNameChange(e: ChangeEvent<HTMLInputElement>) {
+        const value = e.target.value
+        setNewCollectionName(value)
+
+        // Validate for duplicate names while typing
+        const trimmedValue = value.trim()
+        if (trimmedValue) {
+            const isDuplicate = collections.some(c => c.name.toLowerCase() === trimmedValue.toLowerCase())
+            if (isDuplicate) {
+                setCreationError("Name already exists")
+            } else {
+                setCreationError(undefined)
+            }
+        } else {
+            setCreationError(undefined)
         }
     }
 
@@ -115,29 +133,11 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
                         type="text"
                         className={creationError ? "collection-select error" : "collection-select"}
                         value={newCollectionName}
-                        onChange={e => {
-                            const value = e.target.value
-                            setNewCollectionName(value)
-
-                            // Validate for duplicate names while typing
-                            const trimmedValue = value.trim()
-                            if (trimmedValue) {
-                                const isDuplicate = collections.some(
-                                    c => c.name.toLowerCase() === trimmedValue.toLowerCase()
-                                )
-                                if (isDuplicate) {
-                                    setCreationError("Name already exists")
-                                } else {
-                                    setCreationError(undefined)
-                                }
-                            } else {
-                                setCreationError(undefined)
-                            }
-                        }}
+                        onChange={handleCollectionNameChange}
                         onKeyDown={handleKeyDown}
                         onBlur={() => {
                             if (newCollectionName.trim()) {
-                                void handleCreateCollection()
+                                void createCollection()
                             }
                         }}
                         placeholder="Enter new collection name..."
@@ -164,17 +164,12 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
 
                 {isAllowedToCreateCollection && <option value={NEW_COLLECTION_VALUE}>New Collection...</option>}
 
-                {collections.length > 0 && (
-                    <option style={{ border: "1px solid red" }} disabled>
-                        --------------------------------
+                {collections.length > 0 && <hr />}
+                {collections.map(collection => (
+                    <option key={collection.id} value={collection.id}>
+                        {collection.name}
                     </option>
-                )}
-                {collections.length > 0 &&
-                    collections.map(collection => (
-                        <option key={collection.id} value={collection.id}>
-                            {collection.name}
-                        </option>
-                    ))}
+                ))}
             </select>
         </div>
     )

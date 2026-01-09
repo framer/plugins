@@ -480,6 +480,11 @@ select:not(:disabled) {
     padding: 0px 16px 1px 8px;
 }
 
+[data-framer-theme="light"] .field-mapper .slug-field-input:user-invalid {
+    background-color: color-mix(in srgb, #f36 20%, transparent);
+    background-image: url(data:image/svg+xml;charset=utf-8;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxwYXRoIGQ9Ik0gMCA2IEwgMyAzIEwgMCAwIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyLjUgMSkgcm90YXRlKDkwIDEuNSAzKSIgZmlsbD0idHJhbnNwYXJlbnQiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2U9IiNmZjMzNjYiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PC9wYXRoPjwvc3ZnPg==);
+}
+
 .field-mapper .field-type {
     width: 100%;
 }

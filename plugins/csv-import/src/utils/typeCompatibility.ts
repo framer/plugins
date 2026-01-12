@@ -1,6 +1,6 @@
-import type { Field } from "framer-plugin"
+import type { VirtualFieldType } from "./virtualTypes"
 
-const VALID_COLLECTION_REFERENCE_SLUGS: Field["type"][] = ["string", "number"]
+const VALID_COLLECTION_REFERENCE_SLUGS: VirtualFieldType[] = ["string", "number"]
 
 /**
  * Check if a CSV column's inferred type can be imported into a target field type.
@@ -11,8 +11,14 @@ const VALID_COLLECTION_REFERENCE_SLUGS: Field["type"][] = ["string", "number"]
  * - Image: accepts image, link, string
  * - File: accepts file, image, link, string
  * - Number, Boolean, Date, Color: only accept their own type
+ * - Date and DateTime: are compatible with each other
  */
-export function isTypeCompatible(sourceType: Field["type"], targetType: Field["type"]): boolean {
+export function isTypeCompatible(sourceType: VirtualFieldType, targetType: VirtualFieldType): boolean {
+    // Date and DateTime are compatible with each other
+    if ((sourceType === "date" || sourceType === "datetime") && (targetType === "date" || targetType === "datetime")) {
+        return true
+    }
+
     // Same type is always compatible
     if (sourceType === targetType) {
         return true

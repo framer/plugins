@@ -5,6 +5,8 @@ import { FieldMapperRow, type FieldMappingItem } from "../components/FieldMapper
 import { labelByFieldType } from "../utils/fieldLabels"
 import { isTypeCompatible } from "../utils/typeCompatibility"
 import { inferFieldsFromCSV } from "../utils/typeInference"
+import type { VirtualFieldType } from "../utils/virtualTypes"
+import { sdkTypeToVirtual } from "../utils/virtualTypes"
 
 export type MissingFieldAction = "ignore" | "remove"
 
@@ -178,8 +180,9 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
 
                     // Map to existing field
                     const targetField = existingFields.find(f => f.id === targetFieldId)
-                    const hasTypeMismatch = targetField
-                        ? !isTypeCompatible(item.inferredField.inferredType, targetField.type)
+                    const targetVirtualType = targetField ? sdkTypeToVirtual(targetField) : null
+                    const hasTypeMismatch = targetField && targetVirtualType
+                        ? !isTypeCompatible(item.inferredField.inferredType, targetVirtualType)
                         : false
 
                     return {
@@ -216,7 +219,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
         setMissingFields(prev => prev.map(item => (item.field.id === fieldId ? { ...item, action } : item)))
     }, [])
 
-    const updateType = useCallback((columnName: string, type: Field["type"]) => {
+    const updateType = useCallback((columnName: string, type: VirtualFieldType) => {
         setMappings(prev =>
             prev.map(item => {
                 if (item.inferredField.columnName !== columnName) return item

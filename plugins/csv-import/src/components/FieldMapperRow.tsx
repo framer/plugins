@@ -1,6 +1,8 @@
 import type { Field } from "framer-plugin"
 import { labelByFieldType } from "../utils/fieldLabels"
 import type { InferredField } from "../utils/typeInference"
+import type { VirtualFieldType } from "../utils/virtualTypes"
+import { sdkTypeToVirtual } from "../utils/virtualTypes"
 
 export type MappingAction = "create" | "map" | "ignore"
 
@@ -12,7 +14,7 @@ export interface FieldMappingItem {
     /** Whether types are compatible when mapping */
     hasTypeMismatch: boolean
     /** Override the inferred type when creating a new field */
-    overrideType?: Field["type"]
+    overrideType?: VirtualFieldType
 }
 
 interface FieldMapperRowProps {
@@ -21,7 +23,7 @@ interface FieldMapperRowProps {
     onToggleIgnored: () => void
     onSetIgnored: (ignored: boolean) => void
     onTargetChange: (targetFieldId: string | null) => void
-    onTypeChange: (type: Field["type"]) => void
+    onTypeChange: (type: VirtualFieldType) => void
 }
 
 export function FieldMapperRow({
@@ -40,9 +42,7 @@ export function FieldMapperRow({
 
     // Determine the type to display in the Type selector
     const displayType =
-        action === "map" && targetField
-            ? targetField.type // Show existing field's type when mapping
-            : (overrideType ?? inferredField.inferredType) // Show inferred/override type when creating
+        action === "map" && targetField ? sdkTypeToVirtual(targetField) : (overrideType ?? inferredField.inferredType)
 
     // Type selector is editable only when creating a new field with multiple allowed types
     const canEditType = action === "create" && inferredField.allowedTypes.length > 1
@@ -110,7 +110,7 @@ export function FieldMapperRow({
                 disabled={isIgnored || !canEditType}
                 value={displayType}
                 onChange={e => {
-                    onTypeChange(e.target.value as Field["type"])
+                    onTypeChange(e.target.value as VirtualFieldType)
                 }}
             >
                 {canEditType ? (

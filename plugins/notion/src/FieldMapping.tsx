@@ -10,10 +10,10 @@ import { useEffect, useMemo, useState } from "react"
 import {
     type FieldId,
     type FieldInfo,
-    type VirtualFieldType,
     getDatabaseFieldsInfo,
     getPossibleSlugFieldIds,
     isMissingCollection,
+    type VirtualFieldType,
 } from "./api"
 import {
     type DatabaseIdMap,

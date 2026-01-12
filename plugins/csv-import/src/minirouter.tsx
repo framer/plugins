@@ -1,0 +1,76 @@
+import { type Collection, framer, type UIOptions } from "framer-plugin"
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import type { ImportItem, ImportPayload } from "./utils/prepareImportPayload"
+
+type Route =
+    | {
+          uid: "home"
+          opts: { forceCreateCollection?: boolean } | undefined
+      }
+    | {
+          uid: "field-mapper"
+          opts: {
+              collection: Collection
+              csvRecords: Record<string, string>[]
+          }
+      }
+    | {
+          uid: "manage-conflicts"
+          opts: {
+              conflicts: ImportPayload["items"]
+              result: ImportPayload
+              onComplete: (items: ImportItem[]) => void
+          }
+      }
+
+const PRIMARY_SIZE: UIOptions = { width: 260, height: 330, resizable: false }
+const SECONDARY_SIZE: UIOptions = { width: 550, height: 600, resizable: true }
+const defaultUiOptions = {
+    home: PRIMARY_SIZE,
+    "field-mapper": SECONDARY_SIZE,
+    "manage-conflicts": PRIMARY_SIZE,
+} as Record<Route["uid"], UIOptions | undefined>
+
+interface MiniRouterContextType {
+    currentRoute: Route
+    navigate: (route: Route) => Promise<void>
+}
+
+const MiniRouterContext = createContext<MiniRouterContextType | undefined>(undefined)
+
+interface MiniRouterProviderProps {
+    children: ReactNode
+    initialRoute: Route
+}
+
+export function MiniRouterProvider({ children, initialRoute }: MiniRouterProviderProps) {
+    const [currentRoute, setCurrentRoute] = useState<Route>(initialRoute)
+
+    useEffect(() => {
+        const uiOptions = defaultUiOptions[currentRoute.uid] ?? PRIMARY_SIZE
+        void framer.showUI(uiOptions)
+    }, [currentRoute.uid])
+
+    // eslint-disable-next-line @typescript-eslint/require-await -- async for forward compatibility
+    const navigate = useCallback(async (route: Route) => {
+        setCurrentRoute(route)
+    }, [])
+
+    const value: MiniRouterContextType = useMemo(() => {
+        return {
+            currentRoute,
+            navigate,
+        }
+    }, [currentRoute, navigate])
+
+    return <MiniRouterContext.Provider value={value}>{children}</MiniRouterContext.Provider>
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const useMiniRouter = () => {
+    const context = useContext(MiniRouterContext)
+    if (context === undefined) {
+        throw new Error("useMiniRouter must be used within a MiniRouterProvider")
+    }
+    return context
+}

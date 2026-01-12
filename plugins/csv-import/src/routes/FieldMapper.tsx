@@ -181,9 +181,10 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                     // Map to existing field
                     const targetField = existingFields.find(f => f.id === targetFieldId)
                     const targetVirtualType = targetField ? sdkTypeToVirtual(targetField) : null
-                    const hasTypeMismatch = targetField && targetVirtualType
-                        ? !isTypeCompatible(item.inferredField.inferredType, targetVirtualType)
-                        : false
+                    const hasTypeMismatch =
+                        targetField && targetVirtualType
+                            ? !isTypeCompatible(item.inferredField.inferredType, targetVirtualType)
+                            : false
 
                     return {
                         ...item,

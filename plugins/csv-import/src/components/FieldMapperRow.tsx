@@ -42,7 +42,9 @@ export function FieldMapperRow({
 
     // Determine the type to display in the Type selector
     const displayType =
-        action === "map" && targetField ? sdkTypeToVirtual(targetField) : (overrideType ?? inferredField.inferredType)
+        action === "map" && targetField
+            ? sdkTypeToVirtual(targetField) // Show existing field's type when mapping
+            : (overrideType ?? inferredField.inferredType) // Show inferred/override type when creating
 
     // Type selector is editable only when creating a new field with multiple allowed types
     const canEditType = action === "create" && inferredField.allowedTypes.length > 1

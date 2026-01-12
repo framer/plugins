@@ -1,10 +1,10 @@
-import type { Field } from "framer-plugin"
+import type { VirtualFieldType } from "./virtualTypes"
 
 export interface InferredField {
     name: string
     columnName: string
-    inferredType: Field["type"]
-    allowedTypes: Field["type"][]
+    inferredType: VirtualFieldType
+    allowedTypes: VirtualFieldType[]
 }
 
 const BOOLEAN_TRUTHY_VALUES = /^(1|y(?:es)?|true)$/iu
@@ -13,10 +13,27 @@ const URL_PATTERN = /^https?:\/\/.+/i
 const COLOR_PATTERN = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i
 const IMAGE_URL_PATTERN = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|svg)$/i
 
+function hasTimeComponent(dateStrings: string[]): boolean {
+    return dateStrings.some(dateStr => {
+        const date = new Date(dateStr)
+        if (isNaN(date.getTime())) {
+            return false
+        }
+
+        // Check hours, minutes, seconds, milliseconds using UTC to avoid timezone issues
+        return (
+            date.getUTCHours() !== 0 ||
+            date.getUTCMinutes() !== 0 ||
+            date.getUTCSeconds() !== 0 ||
+            date.getUTCMilliseconds() !== 0
+        )
+    })
+}
+
 /**
  * Infer the field type from CSV data
  */
-function inferFieldType(values: (string | null)[]): Field["type"] {
+function inferFieldType(values: (string | null)[]): VirtualFieldType {
     const nonNullValues = values.filter((v): v is string => v !== null && v.trim() !== "")
 
     if (nonNullValues.length === 0) {
@@ -52,7 +69,9 @@ function inferFieldType(values: (string | null)[]): Field["type"] {
                 /\d{1,2}-\d{1,2}-\d{2,4}/.test(v)
         )
         if (hasDateLikeFormat) {
-            return "date"
+            // Check if values contain time components
+            const hasTime = hasTimeComponent(nonNullValues)
+            return hasTime ? "datetime" : "date"
         }
     }
 
@@ -93,14 +112,15 @@ function inferFieldType(values: (string | null)[]): Field["type"] {
 /**
  * Get allowed types for a field based on its inferred type
  */
-function getAllowedTypes(inferredType: Field["type"]): Field["type"][] {
+function getAllowedTypes(inferredType: VirtualFieldType): VirtualFieldType[] {
     // Define which types can be converted to which other types
-    const typeCompatibility: Record<Field["type"], Field["type"][]> = {
+    const typeCompatibility: Record<VirtualFieldType, VirtualFieldType[]> = {
         string: ["string", "formattedText", "link", "color", "file", "image"],
         formattedText: ["formattedText", "string"],
         number: ["number", "string"],
         boolean: ["boolean", "string"],
-        date: ["date", "string"],
+        date: ["date", "datetime", "string"],
+        datetime: ["datetime", "date", "string"],
         color: ["color", "string"],
         link: ["link", "string"],
         image: ["image", "file", "link", "string"],

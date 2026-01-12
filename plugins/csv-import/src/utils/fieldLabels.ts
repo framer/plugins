@@ -1,8 +1,9 @@
-import type { Field } from "framer-plugin"
+import type { VirtualFieldType } from "./virtualTypes"
 
-export const labelByFieldType: Record<Field["type"], string> = {
+export const labelByFieldType: Record<VirtualFieldType, string> = {
     boolean: "Toggle",
     date: "Date",
+    datetime: "DateTime",
     number: "Number",
     formattedText: "Formatted Text",
     color: "Color",

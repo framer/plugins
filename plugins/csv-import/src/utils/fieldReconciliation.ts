@@ -1,6 +1,7 @@
 import type { Collection, CreateField, Field } from "framer-plugin"
 import type { FieldMappingItem } from "../components/FieldMapperRow"
 import type { MissingFieldItem } from "../routes/FieldMapper"
+import type { VirtualFieldType } from "./virtualTypes"
 
 export async function removeFieldsFromCms(collection: Collection, missingFields: MissingFieldItem[]): Promise<void> {
     const fieldsToRemove = missingFields.filter(m => m.action === "remove").map(m => m.field.id)
@@ -19,7 +20,6 @@ export async function createNewFieldsInCms(collection: Collection, mappings: Fie
         })
         .filter((fieldConfig): fieldConfig is CreateField => fieldConfig !== null)
 
-    // Add new fields using collection.addFields()
     if (fieldsToAdd.length > 0) {
         await collection.addFields(fieldsToAdd)
     }
@@ -28,7 +28,7 @@ export async function createNewFieldsInCms(collection: Collection, mappings: Fie
 /**
  * Create a field configuration object for adding a new field
  */
-function createFieldConfig(type: Field["type"], name: string): CreateField | null {
+function createFieldConfig(type: VirtualFieldType, name: string): CreateField | null {
     switch (type) {
         case "string":
             return { type: "string", name }
@@ -43,7 +43,10 @@ function createFieldConfig(type: Field["type"], name: string): CreateField | nul
             return { type: "boolean", name }
 
         case "date":
-            return { type: "date", name }
+            return { type: "date", name, displayTime: false }
+
+        case "datetime":
+            return { type: "date", name, displayTime: true }
 
         case "color":
             return { type: "color", name }

@@ -230,7 +230,6 @@ export async function prepareImportPayload(opts: ProcessRecordsWithFieldMappingO
         }
     }
 
-    // TODO: QA draft functionality
     // Check if CSV has a draft column
     const firstRecord = opts.csvRecords[0]
     assert(firstRecord, "No records were found in your CSV.")
@@ -261,6 +260,12 @@ export async function prepareImportPayload(opts: ProcessRecordsWithFieldMappingO
             const draftValue = findRecordValue(record, ":draft")
             if (draftValue && draftValue.trim() !== "") {
                 draft = BOOLEAN_TRUTHY_VALUES.test(draftValue.trim())
+            }
+        } else {
+            // Preserve existing draft value if no draft column in CSV
+            const existingItem = existingItemsBySlug.get(slug)
+            if (existingItem) {
+                draft = existingItem.draft
             }
         }
 

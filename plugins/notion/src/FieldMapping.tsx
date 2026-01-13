@@ -26,7 +26,7 @@ import {
 } from "./data"
 import { assert, syncMethods } from "./utils"
 
-const labelByFieldTypeOption: Record<ManagedCollectionField["type"] | "dateTime", string> = {
+const labelByFieldTypeOption: Record<VirtualFieldType, string> = {
     boolean: "Toggle",
     date: "Date",
     dateTime: "Date & Time",

@@ -78,13 +78,30 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                     }
                 })
 
-                setMappings(initialMappings)
-
                 const possibleSlugFields = calculatePossibleSlugFields(initialMappings, csvRecords)
                 const slugField = collection.slugFieldName
                     ? (possibleSlugFields.find(field => field.columnName === collection.slugFieldName) ??
                       possibleSlugFields[0])
                     : possibleSlugFields[0]
+
+                // If we found a column matching the collection's slugFieldName, set it to ignore to avoid duplicate slug fields
+                const finalMappings = initialMappings.map(mapping => {
+                    if (
+                        collection.slugFieldName &&
+                        mapping.inferredField.columnName === collection.slugFieldName &&
+                        slugField?.columnName === collection.slugFieldName
+                    ) {
+                        return {
+                            ...mapping,
+                            action: "ignore" as const,
+                            targetFieldId: undefined,
+                            hasTypeMismatch: false,
+                        }
+                    }
+                    return mapping
+                })
+
+                setMappings(finalMappings)
                 setSelectedSlugFieldName(slugField?.columnName ?? null)
 
                 // Find fields that exist in collection but are not mapped from CSV

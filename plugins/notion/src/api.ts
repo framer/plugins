@@ -83,7 +83,7 @@ export const supportedCMSTypeByNotionPropertyType = {
     relation: ["multiCollectionReference", "collectionReference"],
     unique_id: ["string", "number"],
     formula: ["string", "number", "boolean", "date", "dateTime", "link", "color"],
-} satisfies Partial<Record<NotionProperty["type"], readonly (ManagedCollectionField["type"] | "dateTime")[]>>
+} satisfies Partial<Record<NotionProperty["type"], readonly VirtualFieldType[]>>
 
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.
@@ -218,7 +218,7 @@ export async function getNotionDatabases() {
 
 export function assertFieldTypeMatchesPropertyType(
     propertyType: NotionProperty["type"],
-    fieldType: VirtualFieldType | ManagedCollectionField["type"]
+    fieldType: VirtualFieldType
 ): void {
     if (!isSupportedPropertyType(propertyType)) {
         throw new Error(`Property type '${propertyType}' is not supported.`)

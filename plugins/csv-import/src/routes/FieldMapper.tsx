@@ -81,7 +81,11 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                 setMappings(initialMappings)
 
                 const possibleSlugFields = calculatePossibleSlugFields(initialMappings, csvRecords)
-                setSelectedSlugFieldName(possibleSlugFields[0]?.columnName ?? null)
+                const slugField = collection.slugFieldName
+                    ? (possibleSlugFields.find(field => field.columnName === collection.slugFieldName) ??
+                      possibleSlugFields[0])
+                    : possibleSlugFields[0]
+                setSelectedSlugFieldName(slugField?.columnName ?? null)
 
                 // Find fields that exist in collection but are not mapped from CSV
                 const initialMissingFields: MissingFieldItem[] = fields

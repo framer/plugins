@@ -1,4 +1,4 @@
-import { Collection, framer } from "framer-plugin"
+import { type Collection, framer } from "framer-plugin"
 
 import { assert } from "./assert"
 import type { ImportPayload } from "./prepareImportPayload"

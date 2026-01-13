@@ -17,12 +17,7 @@ import { ImportError, type ImportItem, prepareImportPayload } from "./utils/prep
 
 export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
-    const hasAllPermissions = useIsAllowedTo(
-        "Collection.addItems",
-        "Collection.addFields",
-        "Collection.removeFields",
-        "createCollection"
-    )
+    const hasAllPermissions = useIsAllowedTo("Collection.addItems", "Collection.addFields", "Collection.removeFields")
 
     const { currentRoute, navigate } = useMiniRouter()
 

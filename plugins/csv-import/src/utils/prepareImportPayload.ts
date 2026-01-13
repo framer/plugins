@@ -1,6 +1,6 @@
 import {
-    Collection,
-    CollectionItem,
+    type Collection,
+    type CollectionItem,
     type CollectionItemInput,
     type Field,
     type FieldDataEntryInput,

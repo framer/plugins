@@ -29,7 +29,7 @@ interface FieldMapperProps {
 
 function calculatePossibleSlugFields(mappings: FieldMappingItem[], csvRecords: Record<string, string>[]) {
     return mappings
-        .filter(m => csvRecords.every(record => record[m.inferredField.columnName]) && m.action !== "ignore")
+        .filter(m => csvRecords.every(record => record[m.inferredField.columnName]))
         .map(m => m.inferredField)
 }
 
@@ -103,64 +103,41 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
         void loadFields()
     }, [collection, csvRecords])
 
-    const toggleIgnored = useCallback(
-        (columnName: string) => {
-            setMappings(prev => {
-                const currentItem = prev.find(item => item.inferredField.columnName === columnName)
-                const willBeIgnored = currentItem?.action !== "ignore"
+    const toggleIgnored = useCallback((columnName: string) => {
+        setMappings(prev => {
+            const newMappings = prev.map(item => {
+                if (item.inferredField.columnName !== columnName) return item
 
-                const newMappings = prev.map(item => {
-                    if (item.inferredField.columnName !== columnName) return item
-
-                    if (item.action === "ignore") {
-                        // Un-ignore: restore to create mode
-                        return { ...item, action: "create" as const, targetFieldId: undefined, hasTypeMismatch: false }
-                    } else {
-                        // Ignore
-                        return { ...item, action: "ignore" as const, targetFieldId: undefined, hasTypeMismatch: false }
-                    }
-                })
-
-                // If ignoring the current slug field, switch to another available one
-                if (willBeIgnored && columnName === selectedSlugFieldName) {
-                    setSelectedSlugFieldName(null)
+                if (item.action === "ignore") {
+                    // Un-ignore: restore to create mode
+                    return { ...item, action: "create" as const, targetFieldId: undefined, hasTypeMismatch: false }
+                } else {
+                    // Ignore
+                    return { ...item, action: "ignore" as const, targetFieldId: undefined, hasTypeMismatch: false }
                 }
-
-                return newMappings
             })
-        },
-        [selectedSlugFieldName]
-    )
 
-    const setIgnored = useCallback(
-        (columnName: string, ignored: boolean) => {
-            setMappings(prev => {
-                const newMappings = prev.map(item => {
-                    if (item.inferredField.columnName !== columnName) return item
+            return newMappings
+        })
+    }, [])
 
-                    if (ignored) {
-                        return { ...item, action: "ignore" as const, targetFieldId: undefined, hasTypeMismatch: false }
-                    } else if (item.action === "ignore") {
-                        // Un-ignore: restore to create mode
-                        return { ...item, action: "create" as const, targetFieldId: undefined, hasTypeMismatch: false }
-                    }
-                    return item
-                })
+    const setIgnored = useCallback((columnName: string, ignored: boolean) => {
+        setMappings(prev => {
+            const newMappings = prev.map(item => {
+                if (item.inferredField.columnName !== columnName) return item
 
-                // If ignoring the current slug field, switch to another available one
-                if (ignored && columnName === selectedSlugFieldName) {
-                    const newSlugField = newMappings
-                        .filter(m => m.action !== "ignore")
-                        .find(m => csvRecords.every(record => record[m.inferredField.columnName]))
-
-                    setSelectedSlugFieldName(newSlugField?.inferredField.columnName ?? null)
+                if (ignored) {
+                    return { ...item, action: "ignore" as const, targetFieldId: undefined, hasTypeMismatch: false }
+                } else if (item.action === "ignore") {
+                    // Un-ignore: restore to create mode
+                    return { ...item, action: "create" as const, targetFieldId: undefined, hasTypeMismatch: false }
                 }
-
-                return newMappings
+                return item
             })
-        },
-        [selectedSlugFieldName, csvRecords]
-    )
+
+            return newMappings
+        })
+    }, [])
 
     const updateTarget = useCallback(
         (columnName: string, targetFieldId: string | null) => {
@@ -234,13 +211,6 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
 
         if (!selectedSlugFieldName) {
             framer.notify("Please select a slug field before importing.", { variant: "warning" })
-            return
-        }
-
-        // Check if the slug field is being ignored
-        const slugMapping = mappings.find(m => m.inferredField.columnName === selectedSlugFieldName)
-        if (slugMapping?.action === "ignore") {
-            framer.notify("The slug field cannot be ignored.", { variant: "warning" })
             return
         }
 

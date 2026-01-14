@@ -40,6 +40,7 @@ export interface ConflictVersionData {
 // CLI → Plugin messages
 export type CliToPluginMessage =
     | { type: "request-files" }
+    | { type: "file-list"; files: FileInfo[] }
     | { type: "file-change"; fileName: string; content: string }
     | {
           type: "file-delete"
@@ -55,6 +56,7 @@ export type CliToPluginMessage =
 
 const cliToPluginMessageTypes = [
     "request-files",
+    "file-list",
     "file-change",
     "file-delete",
     "conflicts-detected",
@@ -71,6 +73,7 @@ export function isCliToPluginMessage(data: unknown): data is CliToPluginMessage 
 // Plugin → CLI messages
 export type PluginToCliMessage =
     | { type: "handshake"; projectId: string; projectName: string }
+    | { type: "request-files" }
     | { type: "file-list"; files: FileInfo[] }
     | { type: "file-change"; fileName: string; content: string }
     | { type: "file-delete"; fileNames: string[] }

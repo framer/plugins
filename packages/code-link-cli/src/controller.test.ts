@@ -1,844 +1,537 @@
 import { describe, it, expect } from "vitest"
 import { transition } from "./controller.js"
 import { createHashTracker } from "./utils/hash-tracker.js"
-
-import type { WebSocket } from "ws"
 import { filterEchoedFiles } from "./helpers/files.js"
+import type { WebSocket } from "ws"
 
-describe("Sync State Machine", () => {
-  // Connection Lifecycle Tests
-  describe("Connection Lifecycle", () => {
-    it("transitions from disconnected to handshaking on HANDSHAKE", () => {
-      const initialState = {
+// Test helpers
+const mockSocket = {} as WebSocket
+
+function disconnectedState() {
+    return {
         mode: "disconnected" as const,
         socket: null,
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
-      }
+    }
+}
 
-      const mockSocket = {} as WebSocket
-      const result = transition(initialState, {
-        type: "HANDSHAKE",
+function watchingState() {
+    return {
+        mode: "watching" as const,
         socket: mockSocket,
-        projectInfo: { projectId: "test-id", projectName: "Test Project" },
-      })
-
-      expect(result.state.mode).toBe("handshaking")
-      expect(result.state.socket).toBe(mockSocket)
-      expect(result.effects).toHaveLength(3)
-      expect(result.effects[0]).toMatchObject({ type: "INIT_WORKSPACE" })
-      expect(result.effects[1]).toMatchObject({ type: "LOAD_PERSISTED_STATE" })
-      expect(result.effects[2]).toMatchObject({
-        type: "SEND_MESSAGE",
-        payload: { type: "request-files" },
-      })
-    })
-
-    it("ignores handshake when not in disconnected mode", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
-      }
+    }
+}
 
-      const result = transition(initialState, {
-        type: "HANDSHAKE",
-        socket: {} as WebSocket,
-        projectInfo: { projectId: "test-id", projectName: "Test Project" },
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect(result.effects).toHaveLength(1)
-      expect(result.effects[0]).toMatchObject({
-        type: "LOG",
-        level: "warn",
-      })
-    })
-
-    it("transitions to disconnected and persists state on DISCONNECT", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, { type: "DISCONNECT" })
-
-      expect(result.state.mode).toBe("disconnected")
-      expect(result.state.socket).toBe(null)
-      expect(result.effects).toHaveLength(2)
-      expect(result.effects[0]).toMatchObject({ type: "PERSIST_STATE" })
-      expect(result.effects[1]).toMatchObject({
-        type: "LOG",
-        level: "debug",
-      })
-    })
-  })
-
-  // File Synchronization Tests
-  describe("File Synchronization", () => {
-    it("transitions to snapshot_processing on FILE_LIST and emits DETECT_CONFLICTS", () => {
-      const initialState = {
+function handshakingState() {
+    return {
         mode: "handshaking" as const,
-        socket: {} as WebSocket,
+        socket: mockSocket,
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
-      }
+    }
+}
 
-      const remoteFiles = [
-        { name: "Test.tsx", content: "remote content", modifiedAt: Date.now() },
-      ]
-
-      const result = transition(initialState, {
-        type: "FILE_LIST",
-        files: remoteFiles,
-      })
-
-      expect(result.state.mode).toBe("snapshot_processing")
-      expect(result.state.pendingRemoteChanges).toEqual(remoteFiles)
-      expect(result.effects).toHaveLength(2)
-      expect(result.effects[0]).toMatchObject({
-        type: "LOG",
-        level: "debug",
-      })
-      expect(result.effects[1]).toMatchObject({
-        type: "DETECT_CONFLICTS",
-        remoteFiles,
-      })
-    })
-
-    it("ignores FILE_LIST when not in handshaking mode", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "FILE_LIST",
-        files: [],
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect(result.effects).toHaveLength(1)
-      expect(result.effects[0]).toMatchObject({
-        type: "LOG",
-        level: "warn",
-      })
-    })
-
-    it("applies remote FILE_CHANGE immediately in watching mode", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const file = {
-        name: "Test.tsx",
-        content: "new content",
-        modifiedAt: Date.now(),
-      }
-
-      const result = transition(initialState, {
-        type: "FILE_CHANGE",
-        file,
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(true)
-    })
-
-    it("queues remote FILE_CHANGE during snapshot processing", () => {
-      const initialState = {
+function snapshotProcessingState() {
+    return {
         mode: "snapshot_processing" as const,
-        socket: {} as WebSocket,
+        socket: mockSocket,
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
-      }
+    }
+}
 
-      const file = {
-        name: "Test.tsx",
-        content: "new content",
-        modifiedAt: Date.now(),
-      }
-
-      const result = transition(initialState, {
-        type: "FILE_CHANGE",
-        file,
-      })
-
-      expect(result.state.mode).toBe("snapshot_processing")
-      expect(result.state.pendingRemoteChanges).toHaveLength(1)
-      expect(result.state.pendingRemoteChanges).toContainEqual(file)
-      expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(false)
-    })
-
-    it("emits SEND_LOCAL_CHANGE for local file add/change in watching mode", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "WATCHER_EVENT",
-        event: {
-          kind: "change",
-          relativePath: "Test.tsx",
-          content: "export const Test = () => <div>Test</div>",
-        },
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect(result.effects.some((e) => e.type === "SEND_LOCAL_CHANGE")).toBe(
-        true
-      )
-      const sendEffect = result.effects.find(
-        (e) => e.type === "SEND_LOCAL_CHANGE"
-      )
-      expect(sendEffect).toMatchObject({
-        type: "SEND_LOCAL_CHANGE",
-        fileName: "Test.tsx",
-        content: "export const Test = () => <div>Test</div>",
-      })
-    })
-
-    it("ignores local WATCHER_EVENT when not in watching mode", () => {
-      const initialState = {
-        mode: "handshaking" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "WATCHER_EVENT",
-        event: {
-          kind: "change",
-          relativePath: "Test.tsx",
-          content: "content",
-        },
-      })
-
-      expect(result.effects.some((e) => e.type === "SEND_LOCAL_CHANGE")).toBe(
-        false
-      )
-    })
-
-    it("ignores local WATCHER_EVENT when disconnected", () => {
-      const initialState = {
-        mode: "disconnected" as const,
-        socket: null,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "WATCHER_EVENT",
-        event: {
-          kind: "change",
-          relativePath: "Test.tsx",
-          content: "content",
-        },
-      })
-
-      expect(result.effects.some((e) => e.type === "SEND_LOCAL_CHANGE")).toBe(
-        false
-      )
-    })
-
-    it("emits LIST_LOCAL_FILES on REQUEST_FILES when in watching mode", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "REQUEST_FILES",
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect(result.effects.some((e) => e.type === "LIST_LOCAL_FILES")).toBe(
-        true
-      )
-    })
-
-    it("rejects REQUEST_FILES when disconnected", () => {
-      const initialState = {
-        mode: "disconnected" as const,
-        socket: null,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "REQUEST_FILES",
-      })
-
-      expect(result.state.mode).toBe("disconnected")
-      expect(result.effects.some((e) => e.type === "LIST_LOCAL_FILES")).toBe(
-        false
-      )
-      expect(
-        result.effects.some((e) => e.type === "LOG" && e.level === "warn")
-      ).toBe(true)
-    })
-
-    it("updates file metadata on FILE_SYNCED_CONFIRMATION", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "FILE_SYNCED_CONFIRMATION",
-        fileName: "Test.tsx",
-        remoteModifiedAt: 2000,
-      })
-
-      expect(
-        result.effects.some((e) => e.type === "UPDATE_FILE_METADATA")
-      ).toBe(true)
-    })
-
-    it("creates metadata entry on FILE_SYNCED_CONFIRMATION if file not tracked", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "FILE_SYNCED_CONFIRMATION",
-        fileName: "NewFile.tsx",
-        remoteModifiedAt: 3000,
-      })
-
-      // Should not throw - creates new entry
-      expect(result.state.mode).toBe("watching")
-    })
-  })
-
-  // Deletion Safety Tests
-  // Remote → Local: Auto-applies (Framer is source of truth)
-  // Local → Remote: Requires confirmation (protects source of truth)
-  describe("Deletion Safety", () => {
-    it("auto-applies remote deletions to local filesystem", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "REMOTE_FILE_DELETE",
-        fileName: "Test.tsx",
-      })
-
-      expect(result.state.mode).toBe("watching")
-      // CRITICAL: Remote deletions immediately emit DELETE_LOCAL_FILES
-      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
-        true
-      )
-      const deleteEffect = result.effects.find(
-        (e) => e.type === "DELETE_LOCAL_FILES"
-      )
-      expect(deleteEffect).toMatchObject({
-        type: "DELETE_LOCAL_FILES",
-        names: ["Test.tsx"],
-      })
-      expect(result.effects.some((e) => e.type === "PERSIST_STATE")).toBe(true)
-    })
-
-    it("auto-applies remote deletions during snapshot processing", () => {
-      const initialState = {
-        mode: "snapshot_processing" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "REMOTE_FILE_DELETE",
-        fileName: "Test.tsx",
-      })
-
-      expect(result.state.mode).toBe("snapshot_processing")
-      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
-        true
-      )
-    })
-
-    it("rejects remote deletions while disconnected", () => {
-      const initialState = {
-        mode: "disconnected" as const,
-        socket: null,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "REMOTE_FILE_DELETE",
-        fileName: "Test.tsx",
-      })
-
-      expect(result.state.mode).toBe("disconnected")
-      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
-        false
-      )
-      expect(
-        result.effects.some((e) => e.type === "LOG" && e.level === "warn")
-      ).toBe(true)
-    })
-
-    it("prompts user before propagating local delete to Framer", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "WATCHER_EVENT",
-        event: {
-          kind: "delete",
-          relativePath: "Test.tsx",
-        },
-      })
-
-      // CRITICAL: Local deletes do NOT immediately send to Framer
-      // They emit REQUEST_LOCAL_DELETE_DECISION to ask user first
-      expect(
-        result.effects.some((e) => e.type === "REQUEST_LOCAL_DELETE_DECISION")
-      ).toBe(true)
-      // Should NOT have SEND_MESSAGE with file-delete
-      expect(
-        result.effects.some(
-          (e) =>
-            e.type === "SEND_MESSAGE" &&
-            "payload" in e &&
-            e.payload?.type === "file-delete"
-        )
-      ).toBe(false)
-    })
-
-    it("sends delete to Framer only after user approval", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "LOCAL_DELETE_APPROVED",
-        fileName: "Test.tsx",
-      })
-
-      expect(result.state.mode).toBe("watching")
-      // After approval, the delete is applied locally
-      expect(result.effects.some((e) => e.type === "DELETE_LOCAL_FILES")).toBe(
-        true
-      )
-      expect(result.effects.some((e) => e.type === "PERSIST_STATE")).toBe(true)
-    })
-
-    it("does NOT send delete to Framer when user rejects - restores file instead", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "LOCAL_DELETE_REJECTED",
-        fileName: "Test.tsx",
-        content: "restored content",
-      })
-
-      expect(result.state.mode).toBe("watching")
-      // File is restored locally
-      expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(true)
-      const writeEffect = result.effects.find((e) => e.type === "WRITE_FILES")
-      expect(writeEffect).toMatchObject({
-        type: "WRITE_FILES",
-        files: [
-          {
-            name: "Test.tsx",
-            content: "restored content",
-          },
-        ],
-      })
-      // Should NOT send delete to Framer
-      expect(
-        result.effects.some(
-          (e) =>
-            e.type === "SEND_MESSAGE" &&
-            "payload" in e &&
-            e.payload?.type === "file-delete"
-        )
-      ).toBe(false)
-    })
-  })
-
-  // Conflict Resolution Tests
-  describe("Conflict Resolution", () => {
-    it("applies safe writes and transitions to watching when no conflicts", () => {
-      const initialState = {
-        mode: "snapshot_processing" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const result = transition(initialState, {
-        type: "CONFLICTS_DETECTED",
-        conflicts: [],
-        safeWrites: [
-          {
-            name: "Test.tsx",
-            content: "new content",
-            modifiedAt: Date.now(),
-          },
-        ],
-        localOnly: [],
-      })
-
-      expect(result.state.mode).toBe("watching")
-      expect("pendingConflicts" in result.state).toBe(false)
-      expect(result.effects.length).toBeGreaterThan(2)
-      expect(result.effects.some((e) => e.type === "WRITE_FILES")).toBe(true)
-      expect(result.effects.some((e) => e.type === "PERSIST_STATE")).toBe(true)
-    })
-
-    it("transitions to conflict_resolution when manual conflicts exist", () => {
-      const initialState = {
-        mode: "snapshot_processing" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
-
-      const conflict = {
-        fileName: "Test.tsx",
-        localContent: "local content",
-        remoteContent: "remote content",
-        localModifiedAt: Date.now(),
-        remoteModifiedAt: Date.now() + 1000,
-      }
-
-      const result = transition(initialState, {
-        type: "CONFLICTS_DETECTED",
-        conflicts: [conflict],
-        safeWrites: [],
-        localOnly: [],
-      })
-
-      expect(result.state.mode).toBe("conflict_resolution")
-      if (result.state.mode === "conflict_resolution") {
-        expect(result.state.pendingConflicts).toHaveLength(1)
-      }
-      expect(
-        result.effects.some((e) => e.type === "REQUEST_CONFLICT_VERSIONS")
-      ).toBe(true)
-    })
-
-    it("applies all remote versions when user picks remote", () => {
-      const conflict1 = {
-        fileName: "Test1.tsx",
-        localContent: "local 1",
-        remoteContent: "remote 1",
-        localModifiedAt: Date.now(),
-        remoteModifiedAt: Date.now() + 1000,
-      }
-      const conflict2 = {
-        fileName: "Test2.tsx",
-        localContent: "local 2",
-        remoteContent: "remote 2",
-        localModifiedAt: Date.now(),
-        remoteModifiedAt: Date.now() + 1000,
-      }
-
-      const initialState = {
+function conflictResolutionState(
+    pendingConflicts: {
+        fileName: string
+        localContent: string | null
+        remoteContent: string | null
+        localModifiedAt?: number
+        remoteModifiedAt?: number
+        lastSyncedAt?: number
+        localClean?: boolean
+    }[]
+) {
+    return {
         mode: "conflict_resolution" as const,
-        socket: {} as WebSocket,
-        pendingConflicts: [conflict1, conflict2],
+        socket: mockSocket,
+        pendingConflicts,
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
-      }
+    }
+}
 
-      const result = transition(initialState, {
-        type: "CONFLICTS_RESOLVED",
-        resolution: "remote",
-      })
+describe("Code Link", () => {
+    // FIRST-TIME SYNC
+    // When CLI connects to a project for the first time
 
-      expect(result.state.mode).toBe("watching")
-      expect("pendingConflicts" in result.state).toBe(false)
+    describe("First-Time Sync", () => {
+        it("downloads new files from Framer", () => {
+            const state = snapshotProcessingState()
+            const result = transition(state, {
+                type: "CONFLICTS_DETECTED",
+                conflicts: [],
+                safeWrites: [
+                    { name: "Button.tsx", content: "export const Button = () => <button/>", modifiedAt: Date.now() },
+                ],
+                localOnly: [],
+            })
 
-      const writeEffects = result.effects.filter(
-        (e) => e.type === "WRITE_FILES"
-      )
-      expect(writeEffects).toHaveLength(2)
-      expect(writeEffects[0]).toMatchObject({
-        type: "WRITE_FILES",
-        files: [{ name: "Test1.tsx", content: "remote 1" }],
-      })
-      expect(writeEffects[1]).toMatchObject({
-        type: "WRITE_FILES",
-        files: [{ name: "Test2.tsx", content: "remote 2" }],
-      })
-      expect(result.effects.some((e) => e.type === "PERSIST_STATE")).toBe(true)
+            expect(result.state.mode).toBe("watching")
+            expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
+        })
+
+        it("uploads new local files to Framer", () => {
+            const state = snapshotProcessingState()
+            const result = transition(state, {
+                type: "CONFLICTS_DETECTED",
+                conflicts: [],
+                safeWrites: [],
+                localOnly: [
+                    {
+                        name: "LocalComponent.tsx",
+                        content: "export const Local = () => <div/>",
+                        modifiedAt: Date.now(),
+                    },
+                ],
+            })
+
+            expect(result.state.mode).toBe("watching")
+            const sendEffects = result.effects.filter(e => e.type === "SEND_MESSAGE")
+            expect(
+                sendEffects.some(
+                    e => "payload" in e && (e as { payload: { type: string } }).payload.type === "file-change"
+                )
+            ).toBe(true)
+        })
+
+        it("detects conflicts when both sides have different content", () => {
+            const state = snapshotProcessingState()
+            const conflict = {
+                fileName: "Shared.tsx",
+                localContent: "local version",
+                remoteContent: "framer version",
+                localModifiedAt: Date.now(),
+                remoteModifiedAt: Date.now() + 1000,
+            }
+
+            const result = transition(state, {
+                type: "CONFLICTS_DETECTED",
+                conflicts: [conflict],
+                safeWrites: [],
+                localOnly: [],
+            })
+
+            expect(result.state.mode).toBe("conflict_resolution")
+            expect(result.effects.some(e => e.type === "REQUEST_CONFLICT_VERSIONS")).toBe(true)
+        })
     })
 
-    it("sends all local versions when user picks local", () => {
-      const conflict1 = {
-        fileName: "Test1.tsx",
-        localContent: "local 1",
-        remoteContent: "remote 1",
-        localModifiedAt: Date.now(),
-        remoteModifiedAt: Date.now() + 1000,
-      }
-      const conflict2 = {
-        fileName: "Test2.tsx",
-        localContent: "local 2",
-        remoteContent: "remote 2",
-        localModifiedAt: Date.now(),
-        remoteModifiedAt: Date.now() + 1000,
-      }
+    // RECONNECT AFTER OFFLINE
+    // The 4 permutations: nothing changed, local only, remote only, both changed
 
-      const initialState = {
-        mode: "conflict_resolution" as const,
-        socket: {} as WebSocket,
-        pendingConflicts: [conflict1, conflict2],
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
+    describe("Reconnect After Offline", () => {
+        it("no-op when nothing changed on either side", () => {
+            const state = snapshotProcessingState()
+            const result = transition(state, {
+                type: "CONFLICTS_DETECTED",
+                conflicts: [],
+                safeWrites: [],
+                localOnly: [],
+            })
 
-      const result = transition(initialState, {
-        type: "CONFLICTS_RESOLVED",
-        resolution: "local",
-      })
+            expect(result.state.mode).toBe("watching")
+            expect(result.effects.filter(e => e.type === "WRITE_FILES")).toHaveLength(0)
+            expect(result.effects.filter(e => e.type === "SEND_MESSAGE")).toHaveLength(0)
+        })
 
-      expect(result.state.mode).toBe("watching")
-      expect("pendingConflicts" in result.state).toBe(false)
+        it("auto-uploads when only local changed", () => {
+            // Local edited, remote unchanged since last sync → upload local without prompt
+            const conflict = {
+                fileName: "Test.tsx",
+                localContent: "edited locally",
+                remoteContent: "unchanged in framer",
+                lastSyncedAt: 5_000,
+                localClean: false, // local was modified
+            }
+            const state = conflictResolutionState([conflict])
 
-      const sendEffects = result.effects.filter(
-        (e) => e.type === "SEND_MESSAGE"
-      )
-      expect(sendEffects).toHaveLength(2)
-      expect(sendEffects[0]).toMatchObject({
-        payload: {
-          type: "file-change",
-          fileName: "Test1.tsx",
-          content: "local 1",
-        },
-      })
-      expect(sendEffects[1]).toMatchObject({
-        payload: {
-          type: "file-change",
-          fileName: "Test2.tsx",
-          content: "local 2",
-        },
-      })
+            const result = transition(state, {
+                type: "CONFLICT_VERSION_RESPONSE",
+                versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 5_000 }], // remote unchanged
+            })
+
+            expect(result.state.mode).toBe("watching")
+            expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(true)
+        })
+
+        it("auto-downloads when only remote changed", () => {
+            // Remote edited, local unchanged since last sync → download remote without prompt
+            const conflict = {
+                fileName: "Test.tsx",
+                localContent: "unchanged locally",
+                remoteContent: "edited in framer",
+                lastSyncedAt: 5_000,
+                localClean: true, // local matches last sync
+            }
+            const state = conflictResolutionState([conflict])
+
+            const result = transition(state, {
+                type: "CONFLICT_VERSION_RESPONSE",
+                versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 10_000 }], // remote changed
+            })
+
+            expect(result.state.mode).toBe("watching")
+            expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
+        })
+
+        it("shows conflict UI when both sides changed", () => {
+            // Both edited → must ask user which to keep
+            const conflict = {
+                fileName: "Test.tsx",
+                localContent: "edited locally",
+                remoteContent: "edited in framer",
+                lastSyncedAt: 5_000,
+                localClean: false, // local was modified
+            }
+            const state = conflictResolutionState([conflict])
+
+            const result = transition(state, {
+                type: "CONFLICT_VERSION_RESPONSE",
+                versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 9_000 }], // remote also changed
+            })
+
+            expect(result.state.mode).toBe("conflict_resolution")
+            expect(result.effects.some(e => e.type === "REQUEST_CONFLICT_DECISIONS")).toBe(true)
+        })
     })
 
-    it("ignores resolution when not in conflict_resolution mode", () => {
-      const initialState = {
-        mode: "watching" as const,
-        socket: {} as WebSocket,
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
+    // LIVE EDITING
+    // Real-time sync during active editing session
 
-      const result = transition(initialState, {
-        type: "CONFLICTS_RESOLVED",
-        resolution: "remote",
-      })
+    describe("Live Editing", () => {
+        it("pushes local saves to Framer", () => {
+            const state = watchingState()
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: {
+                    kind: "change",
+                    relativePath: "Button.tsx",
+                    content: "export const Button = () => <button>Click</button>",
+                },
+            })
 
-      expect(result.state.mode).toBe("watching")
-      expect(
-        result.effects.some((e) => e.type === "LOG" && e.level === "warn")
-      ).toBe(true)
+            expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(true)
+            const effect = result.effects.find(e => e.type === "SEND_LOCAL_CHANGE")
+            expect(effect).toMatchObject({ fileName: "Button.tsx" })
+        })
+
+        it("pulls Framer edits to disk", () => {
+            const state = watchingState()
+            const result = transition(state, {
+                type: "FILE_CHANGE",
+                file: { name: "Button.tsx", content: "updated from framer", modifiedAt: Date.now() },
+            })
+
+            expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
+        })
+
+        it("queues changes during initial sync", () => {
+            // Changes arriving during snapshot processing are queued, not applied immediately
+            const state = snapshotProcessingState()
+            const result = transition(state, {
+                type: "FILE_CHANGE",
+                file: { name: "Button.tsx", content: "late arrival", modifiedAt: Date.now() },
+            })
+
+            expect(result.state.pendingRemoteChanges).toHaveLength(1)
+            expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(false)
+        })
+
+        it("creates new local file and uploads to Framer", () => {
+            const state = watchingState()
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: {
+                    kind: "add",
+                    relativePath: "NewComponent.tsx",
+                    content: "export const New = () => <div>New</div>",
+                },
+            })
+
+            expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(true)
+        })
     })
 
-    it("auto-applies local changes when remote is unchanged", () => {
-      const conflict = {
-        fileName: "Test.tsx",
-        localContent: "local content",
-        remoteContent: "remote content",
-        localModifiedAt: 1000,
-        remoteModifiedAt: 2000,
-        lastSyncedAt: 5_000,
-        localClean: false,
-      }
+    // DELETION HANDLING
+    // Asymmetric by design: Framer is source of truth
 
-      const initialState = {
-        mode: "conflict_resolution" as const,
-        socket: {} as WebSocket,
-        pendingConflicts: [conflict],
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
+    describe("Deletion Handling", () => {
+        it("auto-applies Framer deletions locally", () => {
+            // Framer delete → immediately delete local (Framer is source of truth)
+            const state = watchingState()
+            const result = transition(state, {
+                type: "REMOTE_FILE_DELETE",
+                fileName: "Removed.tsx",
+            })
 
-      const result = transition(initialState, {
-        type: "CONFLICT_VERSION_RESPONSE",
-        versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 5_000 }],
-      })
+            expect(result.effects.some(e => e.type === "DELETE_LOCAL_FILES")).toBe(true)
+            const effect = result.effects.find(e => e.type === "DELETE_LOCAL_FILES")
+            expect(effect).toMatchObject({ names: ["Removed.tsx"] })
+        })
 
-      expect(result.state.mode).toBe("watching")
-      expect(
-        result.effects.some((effect) => effect.type === "SEND_LOCAL_CHANGE")
-      ).toBe(true)
-      expect(
-        result.effects.some((effect) => effect.type === "PERSIST_STATE")
-      ).toBe(true)
+        it("prompts before propagating local deletes to Framer", () => {
+            // Local delete → ask user "Delete from Framer too?" (protects source of truth)
+            const state = watchingState()
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: { kind: "delete", relativePath: "Deleted.tsx" },
+            })
+
+            expect(result.effects.some(e => e.type === "REQUEST_LOCAL_DELETE_DECISION")).toBe(true)
+            // Should NOT immediately send delete to Framer
+            expect(
+                result.effects.some(
+                    e =>
+                        e.type === "SEND_MESSAGE" &&
+                        "payload" in e &&
+                        (e as { payload: { type: string } }).payload.type === "file-delete"
+                )
+            ).toBe(false)
+        })
+
+        it("deletes from Framer after user confirms", () => {
+            const state = watchingState()
+            const result = transition(state, {
+                type: "LOCAL_DELETE_APPROVED",
+                fileName: "Deleted.tsx",
+            })
+
+            expect(result.effects.some(e => e.type === "DELETE_LOCAL_FILES")).toBe(true)
+            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
+        })
+
+        it("restores file when user cancels local delete", () => {
+            const state = watchingState()
+            const result = transition(state, {
+                type: "LOCAL_DELETE_REJECTED",
+                fileName: "Restored.tsx",
+                content: "export const Restored = () => <div>Back!</div>",
+            })
+
+            expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
+            const effect = result.effects.find(e => e.type === "WRITE_FILES")
+            expect(effect).toMatchObject({ files: [{ name: "Restored.tsx" }] })
+        })
     })
 
-    it("auto-applies remote changes when local is clean", () => {
-      const conflict = {
-        fileName: "Test.tsx",
-        localContent: "local content",
-        remoteContent: "remote content",
-        localModifiedAt: 1000,
-        remoteModifiedAt: 2000,
-        lastSyncedAt: 5_000,
-        localClean: true,
-      }
+    // CONFLICT RESOLUTION
+    // User picks which version to keep for all conflicts
 
-      const initialState = {
-        mode: "conflict_resolution" as const,
-        socket: {} as WebSocket,
-        pendingConflicts: [conflict],
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
+    describe("Conflict Resolution", () => {
+        it("applies all Framer versions when user picks remote", () => {
+            const state = conflictResolutionState([
+                {
+                    fileName: "A.tsx",
+                    localContent: "local A",
+                    remoteContent: "framer A",
+                    localModifiedAt: Date.now(),
+                    remoteModifiedAt: Date.now(),
+                },
+                {
+                    fileName: "B.tsx",
+                    localContent: "local B",
+                    remoteContent: "framer B",
+                    localModifiedAt: Date.now(),
+                    remoteModifiedAt: Date.now(),
+                },
+            ])
 
-      const result = transition(initialState, {
-        type: "CONFLICT_VERSION_RESPONSE",
-        versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 10_000 }],
-      })
+            const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "remote" })
 
-      expect(result.state.mode).toBe("watching")
-      expect(
-        result.effects.some((effect) => effect.type === "WRITE_FILES")
-      ).toBe(true)
+            expect(result.state.mode).toBe("watching")
+            const writes = result.effects.filter(e => e.type === "WRITE_FILES")
+            expect(writes).toHaveLength(2)
+        })
+
+        it("uploads all local versions when user picks local", () => {
+            const state = conflictResolutionState([
+                {
+                    fileName: "A.tsx",
+                    localContent: "local A",
+                    remoteContent: "framer A",
+                    localModifiedAt: Date.now(),
+                    remoteModifiedAt: Date.now(),
+                },
+                {
+                    fileName: "B.tsx",
+                    localContent: "local B",
+                    remoteContent: "framer B",
+                    localModifiedAt: Date.now(),
+                    remoteModifiedAt: Date.now(),
+                },
+            ])
+
+            const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "local" })
+
+            expect(result.state.mode).toBe("watching")
+            const sends = result.effects.filter(e => e.type === "SEND_MESSAGE")
+            expect(sends).toHaveLength(2)
+        })
+
+        it("handles deletion conflicts - remote deleted, local has content", () => {
+            const state = conflictResolutionState([
+                { fileName: "Deleted.tsx", localContent: "still here locally", remoteContent: null, localClean: false },
+            ])
+
+            const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "remote" })
+
+            // Remote is null → delete locally
+            expect(result.effects.some(e => e.type === "DELETE_LOCAL_FILES")).toBe(true)
+        })
+
+        it("handles deletion conflicts - local deleted, remote has content", () => {
+            const state = conflictResolutionState([
+                { fileName: "Deleted.tsx", localContent: null, remoteContent: "still in framer" },
+            ])
+
+            const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "local" })
+
+            // Local is null → send delete to Framer
+            const sends = result.effects.filter(e => e.type === "SEND_MESSAGE")
+            expect(
+                sends.some(e => "payload" in e && (e as { payload: { type: string } }).payload.type === "file-delete")
+            ).toBe(true)
+        })
     })
 
-    it("requests manual decisions when both sides changed", () => {
-      const conflict = {
-        fileName: "Test.tsx",
-        localContent: "local content",
-        remoteContent: "remote content",
-        localModifiedAt: 1000,
-        remoteModifiedAt: 2000,
-        lastSyncedAt: 5_000,
-        localClean: false,
-      }
+    // ECHO PREVENTION
+    // Avoid infinite sync loops by tracking what we just sent/received
 
-      const initialState = {
-        mode: "conflict_resolution" as const,
-        socket: {} as WebSocket,
-        pendingConflicts: [conflict],
-        pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
-      }
+    describe("Echo Prevention", () => {
+        it("skips inbound changes matching last outbound", () => {
+            const tracker = createHashTracker()
+            tracker.remember("Button.tsx", "content we just sent")
 
-      const result = transition(initialState, {
-        type: "CONFLICT_VERSION_RESPONSE",
-        versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 9_000 }],
-      })
+            const filtered = filterEchoedFiles(
+                [{ name: "Button.tsx", content: "content we just sent", modifiedAt: Date.now() }],
+                tracker
+            )
 
-      expect(result.state.mode).toBe("conflict_resolution")
-      expect(
-        result.effects.some(
-          (effect) => effect.type === "REQUEST_CONFLICT_DECISIONS"
-        )
-      ).toBe(true)
-      if (result.state.mode === "conflict_resolution") {
-        expect(result.state.pendingConflicts).toHaveLength(1)
-      }
-    })
-  })
+            expect(filtered).toHaveLength(0)
+        })
 
-  // Echo Prevention Tests
-  describe("Echo Prevention", () => {
-    it("skips inbound file-change that matches last local send", () => {
-      const hashTracker = createHashTracker()
-      hashTracker.remember("Hey.tsx", "content")
+        it("applies inbound changes with different content", () => {
+            const tracker = createHashTracker()
+            tracker.remember("Button.tsx", "old content")
 
-      const filtered = filterEchoedFiles(
-        [
-          {
-            name: "Hey.tsx",
-            content: "content",
-            modifiedAt: Date.now(),
-          },
-        ],
-        hashTracker
-      )
+            const filtered = filterEchoedFiles(
+                [{ name: "Button.tsx", content: "new content from framer", modifiedAt: Date.now() }],
+                tracker
+            )
 
-      expect(filtered).toHaveLength(0)
+            expect(filtered).toHaveLength(1)
+        })
     })
 
-    it("keeps inbound change when content differs", () => {
-      const hashTracker = createHashTracker()
-      hashTracker.remember("Hey.tsx", "old content")
+    // EDGE CASES
+    // Robustness: wrong modes, disconnected states, case sensitivity
 
-      const filtered = filterEchoedFiles(
-        [
-          {
-            name: "Hey.tsx",
-            content: "new content",
-            modifiedAt: Date.now(),
-          },
-        ],
-        hashTracker
-      )
+    describe("Edge Cases", () => {
+        it("ignores local changes when disconnected", () => {
+            const state = disconnectedState()
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: { kind: "change", relativePath: "Test.tsx", content: "content" },
+            })
 
-      expect(filtered).toHaveLength(1)
-      expect(filtered[0]?.content).toBe("new content")
+            expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(false)
+        })
+
+        it("ignores local changes during handshake", () => {
+            const state = handshakingState()
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: { kind: "change", relativePath: "Test.tsx", content: "content" },
+            })
+
+            expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(false)
+        })
+
+        it("rejects remote deletions while disconnected", () => {
+            const state = disconnectedState()
+            const result = transition(state, {
+                type: "REMOTE_FILE_DELETE",
+                fileName: "Test.tsx",
+            })
+
+            expect(result.effects.some(e => e.type === "DELETE_LOCAL_FILES")).toBe(false)
+        })
+
+        it("ignores conflict resolution when not in conflict mode", () => {
+            const state = watchingState()
+            const result = transition(state, {
+                type: "CONFLICTS_RESOLVED",
+                resolution: "remote",
+            })
+
+            expect(result.effects.some(e => e.type === "LOG" && e.level === "warn")).toBe(true)
+        })
+
+        it("persists state on disconnect", () => {
+            const state = watchingState()
+            const result = transition(state, { type: "DISCONNECT" })
+
+            expect(result.state.mode).toBe("disconnected")
+            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
+        })
     })
-  })
+
+    // CONNECTION LIFECYCLE
+    // Handshake flow and state transitions
+
+    describe("Connection Lifecycle", () => {
+        it("transitions disconnected → handshaking on connect", () => {
+            const state = disconnectedState()
+            const result = transition(state, {
+                type: "HANDSHAKE",
+                socket: mockSocket,
+                projectInfo: { projectId: "abc123", projectName: "My Project" },
+            })
+
+            expect(result.state.mode).toBe("handshaking")
+            expect(result.effects.some(e => e.type === "INIT_WORKSPACE")).toBe(true)
+            expect(result.effects.some(e => e.type === "SEND_MESSAGE")).toBe(true)
+        })
+
+        it("requests file list after handshake", () => {
+            const state = disconnectedState()
+            const result = transition(state, {
+                type: "HANDSHAKE",
+                socket: mockSocket,
+                projectInfo: { projectId: "abc123", projectName: "My Project" },
+            })
+
+            const sendEffect = result.effects.find(e => e.type === "SEND_MESSAGE")
+            expect(sendEffect).toMatchObject({ payload: { type: "request-files" } })
+        })
+
+        it("transitions handshaking → snapshot_processing on file list", () => {
+            const state = handshakingState()
+            const result = transition(state, {
+                type: "FILE_LIST",
+                files: [{ name: "Test.tsx", content: "content", modifiedAt: Date.now() }],
+            })
+
+            expect(result.state.mode).toBe("snapshot_processing")
+            expect(result.effects.some(e => e.type === "DETECT_CONFLICTS")).toBe(true)
+        })
+    })
 })

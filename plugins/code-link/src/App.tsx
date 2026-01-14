@@ -1,8 +1,8 @@
 import {
+    type CliToPluginMessage,
     type ConflictSummary,
     createSyncTracker,
     getPortFromHash,
-    type CliToPluginMessage,
     isCliToPluginMessage,
     type Mode,
     type PendingDelete,

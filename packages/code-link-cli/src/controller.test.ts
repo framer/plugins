@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest"
-import { transition } from "./controller.js"
-import { createHashTracker } from "./utils/hash-tracker.js"
-import { filterEchoedFiles } from "./helpers/files.js"
+import { describe, expect, it } from "vitest"
 import type { WebSocket } from "ws"
+import { transition } from "./controller.js"
+import { filterEchoedFiles } from "./helpers/files.js"
+import { createHashTracker } from "./utils/hash-tracker.js"
 
 // Test helpers
 const mockSocket = {} as WebSocket

@@ -1,16 +1,15 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ES2022",
-    "lib": ["ES2022"],
-    "declaration": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "moduleResolution": "bundler"
-  },
-  "include": ["src/**/*"]
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "ES2022",
+        "lib": ["ES2022"],
+        "declaration": true,
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "moduleResolution": "bundler"
+    },
+    "include": ["src/**/*"]
 }
-

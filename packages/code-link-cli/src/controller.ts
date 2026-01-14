@@ -5,45 +5,45 @@
  * Helpers should provide data, nevering hold control or callbacks.
  */
 
+import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
+import { pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import type { WebSocket } from "ws"
-import type { Config, FileInfo, Conflict, WatcherEvent, ConflictVersionData } from "./types.js"
-import type { PluginToCliMessage, CliToPluginMessage } from "@code-link/shared"
 import { initConnection, sendMessage } from "./helpers/connection.js"
-import { initWatcher } from "./helpers/watcher.js"
 import {
-    listFiles,
-    detectConflicts,
-    writeRemoteFiles,
-    deleteLocalFile,
-    readFileSafe,
     autoResolveConflicts,
+    deleteLocalFile,
+    detectConflicts,
     filterEchoedFiles,
+    listFiles,
+    readFileSafe,
+    writeRemoteFiles,
 } from "./helpers/files.js"
 import { Installer } from "./helpers/installer.js"
-import { createHashTracker } from "./utils/hash-tracker.js"
-import {
-    info,
-    warn,
-    error,
-    success,
-    debug,
-    status,
-    fileDown,
-    fileUp,
-    fileDelete,
-    scheduleDisconnectMessage,
-    cancelDisconnectMessage,
-    didShowDisconnect,
-    wasRecentlyDisconnected,
-    resetDisconnectState,
-} from "./utils/logging.js"
-import { hashFileContent } from "./utils/state-persistence.js"
-import { FileMetadataCache, type FileSyncMetadata } from "./utils/file-metadata-cache.js"
 import { PluginUserPromptCoordinator } from "./helpers/plugin-prompts.js"
 import { validateIncomingChange } from "./helpers/sync-validator.js"
+import { initWatcher } from "./helpers/watcher.js"
+import type { Config, Conflict, ConflictVersionData, FileInfo, WatcherEvent } from "./types.js"
+import { FileMetadataCache, type FileSyncMetadata } from "./utils/file-metadata-cache.js"
+import { createHashTracker } from "./utils/hash-tracker.js"
+import {
+    cancelDisconnectMessage,
+    debug,
+    didShowDisconnect,
+    error,
+    fileDelete,
+    fileDown,
+    fileUp,
+    info,
+    resetDisconnectState,
+    scheduleDisconnectMessage,
+    status,
+    success,
+    warn,
+    wasRecentlyDisconnected,
+} from "./utils/logging.js"
 import { findOrCreateProjectDir } from "./utils/project.js"
-import { pluralize, shortProjectHash } from "@code-link/shared"
+import { hashFileContent } from "./utils/state-persistence.js"
 
 /**
  * Explicit sync lifecycle modes

@@ -12,7 +12,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "disconnected" as const,
         socket: null,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -40,7 +39,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -64,16 +62,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map([
-          [
-            "Test.tsx",
-            {
-              localHash: "abc123",
-              lastSyncedHash: "abc123",
-              lastRemoteTimestamp: Date.now(),
-            },
-          ],
-        ]),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -98,7 +86,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "handshaking" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -130,7 +117,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -153,7 +139,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -178,7 +163,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "snapshot_processing" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -205,7 +189,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -238,7 +221,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "handshaking" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -262,7 +244,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "disconnected" as const,
         socket: null,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -286,7 +267,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -306,7 +286,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "disconnected" as const,
         socket: null,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -329,15 +308,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map([
-          [
-            "Test.tsx",
-            {
-              baseRemoteHash: "abc123",
-              lastRemoteTimestamp: 1000,
-            },
-          ],
-        ]),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -358,7 +328,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -383,16 +352,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map([
-          [
-            "Test.tsx",
-            {
-              localHash: "abc123",
-              lastSyncedHash: "abc123",
-              lastRemoteTimestamp: Date.now(),
-            },
-          ],
-        ]),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -422,7 +381,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "snapshot_processing" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -443,7 +401,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "disconnected" as const,
         socket: null,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -467,7 +424,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -501,16 +457,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map([
-          [
-            "Test.tsx",
-            {
-              localHash: "abc123",
-              lastSyncedHash: "abc123",
-              lastRemoteTimestamp: Date.now(),
-            },
-          ],
-        ]),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -533,7 +479,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -576,7 +521,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "snapshot_processing" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -606,7 +550,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "snapshot_processing" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,
@@ -655,7 +598,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "conflict_resolution" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingConflicts: [conflict1, conflict2],
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
@@ -704,7 +646,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "conflict_resolution" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingConflicts: [conflict1, conflict2],
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
@@ -743,7 +684,6 @@ describe("Sync State Machine", () => {
       const initialState = {
         mode: "watching" as const,
         socket: {} as WebSocket,
-        files: new Map(),
         pendingRemoteChanges: [],
         pendingOperations: new Map(),
         nextOperationId: 1,

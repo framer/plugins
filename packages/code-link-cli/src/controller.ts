@@ -9,13 +9,15 @@ import fs from "fs/promises"
 import type { WebSocket } from "ws"
 import type {
   Config,
-  IncomingMessage,
-  OutgoingMessage,
   FileInfo,
   Conflict,
   WatcherEvent,
   ConflictVersionData,
 } from "./types.js"
+import type {
+  PluginToCliMessage,
+  CliToPluginMessage,
+} from "@code-link/shared"
 import { initConnection, sendMessage } from "./helpers/connection.js"
 import { initWatcher } from "./helpers/watcher.js"
 import {
@@ -50,7 +52,7 @@ import {
   FileMetadataCache,
   type FileSyncMetadata,
 } from "./utils/file-metadata-cache.js"
-import { UserActionCoordinator } from "./helpers/user-actions.js"
+import { PluginUserPromptCoordinator } from "./helpers/plugin-prompts.js"
 import { validateIncomingChange } from "./helpers/sync-validator.js"
 import { findOrCreateProjectDir } from "./utils/project.js"
 import { pluralize, shortProjectHash } from "@code-link/shared"
@@ -160,7 +162,7 @@ type Effect =
       projectInfo: { projectId: string; projectName: string }
     }
   | { type: "LOAD_PERSISTED_STATE" }
-  | { type: "SEND_MESSAGE"; payload: OutgoingMessage }
+  | { type: "SEND_MESSAGE"; payload: CliToPluginMessage }
   | { type: "LIST_LOCAL_FILES" }
   | { type: "DETECT_CONFLICTS"; remoteFiles: FileInfo[] }
   | {
@@ -770,7 +772,7 @@ async function executeEffect(
     hashTracker: ReturnType<typeof createHashTracker>
     installer: Installer | null
     fileMetadataCache: FileMetadataCache
-    userActions: UserActionCoordinator
+    userActions: PluginUserPromptCoordinator
     syncState: SyncState
   }
 ): Promise<SyncEvent[]> {
@@ -1139,7 +1141,7 @@ export async function start(config: Config): Promise<void> {
     nextOperationId: 1,
   }
 
-  const userActions = new UserActionCoordinator()
+  const userActions = new PluginUserPromptCoordinator()
 
   // State Machine Helper
   // Process events through state machine and execute effects recursively
@@ -1237,7 +1239,7 @@ export async function start(config: Config): Promise<void> {
   })
 
   // Message Handler
-  async function handleMessage(message: IncomingMessage) {
+  async function handleMessage(message: PluginToCliMessage) {
     // Ensure project is initialized before handling messages
     if (!config.projectDir || !installer) {
       warn("Received message before handshake completed - ignoring")
@@ -1348,7 +1350,7 @@ export async function start(config: Config): Promise<void> {
     await processEvent(event)
   }
 
-  connection.on("message", (message: IncomingMessage) => {
+  connection.on("message", (message: PluginToCliMessage) => {
     void (async () => {
       try {
         await handleMessage(message)

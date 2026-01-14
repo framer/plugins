@@ -3560,6 +3560,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+<<<<<<< HEAD
+=======
+"code-link@workspace:plugins/code-link":
+  version: 0.0.0-use.local
+  resolution: "code-link@workspace:plugins/code-link"
+  dependencies:
+    "@code-link/shared": "workspace:*"
+    "@types/react": "npm:^18.3.24"
+    "@types/react-dom": "npm:^18.3.7"
+    framer-plugin: "npm:3.9.0"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+  languageName: unknown
+  linkType: soft
+
+>>>>>>> d66a44ec (Cleanup)
 "code-versions@workspace:plugins/code-versions":
   version: 0.0.0-use.local
   resolution: "code-versions@workspace:plugins/code-versions"
@@ -4604,6 +4620,29 @@ __metadata:
   languageName: node
   linkType: hard
 
+<<<<<<< HEAD
+=======
+"framer-plugin@npm:3.9.0":
+  version: 3.9.0
+  resolution: "framer-plugin@npm:3.9.0"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/2d8249cc82faadd57880e3fec97db7b3ed7aba5b8e80beb6c250ddf773e0d09265dc0990569bc898b193b790320b7ae89a71fa981c269ff685a3c465f8520713
+  languageName: node
+  linkType: hard
+
+"framer-plugin@npm:3.9.0-beta.1":
+  version: 3.9.0-beta.1
+  resolution: "framer-plugin@npm:3.9.0-beta.1"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/1f58b75683d5cfedb812422916bcf6e4a63c6141b3f0df49eb13551894929edecabe8cb9ebbcb0b5d693efb277412e08e32b7652c41bea58f14b8bd0949106fe
+  languageName: node
+  linkType: hard
+
+>>>>>>> d66a44ec (Cleanup)
 "framer-plugin@npm:^3.6.0":
   version: 3.6.0
   resolution: "framer-plugin@npm:3.6.0"

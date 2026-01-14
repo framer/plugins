@@ -2,8 +2,8 @@ import {
     type ConflictSummary,
     createSyncTracker,
     getPortFromHash,
-    type IncomingMessage,
-    isIncomingMessage,
+    type CliToPluginMessage,
+    isCliToPluginMessage,
     type Mode,
     type PendingDelete,
     type ProjectInfo,
@@ -228,7 +228,7 @@ export function App() {
             socket.onmessage = event => {
                 if (isStale()) return
                 const parsed: unknown = JSON.parse(event.data as string)
-                if (!isIncomingMessage(parsed)) {
+                if (!isCliToPluginMessage(parsed)) {
                     log.warn("Invalid message received:", parsed)
                     return
                 }
@@ -326,6 +326,7 @@ export function App() {
     switch (state.mode) {
         case "delete_confirmation":
             if (state.pendingDeletes.length === 1) {
+                // @TODO: Possibly await this to avoid flash
                 void framer.showUI({
                     width: 260,
                     height: 187,
@@ -627,7 +628,7 @@ function createMessageHandler({
     api: CodeFilesAPI
     syncTracker: SyncTracker
 }) {
-    return async function handleMessage(message: IncomingMessage, socket: WebSocket) {
+    return async function handleMessage(message: CliToPluginMessage, socket: WebSocket) {
         log.debug("Handling message:", message.type)
 
         switch (message.type) {

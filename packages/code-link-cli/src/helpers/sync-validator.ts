@@ -5,7 +5,6 @@
  * Determines if a change should be applied, queued, or rejected.
  */
 
-import { hashFileContent } from "../utils/state-persistence.js"
 import type { FileSyncMetadata } from "../utils/file-metadata-cache.js"
 
 /**
@@ -52,34 +51,4 @@ export function validateIncomingChange(
 
   // Shouldn't receive changes while disconnected
   return { action: "reject", reason: "unknown-file" }
-}
-
-/**
- * Validates whether an outgoing LOCAL change should be sent to remote
- *
- * Checks if the local file has actually changed since last sync
- * to avoid sending duplicate updates.
- *
- * Note: This will be used when WATCHER_EVENT is migrated to the state machine.
- * Currently, the legacy watcher path always sends changes (with echo prevention).
- */
-export function validateOutgoingChange(
-  fileName: string,
-  content: string,
-  fileMeta: FileSyncMetadata | undefined
-): { shouldSend: boolean; reason: string } {
-  const currentHash = hashFileContent(content)
-
-  if (!fileMeta) {
-    // New local file
-    return { shouldSend: true, reason: "new-file" }
-  }
-
-  if (fileMeta.localHash === currentHash) {
-    // No change since we last saw this file
-    return { shouldSend: false, reason: "no-change" }
-  }
-
-  // File has changed
-  return { shouldSend: true, reason: "changed" }
 }

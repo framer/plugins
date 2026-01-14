@@ -27,10 +27,12 @@ interface FieldMapperProps {
     onSubmit: (opts: FieldMapperSubmitOpts) => Promise<void>
 }
 
+function isValidSlugColumn(columnName: string, csvRecords: Record<string, string>[]) {
+    return csvRecords.every(record => record[columnName])
+}
+
 function calculatePossibleSlugFields(mappings: FieldMappingItem[], csvRecords: Record<string, string>[]) {
-    return mappings
-        .filter(m => csvRecords.every(record => record[m.inferredField.columnName]))
-        .map(m => m.inferredField)
+    return mappings.filter(m => isValidSlugColumn(m.inferredField.columnName, csvRecords)).map(m => m.inferredField)
 }
 
 export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperProps) {
@@ -55,13 +57,20 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                 const inferredFields = inferFieldsFromCSV(csvRecords)
 
                 // Determine which column should be the slug field
+                // Ensure the slug column is in inferredFields (exists in CSV) so it appears in possibleSlugFields
+                const slugColumnNameFromCollection =
+                    collection.slugFieldName &&
+                    inferredFields.find(field => field.columnName === collection.slugFieldName)?.columnName
                 const slugColumnName =
-                    collection.slugFieldName ??
-                    inferredFields.find(field => csvRecords.every(record => record[field.columnName]))?.columnName
+                    slugColumnNameFromCollection ??
+                    inferredFields.find(field => isValidSlugColumn(field.columnName, csvRecords))?.columnName
 
                 // Create initial mappings based on name matching
                 const initialMappings: FieldMappingItem[] = inferredFields.map(inferredField => {
-                    const isSlugField = slugColumnName && inferredField.columnName === slugColumnName
+                    // Only ignore slug field if it matches the collection's slugFieldName
+                    // If it was auto-detected, keep it enabled
+                    const isSlugField =
+                        slugColumnNameFromCollection && inferredField.columnName === slugColumnNameFromCollection
 
                     // Try to find an existing field with matching name
                     const matchingField = fields.find(f => f.name.toLowerCase() === inferredField.name.toLowerCase())

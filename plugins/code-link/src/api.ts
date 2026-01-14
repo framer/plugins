@@ -15,7 +15,13 @@ export class CodeFilesAPI {
         // Always all files instead of single file calls.
         // The API internally does that anyways.
         // Also ensures everything is fresh.
-        const codeFiles = await framer.getCodeFiles()
+        let codeFiles
+        try {
+            codeFiles = await framer.getCodeFiles()
+        } catch (err) {
+            log.error("Failed to fetch code files", err)
+            return []
+        }
 
         return codeFiles.map(file => {
             const source = file.path || file.name
@@ -104,7 +110,6 @@ export class CodeFilesAPI {
     async fetchConflictVersions(requests: { fileName: string; lastSyncedAt?: number }[]) {
         log.debug(`Fetching versions for ${String(requests.length)} files`)
 
-        // @TODO why only handle errors here...
         let codeFiles
         try {
             codeFiles = await framer.getCodeFiles()

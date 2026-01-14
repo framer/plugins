@@ -2,7 +2,14 @@
  * Core types for the controller-centric CLI architecture
  */
 
-import type { PendingDelete } from "@code-link/shared"
+// Re-export shared types for convenience
+export type {
+  FileInfo,
+  ConflictVersionRequest,
+  ConflictVersionData,
+  CliToPluginMessage,
+  PluginToCliMessage,
+} from "@code-link/shared"
 
 // Configuration
 export interface Config {
@@ -16,20 +23,14 @@ export interface Config {
   explicitName?: string // User-provided name override
 }
 
-// File representations
-export interface FileInfo {
-  name: string
-  content: string
-  modifiedAt?: number
-}
-
+// Local file representation (CLI-specific)
 export interface LocalFile {
   relativePath: string
   content: string
   modifiedAt?: number
 }
 
-// Conflict detection
+// Conflict detection (CLI-specific - extends shared ConflictSummary with more fields)
 // Deletions are represented by null content
 // For AI: Do NOT add remoteDeletes/localDeletes arrays - use localContent/remoteContent === null
 export interface Conflict {
@@ -48,6 +49,9 @@ export interface Conflict {
   localClean?: boolean
 }
 
+// Re-import FileInfo for use in ConflictResolution
+import type { FileInfo } from "@code-link/shared"
+
 export interface ConflictResolution {
   conflicts: Conflict[]
   writes: FileInfo[]
@@ -55,7 +59,7 @@ export interface ConflictResolution {
   unchanged: FileInfo[]
 }
 
-// Watcher events
+// Watcher events (CLI-specific)
 export type WatcherEventKind = "add" | "change" | "delete"
 
 export interface WatcherEvent {
@@ -63,51 +67,3 @@ export interface WatcherEvent {
   relativePath: string
   content?: string
 }
-
-// Conflict version data
-export interface ConflictVersionRequest {
-  fileName: string
-  lastSyncedAt?: number
-}
-
-export interface ConflictVersionData {
-  fileName: string
-  latestRemoteVersionMs?: number
-}
-
-// WebSocket messages (incoming from plugin)
-export type IncomingMessage =
-  | { type: "handshake"; projectId: string; projectName: string }
-  | { type: "request-files" }
-  | { type: "file-list"; files: FileInfo[] }
-  | { type: "file-change"; fileName: string; content: string }
-  | { type: "file-delete"; fileNames: string[]; requireConfirmation?: boolean }
-  | { type: "delete-confirmed"; fileNames: string[] }
-  | { type: "delete-cancelled"; files: PendingDelete[] }
-  | { type: "file-synced"; fileName: string; remoteModifiedAt: number }
-  | {
-      type: "conflicts-resolved"
-      resolution: "local" | "remote"
-    }
-  | {
-      type: "conflict-version-response"
-      versions: ConflictVersionData[]
-    }
-  | { type: "error"; fileName?: string; message: string }
-
-// WebSocket messages (outgoing to plugin)
-export type OutgoingMessage =
-  | { type: "request-files" }
-  | { type: "file-list"; files: FileInfo[] }
-  | { type: "file-change"; fileName: string; content: string }
-  | {
-      type: "file-delete"
-      fileNames: string[]
-      requireConfirmation?: boolean
-    }
-  | { type: "conflicts-detected"; conflicts: Conflict[] }
-  | {
-      type: "conflict-version-request"
-      conflicts: ConflictVersionRequest[]
-    }
-  | { type: "sync-complete" }

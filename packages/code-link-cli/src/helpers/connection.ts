@@ -5,7 +5,10 @@
  */
 
 import { WebSocketServer, WebSocket } from "ws"
-import type { IncomingMessage, OutgoingMessage } from "../types.js"
+import type {
+  PluginToCliMessage,
+  CliToPluginMessage,
+} from "@code-link/shared"
 import { debug, error } from "../utils/logging.js"
 
 export interface ConnectionCallbacks {
@@ -13,7 +16,7 @@ export interface ConnectionCallbacks {
     client: WebSocket,
     message: { projectId: string; projectName: string }
   ) => void
-  onMessage: (message: IncomingMessage) => void
+  onMessage: (message: PluginToCliMessage) => void
   onDisconnect: () => void
   onError: (error: Error) => void
 }
@@ -76,7 +79,7 @@ export function initConnection(port: number): Promise<Connection> {
 
         ws.on("message", (data: Buffer) => {
           try {
-            const message = JSON.parse(data.toString()) as IncomingMessage
+            const message = JSON.parse(data.toString()) as PluginToCliMessage
 
             // Special handling for handshake
             if (message.type === "handshake") {
@@ -165,7 +168,7 @@ function readyStateToString(state: number): string {
  */
 export function sendMessage(
   socket: WebSocket,
-  message: OutgoingMessage
+  message: CliToPluginMessage
 ): Promise<boolean> {
   return new Promise((resolve) => {
     // Check socket state before attempting to send

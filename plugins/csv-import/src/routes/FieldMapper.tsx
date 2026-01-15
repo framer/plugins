@@ -307,6 +307,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                             key={item.inferredField.columnName}
                             item={item}
                             existingFields={existingFields}
+                            slugFieldName={selectedSlugFieldName}
                             onToggleIgnored={() => {
                                 toggleIgnored(item.inferredField.columnName)
                             }}

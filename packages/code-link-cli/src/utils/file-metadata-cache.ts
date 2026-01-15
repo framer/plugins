@@ -5,6 +5,10 @@ import {
     savePersistedState,
 } from "./state-persistence.js"
 
+/**
+ * In-memory cache on top of state-persistence.
+ */
+
 export interface FileSyncMetadata {
     localHash: string
     lastSyncedHash: string

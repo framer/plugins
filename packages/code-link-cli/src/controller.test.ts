@@ -4,7 +4,8 @@ import { transition } from "./controller.js"
 import { filterEchoedFiles } from "./helpers/files.js"
 import { createHashTracker } from "./utils/hash-tracker.js"
 
-// Test helpers
+// Readable coverage of core controller functionality
+
 const mockSocket = {} as WebSocket
 
 function disconnectedState() {
@@ -150,6 +151,7 @@ describe("Code Link", () => {
             expect(result.state.mode).toBe("watching")
             expect(result.effects.filter(e => e.type === "WRITE_FILES")).toHaveLength(0)
             expect(result.effects.filter(e => e.type === "SEND_MESSAGE")).toHaveLength(0)
+            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
         })
 
         it("auto-uploads when only local changed", () => {
@@ -170,6 +172,7 @@ describe("Code Link", () => {
 
             expect(result.state.mode).toBe("watching")
             expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(true)
+            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
         })
 
         it("auto-downloads when only remote changed", () => {
@@ -190,6 +193,7 @@ describe("Code Link", () => {
 
             expect(result.state.mode).toBe("watching")
             expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
+            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
         })
 
         it("shows conflict UI when both sides changed", () => {
@@ -236,7 +240,7 @@ describe("Code Link", () => {
         it("pulls Framer edits to disk", () => {
             const state = watchingState()
             const result = transition(state, {
-                type: "FILE_CHANGE",
+                type: "REMOTE_FILE_CHANGE",
                 file: { name: "Button.tsx", content: "updated from framer", modifiedAt: Date.now() },
             })
 
@@ -247,7 +251,7 @@ describe("Code Link", () => {
             // Changes arriving during snapshot processing are queued, not applied immediately
             const state = snapshotProcessingState()
             const result = transition(state, {
-                type: "FILE_CHANGE",
+                type: "REMOTE_FILE_CHANGE",
                 file: { name: "Button.tsx", content: "late arrival", modifiedAt: Date.now() },
             })
 
@@ -270,12 +274,105 @@ describe("Code Link", () => {
         })
     })
 
+    // FOLDER STRUCTURES
+    // Nested paths like components/Button.tsx
+
+    describe("Folder Structures", () => {
+        it("downloads files to nested paths", () => {
+            const state = snapshotProcessingState()
+            const result = transition(state, {
+                type: "CONFLICTS_DETECTED",
+                conflicts: [],
+                safeWrites: [
+                    {
+                        name: "components/Button.tsx",
+                        content: "export const Button = () => <button/>",
+                        modifiedAt: Date.now(),
+                    },
+                ],
+                localOnly: [],
+            })
+
+            expect(result.state.mode).toBe("watching")
+            const writeEffect = result.effects.find(e => e.type === "WRITE_FILES")
+            expect(writeEffect).toMatchObject({
+                files: [{ name: "components/Button.tsx" }],
+            })
+        })
+
+        it("uploads local files from subdirectories", () => {
+            const state = snapshotProcessingState()
+            const result = transition(state, {
+                type: "CONFLICTS_DETECTED",
+                conflicts: [],
+                safeWrites: [],
+                localOnly: [
+                    {
+                        name: "hooks/useAuth.ts",
+                        content: "export function useAuth() {}",
+                        modifiedAt: Date.now(),
+                    },
+                ],
+            })
+
+            expect(result.state.mode).toBe("watching")
+            const sendEffects = result.effects.filter(e => e.type === "SEND_MESSAGE")
+            expect(
+                sendEffects.some(
+                    e =>
+                        "payload" in e &&
+                        (e as { payload: { fileName?: string } }).payload.fileName === "hooks/useAuth.ts"
+                )
+            ).toBe(true)
+        })
+
+        it("handles watcher events for nested paths", () => {
+            const state = watchingState()
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: {
+                    kind: "change",
+                    relativePath: "components/ui/Card.tsx",
+                    content: "export const Card = () => <div/>",
+                },
+            })
+
+            const effect = result.effects.find(e => e.type === "SEND_LOCAL_CHANGE")
+            expect(effect).toMatchObject({ fileName: "components/ui/Card.tsx" })
+        })
+
+        it("handles remote changes to nested paths", () => {
+            const state = watchingState()
+            const result = transition(state, {
+                type: "REMOTE_FILE_CHANGE",
+                file: {
+                    name: "lib/utils/format.ts",
+                    content: "export function format() {}",
+                    modifiedAt: Date.now(),
+                },
+            })
+
+            expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
+        })
+
+        it("handles deletions of nested files", () => {
+            const state = watchingState()
+            const result = transition(state, {
+                type: "REMOTE_FILE_DELETE",
+                fileName: "components/deprecated/OldButton.tsx",
+            })
+
+            const effect = result.effects.find(e => e.type === "DELETE_LOCAL_FILES")
+            expect(effect).toMatchObject({ names: ["components/deprecated/OldButton.tsx"] })
+        })
+    })
+
     // DELETION HANDLING
     // Asymmetric by design: Framer is source of truth
 
     describe("Deletion Handling", () => {
         it("auto-applies Framer deletions locally", () => {
-            // Framer delete → immediately delete local (Framer is source of truth)
+            // Framer delete → immediately delete local (Local likely has version control, undos are easier)
             const state = watchingState()
             const result = transition(state, {
                 type: "REMOTE_FILE_DELETE",
@@ -283,12 +380,13 @@ describe("Code Link", () => {
             })
 
             expect(result.effects.some(e => e.type === "DELETE_LOCAL_FILES")).toBe(true)
+            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
             const effect = result.effects.find(e => e.type === "DELETE_LOCAL_FILES")
             expect(effect).toMatchObject({ names: ["Removed.tsx"] })
         })
 
         it("prompts before propagating local deletes to Framer", () => {
-            // Local delete → ask user "Delete from Framer too?" (protects source of truth)
+            // Local delete → ask user "Delete from Framer too?" (Must confirm as deletions in Framer as permanent)
             const state = watchingState()
             const result = transition(state, {
                 type: "WATCHER_EVENT",
@@ -357,6 +455,7 @@ describe("Code Link", () => {
             const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "remote" })
 
             expect(result.state.mode).toBe("watching")
+            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
             const writes = result.effects.filter(e => e.type === "WRITE_FILES")
             expect(writes).toHaveLength(2)
         })
@@ -386,7 +485,7 @@ describe("Code Link", () => {
             expect(sends).toHaveLength(2)
         })
 
-        it("handles deletion conflicts - remote deleted, local has content", () => {
+        it("handles deletions within conflicts - remote deleted, local has content", () => {
             const state = conflictResolutionState([
                 { fileName: "Deleted.tsx", localContent: "still here locally", remoteContent: null, localClean: false },
             ])
@@ -397,7 +496,7 @@ describe("Code Link", () => {
             expect(result.effects.some(e => e.type === "DELETE_LOCAL_FILES")).toBe(true)
         })
 
-        it("handles deletion conflicts - local deleted, remote has content", () => {
+        it("handles deletion within conflicts - local deleted, remote has content", () => {
             const state = conflictResolutionState([
                 { fileName: "Deleted.tsx", localContent: null, remoteContent: "still in framer" },
             ])
@@ -526,7 +625,7 @@ describe("Code Link", () => {
         it("transitions handshaking → snapshot_processing on file list", () => {
             const state = handshakingState()
             const result = transition(state, {
-                type: "FILE_LIST",
+                type: "REMOTE_FILE_LIST",
                 files: [{ name: "Test.tsx", content: "content", modifiedAt: Date.now() }],
             })
 

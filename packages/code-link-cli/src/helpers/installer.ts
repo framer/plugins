@@ -7,7 +7,7 @@ import fs from "fs/promises"
 import path from "path"
 import ts from "typescript"
 import { extractImports } from "../utils/imports.js"
-import { debug, warn } from "../utils/logging.js"
+import { debug, error, warn } from "../utils/logging.js"
 
 export interface InstallerConfig {
     projectDir: string
@@ -34,6 +34,7 @@ interface NpmRegistryResponse {
 
 const FETCH_TIMEOUT_MS = 60_000
 const MAX_FETCH_RETRIES = 3
+const MAX_CONSECUTIVE_FAILURES = 10
 const REACT_TYPES_VERSION = "18.3.12"
 const REACT_DOM_TYPES_VERSION = "18.3.1"
 const CORE_LIBRARIES = ["framer-motion", "framer"]
@@ -164,9 +165,7 @@ export class Installer {
             })
     }
 
-    // ---------------------------------------------------------------------------
     // Internal helpers
-    // ---------------------------------------------------------------------------
 
     private async initializeProject(): Promise<void> {
         await Promise.all([
@@ -267,10 +266,6 @@ export class Installer {
         if (/node_modules\/@types\/[^/]+\/index\.d\.ts$/.exec(normalized)) {
             await this.ensureTypesPackageJson(normalized)
         }
-
-        if (normalized.includes("node_modules/@types/react/index.d.ts")) {
-            await this.patchReactTypes(destination)
-        }
     }
 
     private async ensureTypesPackageJson(normalizedPath: string): Promise<void> {
@@ -300,31 +295,6 @@ export class Installer {
             await fs.writeFile(pkgJsonPath, JSON.stringify(pkg, null, 2))
         } catch {
             // best-effort
-        }
-    }
-
-    private async patchReactTypes(destination: string): Promise<void> {
-        try {
-            let content = await fs.readFile(destination, "utf-8")
-            if (content.includes("function useRef<T = undefined>()")) {
-                return
-            }
-
-            const overloadPattern = /function useRef<T>\(initialValue: T \| undefined\): RefObject<T \| undefined>;/
-
-            if (!content.includes("function useRef<T>(initialValue: T | undefined)")) {
-                return
-            }
-
-            content = content.replace(
-                overloadPattern,
-                `function useRef<T>(initialValue: T | undefined): RefObject<T | undefined>;
-    function useRef<T = undefined>(): MutableRefObject<T | undefined>;`
-            )
-
-            await fs.writeFile(destination, content, "utf-8")
-        } catch {
-            // ignore patch failures
         }
     }
 
@@ -410,6 +380,7 @@ declare module "*.json"
         }
     }
 
+    // Code components in Framer use React 18
     private async ensureReact18Types(): Promise<void> {
         const reactTypesDir = path.join(this.projectDir, "node_modules/@types/react")
 
@@ -488,9 +459,7 @@ declare module "*.json"
     }
 }
 
-// -----------------------------------------------------------------------------
 // Helpers
-// -----------------------------------------------------------------------------
 
 /**
  * Transform package.json exports to include .d.ts type paths
@@ -514,6 +483,29 @@ interface FetchError extends Error {
     cause?: { code?: string }
 }
 
+/** Tracks consecutive network failures across all fetches */
+let consecutiveFailures = 0
+
+/** Reset failure counter on successful fetch */
+function resetFailureCounter(): void {
+    consecutiveFailures = 0
+}
+
+/** Check if we should give up due to persistent network issues */
+function checkFatalFailure(url: string): void {
+    consecutiveFailures++
+    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+        error(
+            `Network unavailable - ${MAX_CONSECUTIVE_FAILURES} fetch failures.\n` +
+                `  Check your internet connection and try again.\n` +
+                `  Last failed URL: ${url}`
+        )
+        process.exit(1)
+    }
+}
+
+// ATA occasionally has some issues with larger packages e.g. framer-motion
+// We use a custom fetch handler to allow us to keep trying
 async function fetchWithRetry(
     url: string | URL | Request,
     init?: RequestInit,
@@ -540,6 +532,7 @@ async function fetchWithRetry(
                 signal: controller.signal,
             })
             clearTimeout(timeout)
+            resetFailureCounter()
             return response
         } catch (err: unknown) {
             clearTimeout(timeout)
@@ -550,6 +543,11 @@ async function fetchWithRetry(
                 error.cause?.code === "ETIMEDOUT" ||
                 error.cause?.code === "UND_ERR_CONNECT_TIMEOUT" ||
                 error.message.includes("timeout")
+
+            // Count every timeout, not just final failures - exits if too many across all fetches
+            if (isRetryable) {
+                checkFatalFailure(urlString)
+            }
 
             if (attempt < retries && isRetryable) {
                 const delay = attempt * 1_000

@@ -7,7 +7,7 @@
 
 import type { WebSocket } from "ws"
 import type { Conflict } from "../types.js"
-import { debug, warn } from "../utils/logging.js"
+import { debug } from "../utils/logging.js"
 import { sendMessage } from "./connection.js"
 
 class PluginDisconnectedError extends Error {

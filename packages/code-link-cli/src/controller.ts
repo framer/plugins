@@ -1,8 +1,8 @@
 /**
  * CLI Controller
  *
- * All runtime state and orchestrates the sync lifecycle.
- * Helpers should provide data, nevering hold control or callbacks.
+ * All runtime state and orchestration of the sync lifecycle.
+ * Helpers should provide data and never hold control.
  */
 
 import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
@@ -109,14 +109,14 @@ type SyncEvent =
           projectInfo: { projectId: string; projectName: string }
       }
     | { type: "REQUEST_FILES" }
-    | { type: "FILE_LIST"; files: FileInfo[] }
+    | { type: "REMOTE_FILE_LIST"; files: FileInfo[] }
     | {
           type: "CONFLICTS_DETECTED"
           conflicts: Conflict[]
           safeWrites: FileInfo[]
           localOnly: FileInfo[]
       }
-    | { type: "FILE_CHANGE"; file: FileInfo; fileMeta?: FileSyncMetadata }
+    | { type: "REMOTE_FILE_CHANGE"; file: FileInfo; fileMeta?: FileSyncMetadata }
     | { type: "REMOTE_FILE_DELETE"; fileName: string }
     | { type: "LOCAL_DELETE_APPROVED"; fileName: string }
     | { type: "LOCAL_DELETE_REJECTED"; fileName: string; content: string }
@@ -276,9 +276,9 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             return { state, effects }
         }
 
-        case "FILE_LIST": {
+        case "REMOTE_FILE_LIST": {
             if (state.mode !== "handshaking") {
-                effects.push(log("warn", `Received FILE_LIST in mode ${state.mode}, ignoring`))
+                effects.push(log("warn", `Received REMOTE_FILE_LIST in mode ${state.mode}, ignoring`))
                 return { state, effects }
             }
 
@@ -381,7 +381,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             }
         }
 
-        case "FILE_CHANGE": {
+        case "REMOTE_FILE_CHANGE": {
             // Use helper to validate the incoming change
             const validation = validateIncomingChange(event.fileMeta, state.mode)
 
@@ -1123,13 +1123,13 @@ export async function start(config: Config): Promise<void> {
 
             case "file-list": {
                 debug(`Received file list: ${message.files.length} files`)
-                event = { type: "FILE_LIST", files: message.files }
+                event = { type: "REMOTE_FILE_LIST", files: message.files }
                 break
             }
 
             case "file-change":
                 event = {
-                    type: "FILE_CHANGE",
+                    type: "REMOTE_FILE_CHANGE",
                     file: {
                         name: message.fileName,
                         content: message.content,

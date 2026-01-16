@@ -37,6 +37,10 @@ form {
     gap: 10px;
 }
 
+p a {
+    cursor: pointer;
+}
+
 .sticky-divider {
     position: sticky;
     top: 0;
@@ -249,6 +253,8 @@ select:not(:disabled) {
     height: 100%;
     padding: 0px 15px 15px 15px;
     gap: 15px;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .login-image {
@@ -296,7 +302,45 @@ select:not(:disabled) {
     width: 100%;
 }
 
+.actions a {
+    display: contents;
+}
+
 .action-button {
     flex: 1;
     width: 100%;
+}
+
+/* Progress State */
+
+.progress-bar-text {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    color: var(--framer-color-text-tertiary);
+}
+
+.progress-bar-percent {
+    font-weight: 600;
+    color: var(--framer-color-text);
+}
+
+.progress-bar {
+    height: 3px;
+    width: 100%;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background-color: var(--framer-color-bg-tertiary);
+    position: relative;
+}
+
+.progress-bar-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 10px;
+    background-color: var(--framer-color-tint);
 }

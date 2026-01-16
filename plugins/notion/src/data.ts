@@ -127,7 +127,7 @@ export async function syncCollection(
 
     const seenItemIds = new Set<string>()
 
-    const databaseItems = await getDatabaseItems(dataSource.database)
+    const databaseItems = await getDatabaseItems(dataSource.database, onProgress)
     const limit = pLimit(CONCURRENCY_LIMIT)
 
     // Progress tracking

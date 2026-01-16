@@ -14,7 +14,6 @@
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
-        "base64-arraybuffer": "^1.0.2",
         "framer-plugin": "^3.6.0",
         "motion": "^12.23.12",
         "react": "^18.3.1",

@@ -16,7 +16,7 @@ if (collection && collection.managedBy !== "user") {
 // This API is unstable and will change without warning, we do not recommend using it until we publish a stable version.
 const initialState = framer[$framerInternal.initialState]
 const shouldCreate = initialState.intent === "collection/add"
-console.log("Initial State:", initialState, "Should Create:", shouldCreate)
+
 ReactDOM.createRoot(root).render(
     <React.StrictMode>
         <MiniRouterProvider

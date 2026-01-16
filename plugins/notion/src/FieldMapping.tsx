@@ -13,6 +13,7 @@ import {
     getDatabaseFieldsInfo,
     getPossibleSlugFieldIds,
     isMissingCollection,
+    type VirtualFieldType,
 } from "./api"
 import {
     type DatabaseIdMap,
@@ -25,9 +26,10 @@ import {
 } from "./data"
 import { assert, syncMethods } from "./utils"
 
-const labelByFieldTypeOption: Record<ManagedCollectionField["type"], string> = {
+const labelByFieldTypeOption: Record<VirtualFieldType, string> = {
     boolean: "Toggle",
     date: "Date",
+    dateTime: "Date & Time",
     number: "Number",
     formattedText: "Formatted Text",
     color: "Color",
@@ -49,7 +51,7 @@ interface FieldMappingRowProps {
     missingCollection: boolean
     onToggleIgnored: (fieldId: string) => void
     onNameChange: (fieldId: string, name: string) => void
-    onFieldTypeChange: (fieldId: string, type: ManagedCollectionField["type"]) => void
+    onFieldTypeChange: (fieldId: string, type: VirtualFieldType) => void
 }
 
 function FieldMappingRow({
@@ -211,7 +213,7 @@ export function FieldMapping({
         })
     }
 
-    const changeFieldType = (fieldId: string, type: ManagedCollectionField["type"]) => {
+    const changeFieldType = (fieldId: string, type: VirtualFieldType) => {
         setFieldsInfo(prevFieldsInfo => {
             const updatedFieldInfo = prevFieldsInfo.map(fieldInfo => {
                 if (fieldInfo.id !== fieldId) return fieldInfo

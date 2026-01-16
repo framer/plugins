@@ -16,7 +16,7 @@
     },
     "dependencies": {
         "clsx": "^2.1.1",
-        "diff": "^8.0.2",
+        "diff": "^8.0.3",
         "framer-plugin": "3.7.0-alpha.0",
         "p-retry": "^7.0.0",
         "prismjs": "^1.30.0",

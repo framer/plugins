@@ -20,6 +20,7 @@ export interface FieldMappingItem {
 interface FieldMapperRowProps {
     item: FieldMappingItem
     existingFields: Field[]
+    slugFieldName: string | null
     onToggleIgnored: () => void
     onSetIgnored: (ignored: boolean) => void
     onTargetChange: (targetFieldId: string | null) => void
@@ -29,6 +30,7 @@ interface FieldMapperRowProps {
 export function FieldMapperRow({
     item,
     existingFields,
+    slugFieldName,
     onToggleIgnored,
     onSetIgnored,
     onTargetChange,
@@ -36,6 +38,7 @@ export function FieldMapperRow({
 }: FieldMapperRowProps) {
     const { inferredField, action, targetFieldId, hasTypeMismatch, overrideType } = item
     const isIgnored = action === "ignore"
+    const isSlugField = slugFieldName && inferredField.columnName === slugFieldName
 
     // Find the target field when mapping to an existing field
     const targetField = targetFieldId ? existingFields.find(f => f.id === targetFieldId) : null
@@ -98,7 +101,7 @@ export function FieldMapperRow({
                 }}
             >
                 <option value="__create__">New Field...</option>
-                {isIgnored && <option value="__ignore__"></option>}
+                {isIgnored && <option value="__ignore__">{isSlugField ? "Slug Field" : ""}</option>}
 
                 {existingFields.length > 0 && <hr />}
                 {existingFields.map(field => (

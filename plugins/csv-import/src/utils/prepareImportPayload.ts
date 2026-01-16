@@ -208,7 +208,6 @@ export async function prepareImportPayload(opts: ProcessRecordsWithFieldMappingO
 
     const allItemIdBySlug = new Map<string, Map<string, string>>()
 
-    // TODO: what's the significance of this? We can do joins between collections? Needs QA to ensure it still works
     for (const field of fields) {
         if (field.type === "collectionReference" || field.type === "multiCollectionReference") {
             const collectionIdBySlug = allItemIdBySlug.get(field.collectionId) ?? new Map<string, string>()

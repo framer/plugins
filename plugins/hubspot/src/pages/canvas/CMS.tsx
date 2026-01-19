@@ -51,7 +51,7 @@ export default function CMSPage() {
             setIsCreating(true)
             const name = await findAvailableCollectionName("HubSpot")
             const collection = await framer.createManagedCollection(name)
-            framer.notify("Created a collection. Click Sync to sync data from HubSpot.")
+            framer.notify("Created a new collection. Click Sync to sync data from HubSpot.")
             await framer.navigateTo(collection.id)
         } catch (error) {
             console.error("Failed to create collection:", error)
@@ -68,15 +68,15 @@ export default function CMSPage() {
     return (
         <div className="flex flex-col gap-0 h-full p-[15px]">
             {collections.length > 0 ? (
-                <ScrollFadeContainer className="col flex-1" height={226}>
+                <ScrollFadeContainer className="col flex-1 gap-0" height={226}>
                     {collections.map(collection => (
-                        <button
+                        <div
                             key={collection.id}
-                            className="framer-button-secondary text-left px-[12px] py-[8px] rounded-md hover:bg-option-light/50 dark:hover:bg-option-dark/50"
+                            className="h-[30px] text-secondary hover:text-primary cursor-pointer px-[12px] flex flex-row items-center hover:bg-tertiary rounded-lg"
                             onClick={() => void handleCollectionClick(collection.id)}
                         >
-                            {collection.name}
-                        </button>
+                            <span>{collection.name}</span>
+                        </div>
                     ))}
                 </ScrollFadeContainer>
             ) : (

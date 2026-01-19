@@ -49,7 +49,8 @@ export default function CMSPage() {
 
         try {
             setIsCreating(true)
-            const collection = await framer.createManagedCollection("HubSpot")
+            const name = await findAvailableCollectionName("HubSpot")
+            const collection = await framer.createManagedCollection(name)
             framer.notify("Created a collection. Click Sync to sync data from HubSpot.")
             await framer.navigateTo(collection.id)
         } catch (error) {
@@ -93,10 +94,31 @@ export default function CMSPage() {
                     onClick={() => void handleCreateCollection()}
                     isLoading={isCreating}
                     disabled={!isAllowedToCreateCollection}
+                    title={isAllowedToCreateCollection ? undefined : "Insufficient permissions"}
                 >
                     Create New Collection
                 </Button>
             </div>
         </div>
     )
+}
+
+async function findAvailableCollectionName(baseName: string): Promise<string> {
+    const collections = await framer.getCollections()
+    const existingNames = new Set(collections.map(c => c.name))
+
+    // Check if base name is available
+    if (!existingNames.has(baseName)) {
+        return baseName
+    }
+
+    // Try numbered variants: "HubSpot 2", "HubSpot 3", etc.
+    let counter = 2
+    let candidateName = `${baseName} ${counter}`
+    while (existingNames.has(candidateName)) {
+        counter++
+        candidateName = `${baseName} ${counter}`
+    }
+
+    return candidateName
 }

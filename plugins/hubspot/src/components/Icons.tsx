@@ -49,15 +49,6 @@ export const MessageIcon = () => (
     </svg>
 )
 
-export const LightningIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18">
-        <path
-            d="M 0 4 C 0 1.791 1.791 0 4 0 L 14 0 C 16.209 0 18 1.791 18 4 L 18 14 C 18 16.209 16.209 18 14 18 L 4 18 C 1.791 18 0 16.209 0 14 Z M 5.021 10.099 C 4.79 10.499 5.078 11 5.541 11 L 8.401 11 C 8.713 11 8.949 11.283 8.893 11.589 L 8.545 13.5 C 8.439 14.086 9.229 14.377 9.528 13.861 L 12.979 7.901 C 13.21 7.501 12.922 7 12.459 7 L 9.599 7 C 9.287 7 9.051 6.717 9.107 6.411 L 9.455 4.5 C 9.561 3.914 8.771 3.623 8.472 4.139 Z"
-            fill="#999999"
-        ></path>
-    </svg>
-)
-
 export const CaretLeftIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
         <path

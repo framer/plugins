@@ -9,6 +9,7 @@ import {
     AccountPage,
     CanvasMenuPage,
     ChatPage,
+    CMSPage,
     FormsInstallationPage,
     FormsPage,
     LearnMoreTrackingPage,
@@ -82,6 +83,14 @@ const routes: Route[] = [
                         },
                     },
                 ],
+            },
+            {
+                path: "/cms",
+                element: CMSPage,
+                title: "CMS",
+                size: {
+                    height: 345,
+                },
             },
         ],
     },

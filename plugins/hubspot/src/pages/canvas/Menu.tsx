@@ -1,9 +1,8 @@
 import cx from "classnames"
-import { framer } from "framer-plugin"
 import { useEffect } from "react"
 import { useLocation } from "wouter"
 import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "../../api"
-import { ChartIcon, FormsIcon, LightningIcon, MeetingsIcon, MessageIcon, PersonIcon } from "../../components/Icons"
+import { ChartIcon, DatabaseIcon, FormsIcon, MeetingsIcon, MessageIcon, PersonIcon } from "../../components/Icons"
 import { Logo } from "../../components/Logo"
 
 const queryHooks = {
@@ -76,12 +75,7 @@ export default function MenuPage() {
                 <MenuOption title="Tracking" to="/canvas/tracking" icon={<ChartIcon />} />
                 <MenuOption title="Meetings" to="/canvas/meetings" icon={<MeetingsIcon />} />
                 <MenuOption title="Chats" to="/canvas/chat" icon={<MessageIcon />} className="gap-[7px]" />
-                <MenuOption
-                    title="Events"
-                    to="/canvas/events"
-                    icon={<LightningIcon />}
-                    onClick={() => framer.notify("The events feature will be out soon", { variant: "info" })}
-                />
+                <MenuOption title="CMS" to="/canvas/cms" icon={<DatabaseIcon />} />
                 <MenuOption title="Account" to="/canvas/account" icon={<PersonIcon />} />
             </div>
         </main>

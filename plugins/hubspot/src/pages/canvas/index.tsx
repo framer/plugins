@@ -1,5 +1,6 @@
 export { default as AccountPage } from "./Account"
 export { default as ChatPage } from "./Chat"
+export { default as CMSPage } from "./CMS"
 export { default as FormsPage } from "./forms"
 export { default as FormsInstallationPage } from "./forms/installation"
 export { default as MeetingsPage } from "./Meetings"

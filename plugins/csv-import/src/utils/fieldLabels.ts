@@ -3,7 +3,7 @@ import type { VirtualFieldType } from "./virtualTypes"
 export const labelByFieldType: Record<VirtualFieldType, string> = {
     boolean: "Toggle",
     date: "Date",
-    datetime: "DateTime",
+    datetime: "Date & Time",
     number: "Number",
     formattedText: "Formatted Text",
     color: "Color",

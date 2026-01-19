@@ -2,6 +2,7 @@ import { framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { Button } from "../../components/Button"
 import { CenteredSpinner } from "../../components/CenteredSpinner"
+import { CMSCollectionIcon } from "../../components/Icons"
 import { ScrollFadeContainer } from "../../components/ScrollFadeContainer"
 
 export default function CMSPage() {
@@ -72,9 +73,10 @@ export default function CMSPage() {
                     {collections.map(collection => (
                         <div
                             key={collection.id}
-                            className="h-[30px] text-secondary hover:text-primary cursor-pointer px-[12px] flex flex-row items-center hover:bg-tertiary rounded-lg"
+                            className="h-[30px] text-secondary hover:text-primary cursor-pointer px-[10px] flex flex-row items-center hover:bg-tertiary rounded-lg gap-2"
                             onClick={() => void handleCollectionClick(collection.id)}
                         >
+                            <CMSCollectionIcon />
                             <span>{collection.name}</span>
                         </div>
                     ))}

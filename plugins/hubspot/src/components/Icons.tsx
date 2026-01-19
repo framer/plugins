@@ -72,6 +72,15 @@ export const DatabaseIcon = () => (
     </svg>
 )
 
+export const CMSCollectionIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 13 15" fill="none">
+        <path
+            d="M 6.5 0 C 10.09 0 13 1.38 13 3.083 C 13 4.785 10.09 6.165 6.5 6.165 C 2.91 6.165 0 4.785 0 3.083 C 0 1.38 2.91 0 6.5 0 Z M 13 7.398 C 13 9.101 10.09 10.481 6.5 10.481 C 2.91 10.481 0 9.101 0 7.398 C 0 6.547 0 4.932 0 4.932 C 0 6.635 2.91 8.015 6.5 8.015 C 10.09 8.015 13 6.635 13 4.932 C 13 4.95 13 6.552 13 7.398 Z M 13 11.714 C 13 13.417 10.09 14.797 6.5 14.797 C 2.91 14.797 0 13.417 0 11.714 C 0 10.863 0 9.248 0 9.248 C 0 10.95 2.91 12.331 6.5 12.331 C 10.09 12.331 13 10.95 13 9.248 C 13 9.266 13 10.868 13 11.714 Z"
+            fill="currentColor"
+        ></path>
+    </svg>
+)
+
 export const IconChevron = ({ className }: { className?: string }) => (
     <svg
         xmlns="http://www.w3.org/2000/svg"

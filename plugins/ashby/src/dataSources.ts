@@ -78,7 +78,7 @@ function getLocationId(entry: unknown): string | null {
     return null
 }
 
-function extractLocation(locationName: string, address: JobAddress | null): Location {
+export function extractLocation(locationName: string, address: JobAddress | null): Location {
     const postalAddress = address?.postalAddress
     const parts = [
         postalAddress?.addressLocality?.trim(),

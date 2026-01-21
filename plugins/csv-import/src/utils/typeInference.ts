@@ -153,8 +153,13 @@ export function inferFieldsFromCSV(records: Record<string, string>[]): InferredF
     const inferredFields: InferredField[] = []
 
     for (const fieldName of fieldNames) {
-        // Skip special fields
+        // Skip special fields (e.g., `:draft`)
         if (fieldName.startsWith(":")) {
+            continue
+        }
+
+        // Skip companion columns (e.g., `Image:alt` provides alt text for `Image`)
+        if (fieldName.endsWith(":alt")) {
             continue
         }
 

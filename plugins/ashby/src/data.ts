@@ -8,7 +8,7 @@ import {
 } from "framer-plugin"
 import * as v from "valibot"
 import { hasOwnProperty } from "./api-types"
-import { type AshbyDataSource, type AshbyField, dataSources, slugify } from "./dataSources"
+import { type AshbyDataSource, type AshbyField, dataSources } from "./dataSources"
 import { assertNever, isCollectionReference } from "./utils"
 
 export const dataSourceIdPluginKey = "dataSourceId"
@@ -96,7 +96,6 @@ export function mergeFieldsWithExistingFields(
 }
 
 const StringifiableSchema = v.union([v.string(), v.number(), v.boolean()])
-const ArrayWithIdsSchema = v.array(v.object({ id: v.number() }))
 
 async function getItems(
     dataSource: AshbyDataSource,
@@ -159,7 +158,7 @@ async function getItems(
         }
 
         const fieldData: FieldDataInput = {}
-        for (const [fieldName, rawValue] of Object.entries(item) as [string, unknown][]) {
+        for (const [fieldName, rawValue] of Object.entries(item)) {
             const fields = fieldLookup.get(fieldName) ?? []
 
             if (fields.length === 0) {
@@ -172,7 +171,7 @@ async function getItems(
                     continue
                 }
 
-                const value = field.getValue ? field.getValue(rawValue) : rawValue
+                const value = !isCollectionReference(field) && field.getValue ? field.getValue(rawValue) : rawValue
 
                 switch (field.type) {
                     case "string":
@@ -202,48 +201,29 @@ async function getItems(
                         }
                         break
                     case "multiCollectionReference": {
-                        const ids: string[] = []
-
-                        // Special handling for Ashby secondary locations
-                        if (field.dataSourceId === "Locations" && Array.isArray(value)) {
-                            for (const item of value) {
-                                if (typeof item === "object" && item !== null && "location" in item) {
-                                    const locationName = (item as { location: string }).location
-                                    if (locationName) ids.push(slugify(locationName))
-                                }
-                            }
-                        } else if (v.is(ArrayWithIdsSchema, value)) {
-                            ids.push(...value.map(item => String(item.id)))
-                        }
-
-                        fieldData[field.id] = {
-                            value: ids,
-                            type: "multiCollectionReference",
-                        }
-                        break
-                    }
-                    case "collectionReference": {
-                        // For Ashby location references, the ID is the slugified location name
-                        if (field.dataSourceId === "Locations") {
-                            const locationName = typeof value === "string" ? value : null
-                            if (!locationName) continue
-
-                            fieldData[field.id] = {
-                                value: slugify(locationName),
-                                type: "collectionReference",
-                            }
+                        const targetDataSource = dataSources.find(ds => ds.id === field.dataSourceId)
+                        if (!targetDataSource?.getItemId || !Array.isArray(rawValue)) {
+                            fieldData[field.id] = { value: [], type: "multiCollectionReference" }
                             break
                         }
 
-                        // Default behavior for other collection references
-                        if (typeof value !== "object" || value == null || !("id" in value)) {
-                            continue
+                        const ids: string[] = []
+                        for (const entry of rawValue) {
+                            const id = targetDataSource.getItemId(entry)
+                            if (id) ids.push(id)
                         }
 
-                        fieldData[field.id] = {
-                            value: String(value.id),
-                            type: "collectionReference",
-                        }
+                        fieldData[field.id] = { value: ids, type: "multiCollectionReference" }
+                        break
+                    }
+                    case "collectionReference": {
+                        const targetDataSource = dataSources.find(ds => ds.id === field.dataSourceId)
+                        if (!targetDataSource?.getItemId) continue
+
+                        const id = targetDataSource.getItemId(rawValue)
+                        if (!id) continue
+
+                        fieldData[field.id] = { value: id, type: "collectionReference" }
                         break
                     }
                     case "image":
@@ -318,7 +298,6 @@ export async function syncExistingCollection(
         framer.closePlugin("You are not allowed to sync this collection.", {
             variant: "error",
         })
-        return { didSync: false }
     }
 
     try {
@@ -327,7 +306,7 @@ export async function syncExistingCollection(
 
         const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
-            framer.notify(`No field matches the slug field id “${previousSlugFieldId}”. Sync will not be performed.`, {
+            framer.notify(`No field matches the slug field id "${previousSlugFieldId}". Sync will not be performed.`, {
                 variant: "error",
             })
             return { didSync: false }
@@ -337,7 +316,7 @@ export async function syncExistingCollection(
         return { didSync: true }
     } catch (error) {
         console.error(error)
-        framer.notify(`Failed to sync collection “${previousDataSourceId}”. Check browser console for more details.`, {
+        framer.notify(`Failed to sync collection "${previousDataSourceId}". Check browser console for more details.`, {
             variant: "error",
         })
         return { didSync: false }

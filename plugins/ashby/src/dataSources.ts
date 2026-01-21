@@ -13,6 +13,8 @@ export interface AshbyDataSource<T extends DataItem = DataItem> {
      */
     fields: readonly AshbyField[]
     fetch: (jobBoardName: string) => Promise<T[]>
+    /** Extracts the ID from a data entry. Required when other data sources reference this one. */
+    getItemId?: (entry: unknown) => string | null
 }
 
 async function fetchAshbyData(url: string): Promise<unknown> {
@@ -39,7 +41,6 @@ export type AshbyField = ManagedCollectionFieldInput &
         | {
               key?: string
               type: "collectionReference" | "multiCollectionReference"
-              getValue?: never
               dataSourceId: string
               supportedCollections?: { id: string; name: string }[]
           }
@@ -49,13 +50,27 @@ const JobApiResponseSchema = v.object({ jobs: v.array(JobSchema) })
 
 const locationsDataSourceName = "Locations"
 
-export function slugify(text: string): string {
+function slugify(text: string): string {
     return text
         .toLowerCase()
         .trim()
         .replace(/[^\w\s-]/g, "")
         .replace(/[\s_-]+/g, "-")
         .replace(/^-+|-+$/g, "")
+}
+
+/** Extracts the location ID from a location entry. Used both for creating Location items and for references. */
+function getLocationId(entry: unknown): string | null {
+    if (typeof entry === "string") {
+        return slugify(entry)
+    }
+    if (typeof entry === "object" && entry !== null && "location" in entry) {
+        const location = (entry as { location: unknown }).location
+        if (typeof location === "string") {
+            return slugify(location)
+        }
+    }
+    return null
 }
 
 function extractLocation(locationName: string, address: JobAddress | null): Location {
@@ -67,7 +82,7 @@ function extractLocation(locationName: string, address: JobAddress | null): Loca
     ].filter(Boolean)
 
     return {
-        id: slugify(locationName),
+        id: getLocationId(locationName) ?? "",
         name: locationName,
         locality: postalAddress?.addressLocality?.trim() ?? "",
         region: postalAddress?.addressRegion?.trim() ?? "",
@@ -79,6 +94,7 @@ function extractLocation(locationName: string, address: JobAddress | null): Loca
 const locationsDataSource: AshbyDataSource<Location> = {
     id: locationsDataSourceName,
     name: locationsDataSourceName,
+    getItemId: getLocationId,
     fields: [
         { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
         { id: "locality", name: "Locality", type: "string" },
@@ -251,15 +267,18 @@ function createDataSource<T extends DataItem>(
     {
         name,
         fetch,
+        getItemId,
     }: {
         name: string
         fetch: (jobBoardName: string) => Promise<T[]>
+        getItemId?: (entry: unknown) => string | null
     },
     [idField, slugField, ...fields]: [AshbyField, AshbyField, ...AshbyField[]]
 ): AshbyDataSource<T> {
     return {
         id: name,
         name,
+        getItemId,
         fields: [idField, slugField, ...fields],
         fetch,
     }
@@ -273,8 +292,10 @@ function createDataSource<T extends DataItem>(
  */
 export function removeAshbyKeys(fields: AshbyField[]): ManagedCollectionFieldInput[] {
     return fields.map(originalField => {
+        if (originalField.type === "collectionReference" || originalField.type === "multiCollectionReference") {
+            return originalField
+        }
         const { getValue, ...field } = originalField
-
         return field
     })
 }

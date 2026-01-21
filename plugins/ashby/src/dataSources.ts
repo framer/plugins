@@ -9,6 +9,7 @@ import {
     type Location,
     SecondaryLocationSchema,
 } from "./api-types"
+import { isCollectionReference } from "./utils"
 
 export interface AshbyDataSource<T extends DataItem = DataItem> {
     id: string
@@ -297,9 +298,8 @@ function createDataSource<T extends DataItem>(
  */
 export function removeAshbyKeys(fields: AshbyField[]): ManagedCollectionFieldInput[] {
     return fields.map(originalField => {
-        if (originalField.type === "collectionReference" || originalField.type === "multiCollectionReference") {
-            return originalField
-        }
+        if (isCollectionReference(originalField)) return originalField
+
         const { getValue, ...field } = originalField
         return field
     })

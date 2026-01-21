@@ -25,7 +25,7 @@ export function App({ collection, previousDataSourceId, previousSlugFieldId, pre
 
         void framer.showUI({
             width: hasDataSourceSelected ? 400 : 320,
-            height: hasDataSourceSelected ? 427 : 285,
+            height: hasDataSourceSelected ? 427 : 325,
             minHeight: hasDataSourceSelected ? 427 : undefined,
             minWidth: hasDataSourceSelected ? 400 : undefined,
             resizable: hasDataSourceSelected,

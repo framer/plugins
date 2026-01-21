@@ -1,8 +1,18 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
 import * as v from "valibot"
-import { type Job, JobAddressSchema, JobSchema } from "./api-types"
+import {
+    type DataItem,
+    type Job,
+    type JobAddress,
+    JobAddressSchema,
+    JobSchema,
+    type Location,
+    SecondaryLocationSchema,
+} from "./api-types"
+import { slugify } from "./slugify"
+import { isCollectionReference } from "./utils"
 
-export interface AshbyDataSource {
+export interface AshbyDataSource<T extends DataItem = DataItem> {
     id: string
     name: string
     /**
@@ -12,7 +22,9 @@ export interface AshbyDataSource {
      * The rest of the fields are the fields of the data source.
      */
     fields: readonly AshbyField[]
-    fetch: (jobBoardName: string) => Promise<Job[]>
+    fetch: (jobBoardName: string) => Promise<T[]>
+    /** Extracts the ID from a data entry. Required when other data sources reference this one. */
+    getItemId?: (entry: unknown) => string | null
 }
 
 async function fetchAshbyData(url: string): Promise<unknown> {
@@ -39,13 +51,85 @@ export type AshbyField = ManagedCollectionFieldInput &
         | {
               key?: string
               type: "collectionReference" | "multiCollectionReference"
-              getValue?: never
               dataSourceId: string
               supportedCollections?: { id: string; name: string }[]
           }
     )
 
 const JobApiResponseSchema = v.object({ jobs: v.array(JobSchema) })
+
+const locationsDataSourceName = "Locations"
+
+/** Extracts the location ID from a location entry. Used both for creating Location items and for references. */
+function getLocationId(entry: unknown): string | null {
+    if (typeof entry === "string") {
+        return slugify(entry)
+    }
+    if (v.is(SecondaryLocationSchema, entry)) {
+        return slugify(entry.location)
+    }
+    return null
+}
+
+export function extractLocation(locationName: string, address: JobAddress | null): Location {
+    const postalAddress = address?.postalAddress
+    const parts = [
+        postalAddress?.addressLocality?.trim(),
+        postalAddress?.addressRegion?.trim(),
+        postalAddress?.addressCountry?.trim(),
+    ].filter(Boolean)
+
+    return {
+        id: getLocationId(locationName) ?? "",
+        name: locationName,
+        locality: postalAddress?.addressLocality?.trim() ?? "",
+        region: postalAddress?.addressRegion?.trim() ?? "",
+        country: postalAddress?.addressCountry?.trim() ?? "",
+        fullAddress: [...new Set(parts)].join(", "),
+    }
+}
+
+const locationsDataSource: AshbyDataSource<Location> = {
+    id: locationsDataSourceName,
+    name: locationsDataSourceName,
+    getItemId: getLocationId,
+    fields: [
+        { id: "name", name: "Name", type: "string", canBeUsedAsSlug: true },
+        { id: "locality", name: "Locality", type: "string" },
+        { id: "region", name: "Region", type: "string" },
+        { id: "country", name: "Country", type: "string" },
+        { id: "fullAddress", name: "Full Address", type: "string" },
+    ],
+    fetch: async (jobBoardName: string): Promise<Location[]> => {
+        const url = `https://api.ashbyhq.com/posting-api/job-board/${jobBoardName}?includeCompensation=true`
+        const data = v.safeParse(JobApiResponseSchema, await fetchAshbyData(url))
+
+        if (!data.success) {
+            console.log("Error parsing Ashby data:", data.issues)
+            throw new Error("Error parsing Ashby data")
+        }
+
+        const locationMap = new Map<string, Location>()
+
+        for (const job of data.output.jobs) {
+            // Primary location
+            const primary = extractLocation(job.location, job.address)
+            if (primary.id && !locationMap.has(primary.id)) {
+                locationMap.set(primary.id, primary)
+            }
+
+            // Secondary locations
+            for (const secondary of job.secondaryLocations) {
+                const loc = extractLocation(secondary.location, secondary.address)
+                if (loc.id && !locationMap.has(loc.id)) {
+                    locationMap.set(loc.id, loc)
+                }
+            }
+        }
+
+        return Array.from(locationMap.values())
+    },
+}
 
 const jobsDataSource = createDataSource(
     {
@@ -157,24 +241,42 @@ const jobsDataSource = createDataSource(
                 return address.addressLocality?.trim() ?? ""
             },
         },
+        {
+            id: "locationRef",
+            key: "location",
+            name: "Location Reference",
+            type: "collectionReference",
+            dataSourceId: locationsDataSourceName,
+            collectionId: "",
+        },
+        {
+            id: "secondaryLocations",
+            name: "Secondary Locations",
+            type: "multiCollectionReference",
+            dataSourceId: locationsDataSourceName,
+            collectionId: "",
+        },
     ]
 )
 
-export const dataSources = [jobsDataSource] satisfies AshbyDataSource[]
+export const dataSources: AshbyDataSource[] = [jobsDataSource, locationsDataSource]
 
-function createDataSource(
+function createDataSource<T extends DataItem>(
     {
         name,
         fetch,
+        getItemId,
     }: {
         name: string
-        fetch: (jobBoardName: string) => Promise<Job[]>
+        fetch: (jobBoardName: string) => Promise<T[]>
+        getItemId?: (entry: unknown) => string | null
     },
     [idField, slugField, ...fields]: [AshbyField, AshbyField, ...AshbyField[]]
-): AshbyDataSource {
+): AshbyDataSource<T> {
     return {
         id: name,
         name,
+        getItemId,
         fields: [idField, slugField, ...fields],
         fetch,
     }
@@ -188,8 +290,9 @@ function createDataSource(
  */
 export function removeAshbyKeys(fields: AshbyField[]): ManagedCollectionFieldInput[] {
     return fields.map(originalField => {
-        const { getValue, ...field } = originalField
+        if (isCollectionReference(originalField)) return originalField
 
+        const { getValue, ...field } = originalField
         return field
     })
 }

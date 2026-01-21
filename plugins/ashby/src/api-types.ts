@@ -1,5 +1,11 @@
 import * as v from "valibot"
 
+/** Base interface for all data items that can be synced */
+export interface DataItem {
+    id: string
+    [key: string]: unknown
+}
+
 const AddressSchema = v.object({
     addressLocality: v.optional(v.string()),
     addressRegion: v.optional(v.string()),
@@ -28,7 +34,7 @@ export const JobAddressSchema = v.object({
     postalAddress: AddressSchema,
 })
 
-const SecondaryLocationSchema = v.object({
+export const SecondaryLocationSchema = v.object({
     location: v.string(),
     address: JobAddressSchema,
 })
@@ -65,6 +71,19 @@ export type Job = v.InferOutput<typeof JobSchema>
 export type Address = v.InferOutput<typeof AddressSchema>
 export type CompensationComponent = v.InferOutput<typeof CompensationComponentSchema>
 export type CompensationTiers = v.InferOutput<typeof CompensationTiersSchema>
+export type SecondaryLocation = v.InferOutput<typeof SecondaryLocationSchema>
+export type JobAddress = v.InferOutput<typeof JobAddressSchema>
+
+export const LocationSchema = v.object({
+    id: v.string(),
+    name: v.string(),
+    locality: v.string(),
+    region: v.string(),
+    country: v.string(),
+    fullAddress: v.string(),
+})
+
+export type Location = v.InferOutput<typeof LocationSchema>
 
 export function hasOwnProperty<T extends object, Key extends PropertyKey>(
     object: T,

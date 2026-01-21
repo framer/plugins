@@ -96,7 +96,6 @@ export function mergeFieldsWithExistingFields(
 }
 
 const StringifiableSchema = v.union([v.string(), v.number(), v.boolean()])
-const ArrayWithIdsSchema = v.array(v.object({ id: v.number() }))
 
 async function getItems(
     dataSource: AshbyDataSource,
@@ -159,16 +158,20 @@ async function getItems(
         }
 
         const fieldData: FieldDataInput = {}
-        for (const [fieldName, rawValue] of Object.entries(item) as [string, unknown][]) {
-            const isFieldIgnored = !fieldsToSync.find(field => field.id === fieldName)
+        for (const [fieldName, rawValue] of Object.entries(item)) {
             const fields = fieldLookup.get(fieldName) ?? []
 
-            if (fields.length === 0 || isFieldIgnored) {
+            if (fields.length === 0) {
                 continue
             }
 
             for (const field of fields) {
-                const value = field.getValue ? field.getValue(rawValue) : rawValue
+                const isFieldIgnored = !fieldsToSync.find(f => f.id === field.id)
+                if (isFieldIgnored) {
+                    continue
+                }
+
+                const value = !isCollectionReference(field) && field.getValue ? field.getValue(rawValue) : rawValue
 
                 switch (field.type) {
                     case "string":
@@ -198,26 +201,29 @@ async function getItems(
                         }
                         break
                     case "multiCollectionReference": {
-                        const ids: string[] = []
-                        if (v.is(ArrayWithIdsSchema, value)) {
-                            ids.push(...value.map(item => String(item.id)))
+                        const targetDataSource = dataSources.find(ds => ds.id === field.dataSourceId)
+                        if (!targetDataSource?.getItemId || !Array.isArray(rawValue)) {
+                            fieldData[field.id] = { value: [], type: "multiCollectionReference" }
+                            break
                         }
 
-                        fieldData[field.id] = {
-                            value: ids,
-                            type: "multiCollectionReference",
+                        const ids: string[] = []
+                        for (const entry of rawValue) {
+                            const id = targetDataSource.getItemId(entry)
+                            if (id) ids.push(id)
                         }
+
+                        fieldData[field.id] = { value: ids, type: "multiCollectionReference" }
                         break
                     }
                     case "collectionReference": {
-                        if (typeof value !== "object" || value == null || !("id" in value)) {
-                            continue
-                        }
+                        const targetDataSource = dataSources.find(ds => ds.id === field.dataSourceId)
+                        if (!targetDataSource?.getItemId) continue
 
-                        fieldData[field.id] = {
-                            value: String(value.id),
-                            type: "collectionReference",
-                        }
+                        const id = targetDataSource.getItemId(rawValue)
+                        if (!id) continue
+
+                        fieldData[field.id] = { value: id, type: "collectionReference" }
                         break
                     }
                     case "image":
@@ -292,7 +298,6 @@ export async function syncExistingCollection(
         framer.closePlugin("You are not allowed to sync this collection.", {
             variant: "error",
         })
-        return { didSync: false }
     }
 
     try {
@@ -301,7 +306,7 @@ export async function syncExistingCollection(
 
         const slugField = dataSource.fields.find(field => field.id === previousSlugFieldId)
         if (!slugField) {
-            framer.notify(`No field matches the slug field id “${previousSlugFieldId}”. Sync will not be performed.`, {
+            framer.notify(`No field matches the slug field id "${previousSlugFieldId}". Sync will not be performed.`, {
                 variant: "error",
             })
             return { didSync: false }
@@ -311,7 +316,7 @@ export async function syncExistingCollection(
         return { didSync: true }
     } catch (error) {
         console.error(error)
-        framer.notify(`Failed to sync collection “${previousDataSourceId}”. Check browser console for more details.`, {
+        framer.notify(`Failed to sync collection "${previousDataSourceId}". Check browser console for more details.`, {
             variant: "error",
         })
         return { didSync: false }

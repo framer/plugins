@@ -77,7 +77,8 @@ form {
     pointer-events: none;
 }
 
-.setup .field {
+.setup .field,
+.setup label {
     display: flex;
     flex-direction: row;
     align-items: center;

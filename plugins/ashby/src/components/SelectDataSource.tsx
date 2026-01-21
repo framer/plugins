@@ -18,7 +18,9 @@ export function SelectDataSource({
     onSelectDataSource,
 }: SelectDataSourceProps) {
     const [jobBoardName, setJobBoardName] = useState<string>(previousJobBoardName ?? "")
-    const [selectedDataSourceId] = useState<string>(previousDataSourceId ?? dataSources[0]?.id ?? "")
+    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string>(
+        previousDataSourceId ?? dataSources[0]?.id ?? ""
+    )
     const [isLoading, setIsLoading] = useState(false)
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
@@ -72,19 +74,40 @@ export function SelectDataSource({
             <img src={hero} alt="Ashby Hero" />
 
             <form onSubmit={handleSubmit}>
-                <div className="field">
+                <label>
                     <p>Job Board Name</p>
                     <input
                         id="jobBoardName"
                         type="text"
                         required
-                        placeholder="jobBoardName"
+                        placeholder="Enter Job Board Name…"
                         value={jobBoardName}
                         onChange={event => {
                             setJobBoardName(event.target.value)
                         }}
                     />
-                </div>
+                </label>
+                <label>
+                    <p>Collection</p>
+                    <select
+                        id="collection"
+                        required
+                        onChange={event => {
+                            setSelectedDataSourceId(event.target.value)
+                        }}
+                        value={selectedDataSourceId}
+                        disabled={!jobBoardName}
+                    >
+                        <option value="" disabled>
+                            Choose Source…
+                        </option>
+                        {dataSources.map(({ id, name }) => (
+                            <option key={id} value={id}>
+                                {name}
+                            </option>
+                        ))}
+                    </select>
+                </label>
                 <button disabled={isButtonDisabled}>{isLoading ? <div className="framer-spinner" /> : "Next"}</button>
             </form>
         </main>

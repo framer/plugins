@@ -8,7 +8,7 @@ import {
 } from "framer-plugin"
 import * as v from "valibot"
 import { hasOwnProperty } from "./api-types"
-import { type AshbyDataSource, type AshbyField, dataSources } from "./dataSources"
+import { type AshbyDataSource, type AshbyField, dataSources, slugify } from "./dataSources"
 import { assertNever, isCollectionReference } from "./utils"
 
 export const dataSourceIdPluginKey = "dataSourceId"
@@ -160,14 +160,18 @@ async function getItems(
 
         const fieldData: FieldDataInput = {}
         for (const [fieldName, rawValue] of Object.entries(item) as [string, unknown][]) {
-            const isFieldIgnored = !fieldsToSync.find(field => field.id === fieldName)
             const fields = fieldLookup.get(fieldName) ?? []
 
-            if (fields.length === 0 || isFieldIgnored) {
+            if (fields.length === 0) {
                 continue
             }
 
             for (const field of fields) {
+                const isFieldIgnored = !fieldsToSync.find(f => f.id === field.id)
+                if (isFieldIgnored) {
+                    continue
+                }
+
                 const value = field.getValue ? field.getValue(rawValue) : rawValue
 
                 switch (field.type) {
@@ -199,7 +203,16 @@ async function getItems(
                         break
                     case "multiCollectionReference": {
                         const ids: string[] = []
-                        if (v.is(ArrayWithIdsSchema, value)) {
+
+                        // Special handling for Ashby secondary locations
+                        if (field.dataSourceId === "Locations" && Array.isArray(value)) {
+                            for (const item of value) {
+                                if (typeof item === "object" && item !== null && "location" in item) {
+                                    const locationName = (item as { location: string }).location
+                                    if (locationName) ids.push(slugify(locationName))
+                                }
+                            }
+                        } else if (v.is(ArrayWithIdsSchema, value)) {
                             ids.push(...value.map(item => String(item.id)))
                         }
 
@@ -210,6 +223,19 @@ async function getItems(
                         break
                     }
                     case "collectionReference": {
+                        // For Ashby location references, the ID is the slugified location name
+                        if (field.dataSourceId === "Locations") {
+                            const locationName = typeof value === "string" ? value : null
+                            if (!locationName) continue
+
+                            fieldData[field.id] = {
+                                value: slugify(locationName),
+                                type: "collectionReference",
+                            }
+                            break
+                        }
+
+                        // Default behavior for other collection references
                         if (typeof value !== "object" || value == null || !("id" in value)) {
                             continue
                         }

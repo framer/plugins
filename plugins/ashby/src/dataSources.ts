@@ -50,11 +50,11 @@ const JobApiResponseSchema = v.object({ jobs: v.array(JobSchema) })
 
 const locationsDataSourceName = "Locations"
 
-function slugify(text: string): string {
+export function slugify(text: string): string {
     return text
         .toLowerCase()
         .trim()
-        .replace(/[^\w\s-]/g, "")
+        .replace(/[^\p{L}\p{N}\s-]/gu, "")
         .replace(/[\s_-]+/g, "-")
         .replace(/^-+|-+$/g, "")
 }

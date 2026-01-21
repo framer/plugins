@@ -34,7 +34,7 @@ export const JobAddressSchema = v.object({
     postalAddress: AddressSchema,
 })
 
-const SecondaryLocationSchema = v.object({
+export const SecondaryLocationSchema = v.object({
     location: v.string(),
     address: JobAddressSchema,
 })

@@ -1,6 +1,14 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
 import * as v from "valibot"
-import { type DataItem, type Job, type JobAddress, JobAddressSchema, JobSchema, type Location } from "./api-types"
+import {
+    type DataItem,
+    type Job,
+    type JobAddress,
+    JobAddressSchema,
+    JobSchema,
+    type Location,
+    SecondaryLocationSchema,
+} from "./api-types"
 
 export interface AshbyDataSource<T extends DataItem = DataItem> {
     id: string
@@ -64,11 +72,8 @@ function getLocationId(entry: unknown): string | null {
     if (typeof entry === "string") {
         return slugify(entry)
     }
-    if (typeof entry === "object" && entry !== null && "location" in entry) {
-        const location = (entry as { location: unknown }).location
-        if (typeof location === "string") {
-            return slugify(location)
-        }
+    if (v.is(SecondaryLocationSchema, entry)) {
+        return slugify(entry.location)
     }
     return null
 }

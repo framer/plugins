@@ -9,6 +9,7 @@ import {
     type Location,
     SecondaryLocationSchema,
 } from "./api-types"
+import { slugify } from "./slugify"
 import { isCollectionReference } from "./utils"
 
 export interface AshbyDataSource<T extends DataItem = DataItem> {
@@ -58,15 +59,6 @@ export type AshbyField = ManagedCollectionFieldInput &
 const JobApiResponseSchema = v.object({ jobs: v.array(JobSchema) })
 
 const locationsDataSourceName = "Locations"
-
-export function slugify(text: string): string {
-    return text
-        .toLowerCase()
-        .trim()
-        .replace(/[^\p{L}\p{N}\s-]/gu, "")
-        .replace(/[\s_-]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-}
 
 /** Extracts the location ID from a location entry. Used both for creating Location items and for references. */
 function getLocationId(entry: unknown): string | null {

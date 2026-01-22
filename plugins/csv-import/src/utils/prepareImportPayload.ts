@@ -9,6 +9,7 @@ import {
 } from "framer-plugin"
 import type { FieldMappingItem } from "../components/FieldMapperRow"
 import { assert } from "./assert"
+import { getDataFields } from "./filterFields"
 import type { CSVRecord } from "./parseCSV"
 
 /** Error when importing fails, internal to `RecordImporter` */
@@ -194,7 +195,8 @@ export async function prepareImportPayload(opts: ProcessRecordsWithFieldMappingO
     }
 
     const existingItems = await opts.collection.getItems()
-    const fields = await opts.collection.getFields()
+    const allFields = await opts.collection.getFields()
+    const fields = getDataFields(allFields)
 
     const result: ImportPayload = {
         warnings: {

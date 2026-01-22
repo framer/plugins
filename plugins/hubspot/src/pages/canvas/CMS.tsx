@@ -1,4 +1,4 @@
-import { framer, useIsAllowedTo } from "framer-plugin"
+import { type Collection, framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useState } from "react"
 import { Button } from "../../components/Button"
 import { CenteredSpinner } from "../../components/CenteredSpinner"
@@ -6,40 +6,55 @@ import { CMSCollectionIcon } from "../../components/Icons"
 import { ScrollFadeContainer } from "../../components/ScrollFadeContainer"
 
 export default function CMSPage() {
-    const [collections, setCollections] = useState<{ id: string; name: string }[]>([])
+    const [collections, setCollections] = useState<Collection[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [isCreating, setIsCreating] = useState(false)
     const isAllowedToCreateCollection = useIsAllowedTo("createManagedCollection")
 
-    useEffect(() => {
-        const loadCollections = async () => {
-            try {
-                const allCollections = await framer.getCollections()
-                const thisPluginCollections = allCollections
-                    .filter(collection => collection.managedBy === "thisPlugin")
-                    .map(collection => ({
-                        id: collection.id,
-                        name: collection.name,
-                    }))
-                setCollections(thisPluginCollections)
-            } catch (error) {
-                console.error("Failed to load collections:", error)
-                framer.notify("Failed to load collections", { variant: "error" })
-            } finally {
-                setIsLoading(false)
-            }
+    const loadCollections = async () => {
+        try {
+            const allCollections = await framer.getCollections()
+            const thisPluginCollections = allCollections.filter(collection => collection.managedBy === "thisPlugin")
+            setCollections(thisPluginCollections)
+        } catch (error) {
+            console.error("Failed to load collections:", error)
+            framer.notify("Failed to load collections", { variant: "error" })
+        } finally {
+            setIsLoading(false)
         }
+    }
 
+    useEffect(() => {
         void loadCollections()
     }, [])
 
-    const handleCollectionClick = async (collectionId: string) => {
+    const handleCollectionClick = (collectionId: string) => {
         try {
-            await framer.navigateTo(collectionId)
+            void framer.navigateTo(collectionId)
         } catch (error) {
             console.error("Failed to navigate to collection:", error)
             framer.notify("Failed to open collection", { variant: "error" })
         }
+    }
+
+    const handleCollectionContextMenu = (e: React.MouseEvent<HTMLDivElement>, collectionId: string) => {
+        e.preventDefault()
+        e.stopPropagation()
+
+        void framer.showContextMenu(
+            [
+                {
+                    label: "Open Collection",
+                    onAction: () => void handleCollectionClick(collectionId),
+                },
+            ],
+            {
+                location: {
+                    x: e.clientX,
+                    y: e.clientY,
+                },
+            }
+        )
     }
 
     const handleCreateCollection = async () => {
@@ -53,6 +68,7 @@ export default function CMSPage() {
             const name = await findAvailableCollectionName("HubSpot")
             const collection = await framer.createManagedCollection(name)
             framer.notify("Created a new collection. Click Sync to sync data from HubSpot.")
+            void loadCollections()
             await framer.navigateTo(collection.id)
         } catch (error) {
             console.error("Failed to create collection:", error)
@@ -73,11 +89,16 @@ export default function CMSPage() {
                     {collections.map(collection => (
                         <div
                             key={collection.id}
-                            className="h-[30px] text-secondary hover:text-primary cursor-pointer px-[15px] flex flex-row items-center hover:bg-tertiary rounded-lg gap-3"
-                            onClick={() => void handleCollectionClick(collection.id)}
+                            className="h-[30px] text-secondary hover:text-primary cursor-pointer px-[15px] flex flex-row items-center hover:bg-tertiary rounded-lg gap-3 select-none"
+                            onClick={() => {
+                                handleCollectionClick(collection.id)
+                            }}
+                            onContextMenu={e => {
+                                handleCollectionContextMenu(e, collection.id)
+                            }}
                         >
                             <CMSCollectionIcon />
-                            <span>{collection.name}</span>
+                            {collection.name}
                         </div>
                     ))}
                 </ScrollFadeContainer>

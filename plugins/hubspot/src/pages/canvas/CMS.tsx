@@ -73,7 +73,7 @@ export default function CMSPage() {
                     {collections.map(collection => (
                         <div
                             key={collection.id}
-                            className="h-[30px] text-secondary hover:text-primary cursor-pointer px-[10px] flex flex-row items-center hover:bg-tertiary rounded-lg gap-2"
+                            className="h-[30px] text-secondary hover:text-primary cursor-pointer px-[15px] flex flex-row items-center hover:bg-tertiary rounded-lg gap-3"
                             onClick={() => void handleCollectionClick(collection.id)}
                         >
                             <CMSCollectionIcon />

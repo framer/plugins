@@ -14,8 +14,8 @@ export default function CMSPage() {
     const loadCollections = async () => {
         try {
             const allCollections = await framer.getCollections()
-            const thisPluginCollections = allCollections.filter(collection => collection.managedBy === "thisPlugin")
-            setCollections(thisPluginCollections)
+            const hubSpotCollections = allCollections.filter(collection => collection.managedBy === "thisPlugin")
+            setCollections(hubSpotCollections)
         } catch (error) {
             console.error("Failed to load collections:", error)
             framer.notify("Failed to load collections", { variant: "error" })
@@ -25,7 +25,16 @@ export default function CMSPage() {
     }
 
     useEffect(() => {
+        const handleWindowFocus = () => {
+            void loadCollections()
+        }
+
+        window.addEventListener("focus", handleWindowFocus)
         void loadCollections()
+
+        return () => {
+            window.removeEventListener("focus", handleWindowFocus)
+        }
     }, [])
 
     const handleCollectionClick = (collectionId: string) => {
@@ -45,7 +54,9 @@ export default function CMSPage() {
             [
                 {
                     label: "Open Collection",
-                    onAction: () => void handleCollectionClick(collectionId),
+                    onAction: () => {
+                        handleCollectionClick(collectionId)
+                    },
                 },
             ],
             {

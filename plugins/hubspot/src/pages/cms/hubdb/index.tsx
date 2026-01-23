@@ -31,7 +31,7 @@ export default function HubDBPage() {
         navigate(`/cms/hubdb/map?tableId=${selectedTableId}`)
     }
 
-    if (isLoading) return <CenteredSpinner />
+    if (isLoading) return <CenteredSpinner large />
 
     if (!tables) return null
 

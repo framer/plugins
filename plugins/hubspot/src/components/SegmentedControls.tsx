@@ -20,12 +20,12 @@ export const SegmentedControls = ({ options, value, onValueChange, disabled, tit
     const segmentWidth = 130 / options.length
 
     return (
-        <div className="relative bg-tertiary w-[134px] h-[32px] p-0.5 rounded-lg flex items-center justify-center font-semibold text-xs select-none">
+        <div className="relative bg-tertiary w-[134px] h-[30px] p-0.5 rounded-lg flex items-center justify-center font-semibold text-xs select-none">
             <motion.div
                 style={{
                     width: `${segmentWidth}px`,
                 }}
-                className="absolute top-[2px] left-[2px] h-[28px] bg-white dark:bg-[#555555] rounded-md segment-control-shadow pointer-events-none"
+                className="absolute top-[2px] left-[2px] h-[26px] bg-white dark:bg-[#555555] rounded-md segment-control-shadow pointer-events-none"
                 initial={false}
                 animate={{ x: `${selectedIndex * segmentWidth}px` }}
                 transition={{ type: "spring", stiffness: 700, damping: 50 }}

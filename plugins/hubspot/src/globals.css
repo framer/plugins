@@ -139,6 +139,8 @@ main {
 
 #root {
     --framer-color-tint: #ff5c35;
+    --framer-color-tint-dark: #f25730;
+    --framer-color-tint-extra-dark: #e34e29;
 }
 
 [data-framer-theme="light"] .framer-button-primary {

@@ -3,6 +3,7 @@ import { framer } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { FieldMapperRow, type FieldMappingItem } from "../components/FieldMapperRow"
 import { labelByFieldType } from "../utils/fieldLabels"
+import { getDataFields } from "../utils/filterFields"
 import { isTypeCompatible } from "../utils/typeCompatibility"
 import { inferFieldsFromCSV } from "../utils/typeInference"
 import type { VirtualFieldType } from "../utils/virtualTypes"
@@ -48,7 +49,8 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
     useEffect(() => {
         async function loadFields() {
             try {
-                const fields = await collection.getFields()
+                const allFields = await collection.getFields()
+                const fields = getDataFields(allFields)
                 setExistingFields(fields)
 
                 const inferredFields = inferFieldsFromCSV(csvRecords)

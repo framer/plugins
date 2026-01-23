@@ -166,6 +166,12 @@ export function SelectCSVFile({ onFileSelected, disabled }: SelectCSVFileProps) 
                         >
                             Upload File
                         </button>
+
+                        <p className="public-data-note">
+                            CMS data is publicly viewable.
+                            <br />
+                            Avoid importing personal data.
+                        </p>
                     </div>
                 </>
             )}

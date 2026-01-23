@@ -657,3 +657,10 @@ select:not(:disabled) {
     grid-column: span 2;
     width: 100%;
 }
+
+.public-data-note {
+    padding-top: 1em;
+    font-size: 0.75em;
+    color: var(--framer-color-text-tertiary);
+    text-align: center;
+}

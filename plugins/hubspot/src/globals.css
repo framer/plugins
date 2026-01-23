@@ -14,7 +14,6 @@
     --background-color-tint-dimmed: var(--framer-color-tint-dimmed);
     --background-color-tint-dark: var(--framer-color-tint-dark);
     --background-color-black-dimmed: rgba(0, 0, 0, 0.5);
-    --background-color-hs-orange: #ff5c35;
     --background-color-framer-red: #ff3366;
     --background-color-framer-blue: #0099ff;
 
@@ -23,7 +22,6 @@
     --color-tertiary: var(--framer-color-text-tertiary);
     --color-inverted: var(--framer-color-text-inverted);
     --color-tint: var(--framer-color-tint);
-    --color-hs-orange: #ff5c35;
     --color-framer-red: #ff3366;
 
     --border-color-divider: var(--framer-color-divider);
@@ -137,4 +135,22 @@ main {
     display: flex;
     flex-direction: column;
     gap: 15px;
+}
+
+#root {
+    --framer-color-tint: #ff5c35;
+}
+
+[data-framer-theme="light"] .framer-button-primary {
+    --framer-color-tint: #111;
+    --framer-color-tint-dark: #333;
+    --framer-color-tint-extra-dark: #444;
+    --framer-color-text-reversed: #fff;
+}
+
+[data-framer-theme="dark"] .framer-button-primary {
+    --framer-color-tint: #fff;
+    --framer-color-tint-dark: #ddd;
+    --framer-color-tint-extra-dark: #c5c5c5;
+    --framer-color-text-reversed: #000;
 }

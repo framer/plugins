@@ -112,7 +112,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 if (error instanceof ImportError || error instanceof Error) {
                     framer.notify(error.message, { variant: "error" })
                 } else {
-                    framer.notify("Error processing CSV file. Check console for details.", {
+                    framer.notify(`Error processing CSV file: ${String(error)}`, {
                         variant: "error",
                     })
                 }

@@ -10,14 +10,13 @@ interface CollectionSelectorProps {
 }
 
 const NEW_COLLECTION_VALUE = "__new_collection__"
-const DEFAULT_COLLECTION_NAME = "Collection"
 
 export function CollectionSelector({ forceCreate, collection, onCollectionChange }: CollectionSelectorProps) {
     const isAllowedToCreateCollection = useIsAllowedTo("createCollection")
     const { writableCollections, allCollections } = useCollections(collection)
     const [isCreatingNew, setIsCreatingNew] = useState(forceCreate)
     const [creationError, setCreationError] = useState<string | undefined>(undefined)
-    const [newCollectionName, setNewCollectionName] = useState(DEFAULT_COLLECTION_NAME)
+    const [newCollectionName, setNewCollectionName] = useState("")
     const inputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
@@ -26,15 +25,6 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
             inputRef.current.select()
         }
     }, [isCreatingNew])
-
-    // Find available collection name when starting to create a new collection
-    useEffect(() => {
-        if (isCreatingNew && allCollections.length > 0) {
-            const availableName = findAvailableCollectionName(DEFAULT_COLLECTION_NAME, allCollections)
-            setNewCollectionName(availableName)
-            setCreationError(undefined)
-        }
-    }, [isCreatingNew, allCollections])
 
     // Validate for duplicates on initial render and when collections change
     // Only show error if user has manually changed the name from the auto-generated one
@@ -54,13 +44,18 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         }
     }, [isCreatingNew, newCollectionName, allCollections])
 
+    const cancelCreatingNewCollection = () => {
+        setIsCreatingNew(false)
+        setNewCollectionName("")
+        setCreationError(undefined)
+    }
+
     const selectCollection = async (event: ChangeEvent<HTMLSelectElement>) => {
         const value = event.currentTarget.value
 
         if (value === NEW_COLLECTION_VALUE) {
             setIsCreatingNew(true)
-            const availableName = findAvailableCollectionName(DEFAULT_COLLECTION_NAME, allCollections)
-            setNewCollectionName(availableName)
+            setNewCollectionName("")
             return
         }
 
@@ -95,19 +90,14 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
             throw error
         }
 
-        setCreationError(undefined)
-
         await newCollection.setAsActive()
         onCollectionChange(newCollection)
-        setIsCreatingNew(false)
-        setNewCollectionName(DEFAULT_COLLECTION_NAME)
+        cancelCreatingNewCollection()
     }
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === "Escape") {
-            setIsCreatingNew(false)
-            setNewCollectionName(DEFAULT_COLLECTION_NAME)
-            setCreationError(undefined)
+            cancelCreatingNewCollection()
         } else if (event.key === "Enter") {
             event.preventDefault()
             void createCollection()
@@ -150,6 +140,8 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
                         onBlur={() => {
                             if (newCollectionName.trim()) {
                                 void createCollection()
+                            } else {
+                                cancelCreatingNewCollection()
                             }
                         }}
                         placeholder="Enter new collection name..."
@@ -221,23 +213,4 @@ function useCollections(collection: Collection | null) {
         writableCollections: allCollections.filter(collection => collection.managedBy === "user"),
         allCollections,
     }
-}
-
-function findAvailableCollectionName(baseName: string, allCollections: Collection[]): string {
-    const existingNames = new Set(allCollections.map(c => c.name))
-
-    // Check if base name is available
-    if (!existingNames.has(baseName)) {
-        return baseName
-    }
-
-    // Try numbered variants: "Collection 2", "Collection 3", etc.
-    let counter = 2
-    let candidateName = `${baseName} ${counter}`
-    while (existingNames.has(candidateName)) {
-        counter++
-        candidateName = `${baseName} ${counter}`
-    }
-
-    return candidateName
 }

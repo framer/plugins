@@ -6,6 +6,23 @@ export const AccessTokenContext = createContext<string>("NO_ACCESS_TOKEN")
 
 const STORAGE_KEY = "framer-search-console-tokens"
 
+class Auth {
+    private readonly AUTH_URI: string
+
+    constructor() {
+        this.AUTH_URI =
+            import.meta.env.VITE_LOCAL === "true"
+                ? "https://localhost:8787"
+                : "https://oauth.fetch.tools/google-search-console-plugin"
+    }
+
+    get authUri() {
+        return this.AUTH_URI
+    }
+}
+
+const auth = new Auth()
+
 export function getLocalStorageTokens(): GoogleToken | null {
     const serializedTokens = window.localStorage.getItem(STORAGE_KEY)
     if (!serializedTokens) return null
@@ -27,7 +44,7 @@ export function useGoogleToken() {
             window.setTimeout(reject, 60_000) // Timeout after 60 seconds
 
             const task = async () => {
-                const response = await fetch(`${import.meta.env.VITE_OAUTH_API_DOMAIN}/poll?readKey=${readKey}`, {
+                const response = await fetch(`${auth.authUri}/poll?readKey=${readKey}`, {
                     method: "POST",
                 })
 
@@ -64,7 +81,7 @@ export function useGoogleToken() {
                 setLoading(true)
 
                 // Retrieve the authorization URL & set of unique read/write keys
-                const response = await fetch(`${import.meta.env.VITE_OAUTH_API_DOMAIN}/authorize`, {
+                const response = await fetch(`${auth.authUri}/authorize`, {
                     method: "POST",
                 })
                 if (response.status !== 200) return
@@ -101,12 +118,9 @@ export function useGoogleToken() {
             }
 
             // Retrieve the authorization URL & set of unique read/write keys
-            const response = await fetch(
-                `${import.meta.env.VITE_OAUTH_API_DOMAIN}/refresh?code=${encodeURIComponent(refreshToken)}`,
-                {
-                    method: "POST",
-                }
-            )
+            const response = await fetch(`${auth.authUri}/refresh?code=${encodeURIComponent(refreshToken)}`, {
+                method: "POST",
+            })
 
             const tokens = v.parse(GoogleTokenSchema, await response.json())
 

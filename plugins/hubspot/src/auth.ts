@@ -29,18 +29,22 @@ type Authorize = v.InferOutput<typeof AuthorizeSchema>
 
 const pluginTokensKey = "hubspotTokens"
 
-const isLocal = () => window.location.hostname.includes("localhost")
-
-const AUTH_URI = isLocal() ? "https://localhost:8787" : "https://oauth.fetch.tools/hubspot-plugin"
-
 class Auth {
+    private readonly AUTH_URI: string
     storedTokens?: StoredTokens | null
+
+    constructor() {
+        this.AUTH_URI =
+            import.meta.env.VITE_LOCAL === "true"
+                ? "https://localhost:8787"
+                : "https://oauth.fetch.tools/hubspot-plugin"
+    }
 
     async refreshTokens(): Promise<StoredTokens> {
         try {
             const tokens = this.tokens.getOrThrow()
 
-            const res = await fetch(`${AUTH_URI}/refresh?code=${tokens.refreshToken}`, {
+            const res = await fetch(`${this.AUTH_URI}/refresh?code=${tokens.refreshToken}`, {
                 method: "POST",
             })
 
@@ -57,7 +61,7 @@ class Auth {
     }
 
     async fetchTokens(readKey: string): Promise<StoredTokens> {
-        const res = await fetch(`${AUTH_URI}/poll?readKey=${readKey}`, {
+        const res = await fetch(`${this.AUTH_URI}/poll?readKey=${readKey}`, {
             method: "POST",
         })
 
@@ -69,7 +73,7 @@ class Auth {
     }
 
     async authorize(): Promise<Authorize> {
-        const response = await fetch(`${AUTH_URI}/authorize`, {
+        const response = await fetch(`${this.AUTH_URI}/authorize`, {
             method: "POST",
         })
 

@@ -84,7 +84,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
             console.error(error)
             const dataSource = dataSources.find(dataSource => dataSource.id === selectedDatabaseId)
             framer.notify(
-                `Failed to load database "${dataSource?.name ?? selectedDatabaseId}": ${error instanceof Error ? error.message : "Unknown error"}`,
+                `Failed to load database “${dataSource?.name ?? selectedDatabaseId}”: ${error instanceof Error ? error.message : "Unknown error"}`,
                 { variant: "error" }
             )
         } finally {

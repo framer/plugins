@@ -11,7 +11,7 @@ import {
     createNewFieldsInCms as applyFieldCreationsToCms,
     removeFieldsFromCms as applyFieldRemovalsToCms,
 } from "./utils/fieldReconciliation"
-import { importCSV as loadDataToCms } from "./utils/importCSV"
+import { importCSV } from "./utils/importCSV"
 import { parseCSV } from "./utils/parseCSV"
 import { ImportError, type ImportItem, prepareImportPayload } from "./utils/prepareImportPayload"
 
@@ -102,11 +102,10 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                     )
                 }
 
-                await navigate({ uid: "home", opts: undefined })
+                void framer.hideUI()
+                void framer.setBackgroundMessage("Importing CSV file…")
 
-                await loadDataToCms(opts.collection, payload)
-
-                await framer.hideUI()
+                await importCSV(opts.collection, payload)
             } catch (error) {
                 await framer.setCloseWarning(false)
 
@@ -118,11 +117,15 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
 
                 if (error instanceof ImportError || error instanceof Error) {
                     framer.notify(error.message, { variant: "error" })
-                    return
+                } else {
+                    framer.notify(`Error processing CSV file: ${String(error)}`, {
+                        variant: "error",
+                    })
                 }
 
-                framer.notify("Error processing CSV file. Check console for details.", {
-                    variant: "error",
+                await navigate({
+                    uid: "home",
+                    opts: { forceCreateCollection: false },
                 })
             }
         },

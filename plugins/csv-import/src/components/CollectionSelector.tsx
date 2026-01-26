@@ -16,7 +16,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
     const collections = useCollections(collection)
     const [isCreatingNew, setIsCreatingNew] = useState(forceCreate)
     const [creationError, setCreationError] = useState<string | undefined>(undefined)
-    const [newCollectionName, setNewCollectionName] = useState("Collection")
+    const [newCollectionName, setNewCollectionName] = useState("")
     const inputRef = useRef<HTMLInputElement>(null)
 
     useEffect(() => {
@@ -43,12 +43,18 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         }
     }, [isCreatingNew, newCollectionName, collections])
 
+    const cancelCreatingNewCollection = () => {
+        setIsCreatingNew(false)
+        setNewCollectionName("")
+        setCreationError(undefined)
+    }
+
     const selectCollection = async (event: ChangeEvent<HTMLSelectElement>) => {
         const value = event.currentTarget.value
 
         if (value === NEW_COLLECTION_VALUE) {
             setIsCreatingNew(true)
-            setNewCollectionName("Collection")
+            setNewCollectionName("")
             return
         }
 
@@ -83,19 +89,14 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
             throw error
         }
 
-        setCreationError(undefined)
-
         await newCollection.setAsActive()
         onCollectionChange(newCollection)
-        setIsCreatingNew(false)
-        setNewCollectionName("Collection")
+        cancelCreatingNewCollection()
     }
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key === "Escape") {
-            setIsCreatingNew(false)
-            setNewCollectionName("Collection")
-            setCreationError(undefined)
+            cancelCreatingNewCollection()
         } else if (event.key === "Enter") {
             event.preventDefault()
             void createCollection()
@@ -138,6 +139,8 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
                         onBlur={() => {
                             if (newCollectionName.trim()) {
                                 void createCollection()
+                            } else {
+                                cancelCreatingNewCollection()
                             }
                         }}
                         placeholder="Enter new collection name..."
@@ -177,6 +180,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
 
 function useCollections(collection: Collection | null) {
     const [collections, setCollections] = useState<Collection[]>([])
+
     useEffect(() => {
         const abortController = new AbortController()
 

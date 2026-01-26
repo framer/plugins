@@ -69,14 +69,18 @@ export function AuthenticatedApp({ pluginContext, setContext }: AuthenticatedApp
     const hasSheet = Boolean(spreadsheetId && sheetTitle)
 
     const syncMutation = useSyncSheetMutation({
-        onSuccess: result => {
+        onSuccess: async result => {
             logSyncResult(result)
 
             if (result.status === "success") {
+                await framer.setCloseWarning(false)
                 framer.closePlugin("Synchronization successful")
             }
         },
-        onError: e => framer.notify(e.message, { variant: "error", durationMs: Infinity }),
+        onError: async e => {
+            await framer.setCloseWarning(false)
+            framer.notify(e.message, { variant: "error", durationMs: Infinity })
+        },
     })
 
     useEffect(() => {
@@ -208,6 +212,8 @@ export function App({ pluginContext }: AppProps) {
 
         const task = async () => {
             try {
+                await framer.setCloseWarning("Import in progress. Closing will cancel the import.")
+
                 await syncSheet({
                     ignoredColumns,
                     slugColumn,
@@ -223,8 +229,11 @@ export function App({ pluginContext }: AppProps) {
                     }),
                 })
 
+                await framer.setCloseWarning(false)
                 framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
+                await framer.setCloseWarning(false)
+
                 if (error instanceof FramerPluginClosedError) return
 
                 console.error(error)

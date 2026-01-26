@@ -61,7 +61,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
         }
     }, [fetchDataSources])
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         if (!selectedDatabaseId) return
@@ -75,12 +75,16 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 return
             }
 
+            await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+
             onSelectDataSource(dataSource)
         } catch (error) {
+            await framer.setCloseWarning(false)
+
             console.error(error)
             const dataSource = dataSources.find(dataSource => dataSource.id === selectedDatabaseId)
             framer.notify(
-                `Failed to load database “${dataSource?.name ?? selectedDatabaseId}”: ${error instanceof Error ? error.message : "Unknown error"}`,
+                `Failed to load database "${dataSource?.name ?? selectedDatabaseId}": ${error instanceof Error ? error.message : "Unknown error"}`,
                 { variant: "error" }
             )
         } finally {

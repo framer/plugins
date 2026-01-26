@@ -1,5 +1,5 @@
 import cx from "classnames"
-import { type ManagedCollectionFieldInput, useIsAllowedTo } from "framer-plugin"
+import { framer, type ManagedCollectionFieldInput, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { IconChevron } from "../components/Icons"
@@ -196,7 +196,7 @@ export function MapSheetFieldsPage({
         )
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
         if (isPending) return
@@ -215,6 +215,8 @@ export function MapSheetFieldsPage({
 
                 return field
             })
+
+        await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
         onSubmit({
             fields: allFields,

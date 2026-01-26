@@ -283,6 +283,7 @@ export function FieldMapping({
                     { variant: "error", durationMs: Infinity }
                 )
             } finally {
+                await framer.setCloseWarning(false)
                 setStatus("mapping-fields")
                 setSyncProgress(null)
             }

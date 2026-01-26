@@ -84,5 +84,6 @@ export async function importCSV(collection: Collection, result: ImportPayload) {
     }
 
     const finalMessage = messages.join(". ")
+    await framer.setCloseWarning(false)
     framer.closePlugin(messages.length > 1 ? finalMessage + "." : finalMessage || "Successfully imported Collection")
 }

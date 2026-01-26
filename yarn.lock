@@ -3714,7 +3714,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     csv-parse: "npm:^6.1.0"
-    framer-plugin: "npm:3.10.2"
+    framer-plugin: "npm:3.10.2-alpha.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.2.0"
@@ -4574,13 +4574,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framer-plugin@npm:3.10.2":
-  version: 3.10.2
-  resolution: "framer-plugin@npm:3.10.2"
+"framer-plugin@npm:3.10.2-alpha.0":
+  version: 3.10.2-alpha.0
+  resolution: "framer-plugin@npm:3.10.2-alpha.0"
   peerDependencies:
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 10/34a230043798343d09603fbf45a5f59a974877ee4b8ea9cdd1bee54d9407220d232f17951fe2a5849883bf127eb2c3c1f385d8972914fa8db096984fb8c64486
+  checksum: 10/ad230848039158de8f40e72413fd7c93a547c58352e20c949abf9e97523f1885ac2046725cb7c6ee896257a7a9dd193f3108487b3a47f1dfc2b7db97dca6e554
   languageName: node
   linkType: hard
 
@@ -4784,7 +4784,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     classnames: "npm:^2.5.1"
-    framer-plugin: "npm:^3.6.0"
+    framer-plugin: "npm:3.10.2-alpha.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
@@ -5662,7 +5662,7 @@ __metadata:
     "@notionhq/client": "npm:^3.1.3"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.6.0"
+    framer-plugin: "npm:3.10.2-alpha.0"
     framer-plugin-tools: "npm:^1.0.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"

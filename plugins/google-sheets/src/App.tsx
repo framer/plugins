@@ -229,8 +229,11 @@ export function App({ pluginContext }: AppProps) {
                     }),
                 })
 
+                await framer.setCloseWarning(false)
                 framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
+                await framer.setCloseWarning(false)
+
                 if (error instanceof FramerPluginClosedError) return
 
                 console.error(error)

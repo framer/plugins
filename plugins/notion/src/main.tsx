@@ -47,6 +47,8 @@ const [
     getExistingCollectionDatabaseIdMap(),
 ])
 
+await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+
 const { didSync } = await syncExistingCollection(
     activeCollection,
     previousDatabaseId,
@@ -58,10 +60,12 @@ const { didSync } = await syncExistingCollection(
 )
 
 if (didSync) {
+    await framer.setCloseWarning(false)
     framer.closePlugin("Synchronization successful", {
         variant: "success",
     })
 } else {
+    await framer.setCloseWarning(false)
     ReactDOM.createRoot(root).render(
         <React.StrictMode>
             <App

@@ -4,7 +4,7 @@ import { framer } from "framer-plugin"
 import React from "react"
 import ReactDOM from "react-dom/client"
 
-import { App } from "./App.tsx"
+import { App } from "./App"
 import { PLUGIN_KEYS } from "./api"
 import auth from "./auth"
 import {
@@ -13,9 +13,8 @@ import {
     shouldSyncExistingCollection,
     syncExistingCollection,
 } from "./data"
-import { Authenticate } from "./Login.tsx"
-import { Progress } from "./Progress.tsx"
-import { showProgressUI } from "./ui"
+import { Authenticate } from "./Login"
+import { ProgressApp } from "./ProgressApp"
 
 const activeCollection = await framer.getActiveManagedCollection()
 
@@ -59,27 +58,20 @@ const shouldSync = shouldSyncExistingCollection({ previousSlugFieldId, previousD
 let didSync = false
 
 if (shouldSync) {
-    // Show Progress UI and render Progress component
-    await showProgressUI()
+    // Render progress UI component
     const reactRoot = ReactDOM.createRoot(root)
 
-    const progressState: SyncProgress = { current: 0, total: 0 }
-    const setSyncProgress = (progress: SyncProgress) => {
-        progressState.current = progress.current
-        progressState.total = progress.total
+    const setSyncProgress = await new Promise<(progress: SyncProgress) => void>(resolve => {
         reactRoot.render(
             <React.StrictMode>
-                <Progress current={progressState.current} total={progressState.total} />
+                <ProgressApp
+                    onProgressReady={(setter: (progress: SyncProgress) => void) => {
+                        resolve(setter)
+                    }}
+                />
             </React.StrictMode>
         )
-    }
-
-    // Initial render
-    reactRoot.render(
-        <React.StrictMode>
-            <Progress current={progressState.current} total={progressState.total} />
-        </React.StrictMode>
-    )
+    })
 
     const { didSync: didSyncResult } = await syncExistingCollection(
         activeCollection,

@@ -1,9 +1,9 @@
 import type { Field } from "framer-plugin"
-import { ChevronIcon } from "./ChevronIcon"
 import { labelByFieldType } from "../utils/fieldLabels"
 import type { InferredField } from "../utils/typeInference"
 import type { VirtualFieldType } from "../utils/virtualTypes"
 import { sdkTypeToVirtual } from "../utils/virtualTypes"
+import { ChevronIcon } from "./ChevronIcon"
 
 export type MappingAction = "create" | "map" | "ignore"
 

@@ -14,4 +14,4 @@ To use a local OAuth worker during development, set the `VITE_LOCAL` environment
 VITE_LOCAL=true yarn dev
 ```
 
-**Note:** The backend OAuth workers are not open source. The `VITE_LOCAL` flag is only applicable for Framer employees who have access to the local worker infrastructure.
+You can use a different URL if you provide your own worker. See the [OAuth guide](https://www.framer.com/developers/oauth) for more information.

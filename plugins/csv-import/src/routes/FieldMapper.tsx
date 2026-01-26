@@ -1,6 +1,7 @@
 import type { Collection, Field } from "framer-plugin"
 import { framer } from "framer-plugin"
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { ChevronIcon } from "../components/ChevronIcon"
 import { FieldMapperRow, type FieldMappingItem } from "../components/FieldMapperRow"
 import { labelByFieldType } from "../utils/fieldLabels"
 import { getDataFields } from "../utils/filterFields"
@@ -351,22 +352,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                                     <span className="field-name">{item.field.name}</span>
                                     <span className="field-type">{labelByFieldType[item.field.type]}</span>
                                 </div>
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="8"
-                                    height="8"
-                                    fill="none"
-                                    style={{ opacity: 1 }}
-                                >
-                                    <path
-                                        fill="transparent"
-                                        stroke="#999"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="1.5"
-                                        d="m2.5 7 3-3-3-3"
-                                    />
-                                </svg>
+                                <ChevronIcon />
                                 <select
                                     className="missing-field-action"
                                     value={item.action}
@@ -393,22 +379,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                                     <span className="field-name">{field.name}</span>
                                     <span className="field-type">{labelByFieldType[field.type]}</span>
                                 </div>
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="8"
-                                    height="8"
-                                    fill="none"
-                                    style={{ opacity: 1 }}
-                                >
-                                    <path
-                                        fill="transparent"
-                                        stroke="#999"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="1.5"
-                                        d="m2.5 7 3-3-3-3"
-                                    />
-                                </svg>
+                                <ChevronIcon />
                                 <span className="required-field-warning">
                                     {issue === "unmapped"
                                         ? "Field is required but is missing"

@@ -1,4 +1,5 @@
 import type { Field } from "framer-plugin"
+import { ChevronIcon } from "./ChevronIcon"
 import { labelByFieldType } from "../utils/fieldLabels"
 import type { InferredField } from "../utils/typeInference"
 import type { VirtualFieldType } from "../utils/virtualTypes"
@@ -67,22 +68,7 @@ export function FieldMapperRow({
                 <span>{inferredField.columnName}</span>
                 <span className="inferred-type">{labelByFieldType[inferredField.inferredType]}</span>
             </button>
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="8"
-                height="8"
-                fill="none"
-                style={{ opacity: isIgnored ? 0.5 : 1 }}
-            >
-                <path
-                    fill="transparent"
-                    stroke="#999"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="m2.5 7 3-3-3-3"
-                />
-            </svg>
+            <ChevronIcon opacity={isIgnored ? 0.5 : 1} />
             <select
                 className="field-input"
                 disabled={isIgnored}

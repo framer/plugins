@@ -355,6 +355,8 @@ export async function syncExistingCollection(
         return { didSync: false }
     }
 
+    await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+
     try {
         const dataSource = await getDataSource(previousDatabaseId)
         const existingFields = await collection.getFields()
@@ -397,6 +399,8 @@ export async function syncExistingCollection(
             { variant: "error", durationMs: Infinity }
         )
         return { didSync: false }
+    } finally {
+        await framer.setCloseWarning(false)
     }
 }
 

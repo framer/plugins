@@ -231,16 +231,13 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
             return
         }
 
-        // Check if all required fields have valid data
         if (requiredFieldIssues.length > 0) {
-            framer.notify("All required fields must have valid data before importing.", { variant: "warning" })
             return
         }
 
         await onSubmit({ mappings, slugFieldName: selectedSlugFieldName, missingFields })
     }
 
-    // Find required fields with issues (unmapped or mapped but with missing values)
     const requiredFieldIssues = useMemo(() => {
         return existingFields
             .filter(field => "required" in field && field.required)
@@ -266,7 +263,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
             .filter(issue => issue !== undefined)
     }, [existingFields, mappings, csvRecords])
 
-    const canSubmit = requiredFieldIssues.length === 0
+    const canSubmit = requiredFieldIssues.length === 0 && !!selectedSlugFieldName
 
     // Summary stats
     const stats = useMemo(() => {
@@ -452,12 +449,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                             <strong>{csvRecords.length}</strong> Items
                         </span>
                     </div>
-                    <button
-                        type="submit"
-                        className="framer-button-primary"
-                        disabled={!canSubmit}
-                        title={!canSubmit ? "All required fields must have valid data" : undefined}
-                    >
+                    <button type="submit" className="framer-button-primary" disabled={!canSubmit}>
                         Import
                     </button>
                 </footer>

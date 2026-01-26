@@ -341,6 +341,21 @@ export function parseIgnoredFieldIds(ignoredFieldIdsStringified: string | null):
         : new Set<string>()
 }
 
+export function shouldSyncExistingCollection({
+    previousSlugFieldId,
+    previousDatabaseId,
+}: {
+    previousSlugFieldId: string | null
+    previousDatabaseId: string | null
+}): boolean {
+    const isAllowedToSync = framer.isAllowedTo(...syncMethods)
+    if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId || !previousDatabaseId || !isAllowedToSync) {
+        return false
+    }
+
+    return true
+}
+
 export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDatabaseId: string | null,
@@ -348,10 +363,10 @@ export async function syncExistingCollection(
     previousIgnoredFieldIds: string | null,
     previousLastSynced: string | null,
     previousDatabaseName: string | null,
-    databaseIdMap: DatabaseIdMap
+    databaseIdMap: DatabaseIdMap,
+    onProgress?: (progress: SyncProgress) => void
 ): Promise<{ didSync: boolean }> {
-    const isAllowedToSync = framer.isAllowedTo(...syncMethods)
-    if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId || !previousDatabaseId || !isAllowedToSync) {
+    if (!shouldSyncExistingCollection({ previousSlugFieldId, previousDatabaseId })) {
         return { didSync: false }
     }
 
@@ -387,7 +402,8 @@ export async function syncExistingCollection(
             slugField,
             ignoredFieldIds,
             previousLastSynced,
-            existingFields
+            existingFields,
+            onProgress
         )
         return { didSync: true }
     } catch (error) {

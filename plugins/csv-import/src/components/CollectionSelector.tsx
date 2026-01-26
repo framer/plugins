@@ -13,7 +13,7 @@ const NEW_COLLECTION_VALUE = "__new_collection__"
 
 export function CollectionSelector({ forceCreate, collection, onCollectionChange }: CollectionSelectorProps) {
     const isAllowedToCreateCollection = useIsAllowedTo("createCollection")
-    const { writableCollections, allCollections } = useCollections(collection)
+    const collections = useCollections(collection)
     const [isCreatingNew, setIsCreatingNew] = useState(forceCreate)
     const [creationError, setCreationError] = useState<string | undefined>(undefined)
     const [newCollectionName, setNewCollectionName] = useState("")
@@ -32,7 +32,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         if (isCreatingNew) {
             const trimmedName = newCollectionName.trim()
             if (trimmedName) {
-                const isDuplicate = allCollections.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())
+                const isDuplicate = collections.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())
                 if (isDuplicate) {
                     setCreationError("Name already exists")
                 } else {
@@ -42,7 +42,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
                 setCreationError(undefined)
             }
         }
-    }, [isCreatingNew, newCollectionName, allCollections])
+    }, [isCreatingNew, newCollectionName, collections])
 
     const cancelCreatingNewCollection = () => {
         setIsCreatingNew(false)
@@ -59,7 +59,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
             return
         }
 
-        const selectedCollection = writableCollections.find(c => c.id === value)
+        const selectedCollection = collections.find(c => c.id === value)
         if (!selectedCollection) return
 
         await selectedCollection.setAsActive()
@@ -71,7 +71,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         if (!trimmedName) return
 
         // Check for duplicates before attempting to create
-        const isDuplicate = allCollections.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())
+        const isDuplicate = collections.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())
         if (isDuplicate) {
             setCreationError("Name already exists")
             return
@@ -111,7 +111,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
         // Validate for duplicate names while typing
         const trimmedValue = value.trim()
         if (trimmedValue) {
-            const isDuplicate = allCollections.some(c => c.name.toLowerCase() === trimmedValue.toLowerCase())
+            const isDuplicate = collections.some(c => c.name.toLowerCase() === trimmedValue.toLowerCase())
             if (isDuplicate) {
                 setCreationError("Name already exists")
             } else {
@@ -168,8 +168,8 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
 
                 {isAllowedToCreateCollection && <option value={NEW_COLLECTION_VALUE}>New Collection...</option>}
 
-                {writableCollections.length > 0 && <hr />}
-                {writableCollections.map(collection => (
+                {collections.length > 0 && <hr />}
+                {collections.map(collection => (
                     <option key={collection.id} value={collection.id}>
                         {collection.name}
                     </option>
@@ -180,7 +180,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
 }
 
 function useCollections(collection: Collection | null) {
-    const [allCollections, setAllCollections] = useState<Collection[]>([])
+    const [collections, setCollections] = useState<Collection[]>([])
 
     useEffect(() => {
         const abortController = new AbortController()
@@ -192,7 +192,8 @@ function useCollections(collection: Collection | null) {
                 // Check if component was unmounted before setting state
                 if (abortController.signal.aborted) return
 
-                setAllCollections(collections)
+                const writableCollections = collections.filter(collection => collection.managedBy === "user")
+                setCollections(writableCollections)
             } catch (error) {
                 // Only handle error if component is still mounted
                 if (abortController.signal.aborted) return
@@ -209,8 +210,5 @@ function useCollections(collection: Collection | null) {
         }
     }, [collection])
 
-    return {
-        writableCollections: allCollections.filter(collection => collection.managedBy === "user"),
-        allCollections,
-    }
+    return collections
 }

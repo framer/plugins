@@ -61,7 +61,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
         }
     }, [fetchDataSources])
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         if (!selectedDatabaseId) return
@@ -75,8 +75,12 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 return
             }
 
+            await framer.setCloseWarning("Synchronization setup in progress. Closing will cancel the sync.")
+
             onSelectDataSource(dataSource)
         } catch (error) {
+            await framer.setCloseWarning(false)
+
             console.error(error)
             const dataSource = dataSources.find(dataSource => dataSource.id === selectedDatabaseId)
             framer.notify(
@@ -98,7 +102,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={e => void handleSubmit(e)}>
                 <label htmlFor="collection" className="collection-label">
                     <select
                         id="collection"

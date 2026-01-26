@@ -781,8 +781,8 @@ export const useSyncSheetMutation = ({
     onSuccess,
     onError,
 }: {
-    onSuccess?: (result: SyncResult) => void
-    onError?: (e: Error) => void
+    onSuccess?: (result: SyncResult) => Promise<void>
+    onError?: (e: Error) => Promise<void>
 }) => {
     return useMutation({
         mutationFn: async (args: SyncMutationOptions) => {

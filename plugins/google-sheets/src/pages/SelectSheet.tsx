@@ -62,11 +62,13 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
         setSelectedSheetTitle(e.target.value)
     }
 
-    const handleNextClick = () => {
+    const handleNextClick = async () => {
         if (!selectedSpreadsheetId || !selectedSheetTitle) {
             framer.notify("Please select a spreadsheet and sheet", { variant: "error" })
             return
         }
+
+        await framer.setCloseWarning("Synchronisation setup in progress. Closing will cancel the sync.")
 
         onSheetSelected(selectedSpreadsheetId, selectedSheetTitle)
     }
@@ -108,7 +110,7 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
 
             <button
                 disabled={isFetchingSheets || !selectedSpreadsheetId || !selectedSheetTitle}
-                onClick={handleNextClick}
+                onClick={() => void handleNextClick()}
             >
                 Next
             </button>

@@ -32,11 +32,15 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                     throw new Error("No records found in CSV")
                 }
 
+                await framer.setCloseWarning("Import in progress. Closing will cancel the import.")
+
                 await navigate({
                     uid: "field-mapper",
                     opts: { collection, csvRecords },
                 })
             } catch (error) {
+                await framer.setCloseWarning(false)
+
                 if (error instanceof FramerPluginClosedError) {
                     throw error
                 }
@@ -104,6 +108,8 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
 
                 await framer.hideUI()
             } catch (error) {
+                await framer.setCloseWarning(false)
+
                 if (error instanceof FramerPluginClosedError) {
                     throw error
                 }

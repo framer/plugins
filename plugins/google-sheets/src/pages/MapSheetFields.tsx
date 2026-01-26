@@ -1,5 +1,5 @@
 import cx from "classnames"
-import { type ManagedCollectionFieldInput, useIsAllowedTo } from "framer-plugin"
+import { framer, type ManagedCollectionFieldInput, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { IconChevron } from "../components/Icons"
@@ -196,7 +196,7 @@ export function MapSheetFieldsPage({
         )
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
         if (isPending) return
@@ -216,6 +216,8 @@ export function MapSheetFieldsPage({
                 return field
             })
 
+        await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+
         onSubmit({
             fields: allFields,
             spreadsheetId,
@@ -231,7 +233,7 @@ export function MapSheetFieldsPage({
 
     return (
         <main className="select-none w-full min-h-full">
-            <form onSubmit={handleSubmit} className="col gap-[15px] h-full text-tertiary min-h-full">
+            <form onSubmit={e => void handleSubmit(e)} className="col gap-[15px] h-full text-tertiary min-h-full">
                 <div className="h-px border-b border-divider sticky top-0" />
                 <div className="flex flex-col gap-[10px] w-full">
                     <label htmlFor="collectionName">Slug Field</label>

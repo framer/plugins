@@ -102,7 +102,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 </p>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={e => void handleSubmit(e)}>
                 <label htmlFor="collection" className="collection-label">
                     <select
                         id="collection"

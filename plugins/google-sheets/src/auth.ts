@@ -31,9 +31,10 @@ class Auth {
     storedTokens?: StoredTokens | null
 
     constructor() {
-        this.AUTH_URI = location.hostname.includes("localhost")
-            ? "https://localhost:8787"
-            : "https://oauth.fetch.tools/google-sheets-plugin"
+        this.AUTH_URI =
+            import.meta.env.VITE_LOCAL === "true"
+                ? "https://localhost:8787"
+                : "https://oauth.fetch.tools/google-sheets-plugin"
     }
 
     async logout() {

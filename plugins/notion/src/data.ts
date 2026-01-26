@@ -366,7 +366,11 @@ export async function syncExistingCollection(
     databaseIdMap: DatabaseIdMap,
     onProgress?: (progress: SyncProgress) => void
 ): Promise<{ didSync: boolean }> {
-    if (!shouldSyncExistingCollection({ previousSlugFieldId, previousDatabaseId })) {
+    if (
+        !shouldSyncExistingCollection({ previousSlugFieldId, previousDatabaseId }) ||
+        !previousSlugFieldId ||
+        !previousDatabaseId
+    ) {
         return { didSync: false }
     }
 

@@ -545,60 +545,62 @@ select:not(:disabled) {
     flex-shrink: 0;
 }
 
-/* Unmapped required fields warning */
+/* Required Fields Section */
 
-.unmapped-required-section {
-    margin-top: 12px;
-    padding: 8px;
-    background-color: rgba(255, 153, 0, 0.08);
-    border: 1px solid rgba(255, 153, 0, 0.25);
-    border-radius: 6px;
+.required-fields-section {
+    display: grid;
+    grid-template-columns: 1fr 8px 1fr 1fr;
+    gap: 10px;
+    align-items: center;
 }
 
-.unmapped-required-header {
+.required-fields-header {
+    grid-column: 1 / -1;
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-weight: 600;
-    font-size: 0.75em;
-    color: var(--framer-color-warning, #ff9500);
-    margin-bottom: 6px;
-}
-
-.warning-icon {
-    font-size: 12px;
-}
-
-.unmapped-required-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.unmapped-required-item {
-    display: flex;
     justify-content: space-between;
+    padding-bottom: 5px;
+}
+
+.required-field-row {
+    display: contents;
+}
+
+.required-field-info {
+    display: flex;
+    flex-direction: row;
     align-items: center;
-    padding: 4px 8px;
-    background-color: var(--framer-color-bg);
-    border-radius: 4px;
-    font-size: 0.75em;
+    background-color: var(--framer-color-bg-tertiary);
+    gap: 8px;
+    padding: 0 10px;
+    height: 30px;
+    border-radius: 8px;
+    min-width: 0;
+    overflow: hidden;
 }
 
-.unmapped-required-item .field-name {
+.required-field-info .field-name {
     font-weight: 500;
-    color: var(--framer-color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
 }
 
-.unmapped-required-item .field-type {
-    color: var(--framer-color-text);
-    font-size: 1em;
-}
-
-.unmapped-required-hint {
-    margin: 6px 0 0;
-    font-size: 0.6875em;
+.required-field-info .field-type {
+    margin-left: auto;
+    font-size: 0.75em;
     color: var(--framer-color-text-tertiary);
+    white-space: nowrap;
+    width: auto;
+    flex-shrink: 0;
+}
+
+.required-field-warning {
+    grid-column: span 2;
+    color: var(--framer-color-warning, #ff9500);
+    white-space: nowrap;
 }
 
 /* Missing Fields Section - Notion-style */

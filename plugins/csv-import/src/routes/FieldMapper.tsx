@@ -231,24 +231,42 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
             return
         }
 
-        // Check if all required fields are mapped
-        if (unmappedRequiredFields.length > 0) {
-            framer.notify("All required fields must be mapped before importing.", { variant: "warning" })
+        // Check if all required fields have valid data
+        if (requiredFieldIssues.length > 0) {
+            framer.notify("All required fields must have valid data before importing.", { variant: "warning" })
             return
         }
 
         await onSubmit({ mappings, slugFieldName: selectedSlugFieldName, missingFields })
     }
 
-    // Find required fields that are not mapped to any CSV column
-    const unmappedRequiredFields = useMemo(() => {
-        const mappedFieldIds = new Set(
-            mappings.filter(m => m.action === "map" && m.targetFieldId).map(m => m.targetFieldId)
-        )
-        return existingFields.filter(field => "required" in field && field.required && !mappedFieldIds.has(field.id))
-    }, [existingFields, mappings])
+    // Find required fields with issues (unmapped or mapped but with missing values)
+    const requiredFieldIssues = useMemo(() => {
+        return existingFields
+            .filter(field => "required" in field && field.required)
+            .map(field => {
+                const mapping = mappings.find(m => m.action === "map" && m.targetFieldId === field.id)
 
-    const canSubmit = unmappedRequiredFields.length === 0
+                if (!mapping) {
+                    return { field, issue: "unmapped" as const }
+                }
+
+                const columnName = mapping.inferredField.columnName
+                const hasEmptyValues = csvRecords.some(record => {
+                    const value = record[columnName]
+                    return value === undefined || value.trim() === ""
+                })
+
+                if (hasEmptyValues) {
+                    return { field, issue: "partial" as const }
+                }
+
+                return undefined
+            })
+            .filter(issue => issue !== undefined)
+    }, [existingFields, mappings, csvRecords])
+
+    const canSubmit = requiredFieldIssues.length === 0
 
     // Summary stats
     const stats = useMemo(() => {
@@ -367,23 +385,40 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                     </div>
                 )}
 
-                {unmappedRequiredFields.length > 0 && (
-                    <div className="unmapped-required-section">
-                        <div className="unmapped-required-header">
-                            <span className="warning-icon">⚠</span>
-                            <span>Required fields without data</span>
+                {requiredFieldIssues.length > 0 && (
+                    <div className="required-fields-section">
+                        <div className="required-fields-header">
+                            <span className="subheading">Required Fields</span>
                         </div>
-                        <div className="unmapped-required-list">
-                            {unmappedRequiredFields.map(field => (
-                                <div key={field.id} className="unmapped-required-item">
+                        {requiredFieldIssues.map(({ field, issue }) => (
+                            <div key={field.id} className="required-field-row">
+                                <div className="required-field-info">
                                     <span className="field-name">{field.name}</span>
                                     <span className="field-type">{labelByFieldType[field.type]}</span>
                                 </div>
-                            ))}
-                        </div>
-                        <p className="unmapped-required-hint">
-                            Map a CSV column to these fields, or imported items will have empty values.
-                        </p>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="8"
+                                    height="8"
+                                    fill="none"
+                                    style={{ opacity: 1 }}
+                                >
+                                    <path
+                                        fill="transparent"
+                                        stroke="#999"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="1.5"
+                                        d="m2.5 7 3-3-3-3"
+                                    />
+                                </svg>
+                                <span className="required-field-warning">
+                                    {issue === "unmapped"
+                                        ? "Field is required but is missing"
+                                        : "Field is required but some values are missing"}
+                                </span>
+                            </div>
+                        ))}
                     </div>
                 )}
 
@@ -421,7 +456,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                         type="submit"
                         className="framer-button-primary"
                         disabled={!canSubmit}
-                        title={unmappedRequiredFields.length > 0 ? "Map all required fields to continue" : undefined}
+                        title={!canSubmit ? "All required fields must have valid data" : undefined}
                     >
                         Import
                     </button>

@@ -75,7 +75,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 return
             }
 
-            await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+            await framer.setCloseWarning("Synchronization setup in progress. Closing will cancel the sync.")
 
             onSelectDataSource(dataSource)
         } catch (error) {

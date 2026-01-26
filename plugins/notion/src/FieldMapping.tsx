@@ -251,6 +251,7 @@ export function FieldMapping({
             try {
                 setStatus("syncing-collection")
                 setSyncProgress(null)
+                await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
                 const fields = fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
                 const fieldsToSync = fields.filter(field => !ignoredFieldIds.has(field.id))

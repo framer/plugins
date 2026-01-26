@@ -68,7 +68,7 @@ export function SelectSheetPage({ onError, onSheetSelected }: Props) {
             return
         }
 
-        await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+        await framer.setCloseWarning("Synchronisation setup in progress. Closing will cancel the sync.")
 
         onSheetSelected(selectedSpreadsheetId, selectedSheetTitle)
     }

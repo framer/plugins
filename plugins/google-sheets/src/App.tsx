@@ -212,7 +212,7 @@ export function App({ pluginContext }: AppProps) {
 
         const task = async () => {
             try {
-                await framer.setCloseWarning("Import in progress. Closing will cancel the import.")
+                await framer.setCloseWarning("Synchronisation setup in progress. Closing will cancel the sync.")
 
                 await syncSheet({
                     ignoredColumns,
@@ -229,11 +229,8 @@ export function App({ pluginContext }: AppProps) {
                     }),
                 })
 
-                await framer.setCloseWarning(false)
                 framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
-                await framer.setCloseWarning(false)
-
                 if (error instanceof FramerPluginClosedError) return
 
                 console.error(error)

@@ -233,7 +233,7 @@ export function MapSheetFieldsPage({
 
     return (
         <main className="select-none w-full min-h-full">
-            <form onSubmit={handleSubmit} className="col gap-[15px] h-full text-tertiary min-h-full">
+            <form onSubmit={e => void handleSubmit(e)} className="col gap-[15px] h-full text-tertiary min-h-full">
                 <div className="h-px border-b border-divider sticky top-0" />
                 <div className="flex flex-col gap-[10px] w-full">
                     <label htmlFor="collectionName">Slug Field</label>

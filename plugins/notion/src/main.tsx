@@ -7,8 +7,15 @@ import ReactDOM from "react-dom/client"
 import { App } from "./App.tsx"
 import { PLUGIN_KEYS } from "./api"
 import auth from "./auth"
-import { getExistingCollectionDatabaseIdMap, syncExistingCollection } from "./data"
+import {
+    getExistingCollectionDatabaseIdMap,
+    type SyncProgress,
+    shouldSyncExistingCollection,
+    syncExistingCollection,
+} from "./data"
 import { Authenticate } from "./Login.tsx"
+import { Progress } from "./Progress.tsx"
+import { showProgressUI } from "./ui"
 
 const activeCollection = await framer.getActiveManagedCollection()
 
@@ -47,15 +54,47 @@ const [
     getExistingCollectionDatabaseIdMap(),
 ])
 
-const { didSync } = await syncExistingCollection(
-    activeCollection,
-    previousDatabaseId,
-    previousSlugFieldId,
-    previousIgnoredFieldIds,
-    previousLastSynced,
-    previousDatabaseName,
-    existingCollectionDatabaseIdMap
-)
+const shouldSync = shouldSyncExistingCollection({ previousSlugFieldId, previousDatabaseId })
+
+let didSync = false
+
+if (shouldSync) {
+    // Show Progress UI and render Progress component
+    await showProgressUI()
+    const reactRoot = ReactDOM.createRoot(root)
+
+    const progressState: SyncProgress = { current: 0, total: 0 }
+    const setSyncProgress = (progress: SyncProgress) => {
+        progressState.current = progress.current
+        progressState.total = progress.total
+        reactRoot.render(
+            <React.StrictMode>
+                <Progress current={progressState.current} total={progressState.total} />
+            </React.StrictMode>
+        )
+    }
+
+    // Initial render
+    reactRoot.render(
+        <React.StrictMode>
+            <Progress current={progressState.current} total={progressState.total} />
+        </React.StrictMode>
+    )
+
+    const { didSync: didSyncResult } = await syncExistingCollection(
+        activeCollection,
+        previousDatabaseId,
+        previousSlugFieldId,
+        previousIgnoredFieldIds,
+        previousLastSynced,
+        previousDatabaseName,
+        existingCollectionDatabaseIdMap,
+        setSyncProgress
+    )
+
+    didSync = didSyncResult
+    reactRoot.unmount()
+}
 
 if (didSync) {
     framer.closePlugin("Synchronization successful", {

@@ -23,7 +23,7 @@ export default function GoogleLogin({ login, loading, hasError, errorMessage }: 
                 </div>
             </div>
             <button type="button" onClick={login} disabled={loading}>
-                {loading ? "Loading..." : "Log In"}
+                {loading ? <div className="framer-spinner" /> : "Log In"}
             </button>
         </div>
     )

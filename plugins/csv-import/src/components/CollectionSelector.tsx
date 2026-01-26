@@ -27,7 +27,6 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
     }, [isCreatingNew])
 
     // Validate for duplicates on initial render and when collections change
-    // Only show error if user has manually changed the name from the auto-generated one
     useEffect(() => {
         if (isCreatingNew) {
             const trimmedName = newCollectionName.trim()

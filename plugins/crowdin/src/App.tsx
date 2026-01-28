@@ -187,7 +187,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 )
             }
 
-            framer.notify(`Successfully imported localizations for ${targetLocale.name}`, {
+            framer.notify(`Successfully imported localizations for ${targetLocale.name} (${activeLocale.code})`, {
                 variant: "success",
                 durationMs: 5000,
             })

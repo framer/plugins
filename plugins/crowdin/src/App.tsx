@@ -102,6 +102,21 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         void loadStoredToken()
     }, [validateAccessToken])
 
+    // Set close warning when importing or exporting
+    useEffect(() => {
+        try {
+            if (isImporting) {
+                void framer.setCloseWarning("Import in progress. Closing will cancel the import.")
+            } else if (isExporting) {
+                void framer.setCloseWarning("Export in progress. Closing will cancel the export.")
+            } else {
+                void framer.setCloseWarning(false)
+            }
+        } catch (error) {
+            console.error("Error setting close warning:", error)
+        }
+    }, [isImporting, isExporting])
+
     const handleTokenInputKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
             if (e.key === "Enter") {

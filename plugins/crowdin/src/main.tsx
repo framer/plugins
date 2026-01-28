@@ -8,13 +8,14 @@ import { App } from "./App.tsx"
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
 
-const activeLocale = await framer.getActiveLocale()
-const locales = await framer.getLocales()
+const [activeLocale, locales] = await Promise.all([framer.getActiveLocale(), framer.getLocales()])
 
-console.log({ activeLocale, locales })
+if (window.location.hostname === "localhost") {
+    console.log({ activeLocale, locales })
+}
 
 if (!activeLocale) {
-    framer.closePlugin("No active locale found", { variant: "error" })
+    framer.closePlugin("No active locale found. Please select a locale.", { variant: "error" })
 } else {
     ReactDOM.createRoot(root).render(
         <React.StrictMode>

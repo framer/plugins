@@ -65,12 +65,24 @@ main {
 
 .logo {
     width: 100%;
-    background-color: var(--crowdin-brand-color);
+    background-color: var(--framer-color-bg-tertiary);
     border-radius: 8px;
     aspect-ratio: 580 / 360;
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+[data-framer-theme="dark"] .logo {
+    background-color: var(--crowdin-brand-color);
+}
+
+[data-framer-theme="light"] .logo .dark {
+    display: none;
+}
+
+[data-framer-theme="dark"] .logo .light {
+    display: none;
 }
 
 .logo img {

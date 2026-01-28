@@ -2,7 +2,6 @@ import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
-import { Loading } from "./components/Loading"
 import {
     createValuesBySourceFromXliff,
     ensureSourceFile,
@@ -161,7 +160,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             const resp = await fetch(url)
             const fileContent = await resp.text()
             const { xliff, targetLocale } = parseXliff(fileContent, locales)
-            const valuesBySource = createValuesBySourceFromXliff(xliff, targetLocale)
+            const valuesBySource = await createValuesBySourceFromXliff(xliff, targetLocale)
 
             const result = await framer.setLocalizationData({ valuesBySource })
 
@@ -256,7 +255,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     return (
         <main className="framer-hide-scrollbar setup">
             <div className="logo">
-                <img src="crowdin.svg" alt="Crowdin Logo" draggable={false} />
+                <img src="crowdin-light.svg" alt="Crowdin Logo" draggable={false} className="light" />
+                <img src="crowdin-dark.svg" alt="Crowdin Logo" draggable={false} className="dark" />
             </div>
             <p className="centered">
                 Get an access token in the{" "}

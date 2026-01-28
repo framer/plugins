@@ -41,23 +41,43 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
     return { xliff, targetLocale }
 }
 
-export function createValuesBySourceFromXliff(
+export async function createValuesBySourceFromXliff(
     xliffDocument: Document,
     targetLocale: Locale
-): LocalizationData["valuesBySource"] {
+): Promise<LocalizationData["valuesBySource"]> {
     const valuesBySource: LocalizationData["valuesBySource"] = {}
+
+    // Get all localization groups to find source IDs by text
+    const groups = await framer.getLocalizationGroups()
+
+    // Create a map of source text to source ID for quick lookup
+    const sourceTextToId = new Map<string, string>()
+    for (const group of groups) {
+        for (const source of group.sources) {
+            sourceTextToId.set(source.value, source.id)
+        }
+    }
 
     const units = xliffDocument.querySelectorAll("trans-unit")
     for (const unit of units) {
-        const id = unit.getAttribute("resname")
+        const sourceElement = unit.querySelector("source")
         const target = unit.querySelector("target")
-        if (!id || !target) continue
+        if (!sourceElement || !target) continue
+
+        const sourceText = sourceElement.textContent
         const targetValue = target.textContent
 
         // Ignore missing or empty values
-        if (!targetValue) continue
+        if (!sourceText || !targetValue) continue
 
-        valuesBySource[id] = {
+        // Find the actual source ID by matching the source text
+        const sourceId = sourceTextToId.get(sourceText)
+        if (!sourceId) {
+            console.warn(`No source ID found for text: "${sourceText}"`)
+            continue
+        }
+
+        valuesBySource[sourceId] = {
             [targetLocale.id]: {
                 action: "set",
                 value: targetValue,

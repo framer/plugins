@@ -39,7 +39,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const inputRef = useRef<HTMLInputElement>(null)
     const selectRef = useRef<HTMLSelectElement>(null)
 
-    const validateAccessToken = useCallback((token: string) => {
+    const validateAccessToken = useCallback((token: string, options?: { isInitialCheck?: boolean }) => {
+        const isInitialCheck = options?.isInitialCheck ?? false
         setIsLoading(true)
 
         // Persist token
@@ -78,6 +79,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     console.error(err)
                     setProjectList([])
                     framer.notify("Invalid access token", { variant: "error" })
+                    if (isInitialCheck) {
+                        inputRef.current?.focus()
+                    }
                 })
                 .finally(() => {
                     setIsLoading(false)
@@ -96,7 +100,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             if (storedToken) {
                 setAccessToken(storedToken)
                 setTokenInputValue(storedToken)
-                validateAccessToken(storedToken)
+                validateAccessToken(storedToken, { isInitialCheck: true })
+            } else {
+                inputRef.current?.focus()
             }
         }
         void loadStoredToken()
@@ -290,7 +296,6 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         type="text"
                         value={tokenInputValue}
                         placeholder="Enter Token…"
-                        autoFocus
                         onChange={e => {
                             setTokenInputValue(e.target.value)
                         }}

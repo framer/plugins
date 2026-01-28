@@ -29,10 +29,6 @@ main {
     -webkit-user-select: none;
 }
 
-input {
-    padding: 0 8px;
-}
-
 .form-field {
     display: flex;
     flex-direction: column;
@@ -112,6 +108,10 @@ input {
 .setup input,
 .setup select {
     width: 134px;
+}
+
+.setup input {
+    padding: 0 8px;
 }
 
 .setup {

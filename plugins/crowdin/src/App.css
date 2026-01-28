@@ -37,6 +37,11 @@ main {
     position: relative;
 }
 
+.form-field.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .loader {
     position: absolute;
     top: 0;
@@ -81,6 +86,11 @@ main {
     justify-content: space-between;
     color: var(--framer-color-text-secondary);
     padding-left: 15px;
+    gap: 10px;
+}
+
+.setup label > p {
+    flex: 1;
 }
 
 .setup input,

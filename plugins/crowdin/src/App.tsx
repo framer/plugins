@@ -25,42 +25,30 @@ interface CrowdinStorageResponse {
     }
 }
 
-function useDebouncedCallback<T extends (...args: never[]) => void>(fn: T, ms = 300) {
-    const timeoutRef = useRef<NodeJS.Timeout>()
-    return (...args: Parameters<T>) => {
-        clearTimeout(timeoutRef.current)
-        timeoutRef.current = setTimeout(() => {
-            fn(...args)
-        }, ms)
-    }
-}
-
 // ----- App component -----
 export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
 
     const [accessToken, setAccessToken] = useState<string>("")
+    const [tokenInputValue, setTokenInputValue] = useState<string>("")
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
     const [isLoading, setIsLoading] = useState(false)
+    const [isImporting, setIsImporting] = useState(false)
+    const [isExporting, setIsExporting] = useState(false)
 
     const inputRef = useRef<HTMLInputElement>(null)
-
-    // Blur the input when loading
-    useEffect(() => {
-        if (isLoading && inputRef.current) {
-            inputRef.current.blur()
-        }
-    }, [isLoading])
+    const selectRef = useRef<HTMLSelectElement>(null)
 
     const validateAccessToken = useCallback((token: string) => {
         setIsLoading(true)
 
+        // Persist token
+        if (framer.isAllowedTo("setPluginData")) {
+            void framer.setPluginData("accessToken", token)
+        }
+
         if (token) {
-            // persist token
-            if (framer.isAllowedTo("setPluginData")) {
-                void framer.setPluginData("accessToken", token)
-            }
             const projectsGroupsApi = new ProjectsGroups({ token })
             projectsGroupsApi
                 .withFetchAll()
@@ -76,6 +64,12 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         name: data.name,
                     }))
                     setProjectList(projects)
+
+                    // Focus the select element after successful validation
+                    if (selectRef.current) {
+                        console.log("focusing select")
+                        selectRef.current.focus()
+                    }
                 })
                 .catch((err: unknown) => {
                     console.error(err)
@@ -87,23 +81,35 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 })
         } else {
             setProjectList([])
+            setAccessToken("")
             setIsLoading(false)
         }
     }, [])
-
-    // Debounce the access token change to prevent too many requests
-    const onAccessTokenChange = useDebouncedCallback(validateAccessToken, 300)
 
     useEffect(() => {
         async function loadStoredToken() {
             const storedToken = await framer.getPluginData("accessToken")
             if (storedToken) {
                 setAccessToken(storedToken)
+                setTokenInputValue(storedToken)
                 validateAccessToken(storedToken)
             }
         }
         void loadStoredToken()
     }, [validateAccessToken])
+
+    const handleTokenInputKeyDown = useCallback(
+        (e: React.KeyboardEvent<HTMLInputElement>) => {
+            if (e.key === "Enter") {
+                validateAccessToken(tokenInputValue)
+            }
+        },
+        [tokenInputValue, validateAccessToken]
+    )
+
+    const handleTokenInputBlur = useCallback(() => {
+        validateAccessToken(tokenInputValue)
+    }, [tokenInputValue, validateAccessToken])
 
     const createCrowdinClient = (token: string) => ({
         projects: new ProjectsGroups({ token }),
@@ -112,6 +118,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
     // ------------------ Import from Crowdin ------------------
     async function importFromCrowdIn() {
+        if (isImporting) return
+
         if (!isAllowedToSetLocalizationData) {
             return framer.notify("You are not allowed to set localization data", {
                 variant: "error",
@@ -130,7 +138,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             })
         }
 
-        setIsLoading(true)
+        setIsImporting(true)
         const client = createCrowdinClient(accessToken)
 
         try {
@@ -164,10 +172,12 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 { variant: "error" }
             )
         } finally {
-            setIsLoading(false)
+            setIsImporting(false)
         }
     }
     async function exportToCrowdIn() {
+        if (isExporting) return
+
         if (!isAllowedToSetLocalizationData) {
             return framer.notify("You are not allowed to set localization data", {
                 variant: "error",
@@ -186,7 +196,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             })
         }
 
-        setIsLoading(true)
+        setIsExporting(true)
         try {
             const groups = await framer.getLocalizationGroups()
             const defaultLocale = await framer.getDefaultLocale()
@@ -227,7 +237,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 { variant: "error" }
             )
         } finally {
-            setIsLoading(false)
+            setIsExporting(false)
         }
     }
 
@@ -244,28 +254,27 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 .
             </p>
             <hr />
-            <div className="form-field">
-                {isLoading && (
-                    <div className="loader">
-                        <Loading />
-                    </div>
-                )}
+            <div className={`form-field ${isImporting || isExporting ? "disabled" : ""}`}>
                 <label>
                     <p>Access Token</p>
+                    {isLoading && <div className="framer-spinner" />}
                     <input
                         ref={inputRef}
                         type="text"
+                        value={tokenInputValue}
                         placeholder="Enter Token…"
-                        defaultValue={accessToken}
                         autoFocus
                         onChange={e => {
-                            onAccessTokenChange(e.target.value)
+                            setTokenInputValue(e.target.value)
                         }}
+                        onKeyDown={handleTokenInputKeyDown}
+                        onBlur={handleTokenInputBlur}
                     />
                 </label>
                 <label>
                     <p>Project</p>
                     <select
+                        ref={selectRef}
                         value={projectId || ""}
                         onChange={e => {
                             setProjectId(Number(e.target.value))
@@ -289,9 +298,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     onClick={() => {
                         void importFromCrowdIn()
                     }}
-                    disabled={!isAllowedToSetLocalizationData || !accessToken || !projectId}
+                    disabled={!isAllowedToSetLocalizationData || !accessToken || !projectId || isExporting}
                 >
-                    Import
+                    {isImporting ? <div className="framer-spinner" /> : "Import"}
                 </button>
 
                 <button
@@ -300,9 +309,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     onClick={() => {
                         void exportToCrowdIn()
                     }}
-                    disabled={!accessToken || !projectId}
+                    disabled={!accessToken || !projectId || isImporting}
                 >
-                    Export
+                    {isExporting ? <div className="framer-spinner" /> : "Export"}
                 </button>
             </div>
         </main>

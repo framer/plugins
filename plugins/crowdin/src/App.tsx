@@ -12,7 +12,7 @@ import {
     uploadStorage,
 } from "./xliff"
 
-void framer.showUI({ width: 325, height: 325 })
+void framer.showUI({ width: 325, height: 377 })
 
 interface Project {
     readonly id: number
@@ -236,6 +236,14 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             <div className="logo">
                 <img src="crowdin.svg" alt="Crowdin Logo" draggable={false} />
             </div>
+            <p className="centered">
+                Get an access token in the{" "}
+                <a href="https://crowdin.com/settings#api-key" target="_blank" rel="noopener noreferrer">
+                    Crowdin dashboard
+                </a>
+                .
+            </p>
+            <hr />
             <div className="form-field">
                 {isLoading && (
                     <div className="loader">

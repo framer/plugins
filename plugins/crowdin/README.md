@@ -1,6 +1,6 @@
 # Crowdin Localization Plugin for Framer
 
-A Framer plugin that synchronizes localization strings between **Framer** and **Crowdin**.
+A Framer plugin that synchronizes localization strings between **Framer** and **[Crowdin](https://crowdin.com/)**.
 ---
 
 ## ✨ Features
@@ -11,6 +11,6 @@ A Framer plugin that synchronizes localization strings between **Framer** and **
     - `Import from Crowdin`
 
 
-**By:** @sushilzore, @clementroche
+**By:** @sushilzore, @clementroche, and @madebyisaacr
 
-![Crowdin Image](./src/assets/hero.png)
+![Crowdin Image](../../assets/hero.png)

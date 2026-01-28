@@ -1,10 +1,15 @@
 /* Your Plugin CSS */
 
+:root {
+    --crowdin-brand-color: #263238;
+}
+
 [data-framer-theme="light"] #root {
-    --framer-color-tint: #263238;
+    --framer-color-tint: var(--crowdin-brand-color);
     --framer-color-tint-dark: #33424a;
     --framer-color-tint-extra-dark: #3d4e57;
 }
+
 [data-framer-theme="dark"] #root {
     --framer-color-tint: #fff;
     --framer-color-tint-dark: #e3e3e3;
@@ -54,23 +59,17 @@ main {
 }
 
 .logo {
-    color: var(--framer-color-text-tertiary);
-    background-color: var(--framer-color-bg-tertiary);
+    width: 100%;
+    background-color: var(--crowdin-brand-color);
     border-radius: 8px;
+    aspect-ratio: 580 / 360;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.setup img {
-    height: 180px;
-    width: 100%;
-    border-radius: 10px;
-    background-color: #263238;
-    object-fit: contain;
-    user-select: none;
-    -webkit-user-select: none;
-    pointer-events: none;
-}
-.setup button {
-    margin-top: 5px;
+.logo img {
+    width: 53.4%;
 }
 
 .setup label {
@@ -98,14 +97,18 @@ main {
     width: 100%;
     padding-bottom: 15px;
 }
+
 a {
     color: currentColor;
 }
+
 .button-stack {
     display: flex;
     gap: 8px;
     justify-content: space-between;
+    width: 100%;
 }
+
 .button-stack button {
     flex: 1;
 }

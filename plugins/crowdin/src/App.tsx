@@ -2,7 +2,6 @@ import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
-import hero from "./assets/hero.png"
 import { Loading } from "./components/Loading"
 import {
     createValuesBySourceFromXliff,
@@ -234,26 +233,29 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
     return (
         <main className="framer-hide-scrollbar setup">
-            <img src={hero} alt="Crowdin Hero" />
+            <div className="logo">
+                <img src="crowdin.svg" alt="Crowdin Logo" draggable={false} />
+            </div>
             <div className="form-field">
                 {isLoading && (
                     <div className="loader">
                         <Loading />
                     </div>
                 )}
-                <label className="show">
+                <label>
                     <p>Access Token</p>
                     <input
                         ref={inputRef}
                         type="text"
                         placeholder="Enter Token…"
                         defaultValue={accessToken}
+                        autoFocus
                         onChange={e => {
                             onAccessTokenChange(e.target.value)
                         }}
                     />
                 </label>
-                <label className="show">
+                <label>
                     <p>Project</p>
                     <select
                         value={projectId || ""}
@@ -272,28 +274,28 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         ))}
                     </select>
                 </label>
-                <div className="button-stack">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            void importFromCrowdIn()
-                        }}
-                        disabled={!isAllowedToSetLocalizationData || !accessToken || !projectId}
-                    >
-                        Import
-                    </button>
+            </div>
+            <div className="button-stack">
+                <button
+                    type="button"
+                    onClick={() => {
+                        void importFromCrowdIn()
+                    }}
+                    disabled={!isAllowedToSetLocalizationData || !accessToken || !projectId}
+                >
+                    Import
+                </button>
 
-                    <button
-                        type="button"
-                        className="framer-button-primary"
-                        onClick={() => {
-                            void exportToCrowdIn()
-                        }}
-                        disabled={!accessToken || !projectId}
-                    >
-                        Export
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    className="framer-button-primary"
+                    onClick={() => {
+                        void exportToCrowdIn()
+                    }}
+                    disabled={!accessToken || !projectId}
+                >
+                    Export
+                </button>
             </div>
         </main>
     )

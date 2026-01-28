@@ -65,9 +65,13 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     }))
                     setProjectList(projects)
 
-                    // Focus the select element after successful validation
-                    if (selectRef.current) {
-                        console.log("focusing select")
+                    // Auto-select if there's only one project
+                    if (projects.length === 1 && projects[0]?.id) {
+                        setProjectId(projects[0].id)
+                        inputRef.current?.blur()
+                    } else if (selectRef.current) {
+                        setProjectId(0)
+                        // Focus the select element after successful validation
                         selectRef.current.focus()
                     }
                 })
@@ -81,6 +85,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 })
         } else {
             setProjectList([])
+            setProjectId(0)
             setAccessToken("")
             setIsLoading(false)
         }
@@ -161,7 +166,11 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             const result = await framer.setLocalizationData({ valuesBySource })
 
             if (result.valuesBySource.errors.length > 0) {
-                throw new Error(`Import errors: ${result.valuesBySource.errors.map(error => error.error).join(", ")}`)
+                throw new Error(
+                    result.valuesBySource.errors
+                        .map(error => (error.sourceId ? `${error.error}: ${error.sourceId}` : error.error))
+                        .join(", ")
+                )
             }
 
             framer.notify(`Successfully imported localizations for ${targetLocale.name}`, {

@@ -164,13 +164,16 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 throw new Error(`Import errors: ${result.valuesBySource.errors.map(error => error.error).join(", ")}`)
             }
 
-            framer.notify(`Successfully imported localizations for ${targetLocale.name}`, { variant: "success" })
+            framer.notify(`Successfully imported localizations for ${targetLocale.name}`, {
+                variant: "success",
+                durationMs: 5000,
+            })
         } catch (error) {
             console.error("Error importing from Crowdin:", error)
-            framer.notify(
-                `Error importing from Crowdin: ${error instanceof Error ? error.message : "An unknown error occurred"}`,
-                { variant: "error" }
-            )
+            framer.notify(`Import error: ${error instanceof Error ? error.message : "An unknown error occurred"}`, {
+                variant: "error",
+                durationMs: 10000,
+            })
         } finally {
             setIsImporting(false)
         }
@@ -229,13 +232,13 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 return
             }
 
-            framer.notify("Export to Crowdin complete", { variant: "success" })
+            framer.notify("Export to Crowdin complete", { variant: "success", durationMs: 5000 })
         } catch (error) {
             console.error("Error exporting to Crowdin:", error)
-            framer.notify(
-                `Error exporting to Crowdin: ${error instanceof Error ? error.message : "An unknown error occurred"}`,
-                { variant: "error" }
-            )
+            framer.notify(`Export error: ${error instanceof Error ? error.message : "An unknown error occurred"}`, {
+                variant: "error",
+                durationMs: 10000,
+            })
         } finally {
             setIsExporting(false)
         }

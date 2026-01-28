@@ -29,6 +29,10 @@ main {
     -webkit-user-select: none;
 }
 
+input {
+    padding: 0 8px;
+}
+
 .form-field {
     display: flex;
     flex-direction: column;

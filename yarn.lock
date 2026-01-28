@@ -4526,7 +4526,7 @@ __metadata:
     "@crowdin/crowdin-api-client": "npm:^1.46.0"
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.7.0"
+    framer-plugin: "npm:^3.10.3"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.1.0"
@@ -5631,6 +5631,16 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
   checksum: 10/f253047cf9b4f0fe9cf61aa27dd0651a6e1d3b13cd4cde0b8b467700ccd45189f4e134f665875a8a727c5c5ba36be5d2d83ad074781768281b1772f0077aa140
+  languageName: node
+  linkType: hard
+
+"framer-plugin@npm:^3.10.3":
+  version: 3.10.3
+  resolution: "framer-plugin@npm:3.10.3"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/c677a261461cc3a79605cd74fc9de746de7c32e531a0c6a7aba0d5794af1c6c194cdea3576a6e74034c0228e7cc5a8ca8b0e40c213fe85e0dacece7cc01ce6c2
   languageName: node
   linkType: hard
 
@@ -8836,7 +8846,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"valibot@npm:^1.2.0":
+"valibot@npm:^1.1.0, valibot@npm:^1.2.0":
   version: 1.2.0
   resolution: "valibot@npm:1.2.0"
   peerDependencies:

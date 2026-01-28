@@ -98,8 +98,13 @@ main {
     padding-bottom: 15px;
 }
 
-a {
-    color: currentColor;
+p.centered {
+    width: 100%;
+    text-align: center;
+}
+
+p a:hover {
+    text-decoration: underline;
 }
 
 .button-stack {

@@ -37,6 +37,9 @@ function calculatePossibleSlugFields(mappings: FieldMappingItem[], csvRecords: R
     return mappings.filter(m => isValidSlugColumn(m.inferredField.columnName, csvRecords)).map(m => m.inferredField)
 }
 
+const caseInsensitiveEquals = (a: string | undefined | null, b: string | undefined | null) =>
+    a?.toLocaleLowerCase() === b?.toLocaleLowerCase()
+
 export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperProps) {
     const [existingFields, setExistingFields] = useState<Field[]>([])
     const [mappings, setMappings] = useState<FieldMappingItem[]>([])
@@ -58,7 +61,8 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
 
                 // Existing Slug field match against CSV column if any
                 const matchedSlugColumnName = collection.slugFieldName
-                    ? inferredFields.find(field => field.columnName === collection.slugFieldName)?.columnName
+                    ? inferredFields.find(field => caseInsensitiveEquals(field.columnName, collection.slugFieldName))
+                          ?.columnName
                     : undefined
 
                 // Column we will suggest as slug field on the UI

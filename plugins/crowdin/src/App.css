@@ -192,21 +192,19 @@ p a:hover {
     width: 100%;
 }
 
-.access-token-input.with-state input {
+.access-token-input:has(.icon) input {
     padding-right: 26px;
 }
 
-.access-token-input.with-state .icon {
+.access-token-input .icon {
     position: absolute;
-    right: 8px;
-    top: 9px;
-    bottom: 0;
+    padding: 0 8px;
+    height: 100%;
+    top: 0;
+    right: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100%;
-    width: 12px;
-    height: 12px;
 }
 
 .button-stack {

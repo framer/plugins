@@ -158,6 +158,11 @@ p a:hover {
     padding-left: 10px;
 }
 
+.property-control.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
 .property-control > p {
     flex: 1;
     height: 30px;
@@ -208,4 +213,26 @@ p a:hover {
     flex-direction: column;
     gap: 10px;
     width: 100%;
+}
+
+.locale-button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding-right: 0;
+    font-weight: 500;
+    background-color: var(--framer-color-bg-tertiary) !important;
+}
+
+.locale-button .icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    height: 100%;
+    color: var(--framer-color-text-tertiary);
+    transition: color 0.2s ease-in-out;
 }

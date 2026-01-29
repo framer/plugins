@@ -65,6 +65,10 @@ select {
     padding: 0 16px 0 10px;
 }
 
+select:not(:disabled) {
+    cursor: pointer;
+}
+
 .setup {
     width: 100%;
     display: flex;
@@ -197,4 +201,11 @@ p a:hover {
     height: 100%;
     width: 12px;
     height: 12px;
+}
+
+.button-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
 }

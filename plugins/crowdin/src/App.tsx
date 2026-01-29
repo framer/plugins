@@ -247,8 +247,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     )
                 }
                 const count = state.confirmedLocaleIds.size
-                framer.closePlugin(`Successfully imported ${count} locale${count === 1 ? "" : "s"} from Crowdin`, {
+                framer.notify(`Successfully imported ${count} locale${count === 1 ? "" : "s"} from Crowdin`, {
                     variant: "success",
+                    durationMs: 5000,
                 })
             })
             .catch((error: unknown) => {
@@ -257,6 +258,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     variant: "error",
                     durationMs: 10000,
                 })
+            })
+            .finally(() => {
                 setOperationInProgress(false)
                 setImportConfirmation(null)
             })

@@ -64,6 +64,7 @@ select:not(:disabled) {
     border-radius: 8px;
     position: relative;
     overflow: clip;
+    margin-bottom: 5px;
 }
 
 .hero .logo img {
@@ -109,7 +110,7 @@ select:not(:disabled) {
     padding-left: 10px;
 }
 
-.property-control.disabled,
+.property-control.disabled > p,
 .controls-stack.disabled {
     opacity: 0.5;
     pointer-events: none;
@@ -165,7 +166,7 @@ select:not(:disabled) {
     width: 100%;
 }
 
-.locale-button {
+.dropdown-button {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -177,7 +178,7 @@ select:not(:disabled) {
     background-color: var(--framer-color-bg-tertiary) !important;
 }
 
-.locale-button .icon-button {
+.dropdown-button .icon-button {
     display: flex;
     align-items: center;
     justify-content: center;

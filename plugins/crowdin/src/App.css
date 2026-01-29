@@ -159,7 +159,8 @@ p a:hover {
     padding-left: 10px;
 }
 
-.property-control.disabled {
+.property-control.disabled,
+.controls-stack.disabled {
     opacity: 0.5;
     pointer-events: none;
 }

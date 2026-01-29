@@ -1,8 +1,10 @@
-import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
 import cx from "classnames"
+import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
+import { CheckIcon, ChevronDownIcon, XIcon } from "./Icons"
+import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import {
     createValuesBySourceFromXliff,
     ensureSourceFile,
@@ -11,8 +13,6 @@ import {
     updateTranslation,
     uploadStorage,
 } from "./xliff"
-import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
-import { CheckIcon, ChevronDownIcon, XIcon } from "./Icons"
 
 const PLUGIN_WIDTH = 280
 
@@ -34,6 +34,13 @@ interface CrowdinStorageResponse {
     }
 }
 
+function createCrowdinClient(token: string) {
+    return {
+        projects: new ProjectsGroups({ token }),
+        translations: new Translations({ token }),
+    }
+}
+
 export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
     const [mode, setMode] = useState<"export" | "import" | null>(null)
     const [accessToken, setAccessToken] = useState<string>("")
@@ -41,9 +48,27 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
     const [selectedLocaleIds, setSelectedLocaleIds] = useState<string[]>(activeLocale ? [activeLocale.id] : [])
+    const [operationInProgress, setOperationInProgress] = useState<boolean>(false)
     const validatingAccessTokenRef = useRef<boolean>(false)
 
     useDynamicPluginHeight({ width: PLUGIN_WIDTH })
+
+    // Set close warning when importing or exporting
+    useEffect(() => {
+        try {
+            if (operationInProgress) {
+                if (mode === "import") {
+                    void framer.setCloseWarning("Import in progress. Closing will cancel the import.")
+                } else if (mode === "export") {
+                    void framer.setCloseWarning("Export in progress. Closing will cancel the export.")
+                }
+            } else {
+                void framer.setCloseWarning(false)
+            }
+        } catch (error) {
+            console.error("Error setting close warning:", error)
+        }
+    }, [mode, operationInProgress])
 
     const validateAccessToken = useCallback(
         async (token: string): Promise<void> => {
@@ -94,14 +119,137 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
             validatingAccessTokenRef.current = false
         },
-        [accessToken, accessTokenState]
+        [accessToken]
     )
 
-    useEffect(() => {
-        if (framer.isAllowedTo("setPluginData")) {
-            void framer.setPluginData("accessToken", accessToken)
+    // ------------------ Import from Crowdin ------------------
+    async function importFromCrowdin() {
+        if (operationInProgress) return
+
+        if (!framer.isAllowedTo("setLocalizationData")) {
+            return framer.notify("You are not allowed to set localization data", {
+                variant: "error",
+            })
+        } else if (!accessToken) {
+            return framer.notify("Access token is missing", {
+                variant: "error",
+            })
+        } else if (!projectId) {
+            return framer.notify("Project ID is missing", {
+                variant: "error",
+            })
+        } else if (!activeLocale) {
+            return framer.notify("Active locale is missing", {
+                variant: "error",
+            })
         }
-    }, [accessToken])
+
+        setOperationInProgress(true)
+        const client = createCrowdinClient(accessToken)
+
+        try {
+            const exportRes = await client.translations.exportProjectTranslation(projectId, {
+                targetLanguageId: activeLocale.code,
+                format: "xliff",
+            })
+            const url = exportRes.data.url
+            if (!url) {
+                framer.notify("Crowdin export URL not found", {
+                    variant: "error",
+                })
+                return
+            }
+            const resp = await fetch(url)
+            const fileContent = await resp.text()
+            const { xliff, targetLocale } = parseXliff(fileContent, locales)
+            const valuesBySource = await createValuesBySourceFromXliff(xliff, targetLocale)
+
+            const result = await framer.setLocalizationData({ valuesBySource })
+
+            if (result.valuesBySource.errors.length > 0) {
+                throw new Error(
+                    result.valuesBySource.errors
+                        .map(error => (error.sourceId ? `${error.error}: ${error.sourceId}` : error.error))
+                        .join(", ")
+                )
+            }
+
+            framer.notify(`Successfully imported localizations for ${targetLocale.name} (${activeLocale.code})`, {
+                variant: "success",
+                durationMs: 5000,
+            })
+        } catch (error) {
+            console.error("Error importing from Crowdin:", error)
+            framer.notify(`Import error: ${error instanceof Error ? error.message : "An unknown error occurred"}`, {
+                variant: "error",
+                durationMs: 10000,
+            })
+        } finally {
+            setOperationInProgress(false)
+        }
+    }
+
+    async function exportToCrowdin() {
+        if (operationInProgress) return
+
+        if (!accessToken) {
+            return framer.notify("Access Token is missing", {
+                variant: "error",
+            })
+        } else if (!projectId) {
+            return framer.notify("Project ID is missing", {
+                variant: "error",
+            })
+        } else if (!activeLocale) {
+            return framer.notify("Active locale is missing", {
+                variant: "error",
+            })
+        }
+
+        setOperationInProgress(true)
+        try {
+            const groups = await framer.getLocalizationGroups()
+            const defaultLocale = await framer.getDefaultLocale()
+            const sourceFilename = `framer-source-${defaultLocale.code}.xliff`
+            // Ensure source file exists
+            const fileId = await ensureSourceFile(sourceFilename, projectId, accessToken, defaultLocale, groups)
+
+            // Generate translation xliff
+            const xliffContent = generateXliff(defaultLocale, activeLocale, groups)
+            const filename = `translations-${activeLocale.code}.xliff`
+
+            console.log(xliffContent)
+
+            // Upload storage
+            const storageRes = await uploadStorage(xliffContent, accessToken, filename)
+            if (!storageRes.ok) {
+                framer.notify("Failed to upload file to Crowdin storage", {
+                    variant: "error",
+                })
+                return
+            }
+            const storageData = (await storageRes.json()) as CrowdinStorageResponse
+            const storageId = storageData.data.id
+
+            // Upload translation
+            const uploadRes = await updateTranslation(projectId, storageId, fileId, accessToken, activeLocale)
+            if (!uploadRes.ok) {
+                const errMsg = await uploadRes.text()
+                framer.notify(`Crowdin upload failed: ${errMsg}`, { variant: "error" })
+                return
+            }
+
+            framer.notify("Export to Crowdin complete", { variant: "success", durationMs: 5000 })
+        } catch (error) {
+            console.error("Error exporting to Crowdin:", error)
+            framer.notify(`Export error: ${error instanceof Error ? error.message : "An unknown error occurred"}`, {
+                variant: "error",
+                durationMs: 10000,
+            })
+        } finally {
+            setOperationInProgress(false)
+        }
+    }
 
     useEffect(() => {
         async function loadStoredToken() {
@@ -112,7 +260,16 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             }
         }
         void loadStoredToken()
-    }, [validateAccessToken])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    function onSubmit() {
+        if (mode === "export") {
+            void exportToCrowdin()
+        } else if (mode === "import") {
+            void importFromCrowdin()
+        }
+    }
 
     if (mode === null) {
         return <Home setMode={setMode} />
@@ -129,6 +286,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 setProjectId={setProjectId}
                 selectedLocaleIds={selectedLocaleIds}
                 setSelectedLocaleIds={setSelectedLocaleIds}
+                operationInProgress={operationInProgress}
+                onSubmit={onSubmit}
             />
         )
     }
@@ -181,6 +340,8 @@ function ConfigurationPage({
     setProjectId,
     selectedLocaleIds,
     setSelectedLocaleIds,
+    operationInProgress,
+    onSubmit,
 }: {
     mode: "export" | "import"
     locales: readonly Locale[]
@@ -192,9 +353,10 @@ function ConfigurationPage({
     setProjectId: (projectId: number) => void
     selectedLocaleIds: string[]
     setSelectedLocaleIds: (localeIds: string[]) => void
+    operationInProgress: boolean
+    onSubmit: () => void
 }) {
     const [accessTokenValue, setAccessTokenValue] = useState<string>(accessToken)
-    const [accessTokenInputFocused, setAccessTokenInputFocused] = useState<boolean>(false)
     const accessTokenInputRef = useRef<HTMLInputElement>(null)
 
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
@@ -253,7 +415,7 @@ function ConfigurationPage({
     return (
         <main>
             <hr />
-            <div className="controls-stack">
+            <div className={cx("controls-stack", operationInProgress && "disabled")}>
                 <PropertyControl label="Token">
                     <div className={cx("access-token-input")}>
                         <input
@@ -276,11 +438,7 @@ function ConfigurationPage({
                                 }
                             }}
                             onBlur={() => {
-                                setAccessTokenInputFocused(false)
                                 void validateAccessToken(accessTokenValue)
-                            }}
-                            onFocus={() => {
-                                setAccessTokenInputFocused(true)
                             }}
                         />
                         {accessTokenState === AccessTokenState.Loading && (
@@ -295,7 +453,7 @@ function ConfigurationPage({
                         )}
                     </div>
                 </PropertyControl>
-                <PropertyControl label="Project" disabled={!accessToken}>
+                <PropertyControl label="Project" disabled={accessTokenState !== AccessTokenState.Valid}>
                     <select
                         value={projectId || ""}
                         onChange={e => {
@@ -364,9 +522,14 @@ function ConfigurationPage({
             <button
                 className="framer-button-primary"
                 disabled={!canPerformAction}
+                onClick={onSubmit}
                 title={!isAllowedToSetLocalizationData ? "Insufficient permissions" : undefined}
             >
-                {mode === "export" ? "Export" : "Import"} {selectedLocaleIds.length === 1 ? "Locale" : "Locales"}
+                {operationInProgress ? (
+                    <div className="framer-spinner" />
+                ) : (
+                    `${mode === "export" ? "Export" : "Import"} ${selectedLocaleIds.length === 1 ? "Locale" : "Locales"}`
+                )}
             </button>
         </main>
     )

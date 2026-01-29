@@ -275,9 +275,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
     return (
         <main className="framer-hide-scrollbar setup">
-            <div className="logo">
-                <img src="crowdin-light.svg" alt="Crowdin Logo" draggable={false} className="light" />
-                <img src="crowdin-dark.svg" alt="Crowdin Logo" draggable={false} className="dark" />
+            <div className="logo-container">
+                <div className="logo" aria-label="Crowdin Logo" />
             </div>
             <p className="centered">
                 Get an access token in the{" "}

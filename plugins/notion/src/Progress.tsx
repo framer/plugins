@@ -1,5 +1,6 @@
 import { framer } from "framer-plugin"
 import { useEffect } from "react"
+import { animate, motion, useMotionValue, useTransform } from "framer-motion"
 
 const LOADING_PHASE_MAX = 20
 const LOADING_PHASE_K = 150
@@ -19,10 +20,16 @@ export function Progress({
     const formattedCurrent = formatter.format(current)
     const formattedTotal = formatter.format(total)
 
+    const animatedValue = useMotionValue(0)
+
     useEffect(() => {
         // Clear menu while syncing
         void framer.setMenu([])
     }, [])
+
+    useEffect(() => {
+        void animate(animatedValue, percent, { type: "tween" })
+    }, [percent, animatedValue])
 
     return (
         <main>
@@ -33,7 +40,12 @@ export function Progress({
                 </span>
             </div>
             <div className="progress-bar">
-                <div className="progress-bar-fill" style={{ width: `${percent}%` }} />
+                <motion.div
+                    className="progress-bar-fill"
+                    style={{
+                        width: useTransform(() => `${animatedValue.get()}%`),
+                    }}
+                />
             </div>
             <p>
                 {current > 0 ? "Syncing" : "Loading data"}… please keep the plugin open until the process is complete.

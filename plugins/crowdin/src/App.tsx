@@ -39,6 +39,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [accessTokenState, setAccessTokenState] = useState<AccessTokenState>(AccessTokenState.None)
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
+    const [selectedLocaleIds, setSelectedLocaleIds] = useState<string[]>(activeLocale ? [activeLocale.id] : [])
 
     useDynamicPluginHeight({ width: PLUGIN_WIDTH })
 
@@ -114,7 +115,6 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         return (
             <ConfigurationPage
                 mode={mode}
-                activeLocale={activeLocale}
                 locales={locales}
                 accessToken={accessToken}
                 accessTokenState={accessTokenState}
@@ -122,6 +122,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 projectList={projectList}
                 validateAccessToken={validateAccessToken}
                 setProjectId={setProjectId}
+                selectedLocaleIds={selectedLocaleIds}
+                setSelectedLocaleIds={setSelectedLocaleIds}
             />
         )
     }
@@ -165,7 +167,6 @@ function Home({ setMode }: { setMode: (mode: "export" | "import") => void }) {
 
 function ConfigurationPage({
     mode,
-    activeLocale,
     locales,
     accessToken,
     accessTokenState,
@@ -173,9 +174,10 @@ function ConfigurationPage({
     projectList,
     validateAccessToken,
     setProjectId,
+    selectedLocaleIds,
+    setSelectedLocaleIds,
 }: {
     mode: "export" | "import"
-    activeLocale: Locale | null
     locales: readonly Locale[]
     accessToken: string
     accessTokenState: AccessTokenState
@@ -183,20 +185,58 @@ function ConfigurationPage({
     projectList: readonly Project[]
     validateAccessToken: (accessToken: string) => Promise<void>
     setProjectId: (projectId: number) => void
+    selectedLocaleIds: string[]
+    setSelectedLocaleIds: (localeIds: string[]) => void
 }) {
-    const selectedLocales = []
-
     const [accessTokenValue, setAccessTokenValue] = useState<string>(accessToken)
     const [accessTokenInputFocused, setAccessTokenInputFocused] = useState<boolean>(false)
     const accessTokenInputRef = useRef<HTMLInputElement>(null)
 
-    const localesTitle = selectedLocales.length === 1 ? "Locale" : "Locales"
+    const localesTitle = selectedLocaleIds.length === 1 ? "Locale" : "Locales"
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
     const canPerformAction = accessToken && projectId && (mode === "import" ? isAllowedToSetLocalizationData : true)
 
     useEffect(() => {
         setAccessTokenValue(accessToken)
     }, [accessToken])
+
+    function onLocaleButtonClick(e: React.MouseEvent<HTMLButtonElement>, localeId: string | null) {
+        const rect = e.currentTarget.getBoundingClientRect()
+
+        void framer.showContextMenu(
+            [
+                {
+                    label: "All Locales",
+                    checked: selectedLocaleIds.length === 0,
+                    onAction: () => {
+                        setSelectedLocaleIds([])
+                    },
+                },
+                {
+                    type: "separator",
+                },
+                ...locales.map(locale => ({
+                    label: locale.name,
+                    checked: locale.id === localeId,
+                    enabled: !(selectedLocaleIds.includes(locale.id) && locale.id !== localeId),
+                    onAction: () => {
+                        if (selectedLocaleIds.includes(locale.id)) {
+                            setSelectedLocaleIds(selectedLocaleIds.filter(id => id !== locale.id))
+                        } else {
+                            setSelectedLocaleIds([...selectedLocaleIds, locale.id])
+                        }
+                    },
+                })),
+            ],
+            {
+                location: {
+                    x: rect.left + 4,
+                    y: rect.bottom + 4,
+                },
+                width: rect.width,
+            }
+        )
+    }
 
     return (
         <main>
@@ -280,16 +320,28 @@ function ConfigurationPage({
                     </select>
                 </PropertyControl>
                 <PropertyControl label={localesTitle}>
-                    <select value={""}>
-                        <option value="">All Locales</option>
-                        <hr />
-                        {locales.map(locale => (
-                            <option key={locale.id} value={locale.id}>
-                                {locale.name}
-                            </option>
-                        ))}
-                    </select>
-                    <button>Add</button>
+                    {selectedLocaleIds.length === 0 && <button onClick={onLocaleButtonClick}>All Locales</button>}
+                    {selectedLocaleIds.length > 0 && (
+                        <div className="button-stack">
+                            {selectedLocaleIds.map(id => (
+                                <button
+                                    key={id}
+                                    onClick={e => {
+                                        onLocaleButtonClick(e, id)
+                                    }}
+                                >
+                                    {locales.find(locale => locale.id === id)?.name ?? id}
+                                </button>
+                            ))}
+                            <button
+                                onClick={e => {
+                                    onLocaleButtonClick(e, null)
+                                }}
+                            >
+                                Add
+                            </button>
+                        </div>
+                    )}
                 </PropertyControl>
             </div>
             <hr />

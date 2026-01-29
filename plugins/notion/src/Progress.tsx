@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
-import { useEffect } from "react"
 import { animate, motion, useMotionValue, useTransform } from "motion/react"
+import { useEffect } from "react"
 
 const LOADING_PHASE_MAX = 20
 const LOADING_PHASE_K = 150

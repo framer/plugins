@@ -24,7 +24,7 @@ main {
 }
 
 main.home {
-    height: 100%;
+    height: 270px;
 }
 
 .form-field {
@@ -127,11 +127,15 @@ p a:hover {
     border-radius: 8px;
 }
 
-.button-stack {
+.button-row {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 10px;
     width: 100%;
+}
+
+.button-row button {
+    flex: 1;
 }
 
 .controls-stack {
@@ -163,9 +167,34 @@ p a:hover {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 140px;
+    width: 150px;
 }
 
 .property-control .content > * {
     width: 100%;
+}
+
+.access-token-input {
+    position: relative;
+}
+
+.access-token-input input {
+    width: 100%;
+}
+
+.access-token-input.with-state input {
+    padding-right: 28px;
+}
+
+.access-token-input.with-state .icon {
+    position: absolute;
+    right: 8px;
+    top: 9px;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 12px;
+    height: 12px;
 }

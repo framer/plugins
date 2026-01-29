@@ -1,4 +1,5 @@
 import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
+import cx from "classnames"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
@@ -12,8 +13,7 @@ import {
 } from "./xliff"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 
-const HOME_UI_OPTIONS = { width: 260, height: 270 }
-const CONFIGURATION_PAGE_UI_OPTIONS = { width: 260 }
+const PLUGIN_WIDTH = 280
 
 interface Project {
     readonly id: number
@@ -30,15 +30,43 @@ interface CrowdinStorageResponse {
 export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
     const [mode, setMode] = useState<"export" | "import" | null>(null)
     const [accessToken, setAccessToken] = useState<string>("")
-    const [tokenInputValue, setTokenInputValue] = useState<string>("")
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
 
-    useEffect(() => {
-        if (mode === null) {
-            void framer.showUI(HOME_UI_OPTIONS)
+    useDynamicPluginHeight({ width: PLUGIN_WIDTH })
+
+    const validateAccessToken = useCallback(async (token: string): Promise<boolean> => {
+        const projects = await validateAccessTokenAndGetProjects(token)
+
+        if (projects) {
+            setAccessToken(token)
+            setProjectList(projects)
+
+            if (projects.length === 1 && projects[0]?.id) {
+                setProjectId(projects[0].id)
+            } else {
+                setProjectId(0)
+            }
+
+            return true
+        } else {
+            setAccessToken("")
+            setProjectList([])
+            setProjectId(0)
+            return false
         }
-    }, [mode])
+    }, [])
+
+    useEffect(() => {
+        async function loadStoredToken() {
+            const storedToken = await framer.getPluginData("accessToken")
+            if (storedToken) {
+                setAccessToken(storedToken)
+                void validateAccessToken(storedToken)
+            }
+        }
+        void loadStoredToken()
+    }, [validateAccessToken])
 
     if (mode === null) {
         return <Home setMode={setMode} />
@@ -51,327 +79,11 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 accessToken={accessToken}
                 projectId={projectId}
                 projectList={projectList}
-                setAccessToken={setAccessToken}
+                validateAccessToken={validateAccessToken}
                 setProjectId={setProjectId}
             />
         )
     }
-
-    const [isLoading, setIsLoading] = useState(false)
-    const [isImporting, setIsImporting] = useState(false)
-    const [isExporting, setIsExporting] = useState(false)
-
-    const inputRef = useRef<HTMLInputElement>(null)
-    const selectRef = useRef<HTMLSelectElement>(null)
-
-    const validateAccessToken = useCallback((token: string, options?: { isInitialCheck?: boolean }) => {
-        const isInitialCheck = options?.isInitialCheck ?? false
-        setIsLoading(true)
-
-        // Persist token
-        if (framer.isAllowedTo("setPluginData")) {
-            void framer.setPluginData("accessToken", token)
-        }
-
-        if (token) {
-            const projectsGroupsApi = new ProjectsGroups({ token })
-            projectsGroupsApi
-                .withFetchAll()
-                .listProjects()
-                .then(response => {
-                    // Only log in development
-                    if (window.location.hostname === "localhost") {
-                        console.log(response.data)
-                    }
-                    setAccessToken(token)
-                    const projects = response.data.map(({ data }: { data: Project }) => ({
-                        id: data.id,
-                        name: data.name,
-                    }))
-                    setProjectList(projects)
-
-                    // Auto-select if there's only one project
-                    if (projects.length === 1 && projects[0]?.id) {
-                        setProjectId(projects[0].id)
-                        inputRef.current?.blur()
-                    } else if (selectRef.current) {
-                        setProjectId(0)
-                        // Focus the select element after successful validation
-                        selectRef.current.focus()
-                    }
-                })
-                .catch((err: unknown) => {
-                    console.error(err)
-                    setProjectList([])
-                    framer.notify("Invalid access token", { variant: "error" })
-                    if (isInitialCheck) {
-                        inputRef.current?.focus()
-                    }
-                })
-                .finally(() => {
-                    setIsLoading(false)
-                })
-        } else {
-            setProjectList([])
-            setProjectId(0)
-            setAccessToken("")
-            setIsLoading(false)
-        }
-    }, [])
-
-    useEffect(() => {
-        async function loadStoredToken() {
-            const storedToken = await framer.getPluginData("accessToken")
-            if (storedToken) {
-                setAccessToken(storedToken)
-                setTokenInputValue(storedToken)
-                validateAccessToken(storedToken, { isInitialCheck: true })
-            } else {
-                inputRef.current?.focus()
-            }
-        }
-        void loadStoredToken()
-    }, [validateAccessToken])
-
-    // Set close warning when importing or exporting
-    useEffect(() => {
-        try {
-            if (isImporting) {
-                void framer.setCloseWarning("Import in progress. Closing will cancel the import.")
-            } else if (isExporting) {
-                void framer.setCloseWarning("Export in progress. Closing will cancel the export.")
-            } else {
-                void framer.setCloseWarning(false)
-            }
-        } catch (error) {
-            console.error("Error setting close warning:", error)
-        }
-    }, [isImporting, isExporting])
-
-    const handleTokenInputKeyDown = useCallback(
-        (e: React.KeyboardEvent<HTMLInputElement>) => {
-            if (e.key === "Enter") {
-                validateAccessToken(tokenInputValue)
-            }
-        },
-        [tokenInputValue, validateAccessToken]
-    )
-
-    const handleTokenInputBlur = useCallback(() => {
-        validateAccessToken(tokenInputValue)
-    }, [tokenInputValue, validateAccessToken])
-
-    const createCrowdinClient = (token: string) => ({
-        projects: new ProjectsGroups({ token }),
-        translations: new Translations({ token }),
-    })
-
-    // ------------------ Import from Crowdin ------------------
-    async function importFromCrowdIn() {
-        if (isImporting) return
-
-        if (!isAllowedToSetLocalizationData) {
-            return framer.notify("You are not allowed to set localization data", {
-                variant: "error",
-            })
-        } else if (!accessToken) {
-            return framer.notify("Access Token is missing", {
-                variant: "error",
-            })
-        } else if (!projectId) {
-            return framer.notify("Project ID is missing", {
-                variant: "error",
-            })
-        } else if (!activeLocale) {
-            return framer.notify("Active locale is missing", {
-                variant: "error",
-            })
-        }
-
-        setIsImporting(true)
-        const client = createCrowdinClient(accessToken)
-
-        try {
-            const exportRes = await client.translations.exportProjectTranslation(projectId, {
-                targetLanguageId: activeLocale.code,
-                format: "xliff",
-            })
-            const url = exportRes.data.url
-            if (!url) {
-                framer.notify("Crowdin export URL not found", {
-                    variant: "error",
-                })
-                return
-            }
-            const resp = await fetch(url)
-            const fileContent = await resp.text()
-            const { xliff, targetLocale } = parseXliff(fileContent, locales)
-            const valuesBySource = await createValuesBySourceFromXliff(xliff, targetLocale)
-
-            const result = await framer.setLocalizationData({ valuesBySource })
-
-            if (result.valuesBySource.errors.length > 0) {
-                throw new Error(
-                    result.valuesBySource.errors
-                        .map(error => (error.sourceId ? `${error.error}: ${error.sourceId}` : error.error))
-                        .join(", ")
-                )
-            }
-
-            framer.notify(`Successfully imported localizations for ${targetLocale.name} (${activeLocale.code})`, {
-                variant: "success",
-                durationMs: 5000,
-            })
-        } catch (error) {
-            console.error("Error importing from Crowdin:", error)
-            framer.notify(`Import error: ${error instanceof Error ? error.message : "An unknown error occurred"}`, {
-                variant: "error",
-                durationMs: 10000,
-            })
-        } finally {
-            setIsImporting(false)
-        }
-    }
-    async function exportToCrowdIn() {
-        if (isExporting) return
-
-        if (!isAllowedToSetLocalizationData) {
-            return framer.notify("You are not allowed to set localization data", {
-                variant: "error",
-            })
-        } else if (!accessToken) {
-            return framer.notify("Access Token is missing", {
-                variant: "error",
-            })
-        } else if (!projectId) {
-            return framer.notify("Project ID is missing", {
-                variant: "error",
-            })
-        } else if (!activeLocale) {
-            return framer.notify("Active locale is missing", {
-                variant: "error",
-            })
-        }
-
-        setIsExporting(true)
-        try {
-            const groups = await framer.getLocalizationGroups()
-            const defaultLocale = await framer.getDefaultLocale()
-            const sourceFilename = `framer-source-${defaultLocale.code}.xliff`
-            // Ensure source file exists
-            const fileId = await ensureSourceFile(sourceFilename, projectId, accessToken, defaultLocale, groups)
-
-            // Generate translation xliff
-            const xliffContent = generateXliff(defaultLocale, activeLocale, groups)
-            const filename = `translations-${activeLocale.code}.xliff`
-
-            console.log(xliffContent)
-
-            // Upload storage
-            const storageRes = await uploadStorage(xliffContent, accessToken, filename)
-            if (!storageRes.ok) {
-                framer.notify("Failed to upload file to Crowdin storage", {
-                    variant: "error",
-                })
-                return
-            }
-            const storageData = (await storageRes.json()) as CrowdinStorageResponse
-            const storageId = storageData.data.id
-
-            // Upload translation
-            const uploadRes = await updateTranslation(projectId, storageId, fileId, accessToken, activeLocale)
-            if (!uploadRes.ok) {
-                const errMsg = await uploadRes.text()
-                framer.notify(`Crowdin upload failed: ${errMsg}`, { variant: "error" })
-                return
-            }
-
-            framer.notify("Export to Crowdin complete", { variant: "success", durationMs: 5000 })
-        } catch (error) {
-            console.error("Error exporting to Crowdin:", error)
-            framer.notify(`Export error: ${error instanceof Error ? error.message : "An unknown error occurred"}`, {
-                variant: "error",
-                durationMs: 10000,
-            })
-        } finally {
-            setIsExporting(false)
-        }
-    }
-
-    return (
-        <main className="framer-hide-scrollbar setup">
-            <div className="logo-container">
-                <div className="logo" aria-label="Crowdin Logo" />
-            </div>
-            <p>
-                Get an access token in the{" "}
-                <a href="https://crowdin.com/settings#api-key" target="_blank" rel="noopener noreferrer">
-                    dashboard
-                </a>
-                .
-            </p>
-            <hr />
-            <div className={`form-field ${isImporting || isExporting ? "disabled" : ""}`}>
-                <label>
-                    <p>Access Token</p>
-                    {isLoading && <div className="framer-spinner" />}
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={tokenInputValue}
-                        placeholder="Enter Token…"
-                        onChange={e => {
-                            setTokenInputValue(e.target.value)
-                        }}
-                        onKeyDown={handleTokenInputKeyDown}
-                        onBlur={handleTokenInputBlur}
-                    />
-                </label>
-                <label>
-                    <p>Project</p>
-                    <select
-                        ref={selectRef}
-                        value={projectId || ""}
-                        onChange={e => {
-                            setProjectId(Number(e.target.value))
-                        }}
-                        disabled={!accessToken || !projectList.length}
-                    >
-                        <option value="" disabled>
-                            Choose Project…
-                        </option>
-                        {projectList.map(p => (
-                            <option key={p.id} value={p.id}>
-                                {p.name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-            </div>
-            <div className="button-stack">
-                <button
-                    type="button"
-                    onClick={() => {
-                        void importFromCrowdIn()
-                    }}
-                    disabled={!isAllowedToSetLocalizationData || !accessToken || !projectId || isExporting}
-                >
-                    {isImporting ? <div className="framer-spinner" /> : "Import"}
-                </button>
-
-                <button
-                    type="button"
-                    className="framer-button-primary"
-                    onClick={() => {
-                        void exportToCrowdIn()
-                    }}
-                    disabled={!accessToken || !projectId || isImporting}
-                >
-                    {isExporting ? <div className="framer-spinner" /> : "Export"}
-                </button>
-            </div>
-        </main>
-    )
 }
 
 function Home({ setMode }: { setMode: (mode: "export" | "import") => void }) {
@@ -387,7 +99,7 @@ function Home({ setMode }: { setMode: (mode: "export" | "import") => void }) {
                 <h1>Translate with Crowdin</h1>
                 <p>Enter your access token from Crowdin and select a project to export Locales.</p>
             </div>
-            <div className="button-stack">
+            <div className="button-row">
                 <button
                     onClick={() => {
                         setMode("export")
@@ -417,7 +129,7 @@ function ConfigurationPage({
     accessToken,
     projectId,
     projectList,
-    setAccessToken,
+    validateAccessToken,
     setProjectId,
 }: {
     mode: "export" | "import"
@@ -426,39 +138,99 @@ function ConfigurationPage({
     accessToken: string
     projectId: number
     projectList: readonly Project[]
-    setAccessToken: (accessToken: string) => void
+    validateAccessToken: (accessToken: string) => Promise<boolean>
     setProjectId: (projectId: number) => void
 }) {
     const selectedLocales = []
 
-    const localesTitle = selectedLocales.length === 1 ? "Locale" : "Locales"
+    const [accessTokenValue, setAccessTokenValue] = useState<string>(accessToken)
+    const [accessTokenState, setAccessTokenState] = useState<"none" | "valid" | "invalid" | "loading">("none")
 
-    useDynamicPluginHeight(CONFIGURATION_PAGE_UI_OPTIONS)
+    const localesTitle = selectedLocales.length === 1 ? "Locale" : "Locales"
+    const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
+    const canPerformAction = accessToken && projectId && (mode === "import" ? isAllowedToSetLocalizationData : true)
+
+    useEffect(() => {
+        setAccessTokenValue(accessToken)
+    }, [accessToken])
+
+    async function confirmAccessToken() {
+        if (accessTokenValue === accessToken) {
+            return
+        }
+
+        setAccessTokenState("loading")
+        const isValid = await validateAccessToken(accessTokenValue)
+        setAccessTokenState(isValid ? "valid" : "invalid")
+    }
 
     return (
         <main>
             <hr />
             <div className="controls-stack">
                 <PropertyControl label="Token">
-                    <input
-                        type="text"
-                        placeholder="Crowdin token…"
-                        autoFocus
-                        value={accessToken}
-                        onChange={e => {
-                            setAccessToken(e.target.value)
-                        }}
-                    />
+                    <div className={cx("access-token-input", accessTokenState !== "none" && "with-state")}>
+                        <input
+                            type="text"
+                            placeholder="Crowdin token…"
+                            autoFocus
+                            value={accessTokenValue}
+                            onChange={e => {
+                                setAccessTokenValue(e.target.value)
+                            }}
+                            onKeyDown={e => {
+                                if (e.key === "Enter") {
+                                    void confirmAccessToken()
+                                }
+                            }}
+                            onBlur={() => {
+                                void confirmAccessToken()
+                            }}
+                        />
+                        <div className="icon">
+                            {accessTokenState === "loading" ? (
+                                <div className="framer-spinner" />
+                            ) : accessTokenState === "invalid" ? (
+                                <div />
+                            ) : accessTokenState === "valid" ? (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="6"
+                                    height="4.5"
+                                    fill="none"
+                                    overflow="visible"
+                                >
+                                    <path
+                                        d="M 0 2.5 L 2.118 4.5 L 6 0"
+                                        fill="transparent"
+                                        strokeWidth="1.5"
+                                        stroke="rgb(64, 222, 127)"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    ></path>
+                                </svg>
+                            ) : null}
+                        </div>
+                    </div>
                 </PropertyControl>
-                {accessToken && (
-                    <PropertyControl label="Project">
-                        <select value={""}>
-                            <option value="" disabled>
-                                Select Project…
+                <PropertyControl label="Project" disabled={!accessToken}>
+                    <select
+                        value={projectId || ""}
+                        onChange={e => {
+                            setProjectId(Number(e.target.value))
+                        }}
+                        disabled={!accessToken || !projectList.length}
+                    >
+                        <option value="" disabled>
+                            Choose Project…
+                        </option>
+                        {projectList.map(p => (
+                            <option key={p.id} value={p.id}>
+                                {p.name}
                             </option>
-                        </select>
-                    </PropertyControl>
-                )}
+                        ))}
+                    </select>
+                </PropertyControl>
                 <PropertyControl label={localesTitle}>
                     <select value={""}>
                         <option value="">All Locales</option>
@@ -473,18 +245,61 @@ function ConfigurationPage({
                 </PropertyControl>
             </div>
             <hr />
-            <button className="framer-button-primary">
+            <button
+                className="framer-button-primary"
+                disabled={!canPerformAction}
+                title={!isAllowedToSetLocalizationData ? "Insufficient permissions" : undefined}
+            >
                 {mode === "export" ? "Export" : "Import"} {localesTitle}
             </button>
         </main>
     )
 }
 
-function PropertyControl({ label, children }: { label: string; children: React.ReactNode | React.ReactNode[] }) {
+function PropertyControl({
+    label,
+    disabled = false,
+    children,
+}: {
+    label: string
+    disabled?: boolean
+    children: React.ReactNode | React.ReactNode[]
+}) {
     return (
-        <div className="property-control">
+        <div className={cx("property-control", disabled && "disabled")}>
             <p>{label}</p>
             <div className="content">{children}</div>
         </div>
     )
+}
+
+// Returns a list of projects or null if the access token is invalid
+async function validateAccessTokenAndGetProjects(token: string): Promise<Project[] | null> {
+    // Persist token
+    if (framer.isAllowedTo("setPluginData")) {
+        void framer.setPluginData("accessToken", token)
+    }
+
+    if (token) {
+        try {
+            const projectsGroupsApi = new ProjectsGroups({ token })
+            const response = await projectsGroupsApi.withFetchAll().listProjects()
+
+            // Only log in development
+            if (window.location.hostname === "localhost") {
+                console.log(response.data)
+            }
+            const projects = response.data.map(({ data }: { data: Project }) => ({
+                id: data.id,
+                name: data.name,
+            }))
+            return projects
+        } catch (error) {
+            console.error(error)
+            framer.notify("Invalid access token", { variant: "error" })
+            return null
+        }
+    } else {
+        return null
+    }
 }

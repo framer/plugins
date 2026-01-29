@@ -40,12 +40,13 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
     const [selectedLocaleIds, setSelectedLocaleIds] = useState<string[]>(activeLocale ? [activeLocale.id] : [])
+    const validatingAccessTokenRef = useRef<boolean>(false)
 
     useDynamicPluginHeight({ width: PLUGIN_WIDTH })
 
     const validateAccessToken = useCallback(
         async (token: string): Promise<void> => {
-            if (accessTokenState === AccessTokenState.Loading) return
+            if (validatingAccessTokenRef.current) return
             if (token === accessToken) return
 
             if (!token) {
@@ -56,13 +57,15 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 return
             }
 
+            validatingAccessTokenRef.current = true
             setAccessTokenState(AccessTokenState.Loading)
 
             try {
                 const { isValid, projects } = await validateAccessTokenAndGetProjects(token)
 
+                setAccessToken(token)
+
                 if (isValid) {
-                    setAccessToken(token)
                     setProjectList(projects ?? [])
 
                     if (Array.isArray(projects) && projects.length === 1 && projects[0]?.id) {
@@ -73,7 +76,6 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
                     setAccessTokenState(AccessTokenState.Valid)
                 } else {
-                    setAccessToken("")
                     setProjectList([])
                     setProjectId(0)
                     setAccessTokenState(AccessTokenState.Invalid)
@@ -88,6 +90,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 setProjectId(0)
                 setAccessTokenState(AccessTokenState.Invalid)
             }
+
+            validatingAccessTokenRef.current = false
         },
         [accessToken, accessTokenState]
     )
@@ -194,6 +198,7 @@ function ConfigurationPage({
 
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
     const canPerformAction = accessToken && projectId && (mode === "import" ? isAllowedToSetLocalizationData : true)
+    const accessTokenValueHasChanged = accessTokenValue !== accessToken
 
     useEffect(() => {
         setAccessTokenValue(accessToken)
@@ -216,6 +221,7 @@ function ConfigurationPage({
                 },
                 ...locales.map(locale => ({
                     label: locale.name,
+                    secondaryLabel: locale.code,
                     checked: locale.id === localeId,
                     enabled: !(selectedLocaleIds.includes(locale.id) && locale.id !== localeId),
                     onAction: () => {
@@ -229,10 +235,11 @@ function ConfigurationPage({
             ],
             {
                 location: {
-                    x: rect.left + 4,
+                    x: rect.right - 4,
                     y: rect.bottom + 4,
                 },
-                width: rect.width,
+                width: 250,
+                placement: "bottom-left",
             }
         )
     }
@@ -259,13 +266,16 @@ function ConfigurationPage({
                             placeholder="Crowdin token…"
                             autoFocus
                             value={accessTokenValue}
+                            className={
+                                accessTokenState === AccessTokenState.Invalid && !accessTokenValueHasChanged
+                                    ? "error"
+                                    : undefined
+                            }
                             onChange={e => {
                                 setAccessTokenValue(e.target.value)
                             }}
                             onKeyDown={e => {
                                 if (e.key === "Enter") {
-                                    accessTokenInputRef.current?.blur()
-                                    setAccessTokenInputFocused(false)
                                     void validateAccessToken(accessTokenValue)
                                 }
                             }}
@@ -279,11 +289,8 @@ function ConfigurationPage({
                         />
                         {!accessTokenInputFocused && (
                             <div className="icon">
-                                {accessTokenState === AccessTokenState.Loading ? (
-                                    <div className="framer-spinner" />
-                                ) : accessTokenState === AccessTokenState.Invalid ? (
-                                    <div />
-                                ) : accessTokenState === AccessTokenState.Valid ? (
+                                {accessTokenState === AccessTokenState.Loading && <div className="framer-spinner" />}
+                                {accessTokenState === AccessTokenState.Valid && (
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         width="6"
@@ -300,7 +307,7 @@ function ConfigurationPage({
                                             strokeLinejoin="round"
                                         ></path>
                                     </svg>
-                                ) : null}
+                                )}
                             </div>
                         )}
                     </div>

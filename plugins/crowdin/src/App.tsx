@@ -9,6 +9,7 @@ import {
     createValuesBySourceFromXliff,
     ensureSourceFile,
     generateXliff,
+    getProjectTargetLanguageIds,
     parseXliff,
     updateTranslation,
     uploadStorage,
@@ -52,6 +53,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
     const [selectedLocaleIds, setSelectedLocaleIds] = useState<LocaleIds>(activeLocale ? [activeLocale.id] : [])
+    const [availableLocaleIds, setAvailableLocaleIds] = useState<string[]>([])
     const [operationInProgress, setOperationInProgress] = useState<boolean>(false)
     const validatingAccessTokenRef = useRef<boolean>(false)
 
@@ -267,6 +269,42 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    // Fetch Crowdin project target languages when project is selected
+    useEffect(() => {
+        if (!projectId || !accessToken || accessTokenState !== AccessTokenState.Valid) {
+            setAvailableLocaleIds([])
+            setSelectedLocaleIds([])
+            return
+        }
+
+        let cancelled = false
+        const task = async () => {
+            let targetLanguageIds: string[] = []
+            try {
+                const ids: string[] = await getProjectTargetLanguageIds(projectId, accessToken)
+                if (!cancelled) {
+                    targetLanguageIds = ids
+                }
+            } catch {
+                if (!cancelled) {
+                    targetLanguageIds = []
+                }
+            }
+
+            // Locales that exist in both Framer and the selected Crowdin project
+            const availableLocaleIds = locales
+                .filter(locale => targetLanguageIds.includes(locale.code))
+                .map(locale => locale.id)
+            setAvailableLocaleIds(availableLocaleIds)
+            setSelectedLocaleIds(availableLocaleIds)
+        }
+        void task()
+
+        return () => {
+            cancelled = true
+        }
+    }, [projectId, accessToken, accessTokenState, locales])
+
     function onSubmit() {
         if (mode === "export") {
             void exportToCrowdin()
@@ -282,6 +320,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             <ConfigurationPage
                 mode={mode}
                 locales={locales}
+                availableLocaleIds={availableLocaleIds}
                 accessToken={accessToken}
                 accessTokenState={accessTokenState}
                 projectId={projectId}
@@ -336,6 +375,7 @@ function Home({ setMode }: { setMode: (mode: "export" | "import") => void }) {
 function ConfigurationPage({
     mode,
     locales,
+    availableLocaleIds,
     accessToken,
     accessTokenState,
     projectId,
@@ -349,6 +389,7 @@ function ConfigurationPage({
 }: {
     mode: "export" | "import"
     locales: readonly Locale[]
+    availableLocaleIds: string[]
     accessToken: string
     accessTokenState: AccessTokenState
     projectId: number
@@ -418,10 +459,12 @@ function ConfigurationPage({
                 ...locales.map(locale => ({
                     label: locale.name,
                     secondaryLabel: locale.code,
-                    checked: locale.id === localeId,
-                    enabled: !(selectedLocaleIds === ALL_LOCALES_ID
-                        ? false
-                        : selectedLocaleIds.includes(locale.id) && locale.id !== localeId),
+                    checked: selectedLocaleIds.includes(locale.id),
+                    enabled:
+                        availableLocaleIds.includes(locale.id) &&
+                        !(selectedLocaleIds === ALL_LOCALES_ID
+                            ? false
+                            : selectedLocaleIds.includes(locale.id) && locale.id !== localeId),
                     onAction: () => {
                         if (selectedLocaleIds === ALL_LOCALES_ID) {
                             setSelectedLocaleIds([locale.id])
@@ -463,7 +506,7 @@ function ConfigurationPage({
                             ref={accessTokenInputRef}
                             type="text"
                             placeholder="Crowdin token…"
-                            autoFocus
+                            autoFocus={!accessToken}
                             value={accessTokenValue}
                             className={
                                 accessTokenState === AccessTokenState.Invalid && !accessTokenValueHasChanged
@@ -542,7 +585,7 @@ function ConfigurationPage({
                                     </div>
                                 </button>
                             ))}
-                            {selectedLocaleIds.length < locales.length && (
+                            {selectedLocaleIds.length < availableLocaleIds.length && (
                                 <button
                                     onClick={e => {
                                         onLocaleButtonClick(e, null)

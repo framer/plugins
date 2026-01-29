@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import { useEffect } from "react"
-import { animate, motion, useMotionValue, useTransform } from "framer-motion"
+import { animate, motion, useMotionValue, useTransform } from "motion/react"
 
 const LOADING_PHASE_MAX = 20
 const LOADING_PHASE_K = 150
@@ -15,7 +15,7 @@ export function Progress({
     /** When false, loading phase spans 0–100% (no per-page content fetch). */
     contentFieldEnabled?: boolean
 }) {
-    const percent = Math.round(getProgressPercent(current, total, contentFieldEnabled))
+    const percent = getProgressPercent(current, total, contentFieldEnabled)
     const formatter = new Intl.NumberFormat("en-US")
     const formattedCurrent = formatter.format(current)
     const formattedTotal = formatter.format(total)
@@ -34,7 +34,7 @@ export function Progress({
     return (
         <main>
             <div className="progress-bar-text">
-                <span className="progress-bar-percent">{percent}%</span>
+                <span className="progress-bar-percent">{percent.toFixed(1).replace(".0", "")}%</span>
                 <span>
                     {formattedCurrent} / {formattedTotal}
                 </span>

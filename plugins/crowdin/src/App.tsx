@@ -128,6 +128,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         [accessToken]
     )
 
+    // Resolve selected locale IDs to an array (handles "All Locales")
+    const localeIdsToSync = selectedLocaleIds === ALL_LOCALES_ID ? availableLocaleIds : selectedLocaleIds
+
     // ------------------ Import from Crowdin ------------------
     async function importFromCrowdin() {
         if (operationInProgress) return
@@ -144,33 +147,57 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             return framer.notify("Project ID is missing", {
                 variant: "error",
             })
-        } else if (!activeLocale) {
-            return framer.notify("Active locale is missing", {
+        } else if (localeIdsToSync.length === 0) {
+            return framer.notify("Select at least one locale to import", {
                 variant: "error",
             })
         }
 
         setOperationInProgress(true)
         const client = createCrowdinClient(accessToken)
+        const localesToSync = locales.filter(locale => localeIdsToSync.includes(locale.id))
 
         try {
-            const exportRes = await client.translations.exportProjectTranslation(projectId, {
-                targetLanguageId: activeLocale.code,
-                format: "xliff",
-            })
-            const url = exportRes.data.url
-            if (!url) {
-                framer.notify("Crowdin export URL not found", {
+            const mergedValuesBySource: Record<
+                string,
+                Record<string, { action: "set"; value: string; needsReview: boolean }>
+            > = {}
+
+            for (const locale of localesToSync) {
+                const exportRes = await client.translations.exportProjectTranslation(projectId, {
+                    targetLanguageId: locale.code,
+                    format: "xliff",
+                })
+                const url = exportRes.data.url
+                if (!url) {
+                    framer.notify(`Crowdin export URL not found for ${locale.code}`, {
+                        variant: "error",
+                    })
+                    continue
+                }
+                const resp = await fetch(url)
+                const fileContent = await resp.text()
+                const { xliff, targetLocale } = parseXliff(fileContent, locales)
+                const valuesBySource = await createValuesBySourceFromXliff(xliff, targetLocale)
+                if (!valuesBySource) continue
+
+                for (const sourceId of Object.keys(valuesBySource)) {
+                    const localeValues = valuesBySource[sourceId]
+                    if (localeValues) {
+                        mergedValuesBySource[sourceId] ??= {}
+                        Object.assign(mergedValuesBySource[sourceId], localeValues)
+                    }
+                }
+            }
+
+            if (Object.keys(mergedValuesBySource).length === 0) {
+                framer.notify("No translations could be fetched from Crowdin", {
                     variant: "error",
                 })
                 return
             }
-            const resp = await fetch(url)
-            const fileContent = await resp.text()
-            const { xliff, targetLocale } = parseXliff(fileContent, locales)
-            const valuesBySource = await createValuesBySourceFromXliff(xliff, targetLocale)
 
-            const result = await framer.setLocalizationData({ valuesBySource })
+            const result = await framer.setLocalizationData({ valuesBySource: mergedValuesBySource })
 
             if (result.valuesBySource.errors.length > 0) {
                 throw new Error(
@@ -180,7 +207,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 )
             }
 
-            framer.notify(`Successfully imported localizations for ${targetLocale.name} (${activeLocale.code})`, {
+            const count = localesToSync.length
+            framer.notify(`Successfully imported ${count} locale${count === 1 ? "" : "s"} from Crowdin`, {
                 variant: "success",
                 durationMs: 5000,
             })
@@ -206,46 +234,47 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             return framer.notify("Project ID is missing", {
                 variant: "error",
             })
-        } else if (!activeLocale) {
-            return framer.notify("Active locale is missing", {
+        } else if (localeIdsToSync.length === 0) {
+            return framer.notify("Select at least one locale to export", {
                 variant: "error",
             })
         }
 
         setOperationInProgress(true)
+        const localesToSync = locales.filter(locale => localeIdsToSync.includes(locale.id))
+
         try {
             const groups = await framer.getLocalizationGroups()
             const defaultLocale = await framer.getDefaultLocale()
             const sourceFilename = `framer-source-${defaultLocale.code}.xliff`
-            // Ensure source file exists
             const fileId = await ensureSourceFile(sourceFilename, projectId, accessToken, defaultLocale, groups)
 
-            // Generate translation xliff
-            const xliffContent = generateXliff(defaultLocale, activeLocale, groups)
-            const filename = `translations-${activeLocale.code}.xliff`
+            for (const locale of localesToSync) {
+                const xliffContent = generateXliff(defaultLocale, locale, groups)
+                const filename = `translations-${locale.code}.xliff`
 
-            console.log(xliffContent)
+                const storageRes = await uploadStorage(xliffContent, accessToken, filename)
+                if (!storageRes.ok) {
+                    framer.notify(`Failed to upload ${locale.code} to Crowdin storage`, {
+                        variant: "error",
+                    })
+                    continue
+                }
+                const storageData = (await storageRes.json()) as CrowdinStorageResponse
+                const storageId = storageData.data.id
 
-            // Upload storage
-            const storageRes = await uploadStorage(xliffContent, accessToken, filename)
-            if (!storageRes.ok) {
-                framer.notify("Failed to upload file to Crowdin storage", {
-                    variant: "error",
-                })
-                return
-            }
-            const storageData = (await storageRes.json()) as CrowdinStorageResponse
-            const storageId = storageData.data.id
-
-            // Upload translation
-            const uploadRes = await updateTranslation(projectId, storageId, fileId, accessToken, activeLocale)
-            if (!uploadRes.ok) {
-                const errMsg = await uploadRes.text()
-                framer.notify(`Crowdin upload failed: ${errMsg}`, { variant: "error" })
-                return
+                const uploadRes = await updateTranslation(projectId, storageId, fileId, accessToken, locale)
+                if (!uploadRes.ok) {
+                    const errMsg = await uploadRes.text()
+                    framer.notify(`Crowdin upload failed for ${locale.code}: ${errMsg}`, { variant: "error" })
+                }
             }
 
-            framer.notify("Export to Crowdin complete", { variant: "success", durationMs: 5000 })
+            const count = localesToSync.length
+            framer.notify(`Export to Crowdin complete (${count} ${count === 1 ? "locale" : "locales"})`, {
+                variant: "success",
+                durationMs: 5000,
+            })
         } catch (error) {
             console.error("Error exporting to Crowdin:", error)
             framer.notify(`Export error: ${error instanceof Error ? error.message : "An unknown error occurred"}`, {
@@ -608,7 +637,13 @@ function ConfigurationPage({
                 {operationInProgress ? (
                     <div className="framer-spinner" />
                 ) : (
-                    `${mode === "export" ? "Export" : "Import"} ${selectedLocaleIds.length === 1 ? "Locale" : "Locales"}`
+                    `${mode === "export" ? "Export" : "Import"} ${
+                        (
+                            selectedLocaleIds === ALL_LOCALES_ID ? availableLocaleIds.length : selectedLocaleIds.length
+                        ) === 1
+                            ? "Locale"
+                            : "Locales"
+                    }`
                 )}
             </button>
         </main>

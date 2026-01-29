@@ -82,6 +82,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             if (token === accessToken) return
 
             if (!token) {
+                if (framer.isAllowedTo("setPluginData")) {
+                    void framer.setPluginData("accessToken", "")
+                }
                 setAccessToken("")
                 setProjectList([])
                 setProjectId(0)

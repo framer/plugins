@@ -307,7 +307,13 @@ export function FieldMapping({
     }
 
     if (isSyncing) {
-        return <Progress current={syncProgress?.current ?? 0} total={syncProgress?.total ?? 0} />
+        return (
+            <Progress
+                current={syncProgress?.current ?? 0}
+                total={syncProgress?.total ?? 0}
+                contentFieldEnabled={syncProgress?.contentFieldEnabled ?? true}
+            />
+        )
     }
 
     return (

@@ -85,6 +85,8 @@ export function mergeFieldsInfoWithExistingFields(
 export interface SyncProgress {
     current: number
     total: number
+    /** When false, loading phase uses 100% of the bar (no per-page content fetch). */
+    contentFieldEnabled?: boolean
 }
 
 export interface CollectionItem {
@@ -111,6 +113,8 @@ export async function syncCollection(
     onProgress?: (progress: SyncProgress) => void
 ) {
     const fieldsById = new Map(fields.map(field => [field.id, field]))
+    const contentFieldEnabled = fieldsById.has(pageContentProperty.id)
+    const reportProgress = (p: { current: number; total: number }) => onProgress?.({ ...p, contentFieldEnabled })
 
     // Track which fields have had their type changed
     const updatedFieldIds = new Set<string>()
@@ -127,7 +131,7 @@ export async function syncCollection(
 
     const seenItemIds = new Set<string>()
 
-    const databaseItems = await getDatabaseItems(dataSource.database, onProgress)
+    const databaseItems = await getDatabaseItems(dataSource.database, reportProgress)
     const limit = pLimit(CONCURRENCY_LIMIT)
 
     // Progress tracking
@@ -224,7 +228,7 @@ export async function syncCollection(
             if (!slugValue) {
                 console.warn(`Skipping item at index ${index} because it doesn't have a valid slug`)
                 processedCount++
-                onProgress?.({ current: processedCount, total: totalItems })
+                reportProgress({ current: processedCount, total: totalItems })
                 return null
             }
 
@@ -255,7 +259,7 @@ export async function syncCollection(
             }
 
             processedCount++
-            onProgress?.({ current: processedCount, total: totalItems })
+            reportProgress({ current: processedCount, total: totalItems })
 
             return {
                 id: item.id,

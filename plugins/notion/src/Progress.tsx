@@ -1,10 +1,28 @@
-const LOADING_PHASE_MAX = 20
+import { framer } from "framer-plugin"
+import { useEffect } from "react"
 
-export function Progress({ current, total }: { current: number; total: number }) {
-    const percent = Math.round(getProgressPercent(current, total))
+const LOADING_PHASE_MAX = 20
+const LOADING_PHASE_K = 150
+
+export function Progress({
+    current,
+    total,
+    contentFieldEnabled = true,
+}: {
+    current: number
+    total: number
+    /** When false, loading phase spans 0–100% (no per-page content fetch). */
+    contentFieldEnabled?: boolean
+}) {
+    const percent = Math.round(getProgressPercent(current, total, contentFieldEnabled))
     const formatter = new Intl.NumberFormat("en-US")
     const formattedCurrent = formatter.format(current)
     const formattedTotal = formatter.format(total)
+
+    useEffect(() => {
+        // Clear menu while syncing
+        void framer.setMenu([])
+    }, [])
 
     return (
         <main>
@@ -24,15 +42,22 @@ export function Progress({ current, total }: { current: number; total: number })
     )
 }
 
-function getProgressPercent(current: number, total: number): number {
-    if (current > 0 && total > 0) {
-        // Processing phase: base 20%, remaining 80% from current/total
-        return LOADING_PHASE_MAX + 80 * (current / total)
-    }
-    if (total > 0) {
+function getProgressPercent(current: number, total: number, contentFieldEnabled: boolean): number {
+    if (total > 0 && contentFieldEnabled) {
+        if (current > 0) {
+            // Processing phase: base 20%, remaining 80% from current/total
+            return LOADING_PHASE_MAX + 80 * (current / total)
+        }
         // Loading phase: 0–20% with total/(total+k) so we approach but never reach 20%
-        const k = 150
-        return LOADING_PHASE_MAX * (total / (total + k))
+        return LOADING_PHASE_MAX * (total / (total + LOADING_PHASE_K))
+    }
+    if (total > 0 && !contentFieldEnabled) {
+        if (current > 0) {
+            // No per-page fetch: loading is done, show 100%
+            return 100
+        }
+        // Loading phase: 0–100% with total/(total+k)
+        return 100 * (total / (total + LOADING_PHASE_K))
     }
     return 0
 }

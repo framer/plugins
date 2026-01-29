@@ -16,6 +16,9 @@ import {
 
 const PLUGIN_WIDTH = 280
 const NO_PROJECT_PLACEHOLDER = "Choose Project…"
+const ALL_LOCALES_ID = "__ALL_LOCALES__"
+
+type LocaleIds = string[] | typeof ALL_LOCALES_ID
 
 enum AccessTokenState {
     None = "none",
@@ -48,7 +51,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [accessTokenState, setAccessTokenState] = useState<AccessTokenState>(AccessTokenState.None)
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
-    const [selectedLocaleIds, setSelectedLocaleIds] = useState<string[]>(activeLocale ? [activeLocale.id] : [])
+    const [selectedLocaleIds, setSelectedLocaleIds] = useState<LocaleIds>(activeLocale ? [activeLocale.id] : [])
     const [operationInProgress, setOperationInProgress] = useState<boolean>(false)
     const validatingAccessTokenRef = useRef<boolean>(false)
 
@@ -352,8 +355,8 @@ function ConfigurationPage({
     projectList: readonly Project[]
     validateAccessToken: (accessToken: string) => Promise<void>
     setProjectId: (projectId: number) => void
-    selectedLocaleIds: string[]
-    setSelectedLocaleIds: (localeIds: string[]) => void
+    selectedLocaleIds: LocaleIds
+    setSelectedLocaleIds: (localeIds: LocaleIds) => void
     operationInProgress: boolean
     onSubmit: () => void
 }) {
@@ -361,7 +364,9 @@ function ConfigurationPage({
     const accessTokenInputRef = useRef<HTMLInputElement>(null)
 
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
-    const canPerformAction = accessToken && projectId && (mode === "import" ? isAllowedToSetLocalizationData : true)
+    const hasSelectedLocales = selectedLocaleIds === ALL_LOCALES_ID || selectedLocaleIds.length > 0
+    const canPerformAction =
+        accessToken && projectId && hasSelectedLocales && (mode === "import" ? isAllowedToSetLocalizationData : true)
     const accessTokenValueHasChanged = accessTokenValue !== accessToken
 
     useEffect(() => {
@@ -402,9 +407,9 @@ function ConfigurationPage({
             [
                 {
                     label: "All Locales",
-                    checked: selectedLocaleIds.length === 0,
+                    checked: selectedLocaleIds === ALL_LOCALES_ID,
                     onAction: () => {
-                        setSelectedLocaleIds([])
+                        setSelectedLocaleIds(selectedLocaleIds === ALL_LOCALES_ID ? [] : ALL_LOCALES_ID)
                     },
                 },
                 {
@@ -414,12 +419,18 @@ function ConfigurationPage({
                     label: locale.name,
                     secondaryLabel: locale.code,
                     checked: locale.id === localeId,
-                    enabled: !(selectedLocaleIds.includes(locale.id) && locale.id !== localeId),
+                    enabled: !(selectedLocaleIds === ALL_LOCALES_ID
+                        ? false
+                        : selectedLocaleIds.includes(locale.id) && locale.id !== localeId),
                     onAction: () => {
-                        if (selectedLocaleIds.includes(locale.id)) {
-                            setSelectedLocaleIds(selectedLocaleIds.filter(id => id !== locale.id))
+                        if (selectedLocaleIds === ALL_LOCALES_ID) {
+                            setSelectedLocaleIds([locale.id])
                         } else {
-                            setSelectedLocaleIds([...selectedLocaleIds, locale.id])
+                            if (selectedLocaleIds.includes(locale.id)) {
+                                setSelectedLocaleIds(selectedLocaleIds.filter(id => id !== locale.id))
+                            } else {
+                                setSelectedLocaleIds([...selectedLocaleIds, locale.id])
+                            }
                         }
                     },
                 })),
@@ -437,7 +448,9 @@ function ConfigurationPage({
 
     function onRemoveLocaleClick(e: React.MouseEvent<HTMLDivElement>, localeId: string) {
         e.stopPropagation()
-        setSelectedLocaleIds(selectedLocaleIds.filter(id => id !== localeId))
+        setSelectedLocaleIds(
+            selectedLocaleIds === ALL_LOCALES_ID ? [] : selectedLocaleIds.filter(id => id !== localeId)
+        )
     }
 
     return (
@@ -495,11 +508,11 @@ function ConfigurationPage({
                     </button>
                 </PropertyControl>
                 <PropertyControl label="Locales">
-                    {selectedLocaleIds.length === 0 && (
+                    {selectedLocaleIds === ALL_LOCALES_ID ? (
                         <button
                             className="dropdown-button"
                             onClick={e => {
-                                onLocaleButtonClick(e, null)
+                                onLocaleButtonClick(e, ALL_LOCALES_ID)
                             }}
                         >
                             All Locales
@@ -507,8 +520,7 @@ function ConfigurationPage({
                                 <ChevronDownIcon />
                             </div>
                         </button>
-                    )}
-                    {selectedLocaleIds.length > 0 && (
+                    ) : (
                         <div className="button-stack">
                             {selectedLocaleIds.map(id => (
                                 <button

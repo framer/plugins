@@ -63,7 +63,7 @@ main {
     height: 100%;
 }
 
-.logo {
+.logo-container {
     width: 100%;
     background-color: var(--framer-color-bg-tertiary);
     border-radius: 8px;
@@ -73,20 +73,22 @@ main {
     justify-content: center;
 }
 
-[data-framer-theme="dark"] .logo {
+[data-framer-theme="dark"] .logo-container {
     background-color: var(--crowdin-brand-color);
 }
 
-[data-framer-theme="light"] .logo .dark {
-    display: none;
+.logo {
+    width: 55%;
+    aspect-ratio: 310 / 64;
+    mask-image: url("/crowdin.svg");
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-mode: alpha;
+    background-color: var(--crowdin-brand-color);
 }
 
-[data-framer-theme="dark"] .logo .light {
-    display: none;
-}
-
-.logo img {
-    width: 53.4%;
+[data-framer-theme="dark"] .logo {
+    background-color: #fff;
 }
 
 .setup label {

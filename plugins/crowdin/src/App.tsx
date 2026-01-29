@@ -192,7 +192,6 @@ function ConfigurationPage({
     const [accessTokenInputFocused, setAccessTokenInputFocused] = useState<boolean>(false)
     const accessTokenInputRef = useRef<HTMLInputElement>(null)
 
-    const localesTitle = selectedLocaleIds.length === 1 ? "Locale" : "Locales"
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
     const canPerformAction = accessToken && projectId && (mode === "import" ? isAllowedToSetLocalizationData : true)
 
@@ -236,6 +235,11 @@ function ConfigurationPage({
                 width: rect.width,
             }
         )
+    }
+
+    function onRemoveLocaleClick(e: React.MouseEvent<HTMLDivElement>, localeId: string) {
+        e.stopPropagation()
+        setSelectedLocaleIds(selectedLocaleIds.filter(id => id !== localeId))
     }
 
     return (
@@ -319,18 +323,58 @@ function ConfigurationPage({
                         ))}
                     </select>
                 </PropertyControl>
-                <PropertyControl label={localesTitle}>
-                    {selectedLocaleIds.length === 0 && <button onClick={onLocaleButtonClick}>All Locales</button>}
+                <PropertyControl label="Locales">
+                    {selectedLocaleIds.length === 0 && (
+                        <button
+                            className="locale-button"
+                            onClick={e => {
+                                onLocaleButtonClick(e, null)
+                            }}
+                        >
+                            All Locales
+                            <div className="icon-button">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8">
+                                    <path
+                                        d="m1 2.75 3 3 3-3"
+                                        fill="transparent"
+                                        strokeWidth="1.5"
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    ></path>
+                                </svg>
+                            </div>
+                        </button>
+                    )}
                     {selectedLocaleIds.length > 0 && (
                         <div className="button-stack">
                             {selectedLocaleIds.map(id => (
                                 <button
+                                    className="locale-button"
                                     key={id}
                                     onClick={e => {
                                         onLocaleButtonClick(e, id)
                                     }}
                                 >
                                     {locales.find(locale => locale.id === id)?.name ?? id}
+                                    <div
+                                        className="icon-button"
+                                        title="Remove locale"
+                                        onClick={e => {
+                                            onRemoveLocaleClick(e, id)
+                                        }}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8.5">
+                                            <g
+                                                fill="transparent"
+                                                strokeWidth="1.5"
+                                                stroke="currentColor"
+                                                strokeLinecap="round"
+                                            >
+                                                <path d="m1.5 6.75 5-5M6.5 6.75l-5-5"></path>
+                                            </g>
+                                        </svg>
+                                    </div>
                                 </button>
                             ))}
                             <button
@@ -350,7 +394,7 @@ function ConfigurationPage({
                 disabled={!canPerformAction}
                 title={!isAllowedToSetLocalizationData ? "Insufficient permissions" : undefined}
             >
-                {mode === "export" ? "Export" : "Import"} {localesTitle}
+                {mode === "export" ? "Export" : "Import"} {selectedLocaleIds.length === 1 ? "Locale" : "Locales"}
             </button>
         </main>
     )

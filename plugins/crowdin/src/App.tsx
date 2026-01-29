@@ -10,10 +10,10 @@ import {
     updateTranslation,
     uploadStorage,
 } from "./xliff"
+import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 
 const HOME_UI_OPTIONS = { width: 260, height: 270 }
-
-void framer.showUI(HOME_UI_OPTIONS)
+const CONFIGURATION_PAGE_UI_OPTIONS = { width: 260 }
 
 interface Project {
     readonly id: number
@@ -28,14 +28,35 @@ interface CrowdinStorageResponse {
 
 // ----- App component -----
 export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
-    const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
-
-    return <Home />
-
+    const [mode, setMode] = useState<"export" | "import" | null>(null)
     const [accessToken, setAccessToken] = useState<string>("")
     const [tokenInputValue, setTokenInputValue] = useState<string>("")
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
+
+    useEffect(() => {
+        if (mode === null) {
+            void framer.showUI(HOME_UI_OPTIONS)
+        }
+    }, [mode])
+
+    if (mode === null) {
+        return <Home setMode={setMode} />
+    } else {
+        return (
+            <ConfigurationPage
+                mode={mode}
+                activeLocale={activeLocale}
+                locales={locales}
+                accessToken={accessToken}
+                projectId={projectId}
+                projectList={projectList}
+                setAccessToken={setAccessToken}
+                setProjectId={setProjectId}
+            />
+        )
+    }
+
     const [isLoading, setIsLoading] = useState(false)
     const [isImporting, setIsImporting] = useState(false)
     const [isExporting, setIsExporting] = useState(false)
@@ -353,9 +374,11 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     )
 }
 
-function Home() {
+function Home({ setMode }: { setMode: (mode: "export" | "import") => void }) {
+    const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
+
     return (
-        <main>
+        <main className="home">
             <hr />
             <div className="hero">
                 <div className="logo">
@@ -364,8 +387,104 @@ function Home() {
                 <h1>Translate with Crowdin</h1>
                 <p>Enter your access token from Crowdin and select a project to export Locales.</p>
             </div>
-            <button>Export</button>
-            <button>Import</button>
+            <div className="button-stack">
+                <button
+                    onClick={() => {
+                        setMode("export")
+                    }}
+                >
+                    Export
+                </button>
+                <button
+                    onClick={() => {
+                        if (!isAllowedToSetLocalizationData) return
+                        setMode("import")
+                    }}
+                    disabled={!isAllowedToSetLocalizationData}
+                    title={isAllowedToSetLocalizationData ? undefined : "Insufficient permissions"}
+                >
+                    Import
+                </button>
+            </div>
         </main>
+    )
+}
+
+function ConfigurationPage({
+    mode,
+    activeLocale,
+    locales,
+    accessToken,
+    projectId,
+    projectList,
+    setAccessToken,
+    setProjectId,
+}: {
+    mode: "export" | "import"
+    activeLocale: Locale | null
+    locales: readonly Locale[]
+    accessToken: string
+    projectId: number
+    projectList: readonly Project[]
+    setAccessToken: (accessToken: string) => void
+    setProjectId: (projectId: number) => void
+}) {
+    const selectedLocales = []
+
+    const localesTitle = selectedLocales.length === 1 ? "Locale" : "Locales"
+
+    useDynamicPluginHeight(CONFIGURATION_PAGE_UI_OPTIONS)
+
+    return (
+        <main>
+            <hr />
+            <div className="controls-stack">
+                <PropertyControl label="Token">
+                    <input
+                        type="text"
+                        placeholder="Crowdin token…"
+                        autoFocus
+                        value={accessToken}
+                        onChange={e => {
+                            setAccessToken(e.target.value)
+                        }}
+                    />
+                </PropertyControl>
+                {accessToken && (
+                    <PropertyControl label="Project">
+                        <select value={""}>
+                            <option value="" disabled>
+                                Select Project…
+                            </option>
+                        </select>
+                    </PropertyControl>
+                )}
+                <PropertyControl label={localesTitle}>
+                    <select value={""}>
+                        <option value="">All Locales</option>
+                        <hr />
+                        {locales.map(locale => (
+                            <option key={locale.id} value={locale.id}>
+                                {locale.name}
+                            </option>
+                        ))}
+                    </select>
+                    <button>Add</button>
+                </PropertyControl>
+            </div>
+            <hr />
+            <button className="framer-button-primary">
+                {mode === "export" ? "Export" : "Import"} {localesTitle}
+            </button>
+        </main>
+    )
+}
+
+function PropertyControl({ label, children }: { label: string; children: React.ReactNode | React.ReactNode[] }) {
+    return (
+        <div className="property-control">
+            <p>{label}</p>
+            <div className="content">{children}</div>
+        </div>
     )
 }

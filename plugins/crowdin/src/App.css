@@ -4,18 +4,11 @@
     --crowdin-brand-color: #263238;
 }
 
-[data-framer-theme="light"] #root {
-    --framer-color-tint: var(--crowdin-brand-color);
-    --framer-color-tint-dark: #33424a;
-    --framer-color-tint-extra-dark: #3d4e57;
+[data-framer-theme="light"] {
     --image-border-color: rgba(0, 0, 0, 0.05);
 }
 
-[data-framer-theme="dark"] #root {
-    --framer-color-tint: #fff;
-    --framer-color-tint-dark: #e3e3e3;
-    --framer-color-tint-extra-dark: #c3c3c3;
-    --framer-color-text-reversed: #000;
+[data-framer-theme="dark"] {
     --image-border-color: rgba(255, 255, 255, 0.05);
 }
 
@@ -24,11 +17,14 @@ main {
     flex-direction: column;
     align-items: start;
     padding: 0 15px 15px;
-    height: 100%;
-    gap: 10px;
+    gap: 15px;
 
     user-select: none;
     -webkit-user-select: none;
+}
+
+main.home {
+    height: 100%;
 }
 
 .form-field {
@@ -65,8 +61,8 @@ main {
     width: 134px;
 }
 
-.setup input {
-    padding: 0 8px;
+select {
+    padding: 0 16px 0 10px;
 }
 
 .setup {
@@ -81,17 +77,6 @@ main {
 
 p a:hover {
     text-decoration: underline;
-}
-
-.button-stack {
-    display: flex;
-    gap: 8px;
-    justify-content: space-between;
-    width: 100%;
-}
-
-.button-stack button {
-    flex: 1;
 }
 
 /* New design */
@@ -140,4 +125,47 @@ p a:hover {
     height: 100%;
     border: 1px solid var(--image-border-color);
     border-radius: 8px;
+}
+
+.button-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.controls-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.property-control {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: start;
+    gap: 10px;
+    padding-left: 10px;
+}
+
+.property-control > p {
+    flex: 1;
+    height: 30px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.property-control .content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 140px;
+}
+
+.property-control .content > * {
+    width: 100%;
 }

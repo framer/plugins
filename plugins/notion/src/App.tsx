@@ -98,7 +98,13 @@ export function App({
     ])
 
     if (isSyncMode) {
-        return <Progress current={progress.current} total={progress.total} />
+        return (
+            <Progress
+                current={progress.current}
+                total={progress.total}
+                contentFieldEnabled={progress.contentFieldEnabled}
+            />
+        )
     }
 
     return (

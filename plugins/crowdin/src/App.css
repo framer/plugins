@@ -126,11 +126,6 @@ main {
     padding-bottom: 15px;
 }
 
-p.centered {
-    width: 100%;
-    text-align: center;
-}
-
 p a:hover {
     text-decoration: underline;
 }

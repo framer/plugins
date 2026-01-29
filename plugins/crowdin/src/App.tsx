@@ -278,10 +278,10 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             <div className="logo-container">
                 <div className="logo" aria-label="Crowdin Logo" />
             </div>
-            <p className="centered">
+            <p>
                 Get an access token in the{" "}
                 <a href="https://crowdin.com/settings#api-key" target="_blank" rel="noopener noreferrer">
-                    Crowdin dashboard
+                    dashboard
                 </a>
                 .
             </p>

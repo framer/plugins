@@ -12,6 +12,7 @@ import {
     uploadStorage,
 } from "./xliff"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
+import { CheckIcon, ChevronDownIcon, XIcon } from "./Icons"
 
 const PLUGIN_WIDTH = 280
 
@@ -254,12 +255,7 @@ function ConfigurationPage({
             <hr />
             <div className="controls-stack">
                 <PropertyControl label="Token">
-                    <div
-                        className={cx(
-                            "access-token-input",
-                            accessTokenState !== AccessTokenState.None && !accessTokenInputFocused && "with-state"
-                        )}
-                    >
+                    <div className={cx("access-token-input")}>
                         <input
                             ref={accessTokenInputRef}
                             type="text"
@@ -287,27 +283,14 @@ function ConfigurationPage({
                                 setAccessTokenInputFocused(true)
                             }}
                         />
-                        {!accessTokenInputFocused && (
+                        {accessTokenState === AccessTokenState.Loading && (
                             <div className="icon">
-                                {accessTokenState === AccessTokenState.Loading && <div className="framer-spinner" />}
-                                {accessTokenState === AccessTokenState.Valid && (
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="6"
-                                        height="4.5"
-                                        fill="none"
-                                        overflow="visible"
-                                    >
-                                        <path
-                                            d="M 0 2.5 L 2.118 4.5 L 6 0"
-                                            fill="transparent"
-                                            strokeWidth="1.5"
-                                            stroke="rgb(64, 222, 127)"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        ></path>
-                                    </svg>
-                                )}
+                                <div className="framer-spinner" />
+                            </div>
+                        )}
+                        {accessTokenState === AccessTokenState.Valid && !accessTokenValueHasChanged && (
+                            <div className="icon">
+                                <CheckIcon />
                             </div>
                         )}
                     </div>
@@ -340,16 +323,7 @@ function ConfigurationPage({
                         >
                             All Locales
                             <div className="icon-button">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8">
-                                    <path
-                                        d="m1 2.75 3 3 3-3"
-                                        fill="transparent"
-                                        strokeWidth="1.5"
-                                        stroke="currentColor"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    ></path>
-                                </svg>
+                                <ChevronDownIcon />
                             </div>
                         </button>
                     )}
@@ -371,16 +345,7 @@ function ConfigurationPage({
                                             onRemoveLocaleClick(e, id)
                                         }}
                                     >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8.5">
-                                            <g
-                                                fill="transparent"
-                                                strokeWidth="1.5"
-                                                stroke="currentColor"
-                                                strokeLinecap="round"
-                                            >
-                                                <path d="m1.5 6.75 5-5M6.5 6.75l-5-5"></path>
-                                            </g>
-                                        </svg>
+                                        <XIcon />
                                     </div>
                                 </button>
                             ))}

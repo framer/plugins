@@ -579,8 +579,10 @@ function ConfigurationPage({
                         </div>
                     </button>
                 </PropertyControl>
-                <PropertyControl label="Locales">
-                    {selectedLocaleIds === ALL_LOCALES_ID ? (
+                <PropertyControl label="Locales" disabled={availableLocaleIds.length === 0}>
+                    {availableLocaleIds.length === 0 ? (
+                        <div className="locales-empty-state" />
+                    ) : selectedLocaleIds === ALL_LOCALES_ID ? (
                         <button
                             className="dropdown-button"
                             onClick={e => {

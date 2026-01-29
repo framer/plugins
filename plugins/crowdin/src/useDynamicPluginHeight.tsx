@@ -13,10 +13,8 @@ export function useDynamicPluginHeight(options: Partial<UIOptions> = {}) {
 
         const updateHeight = () => {
             const height = contentElement.scrollHeight
-            framer.showUI({
+            void framer.showUI({
                 ...options,
-                resizable:
-                    options.resizable === true ? "width" : options.resizable === "height" ? false : options.resizable,
                 height: Math.max(options.minHeight ?? 0, Math.min(height, options.maxHeight ?? Infinity)),
             })
         }

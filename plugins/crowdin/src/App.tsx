@@ -1,5 +1,5 @@
 import cx from "classnames"
-import { framer, type Locale, useIsAllowedTo } from "framer-plugin"
+import { framer, type LocalizationData, type Locale, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
@@ -20,6 +20,13 @@ const NO_PROJECT_PLACEHOLDER = "Choose Project…"
 const ALL_LOCALES_ID = "__ALL_LOCALES__"
 
 type LocaleIds = string[] | typeof ALL_LOCALES_ID
+
+interface ImportConfirmationState {
+    locales: Locale[]
+    valuesByLocale: Record<string, NonNullable<LocalizationData["valuesBySource"]>>
+    currentIndex: number
+    confirmedLocaleIds: Set<string>
+}
 
 enum AccessTokenState {
     None = "none",
@@ -55,6 +62,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [selectedLocaleIds, setSelectedLocaleIds] = useState<LocaleIds>(activeLocale ? [activeLocale.id] : [])
     const [availableLocaleIds, setAvailableLocaleIds] = useState<string[]>([])
     const [operationInProgress, setOperationInProgress] = useState<boolean>(false)
+    const [importConfirmation, setImportConfirmation] = useState<ImportConfirmationState | null>(null)
     const validatingAccessTokenRef = useRef<boolean>(false)
 
     useDynamicPluginHeight({ width: PLUGIN_WIDTH })
@@ -62,7 +70,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     // Set close warning when importing or exporting
     useEffect(() => {
         try {
-            if (operationInProgress) {
+            if (operationInProgress || (mode === "import" && importConfirmation)) {
                 if (mode === "import") {
                     void framer.setCloseWarning("Import in progress. Closing will cancel the import.")
                 } else if (mode === "export") {
@@ -74,7 +82,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         } catch (error) {
             console.error("Error setting close warning:", error)
         }
-    }, [mode, operationInProgress])
+    }, [mode, operationInProgress, importConfirmation])
 
     const validateAccessToken = useCallback(
         async (token: string): Promise<void> => {
@@ -135,7 +143,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const localeIdsToSync = selectedLocaleIds === ALL_LOCALES_ID ? availableLocaleIds : selectedLocaleIds
 
     // ------------------ Import from Crowdin ------------------
-    async function importFromCrowdin() {
+    async function startImportConfirmation() {
         if (operationInProgress) return
 
         if (!framer.isAllowedTo("setLocalizationData")) {
@@ -159,13 +167,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         setOperationInProgress(true)
         const client = createCrowdinClient(accessToken)
         const localesToSync = locales.filter(locale => localeIdsToSync.includes(locale.id))
+        const valuesByLocale: Record<string, NonNullable<LocalizationData["valuesBySource"]>> = {}
 
         try {
-            const mergedValuesBySource: Record<
-                string,
-                Record<string, { action: "set"; value: string; needsReview: boolean }>
-            > = {}
-
             for (const locale of localesToSync) {
                 const exportRes = await client.translations.exportProjectTranslation(projectId, {
                     targetLanguageId: locale.code,
@@ -183,40 +187,25 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 const { xliff, targetLocale } = parseXliff(fileContent, locales)
                 const valuesBySource = await createValuesBySourceFromXliff(xliff, targetLocale)
                 if (!valuesBySource) continue
-
-                for (const sourceId of Object.keys(valuesBySource)) {
-                    const localeValues = valuesBySource[sourceId]
-                    if (localeValues) {
-                        mergedValuesBySource[sourceId] ??= {}
-                        Object.assign(mergedValuesBySource[sourceId], localeValues)
-                    }
-                }
+                valuesByLocale[locale.id] = valuesBySource
             }
 
-            if (Object.keys(mergedValuesBySource).length === 0) {
+            if (Object.keys(valuesByLocale).length === 0) {
                 framer.notify("No translations could be fetched from Crowdin", {
                     variant: "error",
                 })
                 return
             }
 
-            const result = await framer.setLocalizationData({ valuesBySource: mergedValuesBySource })
-
-            if (result.valuesBySource.errors.length > 0) {
-                throw new Error(
-                    result.valuesBySource.errors
-                        .map(error => (error.sourceId ? `${error.error}: ${error.sourceId}` : error.error))
-                        .join(", ")
-                )
-            }
-
-            const count = localesToSync.length
-            framer.notify(`Successfully imported ${count} locale${count === 1 ? "" : "s"} from Crowdin`, {
-                variant: "success",
-                durationMs: 5000,
+            const orderedLocales = localesToSync.filter(locale => locale.id in valuesByLocale)
+            setImportConfirmation({
+                locales: orderedLocales,
+                valuesByLocale,
+                currentIndex: 0,
+                confirmedLocaleIds: new Set(),
             })
         } catch (error) {
-            console.error("Error importing from Crowdin:", error)
+            console.error("Error fetching from Crowdin:", error)
             framer.notify(`Import error: ${error instanceof Error ? error.message : "An unknown error occurred"}`, {
                 variant: "error",
                 durationMs: 10000,
@@ -224,6 +213,56 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         } finally {
             setOperationInProgress(false)
         }
+    }
+
+    function applyConfirmedImport(state: ImportConfirmationState) {
+        if (state.confirmedLocaleIds.size === 0) {
+            framer.notify("No locales selected for import", { variant: "info" })
+            setImportConfirmation(null)
+            return
+        }
+
+        const mergedValuesBySource: NonNullable<LocalizationData["valuesBySource"]> = {}
+        for (const localeId of state.confirmedLocaleIds) {
+            const localeValues = state.valuesByLocale[localeId]
+            if (!localeValues) continue
+            for (const sourceId of Object.keys(localeValues)) {
+                const localeData = localeValues[sourceId]
+                if (localeData) {
+                    mergedValuesBySource[sourceId] ??= {}
+                    Object.assign(mergedValuesBySource[sourceId], localeData)
+                }
+            }
+        }
+
+        setOperationInProgress(true)
+        framer
+            .setLocalizationData({ valuesBySource: mergedValuesBySource })
+            .then(result => {
+                if (result.valuesBySource.errors.length > 0) {
+                    throw new Error(
+                        result.valuesBySource.errors
+                            .map(error => (error.sourceId ? `${error.error}: ${error.sourceId}` : error.error))
+                            .join(", ")
+                    )
+                }
+                const count = state.confirmedLocaleIds.size
+                framer.notify(`Successfully imported ${count} locale${count === 1 ? "" : "s"} from Crowdin`, {
+                    variant: "success",
+                    durationMs: 5000,
+                })
+            })
+            .catch((error: unknown) => {
+                console.error("Error applying import:", error)
+                framer.notify(`Import error: ${error instanceof Error ? error.message : "An unknown error occurred"}`, {
+                    variant: "error",
+                    durationMs: 10000,
+                })
+            })
+            .finally(() => {
+                setOperationInProgress(false)
+                setImportConfirmation(null)
+            })
     }
 
     async function exportToCrowdin() {
@@ -341,31 +380,84 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         if (mode === "export") {
             void exportToCrowdin()
         } else if (mode === "import") {
-            void importFromCrowdin()
+            void startImportConfirmation()
         }
     }
 
     if (mode === null) {
         return <Home setMode={setMode} />
-    } else {
+    }
+
+    if (mode === "import" && importConfirmation) {
+        const { locales: confirmLocales, currentIndex, confirmedLocaleIds } = importConfirmation
+        const currentLocale = confirmLocales[currentIndex]
+        const remainingCount = confirmLocales.length - currentIndex
+
         return (
-            <ConfigurationPage
-                mode={mode}
-                locales={locales}
-                availableLocaleIds={availableLocaleIds}
-                accessToken={accessToken}
-                accessTokenState={accessTokenState}
-                projectId={projectId}
-                projectList={projectList}
-                validateAccessToken={validateAccessToken}
-                setProjectId={setProjectId}
-                selectedLocaleIds={selectedLocaleIds}
-                setSelectedLocaleIds={setSelectedLocaleIds}
-                operationInProgress={operationInProgress}
-                onSubmit={onSubmit}
+            <ConfirmationModal
+                localeName={currentLocale?.name ?? ""}
+                currentStep={currentIndex + 1}
+                totalSteps={confirmLocales.length}
+                remainingLocaleCount={remainingCount}
+                skip={() => {
+                    const nextIndex = currentIndex + 1
+                    if (nextIndex >= confirmLocales.length) {
+                        applyConfirmedImport({ ...importConfirmation, currentIndex: nextIndex })
+                    } else {
+                        setImportConfirmation({ ...importConfirmation, currentIndex: nextIndex })
+                    }
+                }}
+                replace={() => {
+                    const nextConfirmed = new Set(confirmedLocaleIds)
+                    if (currentLocale) nextConfirmed.add(currentLocale.id)
+                    const nextIndex = currentIndex + 1
+                    if (nextIndex >= confirmLocales.length) {
+                        applyConfirmedImport({
+                            ...importConfirmation,
+                            currentIndex: nextIndex,
+                            confirmedLocaleIds: nextConfirmed,
+                        })
+                    } else {
+                        setImportConfirmation({
+                            ...importConfirmation,
+                            currentIndex: nextIndex,
+                            confirmedLocaleIds: nextConfirmed,
+                        })
+                    }
+                }}
+                replaceAll={() => {
+                    const nextConfirmed = new Set(confirmedLocaleIds)
+                    for (let i = currentIndex; i < confirmLocales.length; i++) {
+                        const loc = confirmLocales[i]
+                        if (loc) nextConfirmed.add(loc.id)
+                    }
+                    applyConfirmedImport({
+                        ...importConfirmation,
+                        currentIndex: confirmLocales.length,
+                        confirmedLocaleIds: nextConfirmed,
+                    })
+                }}
             />
         )
     }
+
+    return (
+        <ConfigurationPage
+            mode={mode}
+            locales={locales}
+            availableLocaleIds={availableLocaleIds}
+            accessToken={accessToken}
+            accessTokenState={accessTokenState}
+            projectId={projectId}
+            projectList={projectList}
+            validateAccessToken={validateAccessToken}
+            setProjectId={setProjectId}
+            selectedLocaleIds={selectedLocaleIds}
+            setSelectedLocaleIds={setSelectedLocaleIds}
+            operationInProgress={operationInProgress}
+            onSubmit={onSubmit}
+        />
+    )
 }
 
 function Home({ setMode }: { setMode: (mode: "export" | "import") => void }) {
@@ -669,6 +761,62 @@ function PropertyControl({
             <p>{label}</p>
             <div className="content">{children}</div>
         </div>
+    )
+}
+
+function ConfirmationModal({
+    localeName,
+    currentStep,
+    totalSteps,
+    remainingLocaleCount,
+    skip,
+    replace,
+    replaceAll,
+}: {
+    localeName: string
+    currentStep: number
+    totalSteps: number
+    remainingLocaleCount: number
+    skip: () => void
+    replace: () => void
+    replaceAll: () => void
+}) {
+    const [allChecked, setAllChecked] = useState(false)
+
+    return (
+        <main>
+            <hr />
+            <div className="heading">
+                <h1>Replace Locale{totalSteps === 1 ? "" : "s"}</h1>
+                <span className="step-indicator">
+                    {currentStep} / {totalSteps}
+                </span>
+            </div>
+            <hr />
+            <p>
+                By importing you are going to override the existing locale <strong>"{localeName}"</strong>.
+            </p>
+            {totalSteps > 1 && (
+                <label className="checkbox-label">
+                    <input
+                        type="checkbox"
+                        checked={allChecked}
+                        onChange={e => {
+                            setAllChecked(e.target.checked)
+                        }}
+                    />
+                    <p>
+                        All ({remainingLocaleCount} {remainingLocaleCount === 1 ? "locale" : "locales"})
+                    </p>
+                </label>
+            )}
+            <div className="button-row">
+                <button onClick={skip}>Skip</button>
+                <button onClick={allChecked ? replaceAll : replace} className="framer-button-primary">
+                    Replace
+                </button>
+            </div>
+        </main>
     )
 }
 

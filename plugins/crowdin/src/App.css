@@ -36,6 +36,16 @@ select:not(:disabled) {
     cursor: pointer;
 }
 
+h1 {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+strong {
+    font-weight: 500;
+    color: var(--framer-color-text);
+}
+
 .hero {
     display: flex;
     flex-direction: column;
@@ -45,11 +55,6 @@ select:not(:disabled) {
     gap: 10px;
     width: 100%;
     flex: 1;
-}
-
-.hero h1 {
-    font-size: 12px;
-    font-weight: 600;
 }
 
 .hero p {
@@ -199,4 +204,27 @@ input.error {
     border-radius: 8px;
     opacity: 0.5;
     height: 30px;
+}
+
+.checkbox-label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkbox-label input[type="checkbox"]:not(:checked) {
+    background-color: var(--framer-color-bg-tertiary);
+}
+
+.heading {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.step-indicator {
+    color: var(--framer-color-text-tertiary);
 }

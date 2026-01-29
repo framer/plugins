@@ -11,7 +11,9 @@ import {
     uploadStorage,
 } from "./xliff"
 
-void framer.showUI({ width: 325, height: 377 })
+const HOME_UI_OPTIONS = { width: 260, height: 270 }
+
+void framer.showUI(HOME_UI_OPTIONS)
 
 interface Project {
     readonly id: number
@@ -27,6 +29,8 @@ interface CrowdinStorageResponse {
 // ----- App component -----
 export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
+
+    return <Home />
 
     const [accessToken, setAccessToken] = useState<string>("")
     const [tokenInputValue, setTokenInputValue] = useState<string>("")
@@ -345,6 +349,23 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     {isExporting ? <div className="framer-spinner" /> : "Export"}
                 </button>
             </div>
+        </main>
+    )
+}
+
+function Home() {
+    return (
+        <main>
+            <hr />
+            <div className="hero">
+                <div className="logo">
+                    <img src="/icon.svg" alt="Crowdin Logo" />
+                </div>
+                <h1>Translate with Crowdin</h1>
+                <p>Enter your access token from Crowdin and select a project to export Locales.</p>
+            </div>
+            <button>Export</button>
+            <button>Import</button>
         </main>
     )
 }

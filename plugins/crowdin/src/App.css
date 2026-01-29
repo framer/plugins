@@ -8,6 +8,7 @@
     --framer-color-tint: var(--crowdin-brand-color);
     --framer-color-tint-dark: #33424a;
     --framer-color-tint-extra-dark: #3d4e57;
+    --image-border-color: rgba(0, 0, 0, 0.05);
 }
 
 [data-framer-theme="dark"] #root {
@@ -15,15 +16,16 @@
     --framer-color-tint-dark: #e3e3e3;
     --framer-color-tint-extra-dark: #c3c3c3;
     --framer-color-text-reversed: #000;
+    --image-border-color: rgba(255, 255, 255, 0.05);
 }
 
 main {
     display: flex;
     flex-direction: column;
     align-items: start;
-    padding: 0 15px 0;
+    padding: 0 15px 15px;
     height: 100%;
-    gap: 15px;
+    gap: 10px;
 
     user-select: none;
     -webkit-user-select: none;
@@ -40,34 +42,6 @@ main {
 .form-field.disabled {
     opacity: 0.5;
     pointer-events: none;
-}
-
-.logo-container {
-    width: 100%;
-    background-color: var(--framer-color-bg-tertiary);
-    border-radius: 8px;
-    aspect-ratio: 580 / 360;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-[data-framer-theme="dark"] .logo-container {
-    background-color: var(--crowdin-brand-color);
-}
-
-.logo {
-    width: 55%;
-    aspect-ratio: 310 / 64;
-    mask-image: url("/crowdin.svg");
-    mask-size: contain;
-    mask-repeat: no-repeat;
-    mask-mode: alpha;
-    background-color: var(--crowdin-brand-color);
-}
-
-[data-framer-theme="dark"] .logo {
-    background-color: #fff;
 }
 
 .setup label {
@@ -118,4 +92,52 @@ p a:hover {
 
 .button-stack button {
     flex: 1;
+}
+
+/* New design */
+
+.hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+    width: 100%;
+    flex: 1;
+}
+
+.hero h1 {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.hero p {
+    text-wrap: balance;
+    color: var(--framer-color-text-tertiary);
+    max-width: 200px;
+}
+
+.hero .logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    position: relative;
+    overflow: clip;
+}
+
+.hero .logo img {
+    width: 100%;
+    height: 100%;
+}
+
+.hero .logo:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--image-border-color);
+    border-radius: 8px;
 }

@@ -15,7 +15,12 @@ if (window.location.hostname === "localhost") {
 }
 
 if (!activeLocale) {
-    framer.closePlugin("No active locale found. Please select a locale.", { variant: "error" })
+    framer.closePlugin(
+        locales.length > 0
+            ? "No active locale found. Please select a locale."
+            : "No locales found. Please create a locale.",
+        { variant: "error" }
+    )
 } else {
     ReactDOM.createRoot(root).render(
         <React.StrictMode>

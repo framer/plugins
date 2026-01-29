@@ -15,6 +15,7 @@ import {
 } from "./xliff"
 
 const PLUGIN_WIDTH = 280
+const NO_PROJECT_PLACEHOLDER = "Choose Project…"
 
 enum AccessTokenState {
     None = "none",
@@ -367,6 +368,33 @@ function ConfigurationPage({
         setAccessTokenValue(accessToken)
     }, [accessToken])
 
+    function onProjectButtonClick(e: React.MouseEvent<HTMLButtonElement>) {
+        const rect = e.currentTarget.getBoundingClientRect()
+        void framer.showContextMenu(
+            [
+                {
+                    label: NO_PROJECT_PLACEHOLDER,
+                    enabled: false,
+                },
+                ...projectList.map(p => ({
+                    label: p.name,
+                    checked: p.id === projectId,
+                    onAction: () => {
+                        setProjectId(p.id)
+                    },
+                })),
+            ],
+            {
+                location: {
+                    x: rect.right - 4,
+                    y: rect.bottom + 4,
+                },
+                width: 250,
+                placement: "bottom-left",
+            }
+        )
+    }
+
     function onLocaleButtonClick(e: React.MouseEvent<HTMLButtonElement>, localeId: string | null) {
         const rect = e.currentTarget.getBoundingClientRect()
 
@@ -454,27 +482,22 @@ function ConfigurationPage({
                     </div>
                 </PropertyControl>
                 <PropertyControl label="Project" disabled={accessTokenState !== AccessTokenState.Valid}>
-                    <select
-                        value={projectId || ""}
-                        onChange={e => {
-                            setProjectId(Number(e.target.value))
-                        }}
+                    <button
+                        type="button"
+                        className="dropdown-button"
                         disabled={!accessToken || !projectList.length}
+                        onClick={onProjectButtonClick}
                     >
-                        <option value="" disabled>
-                            Choose Project…
-                        </option>
-                        {projectList.map(p => (
-                            <option key={p.id} value={p.id}>
-                                {p.name}
-                            </option>
-                        ))}
-                    </select>
+                        {projectList.find(p => p.id === projectId)?.name ?? NO_PROJECT_PLACEHOLDER}
+                        <div className="icon-button">
+                            <ChevronDownIcon />
+                        </div>
+                    </button>
                 </PropertyControl>
                 <PropertyControl label="Locales">
                     {selectedLocaleIds.length === 0 && (
                         <button
-                            className="locale-button"
+                            className="dropdown-button"
                             onClick={e => {
                                 onLocaleButtonClick(e, null)
                             }}
@@ -489,7 +512,7 @@ function ConfigurationPage({
                         <div className="button-stack">
                             {selectedLocaleIds.map(id => (
                                 <button
-                                    className="locale-button"
+                                    className="dropdown-button"
                                     key={id}
                                     onClick={e => {
                                         onLocaleButtonClick(e, id)
@@ -507,13 +530,15 @@ function ConfigurationPage({
                                     </div>
                                 </button>
                             ))}
-                            <button
-                                onClick={e => {
-                                    onLocaleButtonClick(e, null)
-                                }}
-                            >
-                                Add
-                            </button>
+                            {selectedLocaleIds.length < locales.length && (
+                                <button
+                                    onClick={e => {
+                                        onLocaleButtonClick(e, null)
+                                    }}
+                                >
+                                    Add
+                                </button>
+                            )}
                         </div>
                     )}
                 </PropertyControl>

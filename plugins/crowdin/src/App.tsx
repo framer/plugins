@@ -15,6 +15,13 @@ import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 
 const PLUGIN_WIDTH = 280
 
+enum AccessTokenState {
+    None = "none",
+    Valid = "valid",
+    Invalid = "invalid",
+    Loading = "loading",
+}
+
 interface Project {
     readonly id: number
     readonly name: string
@@ -26,36 +33,69 @@ interface CrowdinStorageResponse {
     }
 }
 
-// ----- App component -----
 export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
     const [mode, setMode] = useState<"export" | "import" | null>(null)
     const [accessToken, setAccessToken] = useState<string>("")
+    const [accessTokenState, setAccessTokenState] = useState<AccessTokenState>(AccessTokenState.None)
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
 
     useDynamicPluginHeight({ width: PLUGIN_WIDTH })
 
-    const validateAccessToken = useCallback(async (token: string): Promise<boolean> => {
-        const projects = await validateAccessTokenAndGetProjects(token)
+    const validateAccessToken = useCallback(
+        async (token: string): Promise<void> => {
+            if (accessTokenState === AccessTokenState.Loading) return
+            if (token === accessToken) return
 
-        if (projects) {
-            setAccessToken(token)
-            setProjectList(projects)
-
-            if (projects.length === 1 && projects[0]?.id) {
-                setProjectId(projects[0].id)
-            } else {
+            if (!token) {
+                setAccessToken("")
+                setProjectList([])
                 setProjectId(0)
+                setAccessTokenState(AccessTokenState.None)
+                return
             }
 
-            return true
-        } else {
-            setAccessToken("")
-            setProjectList([])
-            setProjectId(0)
-            return false
+            setAccessTokenState(AccessTokenState.Loading)
+
+            try {
+                const { isValid, projects } = await validateAccessTokenAndGetProjects(token)
+
+                if (isValid) {
+                    setAccessToken(token)
+                    setProjectList(projects ?? [])
+
+                    if (Array.isArray(projects) && projects.length === 1 && projects[0]?.id) {
+                        setProjectId(projects[0].id)
+                    } else {
+                        setProjectId(0)
+                    }
+
+                    setAccessTokenState(AccessTokenState.Valid)
+                } else {
+                    setAccessToken("")
+                    setProjectList([])
+                    setProjectId(0)
+                    setAccessTokenState(AccessTokenState.Invalid)
+                }
+            } catch (error) {
+                console.error(error)
+                framer.notify(
+                    `Error validating access token: ${error instanceof Error ? error.message : "Unknown error"}`,
+                    { variant: "error" }
+                )
+                setProjectList([])
+                setProjectId(0)
+                setAccessTokenState(AccessTokenState.Invalid)
+            }
+        },
+        [accessToken, accessTokenState]
+    )
+
+    useEffect(() => {
+        if (framer.isAllowedTo("setPluginData")) {
+            void framer.setPluginData("accessToken", accessToken)
         }
-    }, [])
+    }, [accessToken])
 
     useEffect(() => {
         async function loadStoredToken() {
@@ -77,6 +117,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 activeLocale={activeLocale}
                 locales={locales}
                 accessToken={accessToken}
+                accessTokenState={accessTokenState}
                 projectId={projectId}
                 projectList={projectList}
                 validateAccessToken={validateAccessToken}
@@ -127,6 +168,7 @@ function ConfigurationPage({
     activeLocale,
     locales,
     accessToken,
+    accessTokenState,
     projectId,
     projectList,
     validateAccessToken,
@@ -136,15 +178,17 @@ function ConfigurationPage({
     activeLocale: Locale | null
     locales: readonly Locale[]
     accessToken: string
+    accessTokenState: AccessTokenState
     projectId: number
     projectList: readonly Project[]
-    validateAccessToken: (accessToken: string) => Promise<boolean>
+    validateAccessToken: (accessToken: string) => Promise<void>
     setProjectId: (projectId: number) => void
 }) {
     const selectedLocales = []
 
     const [accessTokenValue, setAccessTokenValue] = useState<string>(accessToken)
-    const [accessTokenState, setAccessTokenState] = useState<"none" | "valid" | "invalid" | "loading">("none")
+    const [accessTokenInputFocused, setAccessTokenInputFocused] = useState<boolean>(false)
+    const accessTokenInputRef = useRef<HTMLInputElement>(null)
 
     const localesTitle = selectedLocales.length === 1 ? "Locale" : "Locales"
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
@@ -154,23 +198,19 @@ function ConfigurationPage({
         setAccessTokenValue(accessToken)
     }, [accessToken])
 
-    async function confirmAccessToken() {
-        if (accessTokenValue === accessToken) {
-            return
-        }
-
-        setAccessTokenState("loading")
-        const isValid = await validateAccessToken(accessTokenValue)
-        setAccessTokenState(isValid ? "valid" : "invalid")
-    }
-
     return (
         <main>
             <hr />
             <div className="controls-stack">
                 <PropertyControl label="Token">
-                    <div className={cx("access-token-input", accessTokenState !== "none" && "with-state")}>
+                    <div
+                        className={cx(
+                            "access-token-input",
+                            accessTokenState !== AccessTokenState.None && !accessTokenInputFocused && "with-state"
+                        )}
+                    >
                         <input
+                            ref={accessTokenInputRef}
                             type="text"
                             placeholder="Crowdin token…"
                             autoFocus
@@ -180,37 +220,45 @@ function ConfigurationPage({
                             }}
                             onKeyDown={e => {
                                 if (e.key === "Enter") {
-                                    void confirmAccessToken()
+                                    accessTokenInputRef.current?.blur()
+                                    setAccessTokenInputFocused(false)
+                                    void validateAccessToken(accessTokenValue)
                                 }
                             }}
                             onBlur={() => {
-                                void confirmAccessToken()
+                                setAccessTokenInputFocused(false)
+                                void validateAccessToken(accessTokenValue)
+                            }}
+                            onFocus={() => {
+                                setAccessTokenInputFocused(true)
                             }}
                         />
-                        <div className="icon">
-                            {accessTokenState === "loading" ? (
-                                <div className="framer-spinner" />
-                            ) : accessTokenState === "invalid" ? (
-                                <div />
-                            ) : accessTokenState === "valid" ? (
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="6"
-                                    height="4.5"
-                                    fill="none"
-                                    overflow="visible"
-                                >
-                                    <path
-                                        d="M 0 2.5 L 2.118 4.5 L 6 0"
-                                        fill="transparent"
-                                        strokeWidth="1.5"
-                                        stroke="rgb(64, 222, 127)"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    ></path>
-                                </svg>
-                            ) : null}
-                        </div>
+                        {!accessTokenInputFocused && (
+                            <div className="icon">
+                                {accessTokenState === AccessTokenState.Loading ? (
+                                    <div className="framer-spinner" />
+                                ) : accessTokenState === AccessTokenState.Invalid ? (
+                                    <div />
+                                ) : accessTokenState === AccessTokenState.Valid ? (
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="6"
+                                        height="4.5"
+                                        fill="none"
+                                        overflow="visible"
+                                    >
+                                        <path
+                                            d="M 0 2.5 L 2.118 4.5 L 6 0"
+                                            fill="transparent"
+                                            strokeWidth="1.5"
+                                            stroke="rgb(64, 222, 127)"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        ></path>
+                                    </svg>
+                                ) : null}
+                            </div>
+                        )}
                     </div>
                 </PropertyControl>
                 <PropertyControl label="Project" disabled={!accessToken}>
@@ -274,7 +322,9 @@ function PropertyControl({
 }
 
 // Returns a list of projects or null if the access token is invalid
-async function validateAccessTokenAndGetProjects(token: string): Promise<Project[] | null> {
+async function validateAccessTokenAndGetProjects(
+    token: string
+): Promise<{ isValid: boolean; projects: Project[] | null }> {
     // Persist token
     if (framer.isAllowedTo("setPluginData")) {
         void framer.setPluginData("accessToken", token)
@@ -293,13 +343,13 @@ async function validateAccessTokenAndGetProjects(token: string): Promise<Project
                 id: data.id,
                 name: data.name,
             }))
-            return projects
+            return { isValid: true, projects }
         } catch (error) {
             console.error(error)
             framer.notify("Invalid access token", { variant: "error" })
-            return null
+            return { isValid: false, projects: null }
         }
     } else {
-        return null
+        return { isValid: false, projects: null }
     }
 }

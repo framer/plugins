@@ -193,3 +193,10 @@ input.error {
     color: var(--color-error);
     background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
 }
+
+.locales-empty-state {
+    background-color: var(--framer-color-bg-tertiary);
+    border-radius: 8px;
+    opacity: 0.5;
+    height: 30px;
+}

@@ -93,12 +93,17 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             if (!token) {
                 if (framer.isAllowedTo("setPluginData")) {
                     void framer.setPluginData("accessToken", "")
+                    void framer.setPluginData("projectId", null)
                 }
                 setAccessToken("")
                 setProjectList([])
                 setProjectId(0)
                 setAccessTokenState(AccessTokenState.None)
                 return
+            }
+
+            if (accessToken && framer.isAllowedTo("setPluginData")) {
+                void framer.setPluginData("projectId", null)
             }
 
             validatingAccessTokenRef.current = true
@@ -112,7 +117,18 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 if (isValid) {
                     setProjectList(projects ?? [])
 
-                    if (Array.isArray(projects) && projects.length === 1 && projects[0]?.id) {
+                    const storedProjectIdRaw = projects?.length ? await framer.getPluginData("projectId") : null
+                    const storedProjectId = storedProjectIdRaw ? Number.parseInt(storedProjectIdRaw, 10) : null
+                    const projectIdFromStorage =
+                        storedProjectId &&
+                        Number.isFinite(storedProjectId) &&
+                        projects?.some(p => p.id === storedProjectId)
+                            ? storedProjectId
+                            : null
+
+                    if (projectIdFromStorage != null) {
+                        setProjectId(projectIdFromStorage)
+                    } else if (Array.isArray(projects) && projects.length === 1 && projects[0]?.id) {
                         setProjectId(projects[0].id)
                     } else {
                         setProjectId(0)
@@ -341,6 +357,13 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    const handleSetProjectId = useCallback((id: number) => {
+        setProjectId(id)
+        if (framer.isAllowedTo("setPluginData")) {
+            void framer.setPluginData("projectId", id ? String(id) : null)
+        }
+    }, [])
+
     // Fetch Crowdin project target languages when project is selected
     useEffect(() => {
         if (!projectId || !accessToken || accessTokenState !== AccessTokenState.Valid) {
@@ -461,7 +484,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             projectId={projectId}
             projectList={projectList}
             validateAccessToken={validateAccessToken}
-            setProjectId={setProjectId}
+            setProjectId={handleSetProjectId}
             selectedLocaleIds={selectedLocaleIds}
             setSelectedLocaleIds={setSelectedLocaleIds}
             operationInProgress={operationInProgress}

@@ -3,7 +3,7 @@ import { framer, type LocalizationData, type Locale, useIsAllowedTo } from "fram
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
-import { CheckIcon, ChevronDownIcon, XIcon } from "./Icons"
+import { CheckIcon, ChevronDownIcon, LinkArrowIcon, XIcon } from "./Icons"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import {
     createValuesBySourceFromXliff,
@@ -16,7 +16,7 @@ import {
 } from "./xliff"
 
 const PLUGIN_WIDTH = 280
-const NO_PROJECT_PLACEHOLDER = "Choose Project…"
+const NO_PROJECT_PLACEHOLDER = "Select…"
 const ALL_LOCALES_ID = "__ALL_LOCALES__"
 
 type LocaleIds = string[] | typeof ALL_LOCALES_ID
@@ -660,7 +660,7 @@ function ConfigurationPage({
             <hr />
             <div className={cx("controls-stack", operationInProgress && "disabled")}>
                 <PropertyControl label="Token">
-                    <div className={cx("access-token-input")}>
+                    <div className="access-token-input">
                         <input
                             ref={accessTokenInputRef}
                             type="text"
@@ -685,6 +685,16 @@ function ConfigurationPage({
                                 void validateAccessToken(accessTokenValue)
                             }}
                         />
+                        {accessTokenState === AccessTokenState.None && !accessTokenValueHasChanged && (
+                            <a
+                                href="https://crowdin.com/settings#api-key"
+                                target="_blank"
+                                className="icon-button link-icon"
+                                title="Open Crowdin settings"
+                            >
+                                <LinkArrowIcon />
+                            </a>
+                        )}
                         {accessTokenState === AccessTokenState.Loading && (
                             <div className="icon">
                                 <div className="framer-spinner" />
@@ -697,7 +707,7 @@ function ConfigurationPage({
                         )}
                     </div>
                 </PropertyControl>
-                <PropertyControl label="Project" disabled={accessTokenState !== AccessTokenState.Valid}>
+                <PropertyControl label="Project">
                     <button
                         type="button"
                         className="dropdown-button"
@@ -710,10 +720,15 @@ function ConfigurationPage({
                         </div>
                     </button>
                 </PropertyControl>
-                <PropertyControl label="Locales" disabled={availableLocaleIds.length === 0}>
+                <PropertyControl label="Locales">
                     {availableLocaleIds.length === 0 ? (
                         <div className="locales-empty-state">
-                            {projectId ? (localesLoading ? "Loading..." : "No matching locales") : ""}
+                            {projectId ? (localesLoading ? "Loading" : "No matching locales") : "Select…"}
+                            {!projectId || localesLoading ? (
+                                <div className="icon-button">
+                                    <ChevronDownIcon />
+                                </div>
+                            ) : null}
                         </div>
                     ) : selectedLocaleIds === ALL_LOCALES_ID ? (
                         <button
@@ -785,17 +800,9 @@ function ConfigurationPage({
     )
 }
 
-function PropertyControl({
-    label,
-    disabled = false,
-    children,
-}: {
-    label: string
-    disabled?: boolean
-    children: React.ReactNode | React.ReactNode[]
-}) {
+function PropertyControl({ label, children }: { label: string; children: React.ReactNode | React.ReactNode[] }) {
     return (
-        <div className={cx("property-control", disabled && "disabled")}>
+        <div className="property-control">
             <p>{label}</p>
             <div className="content">{children}</div>
         </div>

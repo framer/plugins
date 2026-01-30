@@ -665,6 +665,7 @@ function ConfigurationPage({
                             ref={accessTokenInputRef}
                             type="text"
                             placeholder="Crowdin token…"
+                            autoComplete="off"
                             autoFocus={!accessToken}
                             value={accessTokenValue}
                             className={

@@ -153,6 +153,16 @@ strong {
     padding-right: 26px;
 }
 
+.access-token-input .icon-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.link-icon:hover {
+    color: var(--framer-color-text);
+}
+
 .access-token-input .icon {
     position: absolute;
     padding: 0 8px;
@@ -183,7 +193,7 @@ strong {
     background-color: var(--framer-color-bg-tertiary) !important;
 }
 
-.dropdown-button .icon-button {
+.icon-button {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -206,7 +216,8 @@ input.error {
     height: 30px;
     display: flex;
     align-items: center;
-    padding: 0 10px;
+    justify-content: space-between;
+    padding: 0 0 0 10px;
 }
 
 .checkbox-label {

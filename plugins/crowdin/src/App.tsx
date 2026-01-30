@@ -61,6 +61,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [projectId, setProjectId] = useState<number>(0)
     const [selectedLocaleIds, setSelectedLocaleIds] = useState<LocaleIds>(activeLocale ? [activeLocale.id] : [])
     const [availableLocaleIds, setAvailableLocaleIds] = useState<string[]>([])
+    const [localesLoading, setLocalesLoading] = useState(false)
     const [operationInProgress, setOperationInProgress] = useState<boolean>(false)
     const [importConfirmation, setImportConfirmation] = useState<ImportConfirmationState | null>(null)
     const validatingAccessTokenRef = useRef<boolean>(false)
@@ -345,9 +346,13 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         if (!projectId || !accessToken || accessTokenState !== AccessTokenState.Valid) {
             setAvailableLocaleIds([])
             setSelectedLocaleIds([])
+            setLocalesLoading(false)
             return
         }
 
+        setAvailableLocaleIds([])
+        setSelectedLocaleIds([])
+        setLocalesLoading(true)
         let cancelled = false
         const task = async () => {
             let targetLanguageIds: string[] = []
@@ -359,6 +364,10 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             } catch {
                 if (!cancelled) {
                     targetLanguageIds = []
+                }
+            } finally {
+                if (!cancelled) {
+                    setLocalesLoading(false)
                 }
             }
 
@@ -446,6 +455,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             mode={mode}
             locales={locales}
             availableLocaleIds={availableLocaleIds}
+            localesLoading={localesLoading}
             accessToken={accessToken}
             accessTokenState={accessTokenState}
             projectId={projectId}
@@ -500,6 +510,7 @@ function ConfigurationPage({
     mode,
     locales,
     availableLocaleIds,
+    localesLoading,
     accessToken,
     accessTokenState,
     projectId,
@@ -514,6 +525,7 @@ function ConfigurationPage({
     mode: "export" | "import"
     locales: readonly Locale[]
     availableLocaleIds: string[]
+    localesLoading: boolean
     accessToken: string
     accessTokenState: AccessTokenState
     projectId: number
@@ -676,7 +688,9 @@ function ConfigurationPage({
                 </PropertyControl>
                 <PropertyControl label="Locales" disabled={availableLocaleIds.length === 0}>
                     {availableLocaleIds.length === 0 ? (
-                        <div className="locales-empty-state" />
+                        <div className="locales-empty-state">
+                            {projectId ? (localesLoading ? "Loading..." : "No matching locales") : ""}
+                        </div>
                     ) : selectedLocaleIds === ALL_LOCALES_ID ? (
                         <button
                             className="dropdown-button"

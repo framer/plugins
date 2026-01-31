@@ -3,7 +3,7 @@ import { framer, type LocalizationData, type Locale, useIsAllowedTo } from "fram
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
-import { CheckIcon, ChevronDownIcon, LinkArrowIcon, XIcon } from "./Icons"
+import { CheckIcon, ChevronDownIcon, InfoIcon, LinkArrowIcon, XIcon } from "./Icons"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import {
     createValuesBySourceFromXliff,
@@ -61,6 +61,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [projectId, setProjectId] = useState<number>(0)
     const [selectedLocaleIds, setSelectedLocaleIds] = useState<LocaleIds>(activeLocale ? [activeLocale.id] : [])
     const [availableLocaleIds, setAvailableLocaleIds] = useState<string[]>([])
+    const [crowdinTargetLanguageCount, setCrowdinTargetLanguageCount] = useState<number>(0)
     const [localesLoading, setLocalesLoading] = useState(false)
     const [operationInProgress, setOperationInProgress] = useState<boolean>(false)
     const [importConfirmation, setImportConfirmation] = useState<ImportConfirmationState | null>(null)
@@ -156,8 +157,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         [accessToken]
     )
 
-    // Resolve selected locale IDs to an array (handles "All Locales")
-    const localeIdsToSync = selectedLocaleIds === ALL_LOCALES_ID ? availableLocaleIds : selectedLocaleIds
+    // Export: all Framer locales are available. Import: only locales in both Framer and Crowdin.
+    const effectiveAvailableLocaleIds = mode === "export" ? locales.map(locale => locale.id) : availableLocaleIds
+    const localeIdsToSync = selectedLocaleIds === ALL_LOCALES_ID ? effectiveAvailableLocaleIds : selectedLocaleIds
 
     // ------------------ Import from Crowdin ------------------
     async function startImportConfirmation() {
@@ -368,6 +370,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     useEffect(() => {
         if (!projectId || !accessToken || accessTokenState !== AccessTokenState.Valid) {
             setAvailableLocaleIds([])
+            setCrowdinTargetLanguageCount(0)
             setSelectedLocaleIds([])
             setLocalesLoading(false)
             return
@@ -383,10 +386,12 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 const ids: string[] = await getProjectTargetLanguageIds(projectId, accessToken)
                 if (!cancelled) {
                     targetLanguageIds = ids
+                    setCrowdinTargetLanguageCount(ids.length)
                 }
             } catch {
                 if (!cancelled) {
                     targetLanguageIds = []
+                    setCrowdinTargetLanguageCount(0)
                 }
             } finally {
                 if (!cancelled) {
@@ -477,7 +482,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         <ConfigurationPage
             mode={mode}
             locales={locales}
-            availableLocaleIds={availableLocaleIds}
+            availableLocaleIds={effectiveAvailableLocaleIds}
+            crowdinTargetLanguageCount={crowdinTargetLanguageCount}
             localesLoading={localesLoading}
             accessToken={accessToken}
             accessTokenState={accessTokenState}
@@ -533,6 +539,7 @@ function ConfigurationPage({
     mode,
     locales,
     availableLocaleIds,
+    crowdinTargetLanguageCount,
     localesLoading,
     accessToken,
     accessTokenState,
@@ -548,6 +555,7 @@ function ConfigurationPage({
     mode: "export" | "import"
     locales: readonly Locale[]
     availableLocaleIds: string[]
+    crowdinTargetLanguageCount: number
     localesLoading: boolean
     accessToken: string
     accessTokenState: AccessTokenState
@@ -723,12 +731,10 @@ function ConfigurationPage({
                 <PropertyControl label="Locales">
                     {availableLocaleIds.length === 0 ? (
                         <div className="locales-empty-state">
-                            {projectId ? (localesLoading ? "Loading" : "No matching locales") : "Select…"}
-                            {!projectId || localesLoading ? (
-                                <div className="icon-button">
-                                    <ChevronDownIcon />
-                                </div>
-                            ) : null}
+                            {projectId ? (localesLoading ? "Loading…" : "Select…") : "Select…"}
+                            <div className="icon-button">
+                                <ChevronDownIcon />
+                            </div>
                         </div>
                     ) : selectedLocaleIds === ALL_LOCALES_ID ? (
                         <button
@@ -778,24 +784,33 @@ function ConfigurationPage({
                 </PropertyControl>
             </div>
             <hr />
-            <button
-                className="framer-button-primary"
-                disabled={!canPerformAction}
-                onClick={onSubmit}
-                title={!isAllowedToSetLocalizationData ? "Insufficient permissions" : undefined}
-            >
-                {operationInProgress ? (
-                    <div className="framer-spinner" />
-                ) : (
-                    `${mode === "export" ? "Export" : "Import"} ${
-                        (
-                            selectedLocaleIds === ALL_LOCALES_ID ? availableLocaleIds.length : selectedLocaleIds.length
-                        ) === 1
-                            ? "Locale"
-                            : "Locales"
-                    }`
-                )}
-            </button>
+            {accessToken && projectId !== 0 && availableLocaleIds.length === 0 ? (
+                <div className="no-locales-message">
+                    <InfoIcon />
+                    {crowdinTargetLanguageCount === 0 ? "No locales found in Crowdin" : "No matching locales in Framer"}
+                </div>
+            ) : (
+                <button
+                    className="framer-button-primary"
+                    disabled={!canPerformAction}
+                    onClick={onSubmit}
+                    title={!isAllowedToSetLocalizationData ? "Insufficient permissions" : undefined}
+                >
+                    {operationInProgress ? (
+                        <div className="framer-spinner" />
+                    ) : (
+                        `${mode === "export" ? "Export" : "Import"} ${
+                            (
+                                selectedLocaleIds === ALL_LOCALES_ID
+                                    ? availableLocaleIds.length
+                                    : selectedLocaleIds.length
+                            ) === 1
+                                ? "Locale"
+                                : "Locales"
+                        }`
+                    )}
+                </button>
+            )}
         </main>
     )
 }

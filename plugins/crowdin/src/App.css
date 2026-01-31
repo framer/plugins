@@ -242,3 +242,13 @@ input.error {
 .step-indicator {
     color: var(--framer-color-text-tertiary);
 }
+
+.no-locales-message {
+    width: 100%;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--framer-color-text-tertiary);
+}

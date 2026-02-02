@@ -24,7 +24,7 @@
     "dependencies": {
         "@typescript/ata": "^0.9.8",
         "chokidar": "^5.0.0",
-        "commander": "^14.0.2",
+        "commander": "^14.0.3",
         "prettier": "^3.7.4",
         "typescript": "^5.9.3",
         "ws": "^8.18.3"
@@ -33,7 +33,7 @@
         "@code-link/shared": "workspace:*",
         "@types/node": "^22.19.2",
         "@types/ws": "^8.18.1",
-        "tsdown": "^0.17.4",
+        "tsdown": "^0.20.1",
         "tsx": "^4.21.0",
         "vitest": "^4.0.15"
     }

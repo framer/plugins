@@ -2,8 +2,8 @@ import fs from "fs/promises"
 import os from "os"
 import path from "path"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import type { WatcherEvent } from "../types.js"
-import { initWatcher, type Watcher } from "./watcher.js"
+import type { WatcherEvent } from "../types.ts"
+import { initWatcher, type Watcher } from "./watcher.ts"
 
 interface MockWatcher {
     on: (event: "add" | "change" | "unlink", handler: (file: string) => void) => MockWatcher

@@ -9,8 +9,8 @@
 import { createHash } from "crypto"
 import fs from "fs/promises"
 import path from "path"
-import { debug, warn } from "./logging.js"
-import { normalizePath } from "./node-paths.js"
+import { debug, warn } from "./logging.ts"
+import { normalizePath } from "./node-paths.ts"
 
 export interface PersistedFileState {
     timestamp: number // Remote modified timestamp from last sync

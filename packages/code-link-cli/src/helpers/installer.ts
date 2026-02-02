@@ -6,8 +6,8 @@ import { setupTypeAcquisition } from "@typescript/ata"
 import fs from "fs/promises"
 import path from "path"
 import ts from "typescript"
-import { extractImports } from "../utils/imports.js"
-import { debug, error, warn } from "../utils/logging.js"
+import { extractImports } from "../utils/imports.ts"
+import { debug, error, warn } from "../utils/logging.ts"
 
 export interface InstallerConfig {
     projectDir: string

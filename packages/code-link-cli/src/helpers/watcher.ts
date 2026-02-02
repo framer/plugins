@@ -8,9 +8,9 @@ import { isSupportedExtension, normalizePath, sanitizeFilePath } from "@code-lin
 import chokidar from "chokidar"
 import fs from "fs/promises"
 import path from "path"
-import type { WatcherEvent } from "../types.js"
-import { debug, warn } from "../utils/logging.js"
-import { getRelativePath } from "../utils/node-paths.js"
+import type { WatcherEvent } from "../types.ts"
+import { debug, warn } from "../utils/logging.ts"
+import { getRelativePath } from "../utils/node-paths.ts"
 
 export interface Watcher {
     on(event: "change", handler: (event: WatcherEvent) => void): void

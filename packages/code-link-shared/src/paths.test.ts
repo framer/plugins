@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { ensureExtension, isSupportedExtension, normalizePath, sanitizeFilePath } from "./paths.js"
+import { ensureExtension, isSupportedExtension, normalizePath, sanitizeFilePath } from "./paths.ts"
 
 describe("File Name Sanitization", () => {
     describe("sanitizeFilePath", () => {

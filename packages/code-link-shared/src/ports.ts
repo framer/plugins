@@ -1,4 +1,4 @@
-import { shortProjectHash } from "./hash.js"
+import { shortProjectHash } from "./hash.ts"
 
 /**
  * Generate a deterministic port number from a project hash (full or short).

@@ -2,9 +2,9 @@ import fs from "fs/promises"
 import os from "os"
 import path from "path"
 import { describe, expect, it } from "vitest"
-import type { Conflict } from "../types.js"
-import { hashFileContent } from "../utils/state-persistence.js"
-import { autoResolveConflicts, detectConflicts } from "./files.js"
+import type { Conflict } from "../types.ts"
+import { hashFileContent } from "../utils/state-persistence.ts"
+import { autoResolveConflicts, detectConflicts } from "./files.ts"
 
 function makeConflict(overrides: Partial<Conflict> = {}): Conflict {
     return {

@@ -6,7 +6,7 @@
 
 import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
 import { WebSocket, WebSocketServer } from "ws"
-import { debug, error } from "../utils/logging.js"
+import { debug, error } from "../utils/logging.ts"
 
 export interface ConnectionCallbacks {
     onHandshake: (client: WebSocket, message: { projectId: string; projectName: string }) => void

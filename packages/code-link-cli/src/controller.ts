@@ -9,7 +9,7 @@ import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
 import { pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import type { WebSocket } from "ws"
-import { initConnection, sendMessage } from "./helpers/connection.js"
+import { initConnection, sendMessage } from "./helpers/connection.ts"
 import {
     autoResolveConflicts,
     deleteLocalFile,
@@ -18,14 +18,14 @@ import {
     listFiles,
     readFileSafe,
     writeRemoteFiles,
-} from "./helpers/files.js"
-import { Installer } from "./helpers/installer.js"
-import { PluginUserPromptCoordinator } from "./helpers/plugin-prompts.js"
-import { validateIncomingChange } from "./helpers/sync-validator.js"
-import { initWatcher } from "./helpers/watcher.js"
-import type { Config, Conflict, ConflictVersionData, FileInfo, WatcherEvent } from "./types.js"
-import { FileMetadataCache, type FileSyncMetadata } from "./utils/file-metadata-cache.js"
-import { createHashTracker } from "./utils/hash-tracker.js"
+} from "./helpers/files.ts"
+import { Installer } from "./helpers/installer.ts"
+import { PluginUserPromptCoordinator } from "./helpers/plugin-prompts.ts"
+import { validateIncomingChange } from "./helpers/sync-validator.ts"
+import { initWatcher } from "./helpers/watcher.ts"
+import type { Config, Conflict, ConflictVersionData, FileInfo, WatcherEvent } from "./types.ts"
+import { FileMetadataCache, type FileSyncMetadata } from "./utils/file-metadata-cache.ts"
+import { createHashTracker } from "./utils/hash-tracker.ts"
 import {
     cancelDisconnectMessage,
     debug,
@@ -41,9 +41,9 @@ import {
     success,
     warn,
     wasRecentlyDisconnected,
-} from "./utils/logging.js"
-import { findOrCreateProjectDir } from "./utils/project.js"
-import { hashFileContent } from "./utils/state-persistence.js"
+} from "./utils/logging.ts"
+import { findOrCreateProjectDir } from "./utils/project.ts"
+import { hashFileContent } from "./utils/state-persistence.ts"
 
 /**
  * Explicit sync lifecycle modes

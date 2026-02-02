@@ -13,10 +13,10 @@
 import { normalizePath, sanitizeFilePath } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
-import type { Conflict, ConflictResolution, ConflictVersionData, FileInfo } from "../types.js"
-import type { createHashTracker, HashTracker } from "../utils/hash-tracker.js"
-import { debug, warn } from "../utils/logging.js"
-import { hashFileContent, type PersistedFileState } from "../utils/state-persistence.js"
+import type { Conflict, ConflictResolution, ConflictVersionData, FileInfo } from "../types.ts"
+import type { createHashTracker, HashTracker } from "../utils/hash-tracker.ts"
+import { debug, warn } from "../utils/logging.ts"
+import { hashFileContent, type PersistedFileState } from "../utils/state-persistence.ts"
 
 const SUPPORTED_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".json"]
 const DEFAULT_EXTENSION = ".tsx"

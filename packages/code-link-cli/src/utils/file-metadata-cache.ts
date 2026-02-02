@@ -3,7 +3,7 @@ import {
     loadPersistedState,
     type PersistedFileState,
     savePersistedState,
-} from "./state-persistence.js"
+} from "./state-persistence.ts"
 
 /**
  * In-memory cache on top of state-persistence.

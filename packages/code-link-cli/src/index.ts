@@ -10,10 +10,10 @@
 import { createRequire } from "node:module"
 import { getPortFromHash } from "@code-link/shared"
 import { Command } from "commander"
-import { start } from "./controller.js"
-import type { Config } from "./types.js"
-import { banner, LogLevel, setLogLevel, warn } from "./utils/logging.js"
-import { getProjectHashFromCwd } from "./utils/project.js"
+import { start } from "./controller.ts"
+import type { Config } from "./types.ts"
+import { banner, LogLevel, setLogLevel, warn } from "./utils/logging.ts"
+import { getProjectHashFromCwd } from "./utils/project.ts"
 
 const require = createRequire(import.meta.url)
 const { version } = require("../package.json") as { version: string }
@@ -110,5 +110,5 @@ program
 program.parse()
 
 // Export for programmatic usage
-export { start } from "./controller.js"
-export type { Config } from "./types.js"
+export { start } from "./controller.ts"
+export type { Config } from "./types.ts"

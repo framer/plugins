@@ -31,8 +31,7 @@ export interface LocalFile {
 }
 
 // Conflict detection (CLI-specific - extends shared ConflictSummary with more fields)
-// Deletions are represented by null content
-// For AI: Do NOT add remoteDeletes/localDeletes arrays - use localContent/remoteContent === null
+// Deletions are represented by null content, i.e. localContent/remoteContent === null
 export interface Conflict {
     fileName: string
     /** null means the file was deleted locally */

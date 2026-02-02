@@ -1,6 +1,6 @@
 // Types
 
-export { hashContent, shortProjectHash } from "./hash.js"
+export { hashContent, shortProjectHash } from "./hash.ts"
 export {
     canonicalFileName,
     capitalizeFirstLetter,
@@ -11,12 +11,12 @@ export {
     pluralize,
     sanitizeFilePath,
     stripExtension,
-} from "./paths.js"
+} from "./paths.ts"
 
 // Utilities
-export { getPortFromHash } from "./ports.js"
+export { getPortFromHash } from "./ports.ts"
 // Sync tracker
-export { createSyncTracker, type SyncTracker } from "./sync-tracker.js"
+export { createSyncTracker, type SyncTracker } from "./sync-tracker.ts"
 export type {
     CliToPluginMessage,
     ConflictSummary,
@@ -27,5 +27,5 @@ export type {
     PendingDelete,
     PluginToCliMessage,
     ProjectInfo,
-} from "./types.js"
-export { isCliToPluginMessage } from "./types.js"
+} from "./types.ts"
+export { isCliToPluginMessage } from "./types.ts"

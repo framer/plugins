@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 import type { WebSocket } from "ws"
-import { transition } from "./controller.js"
-import { filterEchoedFiles } from "./helpers/files.js"
-import { createHashTracker } from "./utils/hash-tracker.js"
+import { transition } from "./controller.ts"
+import { filterEchoedFiles } from "./helpers/files.ts"
+import { createHashTracker } from "./utils/hash-tracker.ts"
 
 // Readable coverage of core controller functionality
 

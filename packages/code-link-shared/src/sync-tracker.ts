@@ -1,5 +1,5 @@
-import { hashContent } from "./hash.js"
-import { canonicalFileName } from "./paths.js"
+import { hashContent } from "./hash.ts"
+import { canonicalFileName } from "./paths.ts"
 
 export interface SyncTracker {
     remember(fileName: string, content: string): void

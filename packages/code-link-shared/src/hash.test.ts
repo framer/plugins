@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { shortProjectHash } from "./hash.js"
-import { getPortFromHash } from "./ports.js"
+import { shortProjectHash } from "./hash.ts"
+import { getPortFromHash } from "./ports.ts"
 
 describe("shortProjectHash", () => {
     const FULL_HASH = "14c01541d3af3ff6a7cd40ac77a5586f0d273c9c371ac04dd31e4410b411c8f5"

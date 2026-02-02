@@ -5,7 +5,7 @@
  * Determines if a change should be applied, queued, or rejected.
  */
 
-import type { FileSyncMetadata } from "../utils/file-metadata-cache.js"
+import type { FileSyncMetadata } from "../utils/file-metadata-cache.ts"
 
 /**
  * Result of validating an incoming file change

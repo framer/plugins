@@ -13,8 +13,6 @@ function disconnectedState() {
         mode: "disconnected" as const,
         socket: null,
         pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
     }
 }
 
@@ -23,8 +21,6 @@ function watchingState() {
         mode: "watching" as const,
         socket: mockSocket,
         pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
     }
 }
 
@@ -33,8 +29,6 @@ function handshakingState() {
         mode: "handshaking" as const,
         socket: mockSocket,
         pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
     }
 }
 
@@ -43,8 +37,6 @@ function snapshotProcessingState() {
         mode: "snapshot_processing" as const,
         socket: mockSocket,
         pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
     }
 }
 
@@ -64,8 +56,6 @@ function conflictResolutionState(
         socket: mockSocket,
         pendingConflicts,
         pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
     }
 }
 
@@ -249,16 +239,17 @@ describe("Code Link", () => {
             expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
         })
 
-        it("queues changes during initial sync", () => {
-            // Changes arriving during snapshot processing are queued, not applied immediately
+        it("ignores changes during initial sync", () => {
+            // Changes arriving during snapshot processing are ignored - snapshot handles reconciliation
             const state = snapshotProcessingState()
             const result = transition(state, {
                 type: "REMOTE_FILE_CHANGE",
                 file: { name: "Button.tsx", content: "late arrival", modifiedAt: Date.now() },
             })
 
-            expect(result.state.pendingRemoteChanges).toHaveLength(1)
+            expect(result.state.pendingRemoteChanges).toHaveLength(0)
             expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(false)
+            expect(result.effects.some(e => e.type === "LOG")).toBe(true)
         })
 
         it("creates new local file and uploads to Framer", () => {

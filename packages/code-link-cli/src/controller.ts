@@ -51,19 +51,10 @@ import { hashFileContent } from "./utils/state-persistence.ts"
 export type SyncMode = "disconnected" | "handshaking" | "snapshot_processing" | "conflict_resolution" | "watching"
 
 /**
- * Pending operation for echo suppression and replay
- */
-type PendingOperation =
-    | { id: string; type: "write"; file: string; hash: string }
-    | { id: string; type: "delete"; file: string; previousHash?: string }
-
-/**
  * Shared state that persists across all lifecycle modes
  */
 interface SyncStateBase {
     pendingRemoteChanges: FileInfo[]
-    pendingOperations: Map<string, PendingOperation>
-    nextOperationId: number
 }
 
 type DisconnectedState = SyncStateBase & {
@@ -380,15 +371,9 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             const validation = validateIncomingChange(event.fileMeta, state.mode)
 
             if (validation.action === "queue") {
-                effects.push(log("debug", `Queueing file change: ${event.file.name} (${validation.reason})`))
-
-                return {
-                    state: {
-                        ...state,
-                        pendingRemoteChanges: [...state.pendingRemoteChanges, event.file],
-                    },
-                    effects,
-                }
+                // Changes during initial sync are ignored - the snapshot handles reconciliation
+                effects.push(log("debug", `Ignoring file change during sync: ${event.file.name}`))
+                return { state, effects }
             }
 
             if (validation.action === "reject") {
@@ -996,8 +981,6 @@ export async function start(config: Config): Promise<void> {
         mode: "disconnected",
         socket: null,
         pendingRemoteChanges: [],
-        pendingOperations: new Map(),
-        nextOperationId: 1,
     }
 
     const userActions = new PluginUserPromptCoordinator()

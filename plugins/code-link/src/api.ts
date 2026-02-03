@@ -108,7 +108,7 @@ export class CodeFilesAPI {
     }
 
     async fetchConflictVersions(requests: { fileName: string; lastSyncedAt?: number }[]) {
-        log.debug(`Fetching versions for ${String(requests.length)} files`)
+        log.debug(`Fetching versions for ${requests.length} files`)
 
         let codeFiles
         try {

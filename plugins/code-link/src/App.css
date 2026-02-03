@@ -48,18 +48,10 @@ main {
     position: relative;
     width: 30px;
     height: 30px;
-    background-color: #000;
+    background-color: var(--framer-color-bg-tertiary);
+    color: var(--framer-color-text);
     border-radius: 8px;
     margin-bottom: 15px;
-}
-
-.plugin-icon::after {
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
-    content: "";
-    pointer-events: none;
 }
 
 .command-container {

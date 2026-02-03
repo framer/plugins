@@ -12,6 +12,12 @@ export interface PendingDelete {
     content?: string
 }
 
+/** File with content to restore when delete is cancelled - content is required */
+export interface CancelledDelete {
+    fileName: string
+    content: string
+}
+
 export interface ConflictSummary {
     fileName: string
     /** null means the file was deleted on this side */
@@ -78,7 +84,7 @@ export type PluginToCliMessage =
     | { type: "file-change"; fileName: string; content: string }
     | { type: "file-delete"; fileNames: string[] }
     | { type: "delete-confirmed"; fileNames: string[] }
-    | { type: "delete-cancelled"; files: PendingDelete[] }
+    | { type: "delete-cancelled"; files: CancelledDelete[] }
     | { type: "file-synced"; fileName: string; remoteModifiedAt: number }
     | {
           type: "conflicts-resolved"

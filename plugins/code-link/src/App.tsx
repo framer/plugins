@@ -659,7 +659,14 @@ function createMessageHandler({
                     const files: PendingDelete[] = []
                     for (const fileName of message.fileNames) {
                         const content = await api.readCurrentContent(fileName)
-                        files.push({ fileName, content })
+                        // Only include files that exist in Framer (have content to restore)
+                        if (content !== undefined) {
+                            files.push({ fileName, content })
+                        }
+                    }
+                    if (files.length === 0) {
+                        // No files exist in Framer, nothing to confirm
+                        break
                     }
                     dispatch({
                         type: "pending-deletes",

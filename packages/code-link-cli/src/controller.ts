@@ -1163,7 +1163,7 @@ export async function start(config: Config): Promise<void> {
                     await processEvent({
                         type: "LOCAL_DELETE_REJECTED",
                         fileName: file.fileName,
-                        content: file.content ?? "",
+                        content: file.content,
                     })
                 }
 

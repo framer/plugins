@@ -10,7 +10,7 @@
  * Controller decides WHEN to call these, but never computes conflicts itself.
  */
 
-import { normalizePath, sanitizeFilePath } from "@code-link/shared"
+import { fileKeyForLookup, normalizePath, sanitizeFilePath } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
 import type { Conflict, ConflictResolution, ConflictVersionData, FileInfo } from "../types.ts"
@@ -20,12 +20,8 @@ import { hashFileContent, type PersistedFileState } from "../utils/state-persist
 
 const SUPPORTED_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".json"]
 const DEFAULT_EXTENSION = ".tsx"
-const DEFAULT_REMOTE_DRIFT_MS = 2000
-
-/** Normalize file name for case-insensitive comparison (macOS/Windows compat) */
-function normalizeForComparison(fileName: string): string {
-    return fileName.toLowerCase()
-}
+// Allow for clock drift + network latency when comparing timestamps
+export const DEFAULT_REMOTE_DRIFT_MS = 2000
 
 /**
  * Lists all supported files in the files directory
@@ -97,20 +93,20 @@ export async function detectConflicts(
     const preferRemote = options.preferRemote ?? false
     const persistedState = options.persistedState
 
-    const getPersistedState = (fileName: string) =>
-        persistedState?.get(normalizeForComparison(fileName)) ?? persistedState?.get(fileName)
+    // Persisted state keys are normalized to lowercase for case-insensitive lookup
+    const getPersistedState = (fileName: string) => persistedState?.get(fileKeyForLookup(fileName))
 
     debug(`Detecting conflicts for ${String(remoteFiles.length)} remote files`)
 
     // Build a snapshot of all local files (keyed by lowercase for case-insensitive matching)
     const localFiles = await listFiles(filesDir)
-    const localFileMap = new Map(localFiles.map(f => [normalizeForComparison(f.name), f]))
+    const localFileMap = new Map(localFiles.map(f => [fileKeyForLookup(f.name), f]))
 
     // Build a set of remote file names for quick lookup (lowercase keys)
     const remoteFileMap = new Map(
         remoteFiles.map(f => {
             const normalized = resolveRemoteReference(filesDir, f.name)
-            return [normalizeForComparison(normalized.relativePath), f]
+            return [fileKeyForLookup(normalized.relativePath), f]
         })
     )
 
@@ -120,7 +116,7 @@ export async function detectConflicts(
     // Process remote files (remote-only or both sides)
     for (const remote of remoteFiles) {
         const normalized = resolveRemoteReference(filesDir, remote.name)
-        const normalizedKey = normalizeForComparison(normalized.relativePath)
+        const normalizedKey = fileKeyForLookup(normalized.relativePath)
         const local = localFileMap.get(normalizedKey)
         processedFiles.add(normalizedKey)
 
@@ -188,7 +184,7 @@ export async function detectConflicts(
 
     // Process local-only files (not present in remote)
     for (const local of localFiles) {
-        const localKey = normalizeForComparison(local.name)
+        const localKey = fileKeyForLookup(local.name)
         if (!processedFiles.has(localKey)) {
             const persisted = getPersistedState(local.name)
             if (persisted) {
@@ -218,8 +214,8 @@ export async function detectConflicts(
     // Check for files in persisted state that are missing from BOTH sides
     // These were deleted on both sides while offline - auto-clean them (no conflict)
     if (persistedState) {
-        for (const [fileName] of persistedState) {
-            const normalizedKey = normalizeForComparison(fileName)
+        for (const fileName of persistedState.keys()) {
+            const normalizedKey = fileKeyForLookup(fileName)
             const inLocal = localFileMap.has(normalizedKey)
             const inRemote = remoteFileMap.has(normalizedKey)
             if (!inLocal && !inRemote) {
@@ -270,14 +266,24 @@ export function autoResolveConflicts(
             continue
         }
 
+        // If local is clean (unchanged since last sync), we can safely take remote
+        // regardless of version data availability - local hasn't changed
+        if (localClean) {
+            debug(`  Local clean -> REMOTE (safe to overwrite)`)
+            autoResolvedRemote.push(conflict)
+            continue
+        }
+
+        // From here, local has been modified. We need version data to determine
+        // if remote also changed (to avoid overwriting remote changes).
         if (!latestRemoteVersionMs) {
-            debug(`  No remote version data, keeping conflict`)
+            debug(`  Local modified, no remote version data -> conflict`)
             remainingConflicts.push(conflict)
             continue
         }
 
         if (!lastSyncedAt) {
-            debug(`  No last sync timestamp, keeping conflict`)
+            debug(`  Local modified, no sync timestamp -> conflict`)
             remainingConflicts.push(conflict)
             continue
         }
@@ -286,18 +292,16 @@ export function autoResolveConflicts(
         debug(`  Synced: ${new Date(lastSyncedAt).toISOString()}`)
 
         const remoteUnchanged = latestRemoteVersionMs <= lastSyncedAt + remoteDriftMs
-        // localClean already declared above for remote deletion handling
+        const driftMargin = latestRemoteVersionMs - lastSyncedAt
 
-        if (remoteUnchanged && !localClean) {
+        if (remoteUnchanged) {
             debug(`  Remote unchanged, local changed -> LOCAL`)
+            if (driftMargin > 0) {
+                debug(`    (within drift tolerance: ${driftMargin}ms < ${remoteDriftMs}ms threshold)`)
+            }
             autoResolvedLocal.push(conflict)
-        } else if (localClean && !remoteUnchanged) {
-            debug(`  Local unchanged, remote changed -> REMOTE`)
-            autoResolvedRemote.push(conflict)
-        } else if (remoteUnchanged && localClean) {
-            debug(`  Both unchanged, skipping`)
         } else {
-            debug(`  Both changed, real conflict`)
+            debug(`  Both changed -> conflict (remote ahead by ${driftMargin}ms, threshold: ${remoteDriftMs}ms)`)
             remainingConflicts.push(conflict)
         }
     }

@@ -166,6 +166,14 @@ export function isSupportedExtension(filePath: string): boolean {
 }
 
 /**
+ * Returns a normalized, lowercase key for case-insensitive file lookups.
+ * Use this for Map keys on operating systems where "File.tsx" and "file.tsx" are the same file.
+ */
+export function fileKeyForLookup(filePath: string): string {
+    return canonicalFileName(filePath).toLowerCase()
+}
+
+/**
  * Pluralize a word based on count
  * @example pluralize(1, "file") => "1 file"
  * @example pluralize(3, "file") => "3 files"

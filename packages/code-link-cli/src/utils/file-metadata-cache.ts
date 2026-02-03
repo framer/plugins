@@ -1,3 +1,4 @@
+import { fileKeyForLookup } from "@code-link/shared"
 import {
     hashFileContent,
     loadPersistedState,
@@ -33,7 +34,7 @@ export class FileMetadataCache {
         this.metadata = new Map()
 
         for (const [fileName, state] of loaded.entries()) {
-            this.metadata.set(fileName, {
+            this.metadata.set(fileKeyForLookup(fileName), {
                 localHash: state.contentHash,
                 lastSyncedHash: state.contentHash,
                 lastRemoteTimestamp: state.timestamp,
@@ -44,11 +45,11 @@ export class FileMetadataCache {
     }
 
     get(fileName: string): FileSyncMetadata | undefined {
-        return this.metadata.get(fileName)
+        return this.metadata.get(fileKeyForLookup(fileName))
     }
 
     has(fileName: string): boolean {
-        return this.metadata.has(fileName)
+        return this.metadata.has(fileKeyForLookup(fileName))
     }
 
     size(): number {
@@ -60,13 +61,14 @@ export class FileMetadataCache {
     }
 
     recordRemoteWrite(fileName: string, content: string, remoteModifiedAt: number): void {
+        const key = fileKeyForLookup(fileName)
         const contentHash = hashFileContent(content)
-        this.metadata.set(fileName, {
+        this.metadata.set(key, {
             localHash: contentHash,
             lastSyncedHash: contentHash,
             lastRemoteTimestamp: remoteModifiedAt,
         })
-        this.persisted.set(fileName, {
+        this.persisted.set(key, {
             contentHash,
             timestamp: remoteModifiedAt,
         })
@@ -74,12 +76,13 @@ export class FileMetadataCache {
     }
 
     recordSyncedSnapshot(fileName: string, contentHash: string, remoteModifiedAt: number): void {
-        this.metadata.set(fileName, {
+        const key = fileKeyForLookup(fileName)
+        this.metadata.set(key, {
             localHash: contentHash,
             lastSyncedHash: contentHash,
             lastRemoteTimestamp: remoteModifiedAt,
         })
-        this.persisted.set(fileName, {
+        this.persisted.set(key, {
             contentHash,
             timestamp: remoteModifiedAt,
         })
@@ -87,8 +90,9 @@ export class FileMetadataCache {
     }
 
     recordDelete(fileName: string): void {
-        this.metadata.delete(fileName)
-        this.persisted.delete(fileName)
+        const key = fileKeyForLookup(fileName)
+        this.metadata.delete(key)
+        this.persisted.delete(key)
         this.schedulePersist()
     }
 

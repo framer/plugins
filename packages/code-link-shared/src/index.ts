@@ -5,6 +5,7 @@ export {
     canonicalFileName,
     capitalizeFirstLetter,
     ensureExtension,
+    fileKeyForLookup,
     isSupportedExtension,
     normalizeCodeFilePath,
     normalizePath,

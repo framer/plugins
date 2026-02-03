@@ -4,7 +4,7 @@ import path from "path"
 import { describe, expect, it } from "vitest"
 import type { Conflict } from "../types.ts"
 import { hashFileContent } from "../utils/state-persistence.ts"
-import { autoResolveConflicts, detectConflicts } from "./files.ts"
+import { autoResolveConflicts, DEFAULT_REMOTE_DRIFT_MS, detectConflicts } from "./files.ts"
 
 function makeConflict(overrides: Partial<Conflict> = {}): Conflict {
     return {
@@ -13,7 +13,7 @@ function makeConflict(overrides: Partial<Conflict> = {}): Conflict {
         remoteContent: "remoteContent" in overrides ? overrides.remoteContent : "remote",
         localModifiedAt: overrides.localModifiedAt ?? Date.now(),
         remoteModifiedAt: overrides.remoteModifiedAt ?? Date.now(),
-        lastSyncedAt: overrides.lastSyncedAt ?? Date.now(),
+        lastSyncedAt: "lastSyncedAt" in overrides ? overrides.lastSyncedAt : Date.now(),
         localClean: overrides.localClean,
     }
 }
@@ -49,19 +49,25 @@ describe("autoResolveConflicts", () => {
     })
 
     it("keeps conflicts that have both sides changed", () => {
+        const syncTime = 5_000
         const conflict = makeConflict({
-            lastSyncedAt: 5_000,
+            lastSyncedAt: syncTime,
             localClean: false,
         })
 
-        const result = autoResolveConflicts([conflict], [{ fileName: conflict.fileName, latestRemoteVersionMs: 7_500 }])
+        // Remote changed well after sync (beyond drift threshold)
+        const remoteTime = syncTime + DEFAULT_REMOTE_DRIFT_MS + 1000
+        const result = autoResolveConflicts(
+            [conflict],
+            [{ fileName: conflict.fileName, latestRemoteVersionMs: remoteTime }]
+        )
 
         expect(result.remainingConflicts).toHaveLength(1)
         expect(result.autoResolvedLocal).toHaveLength(0)
         expect(result.autoResolvedRemote).toHaveLength(0)
     })
 
-    it("keeps conflicts when version data is missing", () => {
+    it("auto-resolves to remote when local is clean, even without version data", () => {
         const conflict = makeConflict({
             lastSyncedAt: 5_000,
             localClean: true,
@@ -69,7 +75,22 @@ describe("autoResolveConflicts", () => {
 
         const result = autoResolveConflicts([conflict], [])
 
+        // Local is clean (unchanged), so safe to take remote without needing version data
+        expect(result.autoResolvedRemote).toHaveLength(1)
+        expect(result.remainingConflicts).toHaveLength(0)
+    })
+
+    it("keeps conflicts when version data is missing and local was modified", () => {
+        const conflict = makeConflict({
+            lastSyncedAt: 5_000,
+            localClean: false, // Local was modified
+        })
+
+        const result = autoResolveConflicts([conflict], [])
+
+        // Can't determine if remote also changed, so keep as conflict
         expect(result.remainingConflicts).toHaveLength(1)
+        expect(result.autoResolvedLocal).toHaveLength(0)
     })
 
     it("auto-resolves remote deletion when local is clean", () => {
@@ -97,6 +118,59 @@ describe("autoResolveConflicts", () => {
         expect(result.remainingConflicts).toHaveLength(1)
         expect(result.autoResolvedRemote).toHaveLength(0)
     })
+
+    it("keeps conflict when localClean is undefined (no persisted state)", () => {
+        const conflict = makeConflict({
+            lastSyncedAt: undefined,
+            localClean: undefined, // No persisted state to compare against
+        })
+
+        const result = autoResolveConflicts(
+            [conflict],
+            [{ fileName: conflict.fileName, latestRemoteVersionMs: 10_000 }]
+        )
+
+        // Can't determine if local changed, so keep as conflict
+        expect(result.remainingConflicts).toHaveLength(1)
+    })
+
+    it("auto-resolves local deletion when remote unchanged", () => {
+        const syncTime = 5_000
+        const conflict = makeConflict({
+            localContent: null, // Deleted locally
+            lastSyncedAt: syncTime,
+            localClean: undefined, // N/A for deletions
+        })
+
+        // Remote version is same as last sync (within drift tolerance)
+        const result = autoResolveConflicts(
+            [conflict],
+            [{ fileName: conflict.fileName, latestRemoteVersionMs: syncTime }]
+        )
+
+        // Remote unchanged since sync, local deleted -> keep deletion (resolve to local)
+        expect(result.autoResolvedLocal).toHaveLength(1)
+        expect(result.remainingConflicts).toHaveLength(0)
+    })
+
+    it("keeps conflict when local deleted but remote changed", () => {
+        const syncTime = 5_000
+        const conflict = makeConflict({
+            localContent: null, // Deleted locally
+            lastSyncedAt: syncTime,
+            localClean: undefined,
+        })
+
+        // Remote was modified well after last sync (beyond drift threshold)
+        const remoteTime = syncTime + DEFAULT_REMOTE_DRIFT_MS + 1000
+        const result = autoResolveConflicts(
+            [conflict],
+            [{ fileName: conflict.fileName, latestRemoteVersionMs: remoteTime }]
+        )
+
+        // Both sides changed: local deleted, remote modified -> conflict
+        expect(result.remainingConflicts).toHaveLength(1)
+    })
 })
 
 // Detect Conflicts Tests
@@ -110,8 +184,9 @@ describe("detectConflicts", () => {
             const localContent = "local content"
             await fs.writeFile(path.join(filesDir, "Test.tsx"), localContent, "utf-8")
 
+            // Keys are normalized to lowercase for case-insensitive lookup
             const persistedState = new Map([
-                ["Test.tsx", { contentHash: hashFileContent(localContent), timestamp: 1_000 }],
+                ["test.tsx", { contentHash: hashFileContent(localContent), timestamp: 1_000 }],
             ])
 
             const result = await detectConflicts(
@@ -229,8 +304,9 @@ describe("detectConflicts", () => {
             await fs.mkdir(filesDir, { recursive: true })
 
             // File was previously synced but now missing locally
+            // Keys are normalized to lowercase for case-insensitive lookup
             const persistedState = new Map([
-                ["DeletedLocally.tsx", { contentHash: hashFileContent("old content"), timestamp: 1_000 }],
+                ["deletedlocally.tsx", { contentHash: hashFileContent("old content"), timestamp: 1_000 }],
             ])
 
             const result = await detectConflicts(
@@ -264,9 +340,10 @@ describe("detectConflicts", () => {
             await fs.writeFile(path.join(filesDir, "DeletedRemotely.tsx"), "local content still exists", "utf-8")
 
             // File was previously synced
+            // Keys are normalized to lowercase for case-insensitive lookup
             const persistedState = new Map([
                 [
-                    "DeletedRemotely.tsx",
+                    "deletedremotely.tsx",
                     {
                         contentHash: hashFileContent("local content still exists"),
                         timestamp: 1_000,

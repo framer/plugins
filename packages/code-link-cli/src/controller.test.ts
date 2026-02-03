@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { WebSocket } from "ws"
 import { transition } from "./controller.ts"
-import { filterEchoedFiles } from "./helpers/files.ts"
+import { DEFAULT_REMOTE_DRIFT_MS, filterEchoedFiles } from "./helpers/files.ts"
 import { createHashTracker } from "./utils/hash-tracker.ts"
 
 // Readable coverage of core controller functionality
@@ -198,18 +198,20 @@ describe("Code Link", () => {
 
         it("shows conflict UI when both sides changed", () => {
             // Both edited → must ask user which to keep
+            const syncTime = 5_000
             const conflict = {
                 fileName: "Test.tsx",
                 localContent: "edited locally",
                 remoteContent: "edited in framer",
-                lastSyncedAt: 5_000,
+                lastSyncedAt: syncTime,
                 localClean: false, // local was modified
             }
             const state = conflictResolutionState([conflict])
 
             const result = transition(state, {
                 type: "CONFLICT_VERSION_RESPONSE",
-                versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 9_000 }], // remote also changed
+                // Remote changed well after sync (beyond drift threshold)
+                versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: syncTime + DEFAULT_REMOTE_DRIFT_MS + 1000 }],
             })
 
             expect(result.state.mode).toBe("conflict_resolution")

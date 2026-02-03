@@ -158,11 +158,6 @@ type Effect =
     | { type: "REQUEST_CONFLICT_DECISIONS"; conflicts: Conflict[] }
     | { type: "REQUEST_CONFLICT_VERSIONS"; conflicts: Conflict[] }
     | {
-          type: "REQUEST_DELETE_CONFIRMATION"
-          fileName: string
-          requireConfirmation: boolean
-      }
-    | {
           type: "UPDATE_FILE_METADATA"
           fileName: string
           remoteModifiedAt: number
@@ -173,9 +168,8 @@ type Effect =
           content: string
       }
     | {
-          type: "REQUEST_LOCAL_DELETE_DECISION"
-          fileName: string
-          requireConfirmation: boolean
+          type: "LOCAL_INITIATED_FILE_DELETE"
+          fileNames: string[]
       }
     | { type: "PERSIST_STATE" }
     | {
@@ -491,17 +485,11 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
                 }
                 effects.push(log("success", "Keeping Framer changes"))
             } else {
-                // Send all local versions (or delete from Framer if local is null)
+                // Send all local versions (or request delete confirmation if local is null)
+                const localDeletes: string[] = []
                 for (const conflict of state.pendingConflicts) {
                     if (conflict.localContent === null) {
-                        // Local deleted this file - delete from Framer
-                        effects.push({
-                            type: "SEND_MESSAGE",
-                            payload: {
-                                type: "file-delete",
-                                fileNames: [conflict.fileName],
-                            },
-                        })
+                        localDeletes.push(conflict.fileName)
                     } else {
                         effects.push({
                             type: "SEND_MESSAGE",
@@ -512,6 +500,13 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
                             },
                         })
                     }
+                }
+                // Batch local deletes into single confirmation prompt
+                if (localDeletes.length > 0) {
+                    effects.push({
+                        type: "LOCAL_INITIATED_FILE_DELETE",
+                        fileNames: localDeletes,
+                    })
                 }
                 effects.push(log("success", "Keeping local changes"))
             }
@@ -565,9 +560,8 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 
                 case "delete": {
                     effects.push(log("debug", `Local delete detected: ${relativePath}`), {
-                        type: "REQUEST_LOCAL_DELETE_DECISION",
-                        fileName: relativePath,
-                        requireConfirmation: true, // Will be overridden by config in effect
+                        type: "LOCAL_INITIATED_FILE_DELETE",
+                        fileNames: [relativePath],
                     })
                     break
                 }
@@ -589,16 +583,10 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 
             if (autoResolvedLocal.length > 0) {
                 effects.push(log("debug", `Auto-resolved ${autoResolvedLocal.length} local changes`))
+                const localDeletes: string[] = []
                 for (const conflict of autoResolvedLocal) {
                     if (conflict.localContent === null) {
-                        // Local deleted - delete from Framer
-                        effects.push({
-                            type: "SEND_MESSAGE",
-                            payload: {
-                                type: "file-delete",
-                                fileNames: [conflict.fileName],
-                            },
-                        })
+                        localDeletes.push(conflict.fileName)
                     } else {
                         effects.push({
                             type: "SEND_LOCAL_CHANGE",
@@ -606,6 +594,13 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
                             content: conflict.localContent,
                         })
                     }
+                }
+                // Batch local deletes into single confirmation prompt
+                if (localDeletes.length > 0) {
+                    effects.push({
+                        type: "LOCAL_INITIATED_FILE_DELETE",
+                        fileNames: localDeletes,
+                    })
                 }
             }
 
@@ -849,19 +844,6 @@ async function executeEffect(
             return []
         }
 
-        case "REQUEST_DELETE_CONFIRMATION": {
-            if (syncState.socket) {
-                // Send delete request to plugin
-                await sendMessage(syncState.socket, {
-                    type: "file-delete",
-                    fileNames: [effect.fileName],
-                    requireConfirmation: effect.requireConfirmation,
-                })
-            }
-            // Response will come via delete-confirmed or delete-cancelled message
-            return []
-        }
-
         case "UPDATE_FILE_METADATA": {
             if (!config.filesDir || !config.projectDir) {
                 return []
@@ -920,35 +902,39 @@ async function executeEffect(
             return []
         }
 
-        case "REQUEST_LOCAL_DELETE_DECISION": {
-            // Echo prevention: skip if this is a remote-initiated delete
-            const shouldSkip = hashTracker.shouldSkipDelete(effect.fileName)
+        case "LOCAL_INITIATED_FILE_DELETE": {
+            // Echo prevention: filter out remote-initiated deletes
+            const filesToDelete = effect.fileNames.filter(fileName => {
+                const shouldSkip = hashTracker.shouldSkipDelete(fileName)
+                if (shouldSkip) {
+                    hashTracker.clearDelete(fileName)
+                }
+                return !shouldSkip
+            })
 
-            if (shouldSkip) {
-                // Clear the delete marker now that we've caught the echo
-                hashTracker.clearDelete(effect.fileName)
+            if (filesToDelete.length === 0) {
                 return []
             }
 
             try {
-                const shouldDelete = await userActions.requestDeleteDecision(syncState.socket, {
-                    fileName: effect.fileName,
+                const confirmedFiles = await userActions.requestDeleteDecision(syncState.socket, {
+                    fileNames: filesToDelete,
                     requireConfirmation: !config.dangerouslyAutoDelete,
                 })
 
-                if (shouldDelete) {
-                    hashTracker.forget(effect.fileName)
-                    fileMetadataCache.recordDelete(effect.fileName)
+                for (const fileName of confirmedFiles) {
+                    hashTracker.forget(fileName)
+                    fileMetadataCache.recordDelete(fileName)
+                }
 
-                    if (syncState.socket) {
-                        await sendMessage(syncState.socket, {
-                            type: "file-delete",
-                            fileNames: [effect.fileName],
-                        })
-                    }
+                if (confirmedFiles.length > 0 && syncState.socket) {
+                    await sendMessage(syncState.socket, {
+                        type: "file-delete",
+                        fileNames: confirmedFiles,
+                    })
                 }
             } catch (err) {
-                console.warn(`Failed to handle deletion for ${effect.fileName}:`, err)
+                console.warn(`Failed to handle deletion for ${filesToDelete.join(", ")}:`, err)
             }
 
             return []

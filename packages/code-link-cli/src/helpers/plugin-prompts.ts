@@ -39,43 +39,52 @@ export class PluginUserPromptCoordinator {
     }
 
     /**
-     * Sends the delete request to the plugin and awaits the user's decision
+     * Sends the delete request to the plugin and awaits the user's decision.
+     * Returns the list of fileNames that were confirmed for deletion.
      */
     async requestDeleteDecision(
         socket: WebSocket | null,
-        { fileName, requireConfirmation }: { fileName: string; requireConfirmation: boolean }
-    ): Promise<boolean> {
+        { fileNames, requireConfirmation }: { fileNames: string[]; requireConfirmation: boolean }
+    ): Promise<string[]> {
         if (!socket) {
             throw new Error("Cannot request delete decision: plugin not connected")
         }
 
+        if (fileNames.length === 0) {
+            return []
+        }
+
         if (requireConfirmation) {
-            const confirmationPromise = this.awaitAction<boolean>(`delete:${fileName}`, "delete confirmation")
+            // Create a promise for each file's confirmation
+            const confirmationPromises = fileNames.map(fileName =>
+                this.awaitAction<boolean>(`delete:${fileName}`, "delete confirmation")
+                    .then(confirmed => (confirmed ? fileName : null))
+                    .catch(err => {
+                        if (err instanceof PluginDisconnectedError) {
+                            debug(`Plugin disconnected while waiting for delete confirmation: ${fileName}`)
+                            return null
+                        }
+                        throw err
+                    })
+            )
 
             await sendMessage(socket, {
                 type: "file-delete",
-                fileNames: [fileName],
+                fileNames,
                 requireConfirmation: true,
             })
 
-            try {
-                return await confirmationPromise
-            } catch (err) {
-                if (err instanceof PluginDisconnectedError) {
-                    debug(`Plugin disconnected while waiting for delete confirmation: ${fileName}`)
-                    return false
-                }
-                throw err
-            }
+            const results = await Promise.all(confirmationPromises)
+            return results.filter((name): name is string => name !== null)
         }
 
         await sendMessage(socket, {
             type: "file-delete",
-            fileNames: [fileName],
+            fileNames,
             requireConfirmation: false,
         })
 
-        return true
+        return fileNames
     }
 
     /**

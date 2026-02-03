@@ -395,7 +395,7 @@ describe("Code Link", () => {
                 event: { kind: "delete", relativePath: "Deleted.tsx" },
             })
 
-            expect(result.effects.some(e => e.type === "REQUEST_LOCAL_DELETE_DECISION")).toBe(true)
+            expect(result.effects.some(e => e.type === "LOCAL_INITIATED_FILE_DELETE")).toBe(true)
             // Should NOT immediately send delete to Framer
             expect(
                 result.effects.some(
@@ -505,11 +505,8 @@ describe("Code Link", () => {
 
             const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "local" })
 
-            // Local is null → send delete to Framer
-            const sends = result.effects.filter(e => e.type === "SEND_MESSAGE")
-            expect(
-                sends.some(e => "payload" in e && (e as { payload: { type: string } }).payload.type === "file-delete")
-            ).toBe(true)
+            // Local is null → request delete confirmation (don't auto-delete from Framer)
+            expect(result.effects.some(e => e.type === "LOCAL_INITIATED_FILE_DELETE")).toBe(true)
         })
     })
 

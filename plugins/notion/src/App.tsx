@@ -1,14 +1,22 @@
 import "./App.css"
 
 import { APIErrorCode, APIResponseError } from "@notionhq/client"
-import { framer, type ManagedCollection } from "framer-plugin"
-import { useEffect, useLayoutEffect, useMemo, useState } from "react"
+import { FramerPluginClosedError, framer, type ManagedCollection } from "framer-plugin"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import auth from "./auth"
-import { type DatabaseIdMap, type DataSource, getDataSource } from "./data"
+import {
+    type DatabaseIdMap,
+    type DataSource,
+    getDataSource,
+    type SyncProgress,
+    shouldSyncExistingCollection,
+    syncExistingCollection,
+} from "./data"
 import { FieldMapping } from "./FieldMapping"
 import { NoTableAccess } from "./NoAccess"
+import { Progress } from "./Progress"
 import { SelectDataSource } from "./SelectDataSource"
-import { showAccessErrorUI, showFieldMappingUI, showLoginUI } from "./ui"
+import { showAccessErrorUI, showFieldMappingUI, showLoginUI, showProgressUI } from "./ui"
 
 interface AppProps {
     collection: ManagedCollection
@@ -29,9 +37,102 @@ export function App({
     previousDatabaseName,
     existingCollectionDatabaseIdMap,
 }: AppProps) {
+    const [isSyncMode, setIsSyncMode] = useState<boolean>(
+        shouldSyncExistingCollection({
+            previousSlugFieldId,
+            previousDatabaseId,
+        })
+    )
+    const [progress, setProgress] = useState<SyncProgress>({ current: 0, total: 0 })
+    const hasRunSyncRef = useRef(false)
+
+    useEffect(() => {
+        if (!isSyncMode || hasRunSyncRef.current) return
+
+        hasRunSyncRef.current = true
+
+        const task = async () => {
+            void showProgressUI()
+
+            try {
+                const { didSync } = await syncExistingCollection(
+                    collection,
+                    previousDatabaseId,
+                    previousSlugFieldId,
+                    previousIgnoredFieldIds,
+                    previousLastSynced,
+                    previousDatabaseName,
+                    existingCollectionDatabaseIdMap,
+                    setProgress
+                )
+
+                if (didSync) {
+                    framer.closePlugin("Synchronization successful", {
+                        variant: "success",
+                    })
+                } else {
+                    setIsSyncMode(false)
+                }
+            } catch (error) {
+                if (error instanceof FramerPluginClosedError) return
+
+                console.error(error)
+                setIsSyncMode(false)
+                framer.notify(error instanceof Error ? error.message : "Failed to sync collection", {
+                    variant: "error",
+                    durationMs: 10000,
+                })
+            }
+        }
+
+        void task()
+    }, [
+        isSyncMode,
+        collection,
+        previousDatabaseId,
+        previousSlugFieldId,
+        previousIgnoredFieldIds,
+        previousLastSynced,
+        previousDatabaseName,
+        existingCollectionDatabaseIdMap,
+    ])
+
+    if (isSyncMode) {
+        return (
+            <Progress
+                current={progress.current}
+                total={progress.total}
+                contentFieldEnabled={progress.contentFieldEnabled}
+            />
+        )
+    }
+
+    return (
+        <ManageApp
+            collection={collection}
+            previousDatabaseId={previousDatabaseId}
+            previousSlugFieldId={previousSlugFieldId}
+            previousLastSynced={previousLastSynced}
+            previousIgnoredFieldIds={previousIgnoredFieldIds}
+            previousDatabaseName={previousDatabaseName}
+            existingCollectionDatabaseIdMap={existingCollectionDatabaseIdMap}
+        />
+    )
+}
+
+function ManageApp({
+    collection,
+    previousDatabaseId,
+    previousSlugFieldId,
+    previousLastSynced,
+    previousIgnoredFieldIds,
+    previousDatabaseName,
+    existingCollectionDatabaseIdMap,
+}: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDatabaseId))
     const [hasAccessError, setHasAccessError] = useState(false)
+    const [isSyncing, setIsSyncing] = useState(false)
 
     // Support self-referencing databases by allowing the current collection to be referenced.
     const databaseIdMap = useMemo(() => {
@@ -46,6 +147,8 @@ export function App({
             try {
                 if (hasAccessError) {
                     await showAccessErrorUI()
+                } else if (isSyncing) {
+                    await showProgressUI()
                 } else if (dataSource || isLoadingDataSource) {
                     await showFieldMappingUI()
                 } else {
@@ -60,7 +163,7 @@ export function App({
         }
 
         void showUI()
-    }, [dataSource, isLoadingDataSource, hasAccessError])
+    }, [dataSource, isLoadingDataSource, hasAccessError, isSyncing])
 
     useEffect(() => {
         if (!previousDatabaseId) {
@@ -149,6 +252,7 @@ export function App({
             previousLastSynced={previousLastSynced}
             previousIgnoredFieldIds={previousIgnoredFieldIds}
             databaseIdMap={databaseIdMap}
+            setIsSyncing={setIsSyncing}
         />
     )
 }

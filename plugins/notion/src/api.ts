@@ -394,15 +394,28 @@ export async function getPageBlocksAsRichText(pageId: string) {
     return blocksToHtml(blocks)
 }
 
-export async function getDatabaseItems(database: GetDatabaseResponse): Promise<PageObjectResponse[]> {
+export async function getDatabaseItems(
+    database: GetDatabaseResponse,
+    onProgress?: (progress: { current: number; total: number }) => void
+): Promise<PageObjectResponse[]> {
     const notion = getNotionClient()
 
-    const data = await collectPaginatedAPI(notion.databases.query, {
+    const data: PageObjectResponse[] = []
+    let itemCount = 0
+
+    const databaseIterator = iteratePaginatedAPI(notion.databases.query, {
         database_id: database.id,
     })
-    assert(data.every(isFullPage), "Response is not a full page")
 
-    return data
+    for await (const item of databaseIterator) {
+        data.push(item as PageObjectResponse)
+        itemCount++
+        onProgress?.({ current: 0, total: itemCount })
+    }
+
+    const pages = data.filter(isFullPage)
+
+    return pages
 }
 
 export function isUnchangedSinceLastSync(lastEditedTime: string, lastSyncedTime: string | null): boolean {

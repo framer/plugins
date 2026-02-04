@@ -1,0 +1,40 @@
+{
+    "name": "framer-code-link",
+    "version": "0.7.0",
+    "description": "CLI tool for syncing Framer code components - controller-centric architecture",
+    "main": "dist/index.mjs",
+    "type": "module",
+    "bin": "./dist/index.mjs",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "dev": "NODE_ENV=development tsx src/index.ts",
+        "build": "tsdown",
+        "start": "node dist/index.mjs",
+        "test": "vitest run"
+    },
+    "keywords": [
+        "framer",
+        "sync",
+        "code-components"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@typescript/ata": "^0.9.8",
+        "chokidar": "^5.0.0",
+        "commander": "^14.0.3",
+        "prettier": "^3.7.4",
+        "typescript": "^5.9.3",
+        "ws": "^8.18.3"
+    },
+    "devDependencies": {
+        "@code-link/shared": "workspace:*",
+        "@types/node": "^22.19.2",
+        "@types/ws": "^8.18.1",
+        "tsdown": "^0.20.1",
+        "tsx": "^4.21.0",
+        "vitest": "^4.0.15"
+    }
+}

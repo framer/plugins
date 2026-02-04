@@ -416,14 +416,18 @@ function InfoPanel({ command }: InfoPanelProps) {
         <main>
             <div className="info">
                 <div className="plugin-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 30 30">
-                        <g transform="translate(7.5 7.5)">
-                            <path d="M 2 0 L 10 0 L 15 7.5 L 7.5 7.5 Z" fill="currentColor"></path>
-                            <path d="M 0 7.5 L 7.5 7.5 L 13 15 L 5 15 Z" fill="currentColor"></path>
-                        </g>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none" viewBox="0 0 30 30">
+                        <path
+                            d="M 16 19.75 C 16 19.612 16.112 19.5 16.25 19.5 L 22.25 19.5 C 22.388 19.5 22.5 19.612 22.5 19.75 L 22.5 21.25 C 22.5 21.388 22.388 21.5 22.25 21.5 L 16.25 21.5 C 16.112 21.5 16 21.388 16 21.25 Z"
+                            fill="currentColor"
+                        />
+                        <path
+                            d="M 9.677 8.677 C 9.579 8.579 9.421 8.579 9.323 8.677 L 8.177 9.823 C 8.079 9.921 8.079 10.079 8.177 10.177 L 12.823 14.823 C 12.921 14.921 12.921 15.079 12.823 15.177 L 8.177 19.823 C 8.079 19.921 8.079 20.079 8.177 20.177 L 9.323 21.323 C 9.421 21.421 9.579 21.421 9.677 21.323 L 15.823 15.177 C 15.921 15.079 15.921 14.921 15.823 14.823 Z"
+                            fill="currentColor"
+                        />
                     </svg>
                 </div>
-                <h1>Code Link</h1>
+                <h1>Connect to Terminal</h1>
                 <p>
                     Run the command locally in your terminal to get started.{" "}
                     <a

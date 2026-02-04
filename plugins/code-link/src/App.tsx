@@ -426,7 +426,11 @@ function InfoPanel({ command }: InfoPanelProps) {
                 <h1>Code Link</h1>
                 <p>
                     Run the command locally in your terminal to get started.{" "}
-                    <a href="https://github.com/framer/plugins" target="_blank" rel="noopener noreferrer">
+                    <a
+                        href="https://github.com/framer/plugins/tree/main/plugins/code-link"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
                         Learn More
                     </a>
                 </p>

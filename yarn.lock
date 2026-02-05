@@ -3388,7 +3388,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.19.2":
+"@types/node@npm:^22.15.21, @types/node@npm:^22.19.2":
   version: 22.19.8
   resolution: "@types/node@npm:22.19.8"
   dependencies:
@@ -7027,12 +7027,16 @@ __metadata:
     "@biomejs/biome": "npm:^2.2.4"
     "@framer/eslint-config": "workspace:*"
     "@framer/vite-config": "workspace:*"
+    "@types/node": "npm:^22.15.21"
     eslint: "npm:^9.35.0"
     framer-plugin-tools: "workspace:*"
     jiti: "npm:^2.5.1"
+    tsx: "npm:^4.19.0"
     turbo: "npm:^2.5.6"
     typescript: "npm:^5.9.2"
+    valibot: "npm:^1.2.0"
     vite: "npm:^7.1.11"
+    vitest: "npm:^3.2.4"
   languageName: unknown
   linkType: soft
 
@@ -8497,7 +8501,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsx@npm:^4.21.0":
+"tsx@npm:^4.19.0, tsx@npm:^4.21.0":
   version: 4.21.0
   resolution: "tsx@npm:4.21.0"
   dependencies:

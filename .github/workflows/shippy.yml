@@ -7,6 +7,8 @@ on:
       - edited
       - ready_for_review
       - synchronize
+      - labeled
+      - unlabeled
   workflow_dispatch:
     # NOTE: To prevent GitHub from adding PRs to the merge queue before check is done,
     # make sure that there is a ruleset that requires the “Shippy check to pass.
@@ -24,11 +26,32 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
     steps:
-      - name: Check PR description
+      - name: Check if Submit on merge label is present
+        id: check-label
         uses: actions/github-script@v7
         with:
           script: |
-            const prBody = context.payload.pull_request.body?.trim()
-            if (!prBody) {
-              core.setFailed("❌ PR description is required.")
-            }
+            const labels = context.payload.pull_request.labels || []
+            const hasSubmitLabel = labels.some(label => label.name === 'Submit on merge')
+            core.setOutput('require_changelog', hasSubmitLabel ? 'true' : 'false')
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts
+            package.json
+            yarn.lock
+            .yarnrc.yml
+            .yarn
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .tool-versions
+
+      - name: Validate PR body
+        run: yarn dlx tsx scripts/validate-pr-body.ts
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          REQUIRE_CHANGELOG: ${{ steps.check-label.outputs.require_changelog }}

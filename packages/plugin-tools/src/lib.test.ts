@@ -92,15 +92,15 @@ describe("zipPluginDistribution", () => {
         fs.writeFileSync(path.join(distDir, "index.js"), "console.log('hello')")
         fs.writeFileSync(path.join(distDir, "index.html"), "<html></html>")
 
-        const result = zipPluginDistribution({
+        const zipFilePath = zipPluginDistribution({
             cwd: tmpDir,
             distPath: "dist",
             zipFileName: "plugin.zip",
         })
 
-        expect(fs.existsSync(result.zipPath)).toBe(true)
+        expect(fs.existsSync(zipFilePath)).toBe(true)
 
-        const zip = new AdmZip(result.zipPath)
+        const zip = new AdmZip(zipFilePath)
         const entries = zip.getEntries().map(e => e.entryName)
         expect(entries).toContain("index.js")
         expect(entries).toContain("index.html")
@@ -124,14 +124,14 @@ describe("zipPluginDistribution", () => {
         fs.mkdirSync(distDir)
         fs.writeFileSync(path.join(distDir, "index.js"), "")
 
-        const result = zipPluginDistribution({
+        const zipFilePath = zipPluginDistribution({
             cwd: tmpDir,
             distPath: "dist",
             zipFileName: "my-custom-plugin.zip",
         })
 
-        expect(result.zipPath).toBe(path.join(tmpDir, "my-custom-plugin.zip"))
-        expect(fs.existsSync(result.zipPath)).toBe(true)
+        expect(zipFilePath).toBe(path.join(tmpDir, "my-custom-plugin.zip"))
+        expect(fs.existsSync(zipFilePath)).toBe(true)
     })
 
     it("handles nested directory structures", () => {
@@ -141,13 +141,13 @@ describe("zipPluginDistribution", () => {
         fs.writeFileSync(path.join(distDir, "index.js"), "")
         fs.writeFileSync(path.join(nestedDir, "logo.png"), "fake-png-data")
 
-        const result = zipPluginDistribution({
+        const zipFilePath = zipPluginDistribution({
             cwd: tmpDir,
             distPath: "dist",
             zipFileName: "plugin.zip",
         })
 
-        const zip = new AdmZip(result.zipPath)
+        const zip = new AdmZip(zipFilePath)
         const entries = zip.getEntries().map(e => e.entryName)
         expect(entries).toContain("index.js")
         expect(entries).toContain("assets/images/logo.png")
@@ -158,13 +158,13 @@ describe("zipPluginDistribution", () => {
         fs.mkdirSync(distDir)
         fs.writeFileSync(path.join(distDir, "index.js"), "")
 
-        const result = zipPluginDistribution({
+        const zipFilePath = zipPluginDistribution({
             cwd: tmpDir,
             distPath: "dist",
             zipFileName: "output.zip",
         })
 
-        expect(result.zipPath).toBe(path.join(tmpDir, "output.zip"))
+        expect(zipFilePath).toBe(path.join(tmpDir, "output.zip"))
     })
 
     it("supports custom distPath", () => {
@@ -172,14 +172,50 @@ describe("zipPluginDistribution", () => {
         fs.mkdirSync(buildDir, { recursive: true })
         fs.writeFileSync(path.join(buildDir, "bundle.js"), "bundled code")
 
-        const result = zipPluginDistribution({
+        const zipFilePath = zipPluginDistribution({
             cwd: tmpDir,
             distPath: "build/output",
             zipFileName: "plugin.zip",
         })
 
-        const zip = new AdmZip(result.zipPath)
+        const zip = new AdmZip(zipFilePath)
         const entries = zip.getEntries().map(e => e.entryName)
         expect(entries).toContain("bundle.js")
+    })
+
+    it("uses absolute distPath directly without joining with cwd", () => {
+        const absoluteDistDir = path.join(tmpDir, "absolute-dist")
+        fs.mkdirSync(absoluteDistDir)
+        fs.writeFileSync(path.join(absoluteDistDir, "index.js"), "absolute content")
+
+        const absoluteZipPath = path.join(tmpDir, "plugin.zip")
+
+        const zipFilePath = zipPluginDistribution({
+            cwd: "/some/other/path",
+            distPath: absoluteDistDir,
+            zipFileName: absoluteZipPath,
+        })
+
+        const zip = new AdmZip(zipFilePath)
+        const content = zip.readAsText("index.js")
+        expect(content).toBe("absolute content")
+    })
+
+    it("uses absolute zipFileName directly without joining with cwd", () => {
+        const distDir = path.join(tmpDir, "dist")
+        fs.mkdirSync(distDir)
+        fs.writeFileSync(path.join(distDir, "index.js"), "")
+
+        const absoluteZipPath = path.join(tmpDir, "output", "my-plugin.zip")
+        fs.mkdirSync(path.dirname(absoluteZipPath), { recursive: true })
+
+        const zipFilePath = zipPluginDistribution({
+            cwd: "/some/other/path",
+            distPath: distDir,
+            zipFileName: absoluteZipPath,
+        })
+
+        expect(zipFilePath).toBe(absoluteZipPath)
+        expect(fs.existsSync(absoluteZipPath)).toBe(true)
     })
 })

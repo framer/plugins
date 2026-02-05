@@ -1,3 +1,4 @@
+import path from "node:path"
 import { program } from "@commander-js/extra-typings"
 import { runPluginBuildScript, zipPluginDistribution } from "./lib"
 
@@ -25,14 +26,17 @@ program
 
         console.log(`Creating ${options.output} file…`)
 
-        zipPluginDistribution({
+        const zipFilePath = zipPluginDistribution({
             cwd: options.cwd,
             distPath: options.distDir,
             zipFileName: options.output,
         })
 
+        const fileName = path.basename(zipFilePath)
+        const dirName = path.dirname(zipFilePath)
+
         console.log(
-            `\n⚡️ ${options.output} file has been created in ${options.cwd} \n Submit your Plugin on the Framer Marketplace: https://www.framer.com/marketplace/dashboard/plugins/`
+            `\n⚡️ ${fileName} file has been created in ${dirName} \n Submit your Plugin on the Framer Marketplace: https://www.framer.com/marketplace/dashboard/plugins/`
         )
     })
 

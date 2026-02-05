@@ -3,20 +3,10 @@ import { exec } from "child_process"
 import fs from "fs"
 import path from "path"
 
-interface PackPluginOptions {
-    cwd: string
-    distPath: string
-    zipFileName: string
-}
-
-interface PackPluginResult {
-    zipPath: string
-}
-
 /**
  * Naive package manager detection by checking for lock files in the current directory and parent directories.
- * @param cwd
- * @returns
+ * @param cwd - The current working directory.
+ * @returns the package manager entrypoint CLI command.
  */
 export function detectPackageManager(cwd: string): string {
     let dir = cwd
@@ -35,8 +25,14 @@ export function detectPackageManager(cwd: string): string {
     return "npm"
 }
 
-export function zipPluginDistribution(options: PackPluginOptions): PackPluginResult {
-    const distPath = path.join(options.cwd, options.distPath)
+interface ZipPluginDistributionOptions {
+    cwd: string
+    distPath: string
+    zipFileName: string
+}
+
+export function zipPluginDistribution(options: ZipPluginDistributionOptions): string {
+    const distPath = path.isAbsolute(options.distPath) ? options.distPath : path.join(options.cwd, options.distPath)
 
     if (!fs.existsSync(distPath)) {
         throw new Error(
@@ -44,13 +40,15 @@ export function zipPluginDistribution(options: PackPluginOptions): PackPluginRes
         )
     }
 
-    const zipPath = path.join(options.cwd, options.zipFileName)
+    const zipFilePath = path.isAbsolute(options.zipFileName)
+        ? options.zipFileName
+        : path.join(options.cwd, options.zipFileName)
 
     const zip = new AdmZip()
     zip.addLocalFolder(distPath)
-    zip.writeZip(zipPath)
+    zip.writeZip(zipFilePath)
 
-    return { zipPath }
+    return zipFilePath
 }
 
 export function runPluginBuildScript(cwd: string, buildCommandOverride?: string): Promise<void> {

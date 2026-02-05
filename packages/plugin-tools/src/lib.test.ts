@@ -2,7 +2,8 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-import { detectPackageManager } from "./lib"
+import AdmZip from "adm-zip"
+import { detectPackageManager, packPlugin } from "./lib"
 
 describe("detectPackageManager", () => {
     let tmpDir: string
@@ -71,5 +72,114 @@ describe("detectPackageManager", () => {
         fs.writeFileSync(path.join(tmpDir, "yarn.lock"), "")
         fs.writeFileSync(path.join(childDir, "pnpm-lock.yaml"), "")
         expect(detectPackageManager(childDir)).toBe("pnpm")
+    })
+})
+
+describe("packPlugin", () => {
+    let tmpDir: string
+
+    beforeEach(() => {
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pack-plugin-"))
+    })
+
+    afterEach(() => {
+        fs.rmSync(tmpDir, { recursive: true })
+    })
+
+    it("creates a ZIP file with correct contents", () => {
+        const distDir = path.join(tmpDir, "dist")
+        fs.mkdirSync(distDir)
+        fs.writeFileSync(path.join(distDir, "index.js"), "console.log('hello')")
+        fs.writeFileSync(path.join(distDir, "index.html"), "<html></html>")
+
+        const result = packPlugin({
+            cwd: tmpDir,
+            distPath: "dist",
+            zipFileName: "plugin.zip",
+        })
+
+        expect(fs.existsSync(result.zipPath)).toBe(true)
+
+        const zip = new AdmZip(result.zipPath)
+        const entries = zip.getEntries().map(e => e.entryName)
+        expect(entries).toContain("index.js")
+        expect(entries).toContain("index.html")
+
+        const jsContent = zip.readAsText("index.js")
+        expect(jsContent).toBe("console.log('hello')")
+    })
+
+    it("throws error when dist directory does not exist", () => {
+        expect(() =>
+            packPlugin({
+                cwd: tmpDir,
+                distPath: "dist",
+                zipFileName: "plugin.zip",
+            })
+        ).toThrow(/The 'dist' directory does not exist/)
+    })
+
+    it("respects custom output filename", () => {
+        const distDir = path.join(tmpDir, "dist")
+        fs.mkdirSync(distDir)
+        fs.writeFileSync(path.join(distDir, "index.js"), "")
+
+        const result = packPlugin({
+            cwd: tmpDir,
+            distPath: "dist",
+            zipFileName: "my-custom-plugin.zip",
+        })
+
+        expect(result.zipPath).toBe(path.join(tmpDir, "my-custom-plugin.zip"))
+        expect(fs.existsSync(result.zipPath)).toBe(true)
+    })
+
+    it("handles nested directory structures", () => {
+        const distDir = path.join(tmpDir, "dist")
+        const nestedDir = path.join(distDir, "assets", "images")
+        fs.mkdirSync(nestedDir, { recursive: true })
+        fs.writeFileSync(path.join(distDir, "index.js"), "")
+        fs.writeFileSync(path.join(nestedDir, "logo.png"), "fake-png-data")
+
+        const result = packPlugin({
+            cwd: tmpDir,
+            distPath: "dist",
+            zipFileName: "plugin.zip",
+        })
+
+        const zip = new AdmZip(result.zipPath)
+        const entries = zip.getEntries().map(e => e.entryName)
+        expect(entries).toContain("index.js")
+        expect(entries).toContain("assets/images/logo.png")
+    })
+
+    it("returns correct zipPath", () => {
+        const distDir = path.join(tmpDir, "dist")
+        fs.mkdirSync(distDir)
+        fs.writeFileSync(path.join(distDir, "index.js"), "")
+
+        const result = packPlugin({
+            cwd: tmpDir,
+            distPath: "dist",
+            zipFileName: "output.zip",
+        })
+
+        expect(result.zipPath).toBe(path.join(tmpDir, "output.zip"))
+    })
+
+    it("supports custom distPath", () => {
+        const buildDir = path.join(tmpDir, "build", "output")
+        fs.mkdirSync(buildDir, { recursive: true })
+        fs.writeFileSync(path.join(buildDir, "bundle.js"), "bundled code")
+
+        const result = packPlugin({
+            cwd: tmpDir,
+            distPath: "build/output",
+            zipFileName: "plugin.zip",
+        })
+
+        const zip = new AdmZip(result.zipPath)
+        const entries = zip.getEntries().map(e => e.entryName)
+        expect(entries).toContain("bundle.js")
     })
 })

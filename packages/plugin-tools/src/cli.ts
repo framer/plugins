@@ -9,7 +9,7 @@ program.name("framer-plugin").description("CLI tools for Framer Plugins").versio
 
 program
     .command("pack")
-    .alias("prepare") // Backwards compatibility but never used
+    .alias("prepare") // Backwards compatibility but was never documented
     .description("Build and package your plugin into a zip file")
     // Uppercase -C matches familiar git shorthands
     .option("-C, --cwd <dir>", "plugin project directory", defaultCWD)

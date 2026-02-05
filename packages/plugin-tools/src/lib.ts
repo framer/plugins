@@ -35,7 +35,7 @@ export function detectPackageManager(cwd: string): string {
     return "npm"
 }
 
-export function packPlugin(options: PackPluginOptions): PackPluginResult {
+export function zipPluginDistribution(options: PackPluginOptions): PackPluginResult {
     const distPath = path.join(options.cwd, options.distPath)
 
     if (!fs.existsSync(distPath)) {

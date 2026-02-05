@@ -1,9 +1,9 @@
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import AdmZip from "adm-zip"
-import { detectPackageManager, packPlugin } from "./lib"
+import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import { detectPackageManager, zipPluginDistribution } from "./lib"
 
 describe("detectPackageManager", () => {
     let tmpDir: string
@@ -75,7 +75,7 @@ describe("detectPackageManager", () => {
     })
 })
 
-describe("packPlugin", () => {
+describe("zipPluginDistribution", () => {
     let tmpDir: string
 
     beforeEach(() => {
@@ -92,7 +92,7 @@ describe("packPlugin", () => {
         fs.writeFileSync(path.join(distDir, "index.js"), "console.log('hello')")
         fs.writeFileSync(path.join(distDir, "index.html"), "<html></html>")
 
-        const result = packPlugin({
+        const result = zipPluginDistribution({
             cwd: tmpDir,
             distPath: "dist",
             zipFileName: "plugin.zip",
@@ -111,7 +111,7 @@ describe("packPlugin", () => {
 
     it("throws error when dist directory does not exist", () => {
         expect(() =>
-            packPlugin({
+            zipPluginDistribution({
                 cwd: tmpDir,
                 distPath: "dist",
                 zipFileName: "plugin.zip",
@@ -124,7 +124,7 @@ describe("packPlugin", () => {
         fs.mkdirSync(distDir)
         fs.writeFileSync(path.join(distDir, "index.js"), "")
 
-        const result = packPlugin({
+        const result = zipPluginDistribution({
             cwd: tmpDir,
             distPath: "dist",
             zipFileName: "my-custom-plugin.zip",
@@ -141,7 +141,7 @@ describe("packPlugin", () => {
         fs.writeFileSync(path.join(distDir, "index.js"), "")
         fs.writeFileSync(path.join(nestedDir, "logo.png"), "fake-png-data")
 
-        const result = packPlugin({
+        const result = zipPluginDistribution({
             cwd: tmpDir,
             distPath: "dist",
             zipFileName: "plugin.zip",
@@ -158,7 +158,7 @@ describe("packPlugin", () => {
         fs.mkdirSync(distDir)
         fs.writeFileSync(path.join(distDir, "index.js"), "")
 
-        const result = packPlugin({
+        const result = zipPluginDistribution({
             cwd: tmpDir,
             distPath: "dist",
             zipFileName: "output.zip",
@@ -172,7 +172,7 @@ describe("packPlugin", () => {
         fs.mkdirSync(buildDir, { recursive: true })
         fs.writeFileSync(path.join(buildDir, "bundle.js"), "bundled code")
 
-        const result = packPlugin({
+        const result = zipPluginDistribution({
             cwd: tmpDir,
             distPath: "build/output",
             zipFileName: "plugin.zip",

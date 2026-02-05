@@ -1,5 +1,5 @@
 import { program } from "@commander-js/extra-typings"
-import { packPlugin, runPluginBuildScript } from "./lib"
+import { runPluginBuildScript, zipPluginDistribution } from "./lib"
 
 const defaultDistDir = "dist"
 const defaultOutputFilename = "plugin.zip"
@@ -25,7 +25,7 @@ program
 
         console.log(`Creating ${options.output} file…`)
 
-        packPlugin({
+        zipPluginDistribution({
             cwd: options.cwd,
             distPath: options.distDir,
             zipFileName: options.output,

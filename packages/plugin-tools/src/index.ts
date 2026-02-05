@@ -1,1 +1,1 @@
-export { packPlugin, runPluginBuildScript } from "./lib"
+export { runPluginBuildScript, zipPluginDistribution } from "./lib"

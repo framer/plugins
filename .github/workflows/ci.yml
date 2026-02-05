@@ -93,38 +93,38 @@ jobs:
               uses: tj-actions/changed-files@v45
               with:
                   files: |
-                      plugins/*/src/**
-                      plugins/*/test/**
-                      plugins/*/*.test.ts
-                      plugins/*/*.test.tsx
-                      plugins/*/vitest.config.ts
-                      plugins/*/test-setup.ts
+                      {plugins,packages}/*/src/**
+                      {plugins,packages}/*/test/**
+                      {plugins,packages}/*/*.test.ts
+                      {plugins,packages}/*/*.test.tsx
+                      {plugins,packages}/*/vitest.config.ts
+                      {plugins,packages}/*/test-setup.ts
 
             - name: Install dependencies
               if: steps.changed-files.outputs.any_changed == 'true'
               run: yarn
 
-            - name: Get changed plugins
+            - name: Get changed workspaces
               if: steps.changed-files.outputs.any_changed == 'true'
-              id: changed-plugins
+              id: changed-workspaces
               run: |
-                # Extract unique plugin names from changed files
-                PLUGINS=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | \
-                  grep -E '^plugins/[^/]+/' | \
-                  cut -d'/' -f2 | \
+                # Extract unique workspace paths from changed files
+                WORKSPACES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | \
+                  grep -oE '(plugins|packages)/[^/]+' | \
                   sort -u | \
                   tr '\n' ' ')
-                echo "plugins=$PLUGINS" >> $GITHUB_OUTPUT
-                echo "Changed plugins: $PLUGINS"
+                echo "workspaces=$WORKSPACES" >> $GITHUB_OUTPUT
+                echo "Changed workspaces: $WORKSPACES"
 
-            - name: Run tests for changed plugins
-              if: steps.changed-files.outputs.any_changed == 'true' && steps.changed-plugins.outputs.plugins != ''
+            - name: Run tests for changed workspaces
+              if: steps.changed-files.outputs.any_changed == 'true' && steps.changed-workspaces.outputs.workspaces != ''
               run: |
-                for plugin in ${{ steps.changed-plugins.outputs.plugins }}; do
-                  echo "Checking tests for plugin: $plugin"
-                  if [ -f "plugins/$plugin/package.json" ] && grep -q '"check-vitest"' "plugins/$plugin/package.json"; then
-                    yarn workspace $plugin check-vitest
+                for workspace in ${{ steps.changed-workspaces.outputs.workspaces }}; do
+                  echo "Checking tests for workspace: $workspace"
+                  if [ -f "$workspace/package.json" ] && grep -q '"check-vitest"' "$workspace/package.json"; then
+                    name=$(jq -r '.name' "$workspace/package.json")
+                    yarn workspace "$name" check-vitest
                   else
-                    echo "No check-vitest script found for $plugin, skipping..."
+                    echo "No check-vitest script found for $workspace, skipping..."
                   fi
                 done

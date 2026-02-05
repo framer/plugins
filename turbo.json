@@ -31,6 +31,10 @@
             "cache": false,
             "persistent": true
         },
-        "check-vitest": {}
+        "check-vitest": {},
+        "pack": {
+            "dependsOn": ["framer-plugin-tools#build"],
+            "cache": false
+        }
     }
 }

@@ -213,7 +213,7 @@ async function getAccessToken(env: Environment): Promise<string> {
 async function fetchMyPlugins(env: Environment): Promise<Plugin[]> {
     const accessToken = await getAccessToken(env)
 
-    const response = await fetch(`${getURL(env, "apiBase")}/site/v1/plugins/me`, {
+    const response = await fetch(`${getURL(env, "apiBase")}/site/v1/plugins/me?limit=100`, {
         headers: {
             Authorization: `Bearer ${accessToken}`,
         },
@@ -424,6 +424,9 @@ async function main(): Promise<void> {
 
         // 4. Fetch user's plugins to find the database plugin ID
         log.step("Fetching Plugin from Framer")
+
+        // Ideally an endpoint to fetch a plugin by manifest ID is available.
+        // If this starts failing because of pagination, I apologize for my laziness.
         const plugins = await fetchMyPlugins(env)
         const matchedPlugin = plugins.find(p => p.manifestId === framerJson?.id)
 

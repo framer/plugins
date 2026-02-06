@@ -57,7 +57,7 @@ program
                 if (detected) {
                     projectHash = detected
                 } else {
-                    console.error("No project ID provided and no existing code-link directory found.")
+                    console.error("No Project ID provided and no existing Code Link directory found.")
                     console.error("Copy the command from the Code Link Plugin to get started.")
                     process.exit(1)
                 }

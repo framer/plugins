@@ -11,11 +11,11 @@ program.name("framer-plugin-tools").description("CLI tools for Framer Plugins").
 program
     .command("pack")
     .alias("prepare") // Backwards compatibility but was never documented
-    .description("Build and package your plugin into a zip file")
+    .description("Build and package your plugin into a zip file for submission to the Framer Marketplace")
     // Uppercase -C matches familiar git shorthands
     .option("-C, --cwd <dir>", "plugin project directory", defaultCWD)
-    .option("-d, --dist-dir <dir>", "output directory for the build", defaultDistDir)
-    .option("-b, --build-command <cmd>", "custom build command (e.g., 'npm run build:prod')")
+    .option("-d, --dist-dir <dir>", "output directory of the build output", defaultDistDir)
+    .option("-b, --build-command <cmd>", "custom build command (e.g., 'npm run build:plugin')")
     .option("--prebuilt", "skip the build step and only create the zip")
     .option("-o, --output <filename>", "output zip filename", defaultOutputFilename)
     .action(async options => {

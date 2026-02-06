@@ -10,6 +10,8 @@ import path from "path"
  */
 export function detectPackageManager(cwd: string): string {
     let dir = cwd
+
+    // Check up to 3 levels of parent directories for a lock file to support monorepo setups
     for (let i = 0; i < 3; i++) {
         const hasFile = (name: string) => fs.existsSync(path.join(dir, name))
 

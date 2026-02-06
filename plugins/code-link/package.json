@@ -10,7 +10,7 @@
         "check-eslint": "run g:check-eslint",
         "check-typescript": "run g:check-typescript",
         "preview": "run g:preview",
-        "pack": "npx framer-plugin-tools@latest pack"
+        "pack": "run g:pack"
     },
     "dependencies": {
         "@code-link/shared": "workspace:*",

@@ -6,7 +6,7 @@ const defaultDistDir = "dist"
 const defaultOutputFilename = "plugin.zip"
 const defaultCWD = process.cwd()
 
-program.name("framer-plugin").description("CLI tools for Framer Plugins").version("1.1.0")
+program.name("framer-plugin-tools").description("CLI tools for Framer Plugins").version("1.1.0")
 
 program
     .command("pack")

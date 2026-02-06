@@ -44,6 +44,7 @@ jobs:
             yarn.lock
             .yarnrc.yml
             .yarn
+            .tool-versions
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

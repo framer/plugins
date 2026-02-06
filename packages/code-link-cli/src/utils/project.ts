@@ -4,7 +4,6 @@ import path from "path"
 
 interface PackageJson {
     shortProjectHash?: string // derived short id (8 chars base58)
-    framerProjectHash?: string // full 64-char hex hash from Framer API
     framerProjectName?: string
     name?: string
     version?: string
@@ -31,7 +30,6 @@ export async function getProjectHashFromCwd(): Promise<string | null> {
         const packageJsonPath = path.join(process.cwd(), "package.json")
         const content = await fs.readFile(packageJsonPath, "utf-8")
         const pkg = JSON.parse(content) as PackageJson
-        // Return short id for port derivation
         return pkg.shortProjectHash ?? null
     } catch {
         return null
@@ -70,7 +68,6 @@ export async function findOrCreateProjectDir(
         version: "1.0.0",
         private: true,
         shortProjectHash: shortId,
-        framerProjectHash: projectHash,
         framerProjectName: projectName,
     }
     await fs.writeFile(path.join(projectDir, "package.json"), JSON.stringify(pkg, null, 2))

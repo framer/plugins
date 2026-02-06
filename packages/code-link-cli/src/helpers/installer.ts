@@ -8,6 +8,7 @@ import path from "path"
 import ts from "typescript"
 import { extractImports } from "../utils/imports.ts"
 import { debug, error, warn } from "../utils/logging.ts"
+import { installSkills } from "./skills.ts"
 
 export interface InstallerConfig {
     projectDir: string
@@ -39,6 +40,7 @@ const REACT_TYPES_VERSION = "18.3.12"
 const REACT_DOM_TYPES_VERSION = "18.3.1"
 const CORE_LIBRARIES = ["framer-motion", "framer"]
 const JSON_EXTENSION_REGEX = /\.json$/i
+
 
 /**
  * Packages that are officially supported for type acquisition.
@@ -173,6 +175,7 @@ export class Installer {
             this.ensurePrettierConfig(),
             this.ensureFramerDeclarations(),
             this.ensurePackageJson(),
+            this.ensureSkills(),
         ])
 
         // Fire-and-forget type installation - don't block initialization
@@ -378,6 +381,10 @@ declare module "*.json"
             await fs.writeFile(packagePath, JSON.stringify(pkg, null, 2))
             debug("Created package.json")
         }
+    }
+
+    private async ensureSkills(): Promise<void> {
+        await installSkills(this.projectDir)
     }
 
     // Code components in Framer use React 18

@@ -6,7 +6,8 @@
     "type": "module",
     "bin": "./dist/index.mjs",
     "files": [
-        "dist"
+        "dist",
+        "skills"
     ],
     "scripts": {
         "dev": "NODE_ENV=development tsx src/index.ts",

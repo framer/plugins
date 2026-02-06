@@ -33,6 +33,11 @@ import * as v from "valibot"
 
 const FramerEnvSchema = v.picklist(["production", "development"])
 
+const BooleanEnvSchema = v.pipe(
+    v.optional(v.string(), "false"),
+    v.transform(val => ["true", "1", "yes"].includes(val.toLowerCase()))
+)
+
 const EnvSchema = v.object({
     PLUGIN_PATH: v.pipe(v.string(), v.minLength(1)),
     CHANGELOG: v.pipe(v.string(), v.minLength(1)),
@@ -41,7 +46,7 @@ const EnvSchema = v.object({
     RETOOL_URL: v.optional(v.string()),
     GITHUB_RUN_URL: v.optional(v.string()),
     FRAMER_ENV: v.optional(FramerEnvSchema, "production"),
-    DRY_RUN: v.optional(v.string()),
+    DRY_RUN: BooleanEnvSchema,
     REPO_ROOT: v.optional(v.string()),
     SESSION_TOKEN: v.pipe(v.string(), v.minLength(1)),
     FRAMER_ADMIN_SECRET: v.pipe(v.string(), v.minLength(1)),

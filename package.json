@@ -22,6 +22,7 @@
         "g:dev": "cd $INIT_CWD && run g:vite",
         "g:preview": "cd $INIT_CWD && run g:vite preview",
         "g:vite": "cd $INIT_CWD && NODE_OPTIONS='--no-warnings=ExperimentalWarning' vite --config ${VITE_CONFIG_PATH:-$PROJECT_CWD/packages/vite-config/src/index.ts}",
+        "g:pack": "cd $INIT_CWD && framer-plugin-tools pack",
         "preview": "turbo run preview --concurrency=40"
     },
     "devDependencies": {
@@ -29,6 +30,7 @@
         "@framer/eslint-config": "workspace:*",
         "@framer/vite-config": "workspace:*",
         "eslint": "^9.35.0",
+        "framer-plugin-tools": "workspace:*",
         "jiti": "^2.5.1",
         "turbo": "^2.5.6",
         "typescript": "^5.9.2",

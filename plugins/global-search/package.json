@@ -9,7 +9,7 @@
         "check-biome": "run g:check-biome",
         "check-eslint": "run g:check-eslint",
         "preview": "run g:preview",
-        "pack": "npx framer-plugin-tools@latest pack",
+        "pack": "run g:pack",
         "check-typescript": "run g:check-typescript",
         "check-vitest": "run g:check-vitest"
     },

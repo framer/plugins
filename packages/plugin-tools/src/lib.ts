@@ -35,9 +35,11 @@ export function zipPluginDistribution(options: ZipPluginDistributionOptions): st
     const distPath = path.isAbsolute(options.distPath) ? options.distPath : path.join(options.cwd, options.distPath)
 
     if (!fs.existsSync(distPath)) {
-        throw new Error(
-            `The 'dist' directory does not exist at ${distPath}. Please make sure to build the Plugin first and that the build output is in the 'dist' directory.`
-        )
+        throw new Error(`${distPath} does not exist`)
+    }
+
+    if (!fs.statSync(distPath).isDirectory()) {
+        throw new Error(`${distPath} is not directory`)
     }
 
     const zipFilePath = path.isAbsolute(options.zipFileName)

@@ -116,7 +116,20 @@ describe("zipPluginDistribution", () => {
                 distPath: "dist",
                 zipFileName: "plugin.zip",
             })
-        ).toThrow(/The 'dist' directory does not exist/)
+        ).toThrow(/does not exist/)
+    })
+
+    it("throws error when distPath is a file, not a directory", () => {
+        const filePath = path.join(tmpDir, "dist")
+        fs.writeFileSync(filePath, "i am a file")
+
+        expect(() =>
+            zipPluginDistribution({
+                cwd: tmpDir,
+                distPath: "dist",
+                zipFileName: "plugin.zip",
+            })
+        ).toThrow(/is not directory/)
     })
 
     it("respects custom output filename", () => {

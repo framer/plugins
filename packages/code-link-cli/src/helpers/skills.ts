@@ -3,8 +3,8 @@
  * and symlinks it into agent-specific paths.
  */
 
-import fs from "fs/promises"
 import { fileURLToPath } from "node:url"
+import fs from "fs/promises"
 import path from "path"
 
 import { debug } from "../utils/logging.ts"

@@ -104,9 +104,28 @@ describe("zipPluginDistribution", () => {
         const entries = zip.getEntries().map(e => e.entryName)
         expect(entries).toContain("index.js")
         expect(entries).toContain("index.html")
+        expect(entries).toContain("framer-plugin-packed.txt")
 
         const jsContent = zip.readAsText("index.js")
         expect(jsContent).toBe("console.log('hello')")
+
+        const packedContent = zip.readAsText("framer-plugin-packed.txt")
+        expect(packedContent).toBe("true")
+    })
+
+    it("injects framer-plugin-packed.txt with contents 'true'", () => {
+        const distDir = path.join(tmpDir, "dist")
+        fs.mkdirSync(distDir)
+        fs.writeFileSync(path.join(distDir, "index.js"), "")
+
+        zipPluginDistribution({
+            cwd: tmpDir,
+            distPath: "dist",
+            zipFileName: "plugin.zip",
+        })
+
+        const zip = new AdmZip(path.join(tmpDir, "plugin.zip"))
+        expect(zip.readAsText("framer-plugin-packed.txt")).toBe("true")
     })
 
     it("throws error when dist directory does not exist", () => {

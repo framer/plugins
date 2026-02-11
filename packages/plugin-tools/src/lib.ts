@@ -50,6 +50,7 @@ export function zipPluginDistribution(options: ZipPluginDistributionOptions): st
 
     const zip = new AdmZip()
     zip.addLocalFolder(distPath)
+    zip.addFile("framer-plugin-packed.txt", Buffer.from("true", "utf-8"))
     zip.writeZip(zipFilePath)
 
     return zipFilePath

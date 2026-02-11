@@ -3,6 +3,8 @@ import { exec } from "child_process"
 import fs from "fs"
 import path from "path"
 
+const markerFileName = "framer-plugin-packed.txt"
+
 /**
  * Naive package manager detection by checking for lock files in the current directory and parent directories.
  * @param cwd - The current working directory.
@@ -50,7 +52,8 @@ export function zipPluginDistribution(options: ZipPluginDistributionOptions): st
 
     const zip = new AdmZip()
     zip.addLocalFolder(distPath)
-    zip.addFile("framer-plugin-packed.txt", Buffer.from("true", "utf-8"))
+    zip.deleteFile(markerFileName)
+    zip.addFile(markerFileName, Buffer.from("true", "utf-8"))
     zip.writeZip(zipFilePath)
 
     return zipFilePath

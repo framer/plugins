@@ -128,6 +128,24 @@ describe("zipPluginDistribution", () => {
         expect(zip.readAsText("framer-plugin-packed.txt")).toBe("true")
     })
 
+    it("overwrites dist framer-plugin-packed.txt with injected marker", () => {
+        const distDir = path.join(tmpDir, "dist")
+        fs.mkdirSync(distDir)
+        fs.writeFileSync(path.join(distDir, "framer-plugin-packed.txt"), "false or custom")
+        fs.writeFileSync(path.join(distDir, "index.js"), "")
+
+        zipPluginDistribution({
+            cwd: tmpDir,
+            distPath: "dist",
+            zipFileName: "plugin.zip",
+        })
+
+        const zip = new AdmZip(path.join(tmpDir, "plugin.zip"))
+        const entriesWithSameName = zip.getEntries().filter(e => e.entryName === "framer-plugin-packed.txt")
+        expect(entriesWithSameName).toHaveLength(1)
+        expect(zip.readAsText("framer-plugin-packed.txt")).toBe("true")
+    })
+
     it("throws error when dist directory does not exist", () => {
         expect(() =>
             zipPluginDistribution({

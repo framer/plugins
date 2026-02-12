@@ -21,7 +21,7 @@
  *   REPO_ROOT           - Root of the git repository (default: parent of scripts/)
  */
 
-import { execSync } from "node:child_process"
+import { execFileSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
 import { runPluginBuildScript, zipPluginDistribution } from "framer-plugin-tools"
@@ -292,19 +292,18 @@ function createGitTag(pluginName: string, version: number, repoRoot: string, env
     try {
         // Delete existing tag if it exists (e.g., from a rejected submission)
         try {
-            execSync(`git tag -d "${tagName}"`, { cwd: repoRoot, stdio: "pipe" })
-            execSync(`git push origin --delete "${tagName}"`, { cwd: repoRoot, stdio: "pipe" })
+            execFileSync("git", ["tag", "-d", tagName], { cwd: repoRoot, stdio: "pipe" })
+            execFileSync("git", ["push", "origin", "--delete", tagName], { cwd: repoRoot, stdio: "pipe" })
         } catch {
             // Tag doesn't exist, that's fine
         }
 
-        const escapedChangelog = env.CHANGELOG.trim().replace(/'/g, "'\\''")
-        execSync(`git tag -a "${tagName}" -m "${escapedChangelog}"`, {
+        execFileSync("git", ["tag", "-a", tagName, "-m", env.CHANGELOG.trim()], {
             cwd: repoRoot,
             stdio: "inherit",
         })
 
-        execSync(`git push origin "${tagName}"`, {
+        execFileSync("git", ["push", "origin", tagName], {
             cwd: repoRoot,
             stdio: "inherit",
         })

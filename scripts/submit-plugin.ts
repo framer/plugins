@@ -9,7 +9,8 @@
  *
  * Environment Variables:
  *   PLUGIN_PATH         - Path to the plugin directory (required)
- *   CHANGELOG           - Changelog text (required)
+ *   CHANGELOG           - Changelog text (required unless PR_BODY is set)
+ *   PR_BODY             - Full PR body — changelog will be extracted (alternative to CHANGELOG)
  *   SESSION_TOKEN       - Framer session cookie (required unless DRY_RUN)
  *   FRAMER_ADMIN_SECRET - Framer admin API key (required unless DRY_RUN)
  *   SLACK_WEBHOOK_URL   - Slack workflow webhook for success notifications (optional)
@@ -29,6 +30,7 @@ import type { FramerJson } from "./lib/framer-api"
 import { fetchMyPlugins, loadFramerJsonFile, submitPlugin } from "./lib/framer-api"
 import { createGitTag } from "./lib/git"
 import { log } from "./lib/logging"
+import { extractChangelog } from "./lib/parse-pr"
 import { sendErrorNotification, sendSlackNotification } from "./lib/slack"
 
 async function main(): Promise<void> {
@@ -50,6 +52,17 @@ async function main(): Promise<void> {
 
         if (!existsSync(env.PLUGIN_PATH)) {
             throw new Error(`Plugin path does not exist: ${env.PLUGIN_PATH}`)
+        }
+
+        // Resolve changelog from CHANGELOG or PR_BODY
+        log.step("Resolving Changelog")
+        let changelog = env.CHANGELOG
+        if (!changelog && env.PR_BODY) {
+            changelog = extractChangelog(env.PR_BODY) ?? undefined
+        }
+
+        if (!changelog) {
+            throw new Error("No changelog provided. Set CHANGELOG or PR_BODY with a ### Changelog section.")
         }
 
         log.step("Loading Plugin Info")
@@ -77,7 +90,7 @@ async function main(): Promise<void> {
         log.info(`Found plugin with ID: ${plugin.id}`)
 
         log.step("Changelog")
-        log.info(`Changelog:\n${env.CHANGELOG}`)
+        log.info(`Changelog:\n${changelog}`)
 
         log.step("Building & Packing Plugin")
 
@@ -94,19 +107,19 @@ async function main(): Promise<void> {
         if (env.DRY_RUN) {
             log.step("DRY RUN - Skipping Submission")
             log.info("Plugin is built and packed. Would submit to API in real run.")
-            log.info(`Would submit with changelog:\n${env.CHANGELOG}`)
+            log.info(`Would submit with changelog:\n${changelog}`)
             return
         }
 
         log.step("Submitting to Framer API")
-        const submissionResult = await submitPlugin(zipFilePath, plugin, env)
+        const submissionResult = await submitPlugin(zipFilePath, plugin, env, changelog)
 
         log.step("Creating Git Tag")
-        createGitTag(framerJson.name, submissionResult.version, repoRoot, env)
+        createGitTag(framerJson.name, submissionResult.version, repoRoot, changelog)
 
         if (env.SLACK_WEBHOOK_URL) {
             log.step("Sending Slack Notification")
-            await sendSlackNotification(framerJson, submissionResult, env)
+            await sendSlackNotification(framerJson, submissionResult, env, changelog)
         }
 
         console.log("\n" + "=".repeat(60))

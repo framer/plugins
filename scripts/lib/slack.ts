@@ -15,14 +15,15 @@ interface SlackWorkflowPayload {
 export async function sendSlackNotification(
     framerJson: FramerJson,
     submissionResult: SubmissionResponse,
-    env: Environment
+    env: Environment,
+    changelog: string
 ): Promise<void> {
     const payload: SlackWorkflowPayload = {
         pluginName: framerJson.name,
         pluginVersion: submissionResult.version.toString(),
         marketplacePreviewUrl: `${getURL(env, "marketplaceBaseUrl")}/plugins/${submissionResult.slug}/preview`,
         pluginReviewUrl: `${getURL(env, "framerAppUrl")}/projects/new?plugin=${submissionResult.internalPluginId}&pluginVersion=${submissionResult.versionId}`,
-        changelog: env.CHANGELOG,
+        changelog: changelog,
         retoolUrl: env.RETOOL_URL,
     }
 

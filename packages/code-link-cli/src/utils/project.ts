@@ -18,7 +18,7 @@ export function toPackageName(name: string): string {
         .replace(/-+/g, "-")
 }
 
-export function toDirName(name: string): string {
+export function toDirectoryName(name: string): string {
     return name
         .replace(/[^a-zA-Z0-9- ]/g, "-")
         .replace(/^[-\s]+|[-\s]+$/g, "")
@@ -36,33 +36,33 @@ export async function getProjectHashFromCwd(): Promise<string | null> {
     }
 }
 
-export async function findOrCreateProjectDir(
+export async function findOrCreateProjectDirectory(
     projectHash: string,
     projectName?: string,
-    explicitDir?: string
-): Promise<string> {
-    if (explicitDir) {
-        const resolved = path.resolve(explicitDir)
+    explicitDirectory?: string
+): Promise<{ directory: string; created: boolean }> {
+    if (explicitDirectory) {
+        const resolved = path.resolve(explicitDirectory)
         await fs.mkdir(path.join(resolved, "files"), { recursive: true })
-        return resolved
+        return { directory: resolved, created: false }
     }
 
     const cwd = process.cwd()
-    const existing = await findExistingProjectDir(cwd, projectHash)
+    const existing = await findExistingProjectDirectory(cwd, projectHash)
     if (existing) {
-        return existing
+        return { directory: existing, created: false }
     }
 
     if (!projectName) {
         throw new Error("Failed to get Project name. Pass --name <project name>.")
     }
 
-    const dirName = toDirName(projectName)
+    const directoryName = toDirectoryName(projectName)
     const pkgName = toPackageName(projectName)
     const shortId = shortProjectHash(projectHash)
-    const projectDir = path.join(cwd, dirName || shortId)
+    const projectDirectory = path.join(cwd, directoryName || shortId)
 
-    await fs.mkdir(path.join(projectDir, "files"), { recursive: true })
+    await fs.mkdir(path.join(projectDirectory, "files"), { recursive: true })
     const pkg: PackageJson = {
         name: pkgName || shortId,
         version: "1.0.0",
@@ -70,23 +70,23 @@ export async function findOrCreateProjectDir(
         shortProjectHash: shortId,
         framerProjectName: projectName,
     }
-    await fs.writeFile(path.join(projectDir, "package.json"), JSON.stringify(pkg, null, 2))
+    await fs.writeFile(path.join(projectDirectory, "package.json"), JSON.stringify(pkg, null, 2))
 
-    return projectDir
+    return { directory: projectDirectory, created: true }
 }
 
-async function findExistingProjectDir(baseDir: string, projectHash: string): Promise<string | null> {
-    const candidate = path.join(baseDir, "package.json")
+async function findExistingProjectDirectory(baseDirectory: string, projectHash: string): Promise<string | null> {
+    const candidate = path.join(baseDirectory, "package.json")
     if (await matchesProject(candidate, projectHash)) {
-        return baseDir
+        return baseDirectory
     }
 
-    const entries = await fs.readdir(baseDir, { withFileTypes: true })
+    const entries = await fs.readdir(baseDirectory, { withFileTypes: true })
     for (const entry of entries) {
         if (!entry.isDirectory()) continue
-        const dir = path.join(baseDir, entry.name)
-        if (await matchesProject(path.join(dir, "package.json"), projectHash)) {
-            return dir
+        const directory = path.join(baseDirectory, entry.name)
+        if (await matchesProject(path.join(directory, "package.json"), projectHash)) {
+            return directory
         }
     }
 

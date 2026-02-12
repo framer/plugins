@@ -8,6 +8,7 @@
 import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
 import { pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
+import path from "path"
 import type { WebSocket } from "ws"
 import { initConnection, sendMessage } from "./helpers/connection.ts"
 import {
@@ -42,7 +43,7 @@ import {
     warn,
     wasRecentlyDisconnected,
 } from "./utils/logging.ts"
-import { findOrCreateProjectDir } from "./utils/project.ts"
+import { findOrCreateProjectDirectory } from "./utils/project.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
 
 /**
@@ -681,7 +682,13 @@ async function executeEffect(
             if (!config.projectDir) {
                 const projectName = config.explicitName ?? effect.projectInfo.projectName
 
-                config.projectDir = await findOrCreateProjectDir(config.projectHash, projectName, config.explicitDir)
+                const directoryInfo = await findOrCreateProjectDirectory(
+                    config.projectHash,
+                    projectName,
+                    config.explicitDirectory
+                )
+                config.projectDir = directoryInfo.directory
+                config.projectDirCreated = directoryInfo.created
 
                 // May allow customization of file directory in the future
                 config.filesDir = `${config.projectDir}/files`
@@ -950,9 +957,26 @@ async function executeEffect(
                 return []
             }
 
-            success(
-                `Synced ${effect.totalCount} files (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
-            )
+            const relative = config.projectDir ? path.relative(process.cwd(), config.projectDir) : null
+            const relativeDirectory = relative != null ? (relative ? "./" + relative : ".") : null
+
+            if (effect.totalCount === 0 && relativeDirectory) {
+                if (config.projectDirCreated) {
+                    success(`Created ${relativeDirectory} folder`)
+                } else {
+                    success(`Syncing to ${relativeDirectory} folder`)
+                }
+            } else if (relativeDirectory && config.projectDirCreated) {
+                success(`Synced into ${relativeDirectory} (${effect.updatedCount} files added)`)
+            } else if (relativeDirectory) {
+                success(
+                    `Synced into ${relativeDirectory} (${effect.updatedCount} files updated, ${effect.unchangedCount} unchanged)`
+                )
+            } else {
+                success(
+                    `Synced ${effect.totalCount} files (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
+                )
+            }
             status("Watching for changes...")
             return []
         }
@@ -1041,6 +1065,15 @@ export async function start(config: Config): Promise<void> {
         }
 
         void (async () => {
+            cancelDisconnectMessage()
+
+            // Only show "Connected" on initial connection, not reconnects
+            // Reconnect confirmation happens in SYNC_COMPLETE
+            const wasDisconnected = wasRecentlyDisconnected()
+            if (!wasDisconnected && !didShowDisconnect()) {
+                success(`Connected to ${message.projectName}`)
+            }
+
             // Process handshake through state machine
             await processEvent({
                 type: "HANDSHAKE",
@@ -1060,16 +1093,6 @@ export async function start(config: Config): Promise<void> {
                 await installer.initialize()
                 // Start file watcher now that we have a directory
                 startWatcher()
-            }
-
-            // Cancel any pending disconnect message (fast reconnect)
-            cancelDisconnectMessage()
-
-            // Only show "Connected" on initial connection, not reconnects
-            // Reconnect confirmation happens in SYNC_COMPLETE
-            const wasDisconnected = wasRecentlyDisconnected()
-            if (!wasDisconnected && !didShowDisconnect()) {
-                success(`Connected to ${message.projectName}`)
             }
         })()
     })

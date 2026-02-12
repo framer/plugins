@@ -961,6 +961,10 @@ async function executeEffect(
                 } else {
                     success(`Syncing to ${relativeDir} folder`)
                 }
+            } else if (relativeDir && config.projectDirCreated) {
+                success(
+                    `Synced into ${relativeDir} (${effect.updatedCount} files added)`
+                )
             } else if (relativeDir) {
                 success(
                     `Synced into ${relativeDir} (${effect.updatedCount} files updated, ${effect.unchangedCount} unchanged)`
@@ -1058,6 +1062,16 @@ export async function start(config: Config): Promise<void> {
         }
 
         void (async () => {
+            // Cancel any pending disconnect message (fast reconnect)
+            cancelDisconnectMessage()
+
+            // Only show "Connected" on initial connection, not reconnects
+            // Reconnect confirmation happens in SYNC_COMPLETE
+            const wasDisconnected = wasRecentlyDisconnected()
+            if (!wasDisconnected && !didShowDisconnect()) {
+                success(`Connected to ${message.projectName}`)
+            }
+
             // Process handshake through state machine
             await processEvent({
                 type: "HANDSHAKE",
@@ -1077,16 +1091,6 @@ export async function start(config: Config): Promise<void> {
                 await installer.initialize()
                 // Start file watcher now that we have a directory
                 startWatcher()
-            }
-
-            // Cancel any pending disconnect message (fast reconnect)
-            cancelDisconnectMessage()
-
-            // Only show "Connected" on initial connection, not reconnects
-            // Reconnect confirmation happens in SYNC_COMPLETE
-            const wasDisconnected = wasRecentlyDisconnected()
-            if (!wasDisconnected && !didShowDisconnect()) {
-                success(`Connected to ${message.projectName}`)
             }
         })()
     })

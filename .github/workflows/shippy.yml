@@ -11,7 +11,7 @@ on:
       - unlabeled
   workflow_dispatch:
     # NOTE: To prevent GitHub from adding PRs to the merge queue before check is done,
-    # make sure that there is a ruleset that requires the “Shippy check to pass.
+    # make sure that there is a ruleset that requires the “Shippy“ check to pass.
     merge_group:
       types:
         - checks_requested
@@ -21,41 +21,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  auto-label:
-    name: Add Submit on merge label
-    runs-on: ubuntu-latest
-    if: >-
-      (github.event.action == 'opened' || github.event.action == 'ready_for_review') &&
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.user.login != 'dependabot[bot]'
-    steps:
-      - name: Check for changelog and add label
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const body = (context.payload.pull_request.body || '').replace(/\r\n/g, '\n')
-            const changelogPattern = /### Changelog[ \t]*\n([\s\S]*?)(?=\n### |\n## |$)/i
-            const match = body.match(changelogPattern)
-            let changelog = match?.[1]?.trim()
-
-            // Strip HTML comments
-            if (changelog) {
-              changelog = changelog.replace(/<!--[\s\S]*?-->/g, '').trim()
-            }
-
-            if (!changelog || changelog === '-') {
-              core.info('No changelog section found, skipping label')
-              return
-            }
-
-            core.info(`Found changelog: ${changelog}`)
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              labels: ['Submit on merge']
-            })
-
   check-pr-description:
     name: PR Description Check
     runs-on: ubuntu-latest
@@ -87,7 +52,22 @@ jobs:
           node-version-file: .tool-versions
 
       - name: Validate PR body
+        id: validate
         run: yarn dlx tsx scripts/validate-pr-body.ts
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           REQUIRE_CHANGELOG: ${{ steps.check-label.outputs.require_changelog }}
+
+      - name: Add Submit on merge label
+        if: >-
+          steps.validate.outputs.has_changelog == 'true' &&
+          (github.event.action == 'opened' || github.event.action == 'ready_for_review')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ['Submit on merge']
+            })

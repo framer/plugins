@@ -15,6 +15,7 @@
  *   1 - Validation failed
  */
 
+import { appendFileSync } from "fs"
 import { extractChangelog } from "./lib/parse-pr"
 
 const prBody = process.env.PR_BODY?.trim()
@@ -25,17 +26,19 @@ if (!prBody) {
     process.exit(1)
 }
 
-if (requireChangelog) {
-    const changelog = extractChangelog(prBody)
+const changelog = extractChangelog(prBody)
 
-    if (!changelog) {
-        console.log(
-            "❌ Changelog required when 'Submit on merge' label is applied. Add content to the '### Changelog' section in your PR description."
-        )
-        process.exit(1)
-    }
+// Write GitHub Actions output (no-op outside CI)
+const outputFile = process.env.GITHUB_OUTPUT
+if (outputFile) {
+    appendFileSync(outputFile, `has_changelog=${changelog ? "true" : "false"}\n`)
+}
 
-    console.log("Changelog validation passed")
+if (requireChangelog && !changelog) {
+    console.log(
+        "❌ Changelog required when 'Submit on merge' label is applied. Add content to the '### Changelog' section in your PR description."
+    )
+    process.exit(1)
 }
 
 console.log("PR body validation passed")

@@ -682,13 +682,13 @@ async function executeEffect(
             if (!config.projectDir) {
                 const projectName = config.explicitName ?? effect.projectInfo.projectName
 
-                const result = await findOrCreateProjectDirectory(
+                const directoryInfo = await findOrCreateProjectDirectory(
                     config.projectHash,
                     projectName,
                     config.explicitDirectory
                 )
-                config.projectDir = result.directory
-                config.projectDirCreated = result.created
+                config.projectDir = directoryInfo.directory
+                config.projectDirCreated = directoryInfo.created
 
                 // May allow customization of file directory in the future
                 config.filesDir = `${config.projectDir}/files`

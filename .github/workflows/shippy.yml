@@ -26,13 +26,13 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
     steps:
-      - name: Check if Submit on merge label is present
+      - name: Check if Auto submit to Marketplace on merge label is present
         id: check-label
         uses: actions/github-script@v7
         with:
           script: |
             const labels = context.payload.pull_request.labels || []
-            const hasSubmitLabel = labels.some(label => label.name === 'Submit on merge')
+            const hasSubmitLabel = labels.some(label => label.name === 'Auto submit to Marketplace on merge')
             core.setOutput('require_changelog', hasSubmitLabel ? 'true' : 'false')
 
       - name: Checkout repository
@@ -58,7 +58,7 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
           REQUIRE_CHANGELOG: ${{ steps.check-label.outputs.require_changelog }}
 
-      - name: Add Submit on merge label
+      - name: Add Auto submit to Marketplace on merge label
         if: >-
           steps.validate.outputs.has_changelog == 'true' &&
           (github.event.action == 'opened' || github.event.action == 'ready_for_review')
@@ -69,5 +69,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              labels: ['Submit on merge']
+              labels: ['Auto submit to Marketplace on merge']
             })

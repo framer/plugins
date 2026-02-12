@@ -1,7 +1,7 @@
 #!/usr/bin/env yarn tsx
 
 /**
- * Submit on Merge Script
+ * Auto submit to Marketplace on merge
  *
  * Orchestrates multi-plugin submission by detecting changed plugins from a PR
  * and calling submit-plugin.ts for each one with the changelog from the PR body.
@@ -72,7 +72,7 @@ function submitPlugin(pluginName: string, changelog: string): void {
 
 function run(): void {
     console.log("=".repeat(60))
-    console.log("Submit on Merge - Multi-Plugin Submission")
+    console.log("Auto submit to Marketplace on merge")
     console.log("=".repeat(60))
 
     // 1. Validate required environment variables

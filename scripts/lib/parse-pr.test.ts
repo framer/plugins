@@ -134,7 +134,7 @@ MAde some changes
 
 ### Changelog
 
-<!-- Required when using the "Submit on merge" label. Describe user-facing changes in bullet points. -->
+<!-- Required when using the "Auto submit to Marketplace on merge" label. Describe user-facing changes in bullet points. -->
 
 - Just testing changelog extraction
 - I hope its formatted nicely
@@ -171,7 +171,7 @@ MAde some changes
 
           ### Changelog
 
-          <!-- Required when using the "Submit on merge" label. -->
+          <!-- Required when using the "Auto submit to Marketplace on merge" label. -->
 
           - Just testing changelog extraction
 

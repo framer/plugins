@@ -6,7 +6,7 @@ This pull request …
 
 ### Changelog
 
-<!-- Required when using the "Submit on merge" label. Describe user-facing changes in bullet points. -->
+<!-- Required when using the "Auto submit to Marketplace on merge" label. Describe user-facing changes in bullet points. -->
 
 -
 

@@ -2,13 +2,13 @@
 
 /**
  * Validates PR body for changelog content.
- * Used by the Shippy workflow to check PRs with "Submit on merge" label.
+ * Used by the Shippy workflow to check PRs with "Auto submit to Marketplace on merge" label.
  *
  * Usage: yarn tsx scripts/validate-pr-body.ts
  *
  * Environment Variables:
  *   PR_BODY         - The PR body text to validate
- *   REQUIRE_CHANGELOG - Set to "true" to require changelog (when Submit on merge label is present)
+ *   REQUIRE_CHANGELOG - Set to "true" to require changelog (when Auto submit to Marketplace on merge label is present)
  *
  * Exit codes:
  *   0 - Validation passed
@@ -36,7 +36,7 @@ if (outputFile) {
 
 if (requireChangelog && !changelog) {
     console.log(
-        "❌ Changelog required when 'Submit on merge' label is applied. Add content to the '### Changelog' section in your PR description."
+        "❌ Changelog required when 'Auto submit to Marketplace on merge' label is applied. Add content to the '### Changelog' section in your PR description."
     )
     process.exit(1)
 }

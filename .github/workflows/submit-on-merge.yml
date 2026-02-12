@@ -1,4 +1,4 @@
-name: Submit on Merge
+name: Auto submit to Marketplace on merge
 
 on:
   pull_request:
@@ -11,10 +11,10 @@ jobs:
   submit:
     name: Submit Changed Plugins
     runs-on: ubuntu-latest
-    # Only run if PR was merged (not just closed) and has "Submit on merge" label
+    # Only run if PR was merged (not just closed) and has "Auto submit to Marketplace on merge" label
     if: |
       github.event.pull_request.merged == true &&
-      contains(github.event.pull_request.labels.*.name, 'Submit on merge')
+      contains(github.event.pull_request.labels.*.name, 'Auto submit to Marketplace on merge')
     # FIXME: Should be production
     environment: development
 

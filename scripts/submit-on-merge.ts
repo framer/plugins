@@ -20,46 +20,11 @@
 import { execSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { join, resolve } from "node:path"
+import { log } from "./lib/logging"
 import { extractChangelog, parseChangedPlugins } from "./lib/parse-pr"
-
-// ============================================================================
-// Configuration
-// ============================================================================
 
 const REPO_ROOT = process.env.REPO_ROOT ?? resolve(__dirname, "..")
 const PLUGINS_DIR = join(REPO_ROOT, "plugins")
-
-// ============================================================================
-// Logging
-// ============================================================================
-
-const DEBUG = process.env.DEBUG === "1" || process.env.DEBUG === "true"
-
-const log = {
-    info: (msg: string) => {
-        console.log(`[INFO] ${msg}`)
-    },
-    success: (msg: string) => {
-        console.log(`[SUCCESS] ${msg}`)
-    },
-    error: (msg: string) => {
-        console.error(`[ERROR] ${msg}`)
-    },
-    warn: (msg: string) => {
-        console.warn(`[WARN] ${msg}`)
-    },
-    step: (msg: string) => {
-        console.log(`\n=== ${msg} ===`)
-    },
-    debug: (msg: string) => {
-        if (!DEBUG) return
-        console.log(`[DEBUG] ${msg}`)
-    },
-}
-
-// ============================================================================
-// Plugin Detection
-// ============================================================================
 
 function getChangedPlugins(changedFiles: string): string[] {
     // Parse plugin names from changed files (pure function from lib)
@@ -78,10 +43,6 @@ function getChangedPlugins(changedFiles: string): string[] {
 
     return validPlugins
 }
-
-// ============================================================================
-// Plugin Submission
-// ============================================================================
 
 function submitPlugin(pluginName: string, changelog: string): void {
     const pluginPath = join(PLUGINS_DIR, pluginName)
@@ -108,10 +69,6 @@ function submitPlugin(pluginName: string, changelog: string): void {
         )
     }
 }
-
-// ============================================================================
-// Main
-// ============================================================================
 
 function run(): void {
     console.log("=".repeat(60))

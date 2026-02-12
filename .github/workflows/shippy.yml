@@ -53,7 +53,7 @@ jobs:
 
       - name: Validate PR body
         id: validate
-        run: yarn dlx tsx scripts/validate-pr-body.ts
+        run: npx tsx@4.21.0 scripts/validate-pr-body.ts
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           REQUIRE_CHANGELOG: ${{ steps.check-label.outputs.require_changelog }}

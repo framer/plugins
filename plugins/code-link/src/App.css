@@ -1,5 +1,3 @@
-/* Your Plugin CSS */
-
 body main {
     --framer-color-tint: #000000;
     --framer-color-tint-dimmed: #666;
@@ -37,6 +35,7 @@ main {
 .info h1 {
     font-size: 12px;
     margin-bottom: 8px;
+    font-weight: 600;
 }
 
 .info p {

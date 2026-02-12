@@ -28,10 +28,14 @@ if (!prBody) {
 
 const changelog = extractChangelog(prBody)
 
-// Write GitHub Actions output (no-op outside CI)
+// Write GitHub Actions outputs (no-op outside CI)
 const outputFile = process.env.GITHUB_OUTPUT
 if (outputFile) {
     appendFileSync(outputFile, `has_changelog=${changelog ? "true" : "false"}\n`)
+    if (changelog) {
+        // Multiline output requires delimiter syntax
+        appendFileSync(outputFile, `changelog<<CHANGELOG_EOF\n${changelog}\nCHANGELOG_EOF\n`)
+    }
 }
 
 if (requireChangelog && !changelog) {

@@ -11,63 +11,15 @@ on:
       - unlabeled
   workflow_dispatch:
     # NOTE: To prevent GitHub from adding PRs to the merge queue before check is done,
-    # make sure that there is a ruleset that requires the “Shippy“ check to pass.
+    # make sure that there is a ruleset that requires the "Shippy" check to pass.
     merge_group:
       types:
         - checks_requested
-  
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   check-pr-description:
-    name: PR Description Check
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
-    steps:
-      - name: Check if Auto submit to Marketplace on merge label is present
-        id: check-label
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const labels = context.payload.pull_request.labels || []
-            const hasSubmitLabel = labels.some(label => label.name === 'Auto submit to Marketplace on merge')
-            core.setOutput('require_changelog', hasSubmitLabel ? 'true' : 'false')
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            scripts
-            package.json
-            yarn.lock
-            .yarnrc.yml
-            .yarn
-            .tool-versions
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .tool-versions
-
-      - name: Validate PR body
-        id: validate
-        run: npx tsx@4.21.0 scripts/validate-pr-body.ts
-        env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-          REQUIRE_CHANGELOG: ${{ steps.check-label.outputs.require_changelog }}
-
-      - name: Add Auto submit to Marketplace on merge label
-        if: >-
-          steps.validate.outputs.has_changelog == 'true' &&
-          (github.event.action == 'opened' || github.event.action == 'ready_for_review')
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              labels: ['Auto submit to Marketplace on merge']
-            })
+    uses: ./.github/workflows/check-pr.yml

@@ -33,6 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: framer/plugins
+          path: tooling
           sparse-checkout: |
             scripts
             package.json
@@ -44,11 +45,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: .tool-versions
+          node-version-file: tooling/.tool-versions
+
+      - name: Install dependencies
+        working-directory: tooling
+        run: yarn install
 
       - name: Validate PR body
         id: validate
-        run: yarn dlx tsx scripts/validate-pr-body.ts
+        working-directory: tooling
+        run: yarn tsx scripts/validate-pr-body.ts
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           REQUIRE_CHANGELOG: ${{ steps.check-label.outputs.require_changelog }}

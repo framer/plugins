@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   auto-label:
-    name: Auto-add Submit on merge label
+    name: Add Submit on merge label
     runs-on: ubuntu-latest
     if: >-
       (github.event.action == 'opened' || github.event.action == 'ready_for_review') &&

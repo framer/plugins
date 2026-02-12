@@ -1,10 +1,10 @@
-# Framer Code Link
+# Code Link
 
-Two-way sync between Framer code components and your local filesystem.
+Two-way sync between Framer code files and your local filesystem.
 
 **By:** [@huntercaron](https://github.com/huntercaron)
 
-<img src="../../assets/code-link.png" width="600" alt="Code Link">
+<img src="../../assets/code-link.png" alt="Code Link">
 
 ## Features
 

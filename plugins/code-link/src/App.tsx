@@ -91,6 +91,7 @@ export function App() {
     const api = useConstant<CodeFilesAPI>(() => new CodeFilesAPI())
     const syncTracker = useConstant<SyncTracker>(createSyncTracker)
     const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const connectionAttemptsRef = useRef(0)
     const failureCountRef = useRef(0)
 
@@ -173,6 +174,13 @@ export function App() {
             }
         }
 
+        const clearConnectTimeout = () => {
+            if (connectTimeoutRef.current) {
+                clearTimeout(connectTimeoutRef.current)
+                connectTimeoutRef.current = null
+            }
+        }
+
         const scheduleReconnect = () => {
             if (disposed) return
             clearRetry()
@@ -204,11 +212,28 @@ export function App() {
             log.debug("Opening WebSocket", { port, attempt, project: projectName })
             const socket = new WebSocket(`ws://localhost:${port}`)
             socketRef.current = socket
+            // Timeout to prevent hanging on the socket connection which would sometimes make loading slow
+            const connectTimeoutMs = 1200
+            clearConnectTimeout()
+            connectTimeoutRef.current = setTimeout(() => {
+                if (socket.readyState === WebSocket.CONNECTING) {
+                    log.debug("WebSocket connect timeout – closing stale socket", {
+                        port,
+                        attempt,
+                        timeoutMs: connectTimeoutMs,
+                    })
+                    socket.close()
+                }
+            }, connectTimeoutMs)
 
             const isStale = () => socketRef.current !== socket
 
             socket.onopen = async () => {
-                if (disposed || isStale()) return
+                clearConnectTimeout()
+                if (disposed || isStale()) {
+                    socket.close()
+                    return
+                }
                 failureCountRef.current = 0
                 clearRetry()
                 log.debug("WebSocket connected, sending handshake")
@@ -237,6 +262,7 @@ export function App() {
             }
 
             socket.onclose = event => {
+                clearConnectTimeout()
                 if (disposed || isStale()) return
                 socketRef.current = null
                 const failureCount = ++failureCountRef.current
@@ -257,6 +283,7 @@ export function App() {
             }
 
             socket.onerror = event => {
+                clearConnectTimeout()
                 if (isStale()) return
                 const failureCount = failureCountRef.current
                 log.debug("WebSocket error event", {
@@ -275,6 +302,7 @@ export function App() {
             disposed = true
             log.debug("Cleaning up socket connection")
             clearRetry()
+            clearConnectTimeout()
             const socket = socketRef.current
             socketRef.current = null
             if (socket && socket.readyState === WebSocket.OPEN) {
@@ -418,16 +446,16 @@ function InfoPanel({ command }: InfoPanelProps) {
                 <div className="plugin-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="none" viewBox="0 0 30 30">
                         <path
-                            d="M 16 19.75 C 16 19.612 16.112 19.5 16.25 19.5 L 22.25 19.5 C 22.388 19.5 22.5 19.612 22.5 19.75 L 22.5 21.25 C 22.5 21.388 22.388 21.5 22.25 21.5 L 16.25 21.5 C 16.112 21.5 16 21.388 16 21.25 Z"
+                            d="M 9.792 7.898 C 9.671 7.733 9.789 7.5 9.993 7.5 L 17.232 7.5 C 17.4 7.5 17.556 7.584 17.648 7.723 L 22.241 14.611 C 22.352 14.777 22.233 15 22.033 15 L 15 15 Z"
                             fill="currentColor"
                         />
                         <path
-                            d="M 9.677 8.677 C 9.579 8.579 9.421 8.579 9.323 8.677 L 8.177 9.823 C 8.079 9.921 8.079 10.079 8.177 10.177 L 12.823 14.823 C 12.921 14.921 12.921 15.079 12.823 15.177 L 8.177 19.823 C 8.079 19.921 8.079 20.079 8.177 20.177 L 9.323 21.323 C 9.421 21.421 9.579 21.421 9.677 21.323 L 15.823 15.177 C 15.921 15.079 15.921 14.921 15.823 14.823 Z"
+                            d="M 7.759 15.389 C 7.648 15.223 7.767 15 7.967 15 L 15 15 L 20.208 22.102 C 20.329 22.267 20.211 22.5 20.007 22.5 L 12.768 22.5 C 12.6 22.5 12.444 22.416 12.352 22.277 Z"
                             fill="currentColor"
                         />
                     </svg>
                 </div>
-                <h1>Connect to Terminal</h1>
+                <h1>Sync your Code Files</h1>
                 <p>
                     Run the command locally in your terminal to get started.{" "}
                     <a

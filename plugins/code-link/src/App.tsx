@@ -91,6 +91,7 @@ export function App() {
     const api = useConstant<CodeFilesAPI>(() => new CodeFilesAPI())
     const syncTracker = useConstant<SyncTracker>(createSyncTracker)
     const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const connectionAttemptsRef = useRef(0)
     const failureCountRef = useRef(0)
 
@@ -173,6 +174,13 @@ export function App() {
             }
         }
 
+        const clearConnectTimeout = () => {
+            if (connectTimeoutRef.current) {
+                clearTimeout(connectTimeoutRef.current)
+                connectTimeoutRef.current = null
+            }
+        }
+
         const scheduleReconnect = () => {
             if (disposed) return
             clearRetry()
@@ -206,7 +214,8 @@ export function App() {
             socketRef.current = socket
             // Timeout to prevent hanging on the socket connection which would sometimes make loading slow
             const connectTimeoutMs = 1200
-            const connectTimeout = setTimeout(() => {
+            clearConnectTimeout()
+            connectTimeoutRef.current = setTimeout(() => {
                 if (socket.readyState === WebSocket.CONNECTING) {
                     log.debug("WebSocket connect timeout – closing stale socket", {
                         port,
@@ -216,9 +225,6 @@ export function App() {
                     socket.close()
                 }
             }, connectTimeoutMs)
-            const clearConnectTimeout = () => {
-                clearTimeout(connectTimeout)
-            }
 
             const isStale = () => socketRef.current !== socket
 
@@ -296,6 +302,7 @@ export function App() {
             disposed = true
             log.debug("Cleaning up socket connection")
             clearRetry()
+            clearConnectTimeout()
             const socket = socketRef.current
             socketRef.current = null
             if (socket && socket.readyState === WebSocket.OPEN) {

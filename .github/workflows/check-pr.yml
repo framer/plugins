@@ -32,7 +32,8 @@ jobs:
       - name: Checkout tooling
         uses: actions/checkout@v4
         with:
-          repository: framer/plugins
+          repository: niekert/plugins
+          ref: reusable-submit-workflow
           path: tooling
           sparse-checkout: |
             scripts

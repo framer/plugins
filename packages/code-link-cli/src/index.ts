@@ -90,7 +90,7 @@ program
                 filesDir: null, // Will be set during handshake
                 dangerouslyAutoDelete: options.dangerouslyAutoDelete ?? false,
                 allowUnsupportedNpm: options.unsupportedNpm ?? false,
-                explicitDir: options.dir,
+                explicitDirectory: options.dir,
                 explicitName: options.name,
             }
 

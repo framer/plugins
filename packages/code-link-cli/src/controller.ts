@@ -43,7 +43,7 @@ import {
     warn,
     wasRecentlyDisconnected,
 } from "./utils/logging.ts"
-import { findOrCreateProjectDir } from "./utils/project.ts"
+import { findOrCreateProjectDirectory } from "./utils/project.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
 
 /**
@@ -682,8 +682,12 @@ async function executeEffect(
             if (!config.projectDir) {
                 const projectName = config.explicitName ?? effect.projectInfo.projectName
 
-                const result = await findOrCreateProjectDir(config.projectHash, projectName, config.explicitDir)
-                config.projectDir = result.dir
+                const result = await findOrCreateProjectDirectory(
+                    config.projectHash,
+                    projectName,
+                    config.explicitDirectory
+                )
+                config.projectDir = result.directory
                 config.projectDirCreated = result.created
 
                 // May allow customization of file directory in the future
@@ -953,7 +957,9 @@ async function executeEffect(
                 return []
             }
 
-            const relativeDir = config.projectDir ? "./" + (path.relative(process.cwd(), config.projectDir) || ".") : null
+            const relativeDir = config.projectDir
+                ? "./" + (path.relative(process.cwd(), config.projectDir) || ".")
+                : null
 
             if (effect.totalCount === 0 && relativeDir) {
                 if (config.projectDirCreated) {
@@ -962,9 +968,7 @@ async function executeEffect(
                     success(`Syncing to ${relativeDir} folder`)
                 }
             } else if (relativeDir && config.projectDirCreated) {
-                success(
-                    `Synced into ${relativeDir} (${effect.updatedCount} files added)`
-                )
+                success(`Synced into ${relativeDir} (${effect.updatedCount} files added)`)
             } else if (relativeDir) {
                 success(
                     `Synced into ${relativeDir} (${effect.updatedCount} files updated, ${effect.unchangedCount} unchanged)`
@@ -1062,7 +1066,6 @@ export async function start(config: Config): Promise<void> {
         }
 
         void (async () => {
-            // Cancel any pending disconnect message (fast reconnect)
             cancelDisconnectMessage()
 
             // Only show "Connected" on initial connection, not reconnects

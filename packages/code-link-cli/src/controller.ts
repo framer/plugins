@@ -8,6 +8,7 @@
 import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
 import { pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
+import path from "path"
 import type { WebSocket } from "ws"
 import { initConnection, sendMessage } from "./helpers/connection.ts"
 import {
@@ -681,7 +682,9 @@ async function executeEffect(
             if (!config.projectDir) {
                 const projectName = config.explicitName ?? effect.projectInfo.projectName
 
-                config.projectDir = await findOrCreateProjectDir(config.projectHash, projectName, config.explicitDir)
+                const result = await findOrCreateProjectDir(config.projectHash, projectName, config.explicitDir)
+                config.projectDir = result.dir
+                config.projectDirCreated = result.created
 
                 // May allow customization of file directory in the future
                 config.filesDir = `${config.projectDir}/files`
@@ -950,9 +953,23 @@ async function executeEffect(
                 return []
             }
 
-            success(
-                `Synced ${effect.totalCount} files (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
-            )
+            const relativeDir = config.projectDir ? "./" + (path.relative(process.cwd(), config.projectDir) || ".") : null
+
+            if (effect.totalCount === 0 && relativeDir) {
+                if (config.projectDirCreated) {
+                    success(`Created ${relativeDir} folder`)
+                } else {
+                    success(`Syncing to ${relativeDir} folder`)
+                }
+            } else if (relativeDir) {
+                success(
+                    `Synced into ${relativeDir} (${effect.updatedCount} files updated, ${effect.unchangedCount} unchanged)`
+                )
+            } else {
+                success(
+                    `Synced ${effect.totalCount} files (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
+                )
+            }
             status("Watching for changes...")
             return []
         }

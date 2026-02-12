@@ -40,17 +40,17 @@ export async function findOrCreateProjectDir(
     projectHash: string,
     projectName?: string,
     explicitDir?: string
-): Promise<string> {
+): Promise<{ dir: string; created: boolean }> {
     if (explicitDir) {
         const resolved = path.resolve(explicitDir)
         await fs.mkdir(path.join(resolved, "files"), { recursive: true })
-        return resolved
+        return { dir: resolved, created: false }
     }
 
     const cwd = process.cwd()
     const existing = await findExistingProjectDir(cwd, projectHash)
     if (existing) {
-        return existing
+        return { dir: existing, created: false }
     }
 
     if (!projectName) {
@@ -72,7 +72,7 @@ export async function findOrCreateProjectDir(
     }
     await fs.writeFile(path.join(projectDir, "package.json"), JSON.stringify(pkg, null, 2))
 
-    return projectDir
+    return { dir: projectDir, created: true }
 }
 
 async function findExistingProjectDir(baseDir: string, projectHash: string): Promise<string | null> {

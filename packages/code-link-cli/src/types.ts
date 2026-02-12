@@ -21,6 +21,7 @@ export interface Config {
     allowUnsupportedNpm: boolean // Allow type acquisition for unsupported npm packages
     explicitDir?: string // User-provided directory override
     explicitName?: string // User-provided name override
+    projectDirCreated?: boolean // Whether the project directory was newly created
 }
 
 // Local file representation (CLI-specific)

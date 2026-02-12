@@ -8,6 +8,7 @@ import path from "path"
 import ts from "typescript"
 import { extractImports } from "../utils/imports.ts"
 import { debug, error, warn } from "../utils/logging.ts"
+import { tryGitInit } from "./git.ts"
 import { installSkills } from "./skills.ts"
 
 export interface InstallerConfig {
@@ -178,6 +179,9 @@ export class Installer {
             this.ensureSkills(),
             this.ensureGitignore(),
         ])
+
+        // Git init after all scaffolding is in place so initial commit includes everything
+        tryGitInit(this.projectDir)
 
         // Fire-and-forget type installation - don't block initialization
         Promise.resolve()

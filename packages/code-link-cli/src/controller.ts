@@ -957,21 +957,20 @@ async function executeEffect(
                 return []
             }
 
-            const relativeDir = config.projectDir
-                ? "./" + (path.relative(process.cwd(), config.projectDir) || ".")
-                : null
+            const relative = config.projectDir ? path.relative(process.cwd(), config.projectDir) : null
+            const relativeDirectory = relative != null ? (relative ? "./" + relative : ".") : null
 
-            if (effect.totalCount === 0 && relativeDir) {
+            if (effect.totalCount === 0 && relativeDirectory) {
                 if (config.projectDirCreated) {
-                    success(`Created ${relativeDir} folder`)
+                    success(`Created ${relativeDirectory} folder`)
                 } else {
-                    success(`Syncing to ${relativeDir} folder`)
+                    success(`Syncing to ${relativeDirectory} folder`)
                 }
-            } else if (relativeDir && config.projectDirCreated) {
-                success(`Synced into ${relativeDir} (${effect.updatedCount} files added)`)
-            } else if (relativeDir) {
+            } else if (relativeDirectory && config.projectDirCreated) {
+                success(`Synced into ${relativeDirectory} (${effect.updatedCount} files added)`)
+            } else if (relativeDirectory) {
                 success(
-                    `Synced into ${relativeDir} (${effect.updatedCount} files updated, ${effect.unchangedCount} unchanged)`
+                    `Synced into ${relativeDirectory} (${effect.updatedCount} files updated, ${effect.unchangedCount} unchanged)`
                 )
             } else {
                 success(

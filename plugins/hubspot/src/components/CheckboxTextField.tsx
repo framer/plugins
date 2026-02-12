@@ -27,13 +27,7 @@ export function CheckboxTextfield({ value, disabled, checked: initialChecked, on
             onClick={toggle}
             role="button"
         >
-            <input
-                type="checkbox"
-                disabled={disabled}
-                checked={checked}
-                onChange={toggle}
-                className="checked:bg-hs-orange! focus:ring-1 focus:ring-hs-orange border-none!"
-            />
+            <input type="checkbox" disabled={disabled} checked={checked} onChange={toggle} />
             <input
                 className="bg-transparent w-full shrink pointer-events-none select-none"
                 type="text"

@@ -21,10 +21,9 @@ export function extractChangelog(prBody: string): string | null {
     // Match ### Changelog section until next heading (## or ###) or end of string
     // Use [ \t]* instead of \s* to avoid matching newlines before the capture group
     const changelogPattern = /### Changelog[ \t]*\n([\s\S]*?)(?=\n### |\n## |$)/i
-    const match = normalizedBody.match(changelogPattern)
+    const match = changelogPattern.exec(normalizedBody)
     let changelog = match?.[1]?.trim()
 
-    // Return null for empty or placeholder content
     if (!changelog || changelog === "-") {
         return null
     }
@@ -32,7 +31,6 @@ export function extractChangelog(prBody: string): string | null {
     // Strip HTML comments (from PR templates)
     changelog = changelog.replace(/<!--[\s\S]*?-->/g, "").trim()
 
-    // Check again after stripping comments
     if (!changelog || changelog === "-") {
         return null
     }
@@ -57,7 +55,7 @@ export function parseChangedPlugins(changedFiles: string): string[] {
 
     for (const file of files) {
         // Match files in plugins/* directory (e.g., "plugins/csv-import/src/index.ts")
-        const match = file.match(/^plugins\/([^/]+)\//)
+        const match = /^plugins\/([^/]+)\//.exec(file)
         if (match?.[1]) {
             pluginNames.add(match[1])
         }

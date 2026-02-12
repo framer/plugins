@@ -95,9 +95,7 @@ const PluginsResponseSchema = v.object({
 
 const SubmissionResponseSchema = v.object({
     version: v.number(),
-    // FIXME: THIS SHOULD BE DEPLOYED:
-    // SEE: https://github.com/framer/creators/pull/2487/files
-    versionId: v.fallback(v.string(), ""),
+    versionId: v.string(),
     internalPluginId: v.string(),
     slug: v.string(),
 })
@@ -300,14 +298,12 @@ function createGitTag(pluginName: string, version: number, repoRoot: string, env
             // Tag doesn't exist, that's fine
         }
 
-        // Create annotated tag with changelog as message
         const escapedChangelog = env.CHANGELOG.trim().replace(/'/g, "'\\''")
         execSync(`git tag -a "${tagName}" -m "${escapedChangelog}"`, {
             cwd: repoRoot,
             stdio: "inherit",
         })
 
-        // Push tag
         execSync(`git push origin "${tagName}"`, {
             cwd: repoRoot,
             stdio: "inherit",
@@ -425,8 +421,9 @@ async function main(): Promise<void> {
         // 4. Fetch user's plugins to find the database plugin ID
         log.step("Fetching Plugin from Framer")
 
-        // Ideally an endpoint to fetch a plugin by manifest ID is available.
-        // If this starts failing because of pagination, I apologize for my laziness.
+        // Ideally an endpoint to fetch a plugin by manifest ID is available in FramerPluginService but it does not
+        // exist yet. Fetching all plugins could fail in the future but we fetch the first 100 plugins so it should be
+        // okay at the moment
         const plugins = await fetchMyPlugins(env)
         const matchedPlugin = plugins.find(p => p.manifestId === framerJson?.id)
 

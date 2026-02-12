@@ -176,6 +176,7 @@ export class Installer {
             this.ensureFramerDeclarations(),
             this.ensurePackageJson(),
             this.ensureSkills(),
+            this.ensureGitignore(),
         ])
 
         // Fire-and-forget type installation - don't block initialization
@@ -385,6 +386,35 @@ declare module "*.json"
 
     private async ensureSkills(): Promise<void> {
         await installSkills(this.projectDir)
+    }
+
+    private async ensureGitignore(): Promise<void> {
+        const gitignorePath = path.join(this.projectDir, ".gitignore")
+
+        try {
+            await fs.access(gitignorePath)
+            debug(".gitignore already exists")
+            return
+        } catch {
+            // Doesn't exist, create it
+        }
+
+        const content = [
+            "node_modules/",
+            ".DS_Store",
+            "*.local",
+            "",
+            "# Framer Code Link",
+            ".framer-sync-state.json",
+            ".skills/",
+            ".agents/skills/",
+            ".claude/skills/",
+            ".cursor/skills/",
+            "",
+        ].join("\n")
+
+        await fs.writeFile(gitignorePath, content)
+        debug("Created .gitignore")
     }
 
     // Code components in Framer use React 18

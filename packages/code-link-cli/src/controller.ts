@@ -20,6 +20,7 @@ import {
     readFileSafe,
     writeRemoteFiles,
 } from "./helpers/files.ts"
+import { tryGitInit } from "./helpers/git.ts"
 import { Installer } from "./helpers/installer.ts"
 import { PluginUserPromptCoordinator } from "./helpers/plugin-prompts.ts"
 import { validateIncomingChange } from "./helpers/sync-validator.ts"
@@ -977,6 +978,11 @@ async function executeEffect(
                     `Synced ${effect.totalCount} files (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
                 )
             }
+            // Git init after first sync so initial commit includes all synced files
+            if (config.projectDirCreated && config.projectDir) {
+                tryGitInit(config.projectDir)
+            }
+
             status("Watching for changes...")
             return []
         }

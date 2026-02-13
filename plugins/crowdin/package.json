@@ -16,6 +16,7 @@
         "@crowdin/crowdin-api-client": "^1.46.0",
         "classnames": "^2.5.1",
         "framer-plugin": "^3.10.3",
+        "motion": "^12.29.2",
         "react": "^18.3.1",
         "react-dom": "^18.3.1",
         "valibot": "^1.2.0"

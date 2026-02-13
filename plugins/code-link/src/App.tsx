@@ -181,12 +181,26 @@ export function App() {
             }
         }
 
+        // Reconnect strategy: poll every 1s while the plugin is visible or for 20s
+        // after going hidden. Pause when hidden longer; resume on visibility/focus.
+        let paused = false
+        let gracePeriodTimer: ReturnType<typeof setTimeout> | null = null
+        const RECONNECT_INTERVAL_MS = 1000
+        const GRACE_PERIOD_MS = 20_000
+
+        const clearGracePeriod = () => {
+            if (gracePeriodTimer) {
+                clearTimeout(gracePeriodTimer)
+                gracePeriodTimer = null
+            }
+        }
+
         const scheduleReconnect = () => {
-            if (disposed) return
+            if (disposed || paused) return
             clearRetry()
             retryTimeoutRef.current = setTimeout(() => {
                 connect()
-            }, 2000)
+            }, RECONNECT_INTERVAL_MS)
         }
 
         const connect = () => {
@@ -296,6 +310,34 @@ export function App() {
             }
         }
 
+        const resumePolling = () => {
+            clearGracePeriod()
+            paused = false
+            log.debug("Resuming reconnect polling")
+            connect()
+        }
+
+        const onVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                resumePolling()
+            } else {
+                // Going hidden — keep polling for a grace period, then pause
+                clearGracePeriod()
+                gracePeriodTimer = setTimeout(() => {
+                    log.debug("Grace period expired, pausing reconnect polling")
+                    paused = true
+                    clearRetry()
+                }, GRACE_PERIOD_MS)
+            }
+        }
+
+        const onFocus = () => {
+            resumePolling()
+        }
+
+        document.addEventListener("visibilitychange", onVisibilityChange)
+        window.addEventListener("focus", onFocus)
+
         connect()
 
         return () => {
@@ -303,6 +345,9 @@ export function App() {
             log.debug("Cleaning up socket connection")
             clearRetry()
             clearConnectTimeout()
+            clearGracePeriod()
+            document.removeEventListener("visibilitychange", onVisibilityChange)
+            window.removeEventListener("focus", onFocus)
             const socket = socketRef.current
             socketRef.current = null
             if (socket && socket.readyState === WebSocket.OPEN) {

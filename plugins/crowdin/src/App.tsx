@@ -1,8 +1,9 @@
 import cx from "classnames"
-import { framer, type LocalizationData, type Locale, useIsAllowedTo } from "framer-plugin"
+import { framer, type Locale, type LocalizationData, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
+import { animate, motion, useMotionValue, useTransform } from "motion/react"
 import { CheckIcon, ChevronDownIcon, InfoIcon, LinkArrowIcon, XIcon } from "./Icons"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import {
@@ -14,7 +15,6 @@ import {
     updateTranslation,
     uploadStorage,
 } from "./xliff"
-import { animate, motion, useMotionValue, useTransform } from "motion/react"
 
 const PLUGIN_WIDTH = 280
 const NO_PROJECT_PLACEHOLDER = "Select…"

@@ -31,7 +31,11 @@ describe("findOrCreateProjectDirectory", () => {
     })
 
     it("uses the project name as directory name", async () => {
-        const result = await findOrCreateProjectDirectory("hashA", "My Project", undefined, tmpDir)
+        const result = await findOrCreateProjectDirectory({
+            projectHash: "hashA",
+            projectName: "My Project",
+            baseDirectory: tmpDir,
+        })
 
         expect(result.created).toBe(true)
         expect(path.basename(result.directory)).toBe("My Project")
@@ -42,8 +46,16 @@ describe("findOrCreateProjectDirectory", () => {
     })
 
     it("reuses existing directory when hash matches", async () => {
-        const first = await findOrCreateProjectDirectory("hashA", "My Project", undefined, tmpDir)
-        const second = await findOrCreateProjectDirectory("hashA", "My Project", undefined, tmpDir)
+        const first = await findOrCreateProjectDirectory({
+            projectHash: "hashA",
+            projectName: "My Project",
+            baseDirectory: tmpDir,
+        })
+        const second = await findOrCreateProjectDirectory({
+            projectHash: "hashA",
+            projectName: "My Project",
+            baseDirectory: tmpDir,
+        })
 
         expect(first.created).toBe(true)
         expect(second.created).toBe(false)
@@ -51,8 +63,16 @@ describe("findOrCreateProjectDirectory", () => {
     })
 
     it("creates separate directories for same-named projects with different hashes", async () => {
-        const projectA = await findOrCreateProjectDirectory("hashA", "My Project", undefined, tmpDir)
-        const projectB = await findOrCreateProjectDirectory("hashB", "My Project", undefined, tmpDir)
+        const projectA = await findOrCreateProjectDirectory({
+            projectHash: "hashA",
+            projectName: "My Project",
+            baseDirectory: tmpDir,
+        })
+        const projectB = await findOrCreateProjectDirectory({
+            projectHash: "hashB",
+            projectName: "My Project",
+            baseDirectory: tmpDir,
+        })
 
         // First gets the bare name, second gets name-hash
         expect(path.basename(projectA.directory)).toBe("My Project")
@@ -71,12 +91,20 @@ describe("findOrCreateProjectDirectory", () => {
     })
 
     it("does not overwrite first project's package.json when second has same name", async () => {
-        const projectA = await findOrCreateProjectDirectory("hashA", "My Project", undefined, tmpDir)
+        const projectA = await findOrCreateProjectDirectory({
+            projectHash: "hashA",
+            projectName: "My Project",
+            baseDirectory: tmpDir,
+        })
 
         // Write a file into project A to simulate synced state
         await fs.writeFile(path.join(projectA.directory, "files", "Component.tsx"), "export default () => <div/>")
 
-        const projectB = await findOrCreateProjectDirectory("hashB", "My Project", undefined, tmpDir)
+        const projectB = await findOrCreateProjectDirectory({
+            projectHash: "hashB",
+            projectName: "My Project",
+            baseDirectory: tmpDir,
+        })
 
         // Project A's package.json must still have its own hash
         const pkgA = JSON.parse(await fs.readFile(path.join(projectA.directory, "package.json"), "utf-8"))
@@ -93,14 +121,22 @@ describe("findOrCreateProjectDirectory", () => {
 
     it("uses explicit directory when provided", async () => {
         const explicitDir = path.join(tmpDir, "custom-dir")
-        const result = await findOrCreateProjectDirectory("hashA", "My Project", explicitDir)
+        const result = await findOrCreateProjectDirectory({
+            projectHash: "hashA",
+            projectName: "My Project",
+            explicitDirectory: explicitDir,
+        })
 
         expect(result.directory).toBe(explicitDir)
         expect(result.created).toBe(false)
     })
 
     it("falls back to project-[hash] when project name is empty after sanitization", async () => {
-        const result = await findOrCreateProjectDirectory("hashA", "!!!", undefined, tmpDir)
+        const result = await findOrCreateProjectDirectory({
+            projectHash: "hashA",
+            projectName: "!!!",
+            baseDirectory: tmpDir,
+        })
         const shortId = shortProjectHash("hashA")
 
         expect(path.basename(result.directory)).toBe(`project-${shortId}`)

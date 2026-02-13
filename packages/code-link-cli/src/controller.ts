@@ -683,11 +683,11 @@ async function executeEffect(
             if (!config.projectDir) {
                 const projectName = config.explicitName ?? effect.projectInfo.projectName
 
-                const directoryInfo = await findOrCreateProjectDirectory(
-                    config.projectHash,
+                const directoryInfo = await findOrCreateProjectDirectory({
+                    projectHash: config.projectHash,
                     projectName,
-                    config.explicitDirectory
-                )
+                    explicitDirectory: config.explicitDirectory,
+                })
                 config.projectDir = directoryInfo.directory
                 config.projectDirCreated = directoryInfo.created
 

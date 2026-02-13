@@ -36,12 +36,14 @@ export async function getProjectHashFromCwd(): Promise<string | null> {
     }
 }
 
-export async function findOrCreateProjectDirectory(
-    projectHash: string,
-    projectName?: string,
-    explicitDirectory?: string,
+export async function findOrCreateProjectDirectory(options: {
+    projectHash: string
+    projectName?: string
+    explicitDirectory?: string
     baseDirectory?: string
-): Promise<{ directory: string; created: boolean; nameCollision?: boolean }> {
+}): Promise<{ directory: string; created: boolean; nameCollision?: boolean }> {
+    const { projectHash, projectName, explicitDirectory, baseDirectory } = options
+
     if (explicitDirectory) {
         const resolved = path.resolve(explicitDirectory)
         await fs.mkdir(path.join(resolved, "files"), { recursive: true })

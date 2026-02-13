@@ -2,9 +2,15 @@ import cx from "classnames"
 import { framer, type Locale, type LocalizationData, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
-import { ProjectsGroups, Translations } from "@crowdin/crowdin-api-client"
-import { animate, motion, useMotionValue, useTransform } from "motion/react"
+import { ConfirmationModal } from "./ConfirmationModal"
+import {
+    type CrowdinStorageResponse,
+    createCrowdinClient,
+    type Project,
+    validateAccessTokenAndGetProjects,
+} from "./crowdin"
 import { CheckIcon, ChevronDownIcon, InfoIcon, LinkArrowIcon, XIcon } from "./Icons"
+import { Progress } from "./Progress"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import {
     createValuesBySourceFromXliff,
@@ -34,24 +40,6 @@ enum AccessTokenState {
     Valid = "valid",
     Invalid = "invalid",
     Loading = "loading",
-}
-
-interface Project {
-    readonly id: number
-    readonly name: string
-}
-
-interface CrowdinStorageResponse {
-    data: {
-        id: number
-    }
-}
-
-function createCrowdinClient(token: string) {
-    return {
-        projects: new ProjectsGroups({ token }),
-        translations: new Translations({ token }),
-    }
 }
 
 export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
@@ -493,7 +481,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     }
 
     return (
-        <ConfigurationPage
+        <Configuration
             mode={mode}
             locales={locales}
             availableLocaleIds={effectiveAvailableLocaleIds}
@@ -552,7 +540,7 @@ function Home({ setMode, locales }: { setMode: (mode: "export" | "import") => vo
     )
 }
 
-function ConfigurationPage({
+function Configuration({
     mode,
     locales,
     availableLocaleIds,
@@ -843,127 +831,5 @@ function PropertyControl({ label, children }: { label: string; children: React.R
             <p>{label}</p>
             <div className="content">{children}</div>
         </div>
-    )
-}
-
-function ConfirmationModal({
-    localeName,
-    currentStep,
-    totalSteps,
-    remainingLocaleCount,
-    skip,
-    update,
-    updateAll,
-}: {
-    localeName: string
-    currentStep: number
-    totalSteps: number
-    remainingLocaleCount: number
-    skip: () => void
-    update: () => void
-    updateAll: () => void
-}) {
-    const [allChecked, setAllChecked] = useState(false)
-
-    return (
-        <main>
-            <hr />
-            <div className="heading">
-                <h1>Import Locale{totalSteps === 1 ? "" : "s"}</h1>
-                <span className="step-indicator">
-                    {currentStep} / {totalSteps}
-                </span>
-            </div>
-            <hr />
-            <p>
-                By importing you are going to modify the existing locale <strong>“{localeName}”</strong>.
-            </p>
-            {totalSteps > 1 && (
-                <label className="checkbox-label">
-                    <input
-                        type="checkbox"
-                        checked={allChecked}
-                        onChange={e => {
-                            setAllChecked(e.target.checked)
-                        }}
-                    />
-                    <p>
-                        All ({remainingLocaleCount} {remainingLocaleCount === 1 ? "locale" : "locales"})
-                    </p>
-                </label>
-            )}
-            <div className="button-row">
-                <button onClick={skip}>Skip</button>
-                <button onClick={allChecked ? updateAll : update} className="framer-button-primary">
-                    Update
-                </button>
-            </div>
-        </main>
-    )
-}
-
-// Returns a list of projects or null if the access token is invalid
-async function validateAccessTokenAndGetProjects(
-    token: string
-): Promise<{ isValid: boolean; projects: Project[] | null }> {
-    // Persist token
-    if (framer.isAllowedTo("setPluginData")) {
-        void framer.setPluginData("accessToken", token)
-    }
-
-    if (token) {
-        try {
-            const projectsGroupsApi = new ProjectsGroups({ token })
-            const response = await projectsGroupsApi.withFetchAll().listProjects()
-
-            // Only log in development
-            if (window.location.hostname === "localhost") {
-                console.log(response.data)
-            }
-            const projects = response.data.map(({ data }: { data: Project }) => ({
-                id: data.id,
-                name: data.name,
-            }))
-            return { isValid: true, projects }
-        } catch (error) {
-            console.error(error)
-            framer.notify("Invalid access token", { variant: "error" })
-            return { isValid: false, projects: null }
-        }
-    } else {
-        return { isValid: false, projects: null }
-    }
-}
-
-export function Progress({ current, total }: { current: number; total: number }) {
-    const percent = (current / total) * 100
-    const formatter = new Intl.NumberFormat("en-US")
-    const formattedCurrent = formatter.format(current)
-    const formattedTotal = formatter.format(total)
-
-    const animatedValue = useMotionValue(0)
-
-    useEffect(() => {
-        void animate(animatedValue, percent, { type: "tween" })
-    }, [percent, animatedValue])
-
-    return (
-        <main>
-            <div className="progress-bar-text">
-                <span className="progress-bar-percent">{Math.round(percent)}%</span>
-                <span>
-                    {formattedCurrent} / {formattedTotal}
-                </span>
-            </div>
-            <div className="progress-bar">
-                <motion.div
-                    className="progress-bar-fill"
-                    style={{
-                        width: useTransform(() => `${animatedValue.get()}%`),
-                    }}
-                />
-            </div>
-            <p>Exporting… please keep the plugin open until the process is complete.</p>
-        </main>
     )
 }

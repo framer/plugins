@@ -41,7 +41,7 @@ export async function findOrCreateProjectDirectory(
     projectName?: string,
     explicitDirectory?: string,
     baseDirectory?: string
-): Promise<{ directory: string; created: boolean }> {
+): Promise<{ directory: string; created: boolean; nameCollision?: boolean }> {
     if (explicitDirectory) {
         const resolved = path.resolve(explicitDirectory)
         await fs.mkdir(path.join(resolved, "files"), { recursive: true })
@@ -61,10 +61,8 @@ export async function findOrCreateProjectDirectory(
     const directoryName = toDirectoryName(projectName)
     const pkgName = toPackageName(projectName)
     const shortId = shortProjectHash(projectHash)
-    // Include short project hash in directory name to avoid collisions
-    // when multiple projects share the same name
-    const dirSuffix = directoryName ? `${directoryName}-${shortId}` : `project-${shortId}`
-    const projectDirectory = path.join(cwd, dirSuffix)
+    const baseName = directoryName || `project-${shortId}`
+    const { directory: projectDirectory, nameCollision } = await findAvailableDirectory(cwd, baseName, shortId)
 
     await fs.mkdir(path.join(projectDirectory, "files"), { recursive: true })
     const pkg: PackageJson = {
@@ -76,7 +74,28 @@ export async function findOrCreateProjectDirectory(
     }
     await fs.writeFile(path.join(projectDirectory, "package.json"), JSON.stringify(pkg, null, 2))
 
-    return { directory: projectDirectory, created: true }
+    return { directory: projectDirectory, created: true, nameCollision }
+}
+
+/**
+ * Returns a directory path that doesn't collide with an existing project.
+ * Tries the bare name first, falls back to name-{shortId} if taken.
+ */
+async function findAvailableDirectory(
+    baseDir: string,
+    name: string,
+    shortId: string
+): Promise<{ directory: string; nameCollision: boolean }> {
+    const candidate = path.join(baseDir, name)
+    try {
+        await fs.access(candidate)
+        // Directory exists — it belongs to a different project (findExistingProjectDirectory
+        // already checked for a hash match). Disambiguate with the project hash.
+        return { directory: path.join(baseDir, `${name}-${shortId}`), nameCollision: true }
+    } catch {
+        // Doesn't exist yet, use the bare name
+        return { directory: candidate, nameCollision: false }
+    }
 }
 
 async function findExistingProjectDirectory(baseDirectory: string, projectHash: string): Promise<string | null> {

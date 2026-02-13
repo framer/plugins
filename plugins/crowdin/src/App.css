@@ -150,7 +150,7 @@ strong {
 }
 
 .access-token-input:has(.icon) input {
-    padding-right: 26px;
+    padding-right: 28px;
 }
 
 .access-token-input .icon-button {
@@ -165,8 +165,9 @@ strong {
 
 .access-token-input .icon {
     position: absolute;
-    padding: 0 8px;
     height: 100%;
+    width: 28px;
+    flex-shrink: 0;
     top: 0;
     right: 0;
     display: flex;
@@ -186,19 +187,28 @@ strong {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
     width: 100%;
+    min-width: 0;
     padding-right: 0;
     font-weight: 500;
     background-color: var(--framer-color-bg-tertiary) !important;
+}
+
+.dropdown-button > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .icon-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 8px;
+    padding: 0;
     height: 100%;
+    width: 28px;
+    flex-shrink: 0;
     color: var(--framer-color-text-tertiary);
     transition: color 0.2s ease-in-out;
 }

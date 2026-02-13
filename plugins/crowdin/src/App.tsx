@@ -744,7 +744,7 @@ function ConfigurationPage({
                         disabled={!accessToken || !projectList.length}
                         onClick={onProjectButtonClick}
                     >
-                        {projectList.find(p => p.id === projectId)?.name ?? NO_PROJECT_PLACEHOLDER}
+                        <span>{projectList.find(p => p.id === projectId)?.name ?? NO_PROJECT_PLACEHOLDER}</span>
                         <div className="icon-button">
                             <ChevronDownIcon />
                         </div>
@@ -765,7 +765,7 @@ function ConfigurationPage({
                                 onLocaleButtonClick(e, ALL_LOCALES_ID)
                             }}
                         >
-                            All Locales
+                            <span>All Locales</span>
                             <div className="icon-button">
                                 <ChevronDownIcon />
                             </div>
@@ -780,7 +780,7 @@ function ConfigurationPage({
                                         onLocaleButtonClick(e, id)
                                     }}
                                 >
-                                    {locales.find(locale => locale.id === id)?.name ?? id}
+                                    <span>{locales.find(locale => locale.id === id)?.name ?? id}</span>
                                     <div
                                         className="icon-button"
                                         title="Remove locale"

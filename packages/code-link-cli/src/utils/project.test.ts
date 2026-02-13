@@ -30,15 +30,14 @@ describe("findOrCreateProjectDirectory", () => {
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
 
-    it("creates directory with hash suffix in name", async () => {
+    it("uses the project name as directory name", async () => {
         const result = await findOrCreateProjectDirectory("hashA", "My Project", undefined, tmpDir)
-        const shortId = shortProjectHash("hashA")
 
         expect(result.created).toBe(true)
-        expect(path.basename(result.directory)).toBe(`My Project-${shortId}`)
+        expect(path.basename(result.directory)).toBe("My Project")
 
         const pkg = JSON.parse(await fs.readFile(path.join(result.directory, "package.json"), "utf-8"))
-        expect(pkg.shortProjectHash).toBe(shortId)
+        expect(pkg.shortProjectHash).toBe(shortProjectHash("hashA"))
         expect(pkg.framerProjectName).toBe("My Project")
     })
 
@@ -55,6 +54,10 @@ describe("findOrCreateProjectDirectory", () => {
         const projectA = await findOrCreateProjectDirectory("hashA", "My Project", undefined, tmpDir)
         const projectB = await findOrCreateProjectDirectory("hashB", "My Project", undefined, tmpDir)
 
+        // First gets the bare name, second gets name-hash
+        expect(path.basename(projectA.directory)).toBe("My Project")
+        expect(path.basename(projectB.directory)).toBe(`My Project-${shortProjectHash("hashB")}`)
+
         // Must be distinct directories
         expect(projectA.directory).not.toBe(projectB.directory)
         expect(projectA.created).toBe(true)
@@ -65,15 +68,9 @@ describe("findOrCreateProjectDirectory", () => {
         const pkgB = JSON.parse(await fs.readFile(path.join(projectB.directory, "package.json"), "utf-8"))
         expect(pkgA.shortProjectHash).toBe(shortProjectHash("hashA"))
         expect(pkgB.shortProjectHash).toBe(shortProjectHash("hashB"))
-
-        // Files in project A are untouched after creating project B
-        const filesA = await fs.readdir(path.join(projectA.directory, "files"))
-        expect(filesA).toHaveLength(0) // empty but the dir still exists and is separate
     })
 
     it("does not overwrite first project's package.json when second has same name", async () => {
-        // This is the exact bug scenario: two projects named "My Project"
-        // Before the fix, the second would overwrite the first's package.json
         const projectA = await findOrCreateProjectDirectory("hashA", "My Project", undefined, tmpDir)
 
         // Write a file into project A to simulate synced state
@@ -103,7 +100,6 @@ describe("findOrCreateProjectDirectory", () => {
     })
 
     it("falls back to project-[hash] when project name is empty after sanitization", async () => {
-        // A name like "!!!" sanitizes to "" via toDirectoryName
         const result = await findOrCreateProjectDirectory("hashA", "!!!", undefined, tmpDir)
         const shortId = shortProjectHash("hashA")
 

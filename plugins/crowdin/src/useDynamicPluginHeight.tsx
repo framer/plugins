@@ -8,11 +8,8 @@ export function useDynamicPluginHeight(options: Partial<UIOptions> = {}) {
         const root = document.getElementById("root")
         if (!root) return
 
-        const contentElement = root.firstElementChild
-        if (!contentElement) return
-
         const updateHeight = () => {
-            const height = contentElement.scrollHeight
+            const height = root.offsetHeight
             void framer.showUI({
                 ...options,
                 height: Math.max(options.minHeight ?? 0, Math.min(height, options.maxHeight ?? Infinity)),
@@ -28,7 +25,7 @@ export function useDynamicPluginHeight(options: Partial<UIOptions> = {}) {
         })
 
         // Start observing the content element
-        resizeObserver.observe(contentElement)
+        resizeObserver.observe(root)
 
         // Cleanup
         return () => {

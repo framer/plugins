@@ -13,6 +13,10 @@
     --image-border-color: rgba(255, 255, 255, 0.05);
 }
 
+#root {
+    height: fit-content;
+}
+
 main {
     display: flex;
     flex-direction: column;

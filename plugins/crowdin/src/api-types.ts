@@ -11,17 +11,8 @@ export const ProjectSchema = v.object({
     targetLanguages: v.array(TargetLanguageSchema),
 })
 
-export const StorageSchema = v.object({
-    id: v.optional(v.number()),
-    fileName: v.nullable(v.string()),
-})
-
 export const ProjectsSchema = v.object({
     data: v.nullable(ProjectSchema),
-})
-
-export const StoragesSchema = v.object({
-    data: v.nullable(StorageSchema),
 })
 
 export const FileSchema = v.object({

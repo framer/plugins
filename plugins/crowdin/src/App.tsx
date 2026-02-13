@@ -1,6 +1,6 @@
 import cx from "classnames"
 import { framer, type Locale, type LocalizationData, useIsAllowedTo } from "framer-plugin"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ConfirmationModal } from "./ConfirmationModal"
 import {

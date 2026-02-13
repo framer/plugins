@@ -7,13 +7,7 @@ import {
     type LocalizedValueStatus,
 } from "framer-plugin"
 import * as v from "valibot"
-import {
-    CreateFileResponseSchema,
-    FileResponseSchema,
-    LanguagesResponseSchema,
-    ProjectsSchema,
-    StoragesSchema,
-} from "./api-types"
+import { CreateFileResponseSchema, FileResponseSchema, LanguagesResponseSchema, ProjectsSchema } from "./api-types"
 
 const API_URL = "https://api.crowdin.com/api/v2"
 const IS_LOCALHOST = window.location.hostname === "localhost"

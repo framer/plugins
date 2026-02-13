@@ -269,7 +269,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
                 return { state, effects }
             }
 
-            effects.push(log("debug", `Received file list: ${event.files.length} files`))
+            effects.push(log("debug", `Received file list: ${pluralize(event.files.length, "file")}`))
 
             // During initial file list, detect conflicts between remote snapshot and local files
             effects.push({
@@ -313,7 +313,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 
             // Upload local-only files
             if (localOnly.length > 0) {
-                effects.push(log("debug", `Uploading ${localOnly.length} local-only files`))
+                effects.push(log("debug", `Uploading ${pluralize(localOnly.length, "local-only file")}`))
                 for (const file of localOnly) {
                     effects.push({
                         type: "SEND_MESSAGE",
@@ -691,6 +691,10 @@ async function executeEffect(
                 config.projectDir = directoryInfo.directory
                 config.projectDirCreated = directoryInfo.created
 
+                if (directoryInfo.nameCollision) {
+                    warn(`Folder ${projectName} already exists`)
+                }
+
                 // May allow customization of file directory in the future
                 config.filesDir = `${config.projectDir}/files`
                 debug(`Files directory: ${config.filesDir}`)
@@ -702,7 +706,7 @@ async function executeEffect(
         case "LOAD_PERSISTED_STATE": {
             if (config.projectDir) {
                 await fileMetadataCache.initialize(config.projectDir)
-                debug(`Loaded persisted metadata for ${fileMetadataCache.size()} files`)
+                debug(`Loaded persisted metadata for ${pluralize(fileMetadataCache.size(), "file")}`)
             }
             return []
         }
@@ -950,7 +954,7 @@ async function executeEffect(
                 // Only show reconnect message if we actually showed the disconnect notice
                 if (didShowDisconnect()) {
                     success(
-                        `Reconnected, synced ${effect.totalCount} files (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
+                        `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
                     )
                     status("Watching for changes...")
                 }
@@ -968,14 +972,14 @@ async function executeEffect(
                     success(`Syncing to ${relativeDirectory} folder`)
                 }
             } else if (relativeDirectory && config.projectDirCreated) {
-                success(`Synced into ${relativeDirectory} (${effect.updatedCount} files added)`)
+                success(`Created ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} added)`)
             } else if (relativeDirectory) {
                 success(
-                    `Synced into ${relativeDirectory} (${effect.updatedCount} files updated, ${effect.unchangedCount} unchanged)`
+                    `Synced into ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} updated, ${effect.unchangedCount} unchanged)`
                 )
             } else {
                 success(
-                    `Synced ${effect.totalCount} files (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
+                    `Synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
                 )
             }
             // Git init after first sync so initial commit includes all synced files
@@ -1120,7 +1124,7 @@ export async function start(config: Config): Promise<void> {
                 break
 
             case "file-list": {
-                debug(`Received file list: ${message.files.length} files`)
+                debug(`Received file list: ${pluralize(message.files.length, "file")}`)
                 event = { type: "REMOTE_FILE_LIST", files: message.files }
                 break
             }

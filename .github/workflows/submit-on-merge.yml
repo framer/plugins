@@ -15,8 +15,7 @@ jobs:
     if: |
       github.event.pull_request.merged == true &&
       contains(github.event.pull_request.labels.*.name, 'Auto submit to Marketplace on merge')
-    # FIXME: Should be production
-    environment: development
+    environment: production
 
     steps:
       - name: Checkout repository
@@ -58,7 +57,6 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_ERROR_WEBHOOK_URL: ${{ secrets.SLACK_ERROR_WEBHOOK_URL }}
           RETOOL_URL: ${{ secrets.RETOOL_URL }}
-          # FIXME: Should be production
-          FRAMER_ENV: development
+          FRAMER_ENV: production
           GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

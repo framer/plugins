@@ -1,6 +1,6 @@
 import cx from "classnames"
 import { framer, type Locale, type LocalizationData, useIsAllowedTo } from "framer-plugin"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import "./App.css"
 import { ConfirmationModal } from "./ConfirmationModal"
 import {
@@ -22,7 +22,7 @@ import {
     uploadStorage,
 } from "./xliff"
 
-const PLUGIN_WIDTH = 280
+const PLUGIN_UI_OPTIONS = { width: 280 }
 const NO_PROJECT_PLACEHOLDER = "Select…"
 const ALL_LOCALES_ID = "__ALL_LOCALES__"
 
@@ -57,7 +57,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [importConfirmation, setImportConfirmation] = useState<ImportConfirmationState | null>(null)
     const validatingAccessTokenRef = useRef<boolean>(false)
 
-    useDynamicPluginHeight({ width: PLUGIN_WIDTH })
+    useDynamicPluginHeight(PLUGIN_UI_OPTIONS)
 
     // Set close warning when importing or exporting
     useEffect(() => {
@@ -377,6 +377,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         setAvailableLocaleIds([])
         setSelectedLocaleIds([])
         setLocalesLoading(true)
+
         let cancelled = false
         const task = async () => {
             let targetLanguageIds: string[] = []
@@ -397,12 +398,14 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 }
             }
 
-            // Locales that exist in both Framer and the selected Crowdin project
-            const availableLocaleIds = locales
-                .filter(locale => targetLanguageIds.includes(locale.code))
-                .map(locale => locale.id)
-            setAvailableLocaleIds(availableLocaleIds)
-            setSelectedLocaleIds(availableLocaleIds)
+            if (!cancelled) {
+                // Locales that exist in both Framer and the selected Crowdin project
+                const availableLocaleIds = locales
+                    .filter(locale => targetLanguageIds.includes(locale.code))
+                    .map(locale => locale.id)
+                setAvailableLocaleIds(availableLocaleIds)
+                setSelectedLocaleIds(availableLocaleIds)
+            }
         }
         void task()
 

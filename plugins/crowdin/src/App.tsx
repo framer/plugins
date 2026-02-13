@@ -869,7 +869,7 @@ function ConfirmationModal({
         <main>
             <hr />
             <div className="heading">
-                <h1>Update Locale{totalSteps === 1 ? "" : "s"}</h1>
+                <h1>Import Locale{totalSteps === 1 ? "" : "s"}</h1>
                 <span className="step-indicator">
                     {currentStep} / {totalSteps}
                 </span>

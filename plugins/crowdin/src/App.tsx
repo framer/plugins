@@ -14,6 +14,7 @@ import {
     updateTranslation,
     uploadStorage,
 } from "./xliff"
+import { animate, motion, useMotionValue, useTransform } from "motion/react"
 
 const PLUGIN_WIDTH = 280
 const NO_PROJECT_PLACEHOLDER = "Select…"
@@ -64,6 +65,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [crowdinTargetLanguageCount, setCrowdinTargetLanguageCount] = useState<number>(0)
     const [localesLoading, setLocalesLoading] = useState(false)
     const [operationInProgress, setOperationInProgress] = useState<boolean>(false)
+    const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(null)
     const [importConfirmation, setImportConfirmation] = useState<ImportConfirmationState | null>(null)
     const validatingAccessTokenRef = useRef<boolean>(false)
 
@@ -304,6 +306,11 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         setOperationInProgress(true)
         const localesToSync = locales.filter(locale => localeIdsToSync.includes(locale.id))
 
+        // Show progress bar if exporting multiple locales
+        if (localesToSync.length > 1) {
+            setExportProgress({ current: 0, total: localesToSync.length })
+        }
+
         try {
             const groups = await framer.getLocalizationGroups()
             const defaultLocale = await framer.getDefaultLocale()
@@ -329,6 +336,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     const errMsg = await uploadRes.text()
                     framer.notify(`Crowdin upload failed for ${locale.code}: ${errMsg}`, { variant: "error" })
                 }
+
+                setExportProgress(prev => (prev ? { ...prev, current: Math.min(prev.current + 1, prev.total) } : prev))
             }
 
             const count = localesToSync.length
@@ -344,6 +353,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             })
         } finally {
             setOperationInProgress(false)
+            setExportProgress(null)
         }
     }
 
@@ -476,6 +486,10 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 }}
             />
         )
+    }
+
+    if (mode === "export" && exportProgress && exportProgress.total > 1) {
+        return <Progress current={exportProgress.current} total={exportProgress.total} />
     }
 
     return (
@@ -919,4 +933,37 @@ async function validateAccessTokenAndGetProjects(
     } else {
         return { isValid: false, projects: null }
     }
+}
+
+export function Progress({ current, total }: { current: number; total: number }) {
+    const percent = (current / total) * 100
+    const formatter = new Intl.NumberFormat("en-US")
+    const formattedCurrent = formatter.format(current)
+    const formattedTotal = formatter.format(total)
+
+    const animatedValue = useMotionValue(0)
+
+    useEffect(() => {
+        void animate(animatedValue, percent, { type: "tween" })
+    }, [percent, animatedValue])
+
+    return (
+        <main>
+            <div className="progress-bar-text">
+                <span className="progress-bar-percent">{Math.round(percent)}%</span>
+                <span>
+                    {formattedCurrent} / {formattedTotal}
+                </span>
+            </div>
+            <div className="progress-bar">
+                <motion.div
+                    className="progress-bar-fill"
+                    style={{
+                        width: useTransform(() => `${animatedValue.get()}%`),
+                    }}
+                />
+            </div>
+            <p>Exporting… please keep the plugin open until the process is complete.</p>
+        </main>
+    )
 }

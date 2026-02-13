@@ -39,7 +39,8 @@ export async function getProjectHashFromCwd(): Promise<string | null> {
 export async function findOrCreateProjectDirectory(
     projectHash: string,
     projectName?: string,
-    explicitDirectory?: string
+    explicitDirectory?: string,
+    baseDirectory?: string
 ): Promise<{ directory: string; created: boolean }> {
     if (explicitDirectory) {
         const resolved = path.resolve(explicitDirectory)
@@ -47,7 +48,7 @@ export async function findOrCreateProjectDirectory(
         return { directory: resolved, created: false }
     }
 
-    const cwd = process.cwd()
+    const cwd = baseDirectory ?? process.cwd()
     const existing = await findExistingProjectDirectory(cwd, projectHash)
     if (existing) {
         return { directory: existing, created: false }
@@ -60,7 +61,10 @@ export async function findOrCreateProjectDirectory(
     const directoryName = toDirectoryName(projectName)
     const pkgName = toPackageName(projectName)
     const shortId = shortProjectHash(projectHash)
-    const projectDirectory = path.join(cwd, directoryName || shortId)
+    // Include short project hash in directory name to avoid collisions
+    // when multiple projects share the same name
+    const dirSuffix = directoryName ? `${directoryName}-${shortId}` : `project-${shortId}`
+    const projectDirectory = path.join(cwd, dirSuffix)
 
     await fs.mkdir(path.join(projectDirectory, "files"), { recursive: true })
     const pkg: PackageJson = {

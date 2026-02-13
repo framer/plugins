@@ -454,7 +454,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         setImportConfirmation({ ...importConfirmation, currentIndex: nextIndex })
                     }
                 }}
-                replace={() => {
+                update={() => {
                     const nextConfirmed = new Set(confirmedLocaleIds)
                     if (currentLocale) nextConfirmed.add(currentLocale.id)
                     const nextIndex = currentIndex + 1
@@ -472,7 +472,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         })
                     }
                 }}
-                replaceAll={() => {
+                updateAll={() => {
                     const nextConfirmed = new Set(confirmedLocaleIds)
                     for (let i = currentIndex; i < confirmLocales.length; i++) {
                         const loc = confirmLocales[i]
@@ -852,16 +852,16 @@ function ConfirmationModal({
     totalSteps,
     remainingLocaleCount,
     skip,
-    replace,
-    replaceAll,
+    update,
+    updateAll,
 }: {
     localeName: string
     currentStep: number
     totalSteps: number
     remainingLocaleCount: number
     skip: () => void
-    replace: () => void
-    replaceAll: () => void
+    update: () => void
+    updateAll: () => void
 }) {
     const [allChecked, setAllChecked] = useState(false)
 
@@ -869,14 +869,14 @@ function ConfirmationModal({
         <main>
             <hr />
             <div className="heading">
-                <h1>Replace Locale{totalSteps === 1 ? "" : "s"}</h1>
+                <h1>Update Locale{totalSteps === 1 ? "" : "s"}</h1>
                 <span className="step-indicator">
                     {currentStep} / {totalSteps}
                 </span>
             </div>
             <hr />
             <p>
-                By importing you are going to override the existing locale <strong>"{localeName}"</strong>.
+                By importing you are going to modify the existing locale <strong>“{localeName}”</strong>.
             </p>
             {totalSteps > 1 && (
                 <label className="checkbox-label">
@@ -894,8 +894,8 @@ function ConfirmationModal({
             )}
             <div className="button-row">
                 <button onClick={skip}>Skip</button>
-                <button onClick={allChecked ? replaceAll : replace} className="framer-button-primary">
-                    Replace
+                <button onClick={allChecked ? updateAll : update} className="framer-button-primary">
+                    Update
                 </button>
             </div>
         </main>

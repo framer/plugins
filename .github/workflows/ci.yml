@@ -104,6 +104,10 @@ jobs:
               if: steps.changed-files.outputs.any_changed == 'true'
               run: yarn
 
+            - name: Test scripts
+              if: steps.changed-files.outputs.any_changed == 'true'
+              run: yarn run test:scripts
+
             - name: Get changed workspaces
               if: steps.changed-files.outputs.any_changed == 'true'
               id: changed-workspaces

@@ -1,0 +1,124 @@
+name: Submit Plugin
+
+on:
+  # Manual trigger from GitHub UI
+  workflow_dispatch:
+    inputs:
+      plugin_path:
+        description: 'Plugin directory (e.g., plugins/csv-import)'
+        required: true
+        type: string
+      changelog:
+        description: 'Changelog for this release'
+        required: true
+        type: string
+      environment:
+        description: 'Environment (development/production)'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - production
+      dry_run:
+        description: 'Dry run (skip submission and tagging)'
+        required: false
+        default: false
+        type: boolean
+
+  # Reusable workflow - can be called from other repos (e.g., framer/workshop)
+  workflow_call:
+    inputs:
+      plugin_path:
+        description: 'Plugin directory (e.g., plugins/csv-import)'
+        required: true
+        type: string
+      changelog:
+        description: 'Changelog for this release'
+        required: true
+        type: string
+      environment:
+        description: 'Environment (development/production)'
+        required: true
+        default: 'development'
+        type: string
+      dry_run:
+        description: 'Dry run (skip submission and tagging)'
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      SESSION_TOKEN:
+        description: 'Framer session cookie'
+        required: true
+      FRAMER_ADMIN_SECRET:
+        description: 'Framer admin API key'
+        required: true
+      SLACK_WEBHOOK_URL:
+        description: 'Slack webhook URL for notifications'
+        required: false
+      RETOOL_URL:
+        description: 'Retool dashboard URL for Slack notifications'
+        required: false
+      SLACK_ERROR_WEBHOOK_URL:
+        description: 'Slack webhook URL for error notifications'
+        required: false
+
+jobs:
+  submit:
+    name: Submit Plugin to Marketplace
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git tags and diff
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "marketplace@framer.team"
+          git config --global user.name "Framer Marketplace"
+
+      - name: Validate plugin path
+        run: |
+          if [ ! -d "${{ github.workspace }}/${{ inputs.plugin_path }}" ]; then
+            echo "Error: Plugin path '${{ inputs.plugin_path }}' does not exist"
+            echo ""
+            echo "Available plugins:"
+            ls -1 plugins/
+            exit 1
+          fi
+          if [ ! -f "${{ github.workspace }}/${{ inputs.plugin_path }}/framer.json" ]; then
+            echo "Error: No framer.json found in '${{ inputs.plugin_path }}'"
+            exit 1
+          fi
+          echo "Plugin path validated: ${{ inputs.plugin_path }}"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .tool-versions
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build framer-plugin-tools
+        run: yarn turbo run build --filter=framer-plugin-tools
+
+      - name: Submit plugin
+        run: yarn tsx scripts/submit-plugin.ts
+        env:
+          PLUGIN_PATH: ${{ github.workspace }}/${{ inputs.plugin_path }}
+          REPO_ROOT: ${{ github.workspace }}
+          CHANGELOG: ${{ inputs.changelog }}
+          SESSION_TOKEN: ${{ secrets.SESSION_TOKEN }}
+          FRAMER_ADMIN_SECRET: ${{ secrets.FRAMER_ADMIN_SECRET }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_ERROR_WEBHOOK_URL: ${{ secrets.SLACK_ERROR_WEBHOOK_URL }}
+          RETOOL_URL: ${{ secrets.RETOOL_URL }}
+          FRAMER_ENV: ${{ inputs.environment }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

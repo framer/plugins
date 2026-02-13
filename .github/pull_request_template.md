@@ -4,6 +4,12 @@
 
 This pull request …
 
+### Changelog
+
+<!-- Required when using the "Auto submit to Marketplace on merge" label. Describe user-facing changes in bullet points. -->
+
+-
+
 ### Testing
 
 <!-- List of steps to verify the code this pull request changed. If it is a Plugin additions, what are the core workflows to test. If it is a bug fix, what are the steps to verify it is fixed -->

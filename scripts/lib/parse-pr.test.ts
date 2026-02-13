@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { changelogToHtml } from "./changelog"
 import { extractChangelog, parseChangedPlugins } from "./parse-pr"
 
 describe("extractChangelog", () => {
@@ -208,6 +209,33 @@ MAde some changes
         expect(result).toBe("- Actual changelog item")
         expect(result).not.toContain("<!--")
         expect(result).not.toContain("-->")
+    })
+})
+
+describe("changelogToHtml", () => {
+    it("converts bullet lists to ul/li HTML", async () => {
+        const markdown = "- Item one\n- Item two\n- Item three"
+        const html = await changelogToHtml(markdown)
+        expect(html).toContain("<ul>")
+        expect(html).toContain("<li>Item one</li>")
+        expect(html).toContain("<li>Item two</li>")
+        expect(html).toContain("<li>Item three</li>")
+        expect(html).toContain("</ul>")
+    })
+
+    it("converts plain text to paragraph tags", async () => {
+        const markdown = "Fixed a critical bug in the authentication flow."
+        const html = await changelogToHtml(markdown)
+        expect(html).toContain("<p>Fixed a critical bug in the authentication flow.</p>")
+    })
+
+    it("converts mixed content (text + bullets)", async () => {
+        const markdown = "Release notes:\n\n- Added dark mode\n- Fixed login bug"
+        const html = await changelogToHtml(markdown)
+        expect(html).toContain("<p>Release notes:</p>")
+        expect(html).toContain("<ul>")
+        expect(html).toContain("<li>Added dark mode</li>")
+        expect(html).toContain("<li>Fixed login bug</li>")
     })
 })
 

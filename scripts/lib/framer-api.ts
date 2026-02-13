@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 import * as v from "valibot"
+import { changelogToHtml } from "./changelog"
 import type { Environment } from "./env"
 import { getURL } from "./env"
 import { log } from "./logging"
@@ -124,7 +125,7 @@ export async function submitPlugin(zipFilePath: string, plugin: Plugin, env: Env
 
     const formData = new FormData()
     formData.append("file", blob, "plugin.zip")
-    formData.append("content", env.CHANGELOG)
+    formData.append("content", await changelogToHtml(env.CHANGELOG))
 
     const response = await fetch(url, {
         method: "POST",

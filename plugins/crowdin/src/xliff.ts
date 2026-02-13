@@ -16,6 +16,7 @@ import {
 } from "./api-types"
 
 const API_URL = "https://api.crowdin.com/api/v2"
+const IS_LOCALHOST = window.location.hostname === "localhost"
 
 // -------------------- Types --------------------
 
@@ -138,7 +139,7 @@ ${xliffUnits.join("\n")}
   </file>
 </xliff>`
     } catch (e) {
-        console.log(e)
+        console.error(e)
     }
     return ""
 }
@@ -268,9 +269,12 @@ export async function ensureSourceFile(
 
     const existingFile = parsed.data.find(f => f.data.name === filename)
     if (existingFile) {
-        console.log(`Source file already exists in Crowdin: ${filename} (id: ${existingFile.data.id})`)
+        if (IS_LOCALHOST) {
+            console.log(`Source file already exists in Crowdin: ${filename} (id: ${existingFile.data.id})`)
+        }
         return existingFile.data.id
     }
+
     // Step 2: Upload storage for new source file
     const xliffContent = generateSourceXliff(defaultLocale, groups)
     const storageRes = await uploadStorage(xliffContent, accessToken, filename)
@@ -291,7 +295,9 @@ async function checkAndCreateLanguage(projectId: number, language: Locale, acces
     const targetLanguage = languages.find(l => l.id === language.code)
 
     if (!targetLanguage) {
-        console.log("no target language found")
+        if (IS_LOCALHOST) {
+            console.log("No target language found")
+        }
         throw new Error(
             `Language "${language.code}" is not available in Crowdin. Please check your locale's region and language code in Framer`
         )
@@ -322,7 +328,9 @@ export async function ensureLanguageInProject(
     const currentLanguages = await getProjectTargetLanguageIds(projectId, accessToken)
 
     if (currentLanguages.includes(newLanguageId)) {
-        console.log(`Language ${newLanguageId} already exists in project`)
+        if (IS_LOCALHOST) {
+            console.log(`Language "${newLanguageId}" already exists in project`)
+        }
         return
     }
 
@@ -466,6 +474,32 @@ export async function getFileId(projectId: number, fileName: string, accessToken
     }
 }
 
+/** Extract human-readable messages from Crowdin API error response shape: { errors: [{ error: { errors: [{ message }] } }] } */
+function extractCrowdinErrorMessages(body: unknown): string | null {
+    if (typeof body !== "object" || body === null || !("errors" in body)) return null
+    const errors = (body as { errors: unknown[] }).errors
+    if (!Array.isArray(errors)) return null
+    const messages: string[] = []
+    for (const item of errors) {
+        if (typeof item !== "object" || item === null || !("error" in item)) continue
+        const err = (item as { error: unknown }).error
+        if (typeof err !== "object" || err === null || !("errors" in err)) continue
+        const errList = (err as { errors: unknown[] }).errors
+        if (!Array.isArray(errList)) continue
+        for (const e of errList) {
+            if (
+                typeof e === "object" &&
+                e !== null &&
+                "message" in e &&
+                typeof (e as { message: unknown }).message === "string"
+            ) {
+                messages.push((e as { message: string }).message)
+            }
+        }
+    }
+    return messages.length > 0 ? messages.join(" ") : null
+}
+
 export async function createFile(
     projectId: number,
     storageId: number,
@@ -486,6 +520,12 @@ export async function createFile(
         })
 
         const fileData: unknown = await fileRes.json()
+
+        if (!fileRes.ok) {
+            const messages = extractCrowdinErrorMessages(fileData)
+            throw new Error(messages ?? `Crowdin API error (${fileRes.status})`)
+        }
+
         const parsed = v.parse(CreateFileResponseSchema, fileData)
         return parsed.data.id
     } catch (err) {

@@ -422,7 +422,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     }
 
     if (mode === null) {
-        return <Home setMode={setMode} />
+        return <Home setMode={setMode} locales={locales} />
     }
 
     if (mode === "import" && importConfirmation) {
@@ -499,8 +499,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     )
 }
 
-function Home({ setMode }: { setMode: (mode: "export" | "import") => void }) {
+function Home({ setMode, locales }: { setMode: (mode: "export" | "import") => void; locales: readonly Locale[] }) {
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
+    const hasLocales = locales.length > 0
 
     return (
         <main className="home">
@@ -517,6 +518,8 @@ function Home({ setMode }: { setMode: (mode: "export" | "import") => void }) {
                     onClick={() => {
                         setMode("export")
                     }}
+                    disabled={!hasLocales}
+                    title={!hasLocales ? "No locales in project" : undefined}
                 >
                     Export
                 </button>
@@ -573,8 +576,13 @@ function ConfigurationPage({
 
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
     const hasSelectedLocales = selectedLocaleIds === ALL_LOCALES_ID || selectedLocaleIds.length > 0
+    const hasLocalesForMode = mode === "export" ? availableLocaleIds.length > 0 : true
     const canPerformAction =
-        accessToken && projectId && hasSelectedLocales && (mode === "import" ? isAllowedToSetLocalizationData : true)
+        accessToken &&
+        projectId &&
+        hasLocalesForMode &&
+        hasSelectedLocales &&
+        (mode === "import" ? isAllowedToSetLocalizationData : true)
     const accessTokenValueHasChanged = accessTokenValue !== accessToken
 
     useEffect(() => {

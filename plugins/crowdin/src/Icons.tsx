@@ -37,7 +37,7 @@ export function CheckIcon() {
                 d="M 0 2.5 L 2.118 4.5 L 6 0"
                 fill="transparent"
                 strokeWidth="1.5"
-                stroke="rgb(64, 222, 127)"
+                stroke="currentColor"
                 strokeLinecap="round"
                 strokeLinejoin="round"
             ></path>

@@ -33,7 +33,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: niekert/plugins
-          ref: reusable-submit-workflow
           path: tooling
           sparse-checkout: scripts
 

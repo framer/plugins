@@ -117,8 +117,12 @@ jobs:
         with:
           node-version-file: tooling/.tool-versions
 
-      - name: Install dependencies
+      - name: Install tooling dependencies
         working-directory: tooling
+        run: yarn install
+
+      - name: Install source plugin dependencies
+        working-directory: source
         run: yarn install
 
       - name: Build framer-plugin-tools

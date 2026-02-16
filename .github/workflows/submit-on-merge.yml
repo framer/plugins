@@ -1,0 +1,62 @@
+name: Auto submit to Marketplace on merge
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+jobs:
+  submit:
+    name: Submit Changed Plugins
+    runs-on: ubuntu-latest
+    # Only run if PR was merged (not just closed) and has "Auto submit to Marketplace on merge" label
+    if: |
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'Auto submit to Marketplace on merge')
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git tags and diff
+
+      - name: Configure git identity
+        run: |
+          git config --global user.email "marketplace@framer.team"
+          git config --global user.name "Framer Marketplace"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .tool-versions
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build framer-plugin-tools
+        working-directory: packages/plugin-tools
+        run: yarn build
+
+      - name: Write PR body to file
+        run: cat <<< "$PR_BODY" > /tmp/pr-body.txt
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+
+      - name: Submit changed plugins
+        run: |
+          export CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+          yarn tsx scripts/submit-on-merge.ts
+        env:
+          DEBUG: "1"
+          PR_BODY_FILE: /tmp/pr-body.txt
+          SESSION_TOKEN: ${{ secrets.SESSION_TOKEN }}
+          FRAMER_ADMIN_SECRET: ${{ secrets.FRAMER_ADMIN_SECRET }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_ERROR_WEBHOOK_URL: ${{ secrets.SLACK_ERROR_WEBHOOK_URL }}
+          RETOOL_URL: ${{ secrets.RETOOL_URL }}
+          FRAMER_ENV: production
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

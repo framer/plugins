@@ -67,6 +67,9 @@ on:
       SLACK_ERROR_WEBHOOK_URL:
         description: 'Slack webhook URL for error notifications'
         required: false
+      PLUGIN_BUILD_SECRETS:
+        description: 'Newline-separated KEY=VALUE pairs to set as env vars during build'
+        required: false
 
 jobs:
   submit:
@@ -128,6 +131,9 @@ jobs:
       - name: Build framer-plugin-tools
         working-directory: tooling
         run: yarn turbo run build --filter=framer-plugin-tools
+
+      - name: Set plugin build environment
+        run: echo "${{ secrets.PLUGIN_BUILD_SECRETS }}" >> "$GITHUB_ENV"
 
       - name: Submit plugin
         working-directory: tooling

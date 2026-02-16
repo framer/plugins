@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  submit:
+  submit-on-merge:
     name: Submit Changed Plugins
     runs-on: ubuntu-latest
     # Only run if PR was merged (not just closed) and has "Auto submit to Marketplace on merge" label

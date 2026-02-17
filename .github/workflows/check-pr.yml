@@ -14,7 +14,7 @@ jobs:
   check:
     name: PR Description Check
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]'
+    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && !contains(github.event.pull_request.title, '[skip ci]')
     outputs:
       has_changelog: ${{ steps.validate.outputs.has_changelog }}
       changelog: ${{ steps.validate.outputs.changelog }}

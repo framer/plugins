@@ -1,4 +1,4 @@
-name: Check PR
+name: Check Plugin is ready to submit
 
 on:
   workflow_call:

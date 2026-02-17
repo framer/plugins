@@ -16,7 +16,7 @@
  */
 
 import { appendFileSync } from "fs"
-import { extractChangelog } from "./lib/parse-pr"
+import { extractChangelog } from "./lib/parse-pr.ts"
 
 const prBody = process.env.PR_BODY?.trim()
 const requireChangelog = process.env.REQUIRE_CHANGELOG === "true"

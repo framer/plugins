@@ -32,7 +32,7 @@ jobs:
       - name: Checkout tooling
         uses: actions/checkout@v4
         with:
-          repository: niekert/plugins
+          repository: framer/plugins
           path: tooling
           sparse-checkout: scripts
 

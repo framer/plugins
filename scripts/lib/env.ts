@@ -9,7 +9,8 @@ export const BooleanEnvSchema = v.pipe(
 
 export const EnvSchema = v.object({
     PLUGIN_PATH: v.pipe(v.string(), v.minLength(1)),
-    CHANGELOG: v.pipe(v.string(), v.minLength(1)),
+    CHANGELOG: v.optional(v.pipe(v.string(), v.minLength(1))),
+    PR_BODY: v.optional(v.string()),
     SLACK_WEBHOOK_URL: v.optional(v.string()),
     SLACK_ERROR_WEBHOOK_URL: v.optional(v.string()),
     RETOOL_URL: v.optional(v.string()),

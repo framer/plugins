@@ -111,7 +111,12 @@ export function loadFramerJsonFile(pluginPath: string): FramerJson {
     return framerJson
 }
 
-export async function submitPlugin(zipFilePath: string, plugin: Plugin, env: Environment): Promise<SubmissionResponse> {
+export async function submitPlugin(
+    zipFilePath: string,
+    plugin: Plugin,
+    env: Environment,
+    changelog: string
+): Promise<SubmissionResponse> {
     if (!env.SESSION_TOKEN || !env.FRAMER_ADMIN_SECRET) {
         throw new Error("Session token and Framer admin secret are required for submission")
     }
@@ -125,7 +130,7 @@ export async function submitPlugin(zipFilePath: string, plugin: Plugin, env: Env
 
     const formData = new FormData()
     formData.append("file", blob, "plugin.zip")
-    formData.append("content", await changelogToHtml(env.CHANGELOG))
+    formData.append("content", await changelogToHtml(changelog))
 
     const response = await fetch(url, {
         method: "POST",

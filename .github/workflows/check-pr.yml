@@ -1,0 +1,64 @@
+name: Check Plugin is ready to submit
+
+on:
+  workflow_call:
+    outputs:
+      has_changelog:
+        description: 'Whether the PR body contains a changelog section'
+        value: ${{ jobs.check.outputs.has_changelog }}
+      changelog:
+        description: 'Extracted changelog text from the PR body'
+        value: ${{ jobs.check.outputs.changelog }}
+
+jobs:
+  check:
+    name: PR Description Check
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]' && !contains(github.event.pull_request.title, '[skip ci]')
+    outputs:
+      has_changelog: ${{ steps.validate.outputs.has_changelog }}
+      changelog: ${{ steps.validate.outputs.changelog }}
+
+    steps:
+      - name: Check if Auto Submit label is present
+        id: check-label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels || []
+            const hasSubmitLabel = labels.some(label => label.name === 'Auto submit to Marketplace on merge')
+            core.setOutput('require_changelog', hasSubmitLabel ? 'true' : 'false')
+
+      - name: Checkout tooling
+        uses: actions/checkout@v4
+        with:
+          repository: framer/plugins
+          path: tooling
+          sparse-checkout: scripts
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate PR body
+        id: validate
+        working-directory: tooling
+        run: node --experimental-strip-types scripts/validate-pr-body.ts
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          REQUIRE_CHANGELOG: ${{ steps.check-label.outputs.require_changelog }}
+
+      - name: Add Auto Submit on merge label
+        if: >-
+          steps.validate.outputs.has_changelog == 'true' &&
+          (github.event.action == 'opened' || github.event.action == 'ready_for_review')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              labels: ['Auto submit to Marketplace on merge']
+            })

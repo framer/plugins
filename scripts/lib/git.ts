@@ -1,8 +1,7 @@
 import { execFileSync } from "node:child_process"
-import type { Environment } from "./env"
 import { log } from "./logging"
 
-export function createGitTag(pluginName: string, version: number, repoRoot: string, env: Environment): void {
+export function createGitTag(pluginName: string, version: number, repoRoot: string, changelog: string): void {
     const tagName = `${pluginName.toLowerCase().replace(/\s+/g, "-")}-v${version.toString()}`
 
     log.info(`Creating git tag: ${tagName}`)
@@ -16,7 +15,7 @@ export function createGitTag(pluginName: string, version: number, repoRoot: stri
             // Tag doesn't exist, that's fine
         }
 
-        execFileSync("git", ["tag", "-a", tagName, "-m", env.CHANGELOG.trim()], {
+        execFileSync("git", ["tag", "-a", tagName, "-m", changelog.trim()], {
             cwd: repoRoot,
             stdio: "inherit",
         })

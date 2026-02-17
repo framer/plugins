@@ -26,16 +26,20 @@ on:
         default: false
         type: boolean
 
-  # Reusable workflow - can be called from other repos (e.g., framer/workshop)
+  # Reusable workflow - can be called from other repos
   workflow_call:
     inputs:
       plugin_path:
-        description: 'Plugin directory (e.g., plugins/csv-import)'
+        description: 'Plugin directory relative to repo root (e.g., "plugins/csv-import" or ".")'
         required: true
         type: string
       changelog:
-        description: 'Changelog for this release'
-        required: true
+        description: 'Changelog text (mutually exclusive with pr_body)'
+        required: false
+        type: string
+      pr_body:
+        description: 'Full PR body — changelog will be extracted (mutually exclusive with changelog)'
+        required: false
         type: string
       environment:
         description: 'Environment (development/production)'
@@ -63,6 +67,9 @@ on:
       SLACK_ERROR_WEBHOOK_URL:
         description: 'Slack webhook URL for error notifications'
         required: false
+      PLUGIN_BUILD_SECRETS:
+        description: 'Newline-separated KEY=VALUE pairs to set as env vars during build'
+        required: false
 
 jobs:
   submit:
@@ -71,26 +78,38 @@ jobs:
     environment: ${{ inputs.environment }}
 
     steps:
-      - name: Checkout repository
+      # Checkout the caller's repo (plugin source + git history for tags)
+      - name: Checkout plugin source
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Full history for git tags and diff
+          fetch-depth: 0
+          path: source
+
+      # Checkout the plugins repo (scripts + tooling).
+      # For workflow_dispatch this is redundant (same repo), but keeps the flow uniform.
+      - name: Checkout tooling
+        uses: actions/checkout@v4
+        with:
+          repository: niekert/plugins
+          path: tooling
 
       - name: Configure git identity
+        working-directory: source
         run: |
-          git config --global user.email "marketplace@framer.team"
-          git config --global user.name "Framer Marketplace"
+          git config user.email "marketplace@framer.team"
+          git config user.name "Framer Marketplace"
 
       - name: Validate plugin path
+        working-directory: source
         run: |
-          if [ ! -d "${{ github.workspace }}/${{ inputs.plugin_path }}" ]; then
+          if [ ! -d "${{ inputs.plugin_path }}" ]; then
             echo "Error: Plugin path '${{ inputs.plugin_path }}' does not exist"
             echo ""
-            echo "Available plugins:"
-            ls -1 plugins/
+            echo "Available contents:"
+            ls -1
             exit 1
           fi
-          if [ ! -f "${{ github.workspace }}/${{ inputs.plugin_path }}/framer.json" ]; then
+          if [ ! -f "${{ inputs.plugin_path }}/framer.json" ]; then
             echo "Error: No framer.json found in '${{ inputs.plugin_path }}'"
             exit 1
           fi
@@ -99,20 +118,31 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: .tool-versions
+          node-version-file: tooling/.tool-versions
 
-      - name: Install dependencies
+      - name: Install tooling dependencies
+        working-directory: tooling
+        run: yarn install
+
+      - name: Install source plugin dependencies
+        working-directory: source
         run: yarn install
 
       - name: Build framer-plugin-tools
+        working-directory: tooling
         run: yarn turbo run build --filter=framer-plugin-tools
 
+      - name: Set plugin build environment
+        run: echo "${{ secrets.PLUGIN_BUILD_SECRETS }}" >> "$GITHUB_ENV"
+
       - name: Submit plugin
+        working-directory: tooling
         run: yarn tsx scripts/submit-plugin.ts
         env:
-          PLUGIN_PATH: ${{ github.workspace }}/${{ inputs.plugin_path }}
-          REPO_ROOT: ${{ github.workspace }}
+          PLUGIN_PATH: ${{ github.workspace }}/source/${{ inputs.plugin_path }}
+          REPO_ROOT: ${{ github.workspace }}/source
           CHANGELOG: ${{ inputs.changelog }}
+          PR_BODY: ${{ inputs.pr_body }}
           SESSION_TOKEN: ${{ secrets.SESSION_TOKEN }}
           FRAMER_ADMIN_SECRET: ${{ secrets.FRAMER_ADMIN_SECRET }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

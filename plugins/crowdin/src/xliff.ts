@@ -1,11 +1,4 @@
-import {
-    framer,
-    type Locale,
-    type LocalizationData,
-    type LocalizationGroup,
-    type LocalizationSource,
-    type LocalizedValueStatus,
-} from "framer-plugin"
+import { framer, type Locale, type LocalizationData, type LocalizationGroup } from "framer-plugin"
 import * as v from "valibot"
 import { CreateFileResponseSchema, FileResponseSchema, LanguagesResponseSchema, ProjectsSchema } from "./api-types"
 
@@ -84,25 +77,6 @@ export async function createValuesBySourceFromXliff(
     return valuesBySource
 }
 
-// The two functions below have `undefined` in their return types as to future-proof against LocalizedValueStatus and
-// XliffState unions being expanded in minor releases.
-
-function statusToXliffState(status: LocalizedValueStatus): "new" | "needs-translation" | "translated" | "signed-off" {
-    switch (status) {
-        case "new":
-            return "new"
-        case "needsReview":
-            return "needs-translation"
-        case "done":
-            return "translated"
-        case "warning":
-            // Crowdin doesn’t know “warning”, map it to translated but we can add subState note
-            return "translated"
-        default:
-            return "new"
-    }
-}
-
 function escapeXml(unsafe: string): string {
     return unsafe
         .replace(/&/g, "&amp;")
@@ -112,22 +86,6 @@ function escapeXml(unsafe: string): string {
         .replace(/'/g, "&apos;")
 }
 
-function generateUnit(source: LocalizationSource, targetLocale: Locale, groupName?: string): string {
-    const localeData = source.valueByLocale[targetLocale.id]
-    if (!localeData) {
-        throw new Error(`No locale data found for locale: ${targetLocale.id}`)
-    }
-
-    const state = statusToXliffState(localeData.status)
-    const sourceValue = escapeXml(source.value)
-    const targetValue = escapeXml(localeData.value ?? "")
-
-    return `      <trans-unit id="${source.id}">
-        <source>${sourceValue}</source>
-        <target state="${state}">${targetValue}</target>
-        ${groupName ? `<note>${escapeXml(groupName)}</note>` : ""}
-      </trans-unit>`
-}
 function wrapIfHtml(text: string): string {
     // If text looks like HTML, wrap in CDATA
     if (/<[a-z][\s\S]*>/i.test(text)) {
@@ -135,6 +93,7 @@ function wrapIfHtml(text: string): string {
     }
     return escapeXml(text)
 }
+
 export function generateSourceXliff(defaultLocale: Locale, groups: readonly LocalizationGroup[]): string {
     let units = ""
     for (const group of groups) {

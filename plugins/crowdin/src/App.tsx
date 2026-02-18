@@ -1,6 +1,6 @@
 import cx from "classnames"
-import pLimit from "p-limit"
 import { framer, type Locale, type LocalizationData, useIsAllowedTo } from "framer-plugin"
+import pLimit from "p-limit"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { ConfirmationModal } from "./ConfirmationModal"
@@ -24,10 +24,11 @@ import {
 } from "./xliff"
 
 const PLUGIN_UI_OPTIONS = { width: 280 }
-/** Crowdin allows 20 simultaneous API requests per account. Limit concurrent locale exports to stay under that. */
-const CROWDIN_EXPORT_CONCURRENCY = 5
 const NO_PROJECT_PLACEHOLDER = "Select…"
 const ALL_LOCALES_ID = "__ALL_LOCALES__"
+
+/** Crowdin allows 20 simultaneous API requests per account. Limit concurrent locale exports to stay under that. */
+const CROWDIN_EXPORT_CONCURRENCY = 5
 
 type LocaleIds = string[] | typeof ALL_LOCALES_ID
 

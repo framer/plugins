@@ -1,3 +1,4 @@
+import { framer } from "framer-plugin"
 import { createContext, useCallback, useEffect, useRef, useState } from "react"
 import * as v from "valibot"
 import { AuthorizeSchema, type GoogleToken, GoogleTokenSchema } from "./types"
@@ -100,6 +101,9 @@ export function useGoogleToken() {
 
                 // Update the component state.
                 setTokens(tokens)
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : "An unknown error occurred"
+                framer.notify(errorMessage, { variant: "error" })
             } finally {
                 setLoading(false)
             }

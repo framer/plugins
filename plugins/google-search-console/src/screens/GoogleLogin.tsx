@@ -22,8 +22,8 @@ export default function GoogleLogin({ login, loading, hasError, errorMessage }: 
                     </p>
                 </div>
             </div>
-            <button type="button" onClick={login} disabled={loading}>
-                {loading ? "Loading..." : "Log In"}
+            <button type="button" onClick={login} disabled={loading} aria-label={loading ? "Logging in" : "Log in"}>
+                {loading ? <div className="framer-spinner" /> : "Log In"}
             </button>
         </div>
     )

@@ -214,7 +214,10 @@ async function checkAndCreateLanguage(projectId: number, language: Locale, acces
     await ensureLanguageInProject(projectId, language.code, accessToken)
 }
 
-export async function getProjectTargetLanguageIds(projectId: number, accessToken: string): Promise<string[]> {
+export async function getProjectTargetLanguages(
+    projectId: number,
+    accessToken: string
+): Promise<{ id: string; name: string }[]> {
     const res = await fetch(`${API_URL}/projects/${projectId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
     })
@@ -226,7 +229,12 @@ export async function getProjectTargetLanguageIds(projectId: number, accessToken
     if (!parsed.data) {
         throw new Error("Crowdin did not return a project object")
     }
-    return parsed.data.targetLanguages.map(l => l.id)
+    return parsed.data.targetLanguages.map(l => ({ id: l.id, name: l.name }))
+}
+
+export async function getProjectTargetLanguageIds(projectId: number, accessToken: string): Promise<string[]> {
+    const targetLanguages = await getProjectTargetLanguages(projectId, accessToken)
+    return targetLanguages.map(l => l.id)
 }
 
 export async function ensureLanguageInProject(

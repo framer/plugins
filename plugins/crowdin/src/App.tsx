@@ -3,7 +3,7 @@ import { framer, type Locale, type LocalizationData, useIsAllowedTo } from "fram
 import pLimit from "p-limit"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
-import { ConfirmationModal } from "./ConfirmationModal"
+import { ConfirmationModal, CreateLocaleModal } from "./Modals"
 import {
     type CrowdinStorageResponse,
     createCrowdinClient,
@@ -17,7 +17,7 @@ import {
     createValuesBySourceFromXliff,
     ensureSourceFile,
     generateXliff,
-    getProjectTargetLanguageIds,
+    getProjectTargetLanguages,
     parseXliff,
     updateTranslation,
     uploadStorage,
@@ -31,6 +31,13 @@ const ALL_LOCALES_ID = "__ALL_LOCALES__"
 const CROWDIN_EXPORT_CONCURRENCY = 5
 
 type LocaleIds = string[] | typeof ALL_LOCALES_ID
+
+/** Locale-like entry for the import locale list (Crowdin target languages; may not exist in Framer yet). */
+interface ImportDisplayLocale {
+    id: string
+    name: string
+    code: string
+}
 
 interface ImportConfirmationState {
     locales: Locale[]
@@ -54,6 +61,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [projectId, setProjectId] = useState<number>(0)
     const [selectedLocaleIds, setSelectedLocaleIds] = useState<LocaleIds>(activeLocale ? [activeLocale.id] : [])
     const [availableLocaleIds, setAvailableLocaleIds] = useState<string[]>([])
+    const [crowdinTargetLanguages, setCrowdinTargetLanguages] = useState<{ id: string; name: string }[]>([])
     const [crowdinTargetLanguageCount, setCrowdinTargetLanguageCount] = useState<number>(0)
     const [localesLoading, setLocalesLoading] = useState(false)
     const [operationInProgress, setOperationInProgress] = useState<boolean>(false)
@@ -151,9 +159,30 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         [accessToken]
     )
 
-    // Export: all Framer locales are available. Import: only locales in both Framer and Crowdin.
+    // Export: all Framer locales are available. Import: all Crowdin target locales are available.
     const effectiveAvailableLocaleIds = mode === "export" ? locales.map(locale => locale.id) : availableLocaleIds
     const localeIdsToSync = selectedLocaleIds === ALL_LOCALES_ID ? effectiveAvailableLocaleIds : selectedLocaleIds
+
+    // For import: show all Crowdin target languages (Framer name when locale exists, else Crowdin name). Use Crowdin code as id.
+    const importDisplayLocales: ImportDisplayLocale[] = crowdinTargetLanguages.map(ct => ({
+        id: ct.id,
+        name: locales.find(l => l.code === ct.id)?.name ?? ct.name,
+        code: ct.id,
+    }))
+    const configurationLocales: readonly (Locale | ImportDisplayLocale)[] =
+        mode === "import" ? importDisplayLocales : locales
+
+    // When switching to import, selection is by Crowdin code; if current selection is Framer ids, reset to all Crowdin locales
+    useEffect(() => {
+        if (
+            mode === "import" &&
+            availableLocaleIds.length > 0 &&
+            selectedLocaleIds !== ALL_LOCALES_ID &&
+            !selectedLocaleIds.every(id => availableLocaleIds.includes(id))
+        ) {
+            setSelectedLocaleIds(availableLocaleIds)
+        }
+    }, [mode, availableLocaleIds, selectedLocaleIds])
 
     // ------------------ Import from Crowdin ------------------
     async function startImportConfirmation() {
@@ -179,28 +208,34 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
         setOperationInProgress(true)
         const client = createCrowdinClient(accessToken)
-        const localesToSync = locales.filter(locale => localeIdsToSync.includes(locale.id))
+        const codesToSync = localeIdsToSync as string[]
         const valuesByLocale: Record<string, NonNullable<LocalizationData["valuesBySource"]>> = {}
+        const allLocalesForParse: Locale[] = [
+            ...locales,
+            ...crowdinTargetLanguages
+                .filter(ct => !locales.some(l => l.code === ct.id))
+                .map(ct => ({ id: ct.id, name: ct.name, code: ct.id, slug: ct.id })),
+        ]
 
         try {
-            for (const locale of localesToSync) {
+            for (const code of codesToSync) {
                 const exportRes = await client.translations.exportProjectTranslation(projectId, {
-                    targetLanguageId: locale.code,
+                    targetLanguageId: code,
                     format: "xliff",
                 })
                 const url = exportRes.data.url
                 if (!url) {
-                    framer.notify(`Crowdin export URL not found for ${locale.code}`, {
+                    framer.notify(`Crowdin export URL not found for ${code}`, {
                         variant: "error",
                     })
                     continue
                 }
                 const resp = await fetch(url)
                 const fileContent = await resp.text()
-                const { xliff, targetLocale } = parseXliff(fileContent, locales)
+                const { xliff, targetLocale } = parseXliff(fileContent, allLocalesForParse)
                 const valuesBySource = await createValuesBySourceFromXliff(xliff, targetLocale)
                 if (!valuesBySource) continue
-                valuesByLocale[locale.id] = valuesBySource
+                valuesByLocale[code] = valuesBySource
             }
 
             if (Object.keys(valuesByLocale).length === 0) {
@@ -210,7 +245,19 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 return
             }
 
-            const orderedLocales = localesToSync.filter(locale => locale.id in valuesByLocale)
+            const withNewFlag = codesToSync
+                .filter(code => code in valuesByLocale)
+                .map(code => {
+                    const fr = locales.find(l => l.code === code)
+                    const ct = crowdinTargetLanguages.find(c => c.id === code)
+                    if (!ct) return null
+                    const locale = (fr ?? { id: ct.id, name: ct.name, code: ct.id, slug: ct.id }) as Locale
+                    return { locale, isNew: !fr }
+                })
+                .filter((x): x is { locale: Locale; isNew: boolean } => x != null)
+            const orderedLocales: Locale[] = [...withNewFlag]
+                .sort((a, b) => (a.isNew === b.isNew ? 0 : a.isNew ? -1 : 1))
+                .map(x => x.locale)
             setImportConfirmation({
                 locales: orderedLocales,
                 valuesByLocale,
@@ -236,14 +283,22 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         }
 
         const mergedValuesBySource: NonNullable<LocalizationData["valuesBySource"]> = {}
-        for (const localeId of state.confirmedLocaleIds) {
-            const localeValues = state.valuesByLocale[localeId]
+        let appliedCount = 0
+        for (const confirmedLocaleId of state.confirmedLocaleIds) {
+            const code = locales.find(l => l.id === confirmedLocaleId)?.code ?? confirmedLocaleId
+            const localeValues = state.valuesByLocale[code]
             if (!localeValues) continue
+            const framerLocale = locales.find(l => l.code === code)
+            if (!framerLocale) continue
+            appliedCount++
             for (const sourceId of Object.keys(localeValues)) {
                 const localeData = localeValues[sourceId]
                 if (localeData) {
-                    mergedValuesBySource[sourceId] ??= {}
-                    Object.assign(mergedValuesBySource[sourceId], localeData)
+                    const val = Object.values(localeData)[0]
+                    if (val) {
+                        mergedValuesBySource[sourceId] ??= {}
+                        mergedValuesBySource[sourceId][framerLocale.id] = val
+                    }
                 }
             }
         }
@@ -259,7 +314,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                             .join(", ")
                     )
                 }
-                const count = state.confirmedLocaleIds.size
+                const count = appliedCount
                 framer.notify(`Successfully imported ${count} locale${count === 1 ? "" : "s"} from Crowdin`, {
                     variant: "success",
                     durationMs: 5000,
@@ -385,20 +440,21 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
         setAvailableLocaleIds([])
         setSelectedLocaleIds([])
+        setCrowdinTargetLanguages([])
         setLocalesLoading(true)
 
         let cancelled = false
         const task = async () => {
-            let targetLanguageIds: string[] = []
+            let targetLanguages: { id: string; name: string }[] = []
             try {
-                const ids: string[] = await getProjectTargetLanguageIds(projectId, accessToken)
+                const list = await getProjectTargetLanguages(projectId, accessToken)
                 if (!cancelled) {
-                    targetLanguageIds = ids
-                    setCrowdinTargetLanguageCount(ids.length)
+                    targetLanguages = list
+                    setCrowdinTargetLanguageCount(list.length)
                 }
             } catch {
                 if (!cancelled) {
-                    targetLanguageIds = []
+                    targetLanguages = []
                     setCrowdinTargetLanguageCount(0)
                 }
             } finally {
@@ -408,12 +464,13 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             }
 
             if (!cancelled) {
-                // Locales that exist in both Framer and the selected Crowdin project
-                const availableLocaleIds = locales
+                const targetLanguageIds = targetLanguages.map(t => t.id)
+                setCrowdinTargetLanguages(targetLanguages)
+                setAvailableLocaleIds(targetLanguageIds)
+                const exportAvailableLocaleIds = locales
                     .filter(locale => targetLanguageIds.includes(locale.code))
                     .map(locale => locale.id)
-                setAvailableLocaleIds(availableLocaleIds)
-                setSelectedLocaleIds(availableLocaleIds)
+                setSelectedLocaleIds(exportAvailableLocaleIds)
             }
         }
         void task()
@@ -439,6 +496,28 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         const { locales: confirmLocales, currentIndex, confirmedLocaleIds } = importConfirmation
         const currentLocale = confirmLocales[currentIndex]
         const remainingCount = confirmLocales.length - currentIndex
+        const isNewLocale = currentLocale != null && !locales.some(l => l.code === currentLocale.code)
+
+        const goToNext = () => {
+            const nextIndex = currentIndex + 1
+            if (nextIndex >= confirmLocales.length) {
+                applyConfirmedImport({ ...importConfirmation, currentIndex: nextIndex })
+            } else {
+                setImportConfirmation({ ...importConfirmation, currentIndex: nextIndex })
+            }
+        }
+
+        if (isNewLocale) {
+            return (
+                <CreateLocaleModal
+                    localeCode={currentLocale.code}
+                    currentStep={currentIndex + 1}
+                    totalSteps={confirmLocales.length}
+                    onSkip={goToNext}
+                    onAdd={goToNext}
+                />
+            )
+        }
 
         return (
             <ConfirmationModal
@@ -446,14 +525,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 currentStep={currentIndex + 1}
                 totalSteps={confirmLocales.length}
                 remainingLocaleCount={remainingCount}
-                skip={() => {
-                    const nextIndex = currentIndex + 1
-                    if (nextIndex >= confirmLocales.length) {
-                        applyConfirmedImport({ ...importConfirmation, currentIndex: nextIndex })
-                    } else {
-                        setImportConfirmation({ ...importConfirmation, currentIndex: nextIndex })
-                    }
-                }}
+                skip={goToNext}
                 update={() => {
                     const nextConfirmed = new Set(confirmedLocaleIds)
                     if (currentLocale) nextConfirmed.add(currentLocale.id)
@@ -495,7 +567,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     return (
         <Configuration
             mode={mode}
-            locales={locales}
+            locales={configurationLocales}
             availableLocaleIds={effectiveAvailableLocaleIds}
             crowdinTargetLanguageCount={crowdinTargetLanguageCount}
             localesLoading={localesLoading}
@@ -570,7 +642,7 @@ function Configuration({
     onSubmit,
 }: {
     mode: "export" | "import"
-    locales: readonly Locale[]
+    locales: readonly (Locale | ImportDisplayLocale)[]
     availableLocaleIds: string[]
     crowdinTargetLanguageCount: number
     localesLoading: boolean

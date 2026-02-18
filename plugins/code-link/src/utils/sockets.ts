@@ -8,6 +8,14 @@ import {
 import { framer } from "framer-plugin"
 import * as log from "./logger"
 
+/**
+ * Socket lifecycle controller for Code Link.
+ *
+ * - Keeps one active connection to the project-specific CLI port.
+ * - Retries while visible; pauses when hidden after grace period.
+ * - Resumes on focus/visibility changes in the Plugin window.
+ * - Serializes inbound messages to avoid async race conditions.
+ */
 type LifecycleState = "created" | "active" | "paused" | "disposed"
 
 type ResumeSource = "focus" | "visibilitychange"
@@ -53,8 +61,9 @@ export function createSocketConnectionController({
     const projectShortHash = shortProjectHash(project.id)
     const port = getPortFromHash(project.id)
 
-    const toDisconnectedMessage = () =>
-        `Cannot reach CLI for ${projectName} on port ${port}. Run: npx framer-code-link ${projectShortHash}`
+    const toDisconnectedMessage = () => {
+        return `Cannot reach CLI for ${projectName} on port ${port}. Run: npx framer-code-link ${projectShortHash}`
+    }
 
     const setLifecycle = (next: LifecycleState, reason: string) => {
         if (lifecycle === next) return
@@ -127,7 +136,7 @@ export function createSocketConnectionController({
         if (isDisposed() || lifecycle === "paused") return
         setLifecycle("active", `schedule:${reason}`)
         setTimer("connectTrigger", delay, () => {
-            connect(`retry:${reason}`)
+            connect(reason, true)
         })
     }
 
@@ -149,13 +158,13 @@ export function createSocketConnectionController({
             })
     }
 
-    const connect = (source: string) => {
+    const connect = (source: string, isRetry = false) => {
         if (isDisposed()) return
-        if (lifecycle === "paused" && source.startsWith("retry:")) return
+        if (lifecycle === "paused" && isRetry) return
         if (socketIsActive(activeSocket)) return
 
         const attempt = ++connectionAttempt
-        setLifecycle("active", `connect:${source}`)
+        setLifecycle("active", `connect:${source}${isRetry ? ":retry" : ""}`)
 
         const socket = new WebSocket(`ws://localhost:${port}`)
         const token = ++socketToken
@@ -328,11 +337,12 @@ export function createSocketConnectionController({
             window.removeEventListener("focus", onFocus)
 
             clearAllTimers()
+            const socket = activeSocket
             setActiveSocket(null)
 
-            if (activeSocket) {
-                detachSocketHandlers(activeSocket)
-                closeSocket(activeSocket)
+            if (socket) {
+                detachSocketHandlers(socket)
+                closeSocket(socket)
             }
         },
     }

@@ -72,13 +72,15 @@ export function initConnection(port: number): Promise<Connection> {
                     try {
                         const message = JSON.parse(data.toString()) as PluginToCliMessage
 
-                        // Special handling for handshake
                         if (message.type === "handshake") {
                             debug(`Received handshake (conn ${connId})`)
                             handshakeReceived = true
                             const previousActiveClient = activeClient
                             activeClient = ws
-                            if (previousActiveClient && previousActiveClient !== ws) {
+
+                            // Promote the new client.
+                            // Close events from the previous client will be treated as stale.
+                            if (previousActiveClient && previousActiveClient !== activeClient) {
                                 debug(`Replacing active client with conn ${connId}`)
                                 if (
                                     previousActiveClient.readyState === READY_STATE.OPEN ||

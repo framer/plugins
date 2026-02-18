@@ -144,14 +144,6 @@ export function App() {
         }
     }, [state.project, state.permissionsGranted, api, syncTracker])
 
-    const setSocket = useCallback((socket: WebSocket | null) => {
-        socketRef.current = socket
-    }, [])
-
-    const handleDisconnected = useCallback((message: string) => {
-        dispatch({ type: "socket-disconnected", message })
-    }, [])
-
     // Socket connection
     useEffect(() => {
         if (!state.project || !state.permissionsGranted) {
@@ -160,6 +152,14 @@ export function App() {
                 permissions: state.permissionsGranted,
             })
             return
+        }
+
+        const setSocket = (socket: WebSocket | null) => {
+            socketRef.current = socket
+        }
+
+        const handleDisconnected = (message: string) => {
+            dispatch({ type: "socket-disconnected", message })
         }
 
         const handleMessage = createMessageHandler({ dispatch, api, syncTracker })
@@ -175,7 +175,7 @@ export function App() {
             log.debug("Cleaning up socket connection")
             controller.stop()
         }
-    }, [state.project, state.permissionsGranted, api, syncTracker, setSocket, handleDisconnected])
+    }, [state.project, state.permissionsGranted, api, syncTracker])
 
     const sendMessage = useCallback((payload: unknown) => {
         const socket = socketRef.current

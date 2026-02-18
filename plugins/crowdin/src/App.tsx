@@ -1,4 +1,5 @@
 import cx from "classnames"
+import pLimit from "p-limit"
 import { framer, type Locale, type LocalizationData, useIsAllowedTo } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
@@ -23,6 +24,8 @@ import {
 } from "./xliff"
 
 const PLUGIN_UI_OPTIONS = { width: 280 }
+/** Crowdin allows 20 simultaneous API requests per account. Limit concurrent locale exports to stay under that. */
+const CROWDIN_EXPORT_CONCURRENCY = 5
 const NO_PROJECT_PLACEHOLDER = "Select…"
 const ALL_LOCALES_ID = "__ALL_LOCALES__"
 
@@ -305,7 +308,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             const sourceFilename = `framer-source-${defaultLocale.code}.xliff`
             const fileId = await ensureSourceFile(sourceFilename, projectId, accessToken, defaultLocale, groups)
 
-            for (const locale of localesToSync) {
+            const limit = pLimit(CROWDIN_EXPORT_CONCURRENCY)
+            const exportLocale = async (locale: Locale) => {
                 const xliffContent = generateXliff(defaultLocale, locale, groups)
                 const filename = `translations-${locale.code}.xliff`
 
@@ -314,19 +318,23 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     framer.notify(`Failed to upload ${locale.code} to Crowdin storage`, {
                         variant: "error",
                     })
-                    continue
+                    return
                 }
                 const storageData = (await storageRes.json()) as CrowdinStorageResponse
                 const storageId = storageData.data.id
 
-                const uploadRes = await updateTranslation(projectId, storageId, fileId, accessToken, locale)
-                if (!uploadRes.ok) {
-                    const errMsg = await uploadRes.text()
-                    framer.notify(`Crowdin upload failed for ${locale.code}: ${errMsg}`, { variant: "error" })
+                const uploadResult = await updateTranslation(projectId, storageId, fileId, accessToken, locale)
+                if (!uploadResult.ok) {
+                    framer.notify(
+                        `Crowdin upload failed for ${locale.code}: ${uploadResult.errorMessage ?? "Unknown error"}`,
+                        { variant: "error" }
+                    )
                 }
 
                 setExportProgress(prev => (prev ? { ...prev, current: Math.min(prev.current + 1, prev.total) } : prev))
             }
+
+            await Promise.all(localesToSync.map(locale => limit(() => exportLocale(locale))))
 
             const count = localesToSync.length
             framer.notify(`Export to Crowdin complete (${count} ${count === 1 ? "locale" : "locales"})`, {
@@ -602,6 +610,9 @@ function Configuration({
                 {
                     label: "Select project…",
                     enabled: false,
+                },
+                {
+                    type: "separator",
                 },
                 ...projectList.map(p => ({
                     label: p.name,

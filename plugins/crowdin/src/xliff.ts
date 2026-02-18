@@ -313,9 +313,11 @@ export async function updateTranslation(
     fileId: number,
     accessToken: string,
     activeLocale: Locale
-): Promise<Response> {
+): Promise<{ ok: boolean; errorMessage?: string }> {
     await checkAndCreateLanguage(projectId, activeLocale, accessToken)
-    return fetch(`${API_URL}/projects/${projectId}/translations/${activeLocale.code}`, {
+
+    // Use the new translations imports API (the old POST .../translations/{languageId} is deprecated)
+    const importRes = await fetch(`${API_URL}/projects/${projectId}/translations/imports`, {
         method: "POST",
         headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -324,8 +326,54 @@ export async function updateTranslation(
         body: JSON.stringify({
             storageId,
             fileId,
+            languageIds: [activeLocale.code],
+            importEqSuggestions: true,
+            autoApproveImported: true,
         }),
     })
+
+    if (!importRes.ok) {
+        const errText = await importRes.text()
+        return { ok: false, errorMessage: errText }
+    }
+
+    const importData = (await importRes.json()) as { data?: { identifier?: string } }
+    const importId = importData.data?.identifier
+    if (!importId) {
+        return { ok: false, errorMessage: "Import response missing identifier" }
+    }
+
+    // Poll until import completes (async operation)
+    const maxAttempts = 60
+    const pollIntervalMs = 1000
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, pollIntervalMs))
+
+        const statusRes = await fetch(`${API_URL}/projects/${projectId}/translations/imports/${importId}`, {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        if (!statusRes.ok) {
+            return { ok: false, errorMessage: await statusRes.text() }
+        }
+
+        const statusData = (await statusRes.json()) as { data?: { status?: string } }
+        const status = statusData.data?.status
+
+        if (status === "finished") {
+            return { ok: true }
+        }
+        if (status === "failed") {
+            const reportRes = await fetch(`${API_URL}/projects/${projectId}/translations/imports/${importId}/report`, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            })
+            const reportText = reportRes.ok ? await reportRes.text() : ""
+            return { ok: false, errorMessage: `Import failed${reportText ? `: ${reportText}` : ""}` }
+        }
+        // status is "created" or "inProgress" – keep polling
+    }
+
+    return { ok: false, errorMessage: "Import timed out" }
 }
 
 /** Extract human-readable messages from Crowdin API error response shape: { errors: [{ error: { errors: [{ message }] } }] } */

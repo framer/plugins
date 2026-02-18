@@ -14,10 +14,8 @@ import * as log from "./logger"
  * - Keeps one active connection to the project-specific CLI port.
  * - Retries while visible; pauses when hidden after grace period.
  * - Resumes on focus/visibility changes in the Plugin window.
- * - Serializes inbound messages to avoid async race conditions.
  */
 type LifecycleState = "created" | "active" | "paused" | "disposed"
-
 type ResumeSource = "focus" | "visibilitychange"
 type TimerName = "connectTrigger" | "connectTimeout" | "hiddenGrace"
 
@@ -30,17 +28,20 @@ export function createSocketConnectionController({
     project,
     setSocket,
     onMessage,
+    onConnected,
     onDisconnected,
 }: {
     project: ProjectInfo
     setSocket: (socket: WebSocket | null) => void
     onMessage: (message: CliToPluginMessage, socket: WebSocket) => Promise<void>
+    onConnected: () => void
     onDisconnected: (message: string) => void
 }): SocketConnectionController {
-    const RECONNECT_BASE_MS = 800
+    const RECONNECT_BASE_MS = 500
     const RECONNECT_MAX_MS = 5000
-    const CONNECT_TIMEOUT_MS = 1200
-    const HIDDEN_GRACE_MS = 10_000
+    const VISIBLE_RECONNECT_MAX_MS = 1200
+    const CONNECT_TIMEOUT_MS = 1500
+    const HIDDEN_GRACE_MS = 5_000
     const WAKE_DEBOUNCE_MS = 300
     const DISCONNECTED_NOTICE_FAILURE_THRESHOLD = 2
 
@@ -65,9 +66,8 @@ export function createSocketConnectionController({
         return `Cannot reach CLI for ${projectName} on port ${port}. Run: npx framer-code-link ${projectShortHash}`
     }
 
-    const setLifecycle = (next: LifecycleState, reason: string) => {
+    const setLifecycle = (next: LifecycleState) => {
         if (lifecycle === next) return
-        log.debug("[connection] lifecycle transition", { from: lifecycle, to: next, reason })
         lifecycle = next
     }
 
@@ -116,6 +116,15 @@ export function createSocketConnectionController({
         setSocket(socket)
     }
 
+    const clearSocket = (socket: WebSocket) => {
+        clearTimer("connectTimeout")
+        detachSocketHandlers(socket)
+        closeSocket(socket)
+        if (activeSocket === socket) {
+            setActiveSocket(null)
+        }
+    }
+
     const computeBackoffDelay = () => {
         const exponent = Math.min(failureCount, 4)
         const base = Math.min(RECONNECT_BASE_MS * 2 ** exponent, RECONNECT_MAX_MS)
@@ -123,18 +132,44 @@ export function createSocketConnectionController({
         return base - jitter
     }
 
+    const computeVisibleReconnectDelay = () => {
+        // First 2 failures: fast retry at half base delay; then normal backoff capped for visible
+        if (failureCount <= 2) {
+            return Math.floor(RECONNECT_BASE_MS * 0.5)
+        }
+        return Math.min(computeBackoffDelay(), VISIBLE_RECONNECT_MAX_MS)
+    }
+
+    const getConnectTimeoutMs = () => {
+        // After 8+ failures, give CLI more time to start; otherwise use base timeout
+        if (failureCount >= 8) {
+            return CONNECT_TIMEOUT_MS * 2
+        }
+        return CONNECT_TIMEOUT_MS
+    }
+
+    const resetReconnectBackoff = (reason: string) => {
+        if (failureCount === 0) return
+        log.debug("[connection] resetting reconnect backoff", {
+            reason,
+            previousFailureCount: failureCount,
+        })
+        failureCount = 0
+    }
+
     const startHiddenGracePeriod = () => {
         setTimer("hiddenGrace", HIDDEN_GRACE_MS, () => {
-            if (isDisposed() || document.visibilityState === "visible") return
+            if (isDisposed()) return
+            if (document.visibilityState === "visible") return
             if (socketIsActive(activeSocket)) return
-            setLifecycle("paused", "hidden-grace-expired")
+            setLifecycle("paused")
             clearTimer("connectTrigger")
         })
     }
 
     const scheduleConnect = (reason: string, delay: number) => {
         if (isDisposed() || lifecycle === "paused") return
-        setLifecycle("active", `schedule:${reason}`)
+        setLifecycle("active")
         setTimer("connectTrigger", delay, () => {
             connect(reason, true)
         })
@@ -161,22 +196,39 @@ export function createSocketConnectionController({
     const connect = (source: string, isRetry = false) => {
         if (isDisposed()) return
         if (lifecycle === "paused" && isRetry) return
-        if (socketIsActive(activeSocket)) return
+        if (activeSocket?.readyState === WebSocket.OPEN) {
+            return
+        }
+        if (activeSocket?.readyState === WebSocket.CONNECTING) {
+            return
+        }
+        if (activeSocket && activeSocket.readyState !== WebSocket.CLOSED) {
+            clearSocket(activeSocket)
+        }
 
         const attempt = ++connectionAttempt
-        setLifecycle("active", `connect:${source}${isRetry ? ":retry" : ""}`)
+        setLifecycle("active")
+        log.debug("[connection] opening socket", {
+            source,
+            isRetry,
+            attempt,
+            port,
+            failureCount,
+            visibilityState: document.visibilityState,
+        })
 
         const socket = new WebSocket(`ws://localhost:${port}`)
         const token = ++socketToken
         setActiveSocket(socket)
+        const connectTimeoutMs = getConnectTimeoutMs()
 
-        setTimer("connectTimeout", CONNECT_TIMEOUT_MS, () => {
+        setTimer("connectTimeout", connectTimeoutMs, () => {
             if (isDisposed() || token !== socketToken) return
             if (socket.readyState === WebSocket.CONNECTING) {
                 log.debug("WebSocket connect timeout - closing stale socket", {
                     port,
                     attempt,
-                    timeoutMs: CONNECT_TIMEOUT_MS,
+                    timeoutMs: connectTimeoutMs,
                 })
                 closeSocket(socket)
             }
@@ -191,11 +243,12 @@ export function createSocketConnectionController({
                 return
             }
 
+            onConnected()
             failureCount = 0
             hasNotifiedDisconnected = false
             clearTimer("connectTrigger")
             clearTimer("hiddenGrace")
-            setLifecycle("active", "socket-open")
+            setLifecycle("active")
             log.debug("WebSocket connected, sending handshake", { port, attempt, project: projectName })
 
             try {
@@ -237,12 +290,13 @@ export function createSocketConnectionController({
 
         socket.onerror = event => {
             if (isStale()) return
-            log.debug("WebSocket error event", {
+            log.debug("[connection] WebSocket error event (expected while reconnecting)", {
                 type: event.type,
                 port,
                 attempt,
                 project: projectName,
                 failureCount,
+                visibilityState: document.visibilityState,
             })
         }
 
@@ -274,7 +328,7 @@ export function createSocketConnectionController({
 
             if (isDisposed()) return
             if (document.visibilityState === "visible") {
-                scheduleReconnect("socket-close-visible")
+                scheduleReconnect("socket-close-visible", computeVisibleReconnectDelay())
                 return
             }
 
@@ -287,10 +341,15 @@ export function createSocketConnectionController({
         if (isDisposed()) return
         clearTimer("hiddenGrace")
         clearTimer("connectTrigger")
-        setLifecycle("active", `resume:${source}`)
+        setLifecycle("active")
 
-        if (activeSocket?.readyState === WebSocket.OPEN || activeSocket?.readyState === WebSocket.CONNECTING) {
+        const socket = activeSocket
+        if (socket?.readyState === WebSocket.OPEN || socket?.readyState === WebSocket.CONNECTING) {
             return
+        }
+        resetReconnectBackoff(`resume:${source}`)
+        if (socket) {
+            clearSocket(socket)
         }
 
         connect(`resume:${source}`)
@@ -318,7 +377,7 @@ export function createSocketConnectionController({
     return {
         start: () => {
             if (lifecycle !== "created") return
-            setLifecycle("active", "start")
+            setLifecycle("active")
 
             document.addEventListener("visibilitychange", onVisibilityChange)
             window.addEventListener("focus", onFocus)
@@ -331,18 +390,18 @@ export function createSocketConnectionController({
         },
         stop: () => {
             if (isDisposed()) return
-            setLifecycle("disposed", "stop")
+            setLifecycle("disposed")
 
             document.removeEventListener("visibilitychange", onVisibilityChange)
             window.removeEventListener("focus", onFocus)
 
             clearAllTimers()
             const socket = activeSocket
-            setActiveSocket(null)
 
             if (socket) {
-                detachSocketHandlers(socket)
-                closeSocket(socket)
+                clearSocket(socket)
+            } else {
+                setActiveSocket(null)
             }
         },
     }

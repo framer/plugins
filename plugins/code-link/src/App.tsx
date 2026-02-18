@@ -53,7 +53,8 @@ function reducer(state: State, action: Action): State {
             return {
                 ...state,
                 permissionsGranted: action.granted,
-                mode: action.granted ? state.mode : "info",
+                // When permissions become available, hide Info while we attempt socket connect.
+                mode: action.granted ? (state.mode === "info" ? "loading" : state.mode) : "info",
             }
         case "set-mode":
             return {
@@ -161,12 +162,16 @@ export function App() {
         const handleDisconnected = (message: string) => {
             dispatch({ type: "socket-disconnected", message })
         }
+        const handleConnected = () => {
+            dispatch({ type: "set-mode", mode: "syncing" })
+        }
 
         const handleMessage = createMessageHandler({ dispatch, api, syncTracker })
         const controller = createSocketConnectionController({
             project: state.project,
             setSocket,
             onMessage: handleMessage,
+            onConnected: handleConnected,
             onDisconnected: handleDisconnected,
         })
         controller.start()

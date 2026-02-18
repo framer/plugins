@@ -1077,6 +1077,15 @@ export async function start(config: Config): Promise<void> {
         void (async () => {
             cancelDisconnectMessage()
 
+            if (syncState.mode !== "disconnected") {
+                if (syncState.socket === client) {
+                    debug(`Ignoring duplicate handshake from active socket in ${syncState.mode} mode`)
+                    return
+                }
+                debug(`New handshake received in ${syncState.mode} mode, resetting sync state`)
+                await processEvent({ type: "DISCONNECT" })
+            }
+
             // Only show "Connected" on initial connection, not reconnects
             // Reconnect confirmation happens in SYNC_COMPLETE
             const wasDisconnected = wasRecentlyDisconnected()
@@ -1226,7 +1235,11 @@ export async function start(config: Config): Promise<void> {
         })()
     })
 
-    connection.on("disconnect", () => {
+    connection.on("disconnect", (client: WebSocket) => {
+        if (syncState.socket !== client) {
+            debug("[STATE] Ignoring disconnect from stale socket")
+            return
+        }
         // Schedule disconnect message with delay - if reconnect happens quickly, we skip it
         scheduleDisconnectMessage(() => {
             status("Disconnected, waiting to reconnect...")

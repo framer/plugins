@@ -11,7 +11,7 @@ import { debug, error } from "../utils/logging.ts"
 export interface ConnectionCallbacks {
     onHandshake: (client: WebSocket, message: { projectId: string; projectName: string }) => void
     onMessage: (message: PluginToCliMessage) => void
-    onDisconnect: () => void
+    onDisconnect: (client: WebSocket) => void
     onError: (error: Error) => void
 }
 
@@ -61,6 +61,7 @@ export function initConnection(port: number): Promise<Connection> {
         wss.on("listening", () => {
             isReady = true
             debug(`WebSocket server listening on port ${port}`)
+            let activeClient: WebSocket | null = null
 
             wss.on("connection", (ws: WebSocket) => {
                 const connId = ++connectionId
@@ -75,9 +76,22 @@ export function initConnection(port: number): Promise<Connection> {
                         if (message.type === "handshake") {
                             debug(`Received handshake (conn ${connId})`)
                             handshakeReceived = true
+                            const previousActiveClient = activeClient
+                            activeClient = ws
+                            if (previousActiveClient && previousActiveClient !== ws) {
+                                debug(`Replacing active client with conn ${connId}`)
+                                if (
+                                    previousActiveClient.readyState === READY_STATE.OPEN ||
+                                    previousActiveClient.readyState === READY_STATE.CONNECTING
+                                ) {
+                                    previousActiveClient.close()
+                                }
+                            }
                             handlers.onHandshake?.(ws, message)
-                        } else if (handshakeReceived) {
+                        } else if (handshakeReceived && activeClient === ws) {
                             handlers.onMessage?.(message)
+                        } else if (handshakeReceived) {
+                            debug(`Ignoring ${message.type} from stale client (conn ${connId})`)
                         } else {
                             // Ignore messages before handshake - plugin will send full snapshot after
                             debug(`Ignoring ${message.type} before handshake (conn ${connId})`)
@@ -89,7 +103,12 @@ export function initConnection(port: number): Promise<Connection> {
 
                 ws.on("close", (code, reason) => {
                     debug(`Client disconnected (code: ${code}, reason: ${reason.toString()})`)
-                    handlers.onDisconnect?.()
+                    if (activeClient === ws) {
+                        activeClient = null
+                        handlers.onDisconnect?.(ws)
+                    } else {
+                        debug(`Ignoring disconnect from stale client (conn ${connId})`)
+                    }
                 })
 
                 ws.on("error", err => {

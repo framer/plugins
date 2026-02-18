@@ -2,8 +2,6 @@ import {
     type CliToPluginMessage,
     type ConflictSummary,
     createSyncTracker,
-    getPortFromHash,
-    isCliToPluginMessage,
     type Mode,
     type PendingDelete,
     type ProjectInfo,
@@ -16,6 +14,7 @@ import { CodeFilesAPI } from "./api"
 import { copyToClipboard } from "./utils/clipboard"
 import { computeLineDiff } from "./utils/diffing"
 import * as log from "./utils/logger"
+import { createSocketConnectionController } from "./utils/sockets"
 import { useConstant } from "./utils/useConstant"
 
 interface State {
@@ -90,10 +89,6 @@ export function App() {
     const socketRef = useRef<WebSocket | null>(null)
     const api = useConstant<CodeFilesAPI>(() => new CodeFilesAPI())
     const syncTracker = useConstant<SyncTracker>(createSyncTracker)
-    const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const connectionAttemptsRef = useRef(0)
-    const failureCountRef = useRef(0)
 
     const command = state.project && `npx framer-code-link ${shortProjectHash(state.project.id)}`
 
@@ -149,6 +144,14 @@ export function App() {
         }
     }, [state.project, state.permissionsGranted, api, syncTracker])
 
+    const setSocket = useCallback((socket: WebSocket | null) => {
+        socketRef.current = socket
+    }, [])
+
+    const handleDisconnected = useCallback((message: string) => {
+        dispatch({ type: "socket-disconnected", message })
+    }, [])
+
     // Socket connection
     useEffect(() => {
         if (!state.project || !state.permissionsGranted) {
@@ -159,202 +162,20 @@ export function App() {
             return
         }
 
-        // Reset debug counters when project/permissions change
-        connectionAttemptsRef.current = 0
-        failureCountRef.current = 0
-
         const handleMessage = createMessageHandler({ dispatch, api, syncTracker })
-
-        let disposed = false
-
-        const clearRetry = () => {
-            if (retryTimeoutRef.current) {
-                clearTimeout(retryTimeoutRef.current)
-                retryTimeoutRef.current = null
-            }
-        }
-
-        const clearConnectTimeout = () => {
-            if (connectTimeoutRef.current) {
-                clearTimeout(connectTimeoutRef.current)
-                connectTimeoutRef.current = null
-            }
-        }
-
-        // Reconnect strategy: poll every 1s while the plugin is visible or for 20s
-        // after going hidden. Pause when hidden longer; resume on visibility/focus.
-        let paused = false
-        let gracePeriodTimer: ReturnType<typeof setTimeout> | null = null
-        const RECONNECT_INTERVAL_MS = 1000
-        const GRACE_PERIOD_MS = 20_000
-
-        const clearGracePeriod = () => {
-            if (gracePeriodTimer) {
-                clearTimeout(gracePeriodTimer)
-                gracePeriodTimer = null
-            }
-        }
-
-        const scheduleReconnect = () => {
-            if (disposed || paused) return
-            clearRetry()
-            retryTimeoutRef.current = setTimeout(() => {
-                connect()
-            }, RECONNECT_INTERVAL_MS)
-        }
-
-        const connect = () => {
-            if (disposed) return
-            if (
-                socketRef.current?.readyState === WebSocket.OPEN ||
-                socketRef.current?.readyState === WebSocket.CONNECTING
-            ) {
-                log.debug("WebSocket already active – skipping connect")
-                return
-            }
-
-            if (!state.project) {
-                log.debug("Error loading Project Info")
-                return
-            }
-
-            const port = getPortFromHash(state.project.id)
-            const attempt = ++connectionAttemptsRef.current
-            const projectName = state.project.name
-            const projectShortHash = shortProjectHash(state.project.id)
-
-            log.debug("Opening WebSocket", { port, attempt, project: projectName })
-            const socket = new WebSocket(`ws://localhost:${port}`)
-            socketRef.current = socket
-            // Timeout to prevent hanging on the socket connection which would sometimes make loading slow
-            const connectTimeoutMs = 1200
-            clearConnectTimeout()
-            connectTimeoutRef.current = setTimeout(() => {
-                if (socket.readyState === WebSocket.CONNECTING) {
-                    log.debug("WebSocket connect timeout – closing stale socket", {
-                        port,
-                        attempt,
-                        timeoutMs: connectTimeoutMs,
-                    })
-                    socket.close()
-                }
-            }, connectTimeoutMs)
-
-            const isStale = () => socketRef.current !== socket
-
-            socket.onopen = async () => {
-                clearConnectTimeout()
-                if (disposed || isStale()) {
-                    socket.close()
-                    return
-                }
-                failureCountRef.current = 0
-                clearRetry()
-                log.debug("WebSocket connected, sending handshake")
-                // Don't change mode here - wait for CLI to confirm via request-files
-                // This prevents UI flashing during failed handshakes
-                const latestProjectInfo = await framer.getProjectInfo()
-                log.debug("Project info:", latestProjectInfo)
-                socket.send(
-                    JSON.stringify({
-                        type: "handshake",
-                        projectId: latestProjectInfo.id,
-                        projectName: latestProjectInfo.name,
-                    })
-                )
-            }
-
-            socket.onmessage = event => {
-                if (isStale()) return
-                const parsed: unknown = JSON.parse(event.data as string)
-                if (!isCliToPluginMessage(parsed)) {
-                    log.warn("Invalid message received:", parsed)
-                    return
-                }
-                log.debug("Received message:", parsed.type)
-                void handleMessage(parsed, socket)
-            }
-
-            socket.onclose = event => {
-                clearConnectTimeout()
-                if (disposed || isStale()) return
-                socketRef.current = null
-                const failureCount = ++failureCountRef.current
-                log.debug("WebSocket closed – scheduling reconnect", {
-                    code: event.code,
-                    reason: event.reason || "none",
-                    wasClean: event.wasClean,
-                    port,
-                    attempt,
-                    project: projectName,
-                    failureCount,
-                })
-                dispatch({
-                    type: "socket-disconnected",
-                    message: `Cannot reach CLI for ${projectName} on port ${port}. Run: npx framer-code-link ${projectShortHash}`,
-                })
-                scheduleReconnect()
-            }
-
-            socket.onerror = event => {
-                clearConnectTimeout()
-                if (isStale()) return
-                const failureCount = failureCountRef.current
-                log.debug("WebSocket error event", {
-                    type: event.type,
-                    port,
-                    attempt,
-                    project: projectName,
-                    failureCount,
-                })
-            }
-        }
-
-        const resumePolling = () => {
-            clearGracePeriod()
-            paused = false
-            log.debug("Resuming reconnect polling")
-            connect()
-        }
-
-        const onVisibilityChange = () => {
-            if (document.visibilityState === "visible") {
-                resumePolling()
-            } else {
-                // Going hidden — keep polling for a grace period, then pause
-                clearGracePeriod()
-                gracePeriodTimer = setTimeout(() => {
-                    log.debug("Grace period expired, pausing reconnect polling")
-                    paused = true
-                    clearRetry()
-                }, GRACE_PERIOD_MS)
-            }
-        }
-
-        const onFocus = () => {
-            resumePolling()
-        }
-
-        document.addEventListener("visibilitychange", onVisibilityChange)
-        window.addEventListener("focus", onFocus)
-
-        connect()
+        const controller = createSocketConnectionController({
+            project: state.project,
+            setSocket,
+            onMessage: handleMessage,
+            onDisconnected: handleDisconnected,
+        })
+        controller.start()
 
         return () => {
-            disposed = true
             log.debug("Cleaning up socket connection")
-            clearRetry()
-            clearConnectTimeout()
-            clearGracePeriod()
-            document.removeEventListener("visibilitychange", onVisibilityChange)
-            window.removeEventListener("focus", onFocus)
-            const socket = socketRef.current
-            socketRef.current = null
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                socket.close()
-            }
+            controller.stop()
         }
-    }, [state.project, state.permissionsGranted, api, syncTracker])
+    }, [state.project, state.permissionsGranted, api, syncTracker, setSocket, handleDisconnected])
 
     const sendMessage = useCallback((payload: unknown) => {
         const socket = socketRef.current

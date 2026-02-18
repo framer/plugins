@@ -87,10 +87,12 @@ jobs:
 
       # Checkout the plugins repo (scripts + tooling).
       # For workflow_dispatch this is redundant (same repo), but keeps the flow uniform.
+      # When triggered manually, use the selected branch; for workflow_call, use default branch.
       - name: Checkout tooling
         uses: actions/checkout@v4
         with:
           repository: niekert/plugins
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || '' }}
           path: tooling
 
       - name: Configure git identity

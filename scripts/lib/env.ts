@@ -35,7 +35,7 @@ export interface EnvironmentUrls {
 export const ENVIRONMENT_URLS: Record<FramerEnv, EnvironmentUrls> = {
     production: {
         apiBase: "https://api.framer.com",
-        creatorsApiBase: "https://marketplace.framer.com/api",
+        creatorsApiBase: "https://marketplace.framer.com",
         framerAppUrl: "https://framer.com",
         marketplaceBaseUrl: "https://framer.com/marketplace",
     },

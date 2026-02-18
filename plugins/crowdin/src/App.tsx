@@ -70,6 +70,7 @@ enum AccessTokenState {
 }
 
 export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
+    const isAllowedToCreateLocale = useIsAllowedTo("createLocale")
     const [mode, setMode] = useState<"export" | "import" | null>(null)
     const [accessToken, setAccessToken] = useState<string>("")
     const [accessTokenState, setAccessTokenState] = useState<AccessTokenState>(AccessTokenState.None)
@@ -188,7 +189,13 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const configurationLocales: readonly (Locale | ImportDisplayLocale)[] =
         mode === "import" ? importDisplayLocales : locales
 
-    // When switching to import, selection is by Crowdin code; if current selection is Framer ids, reset to all Crowdin locales
+    // When createLocale not allowed, new (non-Framer) locales cannot be selected in import mode.
+    const disabledImportLocaleIds =
+        mode === "import" && !isAllowedToCreateLocale
+            ? availableLocaleIds.filter(id => !locales.some(l => l.code === id))
+            : []
+
+    // When switching to import, selection is by Crowdin code; if current selection is invalid, reset. When createLocale not allowed, default to existing locales only.
     useEffect(() => {
         if (
             mode === "import" &&
@@ -196,9 +203,12 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             selectedLocaleIds !== ALL_LOCALES_ID &&
             !selectedLocaleIds.every(id => availableLocaleIds.includes(id))
         ) {
-            setSelectedLocaleIds(availableLocaleIds)
+            const targetIds = isAllowedToCreateLocale
+                ? availableLocaleIds
+                : availableLocaleIds.filter(id => locales.some(l => l.code === id))
+            setSelectedLocaleIds(targetIds)
         }
-    }, [mode, availableLocaleIds, selectedLocaleIds])
+    }, [mode, availableLocaleIds, selectedLocaleIds, isAllowedToCreateLocale, locales])
 
     // ------------------ Import from Crowdin ------------------
     async function startImportConfirmation() {
@@ -299,7 +309,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             return
         }
         let createdIdsByCode: Record<string, string> | undefined
-        if (state.localesToCreate.length > 0) {
+        if (state.localesToCreate.length > 0 && isAllowedToCreateLocale) {
             setOperationInProgress(true)
             try {
                 createdIdsByCode = {}
@@ -642,6 +652,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             mode={mode}
             locales={configurationLocales}
             availableLocaleIds={effectiveAvailableLocaleIds}
+            disabledImportLocaleIds={disabledImportLocaleIds}
             crowdinTargetLanguageCount={crowdinTargetLanguageCount}
             localesLoading={localesLoading}
             accessToken={accessToken}
@@ -701,6 +712,7 @@ function Configuration({
     mode,
     locales,
     availableLocaleIds,
+    disabledImportLocaleIds = [],
     crowdinTargetLanguageCount,
     localesLoading,
     accessToken,
@@ -717,6 +729,7 @@ function Configuration({
     mode: "export" | "import"
     locales: readonly (Locale | ImportDisplayLocale)[]
     availableLocaleIds: string[]
+    disabledImportLocaleIds?: string[]
     crowdinTargetLanguageCount: number
     localesLoading: boolean
     accessToken: string
@@ -734,6 +747,14 @@ function Configuration({
     const accessTokenInputRef = useRef<HTMLInputElement>(null)
 
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
+    const selectableLocaleIds =
+        disabledImportLocaleIds.length > 0
+            ? availableLocaleIds.filter(id => !disabledImportLocaleIds.includes(id))
+            : availableLocaleIds
+    const isAllSelectableSelected =
+        selectableLocaleIds.length > 0 &&
+        selectableLocaleIds.every(id => selectedLocaleIds.includes(id)) &&
+        (selectedLocaleIds === ALL_LOCALES_ID || selectedLocaleIds.length === selectableLocaleIds.length)
     const hasSelectedLocales = selectedLocaleIds === ALL_LOCALES_ID || selectedLocaleIds.length > 0
     const hasLocalesForMode = mode === "export" ? availableLocaleIds.length > 0 : true
     const localesDisabled = !accessToken || !projectId
@@ -781,14 +802,22 @@ function Configuration({
 
     function onLocaleButtonClick(e: React.MouseEvent<HTMLButtonElement>, localeId: string | null) {
         const rect = e.currentTarget.getBoundingClientRect()
+        const localeDisabled = (id: string) => disabledImportLocaleIds.includes(id)
 
         void framer.showContextMenu(
             [
                 {
                     label: "All Locales",
-                    checked: selectedLocaleIds === ALL_LOCALES_ID,
+                    checked:
+                        disabledImportLocaleIds.length > 0
+                            ? isAllSelectableSelected
+                            : selectedLocaleIds === ALL_LOCALES_ID,
                     onAction: () => {
-                        setSelectedLocaleIds(selectedLocaleIds === ALL_LOCALES_ID ? [] : ALL_LOCALES_ID)
+                        if (disabledImportLocaleIds.length > 0) {
+                            setSelectedLocaleIds(isAllSelectableSelected ? [] : [...selectableLocaleIds])
+                        } else {
+                            setSelectedLocaleIds(selectedLocaleIds === ALL_LOCALES_ID ? [] : ALL_LOCALES_ID)
+                        }
                     },
                 },
                 {
@@ -799,6 +828,7 @@ function Configuration({
                     secondaryLabel: locale.code,
                     checked: selectedLocaleIds.includes(locale.id),
                     enabled:
+                        !localeDisabled(locale.id) &&
                         availableLocaleIds.includes(locale.id) &&
                         !(selectedLocaleIds === ALL_LOCALES_ID
                             ? false
@@ -913,7 +943,7 @@ function Configuration({
                                 </>
                             )}
                         </div>
-                    ) : selectedLocaleIds === ALL_LOCALES_ID ? (
+                    ) : selectedLocaleIds === ALL_LOCALES_ID || isAllSelectableSelected ? (
                         <button
                             className="dropdown-button"
                             disabled={localesDisabled}

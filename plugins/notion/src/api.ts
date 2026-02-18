@@ -27,12 +27,14 @@ const LAST_CONTENT_IMPORTING_UPDATE_DATE = new Date("2025-07-01T12:00:00.000Z")
 
 export type FieldId = string
 
+export type VirtualFieldType = ManagedCollectionField["type"] | "dateTime"
+
 export interface FieldInfo {
     id: FieldId
     name: string
     originalName: string
-    type: ManagedCollectionField["type"] | null
-    allowedTypes: ManagedCollectionField["type"][]
+    type: VirtualFieldType | null
+    allowedTypes: VirtualFieldType[]
     notionProperty: NotionProperty | null
 }
 
@@ -66,12 +68,12 @@ const slugFieldTypes: NotionProperty["type"][] = ["title", "rich_text", "unique_
 
 export const supportedCMSTypeByNotionPropertyType = {
     checkbox: ["boolean"],
-    date: ["date"],
+    date: ["dateTime", "date"],
     number: ["number"],
     title: ["string"],
     rich_text: ["formattedText", "string", "color"],
-    created_time: ["date"],
-    last_edited_time: ["date"],
+    created_time: ["dateTime", "date"],
+    last_edited_time: ["dateTime", "date"],
     select: ["enum"],
     status: ["enum"],
     url: ["link"],
@@ -80,8 +82,8 @@ export const supportedCMSTypeByNotionPropertyType = {
     files: ["file", "image", "array"],
     relation: ["multiCollectionReference", "collectionReference"],
     unique_id: ["string", "number"],
-    formula: ["string", "number", "boolean", "date", "link", "color"],
-} satisfies Partial<Record<NotionProperty["type"], readonly ManagedCollectionField["type"][]>>
+    formula: ["string", "number", "boolean", "date", "dateTime", "link", "color"],
+} satisfies Partial<Record<NotionProperty["type"], readonly VirtualFieldType[]>>
 
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.
@@ -216,15 +218,18 @@ export async function getNotionDatabases() {
 
 export function assertFieldTypeMatchesPropertyType(
     propertyType: NotionProperty["type"],
-    fieldType: ManagedCollectionField["type"]
-): asserts fieldType is ManagedCollectionField["type"] {
+    fieldType: VirtualFieldType
+): void {
     if (!isSupportedPropertyType(propertyType)) {
         throw new Error(`Property type '${propertyType}' is not supported.`)
     }
 
     const allowedFieldTypes = supportedCMSTypeByNotionPropertyType[propertyType]
 
-    if (!allowedFieldTypes.includes(fieldType as never)) {
+    // For dateTime, treat it as "date" for validation purposes
+    const typeToCheck = fieldType === "dateTime" ? "date" : fieldType
+
+    if (!allowedFieldTypes.includes(typeToCheck as never)) {
         throw new Error(`Field type '${fieldType}' is not valid for property type '${propertyType}'.`)
     }
 }

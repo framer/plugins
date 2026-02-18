@@ -75,8 +75,16 @@ export function mergeFieldsInfoWithExistingFields(
 ): FieldInfo[] {
     return sourceFieldsInfo.map(sourceFieldInfo => {
         const existingField = existingFields.find(existingField => existingField.id === sourceFieldInfo.id)
-        if (existingField && sourceFieldInfo.allowedTypes.includes(existingField.type)) {
-            return { ...sourceFieldInfo, name: existingField.name, type: existingField.type }
+        if (existingField) {
+            // Handle date fields with displayTime: convert to dateTime virtual type
+            let fieldType: FieldInfo["type"] = existingField.type
+            if (existingField.type === "date" && "displayTime" in existingField && existingField.displayTime === true) {
+                fieldType = "dateTime"
+            }
+
+            if (sourceFieldInfo.allowedTypes.includes(fieldType)) {
+                return { ...sourceFieldInfo, name: existingField.name, type: fieldType }
+            }
         }
         return sourceFieldInfo
     })
@@ -461,7 +469,6 @@ export function fieldsInfoToCollectionFields(
 
         switch (fieldType) {
             case "boolean":
-            case "date":
             case "number":
             case "string":
             case "formattedText":
@@ -474,6 +481,28 @@ export function fieldsInfoToCollectionFields(
                     id: fieldInfo.id,
                     name: fieldName,
                     userEditable: false,
+                })
+                break
+            }
+            case "date": {
+                assertFieldTypeMatchesPropertyType(property.type, fieldType)
+                fields.push({
+                    type: "date",
+                    id: fieldInfo.id,
+                    name: fieldName,
+                    userEditable: false,
+                    displayTime: false,
+                })
+                break
+            }
+            case "dateTime": {
+                assertFieldTypeMatchesPropertyType(property.type, "date")
+                fields.push({
+                    type: "date",
+                    id: fieldInfo.id,
+                    name: fieldName,
+                    userEditable: false,
+                    displayTime: true,
                 })
                 break
             }

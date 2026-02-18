@@ -16,6 +16,8 @@ interface ConfirmationModalProps {
     currentStep: number
     totalSteps: number
     remainingLocaleCount: number
+    /** Count of remaining locales that already exist in Framer (not new). Used to show "All" checkbox only when > 1. */
+    remainingExistingLocaleCount: number
     skip: () => void
     update: () => void
     updateAll: () => void
@@ -34,6 +36,7 @@ export function ConfirmationModal({
     currentStep,
     totalSteps,
     remainingLocaleCount,
+    remainingExistingLocaleCount,
     skip,
     update,
     updateAll,
@@ -51,7 +54,7 @@ export function ConfirmationModal({
                 </>
             }
             content={
-                totalSteps > 1 ? (
+                remainingExistingLocaleCount > 1 ? (
                     <label className="checkbox-label">
                         <input
                             type="checkbox"

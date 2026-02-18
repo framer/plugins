@@ -27,6 +27,20 @@ const PLUGIN_UI_OPTIONS = { width: 280 }
 const NO_PROJECT_PLACEHOLDER = "Select…"
 const ALL_LOCALES_ID = "__ALL_LOCALES__"
 
+/** Parse BCP 47–style code (e.g. "en-US", "zh-Hans") into language and optional region for createLocale. */
+function parseLocaleCode(code: string): { language: string; region?: string } {
+    const parts = code.split("-")
+    if (parts.length <= 1) return { language: code }
+    const last = parts[parts.length - 1]
+    if (last && last.length === 2 && /^[a-zA-Z]{2}$/.test(last)) {
+        return {
+            language: parts.slice(0, -1).join("-"),
+            region: last,
+        }
+    }
+    return { language: code }
+}
+
 /** Crowdin allows 20 simultaneous API requests per account. Limit concurrent locale exports to stay under that. */
 const CROWDIN_EXPORT_CONCURRENCY = 5
 
@@ -44,6 +58,8 @@ interface ImportConfirmationState {
     valuesByLocale: Record<string, NonNullable<LocalizationData["valuesBySource"]>>
     currentIndex: number
     confirmedLocaleIds: Set<string>
+    /** Locale codes (e.g. "en-US") user chose to create when shown CreateLocaleModal. */
+    localesToCreate: string[]
 }
 
 enum AccessTokenState {
@@ -263,6 +279,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 valuesByLocale,
                 currentIndex: 0,
                 confirmedLocaleIds: new Set(),
+                localesToCreate: [],
             })
         } catch (error) {
             console.error("Error fetching from Crowdin:", error)
@@ -275,7 +292,41 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         }
     }
 
-    function applyConfirmedImport(state: ImportConfirmationState) {
+    async function finishImportConfirmation(state: ImportConfirmationState) {
+        if (state.confirmedLocaleIds.size === 0) {
+            framer.notify("No locales selected for import", { variant: "info" })
+            setImportConfirmation(null)
+            return
+        }
+        let createdIdsByCode: Record<string, string> | undefined
+        if (state.localesToCreate.length > 0) {
+            setOperationInProgress(true)
+            try {
+                createdIdsByCode = {}
+                for (const code of state.localesToCreate) {
+                    const { language, region } = parseLocaleCode(code)
+                    const created = await framer.createLocale({
+                        language,
+                        ...(region && { region }),
+                        draft: true,
+                    })
+                    createdIdsByCode[code] = created.id
+                }
+            } catch (error) {
+                console.error("Error creating locales:", error)
+                framer.notify(
+                    `Failed to create locale(s): ${error instanceof Error ? error.message : "Unknown error"}`,
+                    { variant: "error", durationMs: 10000 }
+                )
+                setOperationInProgress(false)
+                return
+            }
+            setOperationInProgress(false)
+        }
+        applyConfirmedImport(state, createdIdsByCode)
+    }
+
+    function applyConfirmedImport(state: ImportConfirmationState, createdIdsByCode?: Record<string, string>) {
         if (state.confirmedLocaleIds.size === 0) {
             framer.notify("No locales selected for import", { variant: "info" })
             setImportConfirmation(null)
@@ -288,7 +339,9 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             const code = locales.find(l => l.id === confirmedLocaleId)?.code ?? confirmedLocaleId
             const localeValues = state.valuesByLocale[code]
             if (!localeValues) continue
-            const framerLocale = locales.find(l => l.code === code)
+            const framerLocale = createdIdsByCode?.[code]
+                ? { id: createdIdsByCode[code], code, name: code, slug: code }
+                : locales.find(l => l.code === code)
             if (!framerLocale) continue
             appliedCount++
             for (const sourceId of Object.keys(localeValues)) {
@@ -496,12 +549,15 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         const { locales: confirmLocales, currentIndex, confirmedLocaleIds } = importConfirmation
         const currentLocale = confirmLocales[currentIndex]
         const remainingCount = confirmLocales.length - currentIndex
+        const remainingExistingLocaleCount = confirmLocales
+            .slice(currentIndex)
+            .filter(loc => locales.some(l => l.code === loc.code)).length
         const isNewLocale = currentLocale != null && !locales.some(l => l.code === currentLocale.code)
 
         const goToNext = () => {
             const nextIndex = currentIndex + 1
             if (nextIndex >= confirmLocales.length) {
-                applyConfirmedImport({ ...importConfirmation, currentIndex: nextIndex })
+                void finishImportConfirmation({ ...importConfirmation, currentIndex: nextIndex })
             } else {
                 setImportConfirmation({ ...importConfirmation, currentIndex: nextIndex })
             }
@@ -514,7 +570,23 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     currentStep={currentIndex + 1}
                     totalSteps={confirmLocales.length}
                     onSkip={goToNext}
-                    onAdd={goToNext}
+                    onAdd={() => {
+                        const nextConfirmed = new Set(confirmedLocaleIds)
+                        nextConfirmed.add(currentLocale.id)
+                        const nextLocalesToCreate = [...importConfirmation.localesToCreate, currentLocale.code]
+                        const nextIndex = currentIndex + 1
+                        const nextState: ImportConfirmationState = {
+                            ...importConfirmation,
+                            currentIndex: nextIndex,
+                            confirmedLocaleIds: nextConfirmed,
+                            localesToCreate: nextLocalesToCreate,
+                        }
+                        if (nextIndex >= confirmLocales.length) {
+                            void finishImportConfirmation(nextState)
+                        } else {
+                            setImportConfirmation(nextState)
+                        }
+                    }}
                 />
             )
         }
@@ -525,13 +597,14 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 currentStep={currentIndex + 1}
                 totalSteps={confirmLocales.length}
                 remainingLocaleCount={remainingCount}
+                remainingExistingLocaleCount={remainingExistingLocaleCount}
                 skip={goToNext}
                 update={() => {
                     const nextConfirmed = new Set(confirmedLocaleIds)
                     if (currentLocale) nextConfirmed.add(currentLocale.id)
                     const nextIndex = currentIndex + 1
                     if (nextIndex >= confirmLocales.length) {
-                        applyConfirmedImport({
+                        void finishImportConfirmation({
                             ...importConfirmation,
                             currentIndex: nextIndex,
                             confirmedLocaleIds: nextConfirmed,
@@ -550,7 +623,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                         const loc = confirmLocales[i]
                         if (loc) nextConfirmed.add(loc.id)
                     }
-                    applyConfirmedImport({
+                    void finishImportConfirmation({
                         ...importConfirmation,
                         currentIndex: confirmLocales.length,
                         confirmedLocaleIds: nextConfirmed,

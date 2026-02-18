@@ -582,6 +582,7 @@ function Configuration({
     const isAllowedToSetLocalizationData = useIsAllowedTo("setLocalizationData")
     const hasSelectedLocales = selectedLocaleIds === ALL_LOCALES_ID || selectedLocaleIds.length > 0
     const hasLocalesForMode = mode === "export" ? availableLocaleIds.length > 0 : true
+    const localesDisabled = !accessToken || !projectId
     const canPerformAction =
         accessToken &&
         projectId &&
@@ -752,6 +753,7 @@ function Configuration({
                     ) : selectedLocaleIds === ALL_LOCALES_ID ? (
                         <button
                             className="dropdown-button"
+                            disabled={localesDisabled}
                             onClick={e => {
                                 onLocaleButtonClick(e, ALL_LOCALES_ID)
                             }}
@@ -767,6 +769,7 @@ function Configuration({
                                 <button
                                     className="dropdown-button"
                                     key={id}
+                                    disabled={localesDisabled}
                                     onClick={e => {
                                         onLocaleButtonClick(e, id)
                                     }}
@@ -785,6 +788,7 @@ function Configuration({
                             ))}
                             {selectedLocaleIds.length < availableLocaleIds.length && (
                                 <button
+                                    disabled={localesDisabled}
                                     onClick={e => {
                                         onLocaleButtonClick(e, null)
                                     }}

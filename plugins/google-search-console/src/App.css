@@ -277,18 +277,6 @@ body {
     font-size: 12px;
 }
 
-.reindex-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5em;
-}
-
-.reindex-button svg {
-    width: 1.4em;
-    height: 1.4em;
-}
-
 .tabs-nav {
     background: var(--framer-color-bg-secondary);
     display: flex;

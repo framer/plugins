@@ -600,7 +600,7 @@ function Configuration({
         void framer.showContextMenu(
             [
                 {
-                    label: NO_PROJECT_PLACEHOLDER,
+                    label: "Select project…",
                     enabled: false,
                 },
                 ...projectList.map(p => ({
@@ -743,12 +743,18 @@ function Configuration({
                     </button>
                 </PropertyControl>
                 <PropertyControl label="Locales">
-                    {availableLocaleIds.length === 0 ? (
-                        <div className="locales-empty-state">
-                            {projectId ? (localesLoading ? "Loading…" : "Select…") : "Select…"}
-                            <div className="icon-button">
-                                <ChevronDownIcon />
-                            </div>
+                    {localesDisabled || localesLoading || availableLocaleIds.length === 0 ? (
+                        <div className={cx("locales-empty-state", localesLoading && "loading")}>
+                            {localesLoading ? (
+                                <div className="framer-spinner" />
+                            ) : (
+                                <>
+                                    Select…
+                                    <div className="icon-button">
+                                        <ChevronDownIcon />
+                                    </div>
+                                </>
+                            )}
                         </div>
                     ) : selectedLocaleIds === ALL_LOCALES_ID ? (
                         <button

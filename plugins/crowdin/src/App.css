@@ -234,6 +234,11 @@ input.error {
     padding: 0 0 0 10px;
 }
 
+.locales-empty-state.loading {
+    justify-content: center;
+    padding: 0;
+}
+
 .checkbox-label {
     display: flex;
     flex-direction: row;

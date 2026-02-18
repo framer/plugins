@@ -4,11 +4,11 @@ import { framer } from "framer-plugin"
 import React from "react"
 import ReactDOM from "react-dom/client"
 
-import { App } from "./App.tsx"
+import { App } from "./App"
 import { PLUGIN_KEYS } from "./api"
 import auth from "./auth"
-import { getExistingCollectionDatabaseIdMap, syncExistingCollection } from "./data"
-import { Authenticate } from "./Login.tsx"
+import { getExistingCollectionDatabaseIdMap } from "./data"
+import { Authenticate } from "./Login"
 
 const activeCollection = await framer.getActiveManagedCollection()
 
@@ -47,32 +47,16 @@ const [
     getExistingCollectionDatabaseIdMap(),
 ])
 
-const { didSync } = await syncExistingCollection(
-    activeCollection,
-    previousDatabaseId,
-    previousSlugFieldId,
-    previousIgnoredFieldIds,
-    previousLastSynced,
-    previousDatabaseName,
-    existingCollectionDatabaseIdMap
+ReactDOM.createRoot(root).render(
+    <React.StrictMode>
+        <App
+            collection={activeCollection}
+            previousDatabaseId={previousDatabaseId}
+            previousSlugFieldId={previousSlugFieldId}
+            previousLastSynced={previousLastSynced}
+            previousIgnoredFieldIds={previousIgnoredFieldIds}
+            previousDatabaseName={previousDatabaseName}
+            existingCollectionDatabaseIdMap={existingCollectionDatabaseIdMap}
+        />
+    </React.StrictMode>
 )
-
-if (didSync) {
-    framer.closePlugin("Synchronization successful", {
-        variant: "success",
-    })
-} else {
-    ReactDOM.createRoot(root).render(
-        <React.StrictMode>
-            <App
-                collection={activeCollection}
-                previousDatabaseId={previousDatabaseId}
-                previousSlugFieldId={previousSlugFieldId}
-                previousLastSynced={previousLastSynced}
-                previousIgnoredFieldIds={previousIgnoredFieldIds}
-                previousDatabaseName={previousDatabaseName}
-                existingCollectionDatabaseIdMap={existingCollectionDatabaseIdMap}
-            />
-        </React.StrictMode>
-    )
-}

@@ -78,8 +78,7 @@ export function initConnection(port: number): Promise<Connection> {
                             const previousActiveClient = activeClient
                             activeClient = ws
 
-                            // Promote the new client.
-                            // Close events from the previous client will be treated as stale.
+                            // Make this the active client, ignore stale close events from the old one.
                             if (previousActiveClient && previousActiveClient !== activeClient) {
                                 debug(`Replacing active client with conn ${connId}`)
                                 if (

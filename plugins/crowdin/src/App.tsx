@@ -27,6 +27,7 @@ import {
 
 const NO_PROJECT_PLACEHOLDER = "Select…"
 const ALL_LOCALES_ID = "__ALL_LOCALES__"
+const DROPDOWN_MENU_WIDTH = 250
 
 /** Crowdin allows 20 simultaneous API requests per account. Limit concurrent locale exports to stay under that. */
 const CROWDIN_EXPORT_CONCURRENCY = 5
@@ -72,15 +73,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [importConfirmation, setImportConfirmation] = useState<ImportConfirmationState | null>(null)
     const validatingAccessTokenRef = useRef<boolean>(false)
 
-    useDynamicPluginHeight({
-        width:
-            mode === null
-                ? 260
-                : (mode === "export" && exportProgress !== null && exportProgress.total > 1) ||
-                    (mode === "import" && importConfirmation !== null)
-                  ? 280
-                  : 300,
-    })
+    useDynamicPluginHeight({ width: 280 })
 
     // Set close warning when importing or exporting
     useEffect(() => {
@@ -760,6 +753,7 @@ function Configuration({
         hasSelectedLocales &&
         (mode === "import" ? isAllowedToSetLocalizationData : true)
     const accessTokenValueHasChanged = accessTokenValue !== accessToken
+    const projectName = projectList.find(p => p.id === projectId)?.name
 
     useEffect(() => {
         setAccessTokenValue(accessToken)
@@ -768,28 +762,19 @@ function Configuration({
     function onProjectButtonClick(e: React.MouseEvent<HTMLButtonElement>) {
         const rect = e.currentTarget.getBoundingClientRect()
         void framer.showContextMenu(
-            [
-                {
-                    label: "Select project…",
-                    enabled: false,
+            projectList.map(p => ({
+                label: p.name,
+                checked: p.id === projectId,
+                onAction: () => {
+                    setProjectId(p.id)
                 },
-                {
-                    type: "separator",
-                },
-                ...projectList.map(p => ({
-                    label: p.name,
-                    checked: p.id === projectId,
-                    onAction: () => {
-                        setProjectId(p.id)
-                    },
-                })),
-            ],
+            })),
             {
                 location: {
                     x: rect.right - 4,
                     y: rect.bottom + 4,
                 },
-                width: 270,
+                width: DROPDOWN_MENU_WIDTH,
                 placement: "bottom-left",
             }
         )
@@ -846,7 +831,7 @@ function Configuration({
                     x: rect.right - 4,
                     y: rect.bottom + 4,
                 },
-                width: 270,
+                width: DROPDOWN_MENU_WIDTH,
                 placement: "bottom-left",
             }
         )
@@ -917,8 +902,9 @@ function Configuration({
                         className="dropdown-button"
                         disabled={!accessToken || !projectList.length}
                         onClick={onProjectButtonClick}
+                        title={projectName}
                     >
-                        <span>{projectList.find(p => p.id === projectId)?.name ?? NO_PROJECT_PLACEHOLDER}</span>
+                        <span>{projectName ?? NO_PROJECT_PLACEHOLDER}</span>
                         <div className="icon-button">
                             <ChevronDownIcon />
                         </div>
@@ -926,7 +912,10 @@ function Configuration({
                 </PropertyControl>
                 <PropertyControl label="Locales">
                     {localesDisabled || localesLoading || availableLocaleIds.length === 0 ? (
-                        <div className={cx("locales-empty-state", localesLoading && "loading")}>
+                        <button
+                            className={cx("dropdown-button", localesLoading && "locales-empty-state-loading")}
+                            disabled
+                        >
                             {localesLoading ? (
                                 <div className="framer-spinner" />
                             ) : (
@@ -937,7 +926,7 @@ function Configuration({
                                     </div>
                                 </>
                             )}
-                        </div>
+                        </button>
                     ) : selectedLocaleIds === ALL_LOCALES_ID ? (
                         <button
                             className="dropdown-button"
@@ -961,6 +950,7 @@ function Configuration({
                                     onClick={e => {
                                         onLocaleButtonClick(e, id)
                                     }}
+                                    title={locales.find(locale => locale.id === id)?.name}
                                 >
                                     <div className="content">
                                         <Flag code={locales.find(locale => locale.id === id)?.code ?? id} />

@@ -44,7 +44,6 @@ export async function validateAccessTokenAndGetProjects(
             return { isValid: true, projects }
         } catch (error) {
             console.error(error)
-            framer.notify("Invalid access token", { variant: "error" })
             return { isValid: false, projects: null }
         }
     } else {

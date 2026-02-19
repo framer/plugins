@@ -138,7 +138,7 @@ strong {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 160px;
+    width: 150px;
 }
 
 .property-control > .content > * {
@@ -205,13 +205,18 @@ strong {
     align-items: center;
     justify-content: flex-start;
     gap: 8px;
+    overflow: hidden;
 }
 
-.dropdown-button > span {
+.dropdown-button span {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.dropdown-button[disabled] {
+    color: var(--framer-color-text-secondary);
 }
 
 .icon-button {
@@ -232,18 +237,7 @@ input.error {
     background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
 }
 
-.locales-empty-state {
-    background-color: var(--framer-color-bg-tertiary);
-    border-radius: 8px;
-    opacity: 0.5;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 0 0 10px;
-}
-
-.locales-empty-state.loading {
+.locales-empty-state-loading {
     justify-content: center;
     padding: 0;
 }

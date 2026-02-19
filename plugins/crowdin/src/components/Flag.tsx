@@ -1,6 +1,6 @@
 import { useState } from "react"
-import { regionToFlagEmoji } from "./LocaleRegionFlags"
-import { parseLocaleCode } from "./utils"
+import { regionToFlagEmoji } from "../localeRegionFlags"
+import { parseLocaleCode } from "../utils"
 
 export function Flag({ code }: { code: string }) {
     const { language, region } = parseLocaleCode(code)

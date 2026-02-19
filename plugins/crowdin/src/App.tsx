@@ -3,16 +3,16 @@ import { framer, type Locale, type LocalizationData, useIsAllowedTo } from "fram
 import pLimit from "p-limit"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
+import { Flag } from "./components/Flag"
+import { CheckIcon, ChevronDownIcon, InfoIcon, LinkArrowIcon, XIcon } from "./components/Icons"
+import { ConfirmationModal, CreateLocaleModal } from "./components/Modals"
+import { Progress } from "./components/Progress"
 import {
     type CrowdinStorageResponse,
     createCrowdinClient,
     type Project,
     validateAccessTokenAndGetProjects,
 } from "./crowdin"
-import { Flag } from "./Flag"
-import { CheckIcon, ChevronDownIcon, InfoIcon, LinkArrowIcon, XIcon } from "./Icons"
-import { ConfirmationModal, CreateLocaleModal } from "./Modals"
-import { Progress } from "./Progress"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import { parseLocaleCode } from "./utils"
 import {

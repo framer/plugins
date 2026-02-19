@@ -4590,10 +4590,13 @@ __metadata:
     "@crowdin/crowdin-api-client": "npm:^1.46.0"
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:^3.7.0"
+    classnames: "npm:^2.5.1"
+    framer-plugin: "npm:3.11.0-alpha.4"
+    motion: "npm:^12.29.2"
+    p-limit: "npm:^7.3.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    valibot: "npm:^1.1.0"
+    valibot: "npm:^1.2.0"
   languageName: unknown
   linkType: soft
 
@@ -5730,6 +5733,16 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
   checksum: 10/c677a261461cc3a79605cd74fc9de746de7c32e531a0c6a7aba0d5794af1c6c194cdea3576a6e74034c0228e7cc5a8ca8b0e40c213fe85e0dacece7cc01ce6c2
+  languageName: node
+  linkType: hard
+
+"framer-plugin@npm:3.11.0-alpha.4":
+  version: 3.11.0-alpha.4
+  resolution: "framer-plugin@npm:3.11.0-alpha.4"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/9662eda12ea8bb5336acbcff57e2efb7bd97457634531deaca045e0ac6d11008ff3ebcadd2bd8b21a1fe9340144925dd354649b1b99355752412b7ff2c3d6ed1
   languageName: node
   linkType: hard
 
@@ -7337,6 +7350,15 @@ __metadata:
   dependencies:
     yocto-queue: "npm:^0.1.0"
   checksum: 10/7c3690c4dbf62ef625671e20b7bdf1cbc9534e83352a2780f165b0d3ceba21907e77ad63401708145ca4e25bfc51636588d89a8c0aeb715e6c37d1c066430360
+  languageName: node
+  linkType: hard
+
+"p-limit@npm:^7.3.0":
+  version: 7.3.0
+  resolution: "p-limit@npm:7.3.0"
+  dependencies:
+    yocto-queue: "npm:^1.2.1"
+  checksum: 10/bd3f3487ec84401e2cbf243122eef11813edacb621a27808e60a425646d0e75a79514acc2c01e39c41911550dbae5ef0f0ab01caa61cfc1c541cd17a19e8f01b
   languageName: node
   linkType: hard
 
@@ -9930,6 +9952,13 @@ __metadata:
   version: 0.1.0
   resolution: "yocto-queue@npm:0.1.0"
   checksum: 10/f77b3d8d00310def622123df93d4ee654fc6a0096182af8bd60679ddcdfb3474c56c6c7190817c84a2785648cdee9d721c0154eb45698c62176c322fb46fc700
+  languageName: node
+  linkType: hard
+
+"yocto-queue@npm:^1.2.1":
+  version: 1.2.2
+  resolution: "yocto-queue@npm:1.2.2"
+  checksum: 10/92dd9880c324dbc94ff4b677b7d350ba8d835619062b7102f577add7a59ab4d87f40edc5a03d77d369dfa9d11175b1b2ec4a06a6f8a5d8ce5d1306713f66ee41
   languageName: node
   linkType: hard
 

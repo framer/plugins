@@ -73,8 +73,10 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [importConfirmation, setImportConfirmation] = useState<ImportConfirmationState | null>(null)
     const validatingAccessTokenRef = useRef<boolean>(false)
 
-    const isShowingProgressUI = mode === "export" && exportProgress !== null && exportProgress.total > 1
-    useDynamicPluginHeight({ width: isShowingProgressUI ? 280 : 300 })
+    const isNarrowUI =
+        (mode === "export" && exportProgress !== null && exportProgress.total > 1) ||
+        (mode === "import" && importConfirmation !== null)
+    useDynamicPluginHeight({ width: isNarrowUI ? 280 : 300 })
 
     // Set close warning when importing or exporting
     useEffect(() => {

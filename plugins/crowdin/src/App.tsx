@@ -3,16 +3,18 @@ import { framer, type Locale, type LocalizationData, useIsAllowedTo } from "fram
 import pLimit from "p-limit"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
-import { ConfirmationModal, CreateLocaleModal } from "./Modals"
 import {
     type CrowdinStorageResponse,
     createCrowdinClient,
     type Project,
     validateAccessTokenAndGetProjects,
 } from "./crowdin"
+import { Flag } from "./Flag"
 import { CheckIcon, ChevronDownIcon, InfoIcon, LinkArrowIcon, XIcon } from "./Icons"
+import { ConfirmationModal, CreateLocaleModal } from "./Modals"
 import { Progress } from "./Progress"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
+import { parseLocaleCode } from "./utils"
 import {
     createValuesBySourceFromXliff,
     ensureSourceFile,
@@ -22,10 +24,7 @@ import {
     updateTranslation,
     uploadStorage,
 } from "./xliff"
-import { parseLocaleCode } from "./utils"
-import { Flag } from "./Flag"
 
-const PLUGIN_UI_OPTIONS = { width: 300 }
 const NO_PROJECT_PLACEHOLDER = "Select…"
 const ALL_LOCALES_ID = "__ALL_LOCALES__"
 
@@ -74,7 +73,8 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [importConfirmation, setImportConfirmation] = useState<ImportConfirmationState | null>(null)
     const validatingAccessTokenRef = useRef<boolean>(false)
 
-    useDynamicPluginHeight(PLUGIN_UI_OPTIONS)
+    const isShowingProgressUI = mode === "export" && exportProgress !== null && exportProgress.total > 1
+    useDynamicPluginHeight({ width: isShowingProgressUI ? 280 : 300 })
 
     // Set close warning when importing or exporting
     useEffect(() => {

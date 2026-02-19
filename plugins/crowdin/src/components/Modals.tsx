@@ -50,7 +50,7 @@ export function ConfirmationModal({
             totalSteps={totalSteps}
             description={
                 <>
-                    By importing you are going to modify the existing locale <strong>"{localeName}"</strong>.
+                    By importing you are going to modify the existing locale <strong>“{localeName}”</strong>.
                 </>
             }
             content={
@@ -84,7 +84,7 @@ export function CreateLocaleModal({ localeCode, currentStep, totalSteps, onSkip,
             totalSteps={totalSteps}
             description={
                 <>
-                    No locale with code <strong>"{localeCode}"</strong> found.
+                    No locale with code <strong>“{localeCode}”</strong> found.
                     <br />
                     Add a new one or skip this locale.
                 </>

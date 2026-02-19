@@ -28,6 +28,7 @@ export const PLUGIN_KEYS = {
     TABLE_ID: "airtablePluginTableId",
     TABLE_NAME: "airtablePluginTableName",
     SLUG_FIELD_ID: "airtablePluginSlugId",
+    LAST_SYNCED: "airtablePluginLastSynced",
 } as const
 
 const IMAGE_FILE_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/apng", "image/webp", "image/svg+xml"]
@@ -469,7 +470,9 @@ export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
     fields: readonly PossibleField[],
-    slugFieldId: string
+    slugFieldId: string,
+    previousLastSynced: string | null,
+    syncStartedAtDate: string
 ) {
     const dataSourceItems = await getItems({ ...dataSource, fields }, slugFieldId)
     const items: ManagedCollectionItemInput[] = []
@@ -512,6 +515,7 @@ export async function syncCollection(
         collection.setPluginData(PLUGIN_KEYS.TABLE_ID, dataSource.tableId),
         collection.setPluginData(PLUGIN_KEYS.TABLE_NAME, dataSource.tableName),
         collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugFieldId),
+        collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, syncStartedAtDate),
     ])
 }
 
@@ -526,7 +530,8 @@ export async function syncExistingCollection(
     previousBaseId: string | null,
     previousTableId: string | null,
     previousTableName: string | null,
-    previousSlugFieldId: string | null
+    previousSlugFieldId: string | null,
+    previousLastSynced: string | null
 ): Promise<{ didSync: boolean }> {
     if (!previousBaseId || !previousTableId) {
         return { didSync: false }
@@ -541,7 +546,9 @@ export async function syncExistingCollection(
     }
 
     try {
-        await framer.hideUI()
+        void framer.hideUI()
+
+        const syncStartedAtDate = new Date().toISOString()
 
         const existingFields = await collection.getFields()
         const table = await fetchTable(previousBaseId, previousTableId)
@@ -574,7 +581,14 @@ export async function syncExistingCollection(
             tableName: table.name,
             fields: mergedFields,
         }
-        await syncCollection(collection, dataSource, fieldsToSync, previousSlugFieldId)
+        await syncCollection(
+            collection,
+            dataSource,
+            fieldsToSync,
+            previousSlugFieldId,
+            previousLastSynced,
+            syncStartedAtDate
+        )
         return { didSync: true }
     } catch (error) {
         console.error(error)

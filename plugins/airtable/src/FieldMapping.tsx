@@ -147,9 +147,10 @@ interface FieldMappingProps {
     collection: ManagedCollection
     dataSource: DataSource
     initialSlugFieldId: string | null
+    previousLastSynced: string | null
 }
 
-export function FieldMapping({ collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
+export function FieldMapping({ collection, dataSource, initialSlugFieldId, previousLastSynced }: FieldMappingProps) {
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
     )
@@ -165,7 +166,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const [fields, setFields] = useState(initialManagedCollectionFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
-    const lastModifiedTimeFieldId = dataSource.fields.find(field => field.airtableType === "lastModifiedTime")?.id
+    const hasLastModifiedTimeField = dataSource.fields.some(field => field.airtableType === "lastModifiedTime")
 
     // Create a map of field IDs to names for efficient lookup
     const originalFieldNameMap = useMemo(
@@ -312,8 +313,17 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             field.collectionId !== ""
                     )
 
+                const syncStartedAtDate = new Date().toISOString()
+
                 await collection.setFields(processFields(fieldsToSync))
-                await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField.id)
+                await syncCollection(
+                    collection,
+                    dataSource,
+                    fieldsToSync,
+                    selectedSlugField.id,
+                    previousLastSynced,
+                    syncStartedAtDate
+                )
                 framer.closePlugin("Synchronization successful", {
                     variant: "success",
                 })
@@ -349,7 +359,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         <form className="framer-hide-scrollbar mapping" onSubmit={handleSubmit}>
             <hr className="sticky-top" />
 
-            {!lastModifiedTimeFieldId && (
+            {!hasLastModifiedTimeField && (
                 <>
                     <div className="note">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">

@@ -17,9 +17,16 @@ interface AppProps {
     previousBaseId: string | null
     previousTableId: string | null
     previousSlugFieldId: string | null
+    previousLastSynced: string | null
 }
 
-export function App({ collection, previousBaseId, previousTableId, previousSlugFieldId }: AppProps) {
+export function App({
+    collection,
+    previousBaseId,
+    previousTableId,
+    previousSlugFieldId,
+    previousLastSynced,
+}: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousBaseId && previousTableId))
     const [noTableAccess, setNoTableAccess] = useState(false)
@@ -97,5 +104,12 @@ export function App({ collection, previousBaseId, previousTableId, previousSlugF
         return <SelectDataSource collection={collection} onSelectDataSource={setDataSource} />
     }
 
-    return <FieldMapping collection={collection} dataSource={dataSource} initialSlugFieldId={previousSlugFieldId} />
+    return (
+        <FieldMapping
+            collection={collection}
+            dataSource={dataSource}
+            initialSlugFieldId={previousSlugFieldId}
+            previousLastSynced={previousLastSynced}
+        />
+    )
 }

@@ -17,3 +17,9 @@ plugin.zip
 !.yarn/plugins
 !.yarn/sdks
 !.yarn/versions
+
+
+# Code Link CLI — ignore folders (Untitled, etc.) for testing
+packages/code-link-cli/*/
+!packages/code-link-cli/src/
+!packages/code-link-cli/skills/

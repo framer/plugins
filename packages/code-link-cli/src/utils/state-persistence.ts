@@ -6,6 +6,7 @@
  * (hash matches), because that means the file wasn't edited while CLI was offline.
  */
 
+import { pluralize } from "@code-link/shared"
 import { createHash } from "crypto"
 import fs from "fs/promises"
 import path from "path"
@@ -68,7 +69,7 @@ export async function loadPersistedState(projectDir: string): Promise<Map<string
             result.set(normalizedName, state)
         }
 
-        debug(`Loaded persisted state for ${result.size} files`)
+        debug(`Loaded persisted state for ${pluralize(result.size, "file")}`)
         return result
     } catch (err) {
         if ((err as NodeJS.ErrnoException).code === "ENOENT") {
@@ -93,7 +94,7 @@ export async function savePersistedState(projectDir: string, state: Map<string, 
 
     try {
         await fs.writeFile(statePath, JSON.stringify(persistedState, null, 2))
-        debug(`Saved persisted state for ${state.size} files`)
+        debug(`Saved persisted state for ${pluralize(state.size, "file")}`)
     } catch (err) {
         warn("Failed to save persisted state:", err)
     }

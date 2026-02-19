@@ -269,7 +269,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
                 return { state, effects }
             }
 
-            effects.push(log("debug", `Received file list: ${event.files.length} files`))
+            effects.push(log("debug", `Received file list: ${pluralize(event.files.length, "file")}`))
 
             // During initial file list, detect conflicts between remote snapshot and local files
             effects.push({
@@ -304,7 +304,11 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 
             // Apply safe writes
             if (safeWrites.length > 0) {
-                effects.push(log("debug", `Applying ${safeWrites.length} safe writes`), {
+                effects.push(log("debug", `Applying ${safeWrites.length} safe writes`))
+                if (wasRecentlyDisconnected()) {
+                    effects.push(log("success", `Applied ${pluralize(safeWrites.length, "file")} during sync`))
+                }
+                effects.push({
                     type: "WRITE_FILES",
                     files: safeWrites,
                     silent: true,
@@ -313,7 +317,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 
             // Upload local-only files
             if (localOnly.length > 0) {
-                effects.push(log("debug", `Uploading ${localOnly.length} local-only files`))
+                effects.push(log("debug", `Uploading ${pluralize(localOnly.length, "local-only file")}`))
                 for (const file of localOnly) {
                     effects.push({
                         type: "SEND_MESSAGE",
@@ -683,13 +687,17 @@ async function executeEffect(
             if (!config.projectDir) {
                 const projectName = config.explicitName ?? effect.projectInfo.projectName
 
-                const directoryInfo = await findOrCreateProjectDirectory(
-                    config.projectHash,
+                const directoryInfo = await findOrCreateProjectDirectory({
+                    projectHash: config.projectHash,
                     projectName,
-                    config.explicitDirectory
-                )
+                    explicitDirectory: config.explicitDirectory,
+                })
                 config.projectDir = directoryInfo.directory
                 config.projectDirCreated = directoryInfo.created
+
+                if (directoryInfo.nameCollision) {
+                    warn(`Folder ${projectName} already exists`)
+                }
 
                 // May allow customization of file directory in the future
                 config.filesDir = `${config.projectDir}/files`
@@ -702,7 +710,7 @@ async function executeEffect(
         case "LOAD_PERSISTED_STATE": {
             if (config.projectDir) {
                 await fileMetadataCache.initialize(config.projectDir)
-                debug(`Loaded persisted metadata for ${fileMetadataCache.size()} files`)
+                debug(`Loaded persisted metadata for ${pluralize(fileMetadataCache.size(), "file")}`)
             }
             return []
         }
@@ -918,6 +926,7 @@ async function executeEffect(
                 for (const fileName of confirmedFiles) {
                     hashTracker.forget(fileName)
                     fileMetadataCache.recordDelete(fileName)
+                    fileDelete(fileName)
                 }
 
                 if (confirmedFiles.length > 0 && syncState.socket) {
@@ -950,7 +959,7 @@ async function executeEffect(
                 // Only show reconnect message if we actually showed the disconnect notice
                 if (didShowDisconnect()) {
                     success(
-                        `Reconnected, synced ${effect.totalCount} files (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
+                        `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
                     )
                     status("Watching for changes...")
                 }
@@ -968,14 +977,14 @@ async function executeEffect(
                     success(`Syncing to ${relativeDirectory} folder`)
                 }
             } else if (relativeDirectory && config.projectDirCreated) {
-                success(`Synced into ${relativeDirectory} (${effect.updatedCount} files added)`)
+                success(`Created ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} added)`)
             } else if (relativeDirectory) {
                 success(
-                    `Synced into ${relativeDirectory} (${effect.updatedCount} files updated, ${effect.unchangedCount} unchanged)`
+                    `Synced into ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} updated, ${effect.unchangedCount} unchanged)`
                 )
             } else {
                 success(
-                    `Synced ${effect.totalCount} files (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
+                    `Synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
                 )
             }
             // Git init after first sync so initial commit includes all synced files
@@ -1073,6 +1082,15 @@ export async function start(config: Config): Promise<void> {
         void (async () => {
             cancelDisconnectMessage()
 
+            if (syncState.mode !== "disconnected") {
+                if (syncState.socket === client) {
+                    debug(`Ignoring duplicate handshake from active socket in ${syncState.mode} mode`)
+                    return
+                }
+                debug(`New handshake received in ${syncState.mode} mode, resetting sync state`)
+                await processEvent({ type: "DISCONNECT" })
+            }
+
             // Only show "Connected" on initial connection, not reconnects
             // Reconnect confirmation happens in SYNC_COMPLETE
             const wasDisconnected = wasRecentlyDisconnected()
@@ -1120,7 +1138,7 @@ export async function start(config: Config): Promise<void> {
                 break
 
             case "file-list": {
-                debug(`Received file list: ${message.files.length} files`)
+                debug(`Received file list: ${pluralize(message.files.length, "file")}`)
                 event = { type: "REMOTE_FILE_LIST", files: message.files }
                 break
             }
@@ -1222,7 +1240,11 @@ export async function start(config: Config): Promise<void> {
         })()
     })
 
-    connection.on("disconnect", () => {
+    connection.on("disconnect", (client: WebSocket) => {
+        if (syncState.socket !== client) {
+            debug("[STATE] Ignoring disconnect from stale socket")
+            return
+        }
         // Schedule disconnect message with delay - if reconnect happens quickly, we skip it
         scheduleDisconnectMessage(() => {
             status("Disconnected, waiting to reconnect...")

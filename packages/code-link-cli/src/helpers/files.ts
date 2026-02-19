@@ -10,7 +10,7 @@
  * Controller decides WHEN to call these, but never computes conflicts itself.
  */
 
-import { fileKeyForLookup, normalizePath, sanitizeFilePath } from "@code-link/shared"
+import { fileKeyForLookup, normalizePath, pluralize, sanitizeFilePath } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
 import type { Conflict, ConflictResolution, ConflictVersionData, FileInfo } from "../types.ts"
@@ -96,7 +96,7 @@ export async function detectConflicts(
     // Persisted state keys are normalized to lowercase for case-insensitive lookup
     const getPersistedState = (fileName: string) => persistedState?.get(fileKeyForLookup(fileName))
 
-    debug(`Detecting conflicts for ${String(remoteFiles.length)} remote files`)
+    debug(`Detecting conflicts for ${pluralize(remoteFiles.length, "remote file")}`)
 
     // Build a snapshot of all local files (keyed by lowercase for case-insensitive matching)
     const localFiles = await listFiles(filesDir)
@@ -323,7 +323,7 @@ export async function writeRemoteFiles(
     hashTracker: HashTracker,
     installer?: { process: (fileName: string, content: string) => void }
 ): Promise<void> {
-    debug(`Writing ${files.length} remote files`)
+    debug(`Writing ${pluralize(files.length, "remote file")}`)
 
     for (const file of files) {
         try {

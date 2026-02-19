@@ -165,6 +165,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     const [fields, setFields] = useState(initialManagedCollectionFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
+    const lastModifiedTimeFieldId = dataSource.fields.find(field => field.airtableType === "lastModifiedTime")?.id
+
     // Create a map of field IDs to names for efficient lookup
     const originalFieldNameMap = useMemo(
         () => new Map(dataSource.fields.map(field => [field.id, field.name])),
@@ -346,6 +348,21 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     return (
         <form className="framer-hide-scrollbar mapping" onSubmit={handleSubmit}>
             <hr className="sticky-top" />
+
+            {!lastModifiedTimeFieldId && (
+                <>
+                    <div className="note">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
+                            <path
+                                d="M6 0a6 6 0 1 1 0 12A6 6 0 0 1 6 0Zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM5 9a1 1 0 0 0 2 0V6a1 1 0 0 0-2 0Z"
+                                fill="currentColor"
+                            ></path>
+                        </svg>
+                        <p>Add a “Last Modified Time” column in Airtable to sync faster</p>
+                    </div>
+                    <hr />
+                </>
+            )}
 
             <label className="slug-field" htmlFor="slugField">
                 <span>Slug Field</span>

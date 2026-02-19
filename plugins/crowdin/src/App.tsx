@@ -33,7 +33,6 @@ const CROWDIN_EXPORT_CONCURRENCY = 5
 
 type LocaleIds = string[] | typeof ALL_LOCALES_ID
 
-/** Locale-like entry for the import locale list (Crowdin target languages; may not exist in Framer yet). */
 interface ImportDisplayLocale {
     id: string
     name: string
@@ -45,7 +44,7 @@ interface ImportConfirmationState {
     valuesByLocale: Record<string, NonNullable<LocalizationData["valuesBySource"]>>
     currentIndex: number
     confirmedLocaleIds: Set<string>
-    /** Locale codes (e.g. "en-US") user chose to create when shown CreateLocaleModal. */
+    /** Locale codes (e.g. "en-US") to create */
     localesToCreate: string[]
 }
 
@@ -73,10 +72,15 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
     const [importConfirmation, setImportConfirmation] = useState<ImportConfirmationState | null>(null)
     const validatingAccessTokenRef = useRef<boolean>(false)
 
-    const isNarrowUI =
-        (mode === "export" && exportProgress !== null && exportProgress.total > 1) ||
-        (mode === "import" && importConfirmation !== null)
-    useDynamicPluginHeight({ width: isNarrowUI ? 280 : 300 })
+    useDynamicPluginHeight({
+        width:
+            mode === null
+                ? 260
+                : (mode === "export" && exportProgress !== null && exportProgress.total > 1) ||
+                    (mode === "import" && importConfirmation !== null)
+                  ? 280
+                  : 300,
+    })
 
     // Set close warning when importing or exporting
     useEffect(() => {
@@ -224,7 +228,6 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
 
         setOperationInProgress(true)
         const client = createCrowdinClient(accessToken)
-        const codesToSync = localeIdsToSync as string[]
         const valuesByLocale: Record<string, NonNullable<LocalizationData["valuesBySource"]>> = {}
         const allLocalesForParse: Locale[] = [
             ...locales,
@@ -234,7 +237,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         ]
 
         try {
-            for (const code of codesToSync) {
+            for (const code of localeIdsToSync) {
                 const exportRes = await client.translations.exportProjectTranslation(projectId, {
                     targetLanguageId: code,
                     format: "xliff",
@@ -261,13 +264,13 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 return
             }
 
-            const withNewFlag = codesToSync
+            const withNewFlag = localeIdsToSync
                 .filter(code => code in valuesByLocale)
                 .map(code => {
                     const fr = locales.find(l => l.code === code)
                     const ct = crowdinTargetLanguages.find(c => c.id === code)
                     if (!ct) return null
-                    const locale = (fr ?? { id: ct.id, name: ct.name, code: ct.id, slug: ct.id }) as Locale
+                    const locale = fr ?? { id: ct.id, name: ct.name, code: ct.id, slug: ct.id }
                     return { locale, isNew: !fr }
                 })
                 .filter((x): x is { locale: Locale; isNew: boolean } => x != null)
@@ -673,7 +676,7 @@ function Home({ setMode, locales }: { setMode: (mode: "export" | "import") => vo
                     <img src="/icon.svg" alt="Crowdin Logo" />
                 </div>
                 <h1>Translate with Crowdin</h1>
-                <p>Enter your access token from Crowdin and select a project to sync locales.</p>
+                <p>Enter the token from Crowdin and export or import locales.</p>
             </div>
             <div className="button-row">
                 <button
@@ -786,7 +789,7 @@ function Configuration({
                     x: rect.right - 4,
                     y: rect.bottom + 4,
                 },
-                width: 250,
+                width: 270,
                 placement: "bottom-left",
             }
         )
@@ -843,7 +846,7 @@ function Configuration({
                     x: rect.right - 4,
                     y: rect.bottom + 4,
                 },
-                width: 250,
+                width: 270,
                 placement: "bottom-left",
             }
         )

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { regionToFlagEmoji } from "../localeRegionFlags"
+import { regionToFlagEmoji } from "../regionFlags"
 import { parseLocaleCode } from "../utils"
 
 export function Flag({ code }: { code: string }) {
@@ -33,6 +33,7 @@ export function Flag({ code }: { code: string }) {
 }
 
 function emojiToURL(emoji: string): string {
-    const codepoint = [...emoji].map(char => char.codePointAt(0).toString(16)).join("-")
+    // eslint-disable-next-line @typescript-eslint/no-misused-spread
+    const codepoint = [...emoji].map(char => (char.codePointAt(0) ?? 0).toString(16)).join("-")
     return `https://cdnjs.cloudflare.com/ajax/libs/twemoji/15.1.0/72x72/${codepoint}.png`
 }

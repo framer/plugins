@@ -368,7 +368,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId, previ
                                 fill="currentColor"
                             ></path>
                         </svg>
-                        <p>Add a “Last Modified Time” column in Airtable to sync faster</p>
+                        <p>Add a “Last Modified Time” column in Airtable to sync faster.</p>
                     </div>
                     <hr />
                 </>

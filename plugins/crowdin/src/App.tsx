@@ -22,24 +22,12 @@ import {
     updateTranslation,
     uploadStorage,
 } from "./xliff"
+import { parseLocaleCode } from "./utils"
+import { Flag } from "./Flag"
 
-const PLUGIN_UI_OPTIONS = { width: 280 }
+const PLUGIN_UI_OPTIONS = { width: 300 }
 const NO_PROJECT_PLACEHOLDER = "Select…"
 const ALL_LOCALES_ID = "__ALL_LOCALES__"
-
-/** Parse BCP 47–style code (e.g. "en-US", "zh-Hans") into language and optional region for createLocale. */
-function parseLocaleCode(code: string): { language: string; region?: string } {
-    const parts = code.split("-")
-    if (parts.length <= 1) return { language: code }
-    const last = parts[parts.length - 1]
-    if (last && last.length === 2 && /^[a-zA-Z]{2}$/.test(last)) {
-        return {
-            language: parts.slice(0, -1).join("-"),
-            region: last,
-        }
-    }
-    return { language: code }
-}
 
 /** Crowdin allows 20 simultaneous API requests per account. Limit concurrent locale exports to stay under that. */
 const CROWDIN_EXPORT_CONCURRENCY = 5
@@ -315,9 +303,11 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 createdIdsByCode = {}
                 for (const code of state.localesToCreate) {
                     const { language, region } = parseLocaleCode(code)
+                    const crowdinName = crowdinTargetLanguages.find(ct => ct.id === code)?.name
                     const created = await framer.createLocale({
                         language,
                         ...(region && { region }),
+                        ...(crowdinName && { name: crowdinName }),
                         draft: true,
                     })
                     createdIdsByCode[code] = created.id
@@ -681,7 +671,7 @@ function Home({ setMode, locales }: { setMode: (mode: "export" | "import") => vo
                     <img src="/icon.svg" alt="Crowdin Logo" />
                 </div>
                 <h1>Translate with Crowdin</h1>
-                <p>Enter your access token from Crowdin and select a project to export Locales.</p>
+                <p>Enter your access token from Crowdin and select a project to sync locales.</p>
             </div>
             <div className="button-row">
                 <button
@@ -943,7 +933,7 @@ function Configuration({
                                 </>
                             )}
                         </div>
-                    ) : selectedLocaleIds === ALL_LOCALES_ID || isAllSelectableSelected ? (
+                    ) : selectedLocaleIds === ALL_LOCALES_ID ? (
                         <button
                             className="dropdown-button"
                             disabled={localesDisabled}
@@ -967,7 +957,10 @@ function Configuration({
                                         onLocaleButtonClick(e, id)
                                     }}
                                 >
-                                    <span>{locales.find(locale => locale.id === id)?.name ?? id}</span>
+                                    <div className="content">
+                                        <Flag code={locales.find(locale => locale.id === id)?.code ?? id} />
+                                        <span>{locales.find(locale => locale.id === id)?.name ?? id}</span>
+                                    </div>
                                     <div
                                         className="icon-button"
                                         title="Remove locale"

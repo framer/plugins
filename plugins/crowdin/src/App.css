@@ -64,7 +64,7 @@ strong {
 .hero p {
     text-wrap: balance;
     color: var(--framer-color-text-tertiary);
-    max-width: 200px;
+    max-width: 250px;
 }
 
 .hero .logo {
@@ -134,14 +134,14 @@ strong {
     align-items: center;
 }
 
-.property-control .content {
+.property-control > .content {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 150px;
+    width: 160px;
 }
 
-.property-control .content > * {
+.property-control > .content > * {
     width: 100%;
 }
 
@@ -196,6 +196,15 @@ strong {
     padding-right: 0;
     font-weight: 500;
     background-color: var(--framer-color-bg-tertiary) !important;
+}
+
+.dropdown-button .content {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
 }
 
 .dropdown-button > span {
@@ -304,4 +313,31 @@ input.error {
     left: 0;
     border-radius: 10px;
     background-color: var(--framer-color-tint);
+}
+
+/* Flag icons */
+
+.flag-icon {
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+.flag-icon.basic {
+    width: 16px;
+    height: 12px;
+    border-radius: 2px;
+    background-color: #888;
+    color: var(--framer-color-bg);
+    font-size: 8px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flag-icon.emoji {
+    width: 16px;
+    height: 16px;
 }

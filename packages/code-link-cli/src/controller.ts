@@ -304,15 +304,15 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 
             // Apply safe writes
             if (safeWrites.length > 0) {
-                effects.push(
-                    log("debug", `Applying ${safeWrites.length} safe writes`),
-                    log("success", `Applied ${pluralize(safeWrites.length, "file")} during sync`),
-                    {
-                        type: "WRITE_FILES",
-                        files: safeWrites,
-                        silent: true,
-                    }
-                )
+                effects.push(log("debug", `Applying ${safeWrites.length} safe writes`))
+                if (wasRecentlyDisconnected()) {
+                    effects.push(log("success", `Applied ${pluralize(safeWrites.length, "file")} during sync`))
+                }
+                effects.push({
+                    type: "WRITE_FILES",
+                    files: safeWrites,
+                    silent: true,
+                })
             }
 
             // Upload local-only files

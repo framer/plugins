@@ -311,6 +311,18 @@ export function getFieldDataEntryForFieldSchema(
     }
 }
 
+/**
+ * Returns true if the field is a last modified time field that tracks all fields
+ * in the base (i.e. referencedFieldIds is null or empty). Fields that only track
+ * specific columns are not reliable enough to use for sync optimization.
+ */
+export function isFullLastModifiedTimeField(field: PossibleField): boolean {
+    if (field.airtableType !== "lastModifiedTime") return false
+    const options = field.airtableOptions as { isValid?: boolean; referencedFieldIds?: string[] | null } | undefined
+    const referencedFieldIds = options?.referencedFieldIds
+    return options?.isValid === true && (referencedFieldIds == null || referencedFieldIds.length === 0)
+}
+
 export function isUnchangedSinceLastSync(lastModifiedTime: string, lastSyncedTime: string | null): boolean {
     if (!lastSyncedTime) return false
 
@@ -324,7 +336,7 @@ export async function getItems(dataSource: DataSource, slugFieldId: string, last
     const records = await fetchRecords(dataSource.baseId, dataSource.tableId)
     const fieldsById = new Map(dataSource.fields.map(field => [field.id, field]))
 
-    const lastModifiedTimeFieldId = dataSource.fields.find(f => f.airtableType === "lastModifiedTime")?.id ?? null
+    const lastModifiedTimeFieldId = dataSource.fields.find(isFullLastModifiedTimeField)?.id ?? null
 
     const allRecordIds: string[] = []
     const itemsData: { id: string; slugValue: string; fieldData: FieldDataInput }[] = []

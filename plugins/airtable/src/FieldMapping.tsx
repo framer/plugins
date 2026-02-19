@@ -2,7 +2,7 @@ import type { Field, ManagedCollection, ManagedCollectionField, ManagedCollectio
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { memo, useEffect, useMemo, useState } from "react"
 import type { DataSource } from "./data"
-import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
+import { isFullLastModifiedTimeField, mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 import type { PossibleField } from "./fields"
 import { isCollectionReference } from "./utils"
 
@@ -166,7 +166,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId, previ
     const [fields, setFields] = useState(initialManagedCollectionFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
 
-    const hasLastModifiedTimeField = dataSource.fields.some(field => field.airtableType === "lastModifiedTime")
+    const hasLastModifiedTimeField = dataSource.fields.some(isFullLastModifiedTimeField)
 
     // Create a map of field IDs to names for efficient lookup
     const originalFieldNameMap = useMemo(

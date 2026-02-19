@@ -922,6 +922,7 @@ async function executeEffect(
                 for (const fileName of confirmedFiles) {
                     hashTracker.forget(fileName)
                     fileMetadataCache.recordDelete(fileName)
+                    fileDelete(fileName)
                 }
 
                 if (confirmedFiles.length > 0 && syncState.socket) {

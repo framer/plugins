@@ -13,6 +13,7 @@ import {
     type Project,
     validateAccessTokenAndGetProjects,
 } from "./crowdin"
+import { fromCrowdinTarget, fromFramerLocale, type PluginLocale } from "./types"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import { parseLocaleCode } from "./utils"
 import {
@@ -34,14 +35,8 @@ const CROWDIN_EXPORT_CONCURRENCY = 5
 
 type LocaleIds = string[] | typeof ALL_LOCALES_ID
 
-interface ImportDisplayLocale {
-    id: string
-    name: string
-    code: string
-}
-
 interface ImportConfirmationState {
-    locales: Locale[]
+    locales: PluginLocale[]
     valuesByLocale: Record<string, NonNullable<LocalizationData["valuesBySource"]>>
     currentIndex: number
     confirmedLocaleIds: Set<string>
@@ -168,13 +163,10 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
     const localeIdsToSync = selectedLocaleIds === ALL_LOCALES_ID ? effectiveAvailableLocaleIds : selectedLocaleIds
 
     // For import: show all Crowdin target languages (Framer name when locale exists, else Crowdin name). Use Crowdin code as id.
-    const importDisplayLocales: ImportDisplayLocale[] = crowdinTargetLanguages.map(ct => ({
-        id: ct.id,
-        name: locales.find(l => l.code === ct.id)?.name ?? ct.name,
-        code: ct.id,
-    }))
-    const configurationLocales: readonly (Locale | ImportDisplayLocale)[] =
-        mode === "import" ? importDisplayLocales : locales
+    const configurationLocales: readonly PluginLocale[] =
+        mode === "import"
+            ? crowdinTargetLanguages.map(ct => fromCrowdinTarget(ct, locales.find(l => l.code === ct.id)?.name))
+            : locales.map(fromFramerLocale)
 
     // When createLocale not allowed, new (non-Framer) locales cannot be selected in import mode.
     const disabledImportLocaleIds =
@@ -222,11 +214,11 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
         setOperationInProgress(true)
         const client = createCrowdinClient(accessToken)
         const valuesByLocale: Record<string, NonNullable<LocalizationData["valuesBySource"]>> = {}
-        const allLocalesForParse: Locale[] = [
-            ...locales,
+        const allLocalesForParse: PluginLocale[] = [
+            ...locales.map(fromFramerLocale),
             ...crowdinTargetLanguages
                 .filter(ct => !locales.some(l => l.code === ct.id))
-                .map(ct => ({ id: ct.id, name: ct.name, code: ct.id, slug: ct.id })),
+                .map(ct => fromCrowdinTarget(ct)),
         ]
 
         try {
@@ -263,11 +255,11 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
                     const fr = locales.find(l => l.code === code)
                     const ct = crowdinTargetLanguages.find(c => c.id === code)
                     if (!ct) return null
-                    const locale = fr ?? { id: ct.id, name: ct.name, code: ct.id, slug: ct.id }
+                    const locale: PluginLocale = fr ? fromFramerLocale(fr) : fromCrowdinTarget(ct)
                     return { locale, isNew: !fr }
                 })
-                .filter((x): x is { locale: Locale; isNew: boolean } => x != null)
-            const orderedLocales: Locale[] = [...withNewFlag]
+                .filter((x): x is { locale: PluginLocale; isNew: boolean } => x != null)
+            const orderedLocales: PluginLocale[] = [...withNewFlag]
                 .sort((a, b) => (a.isNew === b.isNew ? 0 : a.isNew ? -1 : 1))
                 .map(x => x.locale)
             setImportConfirmation({
@@ -721,7 +713,7 @@ function Configuration({
     onSubmit,
 }: {
     mode: "export" | "import"
-    locales: readonly (Locale | ImportDisplayLocale)[]
+    locales: readonly PluginLocale[]
     availableLocaleIds: string[]
     disabledImportLocaleIds?: string[]
     crowdinTargetLanguageCount: number

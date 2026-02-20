@@ -11,7 +11,16 @@ interface StorageResponse {
     data: { id: number; fileName?: string }
 }
 
-export function parseXliff(xliffText: string, locales: readonly Locale[]): { xliff: Document; targetLocale: Locale } {
+/** Minimal locale shape for XLIFF parsing (works with PluginLocale and framer-plugin Locale types). */
+interface XliffLocale {
+    id: string
+    code: string
+}
+
+export function parseXliff(
+    xliffText: string,
+    locales: readonly XliffLocale[]
+): { xliff: Document; targetLocale: XliffLocale } {
     const parser = new DOMParser()
     const xliff = parser.parseFromString(xliffText, "text/xml")
 
@@ -31,7 +40,7 @@ export function parseXliff(xliffText: string, locales: readonly Locale[]): { xli
 
 export async function createValuesBySourceFromXliff(
     xliffDocument: Document,
-    targetLocale: Locale
+    targetLocale: XliffLocale
 ): Promise<LocalizationData["valuesBySource"]> {
     const valuesBySource: LocalizationData["valuesBySource"] = {}
 

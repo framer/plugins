@@ -108,6 +108,10 @@ export function getFieldDataEntryForFieldSchema(
         case "link":
         case "image":
         case "file": {
+            if (Array.isArray(value) && typeof value[0] === "string") {
+                value = value[0]
+            }
+
             if (typeof value === "string") {
                 if (fieldSchema.airtableType === "email" || EMAIL_REGEX.test(value)) {
                     return {

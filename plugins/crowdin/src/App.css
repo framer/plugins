@@ -153,7 +153,8 @@ strong {
     width: 100%;
 }
 
-.access-token-input:has(.icon) input {
+.access-token-input:has(.icon) input,
+.access-token-input:has(.icon-button) input {
     padding-right: 28px;
 }
 

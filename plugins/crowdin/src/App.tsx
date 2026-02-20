@@ -45,8 +45,7 @@ interface ImportConfirmationState {
     valuesByLocale: Record<string, NonNullable<LocalizationData["valuesBySource"]>>
     currentIndex: number
     confirmedLocaleIds: Set<string>
-    /** Locale codes (e.g. "en-US") to create */
-    localesToCreate: string[]
+    localesToCreate: string[] // Locale codes (e.g. "en-US") to create
 }
 
 enum AccessTokenState {
@@ -521,7 +520,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                 const exportAvailableLocaleIds = locales
                     .filter(locale => targetLanguageIds.includes(locale.code))
                     .map(locale => locale.id)
-                setSelectedLocaleIds(exportAvailableLocaleIds)
+                setSelectedLocaleIds(mode === "export" ? ALL_LOCALES_ID : exportAvailableLocaleIds)
             }
         }
         void task()
@@ -529,7 +528,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
         return () => {
             cancelled = true
         }
-    }, [projectId, accessToken, accessTokenState, locales])
+    }, [projectId, accessToken, accessTokenState, locales, mode])
 
     function onSubmit() {
         if (mode === "export") {
@@ -645,6 +644,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
             localesLoading={localesLoading}
             accessToken={accessToken}
             accessTokenState={accessTokenState}
+            setAccessTokenState={setAccessTokenState}
             projectId={projectId}
             projectList={projectList}
             validateAccessToken={validateAccessToken}
@@ -705,6 +705,7 @@ function Configuration({
     localesLoading,
     accessToken,
     accessTokenState,
+    setAccessTokenState,
     projectId,
     projectList,
     validateAccessToken,
@@ -722,6 +723,7 @@ function Configuration({
     localesLoading: boolean
     accessToken: string
     accessTokenState: AccessTokenState
+    setAccessTokenState: (state: AccessTokenState) => void
     projectId: number
     projectList: readonly Project[]
     validateAccessToken: (accessToken: string) => Promise<void>
@@ -863,7 +865,11 @@ function Configuration({
                                     : undefined
                             }
                             onChange={e => {
-                                setAccessTokenValue(e.target.value)
+                                const value = e.target.value
+                                setAccessTokenValue(value)
+                                if (value !== accessToken) {
+                                    setAccessTokenState(AccessTokenState.None)
+                                }
                             }}
                             onKeyDown={e => {
                                 if (e.key === "Enter") {

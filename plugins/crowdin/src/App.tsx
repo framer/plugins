@@ -55,14 +55,15 @@ enum AccessTokenState {
     Loading = "loading",
 }
 
-export function App({ activeLocale, locales }: { activeLocale: Locale | null; locales: readonly Locale[] }) {
+export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
     const isAllowedToCreateLocale = useIsAllowedTo("createLocale")
+    const [locales, setLocales] = useState<readonly Locale[]>(initialLocales)
     const [mode, setMode] = useState<"export" | "import" | null>(null)
     const [accessToken, setAccessToken] = useState<string>("")
     const [accessTokenState, setAccessTokenState] = useState<AccessTokenState>(AccessTokenState.None)
     const [projectList, setProjectList] = useState<readonly Project[]>([])
     const [projectId, setProjectId] = useState<number>(0)
-    const [selectedLocaleIds, setSelectedLocaleIds] = useState<LocaleIds>(activeLocale ? [activeLocale.id] : [])
+    const [selectedLocaleIds, setSelectedLocaleIds] = useState<LocaleIds>([])
     const [availableLocaleIds, setAvailableLocaleIds] = useState<string[]>([])
     const [crowdinTargetLanguages, setCrowdinTargetLanguages] = useState<{ id: string; name: string }[]>([])
     const [crowdinTargetLanguageCount, setCrowdinTargetLanguageCount] = useState<number>(0)
@@ -309,6 +310,7 @@ export function App({ activeLocale, locales }: { activeLocale: Locale | null; lo
                     })
                     createdIdsByCode[code] = created.id
                 }
+                setLocales(await framer.getLocales())
             } catch (error) {
                 console.error("Error creating locales:", error)
                 framer.notify(

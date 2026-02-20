@@ -8,10 +8,10 @@ import { App } from "./App.tsx"
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
 
-const [activeLocale, locales] = await Promise.all([framer.getActiveLocale(), framer.getLocales()])
+const locales = await framer.getLocales()
 
 ReactDOM.createRoot(root).render(
     <React.StrictMode>
-        <App activeLocale={activeLocale} locales={locales} />
+        <App initialLocales={locales} />
     </React.StrictMode>
 )

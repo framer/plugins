@@ -329,7 +329,6 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
     }
 
     function applyConfirmedImport(state: ImportConfirmationState, currentLocales: readonly Locale[] = locales) {
-        console.log("applyConfirmedImport", state, currentLocales)
         if (state.confirmedLocaleIds.size === 0) {
             framer.notify("No locales selected for import", { variant: "info" })
             setImportConfirmation(null)

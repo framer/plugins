@@ -140,13 +140,70 @@ export async function syncCollection(
     const seenItemIds = new Set<string>()
 
     const databaseItems = await getDatabaseItems(dataSource.database, reportProgress)
+
+    // Validate slugs before fetching page content
+    const seenSlugs = new Set<string>()
+    const duplicateSlugs = new Set<string>()
+    const missingSlugIndices: number[] = []
+    const itemSlugsById = new Map<string, string>()
+
+    for (let index = 0; index < databaseItems.length; index++) {
+        const item = databaseItems[index]
+        if (!item) continue
+
+        let slugValue: string | null = null
+
+        for (const property of Object.values(item.properties)) {
+            if (property.id === slugField.id) {
+                const slug = getSlugValue(property)
+
+                if (slug) {
+                    slugValue = slugify(slug)
+                }
+
+                break
+            }
+        }
+
+        if (!slugValue) {
+            missingSlugIndices.push(index + 1)
+            continue
+        }
+
+        if (seenSlugs.has(slugValue)) {
+            duplicateSlugs.add(slugValue)
+        } else {
+            seenSlugs.add(slugValue)
+        }
+
+        itemSlugsById.set(item.id, slugValue)
+    }
+
+    if (missingSlugIndices.length > 0) {
+        const count = missingSlugIndices.length
+        const pluralSuffix = count > 1 ? "s" : ""
+        const indexList =
+            count <= 5
+                ? listFormatter.format(missingSlugIndices.map(String))
+                : `${listFormatter.format(missingSlugIndices.slice(0, 3).map(String))} and ${count - 3} more`
+        throw new Error(
+            `${count} item${pluralSuffix} with missing or invalid slug${pluralSuffix} (at position${count > 1 ? "s" : ""} ${indexList}). Each item must have a valid slug.`
+        )
+    }
+
+    if (duplicateSlugs.size > 0) {
+        const slugList = listFormatter.format(Array.from(duplicateSlugs))
+        const pluralSuffix = duplicateSlugs.size > 1 ? "s" : ""
+        throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
+    }
+
     const limit = pLimit(CONCURRENCY_LIMIT)
 
     // Progress tracking
     let processedCount = 0
     const totalItems = databaseItems.length
 
-    const promises = databaseItems.map((item, index) =>
+    const promises = databaseItems.map(item =>
         limit(async () => {
             seenItemIds.add(item.id)
 
@@ -161,18 +218,12 @@ export async function syncCollection(
                 isUnchanged = true
             }
 
-            let slugValue: null | string = null
+            const slugValue: string | undefined = itemSlugsById.get(item.id)
+            if (!slugValue) return null
+
             const fieldData: FieldDataInput = {}
 
             for (const property of Object.values(item.properties)) {
-                if (property.id === slugField.id) {
-                    const slug = getSlugValue(property)
-
-                    if (!slug) break
-
-                    slugValue = slugify(slug)
-                }
-
                 const field = fieldsById.get(property.id)
                 if (!field) continue
 
@@ -231,13 +282,6 @@ export async function syncCollection(
                             break
                     }
                 }
-            }
-
-            if (!slugValue) {
-                console.warn(`Skipping item at index ${index} because it doesn't have a valid slug`)
-                processedCount++
-                reportProgress({ current: processedCount, total: totalItems })
-                return null
             }
 
             const skipContent = isUnchanged && !updatedFieldIds.has(pageContentProperty.id)
@@ -305,24 +349,6 @@ export async function syncCollection(
             const errorMessage = error instanceof Error ? error.message : String(error)
             console.error(`  - Item ${itemIndex + 1} (ID: ${itemId}): ${errorMessage}`)
         }
-    }
-
-    // Find duplicate slugs and report error if any are found
-    const seenSlugs = new Set<string>()
-    const duplicateSlugs = new Set<string>()
-
-    for (const item of items) {
-        if (seenSlugs.has(item.slug)) {
-            duplicateSlugs.add(item.slug)
-        } else {
-            seenSlugs.add(item.slug)
-        }
-    }
-
-    if (duplicateSlugs.size > 0) {
-        const slugList = listFormatter.format(Array.from(duplicateSlugs))
-        const pluralSuffix = duplicateSlugs.size > 1 ? "s" : ""
-        throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
     }
 
     const itemIdsToDelete = new Set(await collection.getItemIds())

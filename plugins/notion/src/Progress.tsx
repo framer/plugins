@@ -60,6 +60,7 @@ function getProgressPercent(current: number, total: number, contentFieldEnabled:
             // Processing phase: base 20%, remaining 80% from current/total
             return LOADING_PHASE_MAX + 80 * (current / total)
         } else if (total % 100 !== 0) {
+            // All items have been loaded, show 20%
             return LOADING_PHASE_MAX
         }
         // Loading phase: 0–20% with total/(total+k) so we approach but never reach 20%
@@ -68,6 +69,9 @@ function getProgressPercent(current: number, total: number, contentFieldEnabled:
     if (total > 0 && !contentFieldEnabled) {
         if (current > 0) {
             // No per-page fetch: loading is done, show 100%
+            return 100
+        } else if (total % 100 !== 0) {
+            // All items have been loaded, show 100%
             return 100
         }
         // Loading phase: 0–100% with total/(total+k)

@@ -8,14 +8,17 @@ const LOADING_PHASE_K = 150
 export function Progress({
     current,
     total,
-    contentFieldEnabled = true,
+    contentFieldEnabled,
+    hasFinishedLoading,
 }: {
     current: number
     total: number
     /** When false, loading phase spans 0–100% (no per-page content fetch). */
-    contentFieldEnabled?: boolean
+    contentFieldEnabled: boolean
+    /** When true, database items loading phase is complete. */
+    hasFinishedLoading: boolean
 }) {
-    const percent = getProgressPercent(current, total, contentFieldEnabled)
+    const percent = getProgressPercent(current, total, contentFieldEnabled, hasFinishedLoading)
     const formatter = new Intl.NumberFormat("en-US")
     const formattedCurrent = formatter.format(current)
     const formattedTotal = formatter.format(total)
@@ -54,12 +57,17 @@ export function Progress({
     )
 }
 
-function getProgressPercent(current: number, total: number, contentFieldEnabled: boolean): number {
+function getProgressPercent(
+    current: number,
+    total: number,
+    contentFieldEnabled: boolean,
+    hasFinishedLoading: boolean
+): number {
     if (total > 0 && contentFieldEnabled) {
         if (current > 0) {
             // Processing phase: base 20%, remaining 80% from current/total
             return LOADING_PHASE_MAX + 80 * (current / total)
-        } else if (total % 100 !== 0) {
+        } else if (hasFinishedLoading) {
             // All items have been loaded, show 20%
             return LOADING_PHASE_MAX
         }
@@ -67,10 +75,7 @@ function getProgressPercent(current: number, total: number, contentFieldEnabled:
         return LOADING_PHASE_MAX * (total / (total + LOADING_PHASE_K))
     }
     if (total > 0 && !contentFieldEnabled) {
-        if (current > 0) {
-            // No per-page fetch: loading is done, show 100%
-            return 100
-        } else if (total % 100 !== 0) {
+        if (hasFinishedLoading) {
             // All items have been loaded, show 100%
             return 100
         }

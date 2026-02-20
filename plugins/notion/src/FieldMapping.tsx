@@ -314,6 +314,7 @@ export function FieldMapping({
                 current={syncProgress?.current ?? 0}
                 total={syncProgress?.total ?? 0}
                 contentFieldEnabled={syncProgress?.contentFieldEnabled ?? true}
+                hasFinishedLoading={syncProgress?.hasFinishedLoading ?? false}
             />
         )
     }

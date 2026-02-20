@@ -95,6 +95,8 @@ export interface SyncProgress {
     total: number
     /** When false, loading phase uses 100% of the bar (no per-page content fetch). */
     contentFieldEnabled?: boolean
+    /** When true, database items loading phase is complete. */
+    hasFinishedLoading?: boolean
 }
 
 export interface CollectionItem {
@@ -122,7 +124,8 @@ export async function syncCollection(
 ) {
     const fieldsById = new Map(fields.map(field => [field.id, field]))
     const contentFieldEnabled = fieldsById.has(pageContentProperty.id)
-    const reportProgress = (p: { current: number; total: number }) => onProgress?.({ ...p, contentFieldEnabled })
+    const reportProgress = (p: { current: number; total: number; hasFinishedLoading: boolean }) =>
+        onProgress?.({ ...p, contentFieldEnabled })
 
     // Track which fields have had their type changed
     const updatedFieldIds = new Set<string>()
@@ -311,7 +314,7 @@ export async function syncCollection(
             }
 
             processedCount++
-            reportProgress({ current: processedCount, total: totalItems })
+            reportProgress({ current: processedCount, total: totalItems, hasFinishedLoading: true })
 
             return {
                 id: item.id,

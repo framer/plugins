@@ -103,6 +103,7 @@ export function App({
                 current={progress.current}
                 total={progress.total}
                 contentFieldEnabled={progress.contentFieldEnabled}
+                hasFinishedLoading={progress.hasFinishedLoading}
             />
         )
     }

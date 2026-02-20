@@ -401,7 +401,7 @@ export async function getPageBlocksAsRichText(pageId: string) {
 
 export async function getDatabaseItems(
     database: GetDatabaseResponse,
-    onProgress?: (progress: { current: number; total: number }) => void
+    onProgress?: (progress: { current: number; total: number; hasFinishedLoading: boolean }) => void
 ): Promise<PageObjectResponse[]> {
     const notion = getNotionClient()
 
@@ -415,8 +415,10 @@ export async function getDatabaseItems(
     for await (const item of databaseIterator) {
         data.push(item as PageObjectResponse)
         itemCount++
-        onProgress?.({ current: 0, total: itemCount })
+        onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: false })
     }
+
+    onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: true })
 
     const pages = data.filter(isFullPage)
 

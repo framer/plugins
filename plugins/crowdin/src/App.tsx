@@ -88,12 +88,12 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
     }, [mode, operationInProgress, importConfirmation])
 
     const validateAccessToken = useCallback(
-        async (token: string): Promise<void> => {
+        async (token: string, saveToPluginData = true): Promise<void> => {
             if (validatingAccessTokenRef.current) return
             if (token === accessToken) return
 
             if (!token) {
-                if (framer.isAllowedTo("setPluginData")) {
+                if (saveToPluginData && framer.isAllowedTo("setPluginData")) {
                     void framer.setPluginData("accessToken", "")
                     void framer.setPluginData("projectId", null)
                 }
@@ -104,7 +104,7 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
                 return
             }
 
-            if (accessToken && framer.isAllowedTo("setPluginData")) {
+            if (saveToPluginData && accessToken && framer.isAllowedTo("setPluginData")) {
                 void framer.setPluginData("projectId", null)
             }
 
@@ -461,7 +461,7 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
             const storedToken = await framer.getPluginData("accessToken")
             if (storedToken) {
                 setAccessToken(storedToken)
-                void validateAccessToken(storedToken)
+                void validateAccessToken(storedToken, false)
             }
         }
         void loadStoredToken()

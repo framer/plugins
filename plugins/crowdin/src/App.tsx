@@ -295,6 +295,7 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
             return
         }
         let createdIdsByCode: Record<string, string> | undefined
+        let localesForImport: readonly Locale[] = locales
         if (state.localesToCreate.length > 0 && isAllowedToCreateLocale) {
             setOperationInProgress(true)
             try {
@@ -310,7 +311,8 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
                     })
                     createdIdsByCode[code] = created.id
                 }
-                setLocales(await framer.getLocales())
+                localesForImport = await framer.getLocales()
+                setLocales(localesForImport)
             } catch (error) {
                 console.error("Error creating locales:", error)
                 framer.notify(
@@ -322,10 +324,12 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
             }
             setOperationInProgress(false)
         }
-        applyConfirmedImport(state, createdIdsByCode)
+
+        applyConfirmedImport(state, localesForImport)
     }
 
-    function applyConfirmedImport(state: ImportConfirmationState, createdIdsByCode?: Record<string, string>) {
+    function applyConfirmedImport(state: ImportConfirmationState, currentLocales: readonly Locale[] = locales) {
+        console.log("applyConfirmedImport", state, currentLocales)
         if (state.confirmedLocaleIds.size === 0) {
             framer.notify("No locales selected for import", { variant: "info" })
             setImportConfirmation(null)
@@ -334,13 +338,12 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
 
         const mergedValuesBySource: NonNullable<LocalizationData["valuesBySource"]> = {}
         let appliedCount = 0
-        for (const confirmedLocaleId of state.confirmedLocaleIds) {
-            const code = locales.find(l => l.id === confirmedLocaleId)?.code ?? confirmedLocaleId
+        for (const locale of state.locales) {
+            if (!state.confirmedLocaleIds.has(locale.id)) continue
+            const code = locale.code
             const localeValues = state.valuesByLocale[code]
             if (!localeValues) continue
-            const framerLocale = createdIdsByCode?.[code]
-                ? { id: createdIdsByCode[code], code, name: code, slug: code }
-                : locales.find(l => l.code === code)
+            const framerLocale = currentLocales.find(l => l.code === code)
             if (!framerLocale) continue
             appliedCount++
             for (const sourceId of Object.keys(localeValues)) {
@@ -356,6 +359,7 @@ export function App({ initialLocales }: { initialLocales: readonly Locale[] }) {
         }
 
         setOperationInProgress(true)
+
         framer
             .setLocalizationData({ valuesBySource: mergedValuesBySource })
             .then(result => {

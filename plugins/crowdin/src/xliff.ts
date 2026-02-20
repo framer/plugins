@@ -61,7 +61,9 @@ export async function createValuesBySourceFromXliff(
         // Find the actual source ID by matching the source text
         const sourceId = sourceTextToId.get(sourceText)
         if (!sourceId) {
-            console.warn(`No source ID found for text: "${sourceText}"`)
+            if (IS_LOCALHOST) {
+                console.warn(`No source ID found for text: "${sourceText}"`)
+            }
             continue
         }
 

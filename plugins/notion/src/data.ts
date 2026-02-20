@@ -96,7 +96,7 @@ export interface SyncProgress {
     /** When false, loading phase uses 100% of the bar (no per-page content fetch). */
     contentFieldEnabled?: boolean
     /** When true, database items loading phase is complete. */
-    hasFinishedLoading?: boolean
+    hasFinishedLoading: boolean
 }
 
 export interface CollectionItem {

@@ -59,6 +59,8 @@ function getProgressPercent(current: number, total: number, contentFieldEnabled:
         if (current > 0) {
             // Processing phase: base 20%, remaining 80% from current/total
             return LOADING_PHASE_MAX + 80 * (current / total)
+        } else if (total % 100 !== 0) {
+            return LOADING_PHASE_MAX
         }
         // Loading phase: 0–20% with total/(total+k) so we approach but never reach 20%
         return LOADING_PHASE_MAX * (total / (total + LOADING_PHASE_K))

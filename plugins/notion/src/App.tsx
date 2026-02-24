@@ -43,7 +43,11 @@ export function App({
             previousDatabaseId,
         })
     )
-    const [progress, setProgress] = useState<SyncProgress>({ current: 0, total: 0 })
+    const [progress, setProgress] = useState<SyncProgress>({
+        current: 0,
+        total: 0,
+        hasFinishedLoading: false,
+    })
     const hasRunSyncRef = useRef(false)
 
     useEffect(() => {
@@ -102,7 +106,8 @@ export function App({
             <Progress
                 current={progress.current}
                 total={progress.total}
-                contentFieldEnabled={progress.contentFieldEnabled}
+                contentFieldEnabled={progress.contentFieldEnabled ?? true}
+                hasFinishedLoading={progress.hasFinishedLoading}
             />
         )
     }

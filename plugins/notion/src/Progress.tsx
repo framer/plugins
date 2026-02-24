@@ -63,6 +63,7 @@ function getProgressPercent(
     contentFieldEnabled: boolean,
     hasFinishedLoading: boolean
 ): number {
+    // Content field is enabled, so we have two loading phases: database items and page content.
     if (total > 0 && contentFieldEnabled) {
         if (current > 0) {
             // Processing phase: base 20%, remaining 80% from current/total
@@ -74,6 +75,8 @@ function getProgressPercent(
         // Loading phase: 0–20% with total/(total+k) so we approach but never reach 20%
         return LOADING_PHASE_MAX * (total / (total + LOADING_PHASE_K))
     }
+
+    // Content field is disabled, so only database items need to be loaded.
     if (total > 0 && !contentFieldEnabled) {
         if (hasFinishedLoading) {
             // All items have been loaded, show 100%
@@ -82,5 +85,6 @@ function getProgressPercent(
         // Loading phase: 0–100% with total/(total+k)
         return 100 * (total / (total + LOADING_PHASE_K))
     }
+
     return 0
 }

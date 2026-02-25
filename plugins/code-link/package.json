@@ -14,7 +14,7 @@
     },
     "dependencies": {
         "@code-link/shared": "workspace:*",
-        "framer-plugin": "3.10.3",
+        "framer-plugin": "https://pkg.pr.new/framer/FramerStudio/framer-plugin@1a556bd.tgz",
         "react": "^18.3.1",
         "react-dom": "^18.3.1"
     },

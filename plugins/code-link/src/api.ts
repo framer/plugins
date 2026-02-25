@@ -17,7 +17,7 @@ export class CodeFilesAPI {
         // Also ensures everything is fresh.
         let codeFiles
         try {
-            codeFiles = await framer.getCodeFiles()
+            codeFiles = await framer.getCodeFiles({ moduleType: "all" })
         } catch (err) {
             log.error("Failed to fetch code files", err)
             return []
@@ -112,7 +112,7 @@ export class CodeFilesAPI {
 
         let codeFiles
         try {
-            codeFiles = await framer.getCodeFiles()
+            codeFiles = await framer.getCodeFiles({ moduleType: "all" })
         } catch (err) {
             log.error("Failed to fetch code files", err)
             return requests.map(r => ({
@@ -163,7 +163,7 @@ export class CodeFilesAPI {
 
 async function upsertFramerFile(fileName: string, content: string): Promise<number | undefined> {
     const normalisedName = canonicalFileName(fileName)
-    const codeFiles = await framer.getCodeFiles()
+    const codeFiles = await framer.getCodeFiles({ moduleType: "all" })
     const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedName)
 
     if (existing) {
@@ -173,6 +173,7 @@ async function upsertFramerFile(fileName: string, content: string): Promise<numb
 
     await framer.createCodeFile(ensureExtension(normalisedName), content, {
         editViaPlugin: false,
+        moduleType: fileName.startsWith("Shader") ? "shader" : "codeFile",
     })
 
     return Date.now()
@@ -180,7 +181,7 @@ async function upsertFramerFile(fileName: string, content: string): Promise<numb
 
 async function deleteFramerFile(fileName: string) {
     const normalisedName = canonicalFileName(fileName)
-    const codeFiles = await framer.getCodeFiles()
+    const codeFiles = await framer.getCodeFiles({ moduleType: "all" })
     const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedName)
 
     if (existing) {

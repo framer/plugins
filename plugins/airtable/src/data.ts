@@ -31,6 +31,7 @@ export const PLUGIN_KEYS = {
 } as const
 
 const IMAGE_FILE_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/apng", "image/webp", "image/svg+xml"]
+const PRESERVE_LOOKUP_ARRAY_TYPES = ["image", "file", "array"]
 
 export interface AirtableBase {
     id: string
@@ -88,7 +89,10 @@ export function getFieldDataEntryForFieldSchema(
     value: unknown
 ): FieldDataEntryInput | null {
     // If the field is a lookup field, only use the first value from the array.
-    if (fieldSchema.originalAirtableType === "multipleLookupValues") {
+    if (
+        fieldSchema.originalAirtableType === "multipleLookupValues" &&
+        !PRESERVE_LOOKUP_ARRAY_TYPES.includes(fieldSchema.type)
+    ) {
         if (!Array.isArray(value)) return null
         if (value.length === 0) return null
         value = value[0]
@@ -104,6 +108,10 @@ export function getFieldDataEntryForFieldSchema(
         case "link":
         case "image":
         case "file": {
+            if (Array.isArray(value) && typeof value[0] === "string") {
+                value = value[0]
+            }
+
             if (typeof value === "string") {
                 if (fieldSchema.airtableType === "email" || EMAIL_REGEX.test(value)) {
                     return {

@@ -25,14 +25,16 @@ const columnGap = 5
 const sidePadding = 15 * 2
 const resizable = framer.mode === "canvas"
 
-void framer.showUI({
-    position: "top right",
-    width: minWindowWidth,
-    minWidth: minWindowWidth,
-    maxWidth: 750,
-    minHeight: 400,
-    resizable,
-})
+if (mode !== "api") {
+    void framer.showUI({
+        position: "top right",
+        width: minWindowWidth,
+        minWidth: minWindowWidth,
+        maxWidth: 750,
+        minHeight: 400,
+        resizable,
+    })
+}
 
 export function App() {
     const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")

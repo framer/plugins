@@ -5690,75 +5690,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"framer-plugin@npm:3.10.2-alpha.0":
-  version: 3.10.2-alpha.0
-  resolution: "framer-plugin@npm:3.10.2-alpha.0"
+"framer-plugin@portal:/Users/danieladias/Documents/FramerStudio/src/plugin-api::locator=plugins%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "framer-plugin@portal:/Users/danieladias/Documents/FramerStudio/src/plugin-api::locator=plugins%40workspace%3A."
   peerDependencies:
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 10/ad230848039158de8f40e72413fd7c93a547c58352e20c949abf9e97523f1885ac2046725cb7c6ee896257a7a9dd193f3108487b3a47f1dfc2b7db97dca6e554
   languageName: node
-  linkType: hard
-
-"framer-plugin@npm:3.10.3, framer-plugin@npm:^3.10.3":
-  version: 3.10.3
-  resolution: "framer-plugin@npm:3.10.3"
-  peerDependencies:
-    react: ^18.2.0
-    react-dom: ^18.2.0
-  checksum: 10/c677a261461cc3a79605cd74fc9de746de7c32e531a0c6a7aba0d5794af1c6c194cdea3576a6e74034c0228e7cc5a8ca8b0e40c213fe85e0dacece7cc01ce6c2
-  languageName: node
-  linkType: hard
-
-"framer-plugin@npm:3.7.0-alpha.0":
-  version: 3.7.0-alpha.0
-  resolution: "framer-plugin@npm:3.7.0-alpha.0"
-  peerDependencies:
-    react: ^18.2.0
-    react-dom: ^18.2.0
-  checksum: 10/5af8d7d65bb2119a699eb826e10e470b12790e2699af9b7017de909455434e811843a5a02ab55ae567e813f986f186e0e190b52cf2a43a89122f3504816b4a6b
-  languageName: node
-  linkType: hard
-
-"framer-plugin@npm:3.7.0-alpha.1":
-  version: 3.7.0-alpha.1
-  resolution: "framer-plugin@npm:3.7.0-alpha.1"
-  peerDependencies:
-    react: ^18.2.0
-    react-dom: ^18.2.0
-  checksum: 10/f253047cf9b4f0fe9cf61aa27dd0651a6e1d3b13cd4cde0b8b467700ccd45189f4e134f665875a8a727c5c5ba36be5d2d83ad074781768281b1772f0077aa140
-  languageName: node
-  linkType: hard
-
-"framer-plugin@npm:^3.6.0":
-  version: 3.6.0
-  resolution: "framer-plugin@npm:3.6.0"
-  peerDependencies:
-    react: ^18.2.0
-    react-dom: ^18.2.0
-  checksum: 10/a84ab5008f90e1b7330037ce41a2ae00c3673d2abdc150748ccaa98de25f8637341dbeb2c2a9dcf000861400ec7a7785113e43037084d108f60607379882d756
-  languageName: node
-  linkType: hard
-
-"framer-plugin@npm:^3.7.0":
-  version: 3.7.0
-  resolution: "framer-plugin@npm:3.7.0"
-  peerDependencies:
-    react: ^18.2.0
-    react-dom: ^18.2.0
-  checksum: 10/30b7231daafc1142df63859a1eadcd193faa6a9c97dac254868ca1381cdb1d1b53841390ba14b596b7d75c7fdc4b3602a85b79a911b8528fbb206ded61a8ac0b
-  languageName: node
-  linkType: hard
-
-"framer-plugin@npm:^3.8.0":
-  version: 3.8.0
-  resolution: "framer-plugin@npm:3.8.0"
-  peerDependencies:
-    react: ^18.2.0
-    react-dom: ^18.2.0
-  checksum: 10/2ffbf9c3ddf7089e4e6c09d135752df0616c8a353e86bd4231f4b3032eef64732fee1eb5bd99b00beb4597817cc4c2bf671e0c3f09dcec2cc9b3f2320f8e8942
-  languageName: node
-  linkType: hard
+  linkType: soft
 
 "fs-minipass@npm:^3.0.0":
   version: 3.0.3

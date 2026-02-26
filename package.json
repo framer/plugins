@@ -43,5 +43,8 @@
         "valibot": "^1.2.0",
         "vite": "^7.1.11",
         "vitest": "^3.2.4"
+    },
+    "resolutions": {
+        "framer-plugin": "portal:/Users/danieladias/Documents/FramerStudio/src/plugin-api"
     }
 }

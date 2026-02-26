@@ -1,12 +1,11 @@
 import "./global.css"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { framer } from "framer-plugin"
 import React from "react"
 import ReactDOM from "react-dom/client"
+import { registerAgentTools } from "./agentTools/registerAgentTools"
 import { App } from "./App.tsx"
-
-const root = document.getElementById("root")
-if (!root) throw new Error("Root element not found")
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -19,10 +18,17 @@ const queryClient = new QueryClient({
     },
 })
 
-ReactDOM.createRoot(root).render(
-    <React.StrictMode>
-        <QueryClientProvider client={queryClient}>
-            <App />
-        </QueryClientProvider>
-    </React.StrictMode>
-)
+if (framer.mode === "api") {
+    registerAgentTools()
+} else {
+    const root = document.getElementById("root")
+    if (!root) throw new Error("Root element not found")
+
+    ReactDOM.createRoot(root).render(
+        <React.StrictMode>
+            <QueryClientProvider client={queryClient}>
+                <App />
+            </QueryClientProvider>
+        </React.StrictMode>
+    )
+}

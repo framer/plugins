@@ -74,6 +74,32 @@ export async function fetchUnsplash<TSchema extends v.GenericSchema>(
     return result.output
 }
 
+export async function searchPhotos(query: string, maxResults: number): Promise<UnsplashPhoto[]> {
+    const safeMaxResults = Math.max(1, Math.floor(maxResults))
+    const pageSize = Math.min(pageItemCount, safeMaxResults)
+    const trimmedQuery = query.trim()
+
+    if (trimmedQuery.length === 0) {
+        const photos = await fetchUnsplash(`/photos?page=1&per_page=${pageSize}`, v.array(unsplashPhotoSchema), {
+            method: "GET",
+        })
+
+        return photos.slice(0, safeMaxResults)
+    }
+
+    const params = new URLSearchParams({
+        query: trimmedQuery,
+        page: "1",
+        per_page: String(pageSize),
+    })
+
+    const result = await fetchUnsplash(`/search/photos?${params.toString()}`, listPhotosSchema, {
+        method: "GET",
+    })
+
+    return result.results.slice(0, safeMaxResults)
+}
+
 export function useListPhotosInfinite(query: string) {
     return useInfiniteQuery({
         queryKey: ["photos", query],

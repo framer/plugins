@@ -1,6 +1,41 @@
 {
     "id": "Blwwee",
     "name": "Unsplash",
-    "modes": ["canvas", "editImage", "image"],
-    "icon": "/Unsplash.png"
+    "modes": ["canvas", "editImage", "image", "api"],
+    "icon": "/Unsplash.png",
+    "tools": [
+        {
+            "name": "search_images",
+            "description": "Search Unsplash images from a natural-language prompt and return one or more image URLs.",
+            "inputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["prompt"],
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "Search prompt for Unsplash images."
+                    },
+                    "max": {
+                        "type": "number",
+                        "description": "Optional maximum number of images to return."
+                    }
+                }
+            },
+            "outputSchema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["images"],
+                "properties": {
+                    "images": {
+                        "type": "array",
+                        "description": "List of Unsplash image URLs.",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    ]
 }

@@ -32,16 +32,23 @@ async function svgToBytes(svgText: string) {
 
 export function App() {
     const isAllowedToAddImage = useIsAllowedTo("addImage")
+    const [isAddingImage, setIsAddingImage] = useState(false)
 
     const handleAddSvg = useCallback(async (drawing: string) => {
-        await framer.addImage({
+        const image = await framer.uploadImage({
             image: {
                 type: "bytes",
                 bytes: await svgToBytes(drawing),
                 mimeType: "image/svg+xml",
             },
+        })
+
+        await framer.addImage({
+            image: image.url,
             name: "Doodle",
         })
+
+        setIsAddingImage(false)
     }, [])
 
     const canvasRef = useRef<ReactSketchCanvasRef>(null)
@@ -340,15 +347,18 @@ export function App() {
                     onClick={() => {
                         if (!isAllowedToAddImage) return
                         if (!canvasRef.current) return
+                        setIsAddingImage(true)
                         void canvasRef.current
                             .exportSvg()
                             .then(handleAddSvg)
                             .catch((error: unknown) => {
                                 console.log(error)
+                                setIsAddingImage(false)
+                                void framer.notify("Something went wrong. Please try again.", { variant: "error" })
                             })
                     }}
                 >
-                    Add
+                    {isAddingImage ? <div className="framer-spinner" /> : "Add"}
                 </button>
             </div>
         </main>

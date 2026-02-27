@@ -256,12 +256,6 @@ input::-webkit-inner-spin-button {
     flex: 1;
 }
 
-.final-buttons button:first-child {
-    font-weight: 500;
-    background-color: var(--framer-color-bg-secondary);
-    color: var(--framer-color-text);
-}
-
 /* Dark Mode */
 body[data-framer-theme="dark"] .row p {
     color: #ccc;

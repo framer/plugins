@@ -2,7 +2,7 @@ import type { Field, ManagedCollection, ManagedCollectionField, ManagedCollectio
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { memo, useEffect, useMemo, useState } from "react"
 import type { DataSource } from "./data"
-import { mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
+import { isFullLastModifiedTimeField, mergeFieldsWithExistingFields, syncCollection, syncMethods } from "./data"
 import type { PossibleField } from "./fields"
 import { isCollectionReference } from "./utils"
 
@@ -147,9 +147,10 @@ interface FieldMappingProps {
     collection: ManagedCollection
     dataSource: DataSource
     initialSlugFieldId: string | null
+    previousLastSynced: string | null
 }
 
-export function FieldMapping({ collection, dataSource, initialSlugFieldId }: FieldMappingProps) {
+export function FieldMapping({ collection, dataSource, initialSlugFieldId, previousLastSynced }: FieldMappingProps) {
     const [status, setStatus] = useState<"mapping-fields" | "loading-fields" | "syncing-collection">(
         initialSlugFieldId ? "loading-fields" : "mapping-fields"
     )
@@ -164,6 +165,8 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
 
     const [fields, setFields] = useState(initialManagedCollectionFields)
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(initialFieldIds)
+
+    const hasLastModifiedTimeField = dataSource.fields.some(isFullLastModifiedTimeField)
 
     // Create a map of field IDs to names for efficient lookup
     const originalFieldNameMap = useMemo(
@@ -310,8 +313,17 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                             field.collectionId !== ""
                     )
 
+                const syncStartedAtDate = new Date().toISOString()
+
                 await collection.setFields(processFields(fieldsToSync))
-                await syncCollection(collection, dataSource, fieldsToSync, selectedSlugField.id)
+                await syncCollection(
+                    collection,
+                    dataSource,
+                    fieldsToSync,
+                    selectedSlugField.id,
+                    previousLastSynced,
+                    syncStartedAtDate
+                )
                 framer.closePlugin("Synchronization successful", {
                     variant: "success",
                 })
@@ -346,6 +358,21 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
     return (
         <form className="framer-hide-scrollbar mapping" onSubmit={handleSubmit}>
             <hr className="sticky-top" />
+
+            {!hasLastModifiedTimeField && (
+                <>
+                    <div className="note">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
+                            <path
+                                d="M6 0a6 6 0 1 1 0 12A6 6 0 0 1 6 0Zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM5 9a1 1 0 0 0 2 0V6a1 1 0 0 0-2 0Z"
+                                fill="currentColor"
+                            ></path>
+                        </svg>
+                        <p>Add a “Last Modified Time” column in Airtable to sync faster.</p>
+                    </div>
+                    <hr />
+                </>
+            )}
 
             <label className="slug-field" htmlFor="slugField">
                 <span>Slug Field</span>

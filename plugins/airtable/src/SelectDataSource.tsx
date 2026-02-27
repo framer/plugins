@@ -74,6 +74,9 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                     setSelectedTableId(tables[0]?.id ?? "")
                 } catch (error) {
                     console.error(error)
+
+                    if (abortController.signal.aborted) return
+
                     setStatus("error-tables")
 
                     const baseName = selectedBase?.name ?? selectedBaseId

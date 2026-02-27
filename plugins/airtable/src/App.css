@@ -225,3 +225,19 @@ select:not(:disabled) {
     flex: 1;
     width: 100%;
 }
+
+.note {
+    display: flex;
+    flex-direction: row;
+    align-items: start;
+    justify-content: left;
+    gap: 14px;
+    width: 100%;
+    padding-left: 4px;
+    color: var(--framer-color-text-tertiary);
+}
+
+.note svg {
+    margin-top: 3px;
+    flex-shrink: 0;
+}

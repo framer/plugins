@@ -28,6 +28,7 @@ export const PLUGIN_KEYS = {
     TABLE_ID: "airtablePluginTableId",
     TABLE_NAME: "airtablePluginTableName",
     SLUG_FIELD_ID: "airtablePluginSlugId",
+    LAST_SYNCED: "airtablePluginLastSynced",
 } as const
 
 const IMAGE_FILE_MIME_TYPES = ["image/jpeg", "image/png", "image/gif", "image/apng", "image/webp", "image/svg+xml"]
@@ -318,12 +319,46 @@ export function getFieldDataEntryForFieldSchema(
     }
 }
 
-export async function getItems(dataSource: DataSource, slugFieldId: string) {
-    const items = await fetchRecords(dataSource.baseId, dataSource.tableId)
+/**
+ * Returns true if the field is a last modified time field that tracks all fields
+ * in the base (i.e. referencedFieldIds is null or empty). Fields that only track
+ * specific columns are not reliable enough to use for sync optimization.
+ */
+export function isFullLastModifiedTimeField(field: PossibleField): boolean {
+    if (field.airtableType !== "lastModifiedTime") return false
+    const options = field.airtableOptions as { isValid?: boolean; referencedFieldIds?: string[] | null } | undefined
+    const referencedFieldIds = options?.referencedFieldIds
+    return options?.isValid === true && (referencedFieldIds == null || referencedFieldIds.length === 0)
+}
+
+export function isUnchangedSinceLastSync(lastModifiedTime: string, lastSyncedTime: string | null): boolean {
+    if (!lastSyncedTime) return false
+
+    const lastModified = new Date(lastModifiedTime)
+    const lastSynced = new Date(lastSyncedTime)
+
+    return lastSynced > lastModified
+}
+
+export async function getItems(dataSource: DataSource, slugFieldId: string, lastSyncedTime: string | null) {
+    const records = await fetchRecords(dataSource.baseId, dataSource.tableId)
     const fieldsById = new Map(dataSource.fields.map(field => [field.id, field]))
+
+    const lastModifiedTimeFieldId = dataSource.fields.find(isFullLastModifiedTimeField)?.id ?? null
+
+    const allRecordIds: string[] = []
     const itemsData: { id: string; slugValue: string; fieldData: FieldDataInput }[] = []
 
-    for (const item of items) {
+    for (const item of records) {
+        allRecordIds.push(item.id)
+
+        if (lastSyncedTime && lastModifiedTimeFieldId) {
+            const lastModifiedValue = item.fields[lastModifiedTimeFieldId]
+            if (typeof lastModifiedValue === "string" && isUnchangedSinceLastSync(lastModifiedValue, lastSyncedTime)) {
+                continue
+            }
+        }
+
         const fieldData: FieldDataInput = {}
 
         for (const fieldSchema of dataSource.fields) {
@@ -425,7 +460,7 @@ export async function getItems(dataSource: DataSource, slugFieldId: string) {
         itemsData.push({ id: item.id, slugValue: slugify(slugField.value as string), fieldData })
     }
 
-    return itemsData
+    return { items: itemsData, allRecordIds }
 }
 
 export interface DataSource {
@@ -477,11 +512,22 @@ export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
     fields: readonly PossibleField[],
-    slugFieldId: string
+    slugFieldId: string,
+    previousLastSynced: string | null,
+    syncStartedAtDate: string
 ) {
-    const dataSourceItems = await getItems({ ...dataSource, fields }, slugFieldId)
+    const { items: dataSourceItems, allRecordIds } = await getItems(
+        { ...dataSource, fields },
+        slugFieldId,
+        previousLastSynced
+    )
     const items: ManagedCollectionItemInput[] = []
     const unsyncedItems = new Set(await collection.getItemIds())
+
+    // Remove all fetched record IDs from unsyncedItems so unchanged items are not deleted
+    for (const recordId of allRecordIds) {
+        unsyncedItems.delete(recordId)
+    }
 
     for (const item of dataSourceItems) {
         items.push({
@@ -490,8 +536,6 @@ export async function syncCollection(
             draft: false,
             fieldData: item.fieldData,
         })
-
-        unsyncedItems.delete(item.id)
     }
 
     // Find duplicate slugs and report error if any are found
@@ -512,20 +556,28 @@ export async function syncCollection(
         throw new Error(`Duplicate slug${pluralSuffix} found: ${slugList}. Each item must have a unique slug.`)
     }
 
-    await collection.removeItems(Array.from(unsyncedItems))
-    await collection.addItems(items)
+    const itemsToRemove = Array.from(unsyncedItems)
+    if (itemsToRemove.length > 0) {
+        await collection.removeItems(itemsToRemove)
+    }
+    if (items.length > 0) {
+        await collection.addItems(items)
+    }
+    await collection.setItemOrder(allRecordIds)
 
     await Promise.all([
         collection.setPluginData(PLUGIN_KEYS.BASE_ID, dataSource.baseId),
         collection.setPluginData(PLUGIN_KEYS.TABLE_ID, dataSource.tableId),
         collection.setPluginData(PLUGIN_KEYS.TABLE_NAME, dataSource.tableName),
         collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugFieldId),
+        collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, syncStartedAtDate),
     ])
 }
 
 export const syncMethods = [
     "ManagedCollection.removeItems",
     "ManagedCollection.addItems",
+    "ManagedCollection.setItemOrder",
     "ManagedCollection.setPluginData",
 ] as const satisfies ProtectedMethod[]
 
@@ -534,7 +586,8 @@ export async function syncExistingCollection(
     previousBaseId: string | null,
     previousTableId: string | null,
     previousTableName: string | null,
-    previousSlugFieldId: string | null
+    previousSlugFieldId: string | null,
+    previousLastSynced: string | null
 ): Promise<{ didSync: boolean }> {
     if (!previousBaseId || !previousTableId) {
         return { didSync: false }
@@ -549,7 +602,9 @@ export async function syncExistingCollection(
     }
 
     try {
-        await framer.hideUI()
+        void framer.hideUI()
+
+        const syncStartedAtDate = new Date().toISOString()
 
         const existingFields = await collection.getFields()
         const table = await fetchTable(previousBaseId, previousTableId)
@@ -582,7 +637,14 @@ export async function syncExistingCollection(
             tableName: table.name,
             fields: mergedFields,
         }
-        await syncCollection(collection, dataSource, fieldsToSync, previousSlugFieldId)
+        await syncCollection(
+            collection,
+            dataSource,
+            fieldsToSync,
+            previousSlugFieldId,
+            previousLastSynced,
+            syncStartedAtDate
+        )
         return { didSync: true }
     } catch (error) {
         console.error(error)

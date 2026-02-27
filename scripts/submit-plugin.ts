@@ -23,7 +23,8 @@
  */
 
 import { existsSync } from "node:fs"
-import { resolve } from "node:path"
+import { dirname, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 import { runPluginBuildScript, zipPluginDistribution } from "framer-plugin-tools"
 import { getEnvironment, getURL } from "./lib/env"
 import type { FramerJson } from "./lib/framer-api"
@@ -32,6 +33,8 @@ import { createGitTag } from "./lib/git"
 import { log } from "./lib/logging"
 import { extractChangelog } from "./lib/parse-pr"
 import { sendErrorNotification, sendSlackNotification } from "./lib/slack"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 async function main(): Promise<void> {
     console.log("=".repeat(60))

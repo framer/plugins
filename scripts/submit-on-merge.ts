@@ -19,10 +19,12 @@
 
 import { execSync } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
-import { join, resolve } from "node:path"
+import { dirname, join, resolve } from "node:path"
+import { fileURLToPath } from "node:url"
 import { log } from "./lib/logging"
 import { extractChangelog, parseChangedPlugins } from "./lib/parse-pr"
 
+const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = process.env.REPO_ROOT ?? resolve(__dirname, "..")
 const PLUGINS_DIR = join(REPO_ROOT, "plugins")
 

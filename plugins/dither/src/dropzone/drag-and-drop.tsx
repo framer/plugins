@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import { forwardRef, useImperativeHandle, useRef, useState } from "react"
+import { forwardRef, useImperativeHandle, useRef } from "react"
 import Dropzone from "react-dropzone"
 import type { DroppedAsset } from "../App"
 import { getPermissionTitle } from "../utils"

@@ -31,7 +31,7 @@ async function svgToBytes(svgText: string) {
 }
 
 export function App() {
-    const isAllowedToAddImage = useIsAllowedTo("addImage")
+    const isAllowedToInsertImage = useIsAllowedTo(framer.mode === "image" ? "setImage" : "addImage")
     const [isAddingImage, setIsAddingImage] = useState(false)
 
     const handleAddSvg = useCallback(async (drawing: string) => {
@@ -43,10 +43,18 @@ export function App() {
             },
         })
 
-        await framer.addImage({
-            image: image.url,
-            name: "Doodle",
-        })
+        if (framer.mode === "image") {
+            await framer.setImage({
+                image: image.url,
+                name: "Doodle",
+            })
+            framer.closePlugin()
+        } else {
+            await framer.addImage({
+                image: image.url,
+                name: "Doodle",
+            })
+        }
 
         setIsAddingImage(false)
     }, [])
@@ -342,10 +350,10 @@ export function App() {
                     Clear
                 </button>
                 <button
-                    disabled={!isAllowedToAddImage}
-                    title={isAllowedToAddImage ? undefined : "Insufficient permissions"}
+                    disabled={!isAllowedToInsertImage}
+                    title={isAllowedToInsertImage ? undefined : "Insufficient permissions"}
                     onClick={() => {
-                        if (!isAllowedToAddImage) return
+                        if (!isAllowedToInsertImage) return
                         if (!canvasRef.current) return
                         setIsAddingImage(true)
                         void canvasRef.current

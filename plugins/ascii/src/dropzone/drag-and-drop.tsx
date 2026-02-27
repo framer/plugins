@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { framer } from "framer-plugin"
 import Dropzone from "react-dropzone"
 import type { DroppedAsset } from "../App"
 import { getPermissionTitle } from "../utils"
@@ -10,8 +10,6 @@ export function Upload({
     setDroppedAsset: React.Dispatch<React.SetStateAction<DroppedAsset>>
     isAllowed: boolean
 }) {
-    const [message, setMessage] = useState<string>("Upload")
-
     return (
         <Dropzone
             noDrag
@@ -40,7 +38,7 @@ export function Upload({
             }}
             onError={error => {
                 console.log(error)
-                setMessage("Something went wrong please try again")
+                void framer.notify("Something went wrong. Please try again.", { variant: "error" })
             }}
         >
             {({ getRootProps, getInputProps }) => (
@@ -52,7 +50,7 @@ export function Upload({
                         disabled={!isAllowed}
                         title={getPermissionTitle(isAllowed)}
                     >
-                        {message}
+                        Upload
                     </button>
                 </div>
             )}

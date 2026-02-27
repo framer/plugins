@@ -54,6 +54,14 @@ export function zipPluginDistribution(options: ZipPluginDistributionOptions): st
     zip.addLocalFolder(distPath)
     zip.deleteFile(markerFileName)
     zip.addFile(markerFileName, Buffer.from("true", "utf-8"))
+
+    // Normalize all entry paths to use forward slashes
+    for (const entry of zip.getEntries()) {
+        if (entry.entryName.includes("\\")) {
+            entry.entryName = entry.entryName.replace(/\\/g, "/")
+        }
+    }
+
     zip.writeZip(zipFilePath)
 
     return zipFilePath

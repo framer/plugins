@@ -30,7 +30,11 @@ export function ColorInput({
                     onChange?.(value)
                 }}
             />
-            {value ? <span className="color">{value}</span> : <span className="placeholder">Add...</span>}
+            {value ? (
+                <span className="color">{String(value).replace("#", "")}</span>
+            ) : (
+                <span className="placeholder">Add...</span>
+            )}
             {value && erasable && (
                 <div
                     className="erase"

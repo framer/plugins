@@ -1,6 +1,6 @@
 {
     "id": "TS2xwk",
     "name": "ASCII",
-    "modes": ["canvas", "editImage"],
+    "modes": ["canvas", "image", "editImage"],
     "icon": "/Thumb@2x.png"
 }

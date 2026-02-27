@@ -350,7 +350,7 @@ export function App() {
                     Clear
                 </button>
                 <button
-                    disabled={!isAllowedToInsertImage}
+                    disabled={!isAllowedToInsertImage || isAddingImage}
                     title={isAllowedToInsertImage ? undefined : "Insufficient permissions"}
                     onClick={() => {
                         if (!isAllowedToInsertImage) return

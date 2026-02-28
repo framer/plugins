@@ -1,0 +1,11 @@
+name: Mergetron
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  mergetron:
+    uses: framer/mergetron/.github/workflows/install.yml@master
+    secrets:
+      mergetron_app_private_key: ${{ secrets.MERGETRON_APP_PRIVATE_KEY }}

@@ -1,0 +1,338 @@
+/* Your Plugin CSS */
+
+:root {
+    --crowdin-brand-color: #263238;
+    --color-error: #ff3366;
+}
+
+[data-framer-theme="light"] {
+    --image-border-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-framer-theme="dark"] {
+    --image-border-color: rgba(255, 255, 255, 0.05);
+}
+
+#root {
+    height: fit-content;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 0 15px 15px;
+    gap: 15px;
+
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+main.home {
+    height: 255px;
+}
+
+select {
+    padding: 0 16px 0 10px;
+}
+
+select:not(:disabled) {
+    cursor: pointer;
+}
+
+h1 {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+strong {
+    font-weight: 500;
+    color: var(--framer-color-text);
+}
+
+.hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 10px;
+    width: 100%;
+    flex: 1;
+}
+
+.hero p {
+    text-wrap: balance;
+    color: var(--framer-color-text-tertiary);
+    max-width: 250px;
+}
+
+.hero .logo {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    position: relative;
+    overflow: clip;
+    margin-bottom: 5px;
+}
+
+.hero .logo img {
+    width: 100%;
+    height: 100%;
+}
+
+.hero .logo:after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--image-border-color);
+    border-radius: 8px;
+}
+
+.button-row {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    width: 100%;
+}
+
+.button-row button {
+    flex: 1;
+}
+
+.controls-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.property-control {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: start;
+    gap: 10px;
+    padding-left: 10px;
+}
+
+.property-control.disabled > p,
+.controls-stack.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.property-control > p {
+    flex: 1;
+    height: 30px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.property-control > .content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 150px;
+}
+
+.property-control > .content > * {
+    width: 100%;
+}
+
+.access-token-input {
+    position: relative;
+}
+
+.access-token-input input {
+    width: 100%;
+}
+
+.access-token-input:has(.icon) input,
+.access-token-input:has(.icon-button) input {
+    padding-right: 28px;
+}
+
+.access-token-input .icon-button {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.link-icon:hover {
+    color: var(--framer-color-text);
+}
+
+.access-token-input .icon {
+    position: absolute;
+    height: 100%;
+    width: 28px;
+    flex-shrink: 0;
+    top: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.button-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.dropdown-button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 0;
+    padding-right: 0;
+    font-weight: 500;
+    background-color: var(--framer-color-bg-tertiary) !important;
+}
+
+.dropdown-button .content {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    overflow: hidden;
+}
+
+.dropdown-button span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.dropdown-button[disabled] {
+    color: var(--framer-color-text-secondary);
+}
+
+.icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    height: 100%;
+    width: 28px;
+    flex-shrink: 0;
+    color: var(--framer-color-text-tertiary);
+    transition: color 0.2s ease-in-out;
+}
+
+input.error {
+    box-shadow: inset 0 0 0 1px var(--color-error);
+    color: var(--color-error);
+    background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
+}
+
+.locales-empty-state-loading {
+    justify-content: center;
+    padding: 0;
+}
+
+.checkbox-label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkbox-label input[type="checkbox"]:not(:checked) {
+    background-color: var(--framer-color-bg-tertiary);
+}
+
+.heading {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.step-indicator {
+    color: var(--framer-color-text-tertiary);
+}
+
+.no-locales-message {
+    width: 100%;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--framer-color-text-tertiary);
+}
+
+/* Progress State */
+
+.progress-bar-text {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    color: var(--framer-color-text-tertiary);
+}
+
+.progress-bar-percent {
+    font-weight: 600;
+    color: var(--framer-color-text);
+}
+
+.progress-bar {
+    height: 3px;
+    width: 100%;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background-color: var(--framer-color-bg-tertiary);
+    position: relative;
+}
+
+.progress-bar-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 10px;
+    background-color: var(--framer-color-tint);
+}
+
+/* Flag icons */
+
+.flag-icon {
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+.flag-icon.basic {
+    width: 16px;
+    height: 12px;
+    border-radius: 2px;
+    background-color: #888;
+    color: var(--framer-color-bg);
+    font-size: 8px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flag-icon.emoji {
+    width: 16px;
+    height: 16px;
+}

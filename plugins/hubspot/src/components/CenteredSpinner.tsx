@@ -1,8 +1,7 @@
 import cx from "classnames"
-import { Spinner, type SpinnerProps } from "./Spinner"
 
-export const CenteredSpinner = ({ className, size }: { className?: string; size?: SpinnerProps["size"] }) => (
+export const CenteredSpinner = ({ className, large = false }: { className?: string; large?: boolean }) => (
     <div className={cx("flex items-center justify-center m-auto", className)}>
-        <Spinner inheritColor inline size={size} />
+        <div className={large ? "framer-spinner-large" : "framer-spinner"} />
     </div>
 )

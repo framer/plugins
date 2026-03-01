@@ -31,17 +31,32 @@ async function svgToBytes(svgText: string) {
 }
 
 export function App() {
-    const isAllowedToAddImage = useIsAllowedTo("addImage")
+    const isAllowedToInsertImage = useIsAllowedTo(framer.mode === "image" ? "setImage" : "addImage")
+    const [isAddingImage, setIsAddingImage] = useState(false)
 
     const handleAddSvg = useCallback(async (drawing: string) => {
-        await framer.addImage({
+        const image = await framer.uploadImage({
             image: {
                 type: "bytes",
                 bytes: await svgToBytes(drawing),
                 mimeType: "image/svg+xml",
             },
-            name: "Doodle",
         })
+
+        if (framer.mode === "image") {
+            await framer.setImage({
+                image: image.url,
+                name: "Doodle",
+            })
+            framer.closePlugin()
+        } else {
+            await framer.addImage({
+                image: image.url,
+                name: "Doodle",
+            })
+        }
+
+        setIsAddingImage(false)
     }, [])
 
     const canvasRef = useRef<ReactSketchCanvasRef>(null)
@@ -335,20 +350,23 @@ export function App() {
                     Clear
                 </button>
                 <button
-                    disabled={!isAllowedToAddImage}
-                    title={isAllowedToAddImage ? undefined : "Insufficient permissions"}
+                    disabled={!isAllowedToInsertImage || isAddingImage}
+                    title={isAllowedToInsertImage ? undefined : "Insufficient permissions"}
                     onClick={() => {
-                        if (!isAllowedToAddImage) return
+                        if (!isAllowedToInsertImage) return
                         if (!canvasRef.current) return
+                        setIsAddingImage(true)
                         void canvasRef.current
                             .exportSvg()
                             .then(handleAddSvg)
                             .catch((error: unknown) => {
                                 console.log(error)
+                                setIsAddingImage(false)
+                                void framer.notify("Something went wrong. Please try again.", { variant: "error" })
                             })
                     }}
                 >
-                    Add
+                    {isAddingImage ? <div className="framer-spinner" /> : "Add"}
                 </button>
             </div>
         </main>

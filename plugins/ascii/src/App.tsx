@@ -23,6 +23,9 @@ function useSelectedImage() {
     const [selection, setSelection] = useState<ImageAsset | null>(null)
 
     useEffect(() => {
+        // framer.subscribeToImage is not available in image mode
+        if (framer.mode === "image") return
+
         return framer.subscribeToImage(setSelection)
     }, [])
 
@@ -122,13 +125,23 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
             setSavingInAction(true)
 
             if (droppedAsset || isPlaceholder) {
-                await framer.addImage({
-                    image: {
-                        type: "bytes",
-                        bytes: bytes,
-                        mimeType: "image/png",
-                    },
-                })
+                if (framer.mode === "canvas") {
+                    await framer.addImage({
+                        image: {
+                            type: "bytes",
+                            bytes: bytes,
+                            mimeType: "image/png",
+                        },
+                    })
+                } else {
+                    await framer.setImage({
+                        image: {
+                            bytes: bytes,
+                            mimeType: "image/png",
+                        },
+                    })
+                    void framer.closePlugin()
+                }
             } else {
                 if (!framerCanvasImage) return
 
@@ -281,7 +294,6 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
                 />
                 {droppedAsset && (
                     <button
-                        className="clear"
                         onClick={() => {
                             setDroppedAsset(null)
                         }}
@@ -292,11 +304,11 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
             </div>
             <button
                 onClick={saveEffect}
-                className="submit"
+                className="framer-button-primary"
                 disabled={!isAllowedToUpsertImage}
                 title={getPermissionTitle(isAllowedToUpsertImage)}
             >
-                {savingInAction ? "Adding..." : "Insert"}
+                {savingInAction ? <div className="framer-spinner" /> : "Insert"}
             </button>
         </div>
     )

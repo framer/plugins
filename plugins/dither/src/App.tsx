@@ -20,6 +20,9 @@ function useSelectedImage() {
     const [image, setImage] = useState<ImageAsset | null>(null)
 
     useEffect(() => {
+        // framer.subscribeToImage is not available in image mode
+        if (framer.mode === "image") return
+
         return framer.subscribeToImage(setImage)
     }, [])
 
@@ -154,14 +157,24 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             setSavingInAction(true)
 
             if (droppedAsset) {
-                await framer.addImage({
-                    image: {
-                        type: "bytes",
-                        bytes: bytes,
-                        mimeType: "image/png",
-                    },
-                    preferredImageRendering: "pixelated",
-                })
+                if (framer.mode === "canvas") {
+                    await framer.addImage({
+                        image: {
+                            bytes: bytes,
+                            mimeType: "image/png",
+                        },
+                        preferredImageRendering: "pixelated",
+                    })
+                } else {
+                    await framer.setImage({
+                        image: {
+                            bytes: bytes,
+                            mimeType: "image/png",
+                        },
+                        preferredImageRendering: "pixelated",
+                    })
+                    void framer.closePlugin()
+                }
             } else {
                 if (!image) return
                 const originalImage = await image.getData()
@@ -341,7 +354,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                 />
                 {droppedAsset && (
                     <button
-                        className="clear"
                         onClick={() => {
                             setDroppedAsset(null)
                         }}
@@ -352,11 +364,11 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
             </div>
             <button
                 onClick={saveEffect}
-                className="submit"
+                className="framer-button-primary"
                 disabled={disabled || !isAllowedToUpsertImage}
                 title={getPermissionTitle(isAllowedToUpsertImage)}
             >
-                {savingInAction ? "Adding..." : "Insert Image"}
+                {savingInAction ? <div className="framer-spinner" /> : "Insert Image"}
             </button>
         </div>
     )

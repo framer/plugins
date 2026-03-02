@@ -228,24 +228,15 @@ body[data-framer-theme="light"] .gui-label {
     opacity: 0.33;
 }
 
-.submit:disabled {
-    pointer-events: none;
-    opacity: 0.33;
-}
-
-.submit {
-    width: 100%;
-    color: #000;
+.framer-button-primary {
+    --framer-color-text-reversed: #000;
     background-color: #fff !important;
-    font-weight: 600;
-    cursor: pointer;
 }
 
 body[data-framer-theme="light"] {
-    .submit {
+    .framer-button-primary {
+        --framer-color-text-reversed: #fff;
         background-color: #000 !important;
-        color: #fff;
-        font-weight: 500;
     }
 }
 

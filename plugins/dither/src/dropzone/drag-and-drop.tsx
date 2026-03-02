@@ -1,4 +1,5 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from "react"
+import { framer } from "framer-plugin"
+import { forwardRef, useImperativeHandle, useRef } from "react"
 import Dropzone from "react-dropzone"
 import type { DroppedAsset } from "../App"
 import { getPermissionTitle } from "../utils"
@@ -13,7 +14,6 @@ export const Upload = forwardRef(function Upload(
     },
     ref
 ) {
-    const [message, setMessage] = useState<string>("Upload")
     const buttonRef = useRef<HTMLButtonElement>(null)
 
     useImperativeHandle(ref, () => ({
@@ -41,7 +41,7 @@ export const Upload = forwardRef(function Upload(
             }}
             onError={error => {
                 console.log(error)
-                setMessage("Something went wrong please try again")
+                void framer.notify("Something went wrong. Please try again.", { variant: "error" })
             }}
         >
             {({ getRootProps, getInputProps }) => (
@@ -54,7 +54,7 @@ export const Upload = forwardRef(function Upload(
                         disabled={!isAllowed}
                         title={getPermissionTitle(isAllowed)}
                     >
-                        {message}
+                        Upload
                     </button>
                 </div>
             )}

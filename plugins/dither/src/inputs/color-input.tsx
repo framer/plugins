@@ -33,7 +33,7 @@ export function ColorInput({
             {value ? (
                 <span className="color">{String(value).replace("#", "")}</span>
             ) : (
-                <span className="placeholder">Add...</span>
+                <span className="placeholder">Add…</span>
             )}
             {value && erasable && (
                 <div

@@ -374,6 +374,8 @@ export async function syncExistingCollection(
         return { didSync: false }
     }
 
+    void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+
     try {
         const [dataSource, existingFields] = await Promise.all([
             getDataSource(previousPressRoomId, previousDataSourceId),
@@ -399,5 +401,7 @@ export async function syncExistingCollection(
             variant: "error",
         })
         return { didSync: false }
+    } finally {
+        void framer.setCloseWarning(false)
     }
 }

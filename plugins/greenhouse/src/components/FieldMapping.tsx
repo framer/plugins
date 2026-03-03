@@ -197,6 +197,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
         const task = async () => {
             try {
                 setStatus("syncing-collection")
+                void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
                 const fieldsToSync: GreenhouseField[] = []
 
@@ -217,6 +218,7 @@ export function FieldMapping({ boardToken, collection, dataSource, initialSlugFi
                     variant: "error",
                 })
             } finally {
+                void framer.setCloseWarning(false)
                 setStatus("mapping-fields")
             }
         }

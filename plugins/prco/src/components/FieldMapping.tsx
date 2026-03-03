@@ -195,6 +195,7 @@ export function FieldMapping({ pressRoomId, collection, dataSource, initialSlugF
         }
 
         setStatus("syncing-collection")
+        void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
         const fieldsToSync: PrcoField[] = []
 
@@ -213,6 +214,7 @@ export function FieldMapping({ pressRoomId, collection, dataSource, initialSlugF
                         void framer.closePlugin("Synchronization successful", { variant: "success" })
                     })
                     .catch((error: unknown) => {
+                        void framer.setCloseWarning(false)
                         console.error(error)
                         framer.notify(
                             `Failed to sync collection “${dataSource.id}”. Check the logs for more details.`,
@@ -224,6 +226,7 @@ export function FieldMapping({ pressRoomId, collection, dataSource, initialSlugF
                     })
             })
             .catch((error: unknown) => {
+                void framer.setCloseWarning(false)
                 console.error(error)
                 framer.notify(`Failed to set fields. Check the logs for more details.`, {
                     variant: "error",

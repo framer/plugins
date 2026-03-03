@@ -271,6 +271,8 @@ export async function syncExistingCollection(
         framer.closePlugin("You are not allowed to sync this collection.", { variant: "error" })
     }
 
+    void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+
     try {
         const dataSource = await getDataSource(previousBoardToken, previousDataSourceId)
         const existingFields = await collection.getFields()
@@ -291,5 +293,7 @@ export async function syncExistingCollection(
             variant: "error",
         })
         return { didSync: false }
+    } finally {
+        void framer.setCloseWarning(false)
     }
 }

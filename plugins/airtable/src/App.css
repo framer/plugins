@@ -188,6 +188,11 @@ select:not(:disabled) {
     pointer-events: none;
 }
 
+.import-button {
+    white-space: nowrap;
+    display: inline-block;
+}
+
 /* Login */
 
 .login-steps {

@@ -368,6 +368,7 @@ export function FieldMapping({
                 <footer>
                     <hr className="sticky-top" />
                     <button
+                        className="import-button"
                         disabled={!isAllowedToManage}
                         tabIndex={0}
                         title={!isAllowedToManage ? "Insufficient permissions" : undefined}

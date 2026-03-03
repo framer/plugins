@@ -418,6 +418,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             <footer>
                 <hr className="sticky-top" />
                 <button
+                    className="import-button"
                     type="submit"
                     disabled={isSyncing || !isAllowedToManage}
                     tabIndex={0}

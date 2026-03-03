@@ -548,7 +548,7 @@ export async function syncExistingCollection(
         return { didSync: false }
     }
 
-    await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+    void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
     try {
         await framer.hideUI()
@@ -596,6 +596,6 @@ export async function syncExistingCollection(
         )
         return { didSync: false }
     } finally {
-        await framer.setCloseWarning(false)
+        void framer.setCloseWarning(false)
     }
 }

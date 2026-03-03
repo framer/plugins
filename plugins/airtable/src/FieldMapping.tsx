@@ -293,7 +293,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
         const task = async () => {
             try {
                 setStatus("syncing-collection")
-                await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+                void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
                 const fieldsToSync = fields
                     .filter(field => !ignoredFieldIds.has(field.id))
@@ -327,7 +327,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
                     { variant: "error", durationMs: Infinity }
                 )
             } finally {
-                await framer.setCloseWarning(false)
+                void framer.setCloseWarning(false)
                 setStatus("mapping-fields")
             }
         }

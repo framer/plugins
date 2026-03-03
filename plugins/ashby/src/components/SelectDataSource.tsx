@@ -43,10 +43,14 @@ export function SelectDataSource({
 
                     getDataSource(parsedJobBoardName, selectedDataSourceId)
                         .then(dataSource => {
+                            void framer.setCloseWarning(
+                                "Synchronization setup in progress. Closing will cancel the sync."
+                            )
                             onSelectDataSource(dataSource)
                             onSelectJobBoardName(parsedJobBoardName)
                         })
                         .catch((error: unknown) => {
+                            void framer.setCloseWarning(false)
                             console.error(error)
                             framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
                                 variant: "error",
@@ -57,6 +61,7 @@ export function SelectDataSource({
                         })
                 })
                 .catch((error: unknown) => {
+                    void framer.setCloseWarning(false)
                     console.error(error)
                     framer.notify(error instanceof Error ? error.message : "An unknown error occurred", {
                         variant: "error",

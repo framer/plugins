@@ -195,8 +195,8 @@ export function FieldMapping({ jobBoardName, collection, dataSource, initialSlug
             return
         }
 
-        // try {
         setStatus("syncing-collection")
+        void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
         const fieldsToSync: AshbyField[] = []
 
@@ -216,6 +216,7 @@ export function FieldMapping({ jobBoardName, collection, dataSource, initialSlug
                         framer.closePlugin("Synchronization successful", { variant: "success" })
                     })
                     .catch((error: unknown) => {
+                        void framer.setCloseWarning(false)
                         console.error(error)
                         framer.notify(
                             `Failed to sync collection “${dataSource.id}”. Check the logs for more details.`,
@@ -227,6 +228,7 @@ export function FieldMapping({ jobBoardName, collection, dataSource, initialSlug
                     })
             })
             .catch((error: unknown) => {
+                void framer.setCloseWarning(false)
                 console.error(error)
                 framer.notify(`Failed to set fields. Check the logs for more details.`, {
                     variant: "error",

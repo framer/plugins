@@ -300,6 +300,8 @@ export async function syncExistingCollection(
         })
     }
 
+    void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+
     try {
         const dataSource = await getDataSource(previousJobBoardName, previousDataSourceId)
         const existingFields = await collection.getFields()
@@ -320,5 +322,7 @@ export async function syncExistingCollection(
             variant: "error",
         })
         return { didSync: false }
+    } finally {
+        void framer.setCloseWarning(false)
     }
 }

@@ -108,6 +108,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                     framer.notify("Table not found", { variant: "error" })
                     return
                 }
+                await framer.setCloseWarning("Synchronization setup in progress. Closing will cancel the sync.")
                 const fields = await inferFields(collection, selectedTable)
                 onSelectDataSource({
                     baseId: selectedBaseId,
@@ -116,6 +117,7 @@ export function SelectDataSource({ collection, onSelectDataSource }: SelectDataS
                     fields,
                 })
             } catch (error) {
+                await framer.setCloseWarning(false)
                 console.error(error)
                 framer.notify("Failed to load data source. Check the logs for more details.", { variant: "error" })
             } finally {

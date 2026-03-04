@@ -981,10 +981,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@notionhq/client@npm:^3.1.3":
-  version: 3.1.3
-  resolution: "@notionhq/client@npm:3.1.3"
-  checksum: 10/f599cd656037784125bb84963b0a4549c100223659d193c03b60bd2721fd302589bd12163e914b8fc5770dd753e4cad7eeec5bd2d231b9c227470312412eb4e8
+"@notionhq/client@npm:^5.11.1":
+  version: 5.11.1
+  resolution: "@notionhq/client@npm:5.11.1"
+  checksum: 10/f15ee694f19ab1d07eab28c58f6ccd46161fe34e927a236df2b2460a13aa6c48feebf0ba7f44fdbd02e9a07e18b598a8134ffaa947c73c3438e15ab7462758ed
   languageName: node
   linkType: hard
 
@@ -7119,7 +7119,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "notion@workspace:plugins/notion"
   dependencies:
-    "@notionhq/client": "npm:^3.1.3"
+    "@notionhq/client": "npm:^5.11.1"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     framer-plugin: "npm:^3.10.3"

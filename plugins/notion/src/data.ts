@@ -1,4 +1,4 @@
-import type { DatabaseObjectResponse, PageObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+import type { DataSourceObjectResponse, PageObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import {
     type ArrayItemInput,
     type FieldDataEntryInput,
@@ -12,10 +12,10 @@ import * as v from "valibot"
 import {
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
-    getDatabase,
+    getDataSourceFromDatabaseId,
     getDatabaseFieldsInfo,
     getDatabaseItems,
-    getNotionDatabases,
+    getNotionDataSources,
     getPageBlocksAsRichText,
     getSlugValue,
     isUnchangedSinceLastSync,
@@ -34,29 +34,38 @@ const CONCURRENCY_LIMIT = 5
 export type DatabaseIdMap = Map<string, string>
 
 export interface DataSource {
+    /** Database ID - used for plugin storage, relations, and backward compatibility */
     id: string
+    /** Data source ID - used for API calls (query, etc.) */
+    dataSourceId: string
     name: string
-    database: DatabaseObjectResponse
+    /** Schema with properties - from the first data source when database has multiple */
+    schema: DataSourceObjectResponse
+    /** Database URL for "View in Notion" link */
+    databaseUrl: string | null
 }
 
 export async function getDataSources(): Promise<DataSource[]> {
-    const databases = await getNotionDatabases()
+    const dataSources = await getNotionDataSources()
 
-    return databases.map((database: DatabaseObjectResponse) => {
+    return dataSources.map((ds: DataSourceObjectResponse) => {
+        const databaseId = ds.parent.type === "database_id" ? ds.parent.database_id : ds.id
         return {
-            id: database.id,
-            name: richTextToPlainText(database.title) || "Untitled Database",
-            database,
+            id: databaseId,
+            dataSourceId: ds.id,
+            name: richTextToPlainText(ds.title) || "Untitled Database",
+            schema: ds,
+            databaseUrl: null, // Search results don't include database URL
         }
     })
 }
 
 /**
- * Retrieve Notion database and get name and id.
+ * Retrieve Notion database by database_id and resolve to first data source.
+ * When a database has multiple data sources, only the first one is used.
  */
 export async function getDataSource(databaseId: string, abortSignal?: AbortSignal): Promise<DataSource> {
-    // Fetch from your data source
-    const database = await getDatabase(databaseId)
+    const { database, dataSource } = await getDataSourceFromDatabaseId(databaseId)
 
     if (abortSignal?.aborted) {
         throw new Error("Database loading cancelled")
@@ -64,8 +73,10 @@ export async function getDataSource(databaseId: string, abortSignal?: AbortSigna
 
     return {
         id: database.id,
-        name: richTextToPlainText(database.title) || "Untitled Database",
-        database,
+        dataSourceId: dataSource.id,
+        name: richTextToPlainText(dataSource.title) || "Untitled Database",
+        schema: dataSource,
+        databaseUrl: database.url ?? null,
     }
 }
 
@@ -142,7 +153,7 @@ export async function syncCollection(
 
     const seenItemIds = new Set<string>()
 
-    const databaseItems = await getDatabaseItems(dataSource.database, reportProgress)
+    const databaseItems = await getDatabaseItems(dataSource.dataSourceId, reportProgress)
 
     // Validate slugs before fetching page content
     const seenSlugs = new Set<string>()
@@ -367,10 +378,10 @@ export async function syncCollection(
             PLUGIN_KEYS.IGNORED_FIELD_IDS,
             ignoredFieldIds.size > 0 ? JSON.stringify(Array.from(ignoredFieldIds)) : null
         ),
-        collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, dataSource.database.id),
+        collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, dataSource.id),
         collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
         collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id),
-        collection.setPluginData(PLUGIN_KEYS.DATABASE_NAME, richTextToPlainText(dataSource.database.title)),
+        collection.setPluginData(PLUGIN_KEYS.DATABASE_NAME, richTextToPlainText(dataSource.schema.title)),
     ])
 }
 
@@ -421,7 +432,7 @@ export async function syncExistingCollection(
         const dataSource = await getDataSource(previousDatabaseId)
         const existingFields = await collection.getFields()
 
-        const dataSourceFieldsInfo = getDatabaseFieldsInfo(dataSource.database, databaseIdMap)
+        const dataSourceFieldsInfo = getDatabaseFieldsInfo(dataSource.schema, databaseIdMap)
         const fieldsInfo = mergeFieldsInfoWithExistingFields(dataSourceFieldsInfo, existingFields)
         const fields = fieldsInfoToCollectionFields(fieldsInfo, databaseIdMap)
 

@@ -163,6 +163,7 @@ export function blocksToHtml(blocks: BlockObjectResponse[]) {
 type NotionCodeLanguage = CodeBlockObjectResponse["code"]["language"]
 const CODE_LANGUAGE_MAP: Record<NotionCodeLanguage, string | null> = {
     abap: null,
+    abc: null,
     agda: null,
     arduino: null,
     "ascii art": null,

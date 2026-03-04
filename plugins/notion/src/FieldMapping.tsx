@@ -168,10 +168,10 @@ export function FieldMapping({
     const isLoadingFields = status === "loading-fields"
 
     const dataSourceName = dataSource.name
-    const database = dataSource.database
+    const schema = dataSource.schema
 
-    const initialFieldsInfo = useMemo(() => getDatabaseFieldsInfo(database, databaseIdMap), [database, databaseIdMap])
-    const possibleSlugFieldIds = useMemo(() => getPossibleSlugFieldIds(database), [database])
+    const initialFieldsInfo = useMemo(() => getDatabaseFieldsInfo(schema, databaseIdMap), [schema, databaseIdMap])
+    const possibleSlugFieldIds = useMemo(() => getPossibleSlugFieldIds(schema), [schema])
 
     const [selectedSlugFieldId, setSelectedSlugFieldId] = useState<FieldId | null>(
         initialSlugFieldId ?? possibleSlugFieldIds[0] ?? null

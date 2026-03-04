@@ -141,11 +141,11 @@ function ManageApp({
 
     // Support self-referencing databases by allowing the current collection to be referenced.
     const databaseIdMap = useMemo(() => {
-        if (dataSource?.database.id) {
-            return new Map(existingCollectionDatabaseIdMap).set(dataSource.database.id, collection.id)
+        if (dataSource?.id) {
+            return new Map(existingCollectionDatabaseIdMap).set(dataSource.id, collection.id)
         }
         return existingCollectionDatabaseIdMap
-    }, [existingCollectionDatabaseIdMap, dataSource?.database.id, collection.id])
+    }, [existingCollectionDatabaseIdMap, dataSource?.id, collection.id])
 
     useLayoutEffect(() => {
         const showUI = async () => {
@@ -216,10 +216,10 @@ function ManageApp({
         void framer.setMenu([
             {
                 label: `View ${dataSource?.name ?? ""} in Notion`,
-                visible: Boolean(dataSource?.database.url),
+                visible: Boolean(dataSource?.databaseUrl),
                 onAction: () => {
-                    if (!dataSource?.database) return
-                    window.open(dataSource.database.url, "_blank")
+                    if (!dataSource?.databaseUrl) return
+                    window.open(dataSource.databaseUrl, "_blank")
                 },
             },
             { type: "separator" },

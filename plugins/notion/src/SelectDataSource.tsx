@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { type DataSource, getDataSources } from "./data"
+import { type DataSource, getDataSource, getDataSources } from "./data"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
@@ -69,22 +69,24 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
         try {
             setStatus(Status.Loading)
 
-            const dataSource = dataSources.find(dataSource => dataSource.id === selectedDatabaseId)
-            if (!dataSource) {
+            const listItem = dataSources.find(ds => ds.id === selectedDatabaseId)
+            if (!listItem) {
                 framer.notify("Database not found", { variant: "error" })
                 return
             }
 
             await framer.setCloseWarning("Synchronization setup in progress. Closing will cancel the sync.")
 
+            // Fetch full DataSource with databaseUrl for "View in Notion" link
+            const dataSource = await getDataSource(selectedDatabaseId)
             onSelectDataSource(dataSource)
         } catch (error) {
             await framer.setCloseWarning(false)
 
             console.error(error)
-            const dataSource = dataSources.find(dataSource => dataSource.id === selectedDatabaseId)
+            const listItem = dataSources.find(ds => ds.id === selectedDatabaseId)
             framer.notify(
-                `Failed to load database “${dataSource?.name ?? selectedDatabaseId}”: ${error instanceof Error ? error.message : "Unknown error"}`,
+                `Failed to load database “${listItem?.name ?? selectedDatabaseId}”: ${error instanceof Error ? error.message : "Unknown error"}`,
                 { variant: "error" }
             )
         } finally {

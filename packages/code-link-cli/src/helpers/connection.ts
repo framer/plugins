@@ -5,7 +5,9 @@
  */
 
 import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
+import https from "node:https"
 import { WebSocket, WebSocketServer } from "ws"
+import type { CertBundle } from "./certs.ts"
 import { debug, error } from "../utils/logging.ts"
 
 export interface ConnectionCallbacks {
@@ -24,20 +26,29 @@ export interface Connection {
 }
 
 /**
- * Initializes a WebSocket server and returns a connection interface
- * Returns a Promise that resolves when the server is ready, or rejects on startup errors
+ * Initializes a WebSocket server and returns a connection interface.
+ * When certs are provided, creates a WSS (TLS) server; otherwise plain WS.
+ * Returns a Promise that resolves when the server is ready, or rejects on startup errors.
  */
-export function initConnection(port: number): Promise<Connection> {
+export function initConnection(port: number, certs?: CertBundle): Promise<Connection> {
     return new Promise((resolve, reject) => {
-        const wss = new WebSocketServer({ port })
         const handlers: Partial<ConnectionCallbacks> = {}
         let connectionId = 0
         let isReady = false
 
-        // Handle server-level errors (e.g., EADDRINUSE)
-        wss.on("error", (err: NodeJS.ErrnoException) => {
+        // Create server — WSS when certs are available, plain WS otherwise
+        let httpsServer: https.Server | null = null
+        let wss: WebSocketServer
+
+        if (certs) {
+            httpsServer = https.createServer({ key: certs.key, cert: certs.cert })
+            wss = new WebSocketServer({ server: httpsServer })
+        } else {
+            wss = new WebSocketServer({ port })
+        }
+
+        const handleError = (err: NodeJS.ErrnoException) => {
             if (!isReady) {
-                // Startup error - reject the promise with a helpful message
                 if (err.code === "EADDRINUSE") {
                     error(`Port ${port} is already in use.`)
                     error(`This usually means another instance of Code Link is already running.`)
@@ -53,14 +64,12 @@ export function initConnection(port: number): Promise<Connection> {
                 }
                 return
             }
-            // Runtime error - log but don't crash
             error(`WebSocket server error: ${err.message}`)
-        })
+        }
 
-        // Server is ready when it starts listening
-        wss.on("listening", () => {
+        const handleListening = () => {
             isReady = true
-            debug(`WebSocket server listening on port ${port}`)
+            debug(`${certs ? "WSS" : "WS"} server listening on port ${port}`)
             let activeClient: WebSocket | null = null
 
             wss.on("connection", (ws: WebSocket) => {
@@ -137,9 +146,19 @@ export function initConnection(port: number): Promise<Connection> {
 
                 close(): void {
                     wss.close()
+                    httpsServer?.close()
                 },
             } satisfies Connection)
-        })
+        }
+
+        if (httpsServer) {
+            httpsServer.on("error", handleError)
+            httpsServer.on("listening", handleListening)
+            httpsServer.listen(port)
+        } else {
+            wss.on("error", handleError)
+            wss.on("listening", handleListening)
+        }
     })
 }
 

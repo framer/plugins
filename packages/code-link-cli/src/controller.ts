@@ -10,6 +10,7 @@ import { pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
 import type { WebSocket } from "ws"
+import { getOrCreateCerts } from "./helpers/certs.ts"
 import { initConnection, sendMessage } from "./helpers/connection.ts"
 import {
     autoResolveConflicts,
@@ -1063,8 +1064,14 @@ export async function start(config: Config): Promise<void> {
         }
     }
 
+    // TLS certificates for WSS — falls back to plain WS on failure
+    const certs = await getOrCreateCerts()
+    if (!certs) {
+        warn("Using unencrypted ws:// connection (browser may block this)")
+    }
+
     // WebSocket Connection
-    const connection = await initConnection(config.port)
+    const connection = await initConnection(config.port, certs ?? undefined)
 
     // Handle initial handshake
     connection.on("handshake", (client: WebSocket, message) => {

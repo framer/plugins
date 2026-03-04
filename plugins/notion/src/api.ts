@@ -1,7 +1,9 @@
-import { Client, collectPaginatedAPI, isFullBlock, isFullDatabase, isFullPage } from "@notionhq/client"
+import { Client, collectPaginatedAPI, isFullBlock, isFullDataSource, isFullPage } from "@notionhq/client"
 import type {
     BlockObjectResponse,
-    GetDatabaseResponse,
+    DataSourceObjectResponse,
+    DatabaseObjectResponse,
+    GetDataSourceResponse,
     PageObjectResponse,
     RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints"
@@ -38,7 +40,9 @@ export interface FieldInfo {
     notionProperty: NotionProperty | null
 }
 
-export type NotionProperty = GetDatabaseResponse["properties"][string]
+/** Schema type with properties - both Database and DataSource have this shape */
+export type SchemaWithProperties = GetDataSourceResponse
+export type NotionProperty = SchemaWithProperties["properties"][string]
 
 // Every page has content which can be fetched as blocks. We add it as a
 // property so it displays in the list where you can configure properties to be
@@ -203,17 +207,33 @@ export function getNotionClient(): Client {
     return notionClientSingleton
 }
 
-export async function getNotionDatabases() {
+/**
+ * Returns data sources for databases the user can connect.
+ * When a database has multiple data sources, only the first one is used (for backward compatibility).
+ */
+export async function getNotionDataSources(): Promise<DataSourceObjectResponse[]> {
     const notion = getNotionClient()
 
     const results = await collectPaginatedAPI(notion.search, {
         filter: {
             property: "object",
-            value: "database",
+            value: "data_source",
         },
     })
 
-    return results.filter(isFullDatabase)
+    const fullDataSources = results.filter(isFullDataSource)
+
+    // When a database has multiple data sources, only use the first one per database
+    const seenDatabaseIds = new Set<string>()
+    const firstDataSources: DataSourceObjectResponse[] = []
+    for (const ds of fullDataSources) {
+        const databaseId = ds.parent.type === "database_id" ? ds.parent.database_id : ds.id
+        if (seenDatabaseIds.has(databaseId)) continue
+        seenDatabaseIds.add(databaseId)
+        firstDataSources.push(ds)
+    }
+
+    return firstDataSources
 }
 
 export function assertFieldTypeMatchesPropertyType(
@@ -234,15 +254,33 @@ export function assertFieldTypeMatchesPropertyType(
     }
 }
 
-export async function getDatabase(databaseId: string) {
+/**
+ * Resolves a database_id to its first data source and returns the full schema.
+ * When a database has multiple data sources, only the first one is used.
+ */
+export async function getDataSourceFromDatabaseId(
+    databaseId: string
+): Promise<{ database: DatabaseObjectResponse; dataSource: DataSourceObjectResponse }> {
     const notion = getNotionClient()
     const database = await notion.databases.retrieve({ database_id: databaseId })
 
-    if (!isFullDatabase(database)) {
-        throw new Error(`Database ${databaseId} is not a full database`)
+    const dataSources = "data_sources" in database && Array.isArray(database.data_sources) ? database.data_sources : []
+    const firstDataSourceRef = dataSources[0]
+    if (!firstDataSourceRef) {
+        throw new Error(`Database ${databaseId} has no data sources`)
+    }
+    const dataSource = await notion.dataSources.retrieve({
+        data_source_id: firstDataSourceRef.id,
+    })
+
+    if (!isFullDataSource(dataSource)) {
+        throw new Error(`Data source ${firstDataSourceRef.id} is not a full data source`)
     }
 
-    return database
+    return {
+        database: database as DatabaseObjectResponse,
+        dataSource,
+    }
 }
 
 export function richTextToPlainText(richText: RichTextItemResponse[] | undefined) {
@@ -253,18 +291,18 @@ function isSupportedPropertyType(type: string): type is keyof typeof supportedCM
     return type in supportedCMSTypeByNotionPropertyType
 }
 
-export function getDatabaseFieldsInfo(database: GetDatabaseResponse, databaseIdMap: DatabaseIdMap) {
+export function getDatabaseFieldsInfo(schema: SchemaWithProperties, databaseIdMap: DatabaseIdMap) {
     const result: FieldInfo[] = []
 
-    // These properties are always there but not included in `"database.properties"
+    // These properties are always there but not included in schema.properties
     result.push(pageCoverProperty, pageContentProperty)
 
     const supported: FieldInfo[] = []
     const unsupported: FieldInfo[] = []
     const missingCollection: FieldInfo[] = []
 
-    for (const key in database.properties) {
-        const property = database.properties[key]
+    for (const key in schema.properties) {
+        const property = schema.properties[key]
         assert(property)
 
         const allowedTypes = isSupportedPropertyType(property.type)
@@ -304,14 +342,14 @@ export function getDatabaseFieldsInfo(database: GetDatabaseResponse, databaseIdM
 }
 
 /**
- * Given a Notion Database returns a list of possible fields that can be used as
- * a slug. And a suggested field id to use as a slug.
+ * Given a Notion schema (database or data source) returns a list of possible
+ * field ids that can be used as a slug.
  */
-export function getPossibleSlugFieldIds(database: GetDatabaseResponse) {
+export function getPossibleSlugFieldIds(schema: SchemaWithProperties) {
     const options: NotionProperty[] = []
 
-    for (const key in database.properties) {
-        const property = database.properties[key]
+    for (const key in schema.properties) {
+        const property = schema.properties[key]
         assert(property)
 
         if (slugFieldTypes.includes(property.type)) {
@@ -400,7 +438,7 @@ export async function getPageBlocksAsRichText(pageId: string) {
 }
 
 export async function getDatabaseItems(
-    database: GetDatabaseResponse,
+    dataSourceId: string,
     onProgress?: (progress: { current: number; total: number; hasFinishedLoading: boolean }) => void
 ): Promise<PageObjectResponse[]> {
     const notion = getNotionClient()
@@ -408,11 +446,11 @@ export async function getDatabaseItems(
     const data: PageObjectResponse[] = []
     let itemCount = 0
 
-    const databaseIterator = iteratePaginatedAPI(notion.databases.query, {
-        database_id: database.id,
+    const queryIterator = iteratePaginatedAPI(notion.dataSources.query, {
+        data_source_id: dataSourceId,
     })
 
-    for await (const item of databaseIterator) {
+    for await (const item of queryIterator) {
         data.push(item as PageObjectResponse)
         itemCount++
         onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: false })

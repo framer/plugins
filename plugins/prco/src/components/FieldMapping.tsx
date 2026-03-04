@@ -194,45 +194,49 @@ export function FieldMapping({ pressRoomId, collection, dataSource, initialSlugF
             return
         }
 
-        setStatus("syncing-collection")
-        void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+        const task = async () => {
+            setStatus("syncing-collection")
+            await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
-        const fieldsToSync: PrcoField[] = []
+            const fieldsToSync: PrcoField[] = []
 
-        for (const field of fields) {
-            if (ignoredFieldIds.has(field.id) || isMissingReferenceField(field)) continue
-            fieldsToSync.push({
-                ...field,
-                name: field.name.trim() || field.id,
-            })
-        }
-        collection
-            .setFields(removePrcoKeys(fieldsToSync))
-            .then(() => {
-                syncCollection(pressRoomId, collection, dataSource, fieldsToSync, selectedSlugField)
-                    .then(() => {
-                        void framer.closePlugin("Synchronization successful", { variant: "success" })
-                    })
-                    .catch((error: unknown) => {
-                        void framer.setCloseWarning(false)
-                        console.error(error)
-                        framer.notify(
-                            `Failed to sync collection “${dataSource.id}”. Check the logs for more details.`,
-                            {
-                                variant: "error",
-                            }
-                        )
-                        setStatus("mapping-fields")
-                    })
-            })
-            .catch((error: unknown) => {
-                void framer.setCloseWarning(false)
+            for (const field of fields) {
+                if (ignoredFieldIds.has(field.id) || isMissingReferenceField(field)) continue
+                fieldsToSync.push({
+                    ...field,
+                    name: field.name.trim() || field.id,
+                })
+            }
+
+            try {
+                await collection.setFields(removePrcoKeys(fieldsToSync))
+            } catch (error) {
+                await framer.setCloseWarning(false)
                 console.error(error)
                 framer.notify(`Failed to set fields. Check the logs for more details.`, {
                     variant: "error",
                 })
                 setStatus("mapping-fields")
-            })
+                return
+            }
+
+            try {
+                await syncCollection(pressRoomId, collection, dataSource, fieldsToSync, selectedSlugField)
+                void framer.closePlugin("Synchronization successful", { variant: "success" })
+            } catch (error) {
+                await framer.setCloseWarning(false)
+                console.error(error)
+                framer.notify(
+                    `Failed to sync collection “${dataSource.id}”. Check the logs for more details.`,
+                    {
+                        variant: "error",
+                    }
+                )
+                setStatus("mapping-fields")
+            }
+        }
+
+        void task()
     }
 
     if (isLoadingFields) {

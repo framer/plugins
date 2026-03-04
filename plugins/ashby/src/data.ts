@@ -300,7 +300,7 @@ export async function syncExistingCollection(
         })
     }
 
-    void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+    await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
     try {
         const dataSource = await getDataSource(previousJobBoardName, previousDataSourceId)
@@ -323,6 +323,6 @@ export async function syncExistingCollection(
         })
         return { didSync: false }
     } finally {
-        void framer.setCloseWarning(false)
+        await framer.setCloseWarning(false)
     }
 }

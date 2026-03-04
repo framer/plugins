@@ -374,7 +374,7 @@ export async function syncExistingCollection(
         return { didSync: false }
     }
 
-    void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+    await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
     try {
         const [dataSource, existingFields] = await Promise.all([
@@ -402,6 +402,6 @@ export async function syncExistingCollection(
         })
         return { didSync: false }
     } finally {
-        void framer.setCloseWarning(false)
+        await framer.setCloseWarning(false)
     }
 }

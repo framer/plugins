@@ -198,45 +198,46 @@ export function FieldMapping({ companyId, token, collection, dataSource, initial
             return
         }
 
-        setStatus("syncing-collection")
-        void framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
+        const task = async () => {
+            setStatus("syncing-collection")
+            await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
-        const fieldsToSync: RecruiteeField[] = []
+            const fieldsToSync: RecruiteeField[] = []
 
-        for (const field of fields) {
-            if (ignoredFieldIds.has(field.id) || isMissingReferenceField(field)) continue
-            fieldsToSync.push({
-                ...field,
-                name: field.name.trim() || field.id,
-            })
-        }
-        collection
-            .setFields(removeRecruiteeKeys(fieldsToSync))
-            .then(() => {
-                syncCollection(companyId, token, collection, dataSource, fieldsToSync, selectedSlugField)
-                    .then(() => {
-                        framer.closePlugin("Synchronization successful", { variant: "success" })
-                    })
-                    .catch((error: unknown) => {
-                        void framer.setCloseWarning(false)
-                        console.error(error)
-                        framer.notify(
-                            `Failed to sync collection “${dataSource.id}”. Check the logs for more details.`,
-                            {
-                                variant: "error",
-                            }
-                        )
-                        setStatus("mapping-fields")
-                    })
-            })
-            .catch((error: unknown) => {
-                void framer.setCloseWarning(false)
+            for (const field of fields) {
+                if (ignoredFieldIds.has(field.id) || isMissingReferenceField(field)) continue
+                fieldsToSync.push({
+                    ...field,
+                    name: field.name.trim() || field.id,
+                })
+            }
+
+            try {
+                await collection.setFields(removeRecruiteeKeys(fieldsToSync))
+            } catch (error) {
+                await framer.setCloseWarning(false)
                 console.error(error)
                 framer.notify(`Failed to set fields. Check the logs for more details.`, {
                     variant: "error",
                 })
                 setStatus("mapping-fields")
-            })
+                return
+            }
+
+            try {
+                await syncCollection(companyId, token, collection, dataSource, fieldsToSync, selectedSlugField)
+                framer.closePlugin("Synchronization successful", { variant: "success" })
+            } catch (error) {
+                await framer.setCloseWarning(false)
+                console.error(error)
+                framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
+                    variant: "error",
+                })
+                setStatus("mapping-fields")
+            }
+        }
+
+        void task()
     }
 
     if (isLoadingFields) {

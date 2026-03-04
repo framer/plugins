@@ -52,6 +52,7 @@ export function createSocketConnectionController({
     let hasNotifiedDisconnected = false
     let activeSocket: WebSocket | null = null
     let messageQueue: Promise<void> = Promise.resolve()
+    const protocol = "wss"
     const timers: Record<TimerName, ReturnType<typeof setTimeout> | null> = {
         connectTrigger: null,
         connectTimeout: null,
@@ -217,7 +218,7 @@ export function createSocketConnectionController({
             visibilityState: document.visibilityState,
         })
 
-        const socket = new WebSocket(`ws://localhost:${port}`)
+        const socket = new WebSocket(`${protocol}://localhost:${port}`)
         const token = ++socketToken
         setActiveSocket(socket)
         const connectTimeoutMs = getConnectTimeoutMs()
@@ -313,6 +314,7 @@ export function createSocketConnectionController({
                 wasClean: event.wasClean,
                 port,
                 attempt,
+                protocol,
                 project: projectName,
                 failureCount,
             })

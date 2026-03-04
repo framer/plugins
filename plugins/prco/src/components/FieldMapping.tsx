@@ -226,14 +226,13 @@ export function FieldMapping({ pressRoomId, collection, dataSource, initialSlugF
             } catch (error) {
                 await framer.setCloseWarning(false)
                 console.error(error)
-                framer.notify(
-                    `Failed to sync collection “${dataSource.id}”. Check the logs for more details.`,
-                    {
-                        variant: "error",
-                    }
-                )
+                framer.notify(`Failed to sync collection “${dataSource.id}”. Check the logs for more details.`, {
+                    variant: "error",
+                })
                 setStatus("mapping-fields")
             }
+
+            await framer.setCloseWarning(false)
         }
 
         void task()

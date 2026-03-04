@@ -232,6 +232,8 @@ export function FieldMapping({ jobBoardName, collection, dataSource, initialSlug
                 await framer.setCloseWarning(false)
                 setStatus("mapping-fields")
             }
+
+            await framer.setCloseWarning(false)
         }
 
         void task()

@@ -235,6 +235,8 @@ export function FieldMapping({ companyId, token, collection, dataSource, initial
                 })
                 setStatus("mapping-fields")
             }
+
+            await framer.setCloseWarning(false)
         }
 
         void task()

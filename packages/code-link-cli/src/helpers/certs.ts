@@ -25,6 +25,8 @@ const MKCERT_VERSION = "v1.4.4"
 const CERT_DIR = path.join(os.homedir(), ".framer", "code-link")
 const MKCERT_BIN_NAME = process.platform === "win32" ? "mkcert.exe" : "mkcert"
 const MKCERT_BIN_PATH = path.join(CERT_DIR, MKCERT_BIN_NAME)
+const ROOT_CA_CERT_PATH = path.join(CERT_DIR, "rootCA.pem")
+const ROOT_CA_KEY_PATH = path.join(CERT_DIR, "rootCA-key.pem")
 const SERVER_KEY_PATH = path.join(CERT_DIR, "localhost-key.pem")
 const SERVER_CERT_PATH = path.join(CERT_DIR, "localhost.pem")
 
@@ -60,6 +62,7 @@ export async function getOrCreateCerts(): Promise<CertBundle | null> {
 
         // Slow path: download mkcert (if needed) and generate certs
         const mkcertPath = await ensureMkcertBinary()
+        await retainExistingCA(mkcertPath)
         status("Generating local certificates to connect securely. You may be asked for your password.")
         await generateCerts(mkcertPath)
 
@@ -155,7 +158,28 @@ async function generateCerts(mkcertPath: string): Promise<void> {
     } catch (err) {
         // Non-fatal — certs might still work, but the browser may not auto-trust them.
         warn(`Could not install CA into system trust store: ${err instanceof Error ? err.message : err}`)
-        warn("Your browser may show a certificate warning.")
+    }
+}
+
+async function retainExistingCA(mkcertPath: string): Promise<void> {
+    const existingRootCert = await loadFile(ROOT_CA_CERT_PATH)
+    const existingRootKey = await loadFile(ROOT_CA_KEY_PATH)
+    if (existingRootCert && existingRootKey) return
+
+    const { stdout } = await execFileAsync(mkcertPath, ["-CAROOT"], {
+        env: { ...process.env, JAVA_HOME: "" },
+    })
+    const defaultCAROOT = stdout.trim()
+
+    if (!defaultCAROOT || defaultCAROOT === CERT_DIR) return
+
+    for (const filename of ["rootCA.pem", "rootCA-key.pem"]) {
+        const sourcePath = path.join(defaultCAROOT, filename)
+        try {
+            await fs.copyFile(sourcePath, path.join(CERT_DIR, filename))
+        } catch {
+            // Ignore missing default CA files and fall back to a fresh local CA.
+        }
     }
 }
 

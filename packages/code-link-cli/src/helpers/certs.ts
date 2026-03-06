@@ -1,175 +1,182 @@
 /**
  * Certificate management for WSS support.
  *
- * Generates and persists a local CA + server certificate so the CLI can
- * serve WebSocket connections over TLS (wss://localhost).
+ * Downloads FiloSottile's mkcert binary on first run, then shells out to it
+ * to generate and trust a local CA + server certificate for wss://localhost.
  *
- * Certs are stored in ~/.framer/code-link/ and reused across runs.
+ * Certs and the mkcert binary are cached in ~/.framer/code-link/.
  */
 
-import { execSync } from "child_process"
+import { execFile } from "child_process"
 import fs from "fs/promises"
 import os from "os"
 import path from "path"
-import { debug, error, info, status, warn } from "../utils/logging.ts"
+import { promisify } from "util"
+import { debug, error, status, warn } from "../utils/logging.ts"
+
+const execFileAsync = promisify(execFile)
 
 export interface CertBundle {
     key: string
     cert: string
 }
 
+const MKCERT_VERSION = "v1.4.4"
 const CERT_DIR = path.join(os.homedir(), ".framer", "code-link")
-const CA_KEY_PATH = path.join(CERT_DIR, "ca.key")
-const CA_CERT_PATH = path.join(CERT_DIR, "ca.crt")
-const SERVER_KEY_PATH = path.join(CERT_DIR, "localhost.key")
-const SERVER_CERT_PATH = path.join(CERT_DIR, "localhost.crt")
-const CA_INSTALLED_MARKER = path.join(CERT_DIR, ".ca-installed")
+const MKCERT_BIN_NAME = process.platform === "win32" ? "mkcert.exe" : "mkcert"
+const MKCERT_BIN_PATH = path.join(CERT_DIR, MKCERT_BIN_NAME)
+const SERVER_KEY_PATH = path.join(CERT_DIR, "localhost-key.pem")
+const SERVER_CERT_PATH = path.join(CERT_DIR, "localhost.pem")
+
+/** Env vars passed to every mkcert invocation. */
+const MKCERT_ENV = {
+    ...process.env,
+    CAROOT: CERT_DIR,
+    JAVA_HOME: "",
+    ...(process.platform === "darwin" ? { TRUST_STORES: "system" } : {}),
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 /**
  * Returns a TLS cert bundle for the WSS server, or null if generation fails.
- * On first run, generates a CA + server cert and attempts to install the CA
- * into the macOS system keychain (prompts for sudo).
+ * On first run, downloads mkcert, installs a local CA into trust stores, and
+ * generates a server cert for localhost.
  */
 export async function getOrCreateCerts(): Promise<CertBundle | null> {
     try {
         await fs.mkdir(CERT_DIR, { recursive: true })
 
-        const ca = await getOrCreateCA()
-        const serverCert = await getOrCreateServerCert(ca)
-        await tryInstallCA()
+        // Fast path: certs already exist on disk
+        const existingKey = await loadFile(SERVER_KEY_PATH)
+        const existingCert = await loadFile(SERVER_CERT_PATH)
 
-        return serverCert
+        if (existingKey && existingCert) {
+            debug("Loaded existing server certificates from disk")
+            return { key: existingKey, cert: existingCert }
+        }
+
+        // Slow path: download mkcert (if needed) and generate certs
+        const mkcertPath = await ensureMkcertBinary()
+        status("Generating local certificates to connect securely. You may be asked for your password.")
+        await generateCerts(mkcertPath)
+
+        const key = await fs.readFile(SERVER_KEY_PATH, "utf-8")
+        const cert = await fs.readFile(SERVER_CERT_PATH, "utf-8")
+        return { key, cert }
     } catch (err) {
-        error(`Failed to generate TLS certificates: ${err instanceof Error ? err.message : err}`)
+        error(`Failed to set up TLS certificates: ${err instanceof Error ? err.message : err}`)
         return null
     }
 }
+
+// ---------------------------------------------------------------------------
+// Binary management
+// ---------------------------------------------------------------------------
+
+function getDownloadUrl(): string {
+    const platformMap: Record<string, string> = {
+        darwin: "darwin",
+        linux: "linux",
+        win32: "windows",
+    }
+    const archMap: Record<string, string> = {
+        x64: "amd64",
+        arm64: "arm64",
+        arm: "arm",
+    }
+
+    const platform = platformMap[process.platform]
+    const arch = archMap[process.arch]
+
+    if (!platform || !arch) {
+        throw new Error(
+            `Unsupported platform: ${process.platform}/${process.arch}. ` +
+                `Install mkcert manually: https://github.com/FiloSottile/mkcert#installation`
+        )
+    }
+
+    const ext = process.platform === "win32" ? ".exe" : ""
+    const filename = `mkcert-${MKCERT_VERSION}-${platform}-${arch}${ext}`
+    return `https://github.com/FiloSottile/mkcert/releases/download/${MKCERT_VERSION}/${filename}`
+}
+
+async function ensureMkcertBinary(): Promise<string> {
+    try {
+        await fs.access(MKCERT_BIN_PATH, fs.constants.X_OK)
+        debug("mkcert binary already available")
+        return MKCERT_BIN_PATH
+    } catch {
+        // Need to download
+    }
+
+    const url = getDownloadUrl()
+    debug(`Downloading mkcert from ${url}`)
+    status("Downloading mkcert for certificate generation...")
+
+    try {
+        const response = await fetch(url, { redirect: "follow" })
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+
+        const buffer = Buffer.from(await response.arrayBuffer())
+        await fs.writeFile(MKCERT_BIN_PATH, buffer, { mode: 0o755 })
+        debug(`mkcert binary saved to ${MKCERT_BIN_PATH}`)
+        return MKCERT_BIN_PATH
+    } catch (err) {
+        await fs.rm(MKCERT_BIN_PATH, { force: true })
+        const message = err instanceof Error ? err.message : String(err)
+        throw new Error(
+            `Failed to download mkcert: ${message}\n` +
+                `You can install it manually: https://github.com/FiloSottile/mkcert#installation\n` +
+                `Then run: mkcert -install && mkcert -key-file "${SERVER_KEY_PATH}" -cert-file "${SERVER_CERT_PATH}" localhost 127.0.0.1`
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Certificate generation
+// ---------------------------------------------------------------------------
+
+async function generateCerts(mkcertPath: string): Promise<void> {
+    // Install the CA into platform trust stores (idempotent, safe to run every time).
+    // All stdio is piped to suppress mkcert's chatty output. On macOS the password
+    // prompt is a system GUI dialog, not a terminal prompt, so this is fine.
+    debug("Running mkcert -install...")
+    try {
+        if (process.platform === "darwin") {
+            // Warm up sudo once so mkcert's internal security commands can reuse it.
+            await execFileAsync("sudo", ["--prompt=Sudo password:", "-v"], { env: MKCERT_ENV })
+        }
+        await execFileAsync(mkcertPath, ["-install"], { env: MKCERT_ENV })
+        debug("CA installed into trust stores")
+    } catch (err) {
+        // Non-fatal — certs still work, browser just won't auto-trust them
+        warn(`Could not install CA into system trust store: ${err instanceof Error ? err.message : err}`)
+        warn("Your browser may show a certificate warning.")
+    }
+
+    // Generate server certificate for localhost
+    debug("Generating server certificate...")
+    await execFileAsync(
+        mkcertPath,
+        ["-key-file", SERVER_KEY_PATH, "-cert-file", SERVER_CERT_PATH, "localhost", "127.0.0.1"],
+        { env: MKCERT_ENV }
+    )
+    debug("Server certificate generated successfully")
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 async function loadFile(filePath: string): Promise<string | null> {
     try {
         return await fs.readFile(filePath, "utf-8")
     } catch {
         return null
-    }
-}
-
-async function getOrCreateCA(): Promise<CertBundle> {
-    const existingKey = await loadFile(CA_KEY_PATH)
-    const existingCert = await loadFile(CA_CERT_PATH)
-
-    if (existingKey && existingCert) {
-        debug("Loaded existing CA from disk")
-        return { key: existingKey, cert: existingCert }
-    }
-
-    debug("Generating new local CA...")
-    const { createCA } = await import("mkcert")
-
-    const ca = await createCA({
-        organization: "Framer Code Link Local CA",
-        countryCode: "US",
-        state: "California",
-        locality: "San Francisco",
-        validity: 3650,
-    })
-
-    await fs.writeFile(CA_KEY_PATH, ca.key, { mode: 0o600 })
-    await fs.writeFile(CA_CERT_PATH, ca.cert, { mode: 0o644 })
-    debug("CA generated and saved")
-
-    // Clean up server cert and install marker — they're signed by / refer to the old CA
-    await fs.rm(SERVER_KEY_PATH, { force: true })
-    await fs.rm(SERVER_CERT_PATH, { force: true })
-    await fs.rm(CA_INSTALLED_MARKER, { force: true })
-    debug("Removed stale server cert and CA install marker")
-
-    return ca
-}
-
-async function getOrCreateServerCert(ca: CertBundle): Promise<CertBundle> {
-    const existingKey = await loadFile(SERVER_KEY_PATH)
-    const existingCert = await loadFile(SERVER_CERT_PATH)
-
-    if (existingKey && existingCert) {
-        debug("Loaded existing server cert from disk")
-        return { key: existingKey, cert: existingCert }
-    }
-
-    debug("Generating localhost server certificate...")
-    const { createCert } = await import("mkcert")
-
-    const cert = await createCert({
-        ca: { key: ca.key, cert: ca.cert },
-        domains: ["localhost", "127.0.0.1"],
-        validity: 825,
-    })
-
-    await fs.writeFile(SERVER_KEY_PATH, cert.key, { mode: 0o600 })
-    await fs.writeFile(SERVER_CERT_PATH, cert.cert, { mode: 0o644 })
-    debug("Server certificate generated and saved")
-
-    return cert
-}
-
-async function tryInstallCA(): Promise<void> {
-    if (process.platform === "darwin") {
-        await tryInstallCAMacOS()
-        return
-    }
-
-    // Non-macOS: warn with manual installation instructions
-    const marker = await loadFile(CA_INSTALLED_MARKER)
-    if (marker !== null) return
-
-    warn(`Automatic CA installation is not supported on ${process.platform}.`)
-    info("Your browser may not trust the local certificate, which can prevent the plugin from connecting.")
-    info("To fix this, manually install the CA certificate at:")
-    info(`  ${CA_CERT_PATH}`)
-
-    if (process.platform === "linux") {
-        info("")
-        info("  On most Linux distributions:")
-        info(`  sudo cp "${CA_CERT_PATH}" /usr/local/share/ca-certificates/framer-code-link.crt`)
-        info("  sudo update-ca-certificates")
-        info("")
-        info("  Note: Chromium-based browsers may require:")
-        info(`  certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n "Framer Code Link" -i "${CA_CERT_PATH}"`)
-    } else if (process.platform === "win32") {
-        info("")
-        info("  On Windows (run as Administrator):")
-        info(`  certutil -addstore -f "ROOT" "${CA_CERT_PATH}"`)
-    }
-}
-
-async function tryInstallCAMacOS(): Promise<void> {
-    // Skip if already installed
-    const marker = await loadFile(CA_INSTALLED_MARKER)
-    if (marker !== null) return
-
-    // Check if already trusted
-    try {
-        execSync(`security verify-cert -c "${CA_CERT_PATH}" 2>/dev/null`, { stdio: "ignore" })
-        // Already trusted — write marker and return
-        await fs.writeFile(CA_INSTALLED_MARKER, new Date().toISOString())
-        debug("CA is already trusted")
-        return
-    } catch {
-        // Not trusted yet
-    }
-
-    status("Generating a local certificate to connect securely. You may be asked for your password.")
-
-    try {
-        execSync(
-            `sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "${CA_CERT_PATH}"`,
-            { stdio: "inherit" }
-        )
-        await fs.writeFile(CA_INSTALLED_MARKER, new Date().toISOString())
-        info("Certificate authority installed successfully.")
-    } catch {
-        warn("Could not install CA automatically. To trust the certificate manually, run:")
-        warn(
-            `  sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "${CA_CERT_PATH}"`
-        )
     }
 }

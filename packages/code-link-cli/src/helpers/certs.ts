@@ -112,8 +112,36 @@ async function getOrCreateServerCert(ca: CertBundle): Promise<CertBundle> {
 }
 
 async function tryInstallCA(): Promise<void> {
-    if (process.platform !== "darwin") return
+    if (process.platform === "darwin") {
+        await tryInstallCAMacOS()
+        return
+    }
 
+    // Non-macOS: warn with manual installation instructions
+    const marker = await loadFile(CA_INSTALLED_MARKER)
+    if (marker !== null) return
+
+    warn(`Automatic CA installation is not supported on ${process.platform}.`)
+    info("Your browser may not trust the local certificate, which can prevent the plugin from connecting.")
+    info("To fix this, manually install the CA certificate at:")
+    info(`  ${CA_CERT_PATH}`)
+
+    if (process.platform === "linux") {
+        info("")
+        info("  On most Linux distributions:")
+        info(`  sudo cp "${CA_CERT_PATH}" /usr/local/share/ca-certificates/framer-code-link.crt`)
+        info("  sudo update-ca-certificates")
+        info("")
+        info("  Note: Chromium-based browsers may require:")
+        info(`  certutil -d sql:$HOME/.pki/nssdb -A -t "C,," -n "Framer Code Link" -i "${CA_CERT_PATH}"`)
+    } else if (process.platform === "win32") {
+        info("")
+        info("  On Windows (run as Administrator):")
+        info(`  certutil -addstore -f "ROOT" "${CA_CERT_PATH}"`)
+    }
+}
+
+async function tryInstallCAMacOS(): Promise<void> {
     // Skip if already installed
     const marker = await loadFile(CA_INSTALLED_MARKER)
     if (marker !== null) return

@@ -53,6 +53,7 @@ export type CliToPluginMessage =
           fileNames: string[]
           requireConfirmation?: boolean
       }
+    | { type: "file-rename"; oldFileName: string; newFileName: string }
     | { type: "conflicts-detected"; conflicts: ConflictSummary[] }
     | {
           type: "conflict-version-request"
@@ -65,6 +66,7 @@ const cliToPluginMessageTypes = [
     "file-list",
     "file-change",
     "file-delete",
+    "file-rename",
     "conflicts-detected",
     "conflict-version-request",
     "sync-complete",

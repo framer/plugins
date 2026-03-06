@@ -159,6 +159,34 @@ export class CodeFilesAPI {
         log.debug(`Returning version data for ${String(results.length)} files`)
         return results
     }
+
+    async applyRemoteRename(oldFileName: string, newFileName: string, socket: WebSocket) {
+        const normalisedOld = canonicalFileName(oldFileName)
+        const normalisedNew = canonicalFileName(newFileName)
+
+        const content = this.lastSnapshot.get(normalisedOld)
+        if (content !== undefined) {
+            this.lastSnapshot.delete(normalisedOld)
+            this.lastSnapshot.set(normalisedNew, content)
+        }
+
+        const codeFiles = await framer.getCodeFiles()
+        const existing = codeFiles.find(
+            file => canonicalFileName(file.path || file.name) === normalisedOld
+        )
+
+        if (existing) {
+            await existing.rename(ensureExtension(normalisedNew))
+        }
+
+        socket.send(
+            JSON.stringify({
+                type: "file-synced",
+                fileName: normalisedNew,
+                remoteModifiedAt: Date.now(),
+            })
+        )
+    }
 }
 
 async function upsertFramerFile(fileName: string, content: string): Promise<number | undefined> {

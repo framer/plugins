@@ -11,10 +11,26 @@ import path from "path"
 import type { WatcherEvent } from "../types.ts"
 import { debug, warn } from "../utils/logging.ts"
 import { getRelativePath } from "../utils/node-paths.ts"
+import { hashFileContent } from "../utils/state-persistence.ts"
 
 export interface Watcher {
     on(event: "change", handler: (event: WatcherEvent) => void): void
     close(): Promise<void>
+}
+
+const RENAME_BUFFER_MS = 100
+
+interface PendingDelete {
+    relativePath: string
+    contentHash: string
+    timer: ReturnType<typeof setTimeout>
+}
+
+interface PendingAdd {
+    relativePath: string
+    contentHash: string
+    content: string
+    timer: ReturnType<typeof setTimeout>
 }
 
 /**
@@ -22,6 +38,16 @@ export interface Watcher {
  */
 export function initWatcher(filesDir: string): Watcher {
     const handlers: ((event: WatcherEvent) => void)[] = []
+
+    // Content hash cache: tracks last-known hash for rename detection
+    const contentHashCache = new Map<string, string>()
+
+    // Pending deletes/adds awaiting potential rename matching (keyed by relativePath)
+    const pendingDeletes = new Map<string, PendingDelete>()
+    const pendingAdds = new Map<string, PendingAdd>()
+
+    // Paths recently renamed by sanitization — used to suppress echo events from chokidar
+    const recentSanitizations = new Set<string>()
 
     const watcher = chokidar.watch(filesDir, {
         ignored: /(^|[/\\])\.\./, // ignore dotfiles
@@ -31,20 +57,33 @@ export function initWatcher(filesDir: string): Watcher {
 
     debug(`Watching directory: ${filesDir}`)
 
-    // Helper to emit normalized events
-    const emitEvent = async (kind: "add" | "change" | "delete", absolutePath: string): Promise<void> => {
-        if (!isSupportedExtension(absolutePath)) {
+    const dispatchEvent = (event: WatcherEvent): void => {
+        if (event.kind === "rename" && event.relativePath === event.oldRelativePath) {
+            debug(`Skipping no-op rename: ${event.relativePath}`)
             return
+        }
+        debug(`Watcher event: ${event.kind} ${event.relativePath}`)
+        for (const handler of handlers) {
+            handler(event)
+        }
+    }
+
+    /**
+     * Resolves the sanitized relative path for a given absolute path.
+     * On "add", renames files on disk if they don't match sanitization rules.
+     */
+    const resolveRelativePath = async (
+        kind: "add" | "change" | "delete",
+        absolutePath: string
+    ): Promise<{ relativePath: string; effectiveAbsolutePath: string } | null> => {
+        if (!isSupportedExtension(absolutePath)) {
+            return null
         }
 
         const rawRelativePath = normalizePath(getRelativePath(filesDir, absolutePath))
-        // Don't capitalize - preserve exact file names as they exist
-        // This ensures 1:1 sync with Framer without modifying user's casing choices
         const sanitized = sanitizeFilePath(rawRelativePath, false)
         const relativePath = sanitized.path
 
-        // If the user created a file that doesn't match our sanitization rules,
-        // rename it on disk to match what can be synced.
         let effectiveAbsolutePath = absolutePath
         if (relativePath !== rawRelativePath && kind === "add") {
             const newAbsolutePath = path.join(filesDir, relativePath)
@@ -53,32 +92,136 @@ export function initWatcher(filesDir: string): Watcher {
                 await fs.rename(absolutePath, newAbsolutePath)
                 debug(`Renamed ${rawRelativePath} -> ${relativePath}`)
                 effectiveAbsolutePath = newAbsolutePath
+
+                // Suppress the echo events chokidar will fire for this rename
+                recentSanitizations.add(rawRelativePath) // upcoming unlink echo
+                recentSanitizations.add(relativePath) // upcoming add echo
+                setTimeout(() => {
+                    recentSanitizations.delete(rawRelativePath)
+                    recentSanitizations.delete(relativePath)
+                }, RENAME_BUFFER_MS * 3)
             } catch (err) {
                 warn(`Failed to rename ${rawRelativePath}`, err)
             }
         }
 
-        let content: string | undefined
-        if (kind !== "delete") {
-            try {
-                content = await fs.readFile(effectiveAbsolutePath, "utf-8")
-            } catch (err) {
-                debug(`Failed to read file ${relativePath}:`, err)
+        return { relativePath, effectiveAbsolutePath }
+    }
+
+    // Helper to emit normalized events
+    const emitEvent = async (kind: "add" | "change" | "delete", absolutePath: string): Promise<void> => {
+        // Suppress echo events caused by sanitization renames
+        const rawRelPath = normalizePath(getRelativePath(filesDir, absolutePath))
+        if (recentSanitizations.delete(rawRelPath)) {
+            debug(`Suppressing sanitization echo: ${kind} ${rawRelPath}`)
+            return
+        }
+
+        const resolved = await resolveRelativePath(kind, absolutePath)
+        if (!resolved) return
+        const { relativePath, effectiveAbsolutePath } = resolved
+
+        if (kind === "delete") {
+            const lastHash = contentHashCache.get(relativePath)
+            contentHashCache.delete(relativePath)
+
+            if (lastHash) {
+                // Check if there's already a pending add with matching hash (add arrived first)
+                let matchingAddKey: string | undefined
+                for (const [key, pending] of pendingAdds) {
+                    if (pending.contentHash === lastHash) {
+                        matchingAddKey = key
+                        break
+                    }
+                }
+
+                if (matchingAddKey) {
+                    const matchingAdd = pendingAdds.get(matchingAddKey)!
+                    clearTimeout(matchingAdd.timer)
+                    pendingAdds.delete(matchingAddKey)
+
+                    // Emit as a single rename event
+                    dispatchEvent({
+                        kind: "rename",
+                        relativePath: matchingAdd.relativePath,
+                        oldRelativePath: relativePath,
+                        content: matchingAdd.content,
+                    })
+                    return
+                }
+
+                // No pending add match — buffer this delete
+                const timer = setTimeout(() => {
+                    pendingDeletes.delete(relativePath)
+                    dispatchEvent({ kind: "delete", relativePath })
+                }, RENAME_BUFFER_MS)
+
+                pendingDeletes.set(relativePath, { relativePath, contentHash: lastHash, timer })
+            } else {
+                // No cached hash — emit delete immediately
+                dispatchEvent({ kind: "delete", relativePath })
+            }
+            return
+        }
+
+        // For add/change, read file content
+        let content: string
+        try {
+            content = await fs.readFile(effectiveAbsolutePath, "utf-8")
+        } catch (err) {
+            debug(`Failed to read file ${relativePath}:`, err)
+            return
+        }
+
+        // Update content hash cache
+        const contentHash = hashFileContent(content)
+        contentHashCache.set(relativePath, contentHash)
+
+        if (kind === "add") {
+            // Check if this add matches a pending delete (delete arrived first)
+            let matchingDeleteKey: string | undefined
+            for (const [key, pending] of pendingDeletes) {
+                if (pending.contentHash === contentHash) {
+                    matchingDeleteKey = key
+                    break
+                }
+            }
+
+            if (matchingDeleteKey) {
+                const matchingDelete = pendingDeletes.get(matchingDeleteKey)!
+                clearTimeout(matchingDelete.timer)
+                pendingDeletes.delete(matchingDeleteKey)
+
+                // Emit as a single rename event
+                dispatchEvent({
+                    kind: "rename",
+                    relativePath,
+                    oldRelativePath: matchingDelete.relativePath,
+                    content,
+                })
                 return
             }
+
+            // No pending delete match — buffer this add in case a delete arrives soon
+            const timer = setTimeout(() => {
+                pendingAdds.delete(relativePath)
+                dispatchEvent({ kind: "add", relativePath, content })
+            }, RENAME_BUFFER_MS)
+
+            pendingAdds.set(relativePath, { relativePath, contentHash, content, timer })
+            return
         }
 
-        const event: WatcherEvent = {
-            kind,
-            relativePath,
-            content,
+        // If this file has a buffered add, cancel it and dispatch as "add" with fresh content
+        const pendingAdd = pendingAdds.get(relativePath)
+        if (pendingAdd) {
+            clearTimeout(pendingAdd.timer)
+            pendingAdds.delete(relativePath)
+            dispatchEvent({ kind: "add", relativePath, content })
+            return
         }
 
-        debug(`Watcher event: ${kind} ${relativePath}`)
-
-        for (const handler of handlers) {
-            handler(event)
-        }
+        dispatchEvent({ kind, relativePath, content })
     }
 
     watcher.on("add", filePath => {
@@ -97,6 +240,16 @@ export function initWatcher(filesDir: string): Watcher {
         },
 
         async close(): Promise<void> {
+            for (const pending of pendingDeletes.values()) {
+                clearTimeout(pending.timer)
+            }
+            for (const pending of pendingAdds.values()) {
+                clearTimeout(pending.timer)
+            }
+            pendingDeletes.clear()
+            pendingAdds.clear()
+            contentHashCache.clear()
+            recentSanitizations.clear()
             await watcher.close()
         },
     }

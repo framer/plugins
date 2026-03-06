@@ -560,6 +560,12 @@ function createMessageHandler({
                 syncTracker.remember(message.fileName, message.content)
                 dispatch({ type: "set-mode", mode: "idle" })
                 break
+            case "file-rename":
+                log.debug(`Renaming file: ${message.oldFileName} → ${message.newFileName}`)
+                await api.applyRemoteRename(message.oldFileName, message.newFileName, socket)
+                syncTracker.forget(message.oldFileName)
+                dispatch({ type: "set-mode", mode: "idle" })
+                break
             case "file-delete":
                 if (message.requireConfirmation) {
                     log.debug(`Delete requires confirmation for ${message.fileNames.length} file(s)`)

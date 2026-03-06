@@ -60,10 +60,12 @@ export interface ConflictResolution {
 }
 
 // Watcher events (CLI-specific)
-export type WatcherEventKind = "add" | "change" | "delete"
+export type WatcherEventKind = "add" | "change" | "delete" | "rename"
 
 export interface WatcherEvent {
     kind: WatcherEventKind
     relativePath: string
     content?: string
+    /** The original path before rename. Only set when kind === "rename". */
+    oldRelativePath?: string
 }

@@ -5,7 +5,7 @@
  * and skipping watcher events for files we just wrote.
  */
 
-import { createHash } from "crypto"
+import { hashFileContent } from "./state-persistence.ts"
 
 export interface HashTracker {
     remember(filePath: string, content: string): void
@@ -26,12 +26,12 @@ export function createHashTracker(): HashTracker {
 
     return {
         remember(filePath: string, content: string): void {
-            const hash = hashContent(content)
+            const hash = hashFileContent(content)
             hashes.set(filePath, hash)
         },
 
         shouldSkip(filePath: string, content: string): boolean {
-            const currentHash = hashContent(content)
+            const currentHash = hashFileContent(content)
             const storedHash = hashes.get(filePath)
             return storedHash === currentHash
         },
@@ -69,11 +69,4 @@ export function createHashTracker(): HashTracker {
             pendingDeletes.delete(filePath)
         },
     }
-}
-
-/**
- * Computes a SHA256 hash of file content for comparison
- */
-function hashContent(content: string): string {
-    return createHash("sha256").update(content).digest("hex")
 }

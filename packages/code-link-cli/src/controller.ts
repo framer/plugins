@@ -164,6 +164,12 @@ type Effect =
           type: "LOCAL_INITIATED_FILE_DELETE"
           fileNames: string[]
       }
+    | {
+          type: "SEND_FILE_RENAME"
+          oldFileName: string
+          newFileName: string
+          content: string
+      }
     | { type: "PERSIST_STATE" }
     | {
           type: "SYNC_COMPLETE"
@@ -556,6 +562,23 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
                     })
                     break
                 }
+
+                case "rename": {
+                    if (content === undefined || !event.event.oldRelativePath) {
+                        effects.push(log("warn", `Rename event missing data: ${relativePath}`))
+                        return { state, effects }
+                    }
+                    effects.push(
+                        log("debug", `Local rename detected: ${event.event.oldRelativePath} → ${relativePath}`),
+                        {
+                            type: "SEND_FILE_RENAME",
+                            oldFileName: event.event.oldRelativePath,
+                            newFileName: relativePath,
+                            content,
+                        }
+                    )
+                    break
+                }
             }
 
             return { state, effects }
@@ -900,6 +923,22 @@ async function executeEffect(
                 warn(`Failed to push ${effect.fileName}`)
             }
 
+            return []
+        }
+
+        case "SEND_FILE_RENAME": {
+            hashTracker.forget(effect.oldFileName)
+            fileMetadataCache.recordDelete(effect.oldFileName)
+
+            if (syncState.socket) {
+                await sendMessage(syncState.socket, {
+                    type: "file-rename",
+                    oldFileName: effect.oldFileName,
+                    newFileName: effect.newFileName,
+                })
+            }
+
+            hashTracker.remember(effect.newFileName, effect.content)
             return []
         }
 

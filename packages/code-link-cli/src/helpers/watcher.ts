@@ -212,7 +212,15 @@ export function initWatcher(filesDir: string): Watcher {
             return
         }
 
-        // Normal change event (not buffered)
+        // If this file has a buffered add, cancel it and dispatch as "add" with fresh content
+        const pendingAdd = pendingAdds.get(relativePath)
+        if (pendingAdd) {
+            clearTimeout(pendingAdd.timer)
+            pendingAdds.delete(relativePath)
+            dispatchEvent({ kind: "add", relativePath, content })
+            return
+        }
+
         dispatchEvent({ kind, relativePath, content })
     }
 

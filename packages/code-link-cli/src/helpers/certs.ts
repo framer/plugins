@@ -11,7 +11,7 @@ import { execSync } from "child_process"
 import fs from "fs/promises"
 import os from "os"
 import path from "path"
-import { debug, info, warn } from "../utils/logging.ts"
+import { debug, info, status, warn } from "../utils/logging.ts"
 
 export interface CertBundle {
     key: string
@@ -123,10 +123,7 @@ async function tryInstallCA(): Promise<void> {
         // Not trusted yet
     }
 
-    info("")
-    info("Installing Code Link certificate authority (one-time setup)...")
-    info("You may be prompted for your password.")
-    info("")
+    status("Generating a local certificate to connect securely. You may be asked for your password.")
 
     try {
         execSync(

@@ -142,31 +142,21 @@ async function ensureMkcertBinary(): Promise<string> {
 // ---------------------------------------------------------------------------
 
 async function generateCerts(mkcertPath: string): Promise<void> {
-    // Install the CA into platform trust stores (idempotent, safe to run every time).
-    // All stdio is piped to suppress mkcert's chatty output. On macOS the password
-    // prompt is a system GUI dialog, not a terminal prompt, so this is fine.
-    debug("Running mkcert -install...")
+    // Let mkcert install the CA and generate the localhost cert in one process.
+    // This matches vite-plugin-mkcert more closely and avoids our own extra sudo step.
+    debug("Running mkcert for trust store install + certificate generation...")
     try {
-        if (process.platform === "darwin") {
-            // Warm up sudo once so mkcert's internal security commands can reuse it.
-            await execFileAsync("sudo", ["--prompt=Sudo password:", "-v"], { env: MKCERT_ENV })
-        }
-        await execFileAsync(mkcertPath, ["-install"], { env: MKCERT_ENV })
-        debug("CA installed into trust stores")
+        await execFileAsync(
+            mkcertPath,
+            ["-install", "-key-file", SERVER_KEY_PATH, "-cert-file", SERVER_CERT_PATH, "localhost", "127.0.0.1"],
+            { env: MKCERT_ENV }
+        )
+        debug("CA installed and server certificate generated successfully")
     } catch (err) {
-        // Non-fatal — certs still work, browser just won't auto-trust them
+        // Non-fatal — certs might still work, but the browser may not auto-trust them.
         warn(`Could not install CA into system trust store: ${err instanceof Error ? err.message : err}`)
         warn("Your browser may show a certificate warning.")
     }
-
-    // Generate server certificate for localhost
-    debug("Generating server certificate...")
-    await execFileAsync(
-        mkcertPath,
-        ["-key-file", SERVER_KEY_PATH, "-cert-file", SERVER_CERT_PATH, "localhost", "127.0.0.1"],
-        { env: MKCERT_ENV }
-    )
-    debug("Server certificate generated successfully")
 }
 
 // ---------------------------------------------------------------------------

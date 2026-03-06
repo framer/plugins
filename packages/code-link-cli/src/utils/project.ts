@@ -20,7 +20,7 @@ export function toPackageName(name: string): string {
 
 export function toDirectoryName(name: string): string {
     return name
-        .replace(/[^a-zA-Z0-9-]/g, "-")
+        .replace(/[^a-zA-Z0-9- ]/g, "-")
         .replace(/^-+|-+$/g, "")
         .replace(/-+/g, "-")
 }

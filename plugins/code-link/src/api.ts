@@ -171,21 +171,18 @@ export class CodeFilesAPI {
         }
 
         const codeFiles = await framer.getCodeFiles()
-        const existing = codeFiles.find(
-            file => canonicalFileName(file.path || file.name) === normalisedOld
-        )
+        const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedOld)
 
         if (existing) {
             await existing.rename(ensureExtension(normalisedNew))
+            socket.send(
+                JSON.stringify({
+                    type: "file-synced",
+                    fileName: normalisedNew,
+                    remoteModifiedAt: Date.now(),
+                })
+            )
         }
-
-        socket.send(
-            JSON.stringify({
-                type: "file-synced",
-                fileName: normalisedNew,
-                remoteModifiedAt: Date.now(),
-            })
-        )
     }
 }
 

@@ -5,8 +5,19 @@
  * to generate and trust a local CA + server certificate for wss://localhost.
  *
  * Certs and the mkcert binary are cached in ~/.framer/code-link/.
+ *
+ * Security notes:
+ *  - The mkcert binary is downloaded over HTTPS and its SHA-256 hash is
+ *    verified against hardcoded values before execution.  Update
+ *    MKCERT_CHECKSUMS whenever MKCERT_VERSION changes.
+ *  - mkcert installs a local development root CA into the system trust store.
+ *    The CA private key lives in ~/.framer/code-link/ and is accessible only
+ *    to the current user.  Anyone who obtains this key can issue certificates
+ *    trusted by the developer's browser, so the directory should never be
+ *    shared or committed.
  */
 
+import { createHash } from "crypto"
 import { execFile } from "child_process"
 import fs from "fs/promises"
 import os from "os"
@@ -29,6 +40,21 @@ const ROOT_CA_CERT_PATH = path.join(CERT_DIR, "rootCA.pem")
 const ROOT_CA_KEY_PATH = path.join(CERT_DIR, "rootCA-key.pem")
 const SERVER_KEY_PATH = path.join(CERT_DIR, "localhost-key.pem")
 const SERVER_CERT_PATH = path.join(CERT_DIR, "localhost.pem")
+
+/**
+ * SHA-256 checksums for mkcert v1.4.4 release binaries, keyed by "platform-arch".
+ * These must be updated whenever MKCERT_VERSION changes.
+ * Source: https://github.com/FiloSottile/mkcert/releases/tag/v1.4.4
+ */
+const MKCERT_CHECKSUMS: Record<string, string> = {
+    "darwin-amd64": "a32dfab51f1845d51e810db8e47dcf0e6b51ae3422426514bf5a2b8302e97d4e",
+    "darwin-arm64": "c8af0df44bce04359794dad8ea28d750437411d632748049d08644ffb66a60c6",
+    "linux-amd64": "6d31c65b03972c6dc4a14ab429f2928300518b26503f58723e532d1b0a3bbb52",
+    "linux-arm": "2f22ff62dfc13357e147e027117724e7ce1ff810e30d2b061b05b668ecb4f1d7",
+    "linux-arm64": "b98f2cc69fd9147fe4d405d859c57504571adec0d3611c3eefd04107c7ac00d0",
+    "windows-amd64": "d2660b50a9ed59eada480750561c96abc2ed4c9a38c6a24d93e30e0977631398",
+    "windows-arm64": "793747256c562622d40127c8080df26add2fb44c50906ce9db63b42a5280582e",
+}
 
 /** Env vars passed to every mkcert invocation. */
 const MKCERT_ENV = {
@@ -79,7 +105,7 @@ export async function getOrCreateCerts(): Promise<CertBundle | null> {
 // Binary management
 // ---------------------------------------------------------------------------
 
-function getDownloadUrl(): string {
+function getDownloadInfo(): { url: string; expectedChecksum: string } {
     const platformMap: Record<string, string> = {
         darwin: "darwin",
         linux: "linux",
@@ -101,21 +127,37 @@ function getDownloadUrl(): string {
         )
     }
 
+    const key = `${platform}-${arch}`
+    const expectedChecksum = MKCERT_CHECKSUMS[key]
+    if (!expectedChecksum) {
+        throw new Error(
+            `No checksum available for mkcert ${key}. ` +
+                `Install mkcert manually: https://github.com/FiloSottile/mkcert#installation`
+        )
+    }
+
     const ext = process.platform === "win32" ? ".exe" : ""
     const filename = `mkcert-${MKCERT_VERSION}-${platform}-${arch}${ext}`
-    return `https://github.com/FiloSottile/mkcert/releases/download/${MKCERT_VERSION}/${filename}`
+    const url = `https://github.com/FiloSottile/mkcert/releases/download/${MKCERT_VERSION}/${filename}`
+    return { url, expectedChecksum }
 }
 
 async function ensureMkcertBinary(): Promise<string> {
+    const { url, expectedChecksum } = getDownloadInfo()
+
+    // Fast path: verify any existing cached binary before reusing it.
     try {
         await fs.access(MKCERT_BIN_PATH, fs.constants.X_OK)
-        debug("mkcert binary already available")
-        return MKCERT_BIN_PATH
+        if (await verifyFileChecksum(MKCERT_BIN_PATH, expectedChecksum)) {
+            debug("mkcert binary already available and verified")
+            return MKCERT_BIN_PATH
+        }
+        // Checksum mismatch — binary may be stale or corrupted; re-download.
+        warn("Cached mkcert binary failed checksum verification, re-downloading...")
     } catch {
-        // Need to download
+        // Binary doesn't exist or isn't executable — fall through to download.
     }
 
-    const url = getDownloadUrl()
     debug(`Downloading mkcert from ${url}`)
     status("Downloading mkcert for certificate generation...")
 
@@ -126,6 +168,17 @@ async function ensureMkcertBinary(): Promise<string> {
         }
 
         const buffer = Buffer.from(await response.arrayBuffer())
+
+        // Verify integrity before writing to disk.
+        const actualChecksum = createHash("sha256").update(buffer).digest("hex")
+        if (actualChecksum !== expectedChecksum) {
+            throw new Error(
+                `mkcert binary checksum mismatch — the download may have been tampered with.\n` +
+                    `  Expected: ${expectedChecksum}\n` +
+                    `  Actual:   ${actualChecksum}`
+            )
+        }
+
         await fs.writeFile(MKCERT_BIN_PATH, buffer, { mode: 0o755 })
         debug(`mkcert binary saved to ${MKCERT_BIN_PATH}`)
         return MKCERT_BIN_PATH
@@ -193,4 +246,10 @@ async function loadFile(filePath: string): Promise<string | null> {
     } catch {
         return null
     }
+}
+
+async function verifyFileChecksum(filePath: string, expectedHash: string): Promise<boolean> {
+    const data = await fs.readFile(filePath)
+    const actualHash = createHash("sha256").update(data).digest("hex")
+    return actualHash === expectedHash
 }

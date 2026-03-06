@@ -41,7 +41,6 @@ const REACT_DOM_TYPES_VERSION = "18.3.1"
 const CORE_LIBRARIES = ["framer-motion", "framer"]
 const JSON_EXTENSION_REGEX = /\.json$/i
 
-
 /**
  * Packages that are officially supported for type acquisition.
  * Use --unsupported-npm flag to allow other packages.

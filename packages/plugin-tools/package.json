@@ -1,6 +1,6 @@
 {
     "name": "framer-plugin-tools",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "description": "CLI Tools for Framer Plugins",
     "type": "module",
     "main": "dist/index.js",

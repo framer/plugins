@@ -35,6 +35,15 @@ interface ZipPluginDistributionOptions {
     zipFileName: string
 }
 
+// Normalize all entry paths to use forward slashes
+export function normalizeZipEntryPaths(zip: AdmZip): void {
+    for (const entry of zip.getEntries()) {
+        if (entry.entryName.includes("\\")) {
+            entry.entryName = entry.entryName.replace(/\\/g, "/")
+        }
+    }
+}
+
 export function zipPluginDistribution(options: ZipPluginDistributionOptions): string {
     const distPath = path.isAbsolute(options.distPath) ? options.distPath : path.join(options.cwd, options.distPath)
 
@@ -54,6 +63,7 @@ export function zipPluginDistribution(options: ZipPluginDistributionOptions): st
     zip.addLocalFolder(distPath)
     zip.deleteFile(markerFileName)
     zip.addFile(markerFileName, Buffer.from("true", "utf-8"))
+    normalizeZipEntryPaths(zip)
     zip.writeZip(zipFilePath)
 
     return zipFilePath

@@ -3,7 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import AdmZip from "adm-zip"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-import { detectPackageManager, zipPluginDistribution } from "./lib"
+import { detectPackageManager, normalizeZipEntryPaths, zipPluginDistribution } from "./lib"
 
 describe("detectPackageManager", () => {
     let tmpDir: string
@@ -201,6 +201,17 @@ describe("zipPluginDistribution", () => {
         const entries = zip.getEntries().map(e => e.entryName)
         expect(entries).toContain("index.js")
         expect(entries).toContain("assets/images/logo.png")
+    })
+
+    it("normalizes backslash entry names to use forward slashes", () => {
+        const zip = new AdmZip()
+        zip.addFile("nested\\dir\\file.txt", Buffer.from("content", "utf-8"))
+
+        normalizeZipEntryPaths(zip)
+
+        const entries = zip.getEntries().map(e => e.entryName)
+        expect(entries).toContain("nested/dir/file.txt")
+        expect(entries).not.toContain("nested\\dir\\file.txt")
     })
 
     it("returns correct zipPath", () => {

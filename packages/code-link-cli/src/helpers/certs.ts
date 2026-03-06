@@ -11,7 +11,7 @@ import { execSync } from "child_process"
 import fs from "fs/promises"
 import os from "os"
 import path from "path"
-import { debug, info, status, warn } from "../utils/logging.ts"
+import { debug, error, info, status, warn } from "../utils/logging.ts"
 
 export interface CertBundle {
     key: string
@@ -40,7 +40,7 @@ export async function getOrCreateCerts(): Promise<CertBundle | null> {
 
         return serverCert
     } catch (err) {
-        warn(`Failed to generate TLS certificates: ${err instanceof Error ? err.message : err}`)
+        error(`Failed to generate TLS certificates: ${err instanceof Error ? err.message : err}`)
         return null
     }
 }
@@ -76,6 +76,12 @@ async function getOrCreateCA(): Promise<CertBundle> {
     await fs.writeFile(CA_KEY_PATH, ca.key, { mode: 0o600 })
     await fs.writeFile(CA_CERT_PATH, ca.cert, { mode: 0o644 })
     debug("CA generated and saved")
+
+    // Clean up server cert and install marker — they're signed by / refer to the old CA
+    await fs.rm(SERVER_KEY_PATH, { force: true })
+    await fs.rm(SERVER_CERT_PATH, { force: true })
+    await fs.rm(CA_INSTALLED_MARKER, { force: true })
+    debug("Removed stale server cert and CA install marker")
 
     return ca
 }

@@ -26,26 +26,18 @@ export interface Connection {
 }
 
 /**
- * Initializes a WebSocket server and returns a connection interface.
- * When certs are provided, creates a WSS (TLS) server; otherwise plain WS.
+ * Initializes a WSS (TLS) WebSocket server and returns a connection interface.
  * Returns a Promise that resolves when the server is ready, or rejects on startup errors.
  */
-export function initConnection(port: number, certs?: CertBundle): Promise<Connection> {
+export function initConnection(port: number, certs: CertBundle): Promise<Connection> {
     return new Promise((resolve, reject) => {
         const handlers: Partial<ConnectionCallbacks> = {}
         let connectionId = 0
         let isReady = false
 
-        // Create server — WSS when certs are available, plain WS otherwise
-        let httpsServer: https.Server | null = null
-        let wss: WebSocketServer
-
-        if (certs) {
-            httpsServer = https.createServer({ key: certs.key, cert: certs.cert })
-            wss = new WebSocketServer({ server: httpsServer })
-        } else {
-            wss = new WebSocketServer({ port })
-        }
+        // Create WSS server
+        const httpsServer = https.createServer({ key: certs.key, cert: certs.cert })
+        const wss = new WebSocketServer({ server: httpsServer })
 
         const handleError = (err: NodeJS.ErrnoException) => {
             if (!isReady) {
@@ -69,7 +61,7 @@ export function initConnection(port: number, certs?: CertBundle): Promise<Connec
 
         const handleListening = () => {
             isReady = true
-            debug(`${certs ? "WSS" : "WS"} server listening on port ${port}`)
+            debug(`WSS server listening on port ${port}`)
             let activeClient: WebSocket | null = null
 
             wss.on("connection", (ws: WebSocket) => {
@@ -151,14 +143,9 @@ export function initConnection(port: number, certs?: CertBundle): Promise<Connec
             } satisfies Connection)
         }
 
-        if (httpsServer) {
-            httpsServer.on("error", handleError)
-            httpsServer.on("listening", handleListening)
-            httpsServer.listen(port)
-        } else {
-            wss.on("error", handleError)
-            wss.on("listening", handleListening)
-        }
+        httpsServer.on("error", handleError)
+        httpsServer.on("listening", handleListening)
+        httpsServer.listen(port)
     })
 }
 

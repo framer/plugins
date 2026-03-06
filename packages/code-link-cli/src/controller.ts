@@ -1064,14 +1064,20 @@ export async function start(config: Config): Promise<void> {
         }
     }
 
-    // TLS certificates for WSS — falls back to plain WS on failure
+    // TLS certificates for WSS — required for browser connection
     const certs = await getOrCreateCerts()
     if (!certs) {
-        warn("Using unencrypted ws:// connection (browser may block this)")
+        error("Failed to generate TLS certificates. The Framer plugin requires a secure (wss://) connection.")
+        error("")
+        error("To fix this:")
+        error("  1. Re-run this command — certificate generation is often a one-time issue")
+        error("  2. Manually delete ~/.framer/code-link/ and try again")
+        error("")
+        throw new Error("TLS certificate generation failed")
     }
 
-    // WebSocket Connection
-    const connection = await initConnection(config.port, certs ?? undefined)
+    // WebSocket Connection (always WSS)
+    const connection = await initConnection(config.port, certs)
 
     // Handle initial handshake
     connection.on("handshake", (client: WebSocket, message) => {

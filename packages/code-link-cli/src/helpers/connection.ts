@@ -8,7 +8,7 @@ import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
 import https from "node:https"
 import { WebSocket, WebSocketServer } from "ws"
 import type { CertBundle } from "./certs.ts"
-import { debug, error } from "../utils/logging.ts"
+import { debug, error, info } from "../utils/logging.ts"
 
 export interface ConnectionCallbacks {
     onHandshake: (client: WebSocket, message: { projectId: string; projectName: string }) => void
@@ -47,12 +47,10 @@ export function initConnection(port: number, certs: CertBundle): Promise<Connect
             if (!isReady) {
                 if (err.code === "EADDRINUSE") {
                     error(`Port ${port} is already in use.`)
-                    error(`This usually means another instance of Code Link is already running.`)
-                    error(``)
-                    error(`To fix this:`)
-                    error(`  1. Close any other terminal running Code Link for this project`)
-                    error(`  2. Or run: lsof -i :${port} | grep LISTEN`)
-                    error(`     Then kill the process: kill -9 <PID>`)
+                    info(`This usually means another instance of Code Link is already running.`)
+                    info(``)
+                    info(`To fix this:`)
+                    info(`  Close any other terminal running Code Link for this project`)
                     reject(new Error(`Port ${port} is already in use`))
                 } else {
                     error(`Failed to start WebSocket server: ${err.message}`)

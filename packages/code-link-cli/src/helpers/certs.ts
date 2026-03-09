@@ -260,6 +260,11 @@ async function syncRootCA(mkcertPath: string): Promise<RootCAState> {
         return "unchanged"
     }
 
+    // mkcert marks rootCA-key.pem read-only (0o400); remove before overwriting.
+    await Promise.all([
+        fs.rm(ROOT_CA_CERT_PATH, { force: true }),
+        fs.rm(ROOT_CA_KEY_PATH, { force: true }),
+    ])
     await fs.writeFile(ROOT_CA_CERT_PATH, defaultRootCert, { mode: 0o644 })
     await fs.writeFile(ROOT_CA_KEY_PATH, defaultRootKey, { mode: 0o600 })
 

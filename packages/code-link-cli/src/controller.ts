@@ -1068,11 +1068,11 @@ export async function start(config: Config): Promise<void> {
     const certs = await getOrCreateCerts()
     if (!certs) {
         error("Failed to generate TLS certificates. The Framer plugin requires a secure (wss://) connection.")
-        error("")
-        error("To fix this:")
-        error("  1. Re-run this command — certificate generation is often a one-time issue")
-        error(`  2. Manually delete "${String(CERT_DIR)}" and try again`)
-        error("")
+        info("")
+        info("To fix this:")
+        info("  1. Re-run this command — certificate generation is often a one-time issue")
+        info(`  2. Manually delete "${String(CERT_DIR)}" and try again`)
+        info("")
         throw new Error("TLS certificate generation failed")
     }
 

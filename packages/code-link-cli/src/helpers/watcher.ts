@@ -31,6 +31,28 @@ interface PendingAdd {
     contentHash: string
     content: string
     timer: ReturnType<typeof setTimeout>
+    previousContentHash?: string
+}
+
+function findUniqueHashMatch<T extends { contentHash: string }>(
+    pendingItems: Map<string, T>,
+    contentHash: string
+): string | undefined {
+    let matchingKey: string | undefined
+
+    for (const [key, pending] of pendingItems) {
+        if (pending.contentHash !== contentHash) {
+            continue
+        }
+
+        if (matchingKey !== undefined) {
+            return undefined
+        }
+
+        matchingKey = key
+    }
+
+    return matchingKey
 }
 
 /**
@@ -58,13 +80,25 @@ export function initWatcher(filesDir: string): Watcher {
     debug(`Watching directory: ${filesDir}`)
 
     const dispatchEvent = (event: WatcherEvent): void => {
+        let eventToDispatch = event
+
         if (event.kind === "rename" && event.relativePath === event.oldRelativePath) {
-            debug(`Skipping no-op rename: ${event.relativePath}`)
-            return
+            if (event.content === undefined) {
+                warn(`Skipping invalid same-path rename without content: ${event.relativePath}`)
+                return
+            }
+
+            debug(`Converting same-path rename to change: ${event.relativePath}`)
+            eventToDispatch = {
+                kind: "change",
+                relativePath: event.relativePath,
+                content: event.content,
+            }
         }
-        debug(`Watcher event: ${event.kind} ${event.relativePath}`)
+
+        debug(`Watcher event: ${eventToDispatch.kind} ${eventToDispatch.relativePath}`)
         for (const handler of handlers) {
-            handler(event)
+            handler(eventToDispatch)
         }
     }
 
@@ -102,6 +136,7 @@ export function initWatcher(filesDir: string): Watcher {
                 }, RENAME_BUFFER_MS * 3)
             } catch (err) {
                 warn(`Failed to rename ${rawRelativePath}`, err)
+                return { relativePath: rawRelativePath, effectiveAbsolutePath: absolutePath }
             }
         }
 
@@ -125,18 +160,35 @@ export function initWatcher(filesDir: string): Watcher {
             const lastHash = contentHashCache.get(relativePath)
             contentHashCache.delete(relativePath)
 
-            if (lastHash) {
-                // Check if there's already a pending add with matching hash (add arrived first)
-                let matchingAddKey: string | undefined
-                for (const [key, pending] of pendingAdds) {
-                    if (pending.contentHash === lastHash) {
-                        matchingAddKey = key
-                        break
+            const samePathPendingAdd = pendingAdds.get(relativePath)
+            if (samePathPendingAdd) {
+                clearTimeout(samePathPendingAdd.timer)
+                pendingAdds.delete(relativePath)
+
+                try {
+                    const latestContent = await fs.readFile(effectiveAbsolutePath, "utf-8")
+                    const latestHash = hashFileContent(latestContent)
+                    contentHashCache.set(relativePath, latestHash)
+                    dispatchEvent({ kind: "change", relativePath, content: latestContent })
+                } catch {
+                    if (samePathPendingAdd.previousContentHash !== undefined) {
+                        dispatchEvent({ kind: "delete", relativePath })
+                    } else {
+                        debug(`Suppressing transient add+delete: ${relativePath}`)
                     }
                 }
+                return
+            }
+
+            if (lastHash) {
+                // Only emit rename when there is a single unambiguous add candidate.
+                const matchingAddKey = findUniqueHashMatch(pendingAdds, lastHash)
 
                 if (matchingAddKey) {
-                    const matchingAdd = pendingAdds.get(matchingAddKey)!
+                    const matchingAdd = pendingAdds.get(matchingAddKey)
+                    if (!matchingAdd) {
+                        return
+                    }
                     clearTimeout(matchingAdd.timer)
                     pendingAdds.delete(matchingAddKey)
 
@@ -173,22 +225,29 @@ export function initWatcher(filesDir: string): Watcher {
             return
         }
 
+        const previousContentHash = contentHashCache.get(relativePath)
+
         // Update content hash cache
         const contentHash = hashFileContent(content)
         contentHashCache.set(relativePath, contentHash)
 
         if (kind === "add") {
-            // Check if this add matches a pending delete (delete arrived first)
-            let matchingDeleteKey: string | undefined
-            for (const [key, pending] of pendingDeletes) {
-                if (pending.contentHash === contentHash) {
-                    matchingDeleteKey = key
-                    break
-                }
+            const samePathPendingDelete = pendingDeletes.get(relativePath)
+            if (samePathPendingDelete) {
+                clearTimeout(samePathPendingDelete.timer)
+                pendingDeletes.delete(relativePath)
+                dispatchEvent({ kind: "change", relativePath, content })
+                return
             }
 
+            // Only emit rename when there is a single unambiguous delete candidate.
+            const matchingDeleteKey = findUniqueHashMatch(pendingDeletes, contentHash)
+
             if (matchingDeleteKey) {
-                const matchingDelete = pendingDeletes.get(matchingDeleteKey)!
+                const matchingDelete = pendingDeletes.get(matchingDeleteKey)
+                if (!matchingDelete) {
+                    return
+                }
                 clearTimeout(matchingDelete.timer)
                 pendingDeletes.delete(matchingDeleteKey)
 
@@ -208,7 +267,13 @@ export function initWatcher(filesDir: string): Watcher {
                 dispatchEvent({ kind: "add", relativePath, content })
             }, RENAME_BUFFER_MS)
 
-            pendingAdds.set(relativePath, { relativePath, contentHash, content, timer })
+            pendingAdds.set(relativePath, {
+                relativePath,
+                contentHash,
+                content,
+                timer,
+                previousContentHash,
+            })
             return
         }
 

@@ -161,24 +161,23 @@ export class CodeFilesAPI {
     }
 
     async applyRemoteRename(oldFileName: string, newFileName: string, socket: WebSocket) {
-        const normalisedOld = canonicalFileName(oldFileName)
-        const normalisedNew = canonicalFileName(newFileName)
-
-        const content = this.lastSnapshot.get(normalisedOld)
-        if (content !== undefined) {
-            this.lastSnapshot.delete(normalisedOld)
-            this.lastSnapshot.set(normalisedNew, content)
-        }
+        const sourceFileName = canonicalFileName(oldFileName)
+        const targetFileName = canonicalFileName(ensureExtension(newFileName))
 
         const codeFiles = await framer.getCodeFiles()
-        const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedOld)
+        const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === sourceFileName)
 
         if (existing) {
-            await existing.rename(ensureExtension(normalisedNew))
+            await existing.rename(targetFileName)
+            const content = this.lastSnapshot.get(sourceFileName)
+            if (content !== undefined) {
+                this.lastSnapshot.delete(sourceFileName)
+                this.lastSnapshot.set(targetFileName, content)
+            }
             socket.send(
                 JSON.stringify({
                     type: "file-synced",
-                    fileName: normalisedNew,
+                    fileName: targetFileName,
                     remoteModifiedAt: Date.now(),
                 })
             )

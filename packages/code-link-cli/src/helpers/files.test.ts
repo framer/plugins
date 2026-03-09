@@ -6,14 +6,28 @@ import type { Conflict } from "../types.ts"
 import { hashFileContent } from "../utils/state-persistence.ts"
 import { autoResolveConflicts, DEFAULT_REMOTE_DRIFT_MS, detectConflicts } from "./files.ts"
 
+function getOverride(overrides: Partial<Conflict>, key: "localContent" | "remoteContent", fallback: string): string | null
+function getOverride(overrides: Partial<Conflict>, key: "lastSyncedAt", fallback: number): number | undefined
+function getOverride<K extends keyof Conflict>(
+    overrides: Partial<Conflict>,
+    key: K,
+    fallback: Conflict[K]
+): Conflict[K] {
+    if (Object.hasOwn(overrides, key)) {
+        return overrides[key] as Conflict[K]
+    }
+
+    return fallback
+}
+
 function makeConflict(overrides: Partial<Conflict> = {}): Conflict {
     return {
         fileName: overrides.fileName ?? "Test.tsx",
-        localContent: "localContent" in overrides ? (overrides.localContent as string | null) : "local",
-        remoteContent: "remoteContent" in overrides ? (overrides.remoteContent as string | null) : "remote",
+        localContent: getOverride(overrides, "localContent", "local"),
+        remoteContent: getOverride(overrides, "remoteContent", "remote"),
         localModifiedAt: overrides.localModifiedAt ?? Date.now(),
         remoteModifiedAt: overrides.remoteModifiedAt ?? Date.now(),
-        lastSyncedAt: "lastSyncedAt" in overrides ? overrides.lastSyncedAt : Date.now(),
+        lastSyncedAt: getOverride(overrides, "lastSyncedAt", Date.now()),
         localClean: overrides.localClean,
     }
 }

@@ -86,6 +86,32 @@ describe("initWatcher", () => {
         await watcher.close()
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
+
+    it("falls back to the raw path when sanitization rename fails", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
+        const events: WatcherEvent[] = []
+        const watcher: Watcher = initWatcher(tmpDir)
+        watcher.on("change", event => events.push(event))
+        const rawWatcher = createdWatchers.at(-1)
+        if (!rawWatcher) throw new Error("No watcher created")
+
+        const rawPath = path.join(tmpDir, "bad name!.tsx")
+        await fs.writeFile(rawPath, "export const X = 1;", "utf-8")
+
+        const renameSpy = vi.spyOn(fs, "rename").mockRejectedValueOnce(new Error("rename failed"))
+        await rawWatcher.__emit("add", rawPath)
+
+        await waitForBuffer()
+
+        expect(events).toHaveLength(1)
+        expect(events[0].kind).toBe("add")
+        expect(events[0].relativePath).toBe("bad name!.tsx")
+        await expect(fs.readFile(rawPath, "utf-8")).resolves.toContain("export const X")
+
+        renameSpy.mockRestore()
+        await watcher.close()
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
 })
 
 describe("rename detection", () => {
@@ -163,6 +189,213 @@ describe("rename detection", () => {
         expect(events[0].relativePath).toBe("NewName.tsx")
         expect(events[0].oldRelativePath).toBe("OldName.tsx")
         expect(events[0].content).toBe(content)
+
+        await watcher.close()
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
+    it("emits change when unlink and add target the same path with identical content", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
+        const content = "export const Component = () => null;"
+
+        const events: WatcherEvent[] = []
+        const watcher: Watcher = initWatcher(tmpDir)
+        watcher.on("change", event => events.push(event))
+        const rawWatcher = createdWatchers.at(-1)
+        if (!rawWatcher) throw new Error("No watcher created")
+
+        const filePath = path.join(tmpDir, "Component.tsx")
+        await fs.writeFile(filePath, content, "utf-8")
+        await rawWatcher.__emit("add", filePath)
+        await waitForBuffer()
+        events.length = 0
+
+        await fs.unlink(filePath)
+        await rawWatcher.__emit("unlink", filePath)
+        await fs.writeFile(filePath, content, "utf-8")
+        await rawWatcher.__emit("add", filePath)
+
+        expect(events).toHaveLength(1)
+        expect(events[0]).toEqual({
+            kind: "change",
+            relativePath: "Component.tsx",
+            content,
+        })
+
+        await watcher.close()
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
+    it("emits change when unlink and add target the same path with different content", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
+
+        const events: WatcherEvent[] = []
+        const watcher: Watcher = initWatcher(tmpDir)
+        watcher.on("change", event => events.push(event))
+        const rawWatcher = createdWatchers.at(-1)
+        if (!rawWatcher) throw new Error("No watcher created")
+
+        const filePath = path.join(tmpDir, "Component.tsx")
+        await fs.writeFile(filePath, "export const Version = 1", "utf-8")
+        await rawWatcher.__emit("add", filePath)
+        await waitForBuffer()
+        events.length = 0
+
+        await fs.unlink(filePath)
+        await rawWatcher.__emit("unlink", filePath)
+        await fs.writeFile(filePath, "export const Version = 2", "utf-8")
+        await rawWatcher.__emit("add", filePath)
+
+        expect(events).toHaveLength(1)
+        expect(events[0]).toEqual({
+            kind: "change",
+            relativePath: "Component.tsx",
+            content: "export const Version = 2",
+        })
+
+        await watcher.close()
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
+    it("emits change when add arrives before unlink for the same path and the file still exists", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
+
+        const events: WatcherEvent[] = []
+        const watcher: Watcher = initWatcher(tmpDir)
+        watcher.on("change", event => events.push(event))
+        const rawWatcher = createdWatchers.at(-1)
+        if (!rawWatcher) throw new Error("No watcher created")
+
+        const filePath = path.join(tmpDir, "Component.tsx")
+        await fs.writeFile(filePath, "export const Version = 1", "utf-8")
+        await rawWatcher.__emit("add", filePath)
+        await waitForBuffer()
+        events.length = 0
+
+        await fs.writeFile(filePath, "export const Version = 2", "utf-8")
+        await rawWatcher.__emit("add", filePath)
+        await rawWatcher.__emit("unlink", filePath)
+
+        expect(events).toHaveLength(1)
+        expect(events[0]).toEqual({
+            kind: "change",
+            relativePath: "Component.tsx",
+            content: "export const Version = 2",
+        })
+
+        await watcher.close()
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
+    it("suppresses transient add followed by unlink for a new file on the same path", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
+
+        const events: WatcherEvent[] = []
+        const watcher: Watcher = initWatcher(tmpDir)
+        watcher.on("change", event => events.push(event))
+        const rawWatcher = createdWatchers.at(-1)
+        if (!rawWatcher) throw new Error("No watcher created")
+
+        const filePath = path.join(tmpDir, "Component.tsx")
+        await fs.writeFile(filePath, "export const Temp = 1", "utf-8")
+        await rawWatcher.__emit("add", filePath)
+        await fs.unlink(filePath)
+        await rawWatcher.__emit("unlink", filePath)
+
+        expect(events).toHaveLength(0)
+
+        await waitForBuffer()
+        expect(events).toHaveLength(0)
+
+        await watcher.close()
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
+    it("falls back to add and delete when delete sees multiple matching adds", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
+        const content = "export const Component = () => null;"
+
+        const events: WatcherEvent[] = []
+        const watcher: Watcher = initWatcher(tmpDir)
+        watcher.on("change", event => events.push(event))
+        const rawWatcher = createdWatchers.at(-1)
+        if (!rawWatcher) throw new Error("No watcher created")
+
+        const originalPath = path.join(tmpDir, "OldName.tsx")
+        await fs.writeFile(originalPath, content, "utf-8")
+        await rawWatcher.__emit("add", originalPath)
+        await waitForBuffer()
+        events.length = 0
+
+        const newPathA = path.join(tmpDir, "NewNameA.tsx")
+        const newPathB = path.join(tmpDir, "NewNameB.tsx")
+        await fs.writeFile(newPathA, content, "utf-8")
+        await fs.writeFile(newPathB, content, "utf-8")
+        await rawWatcher.__emit("add", newPathA)
+        await rawWatcher.__emit("add", newPathB)
+
+        await fs.unlink(originalPath)
+        await rawWatcher.__emit("unlink", originalPath)
+
+        expect(events).toHaveLength(0)
+
+        await waitForBuffer()
+
+        expect(events).toHaveLength(3)
+        expect(events.some(event => event.kind === "rename")).toBe(false)
+        expect(events).toEqual(
+            expect.arrayContaining([
+                { kind: "add", relativePath: "NewNameA.tsx", content },
+                { kind: "add", relativePath: "NewNameB.tsx", content },
+                { kind: "delete", relativePath: "OldName.tsx" },
+            ])
+        )
+
+        await watcher.close()
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
+    it("falls back to add and delete when add sees multiple matching deletes", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
+        const content = "export const Component = () => null;"
+
+        const events: WatcherEvent[] = []
+        const watcher: Watcher = initWatcher(tmpDir)
+        watcher.on("change", event => events.push(event))
+        const rawWatcher = createdWatchers.at(-1)
+        if (!rawWatcher) throw new Error("No watcher created")
+
+        const originalPathA = path.join(tmpDir, "OldNameA.tsx")
+        const originalPathB = path.join(tmpDir, "OldNameB.tsx")
+        await fs.writeFile(originalPathA, content, "utf-8")
+        await fs.writeFile(originalPathB, content, "utf-8")
+        await rawWatcher.__emit("add", originalPathA)
+        await rawWatcher.__emit("add", originalPathB)
+        await waitForBuffer()
+        events.length = 0
+
+        await fs.unlink(originalPathA)
+        await fs.unlink(originalPathB)
+        await rawWatcher.__emit("unlink", originalPathA)
+        await rawWatcher.__emit("unlink", originalPathB)
+
+        const newPath = path.join(tmpDir, "NewName.tsx")
+        await fs.writeFile(newPath, content, "utf-8")
+        await rawWatcher.__emit("add", newPath)
+
+        expect(events).toHaveLength(0)
+
+        await waitForBuffer()
+
+        expect(events).toHaveLength(3)
+        expect(events.some(event => event.kind === "rename")).toBe(false)
+        expect(events).toEqual(
+            expect.arrayContaining([
+                { kind: "delete", relativePath: "OldNameA.tsx" },
+                { kind: "delete", relativePath: "OldNameB.tsx" },
+                { kind: "add", relativePath: "NewName.tsx", content },
+            ])
+        )
 
         await watcher.close()
         await fs.rm(tmpDir, { recursive: true, force: true })

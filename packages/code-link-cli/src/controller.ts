@@ -929,15 +929,22 @@ async function executeEffect(
 
         case "SEND_FILE_RENAME": {
             try {
-                if (syncState.socket) {
-                    await sendMessage(syncState.socket, {
-                        type: "file-rename",
-                        oldFileName: effect.oldFileName,
-                        newFileName: effect.newFileName,
-                    })
+                if (!syncState.socket) {
+                    warn(`No socket available to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
+                    return []
                 }
 
-                // Only update tracking after successful send
+                const sent = await sendMessage(syncState.socket, {
+                    type: "file-rename",
+                    oldFileName: effect.oldFileName,
+                    newFileName: effect.newFileName,
+                })
+                if (!sent) {
+                    warn(`Failed to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
+                    return []
+                }
+
+                // Only update tracking after a confirmed successful send
                 hashTracker.forget(effect.oldFileName)
                 fileMetadataCache.recordDelete(effect.oldFileName)
                 hashTracker.remember(effect.newFileName, effect.content)

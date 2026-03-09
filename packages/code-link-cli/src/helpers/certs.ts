@@ -61,10 +61,6 @@ const MKCERT_ENV = {
     ...(process.platform === "darwin" ? { TRUST_STORES: "system" } : {}),
 }
 
-
-// Public API
-
-
 /**
  * Returns a TLS cert bundle for the WSS server, or null if generation fails.
  * On first run, downloads mkcert, installs a local CA into trust stores, and
@@ -107,7 +103,6 @@ export async function getOrCreateCerts(): Promise<CertBundle | null> {
 
 
 // Binary management
-
 
 function getDownloadInfo(): { url: string; expectedChecksum: string } {
     const platformMap: Record<string, string> = {
@@ -198,7 +193,6 @@ async function ensureMkcertBinary(): Promise<string> {
 
 // Certificate generation
 
-
 async function generateCerts(mkcertPath: string): Promise<void> {
     debug("Running mkcert to install the local root CA...")
     try {
@@ -280,7 +274,6 @@ async function syncRootCA(mkcertPath: string): Promise<RootCAState> {
 
 
 // Helpers
-
 
 async function invalidateServerCerts(rootCAState: Exclude<RootCAState, "unchanged">): Promise<void> {
     const reasons: Record<Exclude<RootCAState, "unchanged">, string> = {

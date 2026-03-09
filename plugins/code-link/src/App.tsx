@@ -563,12 +563,7 @@ function createMessageHandler({
                 dispatch({ type: "set-mode", mode: "idle" })
                 break
             case "file-rename": {
-                const { oldFileName, newFileName } = message
-                if (typeof message.content !== "string") {
-                    log.warn("Rename message missing content:", message)
-                    break
-                }
-                const content = message.content
+                const { oldFileName, newFileName, content } = message
                 log.debug(`Renaming file: ${oldFileName} → ${newFileName}`)
                 if (await api.applyRemoteRename(oldFileName, newFileName, socket)) {
                     syncTracker.forget(oldFileName)

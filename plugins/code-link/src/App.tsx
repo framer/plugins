@@ -568,7 +568,7 @@ function createMessageHandler({
                     log.warn("Rename message missing content:", message)
                     break
                 }
-                const content = String(message.content)
+                const content = message.content
                 log.debug(`Renaming file: ${oldFileName} → ${newFileName}`)
                 if (await api.applyRemoteRename(oldFileName, newFileName, socket)) {
                     syncTracker.forget(oldFileName)

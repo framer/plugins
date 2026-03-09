@@ -10,7 +10,7 @@ import { pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
 import type { WebSocket } from "ws"
-import { getOrCreateCerts } from "./helpers/certs.ts"
+import { CERT_DIR, getOrCreateCerts } from "./helpers/certs.ts"
 import { initConnection, sendMessage } from "./helpers/connection.ts"
 import {
     autoResolveConflicts,
@@ -1071,7 +1071,7 @@ export async function start(config: Config): Promise<void> {
         error("")
         error("To fix this:")
         error("  1. Re-run this command — certificate generation is often a one-time issue")
-        error("  2. Manually delete ~/.framer/code-link/ and try again")
+        error(`  2. Manually delete "${String(CERT_DIR)}" and try again`)
         error("")
         throw new Error("TLS certificate generation failed")
     }

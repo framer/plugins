@@ -38,6 +38,10 @@ export function initConnection(port: number, certs: CertBundle): Promise<Connect
         // Create WSS server
         const httpsServer = https.createServer({ key: certs.key, cert: certs.cert })
         const wss = new WebSocketServer({ server: httpsServer })
+        wss.on("error", err => {
+            error(`WebSocket server error: ${err.message}`)
+            handlers.onError?.(err)
+        })
 
         const handleError = (err: NodeJS.ErrnoException) => {
             if (!isReady) {

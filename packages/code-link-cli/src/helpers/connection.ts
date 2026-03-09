@@ -61,6 +61,7 @@ export function initConnection(port: number, certs: CertBundle): Promise<Connect
                 return
             }
             error(`WebSocket server error: ${err.message}`)
+            handlers.onError?.(err)
         }
 
         const handleListening = () => {
@@ -142,7 +143,7 @@ export function initConnection(port: number, certs: CertBundle): Promise<Connect
 
                 close(): void {
                     wss.close()
-                    httpsServer?.close()
+                    httpsServer.close()
                 },
             } satisfies Connection)
         }

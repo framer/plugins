@@ -1,3 +1,4 @@
+import https from "node:https"
 import net from "node:net"
 import { describe, expect, it, vi } from "vitest"
 import { WebSocket, WebSocketServer } from "ws"
@@ -123,6 +124,31 @@ describe("initConnection error handling", () => {
         const boom = new Error("wss exploded")
         expect(() => {
             if (typeof errorHandler !== "function") throw new Error("Expected WebSocketServer error handler")
+            errorHandler(boom)
+        }).not.toThrow()
+
+        expect(onError).toHaveBeenCalledOnce()
+        expect(onError).toHaveBeenCalledWith(boom)
+
+        connection.close()
+        onSpy.mockRestore()
+    })
+
+    it("forwards HTTPS server runtime error events to the connection error handler without throwing", async () => {
+        const port = await getFreePort()
+        const onSpy = vi.spyOn(https.Server.prototype, "on")
+        const connection = await initConnection(port, { key: TEST_KEY, cert: TEST_CERT })
+        const onError = vi.fn()
+        connection.on("error", onError)
+
+        const errorHandler = (onSpy.mock.calls as Array<[string, unknown]>).find(([event]) => event === "error")?.[1] as
+            | ((error: NodeJS.ErrnoException) => void)
+            | undefined
+        expect(errorHandler).toBeTypeOf("function")
+
+        const boom = Object.assign(new Error("https exploded"), { code: "ECONNRESET" }) as NodeJS.ErrnoException
+        expect(() => {
+            if (typeof errorHandler !== "function") throw new Error("Expected HTTPS server error handler")
             errorHandler(boom)
         }).not.toThrow()
 

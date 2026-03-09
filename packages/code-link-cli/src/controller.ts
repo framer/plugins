@@ -184,6 +184,11 @@ type Effect =
           message: string
       }
 
+interface PendingRename {
+    oldFileName: string
+    content: string
+}
+
 /** Log helper */
 function log(level: "info" | "debug" | "warn" | "success", message: string): Effect {
     return { type: "LOG", level, message }
@@ -699,11 +704,12 @@ async function executeEffect(
         hashTracker: ReturnType<typeof createHashTracker>
         installer: Installer | null
         fileMetadataCache: FileMetadataCache
+        pendingRenames: Map<string, PendingRename>
         userActions: PluginUserPromptCoordinator
         syncState: SyncState
     }
 ): Promise<SyncEvent[]> {
-    const { config, hashTracker, installer, fileMetadataCache, userActions, syncState } = context
+    const { config, hashTracker, installer, fileMetadataCache, pendingRenames, userActions, syncState } = context
 
     switch (effect.type) {
         case "INIT_WORKSPACE": {
@@ -876,10 +882,19 @@ async function executeEffect(
 
             // Read current file content to compute hash
             const currentContent = await readFileSafe(effect.fileName, config.filesDir)
+            const pendingRename = pendingRenames.get(effect.fileName)
+            const syncedContent = currentContent ?? pendingRename?.content ?? null
 
-            if (currentContent !== null) {
-                const contentHash = hashFileContent(currentContent)
+            if (syncedContent !== null) {
+                const contentHash = hashFileContent(syncedContent)
                 fileMetadataCache.recordSyncedSnapshot(effect.fileName, contentHash, effect.remoteModifiedAt)
+            }
+
+            if (pendingRename) {
+                hashTracker.forget(pendingRename.oldFileName)
+                fileMetadataCache.recordDelete(pendingRename.oldFileName)
+                hashTracker.remember(effect.fileName, pendingRename.content)
+                pendingRenames.delete(effect.fileName)
             }
 
             return []
@@ -938,16 +953,17 @@ async function executeEffect(
                     type: "file-rename",
                     oldFileName: effect.oldFileName,
                     newFileName: effect.newFileName,
+                    content: effect.content,
                 })
                 if (!sent) {
                     warn(`Failed to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
                     return []
                 }
 
-                // Only update tracking after a confirmed successful send
-                hashTracker.forget(effect.oldFileName)
-                fileMetadataCache.recordDelete(effect.oldFileName)
-                hashTracker.remember(effect.newFileName, effect.content)
+                pendingRenames.set(effect.newFileName, {
+                    oldFileName: effect.oldFileName,
+                    content: effect.content,
+                })
             } catch (err) {
                 warn(`Failed to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
             }
@@ -1065,6 +1081,7 @@ export async function start(config: Config): Promise<void> {
 
     const hashTracker = createHashTracker()
     const fileMetadataCache = new FileMetadataCache()
+    const pendingRenames = new Map<string, PendingRename>()
     let installer: Installer | null = null
 
     // State machine state
@@ -1104,6 +1121,7 @@ export async function start(config: Config): Promise<void> {
                 hashTracker,
                 installer,
                 fileMetadataCache,
+                pendingRenames,
                 userActions,
                 syncState,
             })
@@ -1272,6 +1290,13 @@ export async function start(config: Config): Promise<void> {
                 }
                 break
 
+            case "error":
+                if (message.fileName) {
+                    pendingRenames.delete(message.fileName)
+                }
+                warn(message.message)
+                return
+
             case "conflicts-resolved":
                 event = {
                     type: "CONFLICTS_RESOLVED",
@@ -1351,4 +1376,4 @@ export async function start(config: Config): Promise<void> {
 }
 
 // Export for testing
-export { transition }
+export { executeEffect, transition }

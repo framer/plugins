@@ -160,14 +160,42 @@ export class CodeFilesAPI {
         return results
     }
 
-    async applyRemoteRename(oldFileName: string, newFileName: string, socket: WebSocket) {
+    async applyRemoteRename(oldFileName: string, newFileName: string, socket: WebSocket): Promise<boolean> {
         const sourceFileName = canonicalFileName(oldFileName)
         const targetFileName = canonicalFileName(ensureExtension(newFileName))
 
-        const codeFiles = await framer.getCodeFiles()
+        let codeFiles
+        try {
+            codeFiles = await framer.getCodeFiles()
+        } catch (err) {
+            const message = `Failed to fetch code files for rename ${oldFileName} -> ${newFileName}`
+            log.error(message, err)
+            socket.send(
+                JSON.stringify({
+                    type: "error",
+                    fileName: targetFileName,
+                    message,
+                })
+            )
+            return false
+        }
+
         const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === sourceFileName)
 
-        if (existing) {
+        if (!existing) {
+            const message = `Rename failed: ${oldFileName} not found in Framer`
+            log.warn(message)
+            socket.send(
+                JSON.stringify({
+                    type: "error",
+                    fileName: targetFileName,
+                    message,
+                })
+            )
+            return false
+        }
+
+        try {
             await existing.rename(targetFileName)
             const content = this.lastSnapshot.get(sourceFileName)
             if (content !== undefined) {
@@ -181,6 +209,18 @@ export class CodeFilesAPI {
                     remoteModifiedAt: Date.now(),
                 })
             )
+            return true
+        } catch (err) {
+            const message = `Failed to rename ${oldFileName} -> ${newFileName}`
+            log.error(message, err)
+            socket.send(
+                JSON.stringify({
+                    type: "error",
+                    fileName: targetFileName,
+                    message,
+                })
+            )
+            return false
         }
     }
 }

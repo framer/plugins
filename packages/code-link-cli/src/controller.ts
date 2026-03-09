@@ -10,6 +10,7 @@ import { pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
 import type { WebSocket } from "ws"
+import { CERT_DIR, getOrCreateCerts } from "./helpers/certs.ts"
 import { initConnection, sendMessage } from "./helpers/connection.ts"
 import {
     autoResolveConflicts,
@@ -1063,8 +1064,20 @@ export async function start(config: Config): Promise<void> {
         }
     }
 
-    // WebSocket Connection
-    const connection = await initConnection(config.port)
+    // TLS certificates for WSS — required for browser connection
+    const certs = await getOrCreateCerts()
+    if (!certs) {
+        error("Failed to generate TLS certificates. The Framer plugin requires a secure (wss://) connection.")
+        info("")
+        info("To fix this:")
+        info("  1. Re-run this command — certificate generation is often a one-time issue")
+        info(`  2. Manually delete "${String(CERT_DIR)}" and try again`)
+        info("")
+        throw new Error("TLS certificate generation failed")
+    }
+
+    // WebSocket Connection (always WSS)
+    const connection = await initConnection(config.port, certs)
 
     // Handle initial handshake
     connection.on("handshake", (client: WebSocket, message) => {

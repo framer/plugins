@@ -26,8 +26,6 @@ const currentPlatformChecksum = MKCERT_CHECKSUMS[currentPlatformKey]
 
 
 // Shared test helpers
-
-
 function setupCommonMocks(opts: {
     tempHome: string
     certDir: string
@@ -96,8 +94,6 @@ function fakeFetchResponse(opts?: { ok?: boolean; status?: number; statusText?: 
 
 
 // Integration tests — cached binary, root CA syncing, cert generation
-
-
 describe("getOrCreateCerts", () => {
     let tempHome: string
     let certDir: string
@@ -254,8 +250,6 @@ describe("getOrCreateCerts", () => {
 
 
 // Download URL selection
-
-
 describe("download URL selection", () => {
     let tempHome: string
     let certDir: string
@@ -312,8 +306,6 @@ describe("download URL selection", () => {
 
 
 // Binary cache fast-path and SHA-256 verification
-
-
 describe("binary cache and SHA-256 verification", () => {
     let tempHome: string
     let certDir: string
@@ -419,8 +411,6 @@ describe("binary cache and SHA-256 verification", () => {
 
 
 // Error handling
-
-
 describe("error handling", () => {
     let tempHome: string
     let certDir: string
@@ -504,10 +494,6 @@ describe("error handling", () => {
     })
 })
 
-
-// Mock helpers
-
-
 /**
  * Mocks mkcert's execFile behavior. Handles three commands:
  *  - `-CAROOT` → returns defaultCAROOT
@@ -569,7 +555,7 @@ function mockMkcert(
             }
 
             callback(new Error(`Unexpected mkcert invocation: ${commandArgs.join(" ")}`))
-        })().catch(error => {
+        })().catch((error: unknown) => {
             callback(error instanceof Error ? error : new Error(String(error)))
         })
     })

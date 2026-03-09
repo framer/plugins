@@ -101,9 +101,6 @@ export async function getOrCreateCerts(): Promise<CertBundle | null> {
     }
 }
 
-
-// Binary management
-
 function getDownloadInfo(): { url: string; expectedChecksum: string } {
     const platformMap: Record<string, string> = {
         darwin: "darwin",
@@ -190,9 +187,6 @@ async function ensureMkcertBinary(): Promise<string> {
     }
 }
 
-
-// Certificate generation
-
 async function generateCerts(mkcertPath: string): Promise<void> {
     debug("Running mkcert to install the local root CA...")
     try {
@@ -271,9 +265,6 @@ async function syncRootCA(mkcertPath: string): Promise<RootCAState> {
 
     return existingRootCert && existingRootKey ? "updated" : "copied"
 }
-
-
-// Helpers
 
 async function invalidateServerCerts(rootCAState: Exclude<RootCAState, "unchanged">): Promise<void> {
     const reasons: Record<Exclude<RootCAState, "unchanged">, string> = {

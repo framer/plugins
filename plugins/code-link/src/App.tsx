@@ -106,6 +106,7 @@ export function App() {
             // Check initial permission state
             const initialPermissions = framer.isAllowedTo(
                 "createCodeFile",
+                "CodeFile.rename",
                 "CodeFile.setFileContent",
                 "CodeFile.remove"
             )
@@ -115,6 +116,7 @@ export function App() {
             // Subscribe to permission changes
             unsubscribePermissions = framer.subscribeToIsAllowedTo(
                 "createCodeFile",
+                "CodeFile.rename",
                 "CodeFile.setFileContent",
                 "CodeFile.remove",
                 granted => {

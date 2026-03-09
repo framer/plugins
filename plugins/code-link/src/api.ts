@@ -183,6 +183,7 @@ export class CodeFilesAPI {
         const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === sourceFileName)
 
         if (!existing) {
+            this.lastSnapshot.delete(sourceFileName)
             const message = `Rename failed: ${oldFileName} not found in Framer`
             log.warn(message)
             socket.send(
@@ -196,6 +197,10 @@ export class CodeFilesAPI {
         }
 
         try {
+            if (!framer.isAllowedTo("CodeFile.rename")) {
+                log.warn("No permission to rename code files")
+                return false
+            }
             await existing.rename(targetFileName)
             const content = this.lastSnapshot.get(sourceFileName)
             if (content !== undefined) {

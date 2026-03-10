@@ -1,4 +1,4 @@
-import { canonicalFileName, normalizeCodeFileName, type SyncTracker } from "@code-link/shared"
+import { normalizeCodeFileName, type SyncTracker } from "@code-link/shared"
 import { framer } from "framer-plugin"
 import * as log from "./utils/logger"
 
@@ -26,7 +26,7 @@ export class CodeFilesAPI {
         return codeFiles.map(file => {
             const source = file.path || file.name
             return {
-                name: canonicalFileName(source),
+                name: normalizeCodeFileName(source),
                 content: file.content,
             }
         })
@@ -111,12 +111,12 @@ export class CodeFilesAPI {
 
     async applyRemoteDelete(fileName: string) {
         await deleteFramerFile(fileName)
-        this.lastSnapshot.delete(canonicalFileName(fileName))
+        this.lastSnapshot.delete(normalizeCodeFileName(fileName))
     }
 
     async readCurrentContent(fileName: string) {
         const files = await this.getCodeFilesWithCanonicalNames()
-        const normalizedName = canonicalFileName(fileName)
+        const normalizedName = normalizeCodeFileName(fileName)
         return files.find(file => file.name === normalizedName)?.content
     }
 
@@ -136,7 +136,7 @@ export class CodeFilesAPI {
 
         const versionPromises = requests.map(async request => {
             const file = codeFiles.find(
-                f => canonicalFileName(f.path || f.name) === canonicalFileName(request.fileName)
+                f => normalizeCodeFileName(f.path || f.name) === normalizeCodeFileName(request.fileName)
             )
 
             if (!file) {
@@ -174,7 +174,7 @@ export class CodeFilesAPI {
     }
 
     async applyRemoteRename(oldFileName: string, newFileName: string, socket: WebSocket): Promise<boolean> {
-        const sourceFileName = canonicalFileName(oldFileName)
+        const sourceFileName = normalizeCodeFileName(oldFileName)
         const targetFileName = normalizeCodeFileName(newFileName)
 
         let codeFiles
@@ -193,7 +193,7 @@ export class CodeFilesAPI {
             return false
         }
 
-        const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === sourceFileName)
+        const existing = codeFiles.find(file => normalizeCodeFileName(file.path || file.name) === sourceFileName)
 
         if (!existing) {
             this.lastSnapshot.delete(sourceFileName)
@@ -242,7 +242,7 @@ export class CodeFilesAPI {
 async function upsertFramerFile(fileName: string, content: string): Promise<number | undefined> {
     const normalisedName = normalizeCodeFileName(fileName)
     const codeFiles = await framer.getCodeFiles()
-    const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedName)
+    const existing = codeFiles.find(file => normalizeCodeFileName(file.path || file.name) === normalisedName)
 
     if (existing) {
         await existing.setFileContent(content)
@@ -257,9 +257,9 @@ async function upsertFramerFile(fileName: string, content: string): Promise<numb
 }
 
 async function deleteFramerFile(fileName: string) {
-    const normalisedName = canonicalFileName(fileName)
+    const normalisedName = normalizeCodeFileName(fileName)
     const codeFiles = await framer.getCodeFiles()
-    const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedName)
+    const existing = codeFiles.find(file => normalizeCodeFileName(file.path || file.name) === normalisedName)
 
     if (existing) {
         await existing.remove()

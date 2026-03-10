@@ -221,6 +221,30 @@ describe("CodeFilesAPI", () => {
         expect(trackerRemember).not.toHaveBeenCalled()
     })
 
+    it("updates an existing extensionless Framer file instead of creating a duplicate", async () => {
+        const { api, socket, tracker, trackerRemember } = setup()
+        const oldContent = "export const New = 1"
+        const newContent = "export const New = 2"
+        const existing = createCodeFile({ name: "New", content: oldContent })
+
+        framerMock.getCodeFiles.mockResolvedValueOnce([existing])
+
+        await api.applyRemoteChange("New", newContent, socket as unknown as WebSocket)
+
+        expect(existing.setFileContent).toHaveBeenCalledWith(newContent)
+        expect(framerMock.createCodeFile).not.toHaveBeenCalled()
+        const [syncMessage] = getSentMessages(socket)
+        expectFileSyncedMessage(syncMessage, "New.tsx")
+
+        socket.send.mockClear()
+        mockCodeFiles([createCodeFile({ name: "New", content: newContent })])
+
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+
+        expect(socket.send).not.toHaveBeenCalled()
+        expect(trackerRemember).not.toHaveBeenCalled()
+    })
+
     it("seeds snapshot before a remote write finishes to avoid echoing subscription updates", async () => {
         const { api, socket, tracker, trackerRemember } = setup()
         const oldContent = "export const Race = 1"
@@ -310,6 +334,53 @@ describe("CodeFilesAPI", () => {
 
         expect(socket.send).not.toHaveBeenCalled()
         expect(trackerRemember).not.toHaveBeenCalled()
+    })
+
+    it("finds an extensionless rename source using its normalized name", async () => {
+        const { api, socket, tracker, trackerRemember } = setup()
+        const content = "export const Old = 1"
+        const existing = createCodeFile({ name: "Old", content })
+
+        await publishSnapshotAndClear({
+            api,
+            socket,
+            files: [createCodeFile({ name: "Old", content })],
+        })
+
+        framerMock.getCodeFiles.mockResolvedValueOnce([existing])
+
+        await expect(api.applyRemoteRename("Old.tsx", "New", socket as unknown as WebSocket)).resolves.toBe(true)
+
+        expect(existing.rename).toHaveBeenCalledWith("New.tsx")
+
+        socket.send.mockClear()
+        mockCodeFiles([createCodeFile({ name: "New", content })])
+
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+
+        expect(socket.send).not.toHaveBeenCalled()
+        expect(trackerRemember).not.toHaveBeenCalled()
+    })
+
+    it("deletes an extensionless Framer file using a normalized name", async () => {
+        const { api, socket, tracker } = setup()
+        const existing = createCodeFile({ name: "DeleteMe", content: "export const DeleteMe = 1" })
+
+        await publishSnapshotAndClear({
+            api,
+            socket,
+            files: [createCodeFile({ name: "DeleteMe", content: "export const DeleteMe = 1" })],
+        })
+
+        framerMock.getCodeFiles.mockResolvedValueOnce([existing])
+
+        await api.applyRemoteDelete("DeleteMe.tsx")
+
+        expect(existing.remove).toHaveBeenCalled()
+
+        mockCodeFiles([])
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        expect(socket.send).not.toHaveBeenCalled()
     })
 
     it("returns an error when rename cannot fetch code files", async () => {

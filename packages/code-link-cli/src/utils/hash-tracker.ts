@@ -5,6 +5,7 @@
  * and skipping watcher events for files we just wrote.
  */
 
+import { normalizeCodeFileName } from "@code-link/shared"
 import { hashFileContent } from "./state-persistence.ts"
 
 export interface HashTracker {
@@ -24,20 +25,22 @@ export function createHashTracker(): HashTracker {
     const hashes = new Map<string, string>()
     const pendingDeletes = new Map<string, ReturnType<typeof setTimeout>>()
 
+    const keyFor = (filePath: string) => normalizeCodeFileName(filePath)
+
     return {
         remember(filePath: string, content: string): void {
             const hash = hashFileContent(content)
-            hashes.set(filePath, hash)
+            hashes.set(keyFor(filePath), hash)
         },
 
         shouldSkip(filePath: string, content: string): boolean {
             const currentHash = hashFileContent(content)
-            const storedHash = hashes.get(filePath)
+            const storedHash = hashes.get(keyFor(filePath))
             return storedHash === currentHash
         },
 
         forget(filePath: string): void {
-            hashes.delete(filePath)
+            hashes.delete(keyFor(filePath))
         },
 
         clear(): void {
@@ -45,28 +48,30 @@ export function createHashTracker(): HashTracker {
         },
 
         markDelete(filePath: string): void {
-            const existingTimer = pendingDeletes.get(filePath)
+            const key = keyFor(filePath)
+            const existingTimer = pendingDeletes.get(key)
             if (existingTimer) {
                 clearTimeout(existingTimer)
             }
 
             const timeout = setTimeout(() => {
-                pendingDeletes.delete(filePath)
+                pendingDeletes.delete(key)
             }, 5000)
 
-            pendingDeletes.set(filePath, timeout)
+            pendingDeletes.set(key, timeout)
         },
 
         shouldSkipDelete(filePath: string): boolean {
-            return pendingDeletes.has(filePath)
+            return pendingDeletes.has(keyFor(filePath))
         },
 
         clearDelete(filePath: string): void {
-            const timeout = pendingDeletes.get(filePath)
+            const key = keyFor(filePath)
+            const timeout = pendingDeletes.get(key)
             if (timeout) {
                 clearTimeout(timeout)
             }
-            pendingDeletes.delete(filePath)
+            pendingDeletes.delete(key)
         },
     }
 }

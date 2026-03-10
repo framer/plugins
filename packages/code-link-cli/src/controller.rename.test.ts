@@ -131,6 +131,67 @@ describe("rename confirmation bookkeeping", () => {
         })
     })
 
+    it("normalizes extensionless rename targets for later confirmation lookup", async () => {
+        sendMessage.mockResolvedValue(true)
+
+        const hashTracker = {
+            remember: vi.fn(),
+            shouldSkip: vi.fn(),
+            forget: vi.fn(),
+            clear: vi.fn(),
+            markDelete: vi.fn(),
+            shouldSkipDelete: vi.fn(),
+            clearDelete: vi.fn(),
+        }
+        const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>()
+
+        await executeEffect(
+            {
+                type: "SEND_FILE_RENAME",
+                oldFileName: "Old.tsx",
+                newFileName: "New",
+                content: "export const New = () => null",
+            },
+            {
+                config: {
+                    port: 0,
+                    projectHash: "project",
+                    projectDir: null,
+                    filesDir: null,
+                    dangerouslyAutoDelete: false,
+                    allowUnsupportedNpm: false,
+                } satisfies Config,
+                hashTracker: hashTracker as never,
+                installer: null,
+                fileMetadataCache: {
+                    recordDelete: vi.fn(),
+                } as never,
+                pendingRenameConfirmations,
+                userActions: {} as never,
+                syncState: {
+                    mode: "watching",
+                    socket: {} as never,
+                    pendingRemoteChanges: [],
+                },
+            }
+        )
+
+        expect(sendMessage).toHaveBeenCalledWith(
+            expect.anything(),
+            {
+                type: "file-rename",
+                oldFileName: "Old.tsx",
+                newFileName: "New.tsx",
+                content: "export const New = () => null",
+            }
+        )
+        expect(pendingRenameConfirmations.get("New.tsx")).toEqual({
+            oldFileName: "Old.tsx",
+            content: "export const New = () => null",
+        })
+        expect(pendingRenameConfirmations.has("New")).toBe(false)
+    })
+
     it("applies old-file cleanup after file-synced arrives", async () => {
         const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-"))
         const filesDir = path.join(tmpDir, "files")
@@ -153,6 +214,98 @@ describe("rename confirmation bookkeeping", () => {
         const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>([
             ["New.tsx", { oldFileName: "Old.tsx", content: "export const New = () => null" }],
         ])
+
+        await executeEffect(
+            {
+                type: "UPDATE_FILE_METADATA",
+                fileName: "New.tsx",
+                remoteModifiedAt: 1234,
+            },
+            {
+                config: {
+                    port: 0,
+                    projectHash: "project",
+                    projectDir: tmpDir,
+                    filesDir,
+                    dangerouslyAutoDelete: false,
+                    allowUnsupportedNpm: false,
+                } satisfies Config,
+                hashTracker: hashTracker as never,
+                installer: null,
+                fileMetadataCache: fileMetadataCache as never,
+                pendingRenameConfirmations,
+                userActions: {} as never,
+                syncState: {
+                    mode: "watching",
+                    socket: mockSocket,
+                    pendingRemoteChanges: [],
+                },
+            }
+        )
+
+        expect(fileMetadataCache.recordSyncedSnapshot).toHaveBeenCalledWith(
+            "New.tsx",
+            hashFileContent("export const New = () => null"),
+            1234
+        )
+        expect(hashTracker.forget).toHaveBeenCalledWith("Old.tsx")
+        expect(fileMetadataCache.recordDelete).toHaveBeenCalledWith("Old.tsx")
+        expect(hashTracker.remember).toHaveBeenCalledWith("New.tsx", "export const New = () => null")
+        expect(pendingRenameConfirmations.has("New.tsx")).toBe(false)
+
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
+    it("applies old-file cleanup when file-synced uses a normalized rename target", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-normalized-"))
+        const filesDir = path.join(tmpDir, "files")
+        await fs.mkdir(filesDir, { recursive: true })
+
+        const hashTracker = {
+            remember: vi.fn(),
+            shouldSkip: vi.fn(),
+            forget: vi.fn(),
+            clear: vi.fn(),
+            markDelete: vi.fn(),
+            shouldSkipDelete: vi.fn(),
+            clearDelete: vi.fn(),
+        }
+        const fileMetadataCache = {
+            recordSyncedSnapshot: vi.fn(),
+            recordDelete: vi.fn(),
+        }
+        const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>()
+
+        sendMessage.mockResolvedValue(true)
+
+        await executeEffect(
+            {
+                type: "SEND_FILE_RENAME",
+                oldFileName: "Old.tsx",
+                newFileName: "New",
+                content: "export const New = () => null",
+            },
+            {
+                config: {
+                    port: 0,
+                    projectHash: "project",
+                    projectDir: tmpDir,
+                    filesDir,
+                    dangerouslyAutoDelete: false,
+                    allowUnsupportedNpm: false,
+                } satisfies Config,
+                hashTracker: hashTracker as never,
+                installer: null,
+                fileMetadataCache: fileMetadataCache as never,
+                pendingRenameConfirmations,
+                userActions: {} as never,
+                syncState: {
+                    mode: "watching",
+                    socket: {} as never,
+                    pendingRemoteChanges: [],
+                },
+            }
+        )
 
         await executeEffect(
             {

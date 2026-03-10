@@ -7,6 +7,7 @@ export {
     ensureExtension,
     fileKeyForLookup,
     isSupportedExtension,
+    normalizeCodeFileName,
     normalizeCodeFilePath,
     normalizePath,
     pluralize,

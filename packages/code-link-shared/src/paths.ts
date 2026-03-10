@@ -141,6 +141,11 @@ export function canonicalFileName(filePath: string): string {
     return normalizeCodeFilePath(filePath)
 }
 
+/** Normalized code-file name with default extension. */
+export function normalizeCodeFileName(filePath: string): string {
+    return canonicalFileName(ensureExtension(filePath))
+}
+
 export function sanitizeFilePath(input: string, capitalizeReactComponent = true): SanitizedNameResult {
     const trimmed = input.trim()
     const [inputName, extension] = splitExtension(filename(trimmed))

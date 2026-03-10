@@ -1,4 +1,4 @@
-import { canonicalFileName, ensureExtension, type SyncTracker } from "@code-link/shared"
+import { canonicalFileName, normalizeCodeFileName, type SyncTracker } from "@code-link/shared"
 import { framer } from "framer-plugin"
 import * as log from "./utils/logger"
 
@@ -77,11 +77,11 @@ export class CodeFilesAPI {
     }
 
     async applyRemoteChange(fileName: string, content: string, socket: WebSocket) {
-        const normalizedName = canonicalFileName(fileName)
+        const normalizedName = normalizeCodeFileName(fileName)
         // Update snapshot BEFORE upsert to prevent race with file subscription
         this.lastSnapshot.set(normalizedName, content)
 
-        const updatedAt = await upsertFramerFile(fileName, content)
+        const updatedAt = await upsertFramerFile(normalizedName, content)
         // Send file-synced message with timestamp
         const syncTimestamp = updatedAt ?? Date.now()
         log.debug(
@@ -162,7 +162,7 @@ export class CodeFilesAPI {
 
     async applyRemoteRename(oldFileName: string, newFileName: string, socket: WebSocket): Promise<boolean> {
         const sourceFileName = canonicalFileName(oldFileName)
-        const targetFileName = canonicalFileName(ensureExtension(newFileName))
+        const targetFileName = normalizeCodeFileName(newFileName)
 
         let codeFiles
         try {
@@ -227,7 +227,7 @@ export class CodeFilesAPI {
 }
 
 async function upsertFramerFile(fileName: string, content: string): Promise<number | undefined> {
-    const normalisedName = canonicalFileName(fileName)
+    const normalisedName = normalizeCodeFileName(fileName)
     const codeFiles = await framer.getCodeFiles()
     const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedName)
 
@@ -236,7 +236,7 @@ async function upsertFramerFile(fileName: string, content: string): Promise<numb
         return Date.now()
     }
 
-    await framer.createCodeFile(ensureExtension(normalisedName), content, {
+    await framer.createCodeFile(normalisedName, content, {
         editViaPlugin: false,
     })
 

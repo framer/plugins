@@ -6,12 +6,11 @@
  * (hash matches), because that means the file wasn't edited while CLI was offline.
  */
 
-import { pluralize } from "@code-link/shared"
+import { fileKeyForLookup, normalizeCodeFileName, pluralize } from "@code-link/shared"
 import { createHash } from "crypto"
 import fs from "fs/promises"
 import path from "path"
 import { debug, warn } from "./logging.ts"
-import { normalizePath } from "./node-paths.ts"
 
 export interface PersistedFileState {
     timestamp: number // Remote modified timestamp from last sync
@@ -25,15 +24,9 @@ interface PersistedState {
 
 const STATE_FILE_NAME = ".framer-sync-state.json"
 const CURRENT_VERSION = 1
-const SUPPORTED_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".json"]
-const DEFAULT_EXTENSION = ".tsx"
 
-export function normalizePersistedFileName(fileName: string): string {
-    let normalized = normalizePath(fileName.trim())
-    if (!SUPPORTED_EXTENSIONS.some(ext => normalized.toLowerCase().endsWith(ext))) {
-        normalized = `${normalized}${DEFAULT_EXTENSION}`
-    }
-    return normalized
+function persistedFileKey(fileName: string): string {
+    return fileKeyForLookup(normalizeCodeFileName(fileName))
 }
 
 /**
@@ -62,7 +55,7 @@ export async function loadPersistedState(projectDir: string): Promise<Map<string
         }
 
         for (const [fileName, state] of Object.entries(parsed.files)) {
-            const normalizedName = normalizePersistedFileName(fileName)
+            const normalizedName = persistedFileKey(fileName)
             if (normalizedName !== fileName) {
                 debug(`Normalized persisted key "${fileName}" -> "${normalizedName}" for compatibility`)
             }

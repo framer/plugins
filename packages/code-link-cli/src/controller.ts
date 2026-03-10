@@ -6,7 +6,7 @@
  */
 
 import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
-import { pluralize, shortProjectHash } from "@code-link/shared"
+import { normalizeCodeFileName, pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
 import type { WebSocket } from "ws"
@@ -891,7 +891,7 @@ async function executeEffect(
             // Read current file content to compute hash
             const currentContent = await readFileSafe(effect.fileName, config.filesDir)
             // Rename cleanup waits for the plugin's file-synced acknowledgment.
-            const pendingRenameConfirmation = pendingRenameConfirmations.get(effect.fileName)
+            const pendingRenameConfirmation = pendingRenameConfirmations.get(normalizeCodeFileName(effect.fileName))
             const syncedContent = currentContent ?? pendingRenameConfirmation?.content ?? null
 
             if (syncedContent !== null) {
@@ -903,7 +903,7 @@ async function executeEffect(
                 hashTracker.forget(pendingRenameConfirmation.oldFileName)
                 fileMetadataCache.recordDelete(pendingRenameConfirmation.oldFileName)
                 hashTracker.remember(effect.fileName, pendingRenameConfirmation.content)
-                pendingRenameConfirmations.delete(effect.fileName)
+                pendingRenameConfirmations.delete(normalizeCodeFileName(effect.fileName))
             }
 
             return []
@@ -952,8 +952,9 @@ async function executeEffect(
         }
 
         case "SEND_FILE_RENAME": {
+            const normalizedNewFileName = normalizeCodeFileName(effect.newFileName)
             const isEchoedRename =
-                hashTracker.shouldSkip(effect.newFileName, effect.content) &&
+                hashTracker.shouldSkip(normalizedNewFileName, effect.content) &&
                 hashTracker.shouldSkipDelete(effect.oldFileName)
 
             if (isEchoedRename) {
@@ -971,7 +972,7 @@ async function executeEffect(
                 const sent = await sendMessage(syncState.socket, {
                     type: "file-rename",
                     oldFileName: effect.oldFileName,
-                    newFileName: effect.newFileName,
+                    newFileName: normalizedNewFileName,
                     content: effect.content,
                 })
                 if (!sent) {
@@ -979,7 +980,7 @@ async function executeEffect(
                     return []
                 }
 
-                pendingRenameConfirmations.set(effect.newFileName, {
+                pendingRenameConfirmations.set(normalizeCodeFileName(effect.newFileName), {
                     oldFileName: effect.oldFileName,
                     content: effect.content,
                 })
@@ -1312,7 +1313,7 @@ export async function start(config: Config): Promise<void> {
 
             case "error":
                 if (message.fileName) {
-                    pendingRenameConfirmations.delete(message.fileName)
+                    pendingRenameConfirmations.delete(normalizeCodeFileName(message.fileName))
                 }
                 warn(message.message)
                 return

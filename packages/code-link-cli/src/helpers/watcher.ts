@@ -151,8 +151,8 @@ export function initWatcher(filesDir: string): Watcher {
     }
 
     /**
-     * Resolves the sanitized relative path for a given absolute path.
-     * On "add", renames files on disk if they don't match sanitization rules.
+     * Resolves the relative path identity for a watcher event.
+     * Only "add" may rewrite that identity by successfully sanitizing on disk.
      */
     const resolveRelativePath = async (
         kind: "add" | "change" | "delete",
@@ -163,28 +163,32 @@ export function initWatcher(filesDir: string): Watcher {
         }
 
         const rawRelativePath = normalizePath(getRelativePath(filesDir, absolutePath))
-        const sanitized = sanitizeFilePath(rawRelativePath, false)
-        const relativePath = sanitized.path
+        let relativePath = rawRelativePath
 
         let effectiveAbsolutePath = absolutePath
-        if (relativePath !== rawRelativePath && kind === "add") {
-            const newAbsolutePath = path.join(filesDir, relativePath)
-            try {
-                await fs.mkdir(path.dirname(newAbsolutePath), { recursive: true })
-                await fs.rename(absolutePath, newAbsolutePath)
-                debug(`Renamed ${rawRelativePath} -> ${relativePath}`)
-                effectiveAbsolutePath = newAbsolutePath
+        if (kind === "add") {
+            const sanitized = sanitizeFilePath(rawRelativePath, false)
+            if (sanitized.path !== rawRelativePath) {
+                const nextRelativePath = sanitized.path
+                const newAbsolutePath = path.join(filesDir, nextRelativePath)
+                try {
+                    await fs.mkdir(path.dirname(newAbsolutePath), { recursive: true })
+                    await fs.rename(absolutePath, newAbsolutePath)
+                    debug(`Renamed ${rawRelativePath} -> ${nextRelativePath}`)
+                    relativePath = nextRelativePath
+                    effectiveAbsolutePath = newAbsolutePath
 
-                // Suppress the echo events chokidar will fire for this rename
-                recentSanitizations.add(rawRelativePath) // upcoming unlink echo
-                recentSanitizations.add(relativePath) // upcoming add echo
-                setTimeout(() => {
-                    recentSanitizations.delete(rawRelativePath)
-                    recentSanitizations.delete(relativePath)
-                }, RENAME_BUFFER_MS * 3)
-            } catch (err) {
-                warn(`Failed to rename ${rawRelativePath}`, err)
-                return { relativePath: rawRelativePath, effectiveAbsolutePath: absolutePath }
+                    // Suppress the echo events chokidar will fire for this rename
+                    recentSanitizations.add(rawRelativePath) // upcoming unlink echo
+                    recentSanitizations.add(nextRelativePath) // upcoming add echo
+                    setTimeout(() => {
+                        recentSanitizations.delete(rawRelativePath)
+                        recentSanitizations.delete(nextRelativePath)
+                    }, RENAME_BUFFER_MS * 3)
+                } catch (err) {
+                    warn(`Failed to rename ${rawRelativePath}`, err)
+                    return { relativePath: rawRelativePath, effectiveAbsolutePath: absolutePath }
+                }
             }
         }
 

@@ -112,6 +112,53 @@ describe("initWatcher", () => {
         await watcher.close()
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
+
+    it("keeps using the raw path after sanitization rename fails", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
+        const events: WatcherEvent[] = []
+        const watcher: Watcher = initWatcher(tmpDir)
+        watcher.on("change", event => events.push(event))
+        const rawWatcher = createdWatchers.at(-1)
+        if (!rawWatcher) throw new Error("No watcher created")
+
+        const rawPath = path.join(tmpDir, "bad name!.tsx")
+        await fs.writeFile(rawPath, "export const Version = 1", "utf-8")
+
+        const renameSpy = vi.spyOn(fs, "rename").mockRejectedValueOnce(new Error("rename failed"))
+        await rawWatcher.__emit("add", rawPath)
+        await waitForBuffer()
+
+        await fs.writeFile(rawPath, "export const Version = 2", "utf-8")
+        await rawWatcher.__emit("change", rawPath)
+
+        const renamedPath = path.join(tmpDir, "GoodName.tsx")
+        await fs.rename(rawPath, renamedPath)
+        await rawWatcher.__emit("unlink", rawPath)
+        await rawWatcher.__emit("add", renamedPath)
+
+        expect(events).toEqual([
+            {
+                kind: "add",
+                relativePath: "bad name!.tsx",
+                content: "export const Version = 1",
+            },
+            {
+                kind: "change",
+                relativePath: "bad name!.tsx",
+                content: "export const Version = 2",
+            },
+            {
+                kind: "rename",
+                relativePath: "GoodName.tsx",
+                oldRelativePath: "bad name!.tsx",
+                content: "export const Version = 2",
+            },
+        ])
+
+        renameSpy.mockRestore()
+        await watcher.close()
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
 })
 
 describe("rename detection", () => {

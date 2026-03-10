@@ -1189,6 +1189,7 @@ export async function start(config: Config): Promise<void> {
                     return
                 }
                 debug(`New handshake received in ${syncState.mode} mode, resetting sync state`)
+                pendingRenameConfirmations.clear()
                 await processEvent({ type: "DISCONNECT" })
             }
 
@@ -1358,6 +1359,7 @@ export async function start(config: Config): Promise<void> {
             status("Disconnected, waiting to reconnect...")
         })
         void (async () => {
+            pendingRenameConfirmations.clear()
             await processEvent({ type: "DISCONNECT" })
             userActions.cleanup()
         })()

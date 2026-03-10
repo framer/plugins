@@ -17,6 +17,11 @@ describe("toDirectoryName", () => {
         expect(toDirectoryName("My Project")).toBe("My Project")
         expect(toDirectoryName("Hello World!")).toBe("Hello World")
     })
+
+    it("removes boundary hyphens revealed by trimming", () => {
+        expect(toDirectoryName(" -Project")).toBe("Project")
+        expect(toDirectoryName("Project- ")).toBe("Project")
+    })
 })
 
 describe("findOrCreateProjectDirectory", () => {

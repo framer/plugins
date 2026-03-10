@@ -194,4 +194,5 @@ describe("rename confirmation bookkeeping", () => {
 
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
+
 })

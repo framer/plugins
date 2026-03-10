@@ -952,6 +952,16 @@ async function executeEffect(
         }
 
         case "SEND_FILE_RENAME": {
+            const isEchoedRename =
+                hashTracker.shouldSkip(effect.newFileName, effect.content) &&
+                hashTracker.shouldSkipDelete(effect.oldFileName)
+
+            if (isEchoedRename) {
+                hashTracker.clearDelete(effect.oldFileName)
+                debug(`Skipping echoed rename ${effect.oldFileName} -> ${effect.newFileName}`)
+                return []
+            }
+
             try {
                 if (!syncState.socket) {
                     warn(`No socket available to send rename ${effect.oldFileName} -> ${effect.newFileName}`)

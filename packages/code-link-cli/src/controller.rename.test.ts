@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { WebSocket } from "ws"
 import { executeEffect } from "./controller.ts"
 import type { Config } from "./types.ts"
+import { createHashTracker } from "./utils/hash-tracker.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
 
 const { sendMessage } = vi.hoisted(() => ({
@@ -21,6 +22,49 @@ const mockSocket = {} as WebSocket
 describe("rename confirmation bookkeeping", () => {
     beforeEach(() => {
         sendMessage.mockReset()
+    })
+
+    it("skips echoed remote renames when write and delete collapse into one watcher rename", async () => {
+        const hashTracker = createHashTracker()
+        hashTracker.remember("New.tsx", "export const New = () => null")
+        hashTracker.markDelete("Old.tsx")
+
+        const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>()
+
+        await executeEffect(
+            {
+                type: "SEND_FILE_RENAME",
+                oldFileName: "Old.tsx",
+                newFileName: "New.tsx",
+                content: "export const New = () => null",
+            },
+            {
+                config: {
+                    port: 0,
+                    projectHash: "project",
+                    projectDir: null,
+                    filesDir: null,
+                    dangerouslyAutoDelete: false,
+                    allowUnsupportedNpm: false,
+                } satisfies Config,
+                hashTracker,
+                installer: null,
+                fileMetadataCache: {
+                    recordDelete: vi.fn(),
+                } as never,
+                pendingRenameConfirmations,
+                userActions: {} as never,
+                syncState: {
+                    mode: "watching",
+                    socket: mockSocket,
+                    pendingRemoteChanges: [],
+                },
+            }
+        )
+
+        expect(sendMessage).not.toHaveBeenCalled()
+        expect(hashTracker.shouldSkipDelete("Old.tsx")).toBe(false)
+        expect(pendingRenameConfirmations.size).toBe(0)
     })
 
     it("waits for file-synced before deleting old tracking", async () => {

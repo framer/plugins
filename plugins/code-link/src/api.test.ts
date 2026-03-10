@@ -221,6 +221,33 @@ describe("CodeFilesAPI", () => {
         expect(trackerRemember).not.toHaveBeenCalled()
     })
 
+    it("seeds snapshot before a remote write finishes to avoid echoing subscription updates", async () => {
+        const { api, socket, tracker, trackerRemember } = setup()
+        const oldContent = "export const Race = 1"
+        const newContent = "export const Race = 2"
+        const existing = createCodeFile({ name: "Race.tsx", content: oldContent })
+
+        await publishSnapshotAndClear({
+            api,
+            socket,
+            files: [createCodeFile({ name: "Race.tsx", content: oldContent })],
+        })
+
+        framerMock.getCodeFiles.mockResolvedValueOnce([existing])
+        existing.setFileContent.mockImplementation(async (content: string) => {
+            existing.content = content
+            framerMock.getCodeFiles.mockResolvedValue([existing])
+            await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        })
+
+        await api.applyRemoteChange("Race.tsx", newContent, socket as unknown as WebSocket)
+
+        const sentMessages = getSentMessages(socket)
+        expect(sentMessages).toHaveLength(1)
+        expectFileSyncedMessage(sentMessages[0], "Race.tsx")
+        expect(trackerRemember).not.toHaveBeenCalled()
+    })
+
     it("does not update snapshot state when a remote write fails", async () => {
         const { api, socket, tracker, trackerRemember } = setup()
         const oldContent = "export const Broken = 1"

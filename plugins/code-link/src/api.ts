@@ -78,8 +78,23 @@ export class CodeFilesAPI {
 
     async applyRemoteChange(fileName: string, content: string, socket: WebSocket) {
         const normalizedName = normalizeCodeFileName(fileName)
-        const updatedAt = await upsertFramerFile(normalizedName, content)
+        const previousSnapshot = this.lastSnapshot.get(normalizedName)
+
+        // Update snapshot BEFORE upsert to prevent race with file subscription.
         this.lastSnapshot.set(normalizedName, content)
+
+        let updatedAt: number | undefined
+        try {
+            updatedAt = await upsertFramerFile(normalizedName, content)
+        } catch (error) {
+            if (previousSnapshot !== undefined) {
+                this.lastSnapshot.set(normalizedName, previousSnapshot)
+            } else {
+                this.lastSnapshot.delete(normalizedName)
+            }
+            throw error
+        }
+
         // Send file-synced message with timestamp
         const syncTimestamp = updatedAt ?? Date.now()
         log.debug(

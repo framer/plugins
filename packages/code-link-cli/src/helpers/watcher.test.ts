@@ -435,6 +435,38 @@ describe("rename detection", () => {
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
 
+    it("replaces a buffered add on the same path without leaking the old timer", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
+
+        const events: WatcherEvent[] = []
+        const watcher: Watcher = initWatcher(tmpDir)
+        watcher.on("change", event => events.push(event))
+        const rawWatcher = createdWatchers.at(-1)
+        if (!rawWatcher) throw new Error("No watcher created")
+
+        const filePath = path.join(tmpDir, "Component.tsx")
+        await fs.writeFile(filePath, "export const Version = 1", "utf-8")
+        await rawWatcher.__emit("add", filePath)
+
+        await fs.writeFile(filePath, "export const Version = 2", "utf-8")
+        await rawWatcher.__emit("add", filePath)
+
+        expect(events).toHaveLength(0)
+
+        await waitForBuffer()
+
+        expect(events).toEqual([
+            {
+                kind: "add",
+                relativePath: "Component.tsx",
+                content: "export const Version = 2",
+            },
+        ])
+
+        await watcher.close()
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
     it("emits add and delete separately when content differs", async () => {
         const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "framer-watcher-"))
 

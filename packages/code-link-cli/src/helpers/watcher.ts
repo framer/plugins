@@ -298,6 +298,11 @@ export function initWatcher(filesDir: string): Watcher {
             }
 
             // No pending delete match — buffer this add in case a delete arrives soon
+            const existingPendingAdd = pendingAdds.get(relativePath)
+            if (existingPendingAdd) {
+                clearTimeout(existingPendingAdd.timer)
+            }
+            const retainedPreviousContentHash = existingPendingAdd?.previousContentHash ?? previousContentHash
             const timer = setTimeout(() => {
                 pendingAdds.delete(relativePath)
                 dispatchEvent({ kind: "add", relativePath, content })
@@ -308,7 +313,7 @@ export function initWatcher(filesDir: string): Watcher {
                 contentHash,
                 content,
                 timer,
-                previousContentHash,
+                previousContentHash: retainedPreviousContentHash,
             })
             return
         }

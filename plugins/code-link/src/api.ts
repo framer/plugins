@@ -209,13 +209,16 @@ export class CodeFilesAPI {
             return false
         }
 
+        const previousSourceSnapshot = this.lastSnapshot.get(sourceFileName)
+        const previousTargetSnapshot = this.lastSnapshot.get(targetFileName)
+        const renamedContent = previousSourceSnapshot ?? existing.content
+
+        // Update snapshot BEFORE rename to prevent race with file subscription.
+        this.lastSnapshot.delete(sourceFileName)
+        this.lastSnapshot.set(targetFileName, renamedContent)
+
         try {
             await existing.rename(targetFileName)
-            const content = this.lastSnapshot.get(sourceFileName)
-            if (content !== undefined) {
-                this.lastSnapshot.delete(sourceFileName)
-                this.lastSnapshot.set(targetFileName, content)
-            }
             socket.send(
                 JSON.stringify({
                     type: "file-synced",
@@ -225,6 +228,16 @@ export class CodeFilesAPI {
             )
             return true
         } catch (err) {
+            if (previousSourceSnapshot !== undefined) {
+                this.lastSnapshot.set(sourceFileName, previousSourceSnapshot)
+            }
+
+            if (previousTargetSnapshot !== undefined) {
+                this.lastSnapshot.set(targetFileName, previousTargetSnapshot)
+            } else {
+                this.lastSnapshot.delete(targetFileName)
+            }
+
             const message = `Failed to rename ${oldFileName} -> ${newFileName}`
             log.error(message, err)
             socket.send(

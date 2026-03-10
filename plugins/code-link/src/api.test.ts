@@ -336,6 +336,32 @@ describe("CodeFilesAPI", () => {
         expect(trackerRemember).not.toHaveBeenCalled()
     })
 
+    it("seeds snapshot before a remote rename finishes to avoid echoing subscription updates", async () => {
+        const { api, socket, tracker, trackerRemember } = setup()
+        const content = "export const Old = 1"
+        const existing = createCodeFile({ name: "Old.tsx", content })
+
+        await publishSnapshotAndClear({
+            api,
+            socket,
+            files: [createCodeFile({ name: "Old.tsx", content })],
+        })
+
+        framerMock.getCodeFiles.mockResolvedValueOnce([existing])
+        existing.rename.mockImplementation(async (nextName: string) => {
+            existing.name = nextName
+            framerMock.getCodeFiles.mockResolvedValue([existing])
+            await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        })
+
+        await expect(api.applyRemoteRename("Old.tsx", "New", socket as unknown as WebSocket)).resolves.toBe(true)
+
+        const sentMessages = getSentMessages(socket)
+        expect(sentMessages).toHaveLength(1)
+        expectFileSyncedMessage(sentMessages[0], "New.tsx")
+        expect(trackerRemember).not.toHaveBeenCalled()
+    })
+
     it("finds an extensionless rename source using its normalized name", async () => {
         const { api, socket, tracker, trackerRemember } = setup()
         const content = "export const Old = 1"

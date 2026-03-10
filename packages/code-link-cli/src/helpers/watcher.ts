@@ -55,6 +55,50 @@ function findUniqueHashMatch<T extends { contentHash: string }>(
     return matchingKey
 }
 
+function matchPendingAddForDelete(
+    contentHash: string | undefined,
+    pendingAdds: Map<string, PendingAdd>
+): { key: string; pendingAdd: PendingAdd } | null {
+    if (!contentHash) {
+        return null
+    }
+
+    const matchingAddKey = findUniqueHashMatch(pendingAdds, contentHash)
+    if (!matchingAddKey) {
+        return null
+    }
+
+    const pendingAdd = pendingAdds.get(matchingAddKey)
+    if (!pendingAdd) {
+        return null
+    }
+
+    return {
+        key: matchingAddKey,
+        pendingAdd,
+    }
+}
+
+function matchPendingDeleteForAdd(
+    contentHash: string,
+    pendingDeletes: Map<string, PendingDelete>
+): { key: string; pendingDelete: PendingDelete } | null {
+    const matchingDeleteKey = findUniqueHashMatch(pendingDeletes, contentHash)
+    if (!matchingDeleteKey) {
+        return null
+    }
+
+    const pendingDelete = pendingDeletes.get(matchingDeleteKey)
+    if (!pendingDelete) {
+        return null
+    }
+
+    return {
+        key: matchingDeleteKey,
+        pendingDelete,
+    }
+}
+
 /**
  * Initializes a file watcher for the given directory
  */
@@ -79,6 +123,10 @@ export function initWatcher(filesDir: string): Watcher {
 
     debug(`Watching directory: ${filesDir}`)
 
+    // Watcher contract:
+    // - rename-to-self is treated as a content change
+    // - only unique hash matches become rename events
+    // - sanitize-on-add echo events are filtered before normal processing
     const dispatchEvent = (event: WatcherEvent): void => {
         let eventToDispatch = event
 
@@ -180,28 +228,22 @@ export function initWatcher(filesDir: string): Watcher {
                 return
             }
 
+            const matchedAdd = matchPendingAddForDelete(lastHash, pendingAdds)
+            if (matchedAdd) {
+                clearTimeout(matchedAdd.pendingAdd.timer)
+                pendingAdds.delete(matchedAdd.key)
+
+                // Emit as a single rename event
+                dispatchEvent({
+                    kind: "rename",
+                    relativePath: matchedAdd.pendingAdd.relativePath,
+                    oldRelativePath: relativePath,
+                    content: matchedAdd.pendingAdd.content,
+                })
+                return
+            }
+
             if (lastHash) {
-                // Only emit rename when there is a single unambiguous add candidate.
-                const matchingAddKey = findUniqueHashMatch(pendingAdds, lastHash)
-
-                if (matchingAddKey) {
-                    const matchingAdd = pendingAdds.get(matchingAddKey)
-                    if (!matchingAdd) {
-                        return
-                    }
-                    clearTimeout(matchingAdd.timer)
-                    pendingAdds.delete(matchingAddKey)
-
-                    // Emit as a single rename event
-                    dispatchEvent({
-                        kind: "rename",
-                        relativePath: matchingAdd.relativePath,
-                        oldRelativePath: relativePath,
-                        content: matchingAdd.content,
-                    })
-                    return
-                }
-
                 // No pending add match — buffer this delete
                 const timer = setTimeout(() => {
                     pendingDeletes.delete(relativePath)
@@ -240,22 +282,16 @@ export function initWatcher(filesDir: string): Watcher {
                 return
             }
 
-            // Only emit rename when there is a single unambiguous delete candidate.
-            const matchingDeleteKey = findUniqueHashMatch(pendingDeletes, contentHash)
-
-            if (matchingDeleteKey) {
-                const matchingDelete = pendingDeletes.get(matchingDeleteKey)
-                if (!matchingDelete) {
-                    return
-                }
-                clearTimeout(matchingDelete.timer)
-                pendingDeletes.delete(matchingDeleteKey)
+            const matchedDelete = matchPendingDeleteForAdd(contentHash, pendingDeletes)
+            if (matchedDelete) {
+                clearTimeout(matchedDelete.pendingDelete.timer)
+                pendingDeletes.delete(matchedDelete.key)
 
                 // Emit as a single rename event
                 dispatchEvent({
                     kind: "rename",
                     relativePath,
-                    oldRelativePath: matchingDelete.relativePath,
+                    oldRelativePath: matchedDelete.pendingDelete.relativePath,
                     content,
                 })
                 return

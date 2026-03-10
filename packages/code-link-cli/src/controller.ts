@@ -184,7 +184,7 @@ type Effect =
           message: string
       }
 
-interface PendingRename {
+interface PendingRenameConfirmation {
     oldFileName: string
     content: string
 }
@@ -704,12 +704,20 @@ async function executeEffect(
         hashTracker: ReturnType<typeof createHashTracker>
         installer: Installer | null
         fileMetadataCache: FileMetadataCache
-        pendingRenames: Map<string, PendingRename>
+        pendingRenameConfirmations: Map<string, PendingRenameConfirmation>
         userActions: PluginUserPromptCoordinator
         syncState: SyncState
     }
 ): Promise<SyncEvent[]> {
-    const { config, hashTracker, installer, fileMetadataCache, pendingRenames, userActions, syncState } = context
+    const {
+        config,
+        hashTracker,
+        installer,
+        fileMetadataCache,
+        pendingRenameConfirmations,
+        userActions,
+        syncState,
+    } = context
 
     switch (effect.type) {
         case "INIT_WORKSPACE": {
@@ -882,19 +890,20 @@ async function executeEffect(
 
             // Read current file content to compute hash
             const currentContent = await readFileSafe(effect.fileName, config.filesDir)
-            const pendingRename = pendingRenames.get(effect.fileName)
-            const syncedContent = currentContent ?? pendingRename?.content ?? null
+            // Rename cleanup waits for the plugin's file-synced acknowledgment.
+            const pendingRenameConfirmation = pendingRenameConfirmations.get(effect.fileName)
+            const syncedContent = currentContent ?? pendingRenameConfirmation?.content ?? null
 
             if (syncedContent !== null) {
                 const contentHash = hashFileContent(syncedContent)
                 fileMetadataCache.recordSyncedSnapshot(effect.fileName, contentHash, effect.remoteModifiedAt)
             }
 
-            if (pendingRename) {
-                hashTracker.forget(pendingRename.oldFileName)
-                fileMetadataCache.recordDelete(pendingRename.oldFileName)
-                hashTracker.remember(effect.fileName, pendingRename.content)
-                pendingRenames.delete(effect.fileName)
+            if (pendingRenameConfirmation) {
+                hashTracker.forget(pendingRenameConfirmation.oldFileName)
+                fileMetadataCache.recordDelete(pendingRenameConfirmation.oldFileName)
+                hashTracker.remember(effect.fileName, pendingRenameConfirmation.content)
+                pendingRenameConfirmations.delete(effect.fileName)
             }
 
             return []
@@ -960,7 +969,7 @@ async function executeEffect(
                     return []
                 }
 
-                pendingRenames.set(effect.newFileName, {
+                pendingRenameConfirmations.set(effect.newFileName, {
                     oldFileName: effect.oldFileName,
                     content: effect.content,
                 })
@@ -1081,7 +1090,7 @@ export async function start(config: Config): Promise<void> {
 
     const hashTracker = createHashTracker()
     const fileMetadataCache = new FileMetadataCache()
-    const pendingRenames = new Map<string, PendingRename>()
+    const pendingRenameConfirmations = new Map<string, PendingRenameConfirmation>()
     let installer: Installer | null = null
 
     // State machine state
@@ -1121,7 +1130,7 @@ export async function start(config: Config): Promise<void> {
                 hashTracker,
                 installer,
                 fileMetadataCache,
-                pendingRenames,
+                pendingRenameConfirmations,
                 userActions,
                 syncState,
             })
@@ -1292,7 +1301,7 @@ export async function start(config: Config): Promise<void> {
 
             case "error":
                 if (message.fileName) {
-                    pendingRenames.delete(message.fileName)
+                    pendingRenameConfirmations.delete(message.fileName)
                 }
                 warn(message.message)
                 return

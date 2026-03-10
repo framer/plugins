@@ -38,7 +38,7 @@ describe("rename confirmation bookkeeping", () => {
         const fileMetadataCache = {
             recordDelete: vi.fn(),
         }
-        const pendingRenames = new Map<string, { oldFileName: string; content: string }>()
+        const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>()
 
         await executeEffect(
             {
@@ -59,7 +59,7 @@ describe("rename confirmation bookkeeping", () => {
                 hashTracker: hashTracker as never,
                 installer: null,
                 fileMetadataCache: fileMetadataCache as never,
-                pendingRenames,
+                pendingRenameConfirmations,
                 userActions: {} as never,
                 syncState: {
                     mode: "watching",
@@ -81,7 +81,7 @@ describe("rename confirmation bookkeeping", () => {
         expect(hashTracker.forget).not.toHaveBeenCalled()
         expect(hashTracker.remember).not.toHaveBeenCalled()
         expect(fileMetadataCache.recordDelete).not.toHaveBeenCalled()
-        expect(pendingRenames.get("New.tsx")).toEqual({
+        expect(pendingRenameConfirmations.get("New.tsx")).toEqual({
             oldFileName: "Old.tsx",
             content: "export const New = () => null",
         })
@@ -106,7 +106,7 @@ describe("rename confirmation bookkeeping", () => {
             recordSyncedSnapshot: vi.fn(),
             recordDelete: vi.fn(),
         }
-        const pendingRenames = new Map<string, { oldFileName: string; content: string }>([
+        const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>([
             ["New.tsx", { oldFileName: "Old.tsx", content: "export const New = () => null" }],
         ])
 
@@ -128,7 +128,7 @@ describe("rename confirmation bookkeeping", () => {
                 hashTracker: hashTracker as never,
                 installer: null,
                 fileMetadataCache: fileMetadataCache as never,
-                pendingRenames,
+                pendingRenameConfirmations,
                 userActions: {} as never,
                 syncState: {
                     mode: "watching",
@@ -146,7 +146,7 @@ describe("rename confirmation bookkeeping", () => {
         expect(hashTracker.forget).toHaveBeenCalledWith("Old.tsx")
         expect(fileMetadataCache.recordDelete).toHaveBeenCalledWith("Old.tsx")
         expect(hashTracker.remember).toHaveBeenCalledWith("New.tsx", "export const New = () => null")
-        expect(pendingRenames.has("New.tsx")).toBe(false)
+        expect(pendingRenameConfirmations.has("New.tsx")).toBe(false)
 
         await fs.rm(tmpDir, { recursive: true, force: true })
     })

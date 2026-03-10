@@ -348,8 +348,8 @@ describe("CodeFilesAPI", () => {
         })
 
         framerMock.getCodeFiles.mockResolvedValueOnce([existing])
-        existing.rename.mockImplementation(async (nextName: string) => {
-            existing.name = nextName
+        existing.rename.mockImplementation(async (targetName: string) => {
+            existing.name = targetName
             framerMock.getCodeFiles.mockResolvedValue([existing])
             await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
         })
@@ -409,6 +409,52 @@ describe("CodeFilesAPI", () => {
         expect(socket.send).not.toHaveBeenCalled()
     })
 
+    it("seeds snapshot before a remote delete finishes to avoid echoing subscription updates", async () => {
+        const { api, socket, tracker, trackerRemember } = setup()
+        const content = "export const DeleteMe = 1"
+        const existing = createCodeFile({ name: "DeleteMe.tsx", content })
+
+        await publishSnapshotAndClear({
+            api,
+            socket,
+            files: [createCodeFile({ name: "DeleteMe.tsx", content })],
+        })
+
+        framerMock.getCodeFiles.mockResolvedValueOnce([existing])
+        existing.remove.mockImplementation(async () => {
+            framerMock.getCodeFiles.mockResolvedValue([])
+            await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        })
+
+        await api.applyRemoteDelete("DeleteMe.tsx")
+
+        expect(socket.send).not.toHaveBeenCalled()
+        expect(trackerRemember).not.toHaveBeenCalled()
+    })
+
+    it("restores snapshot state when a remote delete fails", async () => {
+        const { api, socket, tracker, trackerRemember } = setup()
+        const content = "export const DeleteMe = 1"
+        const existing = createCodeFile({ name: "DeleteMe.tsx", content })
+
+        await publishSnapshotAndClear({
+            api,
+            socket,
+            files: [createCodeFile({ name: "DeleteMe.tsx", content })],
+        })
+
+        existing.remove.mockRejectedValueOnce(new Error("delete failed"))
+        framerMock.getCodeFiles.mockResolvedValueOnce([existing])
+
+        await expect(api.applyRemoteDelete("DeleteMe.tsx")).rejects.toThrow("delete failed")
+
+        mockCodeFiles([createCodeFile({ name: "DeleteMe.tsx", content })])
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+
+        expect(socket.send).not.toHaveBeenCalled()
+        expect(trackerRemember).not.toHaveBeenCalled()
+    })
+
     it("returns an error when rename cannot fetch code files", async () => {
         const { api, socket } = setup()
 
@@ -455,8 +501,15 @@ describe("CodeFilesAPI", () => {
     })
 
     it("returns an error when rename throws and does not confirm sync", async () => {
-        const { api, socket } = setup()
-        const existing = createCodeFile({ name: "Old.tsx", content: "export const Old = 1" })
+        const { api, socket, tracker, trackerRemember } = setup()
+        const content = "export const Old = 1"
+        const existing = createCodeFile({ name: "Old.tsx", content })
+
+        await publishSnapshotAndClear({
+            api,
+            socket,
+            files: [createCodeFile({ name: "Old.tsx", content })],
+        })
 
         existing.rename.mockRejectedValueOnce(new Error("rename failed"))
         framerMock.getCodeFiles.mockResolvedValueOnce([existing])
@@ -470,5 +523,12 @@ describe("CodeFilesAPI", () => {
                 message: "Failed to rename Old.tsx -> New",
             },
         ])
+
+        socket.send.mockClear()
+        mockCodeFiles([createCodeFile({ name: "Old.tsx", content })])
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+
+        expect(socket.send).not.toHaveBeenCalled()
+        expect(trackerRemember).not.toHaveBeenCalled()
     })
 })

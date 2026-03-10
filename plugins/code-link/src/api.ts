@@ -11,6 +11,44 @@ import * as log from "./utils/logger"
 export class CodeFilesAPI {
     private lastSnapshot = new Map<string, string>()
 
+    // Keep the snapshot aligned with the state Framer should expose, even while a remote mutation is in flight.
+    private async withExpectedSnapshotPatch<T>(
+        patch: {
+            upserts?: { fileName: string; content: string }[]
+            deletes?: string[]
+        },
+        run: () => Promise<T>
+    ): Promise<T> {
+        const previousEntries = new Map<string, string | undefined>()
+
+        for (const fileName of patch.deletes ?? []) {
+            if (!previousEntries.has(fileName)) {
+                previousEntries.set(fileName, this.lastSnapshot.get(fileName))
+            }
+            this.lastSnapshot.delete(fileName)
+        }
+
+        for (const entry of patch.upserts ?? []) {
+            if (!previousEntries.has(entry.fileName)) {
+                previousEntries.set(entry.fileName, this.lastSnapshot.get(entry.fileName))
+            }
+            this.lastSnapshot.set(entry.fileName, entry.content)
+        }
+
+        try {
+            return await run()
+        } catch (error) {
+            for (const [fileName, previousContent] of previousEntries) {
+                if (previousContent === undefined) {
+                    this.lastSnapshot.delete(fileName)
+                } else {
+                    this.lastSnapshot.set(fileName, previousContent)
+                }
+            }
+            throw error
+        }
+    }
+
     private async getCodeFilesWithCanonicalNames() {
         // Always all files instead of single file calls.
         // The API internally does that anyways.
@@ -78,22 +116,12 @@ export class CodeFilesAPI {
 
     async applyRemoteChange(fileName: string, content: string, socket: WebSocket) {
         const normalizedName = normalizeCodeFileName(fileName)
-        const previousSnapshot = this.lastSnapshot.get(normalizedName)
-
-        // Update snapshot BEFORE upsert to prevent race with file subscription.
-        this.lastSnapshot.set(normalizedName, content)
-
-        let updatedAt: number | undefined
-        try {
-            updatedAt = await upsertFramerFile(normalizedName, content)
-        } catch (error) {
-            if (previousSnapshot !== undefined) {
-                this.lastSnapshot.set(normalizedName, previousSnapshot)
-            } else {
-                this.lastSnapshot.delete(normalizedName)
-            }
-            throw error
-        }
+        const updatedAt = await this.withExpectedSnapshotPatch(
+            {
+                upserts: [{ fileName: normalizedName, content }],
+            },
+            async () => await upsertFramerFile(normalizedName, content)
+        )
 
         // Send file-synced message with timestamp
         const syncTimestamp = updatedAt ?? Date.now()
@@ -110,8 +138,15 @@ export class CodeFilesAPI {
     }
 
     async applyRemoteDelete(fileName: string) {
-        await deleteFramerFile(fileName)
-        this.lastSnapshot.delete(normalizeCodeFileName(fileName))
+        const normalizedName = normalizeCodeFileName(fileName)
+        await this.withExpectedSnapshotPatch(
+            {
+                deletes: [normalizedName],
+            },
+            async () => {
+                await deleteFramerFile(normalizedName)
+            }
+        )
     }
 
     async readCurrentContent(fileName: string) {
@@ -209,16 +244,16 @@ export class CodeFilesAPI {
             return false
         }
 
-        const previousSourceSnapshot = this.lastSnapshot.get(sourceFileName)
-        const previousTargetSnapshot = this.lastSnapshot.get(targetFileName)
-        const renamedContent = previousSourceSnapshot ?? existing.content
-
-        // Update snapshot BEFORE rename to prevent race with file subscription.
-        this.lastSnapshot.delete(sourceFileName)
-        this.lastSnapshot.set(targetFileName, renamedContent)
+        const content = this.lastSnapshot.get(sourceFileName) ?? existing.content
 
         try {
-            await existing.rename(targetFileName)
+            await this.withExpectedSnapshotPatch(
+                {
+                    upserts: [{ fileName: targetFileName, content }],
+                    deletes: [sourceFileName],
+                },
+                async () => await existing.rename(targetFileName)
+            )
             socket.send(
                 JSON.stringify({
                     type: "file-synced",
@@ -228,16 +263,6 @@ export class CodeFilesAPI {
             )
             return true
         } catch (err) {
-            if (previousSourceSnapshot !== undefined) {
-                this.lastSnapshot.set(sourceFileName, previousSourceSnapshot)
-            }
-
-            if (previousTargetSnapshot !== undefined) {
-                this.lastSnapshot.set(targetFileName, previousTargetSnapshot)
-            } else {
-                this.lastSnapshot.delete(targetFileName)
-            }
-
             const message = `Failed to rename ${oldFileName} -> ${newFileName}`
             log.error(message, err)
             socket.send(

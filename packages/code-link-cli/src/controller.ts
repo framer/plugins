@@ -958,6 +958,7 @@ async function executeEffect(
                 hashTracker.shouldSkipDelete(effect.oldFileName)
 
             if (isEchoedRename) {
+                hashTracker.forget(normalizedNewFileName)
                 hashTracker.clearDelete(effect.oldFileName)
                 debug(`Skipping echoed rename ${effect.oldFileName} -> ${effect.newFileName}`)
                 return []

@@ -25,8 +25,9 @@ describe("rename confirmation bookkeeping", () => {
     })
 
     it("skips echoed remote renames when write and delete collapse into one watcher rename", async () => {
+        const content = "export const New = () => null"
         const hashTracker = createHashTracker()
-        hashTracker.remember("New.tsx", "export const New = () => null")
+        hashTracker.remember("New.tsx", content)
         hashTracker.markDelete("Old.tsx")
 
         const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>()
@@ -36,7 +37,7 @@ describe("rename confirmation bookkeeping", () => {
                 type: "SEND_FILE_RENAME",
                 oldFileName: "Old.tsx",
                 newFileName: "New.tsx",
-                content: "export const New = () => null",
+                content,
             },
             {
                 config: {
@@ -64,6 +65,7 @@ describe("rename confirmation bookkeeping", () => {
 
         expect(sendMessage).not.toHaveBeenCalled()
         expect(hashTracker.shouldSkipDelete("Old.tsx")).toBe(false)
+        expect(hashTracker.shouldSkip("New.tsx", content)).toBe(false)
         expect(pendingRenameConfirmations.size).toBe(0)
     })
 

@@ -306,7 +306,7 @@ export function initWatcher(filesDir: string): Watcher {
             if (existingPendingAdd) {
                 clearTimeout(existingPendingAdd.timer)
             }
-            const retainedPreviousContentHash = existingPendingAdd?.previousContentHash ?? previousContentHash
+            const retainedPreviousContentHash = existingPendingAdd ? existingPendingAdd.previousContentHash : previousContentHash
             const timer = setTimeout(() => {
                 pendingAdds.delete(relativePath)
                 dispatchEvent({ kind: "add", relativePath, content })

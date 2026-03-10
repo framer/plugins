@@ -1,5 +1,5 @@
 import type { SyncTracker } from "@code-link/shared"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, type Mock, vi } from "vitest"
 import { CodeFilesAPI } from "./api"
 
 const { framerMock } = vi.hoisted(() => ({
@@ -20,8 +20,17 @@ vi.mock("./utils/logger", () => ({
     warn: vi.fn(),
 }))
 
-type MockSocket = {
-    send: ReturnType<typeof vi.fn>
+type SentMessage =
+    | { type: "file-list"; files: { name: string; content: string }[] }
+    | { type: "file-change"; fileName: string; content: string }
+    | { type: "file-delete"; fileNames: string[]; requireConfirmation: boolean }
+    | { type: "file-synced"; fileName: string; remoteModifiedAt: number }
+    | { type: "error"; fileName: string; message: string }
+
+type FileSyncedMessage = Extract<SentMessage, { type: "file-synced" }>
+
+interface MockSocket {
+    send: Mock<(payload: string) => void>
 }
 
 function createSocket(): MockSocket {
@@ -30,28 +39,46 @@ function createSocket(): MockSocket {
     }
 }
 
-function getSentMessages(socket: MockSocket) {
-    return socket.send.mock.calls.map(([payload]) => JSON.parse(payload as string))
+function parseSentMessage(payload: string): SentMessage {
+    return JSON.parse(payload) as SentMessage
 }
 
-function createTracker(): SyncTracker {
-    return {
-        remember: vi.fn(),
-        shouldSkip: vi.fn(),
-        forget: vi.fn(),
-        clear: vi.fn(),
+function getSentMessages(socket: MockSocket): SentMessage[] {
+    return socket.send.mock.calls.map(([payload]) => parseSentMessage(payload))
+}
+
+function expectFileSyncedMessage(
+    message: SentMessage | undefined,
+    fileName: string
+): asserts message is FileSyncedMessage {
+    expect(message).toMatchObject({
+        type: "file-synced",
+        fileName,
+    })
+
+    if (!message || message.type !== "file-synced") {
+        throw new Error(`Expected file-synced message for ${fileName}`)
     }
 }
 
-function createCodeFile({
-    content,
-    name,
-    path,
-}: {
-    content: string
-    name?: string
-    path?: string
-}) {
+function createTracker() {
+    const remember = vi.fn()
+    const shouldSkip = vi.fn()
+    const forget = vi.fn()
+    const clear = vi.fn()
+
+    return {
+        tracker: {
+            remember,
+            shouldSkip,
+            forget,
+            clear,
+        } satisfies SyncTracker,
+        remember,
+    }
+}
+
+function createCodeFile({ content, name, path }: { content: string; name?: string; path?: string }) {
     return {
         content,
         getVersions: vi.fn(),
@@ -64,10 +91,12 @@ function createCodeFile({
 }
 
 function setup() {
+    const tracker = createTracker()
     return {
         api: new CodeFilesAPI(),
         socket: createSocket(),
-        tracker: createTracker(),
+        tracker: tracker.tracker,
+        trackerRemember: tracker.remember,
     }
 }
 
@@ -95,7 +124,7 @@ describe("CodeFilesAPI", () => {
     })
 
     it("publishes a canonicalized snapshot and seeds later diffing", async () => {
-        const { api, socket, tracker } = setup()
+        const { api, socket, tracker, trackerRemember } = setup()
 
         const files = [
             createCodeFile({ path: "components/Foo.tsx", content: "export const Foo = 1" }),
@@ -121,11 +150,11 @@ describe("CodeFilesAPI", () => {
         await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(tracker.remember).not.toHaveBeenCalled()
+        expect(trackerRemember).not.toHaveBeenCalled()
     })
 
     it("emits incremental file changes and deletes", async () => {
-        const { api, socket, tracker } = setup()
+        const { api, socket, tracker, trackerRemember } = setup()
 
         await publishSnapshotAndClear({
             api,
@@ -163,13 +192,13 @@ describe("CodeFilesAPI", () => {
                 },
             ])
         )
-        expect(tracker.remember).toHaveBeenCalledTimes(2)
-        expect(tracker.remember).toHaveBeenNthCalledWith(1, "Changed.tsx", "export const Changed = 2")
-        expect(tracker.remember).toHaveBeenNthCalledWith(2, "Added.tsx", "export const Added = 1")
+        expect(trackerRemember).toHaveBeenCalledTimes(2)
+        expect(trackerRemember).toHaveBeenNthCalledWith(1, "Changed.tsx", "export const Changed = 2")
+        expect(trackerRemember).toHaveBeenNthCalledWith(2, "Added.tsx", "export const Added = 1")
     })
 
     it("normalizes extensionless remote changes and seeds snapshot state after a successful write", async () => {
-        const { api, socket, tracker } = setup()
+        const { api, socket, tracker, trackerRemember } = setup()
         const content = "export const New = 1"
 
         framerMock.getCodeFiles.mockResolvedValueOnce([])
@@ -179,27 +208,21 @@ describe("CodeFilesAPI", () => {
         expect(framerMock.createCodeFile).toHaveBeenCalledWith("New.tsx", content, {
             editViaPlugin: false,
         })
-        expect(getSentMessages(socket)).toEqual([
-            expect.objectContaining({
-                type: "file-synced",
-                fileName: "New.tsx",
-                remoteModifiedAt: expect.any(Number),
-            }),
-        ])
+        const [syncMessage] = getSentMessages(socket)
+        expectFileSyncedMessage(syncMessage, "New.tsx")
+        expect(syncMessage.remoteModifiedAt).toEqual(expect.any(Number))
 
         socket.send.mockClear()
-        mockCodeFiles([
-            createCodeFile({ name: "New.tsx", content }),
-        ])
+        mockCodeFiles([createCodeFile({ name: "New.tsx", content })])
 
         await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(tracker.remember).not.toHaveBeenCalled()
+        expect(trackerRemember).not.toHaveBeenCalled()
     })
 
     it("does not update snapshot state when a remote write fails", async () => {
-        const { api, socket, tracker } = setup()
+        const { api, socket, tracker, trackerRemember } = setup()
         const oldContent = "export const Broken = 1"
         const newContent = "export const Broken = 2"
         const existing = createCodeFile({ name: "Broken.tsx", content: oldContent })
@@ -230,11 +253,11 @@ describe("CodeFilesAPI", () => {
                 content: newContent,
             },
         ])
-        expect(tracker.remember).toHaveBeenCalledWith("Broken.tsx", newContent)
+        expect(trackerRemember).toHaveBeenCalledWith("Broken.tsx", newContent)
     })
 
     it("renames a file to a normalized target and updates snapshot state", async () => {
-        const { api, socket, tracker } = setup()
+        const { api, socket, tracker, trackerRemember } = setup()
         const content = "export const Old = 1"
         const existing = createCodeFile({ name: "Old.tsx", content })
 
@@ -249,23 +272,17 @@ describe("CodeFilesAPI", () => {
         await expect(api.applyRemoteRename("Old.tsx", "New", socket as unknown as WebSocket)).resolves.toBe(true)
 
         expect(existing.rename).toHaveBeenCalledWith("New.tsx")
-        expect(getSentMessages(socket)).toEqual([
-            expect.objectContaining({
-                type: "file-synced",
-                fileName: "New.tsx",
-                remoteModifiedAt: expect.any(Number),
-            }),
-        ])
+        const [syncMessage] = getSentMessages(socket)
+        expectFileSyncedMessage(syncMessage, "New.tsx")
+        expect(syncMessage.remoteModifiedAt).toEqual(expect.any(Number))
 
         socket.send.mockClear()
-        mockCodeFiles([
-            createCodeFile({ name: "New.tsx", content }),
-        ])
+        mockCodeFiles([createCodeFile({ name: "New.tsx", content })])
 
         await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(tracker.remember).not.toHaveBeenCalled()
+        expect(trackerRemember).not.toHaveBeenCalled()
     })
 
     it("returns an error when rename cannot fetch code files", async () => {

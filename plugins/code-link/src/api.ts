@@ -197,10 +197,6 @@ export class CodeFilesAPI {
         }
 
         try {
-            if (!framer.isAllowedTo("CodeFile.rename")) {
-                log.warn("No permission to rename code files")
-                return false
-            }
             await existing.rename(targetFileName)
             const content = this.lastSnapshot.get(sourceFileName)
             if (content !== undefined) {

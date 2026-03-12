@@ -1,5 +1,4 @@
 import {
-    type CliToPluginMessage,
     type ConflictSummary,
     createSyncTracker,
     type Mode,
@@ -11,6 +10,7 @@ import {
 import { framer } from "framer-plugin"
 import { useCallback, useEffect, useReducer, useRef, useState } from "react"
 import { CodeFilesAPI } from "./api"
+import { createMessageHandler } from "./messages"
 import { copyToClipboard } from "./utils/clipboard"
 import { computeLineDiff } from "./utils/diffing"
 import * as log from "./utils/logger"
@@ -106,6 +106,7 @@ export function App() {
             // Check initial permission state
             const initialPermissions = framer.isAllowedTo(
                 "createCodeFile",
+                "CodeFile.rename",
                 "CodeFile.setFileContent",
                 "CodeFile.remove"
             )
@@ -115,6 +116,7 @@ export function App() {
             // Subscribe to permission changes
             unsubscribePermissions = framer.subscribeToIsAllowedTo(
                 "createCodeFile",
+                "CodeFile.rename",
                 "CodeFile.setFileContent",
                 "CodeFile.remove",
                 granted => {
@@ -531,84 +533,4 @@ function ConflictPanel({ conflicts, onResolve }: ConflictPanelProps) {
             </div>
         </main>
     )
-}
-
-function createMessageHandler({
-    dispatch,
-    api,
-    syncTracker,
-}: {
-    dispatch: (action: Action) => void
-    api: CodeFilesAPI
-    syncTracker: SyncTracker
-}) {
-    return async function handleMessage(message: CliToPluginMessage, socket: WebSocket) {
-        log.debug("Handling message:", message.type)
-
-        switch (message.type) {
-            case "request-files":
-                log.debug("Publishing snapshot to CLI")
-                await api.publishSnapshot(socket)
-                dispatch({
-                    type: "set-mode",
-                    mode: "syncing",
-                })
-                break
-            case "file-change":
-                log.debug("Applying remote change:", message.fileName)
-                await api.applyRemoteChange(message.fileName, message.content, socket)
-                syncTracker.remember(message.fileName, message.content)
-                dispatch({ type: "set-mode", mode: "idle" })
-                break
-            case "file-delete":
-                if (message.requireConfirmation) {
-                    log.debug(`Delete requires confirmation for ${message.fileNames.length} file(s)`)
-                    const files: PendingDelete[] = []
-                    for (const fileName of message.fileNames) {
-                        const content = await api.readCurrentContent(fileName)
-                        // Only include files that exist in Framer (have content to restore)
-                        if (content !== undefined) {
-                            files.push({ fileName, content })
-                        }
-                    }
-                    if (files.length === 0) {
-                        // No files exist in Framer, nothing to confirm
-                        break
-                    }
-                    dispatch({
-                        type: "pending-deletes",
-                        files,
-                    })
-                } else {
-                    for (const fileName of message.fileNames) {
-                        log.debug("Deleting file:", fileName)
-                        await api.applyRemoteDelete(fileName)
-                    }
-                }
-                break
-            case "conflicts-detected":
-                log.debug(`Received ${message.conflicts.length} conflicts from CLI`)
-                dispatch({ type: "conflicts", conflicts: message.conflicts })
-                break
-            case "conflict-version-request": {
-                log.debug(`Fetching conflict versions for ${message.conflicts.length} files`)
-                const versions = await api.fetchConflictVersions(message.conflicts)
-                log.debug(`Sending version response for ${versions.length} files`)
-                socket.send(
-                    JSON.stringify({
-                        type: "conflict-version-response",
-                        versions,
-                    })
-                )
-                break
-            }
-            case "sync-complete":
-                log.debug("Sync complete, transitioning to idle")
-                dispatch({ type: "set-mode", mode: "idle" })
-                break
-            default:
-                log.warn("Unknown message type:", (message as unknown as { type: string }).type)
-                break
-        }
-    }
 }

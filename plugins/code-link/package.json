@@ -9,6 +9,7 @@
         "check-biome": "run g:check-biome",
         "check-eslint": "run g:check-eslint",
         "check-typescript": "run g:check-typescript",
+        "check-vitest": "run g:check-vitest",
         "preview": "run g:preview",
         "pack": "run g:pack"
     },

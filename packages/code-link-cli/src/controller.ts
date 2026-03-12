@@ -6,7 +6,7 @@
  */
 
 import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
-import { pluralize, shortProjectHash } from "@code-link/shared"
+import { normalizeCodeFilePathWithExtension, pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
 import type { WebSocket } from "ws"
@@ -165,6 +165,12 @@ type Effect =
           type: "LOCAL_INITIATED_FILE_DELETE"
           fileNames: string[]
       }
+    | {
+          type: "SEND_FILE_RENAME"
+          oldFileName: string
+          newFileName: string
+          content: string
+      }
     | { type: "PERSIST_STATE" }
     | {
           type: "SYNC_COMPLETE"
@@ -177,6 +183,11 @@ type Effect =
           level: "info" | "debug" | "warn" | "success"
           message: string
       }
+
+interface PendingRenameConfirmation {
+    oldFileName: string
+    content: string
+}
 
 /** Log helper */
 function log(level: "info" | "debug" | "warn" | "success", message: string): Effect {
@@ -557,6 +568,23 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
                     })
                     break
                 }
+
+                case "rename": {
+                    if (content === undefined || !event.event.oldRelativePath) {
+                        effects.push(log("warn", `Rename event missing data: ${relativePath}`))
+                        return { state, effects }
+                    }
+                    effects.push(
+                        log("debug", `Local rename detected: ${event.event.oldRelativePath} → ${relativePath}`),
+                        {
+                            type: "SEND_FILE_RENAME",
+                            oldFileName: event.event.oldRelativePath,
+                            newFileName: relativePath,
+                            content,
+                        }
+                    )
+                    break
+                }
             }
 
             return { state, effects }
@@ -676,11 +704,13 @@ async function executeEffect(
         hashTracker: ReturnType<typeof createHashTracker>
         installer: Installer | null
         fileMetadataCache: FileMetadataCache
+        pendingRenameConfirmations: Map<string, PendingRenameConfirmation>
         userActions: PluginUserPromptCoordinator
         syncState: SyncState
     }
 ): Promise<SyncEvent[]> {
-    const { config, hashTracker, installer, fileMetadataCache, userActions, syncState } = context
+    const { config, hashTracker, installer, fileMetadataCache, pendingRenameConfirmations, userActions, syncState } =
+        context
 
     switch (effect.type) {
         case "INIT_WORKSPACE": {
@@ -853,10 +883,24 @@ async function executeEffect(
 
             // Read current file content to compute hash
             const currentContent = await readFileSafe(effect.fileName, config.filesDir)
+            // Rename cleanup waits for the plugin's file-synced acknowledgment.
+            const pendingRenameConfirmation = pendingRenameConfirmations.get(
+                normalizeCodeFilePathWithExtension(effect.fileName)
+            )
+            const syncedContent = currentContent ?? pendingRenameConfirmation?.content ?? null
 
-            if (currentContent !== null) {
-                const contentHash = hashFileContent(currentContent)
+            if (syncedContent !== null) {
+                const contentHash = hashFileContent(syncedContent)
                 fileMetadataCache.recordSyncedSnapshot(effect.fileName, contentHash, effect.remoteModifiedAt)
+            }
+
+            if (pendingRenameConfirmation) {
+                hashTracker.forget(pendingRenameConfirmation.oldFileName)
+                fileMetadataCache.recordDelete(pendingRenameConfirmation.oldFileName)
+                if (currentContent !== null) {
+                    hashTracker.remember(effect.fileName, currentContent)
+                }
+                pendingRenameConfirmations.delete(normalizeCodeFilePathWithExtension(effect.fileName))
             }
 
             return []
@@ -899,6 +943,47 @@ async function executeEffect(
                 }
             } catch (err) {
                 warn(`Failed to push ${effect.fileName}`)
+            }
+
+            return []
+        }
+
+        case "SEND_FILE_RENAME": {
+            const normalizedNewFileName = normalizeCodeFilePathWithExtension(effect.newFileName)
+            const isEchoedRename =
+                hashTracker.shouldSkip(normalizedNewFileName, effect.content) &&
+                hashTracker.shouldSkipDelete(effect.oldFileName)
+
+            if (isEchoedRename) {
+                hashTracker.forget(normalizedNewFileName)
+                hashTracker.clearDelete(effect.oldFileName)
+                debug(`Skipping echoed rename ${effect.oldFileName} -> ${effect.newFileName}`)
+                return []
+            }
+
+            try {
+                if (!syncState.socket) {
+                    warn(`No socket available to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
+                    return []
+                }
+
+                const sent = await sendMessage(syncState.socket, {
+                    type: "file-rename",
+                    oldFileName: effect.oldFileName,
+                    newFileName: normalizedNewFileName,
+                    content: effect.content,
+                })
+                if (!sent) {
+                    warn(`Failed to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
+                    return []
+                }
+
+                pendingRenameConfirmations.set(normalizeCodeFilePathWithExtension(effect.newFileName), {
+                    oldFileName: effect.oldFileName,
+                    content: effect.content,
+                })
+            } catch (err) {
+                warn(`Failed to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
             }
 
             return []
@@ -1014,6 +1099,7 @@ export async function start(config: Config): Promise<void> {
 
     const hashTracker = createHashTracker()
     const fileMetadataCache = new FileMetadataCache()
+    const pendingRenameConfirmations = new Map<string, PendingRenameConfirmation>()
     let installer: Installer | null = null
 
     // State machine state
@@ -1053,6 +1139,7 @@ export async function start(config: Config): Promise<void> {
                 hashTracker,
                 installer,
                 fileMetadataCache,
+                pendingRenameConfirmations,
                 userActions,
                 syncState,
             })
@@ -1101,6 +1188,7 @@ export async function start(config: Config): Promise<void> {
                     return
                 }
                 debug(`New handshake received in ${syncState.mode} mode, resetting sync state`)
+                pendingRenameConfirmations.clear()
                 await processEvent({ type: "DISCONNECT" })
             }
 
@@ -1221,6 +1309,13 @@ export async function start(config: Config): Promise<void> {
                 }
                 break
 
+            case "error":
+                if (message.fileName) {
+                    pendingRenameConfirmations.delete(normalizeCodeFilePathWithExtension(message.fileName))
+                }
+                warn(message.message)
+                return
+
             case "conflicts-resolved":
                 event = {
                     type: "CONFLICTS_RESOLVED",
@@ -1263,6 +1358,7 @@ export async function start(config: Config): Promise<void> {
             status("Disconnected, waiting to reconnect...")
         })
         void (async () => {
+            pendingRenameConfirmations.clear()
             await processEvent({ type: "DISCONNECT" })
             userActions.cleanup()
         })()
@@ -1300,4 +1396,4 @@ export async function start(config: Config): Promise<void> {
 }
 
 // Export for testing
-export { transition }
+export { executeEffect, transition }

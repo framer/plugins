@@ -16,6 +16,12 @@ describe("toDirectoryName", () => {
     it("replaces invalid chars preserving case and spaces", () => {
         expect(toDirectoryName("My Project")).toBe("My Project")
         expect(toDirectoryName("Hello World!")).toBe("Hello World")
+        expect(toDirectoryName("My-Project 2026!")).toBe("My-Project 2026")
+    })
+
+    it("removes boundary hyphens revealed by trimming", () => {
+        expect(toDirectoryName(" -Project")).toBe("Project")
+        expect(toDirectoryName("Project- ")).toBe("Project")
     })
 })
 

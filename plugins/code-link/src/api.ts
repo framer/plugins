@@ -1,4 +1,4 @@
-import { canonicalFileName, ensureExtension, type SyncTracker } from "@code-link/shared"
+import { normalizeCodeFilePathWithExtension, type SyncTracker } from "@code-link/shared"
 import { framer } from "framer-plugin"
 import * as log from "./utils/logger"
 
@@ -11,7 +11,45 @@ import * as log from "./utils/logger"
 export class CodeFilesAPI {
     private lastSnapshot = new Map<string, string>()
 
-    private async getCodeFilesWithCanonicalNames() {
+    // Keep the snapshot aligned with the state Framer should expose, even while a remote mutation is in flight.
+    private async withExpectedSnapshotPatch<T>(
+        patch: {
+            upserts?: { fileName: string; content: string }[]
+            deletes?: string[]
+        },
+        run: () => Promise<T>
+    ): Promise<T> {
+        const previousEntries = new Map<string, string | undefined>()
+
+        for (const fileName of patch.deletes ?? []) {
+            if (!previousEntries.has(fileName)) {
+                previousEntries.set(fileName, this.lastSnapshot.get(fileName))
+            }
+            this.lastSnapshot.delete(fileName)
+        }
+
+        for (const entry of patch.upserts ?? []) {
+            if (!previousEntries.has(entry.fileName)) {
+                previousEntries.set(entry.fileName, this.lastSnapshot.get(entry.fileName))
+            }
+            this.lastSnapshot.set(entry.fileName, entry.content)
+        }
+
+        try {
+            return await run()
+        } catch (error) {
+            for (const [fileName, previousContent] of previousEntries) {
+                if (previousContent === undefined) {
+                    this.lastSnapshot.delete(fileName)
+                } else {
+                    this.lastSnapshot.set(fileName, previousContent)
+                }
+            }
+            throw error
+        }
+    }
+
+    private async getCodeFilesWithNormalizedPaths() {
         // Always all files instead of single file calls.
         // The API internally does that anyways.
         // Also ensures everything is fresh.
@@ -26,21 +64,21 @@ export class CodeFilesAPI {
         return codeFiles.map(file => {
             const source = file.path || file.name
             return {
-                name: canonicalFileName(source),
+                name: normalizeCodeFilePathWithExtension(source),
                 content: file.content,
             }
         })
     }
 
     async publishSnapshot(socket: WebSocket) {
-        const files = await this.getCodeFilesWithCanonicalNames()
+        const files = await this.getCodeFilesWithNormalizedPaths()
         socket.send(JSON.stringify({ type: "file-list", files }))
         this.lastSnapshot.clear()
         files.forEach(file => this.lastSnapshot.set(file.name, file.content))
     }
 
     async handleFramerFilesChanged(socket: WebSocket, tracker: SyncTracker) {
-        const files = await this.getCodeFilesWithCanonicalNames()
+        const files = await this.getCodeFilesWithNormalizedPaths()
         const seen = new Set<string>()
 
         for (const file of files) {
@@ -77,11 +115,14 @@ export class CodeFilesAPI {
     }
 
     async applyRemoteChange(fileName: string, content: string, socket: WebSocket) {
-        const normalizedName = canonicalFileName(fileName)
-        // Update snapshot BEFORE upsert to prevent race with file subscription
-        this.lastSnapshot.set(normalizedName, content)
+        const normalizedName = normalizeCodeFilePathWithExtension(fileName)
+        const updatedAt = await this.withExpectedSnapshotPatch(
+            {
+                upserts: [{ fileName: normalizedName, content }],
+            },
+            async () => await upsertFramerFile(normalizedName, content)
+        )
 
-        const updatedAt = await upsertFramerFile(fileName, content)
         // Send file-synced message with timestamp
         const syncTimestamp = updatedAt ?? Date.now()
         log.debug(
@@ -97,13 +138,20 @@ export class CodeFilesAPI {
     }
 
     async applyRemoteDelete(fileName: string) {
-        await deleteFramerFile(fileName)
-        this.lastSnapshot.delete(canonicalFileName(fileName))
+        const normalizedName = normalizeCodeFilePathWithExtension(fileName)
+        await this.withExpectedSnapshotPatch(
+            {
+                deletes: [normalizedName],
+            },
+            async () => {
+                await deleteFramerFile(normalizedName)
+            }
+        )
     }
 
     async readCurrentContent(fileName: string) {
-        const files = await this.getCodeFilesWithCanonicalNames()
-        const normalizedName = canonicalFileName(fileName)
+        const files = await this.getCodeFilesWithNormalizedPaths()
+        const normalizedName = normalizeCodeFilePathWithExtension(fileName)
         return files.find(file => file.name === normalizedName)?.content
     }
 
@@ -123,7 +171,9 @@ export class CodeFilesAPI {
 
         const versionPromises = requests.map(async request => {
             const file = codeFiles.find(
-                f => canonicalFileName(f.path || f.name) === canonicalFileName(request.fileName)
+                f =>
+                    normalizeCodeFilePathWithExtension(f.path || f.name) ===
+                    normalizeCodeFilePathWithExtension(request.fileName)
             )
 
             if (!file) {
@@ -159,19 +209,91 @@ export class CodeFilesAPI {
         log.debug(`Returning version data for ${String(results.length)} files`)
         return results
     }
+
+    async applyRemoteRename(oldFileName: string, newFileName: string, socket: WebSocket): Promise<boolean> {
+        const sourceFileName = normalizeCodeFilePathWithExtension(oldFileName)
+        const targetFileName = normalizeCodeFilePathWithExtension(newFileName)
+
+        let codeFiles
+        try {
+            codeFiles = await framer.getCodeFiles()
+        } catch (err) {
+            const message = `Failed to fetch code files for rename ${oldFileName} -> ${newFileName}`
+            log.error(message, err)
+            socket.send(
+                JSON.stringify({
+                    type: "error",
+                    fileName: targetFileName,
+                    message,
+                })
+            )
+            return false
+        }
+
+        const existing = codeFiles.find(
+            file => normalizeCodeFilePathWithExtension(file.path || file.name) === sourceFileName
+        )
+
+        if (!existing) {
+            this.lastSnapshot.delete(sourceFileName)
+            const message = `Rename failed: ${oldFileName} not found in Framer`
+            log.warn(message)
+            socket.send(
+                JSON.stringify({
+                    type: "error",
+                    fileName: targetFileName,
+                    message,
+                })
+            )
+            return false
+        }
+
+        const content = this.lastSnapshot.get(sourceFileName) ?? existing.content
+
+        try {
+            await this.withExpectedSnapshotPatch(
+                {
+                    upserts: [{ fileName: targetFileName, content }],
+                    deletes: [sourceFileName],
+                },
+                async () => await existing.rename(targetFileName)
+            )
+            socket.send(
+                JSON.stringify({
+                    type: "file-synced",
+                    fileName: targetFileName,
+                    remoteModifiedAt: Date.now(),
+                })
+            )
+            return true
+        } catch (err) {
+            const message = `Failed to rename ${oldFileName} -> ${newFileName}`
+            log.error(message, err)
+            socket.send(
+                JSON.stringify({
+                    type: "error",
+                    fileName: targetFileName,
+                    message,
+                })
+            )
+            return false
+        }
+    }
 }
 
 async function upsertFramerFile(fileName: string, content: string): Promise<number | undefined> {
-    const normalisedName = canonicalFileName(fileName)
+    const normalisedName = normalizeCodeFilePathWithExtension(fileName)
     const codeFiles = await framer.getCodeFiles()
-    const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedName)
+    const existing = codeFiles.find(
+        file => normalizeCodeFilePathWithExtension(file.path || file.name) === normalisedName
+    )
 
     if (existing) {
         await existing.setFileContent(content)
         return Date.now()
     }
 
-    await framer.createCodeFile(ensureExtension(normalisedName), content, {
+    await framer.createCodeFile(normalisedName, content, {
         editViaPlugin: false,
     })
 
@@ -179,9 +301,11 @@ async function upsertFramerFile(fileName: string, content: string): Promise<numb
 }
 
 async function deleteFramerFile(fileName: string) {
-    const normalisedName = canonicalFileName(fileName)
+    const normalisedName = normalizeCodeFilePathWithExtension(fileName)
     const codeFiles = await framer.getCodeFiles()
-    const existing = codeFiles.find(file => canonicalFileName(file.path || file.name) === normalisedName)
+    const existing = codeFiles.find(
+        file => normalizeCodeFilePathWithExtension(file.path || file.name) === normalisedName
+    )
 
     if (existing) {
         await existing.remove()

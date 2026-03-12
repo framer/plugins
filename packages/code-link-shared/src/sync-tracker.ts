@@ -1,5 +1,5 @@
 import { hashContent } from "./hash.ts"
-import { canonicalFileName } from "./paths.ts"
+import { normalizeCodeFilePath } from "./paths.ts"
 
 export interface SyncTracker {
     remember(fileName: string, content: string): void
@@ -17,15 +17,15 @@ export function createSyncTracker(): SyncTracker {
 
     return {
         remember(fileName: string, content: string) {
-            contentHashes.set(canonicalFileName(fileName), hashContent(content))
+            contentHashes.set(normalizeCodeFilePath(fileName), hashContent(content))
         },
 
         shouldSkip(fileName: string, content: string) {
-            return contentHashes.get(canonicalFileName(fileName)) === hashContent(content)
+            return contentHashes.get(normalizeCodeFilePath(fileName)) === hashContent(content)
         },
 
         forget(fileName: string) {
-            contentHashes.delete(canonicalFileName(fileName))
+            contentHashes.delete(normalizeCodeFilePath(fileName))
         },
 
         clear() {

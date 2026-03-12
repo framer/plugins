@@ -41,7 +41,6 @@ const REACT_DOM_TYPES_VERSION = "18.3.1"
 const CORE_LIBRARIES = ["framer-motion", "framer"]
 const JSON_EXTENSION_REGEX = /\.json$/i
 
-
 /**
  * Packages that are officially supported for type acquisition.
  * Use --unsupported-npm flag to allow other packages.
@@ -228,7 +227,8 @@ export class Installer {
         try {
             await this.ata(filteredContent)
         } catch (err) {
-            warn(`ATA failed for ${fileName}`, err as Error)
+            warn(`Type fetching failed for ${fileName}`)
+            debug(`ATA error for ${fileName}:`, err)
         }
     }
 
@@ -588,12 +588,13 @@ async function fetchWithRetry(
 
             if (attempt < retries && isRetryable) {
                 const delay = attempt * 1_000
-                warn(`Fetch failed (${error.cause?.code ?? error.message}) for ${urlString}, retrying in ${delay}ms...`)
+                debug(`Fetch failed for ${urlString}, retrying...`, error)
                 await new Promise(resolve => setTimeout(resolve, delay))
                 continue
             }
 
-            warn(`Fetch failed for ${urlString}`, error)
+            warn(`Fetch failed for ${urlString}`)
+            debug(`Fetch error details:`, error)
             throw error
         }
     }

@@ -2,12 +2,12 @@
 
 export { hashContent, shortProjectHash } from "./hash.ts"
 export {
-    canonicalFileName,
     capitalizeFirstLetter,
     ensureExtension,
     fileKeyForLookup,
     isSupportedExtension,
     normalizeCodeFilePath,
+    normalizeCodeFilePathWithExtension,
     normalizePath,
     pluralize,
     sanitizeFilePath,

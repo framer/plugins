@@ -5,7 +5,8 @@
  * and skipping watcher events for files we just wrote.
  */
 
-import { createHash } from "crypto"
+import { normalizeCodeFilePathWithExtension } from "@code-link/shared"
+import { hashFileContent } from "./state-persistence.ts"
 
 export interface HashTracker {
     remember(filePath: string, content: string): void
@@ -24,20 +25,22 @@ export function createHashTracker(): HashTracker {
     const hashes = new Map<string, string>()
     const pendingDeletes = new Map<string, ReturnType<typeof setTimeout>>()
 
+    const keyFor = (filePath: string) => normalizeCodeFilePathWithExtension(filePath)
+
     return {
         remember(filePath: string, content: string): void {
-            const hash = hashContent(content)
-            hashes.set(filePath, hash)
+            const hash = hashFileContent(content)
+            hashes.set(keyFor(filePath), hash)
         },
 
         shouldSkip(filePath: string, content: string): boolean {
-            const currentHash = hashContent(content)
-            const storedHash = hashes.get(filePath)
+            const currentHash = hashFileContent(content)
+            const storedHash = hashes.get(keyFor(filePath))
             return storedHash === currentHash
         },
 
         forget(filePath: string): void {
-            hashes.delete(filePath)
+            hashes.delete(keyFor(filePath))
         },
 
         clear(): void {
@@ -45,35 +48,30 @@ export function createHashTracker(): HashTracker {
         },
 
         markDelete(filePath: string): void {
-            const existingTimer = pendingDeletes.get(filePath)
+            const key = keyFor(filePath)
+            const existingTimer = pendingDeletes.get(key)
             if (existingTimer) {
                 clearTimeout(existingTimer)
             }
 
             const timeout = setTimeout(() => {
-                pendingDeletes.delete(filePath)
+                pendingDeletes.delete(key)
             }, 5000)
 
-            pendingDeletes.set(filePath, timeout)
+            pendingDeletes.set(key, timeout)
         },
 
         shouldSkipDelete(filePath: string): boolean {
-            return pendingDeletes.has(filePath)
+            return pendingDeletes.has(keyFor(filePath))
         },
 
         clearDelete(filePath: string): void {
-            const timeout = pendingDeletes.get(filePath)
+            const key = keyFor(filePath)
+            const timeout = pendingDeletes.get(key)
             if (timeout) {
                 clearTimeout(timeout)
             }
-            pendingDeletes.delete(filePath)
+            pendingDeletes.delete(key)
         },
     }
-}
-
-/**
- * Computes a SHA256 hash of file content for comparison
- */
-function hashContent(content: string): string {
-    return createHash("sha256").update(content).digest("hex")
 }

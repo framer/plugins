@@ -4,7 +4,7 @@ import { createSocketConnectionController } from "./sockets.ts"
 
 vi.mock("framer-plugin", () => ({
     framer: {
-        getProjectInfo: vi.fn(async () => ({ id: "project-id", name: "Project Name" })),
+        getProjectInfo: vi.fn(() => Promise.resolve({ id: "project-id", name: "Project Name" })),
     },
 }))
 
@@ -107,7 +107,7 @@ describe("createSocketConnectionController", () => {
         const controller = createSocketConnectionController({
             project: { id: "project-id", name: "Project Name" } satisfies ProjectInfo,
             setSocket,
-            onMessage: vi.fn(async () => {}),
+            onMessage: vi.fn(() => Promise.resolve()),
             onConnected: vi.fn(),
             onDisconnected: vi.fn(),
             onReplaced,
@@ -115,10 +115,7 @@ describe("createSocketConnectionController", () => {
 
         controller.start()
 
-        expect(mockDocument.addEventListener).toHaveBeenCalledWith(
-            "visibilitychange",
-            expect.any(Function)
-        )
+        expect(mockDocument.addEventListener).toHaveBeenCalledWith("visibilitychange", expect.any(Function))
         expect(mockWindow.addEventListener).toHaveBeenCalledWith("focus", expect.any(Function))
         expect(MockWebSocket.instances).toHaveLength(1)
 
@@ -129,10 +126,7 @@ describe("createSocketConnectionController", () => {
         controller.stop()
 
         expect(onReplaced).toHaveBeenCalledOnce()
-        expect(mockDocument.removeEventListener).toHaveBeenCalledWith(
-            "visibilitychange",
-            expect.any(Function)
-        )
+        expect(mockDocument.removeEventListener).toHaveBeenCalledWith("visibilitychange", expect.any(Function))
         expect(mockWindow.removeEventListener).toHaveBeenCalledWith("focus", expect.any(Function))
         expect(vi.getTimerCount()).toBe(0)
         expect(setSocket).toHaveBeenLastCalledWith(null)

@@ -344,7 +344,67 @@ describe("rename confirmation bookkeeping", () => {
         )
         expect(hashTracker.forget).toHaveBeenCalledWith("Old.tsx")
         expect(fileMetadataCache.recordDelete).toHaveBeenCalledWith("Old.tsx")
-        expect(hashTracker.remember).toHaveBeenCalledWith("New.tsx", "export const New = () => null")
+        expect(hashTracker.remember).not.toHaveBeenCalled()
+        expect(pendingRenameConfirmations.has("New.tsx")).toBe(false)
+
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
+    it("uses current file content when cleanup runs after a newer local change", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-late-"))
+        const filesDir = path.join(tmpDir, "files")
+        await fs.mkdir(filesDir, { recursive: true })
+        await fs.writeFile(path.join(filesDir, "New.tsx"), "export const New = 2", "utf-8")
+
+        const hashTracker = {
+            remember: vi.fn(),
+            shouldSkip: vi.fn(),
+            forget: vi.fn(),
+            clear: vi.fn(),
+            markDelete: vi.fn(),
+            shouldSkipDelete: vi.fn(),
+            clearDelete: vi.fn(),
+        }
+        const fileMetadataCache = {
+            recordSyncedSnapshot: vi.fn(),
+            recordDelete: vi.fn(),
+        }
+        const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>([
+            ["New.tsx", { oldFileName: "Old.tsx", content: "export const New = 1" }],
+        ])
+
+        await executeEffect(
+            {
+                type: "UPDATE_FILE_METADATA",
+                fileName: "New.tsx",
+                remoteModifiedAt: 1234,
+            },
+            {
+                config: {
+                    port: 0,
+                    projectHash: "project",
+                    projectDir: tmpDir,
+                    filesDir,
+                    dangerouslyAutoDelete: false,
+                    allowUnsupportedNpm: false,
+                } satisfies Config,
+                hashTracker: hashTracker as never,
+                installer: null,
+                fileMetadataCache: fileMetadataCache as never,
+                pendingRenameConfirmations,
+                userActions: {} as never,
+                syncState: {
+                    mode: "watching",
+                    socket: mockSocket,
+                    pendingRemoteChanges: [],
+                },
+            }
+        )
+
+        expect(fileMetadataCache.recordSyncedSnapshot).toHaveBeenCalledWith("New.tsx", hashFileContent("export const New = 2"), 1234)
+        expect(hashTracker.forget).toHaveBeenCalledWith("Old.tsx")
+        expect(fileMetadataCache.recordDelete).toHaveBeenCalledWith("Old.tsx")
+        expect(hashTracker.remember).toHaveBeenCalledWith("New.tsx", "export const New = 2")
         expect(pendingRenameConfirmations.has("New.tsx")).toBe(false)
 
         await fs.rm(tmpDir, { recursive: true, force: true })

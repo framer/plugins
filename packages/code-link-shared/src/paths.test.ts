@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { ensureExtension, isSupportedExtension, normalizeCodeFileName, normalizePath, sanitizeFilePath } from "./paths.ts"
+import {
+    ensureExtension,
+    isSupportedExtension,
+    normalizeCodeFilePathWithExtension,
+    normalizePath,
+    sanitizeFilePath,
+} from "./paths.ts"
 
 describe("File Name Sanitization", () => {
     describe("sanitizeFilePath", () => {
@@ -144,13 +150,15 @@ describe("File Name Sanitization", () => {
         })
     })
 
-    describe("normalizeCodeFileName", () => {
+    describe("normalizeCodeFilePathWithExtension", () => {
         it("normalizes folder paths and adds the default extension", () => {
-            expect(normalizeCodeFileName("./components/../components/Button")).toBe("components/Button.tsx")
+            expect(normalizeCodeFilePathWithExtension("./components/../components/Button")).toBe(
+                "components/Button.tsx"
+            )
         })
 
         it("preserves existing supported extensions", () => {
-            expect(normalizeCodeFileName("utils/file.ts")).toBe("utils/file.ts")
+            expect(normalizeCodeFilePathWithExtension("utils/file.ts")).toBe("utils/file.ts")
         })
     })
 })

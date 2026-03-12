@@ -1,4 +1,4 @@
-import { normalizeCodeFileName, type SyncTracker } from "@code-link/shared"
+import { normalizeCodeFilePathWithExtension, type SyncTracker } from "@code-link/shared"
 import { framer } from "framer-plugin"
 import * as log from "./utils/logger"
 
@@ -49,7 +49,7 @@ export class CodeFilesAPI {
         }
     }
 
-    private async getCodeFilesWithCanonicalNames() {
+    private async getCodeFilesWithNormalizedPaths() {
         // Always all files instead of single file calls.
         // The API internally does that anyways.
         // Also ensures everything is fresh.
@@ -64,21 +64,21 @@ export class CodeFilesAPI {
         return codeFiles.map(file => {
             const source = file.path || file.name
             return {
-                name: normalizeCodeFileName(source),
+                name: normalizeCodeFilePathWithExtension(source),
                 content: file.content,
             }
         })
     }
 
     async publishSnapshot(socket: WebSocket) {
-        const files = await this.getCodeFilesWithCanonicalNames()
+        const files = await this.getCodeFilesWithNormalizedPaths()
         socket.send(JSON.stringify({ type: "file-list", files }))
         this.lastSnapshot.clear()
         files.forEach(file => this.lastSnapshot.set(file.name, file.content))
     }
 
     async handleFramerFilesChanged(socket: WebSocket, tracker: SyncTracker) {
-        const files = await this.getCodeFilesWithCanonicalNames()
+        const files = await this.getCodeFilesWithNormalizedPaths()
         const seen = new Set<string>()
 
         for (const file of files) {
@@ -115,7 +115,7 @@ export class CodeFilesAPI {
     }
 
     async applyRemoteChange(fileName: string, content: string, socket: WebSocket) {
-        const normalizedName = normalizeCodeFileName(fileName)
+        const normalizedName = normalizeCodeFilePathWithExtension(fileName)
         const updatedAt = await this.withExpectedSnapshotPatch(
             {
                 upserts: [{ fileName: normalizedName, content }],
@@ -138,7 +138,7 @@ export class CodeFilesAPI {
     }
 
     async applyRemoteDelete(fileName: string) {
-        const normalizedName = normalizeCodeFileName(fileName)
+        const normalizedName = normalizeCodeFilePathWithExtension(fileName)
         await this.withExpectedSnapshotPatch(
             {
                 deletes: [normalizedName],
@@ -150,8 +150,8 @@ export class CodeFilesAPI {
     }
 
     async readCurrentContent(fileName: string) {
-        const files = await this.getCodeFilesWithCanonicalNames()
-        const normalizedName = normalizeCodeFileName(fileName)
+        const files = await this.getCodeFilesWithNormalizedPaths()
+        const normalizedName = normalizeCodeFilePathWithExtension(fileName)
         return files.find(file => file.name === normalizedName)?.content
     }
 
@@ -171,7 +171,9 @@ export class CodeFilesAPI {
 
         const versionPromises = requests.map(async request => {
             const file = codeFiles.find(
-                f => normalizeCodeFileName(f.path || f.name) === normalizeCodeFileName(request.fileName)
+                f =>
+                    normalizeCodeFilePathWithExtension(f.path || f.name) ===
+                    normalizeCodeFilePathWithExtension(request.fileName)
             )
 
             if (!file) {
@@ -209,8 +211,8 @@ export class CodeFilesAPI {
     }
 
     async applyRemoteRename(oldFileName: string, newFileName: string, socket: WebSocket): Promise<boolean> {
-        const sourceFileName = normalizeCodeFileName(oldFileName)
-        const targetFileName = normalizeCodeFileName(newFileName)
+        const sourceFileName = normalizeCodeFilePathWithExtension(oldFileName)
+        const targetFileName = normalizeCodeFilePathWithExtension(newFileName)
 
         let codeFiles
         try {
@@ -228,7 +230,9 @@ export class CodeFilesAPI {
             return false
         }
 
-        const existing = codeFiles.find(file => normalizeCodeFileName(file.path || file.name) === sourceFileName)
+        const existing = codeFiles.find(
+            file => normalizeCodeFilePathWithExtension(file.path || file.name) === sourceFileName
+        )
 
         if (!existing) {
             this.lastSnapshot.delete(sourceFileName)
@@ -278,9 +282,11 @@ export class CodeFilesAPI {
 }
 
 async function upsertFramerFile(fileName: string, content: string): Promise<number | undefined> {
-    const normalisedName = normalizeCodeFileName(fileName)
+    const normalisedName = normalizeCodeFilePathWithExtension(fileName)
     const codeFiles = await framer.getCodeFiles()
-    const existing = codeFiles.find(file => normalizeCodeFileName(file.path || file.name) === normalisedName)
+    const existing = codeFiles.find(
+        file => normalizeCodeFilePathWithExtension(file.path || file.name) === normalisedName
+    )
 
     if (existing) {
         await existing.setFileContent(content)
@@ -295,9 +301,11 @@ async function upsertFramerFile(fileName: string, content: string): Promise<numb
 }
 
 async function deleteFramerFile(fileName: string) {
-    const normalisedName = normalizeCodeFileName(fileName)
+    const normalisedName = normalizeCodeFilePathWithExtension(fileName)
     const codeFiles = await framer.getCodeFiles()
-    const existing = codeFiles.find(file => normalizeCodeFileName(file.path || file.name) === normalisedName)
+    const existing = codeFiles.find(
+        file => normalizeCodeFilePathWithExtension(file.path || file.name) === normalisedName
+    )
 
     if (existing) {
         await existing.remove()

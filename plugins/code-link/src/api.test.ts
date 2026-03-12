@@ -123,12 +123,13 @@ describe("CodeFilesAPI", () => {
         vi.clearAllMocks()
     })
 
-    it("publishes a canonicalized snapshot and seeds later diffing", async () => {
+    it("publishes a normalized snapshot with ensured extensions and seeds later diffing", async () => {
         const { api, socket, tracker, trackerRemember } = setup()
 
         const files = [
             createCodeFile({ path: "components/Foo.tsx", content: "export const Foo = 1" }),
             createCodeFile({ name: "Bar.ts", content: "export const Bar = 1" }),
+            createCodeFile({ name: "Baz", content: "export const Baz = 1" }),
         ]
         mockCodeFiles(files)
 
@@ -140,6 +141,7 @@ describe("CodeFilesAPI", () => {
                 files: [
                     { name: "components/Foo.tsx", content: "export const Foo = 1" },
                     { name: "Bar.ts", content: "export const Bar = 1" },
+                    { name: "Baz.tsx", content: "export const Baz = 1" },
                 ],
             },
         ])

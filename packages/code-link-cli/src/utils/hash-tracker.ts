@@ -5,7 +5,7 @@
  * and skipping watcher events for files we just wrote.
  */
 
-import { normalizeCodeFileName } from "@code-link/shared"
+import { normalizeCodeFilePathWithExtension } from "@code-link/shared"
 import { hashFileContent } from "./state-persistence.ts"
 
 export interface HashTracker {
@@ -25,7 +25,7 @@ export function createHashTracker(): HashTracker {
     const hashes = new Map<string, string>()
     const pendingDeletes = new Map<string, ReturnType<typeof setTimeout>>()
 
-    const keyFor = (filePath: string) => normalizeCodeFileName(filePath)
+    const keyFor = (filePath: string) => normalizeCodeFilePathWithExtension(filePath)
 
     return {
         remember(filePath: string, content: string): void {

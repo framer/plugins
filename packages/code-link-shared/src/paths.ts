@@ -117,6 +117,10 @@ export function normalizePath(filePath: string): string {
     return normalized
 }
 
+/**
+ * Use when you only want path normalization.
+ * Preserves the caller-provided extension so `Foo.ts` and `Foo.tsx` stay distinct.
+ */
 export function normalizeCodeFilePath(filePath: string): string {
     // Use proper path normalization that handles .., ., //, etc.
     // Always return relative paths (strip leading slash)
@@ -135,15 +139,12 @@ export function ensureExtension(filePath: string, extension = ".tsx"): string {
     return hasValidExtension ? normalized : `${normalized}${extension}`
 }
 
-export function canonicalFileName(filePath: string): string {
-    // Keep the extension - just normalize the path
-    // This prevents collisions between files with same name but different extensions
-    return normalizeCodeFilePath(filePath)
-}
-
-/** Normalized code-file name with default extension. */
-export function normalizeCodeFileName(filePath: string): string {
-    return canonicalFileName(ensureExtension(filePath))
+/**
+ * Use when the path must match the code-file API contract.
+ * Normalizes the path and ensures a default `.tsx` extension when one is missing.
+ */
+export function normalizeCodeFilePathWithExtension(filePath: string): string {
+    return ensureExtension(filePath)
 }
 
 export function sanitizeFilePath(input: string, capitalizeReactComponent = true): SanitizedNameResult {
@@ -175,7 +176,7 @@ export function isSupportedExtension(filePath: string): boolean {
  * Use this for Map keys on operating systems where "File.tsx" and "file.tsx" are the same file.
  */
 export function fileKeyForLookup(filePath: string): string {
-    return canonicalFileName(filePath).toLowerCase()
+    return normalizeCodeFilePath(filePath).toLowerCase()
 }
 
 /**

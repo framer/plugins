@@ -6,7 +6,7 @@
  * (hash matches), because that means the file wasn't edited while CLI was offline.
  */
 
-import { fileKeyForLookup, normalizeCodeFileName, pluralize } from "@code-link/shared"
+import { fileKeyForLookup, normalizeCodeFilePathWithExtension, pluralize } from "@code-link/shared"
 import { createHash } from "crypto"
 import fs from "fs/promises"
 import path from "path"
@@ -26,7 +26,7 @@ const STATE_FILE_NAME = ".framer-sync-state.json"
 const CURRENT_VERSION = 1
 
 function persistedFileKey(fileName: string): string {
-    return fileKeyForLookup(normalizeCodeFileName(fileName))
+    return fileKeyForLookup(normalizeCodeFilePathWithExtension(fileName))
 }
 
 /**

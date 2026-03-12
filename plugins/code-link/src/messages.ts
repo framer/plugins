@@ -2,7 +2,7 @@ import {
     type CliToPluginMessage,
     type ConflictSummary,
     type Mode,
-    normalizeCodeFileName,
+    normalizeCodeFilePathWithExtension,
     type PendingDelete,
     type SyncTracker,
 } from "@code-link/shared"
@@ -38,15 +38,15 @@ export function createMessageHandler({
             case "file-change":
                 log.debug("Applying remote change:", message.fileName)
                 await api.applyRemoteChange(message.fileName, message.content, socket)
-                syncTracker.remember(normalizeCodeFileName(message.fileName), message.content)
+                syncTracker.remember(normalizeCodeFilePathWithExtension(message.fileName), message.content)
                 dispatch({ type: "set-mode", mode: "idle" })
                 break
             case "file-rename": {
                 const { oldFileName, newFileName, content } = message
                 log.debug(`Renaming file: ${oldFileName} → ${newFileName}`)
                 if (await api.applyRemoteRename(oldFileName, newFileName, socket)) {
-                    syncTracker.forget(normalizeCodeFileName(oldFileName))
-                    syncTracker.remember(normalizeCodeFileName(newFileName), content)
+                    syncTracker.forget(normalizeCodeFilePathWithExtension(oldFileName))
+                    syncTracker.remember(normalizeCodeFilePathWithExtension(newFileName), content)
                 }
                 dispatch({ type: "set-mode", mode: "idle" })
                 break

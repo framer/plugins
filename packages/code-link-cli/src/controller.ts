@@ -6,7 +6,7 @@
  */
 
 import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
-import { normalizeCodeFileName, pluralize, shortProjectHash } from "@code-link/shared"
+import { normalizeCodeFilePathWithExtension, pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
 import type { WebSocket } from "ws"
@@ -709,15 +709,8 @@ async function executeEffect(
         syncState: SyncState
     }
 ): Promise<SyncEvent[]> {
-    const {
-        config,
-        hashTracker,
-        installer,
-        fileMetadataCache,
-        pendingRenameConfirmations,
-        userActions,
-        syncState,
-    } = context
+    const { config, hashTracker, installer, fileMetadataCache, pendingRenameConfirmations, userActions, syncState } =
+        context
 
     switch (effect.type) {
         case "INIT_WORKSPACE": {
@@ -891,7 +884,9 @@ async function executeEffect(
             // Read current file content to compute hash
             const currentContent = await readFileSafe(effect.fileName, config.filesDir)
             // Rename cleanup waits for the plugin's file-synced acknowledgment.
-            const pendingRenameConfirmation = pendingRenameConfirmations.get(normalizeCodeFileName(effect.fileName))
+            const pendingRenameConfirmation = pendingRenameConfirmations.get(
+                normalizeCodeFilePathWithExtension(effect.fileName)
+            )
             const syncedContent = currentContent ?? pendingRenameConfirmation?.content ?? null
 
             if (syncedContent !== null) {
@@ -902,8 +897,10 @@ async function executeEffect(
             if (pendingRenameConfirmation) {
                 hashTracker.forget(pendingRenameConfirmation.oldFileName)
                 fileMetadataCache.recordDelete(pendingRenameConfirmation.oldFileName)
-                hashTracker.remember(effect.fileName, pendingRenameConfirmation.content)
-                pendingRenameConfirmations.delete(normalizeCodeFileName(effect.fileName))
+                if (currentContent !== null) {
+                    hashTracker.remember(effect.fileName, currentContent)
+                }
+                pendingRenameConfirmations.delete(normalizeCodeFilePathWithExtension(effect.fileName))
             }
 
             return []
@@ -952,7 +949,7 @@ async function executeEffect(
         }
 
         case "SEND_FILE_RENAME": {
-            const normalizedNewFileName = normalizeCodeFileName(effect.newFileName)
+            const normalizedNewFileName = normalizeCodeFilePathWithExtension(effect.newFileName)
             const isEchoedRename =
                 hashTracker.shouldSkip(normalizedNewFileName, effect.content) &&
                 hashTracker.shouldSkipDelete(effect.oldFileName)
@@ -981,7 +978,7 @@ async function executeEffect(
                     return []
                 }
 
-                pendingRenameConfirmations.set(normalizeCodeFileName(effect.newFileName), {
+                pendingRenameConfirmations.set(normalizeCodeFilePathWithExtension(effect.newFileName), {
                     oldFileName: effect.oldFileName,
                     content: effect.content,
                 })
@@ -1314,7 +1311,7 @@ export async function start(config: Config): Promise<void> {
 
             case "error":
                 if (message.fileName) {
-                    pendingRenameConfirmations.delete(normalizeCodeFileName(message.fileName))
+                    pendingRenameConfirmations.delete(normalizeCodeFilePathWithExtension(message.fileName))
                 }
                 warn(message.message)
                 return

@@ -35,7 +35,7 @@ beforeEach(async () => {
                 json: async () => ({
                     version: "3.0.2",
                     peerDependencies: {
-                        "framer-motion": "12.34.3",
+                        "framer-motion": "^12.34.3",
                         "react": "^18.2.0",
                     },
                 }),

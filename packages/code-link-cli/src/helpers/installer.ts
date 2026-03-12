@@ -291,7 +291,8 @@ export class Installer {
             const framerManifest = await fetchNpmPackageManifest(FRAMER_PACKAGE_NAME)
             const framerVersion = normalizePinnedVersion(framerManifest.version)
             const framerMotionVersion =
-                getManifestDependencyVersion(framerManifest, "framer-motion") ?? DEFAULT_PINNED_TYPE_VERSIONS["framer-motion"]
+                normalizePinnedVersion(getManifestDependencyVersion(framerManifest, "framer-motion")) ??
+                DEFAULT_PINNED_TYPE_VERSIONS["framer-motion"]
             const reactVersion =
                 normalizePinnedVersion(getManifestDependencyVersion(framerManifest, "react")) ??
                 DEFAULT_PINNED_TYPE_VERSIONS["react"]

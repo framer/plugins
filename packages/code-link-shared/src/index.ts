@@ -30,4 +30,4 @@ export type {
     PluginToCliMessage,
     ProjectInfo,
 } from "./types.ts"
-export { isCliToPluginMessage } from "./types.ts"
+export { CLOSE_CODE_REPLACED, isCliToPluginMessage } from "./types.ts"

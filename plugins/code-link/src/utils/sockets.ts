@@ -1,4 +1,5 @@
 import {
+    CLOSE_CODE_REPLACED,
     type CliToPluginMessage,
     getPortFromHash,
     isCliToPluginMessage,
@@ -23,9 +24,6 @@ export interface SocketConnectionController {
     start: () => void
     stop: () => void
 }
-
-/** Custom close code sent by CLI when another plugin tab takes over. */
-const CLOSE_CODE_REPLACED = 4001
 
 export function createSocketConnectionController({
     project,
@@ -57,6 +55,7 @@ export function createSocketConnectionController({
     let hasNotifiedDisconnected = false
     let activeSocket: WebSocket | null = null
     let messageQueue: Promise<void> = Promise.resolve()
+    let hasCleanedUp = false
     const protocol = "wss"
     const timers: Record<TimerName, ReturnType<typeof setTimeout> | null> = {
         connectTrigger: null,
@@ -120,6 +119,28 @@ export function createSocketConnectionController({
     const setActiveSocket = (socket: WebSocket | null) => {
         activeSocket = socket
         setSocket(socket)
+    }
+
+    const cleanupResources = () => {
+        if (hasCleanedUp) return
+        hasCleanedUp = true
+
+        document.removeEventListener("visibilitychange", onVisibilityChange)
+        window.removeEventListener("focus", onFocus)
+
+        clearAllTimers()
+        const socket = activeSocket
+
+        if (socket) {
+            clearSocket(socket)
+        } else {
+            setActiveSocket(null)
+        }
+    }
+
+    const dispose = () => {
+        setLifecycle("disposed")
+        cleanupResources()
     }
 
     const clearSocket = (socket: WebSocket) => {
@@ -327,7 +348,7 @@ export function createSocketConnectionController({
             if (event.code === CLOSE_CODE_REPLACED) {
                 log.debug("Connection replaced by another plugin tab, disposing")
                 onReplaced()
-                setLifecycle("disposed")
+                dispose()
                 return
             }
 
@@ -405,20 +426,7 @@ export function createSocketConnectionController({
             }
         },
         stop: () => {
-            if (isDisposed()) return
-            setLifecycle("disposed")
-
-            document.removeEventListener("visibilitychange", onVisibilityChange)
-            window.removeEventListener("focus", onFocus)
-
-            clearAllTimers()
-            const socket = activeSocket
-
-            if (socket) {
-                clearSocket(socket)
-            } else {
-                setActiveSocket(null)
-            }
+            dispose()
         },
     }
 }

@@ -2,6 +2,9 @@
 
 export type Mode = "loading" | "info" | "syncing" | "delete_confirmation" | "conflict_resolution" | "idle" | "replaced"
 
+/** Custom close code sent when a new plugin tab replaces the active one. */
+export const CLOSE_CODE_REPLACED = 4001
+
 export interface ProjectInfo {
     id: string
     name: string

@@ -4,14 +4,11 @@
  * Wrapper around ws.Server that normalizes handshake and surfaces callbacks.
  */
 
-import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
+import { CLOSE_CODE_REPLACED, type CliToPluginMessage, type PluginToCliMessage } from "@code-link/shared"
 import https from "node:https"
 import { WebSocket, WebSocketServer } from "ws"
 import type { CertBundle } from "./certs.ts"
 import { debug, error, info } from "../utils/logging.ts"
-
-/** Custom close code sent when a new plugin tab replaces the active one. */
-export const CLOSE_CODE_REPLACED = 4001
 
 export interface ConnectionCallbacks {
     onHandshake: (client: WebSocket, message: { projectId: string; projectName: string }) => void

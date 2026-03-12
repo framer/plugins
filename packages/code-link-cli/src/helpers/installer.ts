@@ -22,9 +22,7 @@ interface NpmExportValue {
     types?: string
 }
 
-interface NpmDependencyMap {
-    [name: string]: string | undefined
-}
+type NpmDependencyMap = Record<string, string | undefined>
 
 /** npm registry API response for a single package version */
 interface NpmPackageVersion {
@@ -57,6 +55,7 @@ const DEFAULT_PINNED_TYPE_VERSIONS: Record<string, string> = {
     "@types/react": "18.2.0",
     "@types/react-dom": "18.2.0",
 }
+
 const JSON_EXTENSION_REGEX = /\.json$/i
 
 /**
@@ -287,28 +286,19 @@ export class Installer {
         try {
             const framerManifest = await fetchNpmPackageManifest(FRAMER_PACKAGE_NAME)
             const framerVersion = normalizePinnedVersion(framerManifest.version)
-            const framerMotionVersion =
-                normalizePinnedVersion(getManifestDependencyVersion(framerManifest, "framer-motion")) ??
-                DEFAULT_PINNED_TYPE_VERSIONS["framer-motion"]
-            const reactVersion =
-                normalizePinnedVersion(getManifestDependencyVersion(framerManifest, "react")) ??
-                DEFAULT_PINNED_TYPE_VERSIONS["react"]
-            const reactDomVersion =
-                normalizePinnedVersion(getManifestDependencyVersion(framerManifest, "react-dom")) ?? reactVersion
-
             if (framerVersion) {
                 this.pinnedTypeVersions.framer = framerVersion
             }
 
-            this.pinnedTypeVersions["framer-motion"] = framerMotionVersion
-            this.pinnedTypeVersions.react = reactVersion
-            this.pinnedTypeVersions["react-dom"] = reactDomVersion
-            this.pinnedTypeVersions["@types/react"] = reactVersion
-            this.pinnedTypeVersions["@types/react-dom"] = reactDomVersion
+            for (const [pkg, defaultVersion] of Object.entries(DEFAULT_PINNED_TYPE_VERSIONS)) {
+                const manifestDep = pkg.replace(/^@types\//, "")
+                this.pinnedTypeVersions[pkg] =
+                    normalizePinnedVersion(getManifestDependencyVersion(framerManifest, manifestDep)) ?? defaultVersion
+            }
 
             debug(
                 `Resolved ATA pins from ${FRAMER_PACKAGE_NAME}@${framerVersion ?? "latest"} ` +
-                    `(framer-motion ${framerMotionVersion}, react ${reactVersion})`
+                    `(framer-motion ${this.pinnedTypeVersions["framer-motion"]}, react ${this.pinnedTypeVersions.react})`
             )
         } catch (err) {
             debug(`Falling back to default ATA pins for ${FRAMER_PACKAGE_NAME}`, err)

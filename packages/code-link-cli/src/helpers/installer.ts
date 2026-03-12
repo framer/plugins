@@ -341,7 +341,7 @@ export class Installer {
             }
             debug(`Resolved ${Object.keys(allDeps).length} package.json version pins`)
         } catch {
-            // package.json may not exist yet
+            warn("Could not read package.json for version pinning")
         }
     }
 

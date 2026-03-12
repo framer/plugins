@@ -35,6 +35,11 @@ interface NpmPackageManifest extends NpmPackageVersion {
     peerDependencies?: NpmDependencyMap
 }
 
+interface ProjectPackageJson {
+    dependencies?: NpmDependencyMap
+    devDependencies?: NpmDependencyMap
+}
+
 /** npm registry API response */
 interface NpmRegistryResponse {
     "dist-tags"?: { latest?: string }
@@ -203,8 +208,15 @@ export class Installer {
         // Fire-and-forget type installation - don't block initialization
         Promise.resolve()
             .then(async () => {
-                const coreImports = (await this.buildPinnedImports(CORE_LIBRARIES)).join("\n")
-                await this.ata(coreImports)
+                const coreImports = await this.buildPinnedImports(CORE_LIBRARIES)
+
+                // After pins are resolved, also include package.json deps
+                const packageJsonDeps = this.allowUnsupportedNpm
+                    ? Object.keys(this.pinnedTypeVersions).filter(name => !SUPPORTED_PACKAGES.has(name))
+                    : []
+
+                const imports = [...coreImports, ...(await this.buildPinnedImports(packageJsonDeps))].join("\n")
+                await this.ata(imports)
             })
             .catch((err: unknown) => {
                 debug("Type installation failed", err)
@@ -231,8 +243,12 @@ export class Installer {
 
         await this.pinnedTypeVersionsPromise
 
+        if (this.allowUnsupportedNpm) {
+            await this.resolvePackageJsonPins()
+        }
+
         const hash = imports
-            .map(imp => imp.name)
+            .map(imp => this.pinImport(imp.name))
             .sort()
             .join(",")
 
@@ -252,6 +268,7 @@ export class Installer {
             warn(`Type fetching failed for ${fileName}`)
             debug(`ATA error for ${fileName}:`, err)
         }
+
     }
 
     /**
@@ -302,6 +319,29 @@ export class Installer {
             )
         } catch (err) {
             debug(`Falling back to default ATA pins for ${FRAMER_PACKAGE_NAME}`, err)
+        }
+
+        if (this.allowUnsupportedNpm) {
+            await this.resolvePackageJsonPins()
+        }
+    }
+
+    private async resolvePackageJsonPins(): Promise<void> {
+        try {
+            const pkgPath = path.join(this.projectDir, "package.json")
+            const raw = await fs.readFile(pkgPath, "utf-8")
+            const parsed: unknown = JSON.parse(raw)
+            const pkg = parsed as ProjectPackageJson
+            const allDeps: NpmDependencyMap = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) }
+            for (const [name, range] of Object.entries(allDeps)) {
+                const version = normalizePinnedVersion(range)
+                if (version) {
+                    this.pinnedTypeVersions[name] = version
+                }
+            }
+            debug(`Resolved ${Object.keys(allDeps).length} package.json version pins`)
+        } catch {
+            // package.json may not exist yet
         }
     }
 

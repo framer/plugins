@@ -167,6 +167,9 @@ export function App() {
         const handleConnected = () => {
             dispatch({ type: "set-mode", mode: "syncing" })
         }
+        const handleReplaced = () => {
+            dispatch({ type: "set-mode", mode: "replaced" })
+        }
 
         const handleMessage = createMessageHandler({ dispatch, api, syncTracker })
         const controller = createSocketConnectionController({
@@ -175,6 +178,7 @@ export function App() {
             onMessage: handleMessage,
             onConnected: handleConnected,
             onDisconnected: handleDisconnected,
+            onReplaced: handleReplaced,
         })
         controller.start()
 
@@ -283,6 +287,8 @@ function backgroundStatusFromMode(mode: Mode | undefined): string | null {
             return null
         case "idle":
             return "Watching Files…"
+        case "replaced":
+            return "Replaced by another Plugin connection"
         default:
             return "Loading…"
     }

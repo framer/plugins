@@ -1,6 +1,6 @@
 // Shared types between plugin and CLI
 
-export type Mode = "loading" | "info" | "syncing" | "delete_confirmation" | "conflict_resolution" | "idle"
+export type Mode = "loading" | "info" | "syncing" | "delete_confirmation" | "conflict_resolution" | "idle" | "replaced"
 
 export interface ProjectInfo {
     id: string

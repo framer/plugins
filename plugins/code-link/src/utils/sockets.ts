@@ -24,18 +24,23 @@ export interface SocketConnectionController {
     stop: () => void
 }
 
+/** Custom close code sent by CLI when another plugin tab takes over. */
+const CLOSE_CODE_REPLACED = 4001
+
 export function createSocketConnectionController({
     project,
     setSocket,
     onMessage,
     onConnected,
     onDisconnected,
+    onReplaced,
 }: {
     project: ProjectInfo
     setSocket: (socket: WebSocket | null) => void
     onMessage: (message: CliToPluginMessage, socket: WebSocket) => Promise<void>
     onConnected: () => void
     onDisconnected: (message: string) => void
+    onReplaced: () => void
 }): SocketConnectionController {
     const RECONNECT_BASE_MS = 500
     const RECONNECT_MAX_MS = 5000
@@ -306,7 +311,6 @@ export function createSocketConnectionController({
             if (isStale()) return
 
             setActiveSocket(null)
-            failureCount += 1
 
             log.debug("WebSocket closed", {
                 code: event.code,
@@ -318,6 +322,16 @@ export function createSocketConnectionController({
                 project: projectName,
                 failureCount,
             })
+
+            // Another plugin tab took over this connection — stop reconnecting.
+            if (event.code === CLOSE_CODE_REPLACED) {
+                log.debug("Connection replaced by another plugin tab, disposing")
+                onReplaced()
+                setLifecycle("disposed")
+                return
+            }
+
+            failureCount += 1
 
             if (
                 !hasNotifiedDisconnected &&

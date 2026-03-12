@@ -10,6 +10,9 @@ import { WebSocket, WebSocketServer } from "ws"
 import type { CertBundle } from "./certs.ts"
 import { debug, error, info } from "../utils/logging.ts"
 
+/** Custom close code sent when a new plugin tab replaces the active one. */
+export const CLOSE_CODE_REPLACED = 4001
+
 export interface ConnectionCallbacks {
     onHandshake: (client: WebSocket, message: { projectId: string; projectName: string }) => void
     onMessage: (message: PluginToCliMessage) => void
@@ -89,7 +92,7 @@ export function initConnection(port: number, certs: CertBundle): Promise<Connect
                                     previousActiveClient.readyState === READY_STATE.OPEN ||
                                     previousActiveClient.readyState === READY_STATE.CONNECTING
                                 ) {
-                                    previousActiveClient.close()
+                                    previousActiveClient.close(CLOSE_CODE_REPLACED)
                                 }
                             }
                             handlers.onHandshake?.(ws, message)

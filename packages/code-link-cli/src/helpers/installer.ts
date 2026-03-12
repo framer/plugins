@@ -379,7 +379,7 @@ declare module "*.json"
                 private: true,
                 description: "Framer files synced with framer-code-link",
             }
-            await fs.writeFile(packagePath, JSON.stringify(pkg, null, 2))
+            await fs.writeFile(packagePath, JSON.stringify(pkg, null, 4))
             debug("Created package.json")
         }
     }

@@ -1,4 +1,5 @@
 import {
+    CLOSE_CODE_REPLACED,
     type CliToPluginMessage,
     getPortFromHash,
     isCliToPluginMessage,
@@ -30,12 +31,14 @@ export function createSocketConnectionController({
     onMessage,
     onConnected,
     onDisconnected,
+    onReplaced,
 }: {
     project: ProjectInfo
     setSocket: (socket: WebSocket | null) => void
     onMessage: (message: CliToPluginMessage, socket: WebSocket) => Promise<void>
     onConnected: () => void
     onDisconnected: (message: string) => void
+    onReplaced: () => void
 }): SocketConnectionController {
     const RECONNECT_BASE_MS = 500
     const RECONNECT_MAX_MS = 5000
@@ -52,6 +55,7 @@ export function createSocketConnectionController({
     let hasNotifiedDisconnected = false
     let activeSocket: WebSocket | null = null
     let messageQueue: Promise<void> = Promise.resolve()
+    let hasCleanedUp = false
     const protocol = "wss"
     const timers: Record<TimerName, ReturnType<typeof setTimeout> | null> = {
         connectTrigger: null,
@@ -115,6 +119,25 @@ export function createSocketConnectionController({
     const setActiveSocket = (socket: WebSocket | null) => {
         activeSocket = socket
         setSocket(socket)
+    }
+
+    const cleanupResources = () => {
+        if (hasCleanedUp) return
+        hasCleanedUp = true
+
+        document.removeEventListener("visibilitychange", onVisibilityChange)
+        window.removeEventListener("focus", onFocus)
+
+        clearAllTimers()
+
+        if (activeSocket) {
+            clearSocket(activeSocket)
+        }
+    }
+
+    const dispose = () => {
+        setLifecycle("disposed")
+        cleanupResources()
     }
 
     const clearSocket = (socket: WebSocket) => {
@@ -306,7 +329,6 @@ export function createSocketConnectionController({
             if (isStale()) return
 
             setActiveSocket(null)
-            failureCount += 1
 
             log.debug("WebSocket closed", {
                 code: event.code,
@@ -318,6 +340,16 @@ export function createSocketConnectionController({
                 project: projectName,
                 failureCount,
             })
+
+            // Another plugin tab took over this connection — stop reconnecting.
+            if (event.code === CLOSE_CODE_REPLACED) {
+                log.debug("Connection replaced by another plugin tab, disposing")
+                onReplaced()
+                dispose()
+                return
+            }
+
+            failureCount += 1
 
             if (
                 !hasNotifiedDisconnected &&
@@ -391,20 +423,7 @@ export function createSocketConnectionController({
             }
         },
         stop: () => {
-            if (isDisposed()) return
-            setLifecycle("disposed")
-
-            document.removeEventListener("visibilitychange", onVisibilityChange)
-            window.removeEventListener("focus", onFocus)
-
-            clearAllTimers()
-            const socket = activeSocket
-
-            if (socket) {
-                clearSocket(socket)
-            } else {
-                setActiveSocket(null)
-            }
+            dispose()
         },
     }
 }

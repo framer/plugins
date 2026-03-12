@@ -75,7 +75,7 @@ export async function findOrCreateProjectDirectory(options: {
         shortProjectHash: shortId,
         framerProjectName: projectName,
     }
-    await fs.writeFile(path.join(projectDirectory, "package.json"), JSON.stringify(pkg, null, 2))
+    await fs.writeFile(path.join(projectDirectory, "package.json"), JSON.stringify(pkg, null, 4))
 
     return { directory: projectDirectory, created: true, nameCollision }
 }

@@ -4,7 +4,7 @@
  * Wrapper around ws.Server that normalizes handshake and surfaces callbacks.
  */
 
-import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
+import { CLOSE_CODE_REPLACED, type CliToPluginMessage, type PluginToCliMessage } from "@code-link/shared"
 import https from "node:https"
 import { WebSocket, WebSocketServer } from "ws"
 import type { CertBundle } from "./certs.ts"
@@ -89,7 +89,7 @@ export function initConnection(port: number, certs: CertBundle): Promise<Connect
                                     previousActiveClient.readyState === READY_STATE.OPEN ||
                                     previousActiveClient.readyState === READY_STATE.CONNECTING
                                 ) {
-                                    previousActiveClient.close()
+                                    previousActiveClient.close(CLOSE_CODE_REPLACED)
                                 }
                             }
                             handlers.onHandshake?.(ws, message)

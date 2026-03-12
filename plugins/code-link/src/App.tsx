@@ -167,6 +167,9 @@ export function App() {
         const handleConnected = () => {
             dispatch({ type: "set-mode", mode: "syncing" })
         }
+        const handleReplaced = () => {
+            dispatch({ type: "set-mode", mode: "replaced" })
+        }
 
         const handleMessage = createMessageHandler({ dispatch, api, syncTracker })
         const controller = createSocketConnectionController({
@@ -175,6 +178,7 @@ export function App() {
             onMessage: handleMessage,
             onConnected: handleConnected,
             onDisconnected: handleDisconnected,
+            onReplaced: handleReplaced,
         })
         controller.start()
 
@@ -262,6 +266,10 @@ export function App() {
             })
             return <InfoPanel command={command} />
 
+        case "replaced":
+            return framer.closePlugin("Replaced by another Plugin connection", {
+                variant: "info",
+            })
         default:
             void framer.setBackgroundMessage(backgroundStatusFromMode(state.mode))
             void framer.hideUI()

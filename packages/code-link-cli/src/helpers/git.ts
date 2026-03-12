@@ -6,7 +6,7 @@
 import { execSync } from "child_process"
 import fs from "fs"
 import path from "path"
-import { debug } from "../utils/logging.ts"
+import { debug, status } from "../utils/logging.ts"
 
 function isInGitRepository(cwd: string): boolean {
     try {
@@ -49,6 +49,7 @@ export function tryGitInit(projectDir: string): boolean {
             return false
         }
 
+        status("Initializing git repository...")
         execSync("git init", { stdio: "ignore", cwd: projectDir })
         didInit = true
 

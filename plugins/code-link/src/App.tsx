@@ -267,10 +267,9 @@ export function App() {
             return <InfoPanel command={command} />
 
         case "replaced":
-            framer.closePlugin("Replaced by another Plugin connection", {
+            return framer.closePlugin("Replaced by another Plugin connection", {
                 variant: "info",
             })
-        // eslint-disable-next-line no-fallthrough
         default:
             void framer.setBackgroundMessage(backgroundStatusFromMode(state.mode))
             void framer.hideUI()

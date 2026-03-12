@@ -115,15 +115,12 @@ describe("rename confirmation bookkeeping", () => {
             }
         )
 
-        expect(sendMessage).toHaveBeenCalledWith(
-            expect.anything(),
-            {
-                type: "file-rename",
-                oldFileName: "Old.tsx",
-                newFileName: "New.tsx",
-                content: "export const New = () => null",
-            }
-        )
+        expect(sendMessage).toHaveBeenCalledWith(expect.anything(), {
+            type: "file-rename",
+            oldFileName: "Old.tsx",
+            newFileName: "New.tsx",
+            content: "export const New = () => null",
+        })
         expect(hashTracker.forget).not.toHaveBeenCalled()
         expect(hashTracker.remember).not.toHaveBeenCalled()
         expect(fileMetadataCache.recordDelete).not.toHaveBeenCalled()
@@ -178,15 +175,12 @@ describe("rename confirmation bookkeeping", () => {
             }
         )
 
-        expect(sendMessage).toHaveBeenCalledWith(
-            expect.anything(),
-            {
-                type: "file-rename",
-                oldFileName: "Old.tsx",
-                newFileName: "New.tsx",
-                content: "export const New = () => null",
-            }
-        )
+        expect(sendMessage).toHaveBeenCalledWith(expect.anything(), {
+            type: "file-rename",
+            oldFileName: "Old.tsx",
+            newFileName: "New.tsx",
+            content: "export const New = () => null",
+        })
         expect(pendingRenameConfirmations.get("New.tsx")).toEqual({
             oldFileName: "Old.tsx",
             content: "export const New = () => null",
@@ -401,7 +395,11 @@ describe("rename confirmation bookkeeping", () => {
             }
         )
 
-        expect(fileMetadataCache.recordSyncedSnapshot).toHaveBeenCalledWith("New.tsx", hashFileContent("export const New = 2"), 1234)
+        expect(fileMetadataCache.recordSyncedSnapshot).toHaveBeenCalledWith(
+            "New.tsx",
+            hashFileContent("export const New = 2"),
+            1234
+        )
         expect(hashTracker.forget).toHaveBeenCalledWith("Old.tsx")
         expect(fileMetadataCache.recordDelete).toHaveBeenCalledWith("Old.tsx")
         expect(hashTracker.remember).toHaveBeenCalledWith("New.tsx", "export const New = 2")
@@ -409,5 +407,4 @@ describe("rename confirmation bookkeeping", () => {
 
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
-
 })

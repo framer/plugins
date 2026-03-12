@@ -266,6 +266,11 @@ export function App() {
             })
             return <InfoPanel command={command} />
 
+        case "replaced":
+            framer.closePlugin("Replaced by another Plugin connection", {
+                variant: "info",
+            })
+
         default:
             void framer.setBackgroundMessage(backgroundStatusFromMode(state.mode))
             void framer.hideUI()
@@ -287,8 +292,6 @@ function backgroundStatusFromMode(mode: Mode | undefined): string | null {
             return null
         case "idle":
             return "Watching Files…"
-        case "replaced":
-            return "Replaced by another Plugin connection"
         default:
             return "Loading…"
     }

@@ -22,9 +22,19 @@ interface NpmExportValue {
     types?: string
 }
 
+interface NpmDependencyMap {
+    [name: string]: string | undefined
+}
+
 /** npm registry API response for a single package version */
 interface NpmPackageVersion {
     exports?: Record<string, string | NpmExportValue>
+}
+
+interface NpmPackageManifest extends NpmPackageVersion {
+    version?: string
+    dependencies?: NpmDependencyMap
+    peerDependencies?: NpmDependencyMap
 }
 
 /** npm registry API response */
@@ -36,9 +46,17 @@ interface NpmRegistryResponse {
 const FETCH_TIMEOUT_MS = 60_000
 const MAX_FETCH_RETRIES = 3
 const MAX_CONSECUTIVE_FAILURES = 10
-const REACT_TYPES_VERSION = "18.3.12"
-const REACT_DOM_TYPES_VERSION = "18.3.1"
-const CORE_LIBRARIES = ["framer-motion", "framer"]
+const FRAMER_PACKAGE_NAME = "framer"
+const CORE_LIBRARIES = ["framer-motion", "framer", "react", "react-dom"]
+
+/** Packages with pinned type versions — used by ATA's `// types:` comment syntax */
+const DEFAULT_PINNED_TYPE_VERSIONS: Record<string, string> = {
+    "framer-motion": "12.34.3",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "@types/react": "18.2.0",
+    "@types/react-dom": "18.2.0",
+}
 const JSON_EXTENSION_REGEX = /\.json$/i
 
 /**
@@ -49,6 +67,7 @@ const SUPPORTED_PACKAGES = new Set([
     "framer",
     "framer-motion",
     "react",
+    "react-dom",
     "@types/react",
     "eventemitter3",
     "csstype",
@@ -65,6 +84,8 @@ export class Installer {
     private ata: ReturnType<typeof setupTypeAcquisition>
     private processedImports = new Set<string>()
     private initializationPromise: Promise<void> | null = null
+    private pinnedTypeVersions: Record<string, string> = { ...DEFAULT_PINNED_TYPE_VERSIONS }
+    private pinnedTypeVersionsPromise: Promise<void> | null = null
 
     constructor(config: InstallerConfig) {
         this.projectDir = config.projectDir
@@ -178,12 +199,15 @@ export class Installer {
             this.ensureGitignore(),
         ])
 
+        this.pinnedTypeVersionsPromise = this.resolvePinnedTypeVersions()
+
         // Fire-and-forget type installation - don't block initialization
         Promise.resolve()
             .then(async () => {
-                await this.ensureReact18Types()
-
-                const coreImports = CORE_LIBRARIES.map(lib => `import "${lib}";`).join("\n")
+                const coreImports = [
+                    ...(await this.buildPinnedImports(CORE_LIBRARIES)),
+                    ...(await this.buildPinnedImports(["@types/react"])),
+                ].join("\n")
                 await this.ata(coreImports)
             })
             .catch((err: unknown) => {
@@ -209,6 +233,8 @@ export class Installer {
             return
         }
 
+        await this.pinnedTypeVersionsPromise
+
         const hash = imports
             .map(imp => imp.name)
             .sort()
@@ -222,7 +248,7 @@ export class Installer {
         debug(`Processing imports for ${fileName} (${imports.length} packages)`)
 
         // Build filtered content with only supported imports for ATA
-        const filteredContent = this.allowUnsupportedNpm ? content : this.buildFilteredImports(imports)
+        const filteredContent = this.allowUnsupportedNpm ? content : await this.buildFilteredImports(imports)
 
         try {
             await this.ata(filteredContent)
@@ -251,8 +277,55 @@ export class Installer {
     /**
      * Build synthetic import statements for ATA from filtered imports
      */
-    private buildFilteredImports(imports: { name: string }[]): string {
-        return imports.map(imp => `import "${imp.name}";`).join("\n")
+    private async buildFilteredImports(imports: { name: string }[]): Promise<string> {
+        return (await this.buildPinnedImports(imports.map(imp => imp.name))).join("\n")
+    }
+
+    private async buildPinnedImports(imports: string[]): Promise<string[]> {
+        await this.pinnedTypeVersionsPromise
+        return imports.map(name => this.pinImport(name))
+    }
+
+    private async resolvePinnedTypeVersions(): Promise<void> {
+        try {
+            const framerManifest = await fetchNpmPackageManifest(FRAMER_PACKAGE_NAME)
+            const framerVersion = normalizePinnedVersion(framerManifest.version)
+            const framerMotionVersion =
+                getManifestDependencyVersion(framerManifest, "framer-motion") ?? DEFAULT_PINNED_TYPE_VERSIONS["framer-motion"]
+            const reactVersion =
+                normalizePinnedVersion(getManifestDependencyVersion(framerManifest, "react")) ??
+                DEFAULT_PINNED_TYPE_VERSIONS["react"]
+            const reactDomVersion =
+                normalizePinnedVersion(getManifestDependencyVersion(framerManifest, "react-dom")) ?? reactVersion
+
+            if (framerVersion) {
+                this.pinnedTypeVersions.framer = framerVersion
+            }
+
+            this.pinnedTypeVersions["framer-motion"] = framerMotionVersion
+            this.pinnedTypeVersions.react = reactVersion
+            this.pinnedTypeVersions["react-dom"] = reactDomVersion
+            this.pinnedTypeVersions["@types/react"] = reactVersion
+            this.pinnedTypeVersions["@types/react-dom"] = reactDomVersion
+
+            debug(
+                `Resolved ATA pins from ${FRAMER_PACKAGE_NAME}@${framerVersion ?? "latest"} ` +
+                    `(framer-motion ${framerMotionVersion}, react ${reactVersion})`
+            )
+        } catch (err) {
+            debug(`Falling back to default ATA pins for ${FRAMER_PACKAGE_NAME}`, err)
+        }
+    }
+
+    /**
+     * Build an import statement with an optional `// types:` version pin for ATA.
+     * Resolves the base package name for subpath imports (e.g., "framer-motion/dist" -> "framer-motion").
+     */
+    private pinImport(name: string): string {
+        const base = name.startsWith("@") ? name.split("/").slice(0, 2).join("/") : name.split("/")[0]
+        const version = this.pinnedTypeVersions[base]
+        if (version) return `import "${name}"; // types: ${version}`
+        return `import "${name}";`
     }
 
     private async writeTypeFile(receivedPath: string, code: string): Promise<void> {
@@ -285,7 +358,12 @@ export class Installer {
             if (!response.ok) return
 
             const npmData = (await response.json()) as NpmRegistryResponse
-            const version = npmData["dist-tags"]?.latest
+
+            // Use pinned version if available, otherwise fall back to latest
+            const pinnedVersion = this.pinnedTypeVersions[pkgName]
+            const version = pinnedVersion
+                ? this.findMatchingVersion(Object.keys(npmData.versions ?? {}), pinnedVersion)
+                : npmData["dist-tags"]?.latest
             if (!version || !npmData.versions?.[version]) return
 
             const pkg = npmData.versions[version]
@@ -300,6 +378,21 @@ export class Installer {
         } catch {
             // best-effort
         }
+    }
+
+    /**
+     * Find the best matching version from a list of available versions.
+     * Supports exact versions ("18.2.0") — returns exact match if available.
+     */
+    private findMatchingVersion(versions: string[], pinned: string): string | undefined {
+        // Exact match
+        if (versions.includes(pinned)) return pinned
+
+        // For exact pins that don't match, find the closest version with matching major.minor
+        const [major, minor] = pinned.split(".")
+        const prefix = `${major}.${minor}.`
+        const matching = versions.filter(v => v.startsWith(prefix))
+        return matching.length > 0 ? matching[matching.length - 1] : undefined
     }
 
     private async ensureTsConfig(): Promise<void> {
@@ -417,86 +510,27 @@ declare module "*.json"
         debug("Created .gitignore")
     }
 
-    // Code components in Framer use React 18
-    private async ensureReact18Types(): Promise<void> {
-        const reactTypesDir = path.join(this.projectDir, "node_modules/@types/react")
-
-        const reactFiles = ["package.json", "index.d.ts", "global.d.ts", "jsx-runtime.d.ts", "jsx-dev-runtime.d.ts"]
-
-        if (await this.hasTypePackage(reactTypesDir, REACT_TYPES_VERSION, reactFiles)) {
-            debug("📦 React types (from cache)")
-        } else {
-            debug("Downloading React 18 types...")
-            await this.downloadTypePackage("@types/react", REACT_TYPES_VERSION, reactTypesDir, reactFiles)
-        }
-
-        const reactDomDir = path.join(this.projectDir, "node_modules/@types/react-dom")
-
-        const reactDomFiles = ["package.json", "index.d.ts", "client.d.ts"]
-
-        if (await this.hasTypePackage(reactDomDir, REACT_DOM_TYPES_VERSION, reactDomFiles)) {
-            debug("📦 React DOM types (from cache)")
-        } else {
-            await this.downloadTypePackage("@types/react-dom", REACT_DOM_TYPES_VERSION, reactDomDir, reactDomFiles)
-        }
-    }
-
-    private async hasTypePackage(destinationDir: string, version: string, files: string[]): Promise<boolean> {
-        try {
-            const pkgJsonPath = path.join(destinationDir, "package.json")
-            const pkgJson = await fs.readFile(pkgJsonPath, "utf-8")
-            const parsed = JSON.parse(pkgJson) as { version?: string }
-
-            if (parsed.version !== version) {
-                return false
-            }
-
-            for (const file of files) {
-                if (file === "package.json") continue
-                await fs.access(path.join(destinationDir, file))
-            }
-
-            return true
-        } catch {
-            return false
-        }
-    }
-
-    private async downloadTypePackage(
-        pkgName: string,
-        version: string,
-        destinationDir: string,
-        files: string[]
-    ): Promise<void> {
-        const baseUrl = `https://unpkg.com/${pkgName}@${version}`
-        await fs.mkdir(destinationDir, { recursive: true })
-
-        await Promise.all(
-            files.map(async file => {
-                const destination = path.join(destinationDir, file)
-
-                // Check if file already exists
-                try {
-                    await fs.access(destination)
-                    return // Skip if exists
-                } catch {
-                    // File doesn't exist, download it
-                }
-
-                try {
-                    const response = await fetch(`${baseUrl}/${file}`)
-                    if (!response.ok) return
-                    const content = await response.text()
-                    await fs.writeFile(destination, content)
-                } catch {
-                    // ignore per-file failures
-                }
-            })
-        )
-    }
 }
 
-// Helpers
+function getManifestDependencyVersion(manifest: NpmPackageManifest, packageName: string): string | undefined {
+    return manifest.peerDependencies?.[packageName] ?? manifest.dependencies?.[packageName]
+}
+
+function normalizePinnedVersion(version: string | undefined): string | undefined {
+    if (!version) return undefined
+    const match = /\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?/.exec(version)
+    return match?.[0]
+}
+
+async function fetchNpmPackageManifest(packageName: string): Promise<NpmPackageManifest> {
+    const response = await fetchWithRetry(`https://registry.npmjs.org/${packageName}/latest`)
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch ${packageName} manifest: ${response.status}`)
+    }
+
+    return (await response.json()) as NpmPackageManifest
+}
 
 /**
  * Transform package.json exports to include .d.ts type paths

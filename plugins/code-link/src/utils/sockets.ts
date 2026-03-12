@@ -129,12 +129,9 @@ export function createSocketConnectionController({
         window.removeEventListener("focus", onFocus)
 
         clearAllTimers()
-        const socket = activeSocket
 
-        if (socket) {
-            clearSocket(socket)
-        } else {
-            setActiveSocket(null)
+        if (activeSocket) {
+            clearSocket(activeSocket)
         }
     }
 

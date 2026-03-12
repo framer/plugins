@@ -47,7 +47,7 @@ const FETCH_TIMEOUT_MS = 60_000
 const MAX_FETCH_RETRIES = 3
 const MAX_CONSECUTIVE_FAILURES = 10
 const FRAMER_PACKAGE_NAME = "framer"
-const CORE_LIBRARIES = ["framer-motion", "framer"]
+const CORE_LIBRARIES = ["framer-motion", "framer", "react", "react-dom"]
 
 /** Packages with pinned type versions — used by ATA's `// types:` comment syntax */
 const DEFAULT_PINNED_TYPE_VERSIONS: Record<string, string> = {
@@ -204,10 +204,7 @@ export class Installer {
         // Fire-and-forget type installation - don't block initialization
         Promise.resolve()
             .then(async () => {
-                const coreImports = [
-                    ...(await this.buildPinnedImports(CORE_LIBRARIES)),
-                    ...(await this.buildPinnedImports(["@types/react"])),
-                ].join("\n")
+                const coreImports = (await this.buildPinnedImports(CORE_LIBRARIES)).join("\n")
                 await this.ata(coreImports)
             })
             .catch((err: unknown) => {

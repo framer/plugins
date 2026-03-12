@@ -65,7 +65,6 @@ describe("Installer", () => {
             expect(coreCall).toContain(`import "framer-motion"; // types: 12.34.3`)
             expect(coreCall).toContain(`import "react"; // types: 18.2.0`)
             expect(coreCall).toContain(`import "react-dom"; // types: 18.2.0`)
-            expect(coreCall).toContain(`import "@types/react"; // types: 18.2.0`)
         })
 
         it("falls back to default pins when framer metadata fetch fails", async () => {
@@ -183,6 +182,21 @@ describe("Installer", () => {
             })
 
             expect(mockAta).toHaveBeenCalledTimes(1)
+        })
+
+        it("pins React runtime imports when components reference them", async () => {
+            const installer = new Installer({ projectDir: tmpDir })
+            await initAndClearAta(installer)
+
+            installer.process("component.tsx", `import React from "react"\nimport { createRoot } from "react-dom/client"`)
+
+            await vi.waitFor(() => {
+                expect(mockAta).toHaveBeenCalled()
+            })
+
+            const processedCall = mockAta.mock.calls[0][0]
+            expect(processedCall).toContain(`import "react"; // types: 18.2.0`)
+            expect(processedCall).toContain(`import "react-dom"; // types: 18.2.0`)
         })
     })
 })

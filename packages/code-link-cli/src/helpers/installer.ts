@@ -47,7 +47,7 @@ const FETCH_TIMEOUT_MS = 60_000
 const MAX_FETCH_RETRIES = 3
 const MAX_CONSECUTIVE_FAILURES = 10
 const FRAMER_PACKAGE_NAME = "framer"
-const CORE_LIBRARIES = ["framer-motion", "framer", "react", "react-dom"]
+const CORE_LIBRARIES = ["framer-motion", "framer"]
 
 /** Packages with pinned type versions — used by ATA's `// types:` comment syntax */
 const DEFAULT_PINNED_TYPE_VERSIONS: Record<string, string> = {

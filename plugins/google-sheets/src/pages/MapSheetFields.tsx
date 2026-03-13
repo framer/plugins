@@ -309,6 +309,7 @@ export function MapSheetFieldsPage({
                     <button
                         disabled={!isAllowedToManage}
                         title={isAllowedToManage ? undefined : "Insufficient permissions"}
+                        className="whitespace-nowrap inline-block"
                     >
                         {isPending ? <div className="framer-spinner" /> : `Import from ${sheetTitle}`}
                     </button>

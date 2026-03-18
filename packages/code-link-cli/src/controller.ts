@@ -1095,8 +1095,6 @@ async function executeEffect(
  * Starts the sync controller with the given configuration
  */
 export async function start(config: Config): Promise<void> {
-    status("Waiting for Plugin connection...")
-
     const hashTracker = createHashTracker()
     const fileMetadataCache = new FileMetadataCache()
     const pendingRenameConfirmations = new Map<string, PendingRenameConfirmation>()
@@ -1162,6 +1160,8 @@ export async function start(config: Config): Promise<void> {
         info("")
         throw new Error("TLS certificate generation failed")
     }
+
+    status("Waiting for Plugin connection...")
 
     // WebSocket Connection (always WSS)
     const connection = await initConnection(config.port, certs)

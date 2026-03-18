@@ -91,6 +91,7 @@ export async function getOrCreateCerts(): Promise<CertBundle | null> {
 
         status("Generating local certificates to connect securely. You may be asked for your password.")
         await generateCerts(mkcertPath)
+        status("Successfully generated certificates.")
 
         const key = await fs.readFile(SERVER_KEY_PATH, "utf-8")
         const cert = await fs.readFile(SERVER_CERT_PATH, "utf-8")

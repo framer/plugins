@@ -59,7 +59,12 @@ function reducer(state: State, action: Action): State {
         case "set-mode":
             // Don't dismiss conflict resolution while conflicts are pending,
             // but allow "replaced" (another tab took over) and "idle" (controller resolved all conflicts).
-            if (state.mode === "conflict_resolution" && state.conflicts.length > 0 && action.mode !== "replaced" && action.mode !== "idle") {
+            if (
+                state.mode === "conflict_resolution" &&
+                state.conflicts.length > 0 &&
+                action.mode !== "replaced" &&
+                action.mode !== "idle"
+            ) {
                 return state
             }
             return {

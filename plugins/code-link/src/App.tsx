@@ -57,6 +57,10 @@ function reducer(state: State, action: Action): State {
                 mode: action.granted ? (state.mode === "info" ? "loading" : state.mode) : "info",
             }
         case "set-mode":
+            // Don't dismiss conflict resolution while conflicts are pending
+            if (state.mode === "conflict_resolution" && state.conflicts.length > 0) {
+                return state
+            }
             return {
                 ...state,
                 mode: action.mode,
@@ -67,6 +71,10 @@ function reducer(state: State, action: Action): State {
                 mode: "info",
             }
         case "pending-deletes":
+            // Queue deletes but don't switch mode during conflict resolution
+            if (state.mode === "conflict_resolution" && state.conflicts.length > 0) {
+                return { ...state, pendingDeletes: [...state.pendingDeletes, ...action.files] }
+            }
             return {
                 ...state,
                 pendingDeletes: [...state.pendingDeletes, ...action.files],

@@ -623,4 +623,186 @@ describe("Code Link", () => {
             expect(result.effects.some(e => e.type === "DETECT_CONFLICTS")).toBe(true)
         })
     })
+
+    // SYNC DURING CONFLICT RESOLUTION
+    // Non-conflicted files should continue syncing while the conflict prompt is open.
+    // Conflicted files should have their pendingConflicts data updated live.
+
+    describe("Sync During Conflict Resolution", () => {
+        const baseConflict = {
+            fileName: "Conflicted.tsx",
+            localContent: "local version",
+            remoteContent: "framer version",
+            localModifiedAt: Date.now(),
+            remoteModifiedAt: Date.now(),
+        }
+
+        it("syncs non-conflicted local changes during conflict resolution", () => {
+            const state = conflictResolutionState([baseConflict])
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: { kind: "change", relativePath: "Other.tsx", content: "updated content" },
+            })
+
+            expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(true)
+            const effect = result.effects.find(e => e.type === "SEND_LOCAL_CHANGE")
+            expect(effect).toMatchObject({ fileName: "Other.tsx" })
+        })
+
+        it("updates pendingConflicts.localContent on conflicted local change", () => {
+            const state = conflictResolutionState([baseConflict])
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: { kind: "change", relativePath: "Conflicted.tsx", content: "newer local version" },
+            })
+
+            expect(result.state.mode).toBe("conflict_resolution")
+            expect(result.effects.some(e => e.type === "UPDATE_CONFLICT_DATA")).toBe(true)
+            expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(false)
+
+            const updatedConflict = (result.state as { pendingConflicts: typeof baseConflict[] }).pendingConflicts[0]
+            expect(updatedConflict.localContent).toBe("newer local version")
+        })
+
+        it("sets localContent to null on conflicted local delete", () => {
+            const state = conflictResolutionState([baseConflict])
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: { kind: "delete", relativePath: "Conflicted.tsx" },
+            })
+
+            expect(result.effects.some(e => e.type === "UPDATE_CONFLICT_DATA")).toBe(true)
+            expect(result.effects.some(e => e.type === "LOCAL_INITIATED_FILE_DELETE")).toBe(false)
+
+            const updatedConflict = (result.state as { pendingConflicts: typeof baseConflict[] }).pendingConflicts[0]
+            expect(updatedConflict.localContent).toBeNull()
+        })
+
+        it("ignores rename of conflicted file", () => {
+            const state = conflictResolutionState([baseConflict])
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: {
+                    kind: "rename",
+                    relativePath: "Renamed.tsx",
+                    oldRelativePath: "Conflicted.tsx",
+                    content: "local version",
+                },
+            })
+
+            expect(result.effects.some(e => e.type === "SEND_FILE_RENAME")).toBe(false)
+            expect(result.effects.some(e => e.type === "UPDATE_CONFLICT_DATA")).toBe(false)
+            expect(result.effects.some(e => e.type === "LOG" && e.level === "debug")).toBe(true)
+        })
+
+        it("applies non-conflicted remote changes during conflict resolution", () => {
+            const state = conflictResolutionState([baseConflict])
+            const result = transition(state, {
+                type: "REMOTE_FILE_CHANGE",
+                file: { name: "Other.tsx", content: "remote update", modifiedAt: Date.now() },
+            })
+
+            expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
+        })
+
+        it("updates pendingConflicts.remoteContent on conflicted remote change", () => {
+            const state = conflictResolutionState([baseConflict])
+            const result = transition(state, {
+                type: "REMOTE_FILE_CHANGE",
+                file: { name: "Conflicted.tsx", content: "newer framer version", modifiedAt: Date.now() + 5000 },
+            })
+
+            expect(result.state.mode).toBe("conflict_resolution")
+            expect(result.effects.some(e => e.type === "UPDATE_CONFLICT_DATA")).toBe(true)
+            expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(false)
+
+            const updatedConflict = (result.state as { pendingConflicts: typeof baseConflict[] }).pendingConflicts[0]
+            expect(updatedConflict.remoteContent).toBe("newer framer version")
+        })
+
+        it("sets remoteContent to null on conflicted remote delete without deleting from disk", () => {
+            const state = conflictResolutionState([baseConflict])
+            const result = transition(state, {
+                type: "REMOTE_FILE_DELETE",
+                fileName: "Conflicted.tsx",
+            })
+
+            expect(result.effects.some(e => e.type === "UPDATE_CONFLICT_DATA")).toBe(true)
+            expect(result.effects.some(e => e.type === "DELETE_LOCAL_FILES")).toBe(false)
+
+            const updatedConflict = (result.state as { pendingConflicts: typeof baseConflict[] }).pendingConflicts[0]
+            expect(updatedConflict.remoteContent).toBeNull()
+        })
+
+        it("auto-resolves conflict when local content converges to match remote", () => {
+            const state = conflictResolutionState([
+                { fileName: "A.tsx", localContent: "old local", remoteContent: "framer version" },
+            ])
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: { kind: "change", relativePath: "A.tsx", content: "framer version" },
+            })
+
+            // Content matches — conflict should be auto-resolved, transition to watching
+            expect(result.state.mode).toBe("watching")
+            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
+            expect(result.effects.some(e => e.type === "SYNC_COMPLETE")).toBe(true)
+            expect(result.effects.some(e => e.type === "UPDATE_CONFLICT_DATA")).toBe(false)
+        })
+
+        it("auto-resolves conflict when remote content converges to match local", () => {
+            const state = conflictResolutionState([
+                { fileName: "A.tsx", localContent: "local version", remoteContent: "old framer" },
+            ])
+            const result = transition(state, {
+                type: "REMOTE_FILE_CHANGE",
+                file: { name: "A.tsx", content: "local version", modifiedAt: Date.now() },
+            })
+
+            expect(result.state.mode).toBe("watching")
+            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
+        })
+
+        it("auto-resolves only the converged conflict, keeps the rest", () => {
+            const state = conflictResolutionState([
+                { fileName: "A.tsx", localContent: "same", remoteContent: "different" },
+                { fileName: "B.tsx", localContent: "local B", remoteContent: "framer B" },
+            ])
+            const result = transition(state, {
+                type: "REMOTE_FILE_CHANGE",
+                file: { name: "A.tsx", content: "same", modifiedAt: Date.now() },
+            })
+
+            // A.tsx resolved, B.tsx still pending
+            expect(result.state.mode).toBe("conflict_resolution")
+            expect(result.effects.some(e => e.type === "UPDATE_CONFLICT_DATA")).toBe(true)
+            const updateEffect = result.effects.find(e => e.type === "UPDATE_CONFLICT_DATA")
+            expect((updateEffect as { conflicts: { fileName: string }[] }).conflicts).toHaveLength(1)
+            expect((updateEffect as { conflicts: { fileName: string }[] }).conflicts[0].fileName).toBe("B.tsx")
+        })
+
+        it("handles sequential local and remote updates to the same conflicted file", () => {
+            const state = conflictResolutionState([baseConflict])
+
+            // First: local change
+            const afterLocal = transition(state, {
+                type: "WATCHER_EVENT",
+                event: { kind: "change", relativePath: "Conflicted.tsx", content: "local edit 2" },
+            })
+
+            const midConflict = (afterLocal.state as { pendingConflicts: typeof baseConflict[] }).pendingConflicts[0]
+            expect(midConflict.localContent).toBe("local edit 2")
+            expect(midConflict.remoteContent).toBe("framer version") // unchanged
+
+            // Second: remote change on the updated state
+            const afterRemote = transition(afterLocal.state, {
+                type: "REMOTE_FILE_CHANGE",
+                file: { name: "Conflicted.tsx", content: "framer edit 2", modifiedAt: Date.now() + 5000 },
+            })
+
+            const finalConflict = (afterRemote.state as { pendingConflicts: typeof baseConflict[] }).pendingConflicts[0]
+            expect(finalConflict.localContent).toBe("local edit 2")
+            expect(finalConflict.remoteContent).toBe("framer edit 2")
+        })
+    })
 })

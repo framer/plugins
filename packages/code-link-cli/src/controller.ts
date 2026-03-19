@@ -171,6 +171,7 @@ type Effect =
           newFileName: string
           content: string
       }
+    | { type: "UPDATE_CONFLICT_DATA"; conflicts: Conflict[] }
     | { type: "PERSIST_STATE" }
     | {
           type: "SYNC_COMPLETE"
@@ -192,6 +193,40 @@ interface PendingRenameConfirmation {
 /** Log helper */
 function log(level: "info" | "debug" | "warn" | "success", message: string): Effect {
     return { type: "LOG", level, message }
+}
+
+/**
+ * After updating a conflict's content, filter out any conflicts where both sides now match.
+ * If no conflicts remain, transition to watching mode. Otherwise emit updated conflict data.
+ */
+function applyConflictUpdate(
+    state: ConflictResolutionState,
+    updatedConflicts: Conflict[],
+    effects: Effect[]
+): { state: SyncState; effects: Effect[] } {
+    const remaining = updatedConflicts.filter(c => c.localContent !== c.remoteContent)
+
+    if (remaining.length === 0) {
+        // All conflicts resolved — transition to watching
+        effects.push(
+            log("debug", "All conflicts auto-resolved (content converged)"),
+            { type: "PERSIST_STATE" },
+            {
+                type: "SYNC_COMPLETE",
+                totalCount: updatedConflicts.length,
+                updatedCount: updatedConflicts.length,
+                unchangedCount: 0,
+            }
+        )
+        const { pendingConflicts: _discarded, ...rest } = state
+        return {
+            state: { ...rest, mode: "watching", pendingRemoteChanges: [] },
+            effects,
+        }
+    }
+
+    effects.push({ type: "UPDATE_CONFLICT_DATA", conflicts: remaining })
+    return { state: { ...state, pendingConflicts: remaining }, effects }
 }
 
 /**
@@ -389,9 +424,25 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             const validation = validateIncomingChange(event.fileMeta, state.mode)
 
             if (validation.action === "queue") {
-                // Changes during initial sync are ignored - the snapshot handles reconciliation
-                effects.push(log("debug", `Ignoring file change during sync: ${event.file.name}`))
-                return { state, effects }
+                if (state.mode === "conflict_resolution") {
+                    const conflictIndex = state.pendingConflicts.findIndex(c => c.fileName === event.file.name)
+                    if (conflictIndex >= 0) {
+                        // Update conflict with latest remote content
+                        const updatedConflicts = [...state.pendingConflicts]
+                        updatedConflicts[conflictIndex] = {
+                            ...updatedConflicts[conflictIndex],
+                            remoteContent: event.file.content,
+                            remoteModifiedAt: event.file.modifiedAt,
+                        }
+                        effects.push(log("debug", `Updated conflict with latest remote content: ${event.file.name}`))
+                        return applyConflictUpdate(state, updatedConflicts, effects)
+                    }
+                    // Non-conflicted file during conflict resolution: fall through to apply
+                } else {
+                    // Changes during initial sync are ignored - the snapshot handles reconciliation
+                    effects.push(log("debug", `Ignoring file change during sync: ${event.file.name}`))
+                    return { state, effects }
+                }
             }
 
             if (validation.action === "reject") {
@@ -416,7 +467,18 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
                 return { state, effects }
             }
 
-            // Remote deletes should always be applied immediately
+            // During conflict resolution, update conflict data instead of deleting
+            if (state.mode === "conflict_resolution") {
+                const conflictIndex = state.pendingConflicts.findIndex(c => c.fileName === event.fileName)
+                if (conflictIndex >= 0) {
+                    const updatedConflicts = [...state.pendingConflicts]
+                    updatedConflicts[conflictIndex] = { ...updatedConflicts[conflictIndex], remoteContent: null }
+                    effects.push(log("debug", `Updated conflict with remote delete: ${event.fileName}`))
+                    return applyConflictUpdate(state, updatedConflicts, effects)
+                }
+            }
+
+            // Remote deletes applied immediately
             // (the file is already gone from Framer)
             effects.push(
                 log("debug", `Remote delete applied: ${event.fileName}`),
@@ -539,10 +601,56 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             // Local file system change detected
             const { kind, relativePath, content } = event.event
 
-            // Only process changes in watching mode
+            // Only process changes in watching or conflict_resolution mode
             if (state.mode !== "watching") {
-                effects.push(log("debug", `Ignoring watcher event in ${state.mode} mode: ${kind} ${relativePath}`))
-                return { state, effects }
+                if (state.mode === "conflict_resolution") {
+                    const conflictIndex = state.pendingConflicts.findIndex(c => c.fileName === relativePath)
+
+                    if (conflictIndex >= 0) {
+                        if ((kind === "add" || kind === "change") && content !== undefined) {
+                            // Update conflict with latest local content
+                            const updatedConflicts = [...state.pendingConflicts]
+                            updatedConflicts[conflictIndex] = { ...updatedConflicts[conflictIndex], localContent: content }
+                            effects.push(log("debug", `Updated conflict with latest local content: ${relativePath}`))
+                            return applyConflictUpdate(state, updatedConflicts, effects)
+                        }
+                        if (kind === "delete") {
+                            // Local deleted a conflicted file
+                            const updatedConflicts = [...state.pendingConflicts]
+                            updatedConflicts[conflictIndex] = { ...updatedConflicts[conflictIndex], localContent: null }
+                            effects.push(log("debug", `Updated conflict with local delete: ${relativePath}`))
+                            return applyConflictUpdate(state, updatedConflicts, effects)
+                        }
+                        if (kind === "rename") {
+                            // Renaming a conflicted file during resolution is ambiguous; ignore
+                            effects.push(log("debug", `Ignoring rename of conflicted file: ${relativePath}`))
+                            return { state, effects }
+                        }
+                    }
+
+                    // Check if rename's old path is a conflicted file
+                    if (kind === "rename" && event.event.oldRelativePath) {
+                        const oldConflictIndex = state.pendingConflicts.findIndex(
+                            c => c.fileName === event.event.oldRelativePath
+                        )
+                        if (oldConflictIndex >= 0) {
+                            effects.push(log("debug", `Ignoring rename of conflicted file: ${event.event.oldRelativePath} → ${relativePath}`))
+                            return { state, effects }
+                        }
+                    }
+
+                    // Non-conflicted file: allow add/change to sync, defer delete/rename
+                    // (delete triggers a confirmation prompt that would conflict with the conflict UI,
+                    // and rename sends a message that would dismiss the conflict panel)
+                    if (kind === "delete" || kind === "rename") {
+                        effects.push(log("debug", `Deferring ${kind} during conflict resolution: ${relativePath}`))
+                        return { state, effects }
+                    }
+                    // add/change: fall through to normal processing
+                } else {
+                    effects.push(log("debug", `Ignoring watcher event in ${state.mode} mode: ${kind} ${relativePath}`))
+                    return { state, effects }
+                }
             }
 
             switch (kind) {
@@ -848,6 +956,16 @@ async function executeEffect(
         case "REQUEST_CONFLICT_DECISIONS": {
             await userActions.requestConflictDecisions(syncState.socket, effect.conflicts)
 
+            return []
+        }
+
+        case "UPDATE_CONFLICT_DATA": {
+            if (syncState.socket) {
+                await sendMessage(syncState.socket, {
+                    type: "conflicts-detected",
+                    conflicts: effect.conflicts,
+                })
+            }
             return []
         }
 

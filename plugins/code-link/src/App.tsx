@@ -57,13 +57,16 @@ function reducer(state: State, action: Action): State {
                 mode: action.granted ? (state.mode === "info" ? "loading" : state.mode) : "info",
             }
         case "set-mode":
-            // Don't dismiss conflict resolution while conflicts are pending
-            if (state.mode === "conflict_resolution" && state.conflicts.length > 0) {
+            // Don't dismiss conflict resolution while conflicts are pending,
+            // but allow "replaced" (another tab took over) and "idle" (controller resolved all conflicts).
+            if (state.mode === "conflict_resolution" && state.conflicts.length > 0 && action.mode !== "replaced" && action.mode !== "idle") {
                 return state
             }
             return {
                 ...state,
                 mode: action.mode,
+                // Clear stale conflicts when leaving conflict resolution
+                ...(state.mode === "conflict_resolution" && action.mode === "idle" ? { conflicts: [] } : {}),
             }
         case "socket-disconnected":
             return {

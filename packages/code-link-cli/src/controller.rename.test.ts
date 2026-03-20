@@ -18,6 +18,7 @@ vi.mock("./helpers/connection.ts", () => ({
 }))
 
 const mockSocket = {} as WebSocket
+const shutdown = (): Promise<void> => Promise.resolve()
 
 describe("rename confirmation bookkeeping", () => {
     beforeEach(() => {
@@ -54,6 +55,7 @@ describe("rename confirmation bookkeeping", () => {
                     recordDelete: vi.fn(),
                 } as never,
                 pendingRenameConfirmations,
+                shutdown,
                 userActions: {} as never,
                 syncState: {
                     mode: "watching",
@@ -106,6 +108,7 @@ describe("rename confirmation bookkeeping", () => {
                 installer: null,
                 fileMetadataCache: fileMetadataCache as never,
                 pendingRenameConfirmations,
+                shutdown,
                 userActions: {} as never,
                 syncState: {
                     mode: "watching",
@@ -166,6 +169,7 @@ describe("rename confirmation bookkeeping", () => {
                     recordDelete: vi.fn(),
                 } as never,
                 pendingRenameConfirmations,
+                shutdown,
                 userActions: {} as never,
                 syncState: {
                     mode: "watching",
@@ -230,6 +234,7 @@ describe("rename confirmation bookkeeping", () => {
                 installer: null,
                 fileMetadataCache: fileMetadataCache as never,
                 pendingRenameConfirmations,
+                shutdown,
                 userActions: {} as never,
                 syncState: {
                     mode: "watching",
@@ -294,6 +299,7 @@ describe("rename confirmation bookkeeping", () => {
                 installer: null,
                 fileMetadataCache: fileMetadataCache as never,
                 pendingRenameConfirmations,
+                shutdown,
                 userActions: {} as never,
                 syncState: {
                     mode: "watching",
@@ -322,6 +328,7 @@ describe("rename confirmation bookkeeping", () => {
                 installer: null,
                 fileMetadataCache: fileMetadataCache as never,
                 pendingRenameConfirmations,
+                shutdown,
                 userActions: {} as never,
                 syncState: {
                     mode: "watching",
@@ -386,6 +393,7 @@ describe("rename confirmation bookkeeping", () => {
                 installer: null,
                 fileMetadataCache: fileMetadataCache as never,
                 pendingRenameConfirmations,
+                shutdown,
                 userActions: {} as never,
                 syncState: {
                     mode: "watching",

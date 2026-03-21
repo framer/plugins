@@ -192,12 +192,16 @@ function inferAttachmentsField(fieldSchema: FieldSchema<"multipleAttachments">):
 function inferDateField(
     fieldSchema: FieldSchema<"date" | "dateTime" | "createdTime" | "lastModifiedTime">
 ): PossibleField {
+    const displayTime =
+        fieldSchema.type === "dateTime" || fieldSchema.type === "createdTime" || fieldSchema.type === "lastModifiedTime"
+
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
         type: "date",
+        displayTime,
         allowedTypes: ["date"],
         ...createFieldMetadata(fieldSchema),
     }

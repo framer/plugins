@@ -189,19 +189,27 @@ function inferAttachmentsField(fieldSchema: FieldSchema<"multipleAttachments">):
     }
 }
 
-function inferDateField(
-    fieldSchema: FieldSchema<"date" | "dateTime" | "createdTime" | "lastModifiedTime">
-): PossibleField {
-    const displayTime =
-        fieldSchema.type === "dateTime" || fieldSchema.type === "createdTime" || fieldSchema.type === "lastModifiedTime"
-
+function inferDateField(fieldSchema: FieldSchema<"date">): PossibleField {
     return {
         id: fieldSchema.id,
         name: fieldSchema.name,
         userEditable: false,
         airtableType: fieldSchema.type,
         type: "date",
-        displayTime,
+        displayTime: false,
+        allowedTypes: ["date"],
+        ...createFieldMetadata(fieldSchema),
+    }
+}
+
+function inferDateTimeField(fieldSchema: FieldSchema<"dateTime" | "createdTime" | "lastModifiedTime">): PossibleField {
+    return {
+        id: fieldSchema.id,
+        name: fieldSchema.name,
+        userEditable: false,
+        airtableType: fieldSchema.type,
+        type: "date",
+        displayTime: true,
         allowedTypes: ["date"],
         ...createFieldMetadata(fieldSchema),
     }
@@ -377,10 +385,12 @@ async function inferFieldByType(
             return inferAttachmentsField(fieldSchema)
 
         case "date":
+            return inferDateField(fieldSchema)
+
         case "dateTime":
         case "createdTime":
         case "lastModifiedTime":
-            return inferDateField(fieldSchema)
+            return inferDateTimeField(fieldSchema)
 
         case "multipleRecordLinks":
             return await inferRecordLinksField(fieldSchema, collection, tableIdBeingLinkedTo)

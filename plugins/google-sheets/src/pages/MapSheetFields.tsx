@@ -5,7 +5,6 @@ import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { IconChevron } from "../components/Icons"
 import type {
     CellValue,
-    CollectionFieldType,
     HeaderRow,
     PluginContext,
     Row,
@@ -55,7 +54,7 @@ const getLastSyncedTime = (context: PluginContext, slugColumn: string): string |
     return context.lastSyncedTime
 }
 
-const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
+const inferFieldType = (cellValue: CellValue): VirtualFieldType => {
     if (typeof cellValue === "boolean") return "boolean"
     if (typeof cellValue === "number") return "number"
 
@@ -70,6 +69,14 @@ const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
         // Check if the string is an ISO date
         // Accepts formats like 2023-01-01, 2023-01-01T12:34:56Z, 2023-01-01T12:34:56.789+02:00, etc.
         if (/^\d{4}-\d{2}-\d{2}(?:[Tt ][\d:.+-Zz]*)?$/.test(cellValueTrimmed) && !isNaN(Date.parse(cellValueTrimmed))) {
+            // Date-only values (YYYY-MM-DD) map to date.
+            if (/^\d{4}-\d{2}-\d{2}$/.test(cellValueTrimmed)) {
+                return "date"
+            }
+            // ISO values with an explicit time component map to dateTime.
+            if (/[Tt ]\d{2}:\d{2}/.test(cellValueTrimmed)) {
+                return "dateTime"
+            }
             return "date"
         }
 

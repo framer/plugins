@@ -639,14 +639,10 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
                         }
                     }
 
-                    // Non-conflicted file: allow add/change to sync, defer delete/rename
-                    // (delete triggers a confirmation prompt that would conflict with the conflict UI,
-                    // and rename sends a message that would dismiss the conflict panel)
-                    if (kind === "delete" || kind === "rename") {
-                        effects.push(log("debug", `Deferring ${kind} during conflict resolution: ${relativePath}`))
-                        return { state, effects }
-                    }
-                    // add/change: fall through to normal processing
+                    // Non-conflicted file: fall through to normal processing
+                    // - delete → LOCAL_INITIATED_FILE_DELETE (pending-deletes guard queues, clear-conflicts surfaces)
+                    // - rename → SEND_FILE_RENAME (set-mode guard prevents conflict UI dismissal)
+                    // - add/change → SEND_LOCAL_CHANGE
                 } else {
                     effects.push(log("debug", `Ignoring watcher event in ${state.mode} mode: ${kind} ${relativePath}`))
                     return { state, effects }

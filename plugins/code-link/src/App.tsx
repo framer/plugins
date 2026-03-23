@@ -90,6 +90,9 @@ function reducer(state: State, action: Action): State {
                 mode: "conflict_resolution",
             }
         case "clear-conflicts":
+            if (state.pendingDeletes.length > 0) {
+                return { ...state, conflicts: [], mode: "delete_confirmation" }
+            }
             return { ...state, conflicts: [], mode: "idle" }
     }
 }

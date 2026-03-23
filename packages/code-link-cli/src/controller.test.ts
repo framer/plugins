@@ -695,6 +695,35 @@ describe("Code Link", () => {
             expect(result.effects.some(e => e.type === "LOG" && e.level === "debug")).toBe(true)
         })
 
+        it("emits LOCAL_INITIATED_FILE_DELETE for non-conflicted local delete during conflict resolution", () => {
+            const state = conflictResolutionState([baseConflict])
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: { kind: "delete", relativePath: "Other.tsx" },
+            })
+
+            expect(result.effects.some(e => e.type === "LOCAL_INITIATED_FILE_DELETE")).toBe(true)
+            const effect = result.effects.find(e => e.type === "LOCAL_INITIATED_FILE_DELETE")
+            expect(effect).toMatchObject({ fileNames: ["Other.tsx"] })
+        })
+
+        it("emits SEND_FILE_RENAME for non-conflicted local rename during conflict resolution", () => {
+            const state = conflictResolutionState([baseConflict])
+            const result = transition(state, {
+                type: "WATCHER_EVENT",
+                event: {
+                    kind: "rename",
+                    relativePath: "Renamed.tsx",
+                    oldRelativePath: "Other.tsx",
+                    content: "file content",
+                },
+            })
+
+            expect(result.effects.some(e => e.type === "SEND_FILE_RENAME")).toBe(true)
+            const effect = result.effects.find(e => e.type === "SEND_FILE_RENAME")
+            expect(effect).toMatchObject({ oldFileName: "Other.tsx", newFileName: "Renamed.tsx" })
+        })
+
         it("applies non-conflicted remote changes during conflict resolution", () => {
             const state = conflictResolutionState([baseConflict])
             const result = transition(state, {

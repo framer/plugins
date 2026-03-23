@@ -244,6 +244,11 @@ select:not(:disabled) {
     cursor: pointer;
 }
 
+.import-button {
+    white-space: nowrap;
+    display: inline-block;
+}
+
 /* Login */
 
 .login {

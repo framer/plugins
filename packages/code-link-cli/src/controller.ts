@@ -962,9 +962,27 @@ async function executeEffect(
                 return []
             }
 
+            const { oldFileName, content } = effect
+
+            async function undoLocalRename() {
+                if (!config.filesDir) return
+                const oldPath = path.join(config.filesDir, oldFileName)
+                const newPath = path.join(config.filesDir, normalizedNewFileName)
+                try {
+                    // Echo prevention: mark the undo rename so the watcher ignores it
+                    hashTracker.remember(oldFileName, content)
+                    hashTracker.markDelete(normalizedNewFileName)
+                    await fs.rename(newPath, oldPath)
+                    debug(`Undid local rename: ${normalizedNewFileName} -> ${oldFileName}`)
+                } catch (undoErr) {
+                    warn(`Failed to undo local rename ${normalizedNewFileName} -> ${oldFileName}:`, undoErr)
+                }
+            }
+
             try {
                 if (!syncState.socket) {
                     warn(`No socket available to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
+                    await undoLocalRename()
                     return []
                 }
 
@@ -976,6 +994,7 @@ async function executeEffect(
                 })
                 if (!sent) {
                     warn(`Failed to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
+                    await undoLocalRename()
                     return []
                 }
 
@@ -985,6 +1004,7 @@ async function executeEffect(
                 })
             } catch (err) {
                 warn(`Failed to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
+                await undoLocalRename()
             }
 
             return []

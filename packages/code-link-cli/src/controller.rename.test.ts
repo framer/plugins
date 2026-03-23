@@ -351,6 +351,160 @@ describe("rename confirmation bookkeeping", () => {
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
 
+    it("undoes local rename on disk when sendMessage returns false", async () => {
+        sendMessage.mockResolvedValue(false)
+
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-undo-"))
+        const filesDir = path.join(tmpDir, "files")
+        await fs.mkdir(filesDir, { recursive: true })
+        await fs.writeFile(path.join(filesDir, "New.tsx"), "export const New = () => null", "utf-8")
+
+        const hashTracker = createHashTracker()
+        const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>()
+
+        await executeEffect(
+            {
+                type: "SEND_FILE_RENAME",
+                oldFileName: "Old.tsx",
+                newFileName: "New.tsx",
+                content: "export const New = () => null",
+            },
+            {
+                config: {
+                    port: 0,
+                    projectHash: "project",
+                    projectDir: tmpDir,
+                    filesDir,
+                    dangerouslyAutoDelete: false,
+                    allowUnsupportedNpm: false,
+                } satisfies Config,
+                hashTracker,
+                installer: null,
+                fileMetadataCache: { recordDelete: vi.fn() } as never,
+                pendingRenameConfirmations,
+                shutdown,
+                userActions: {} as never,
+                syncState: {
+                    mode: "watching",
+                    socket: {} as never,
+                    pendingRemoteChanges: [],
+                },
+            }
+        )
+
+        // File should be renamed back to Old.tsx
+        const oldExists = await fs.stat(path.join(filesDir, "Old.tsx")).then(() => true, () => false)
+        const newExists = await fs.stat(path.join(filesDir, "New.tsx")).then(() => true, () => false)
+        expect(oldExists).toBe(true)
+        expect(newExists).toBe(false)
+
+        // Echo prevention should be set up for the undo rename
+        expect(hashTracker.shouldSkip("Old.tsx", "export const New = () => null")).toBe(true)
+        expect(hashTracker.shouldSkipDelete("New.tsx")).toBe(true)
+
+        // No pending rename confirmation should be created
+        expect(pendingRenameConfirmations.size).toBe(0)
+
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
+    it("undoes local rename on disk when no socket is available", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-undo-nosock-"))
+        const filesDir = path.join(tmpDir, "files")
+        await fs.mkdir(filesDir, { recursive: true })
+        await fs.writeFile(path.join(filesDir, "New.tsx"), "export const New = () => null", "utf-8")
+
+        const hashTracker = createHashTracker()
+        const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>()
+
+        await executeEffect(
+            {
+                type: "SEND_FILE_RENAME",
+                oldFileName: "Old.tsx",
+                newFileName: "New.tsx",
+                content: "export const New = () => null",
+            },
+            {
+                config: {
+                    port: 0,
+                    projectHash: "project",
+                    projectDir: tmpDir,
+                    filesDir,
+                    dangerouslyAutoDelete: false,
+                    allowUnsupportedNpm: false,
+                } satisfies Config,
+                hashTracker,
+                installer: null,
+                fileMetadataCache: { recordDelete: vi.fn() } as never,
+                pendingRenameConfirmations,
+                shutdown,
+                userActions: {} as never,
+                syncState: {
+                    mode: "watching",
+                    socket: null as never,
+                    pendingRemoteChanges: [],
+                },
+            }
+        )
+
+        const oldExists = await fs.stat(path.join(filesDir, "Old.tsx")).then(() => true, () => false)
+        const newExists = await fs.stat(path.join(filesDir, "New.tsx")).then(() => true, () => false)
+        expect(oldExists).toBe(true)
+        expect(newExists).toBe(false)
+
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
+    it("undoes local rename on disk when sendMessage throws", async () => {
+        sendMessage.mockRejectedValue(new Error("connection lost"))
+
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-undo-throw-"))
+        const filesDir = path.join(tmpDir, "files")
+        await fs.mkdir(filesDir, { recursive: true })
+        await fs.writeFile(path.join(filesDir, "New.tsx"), "export const New = () => null", "utf-8")
+
+        const hashTracker = createHashTracker()
+        const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>()
+
+        await executeEffect(
+            {
+                type: "SEND_FILE_RENAME",
+                oldFileName: "Old.tsx",
+                newFileName: "New.tsx",
+                content: "export const New = () => null",
+            },
+            {
+                config: {
+                    port: 0,
+                    projectHash: "project",
+                    projectDir: tmpDir,
+                    filesDir,
+                    dangerouslyAutoDelete: false,
+                    allowUnsupportedNpm: false,
+                } satisfies Config,
+                hashTracker,
+                installer: null,
+                fileMetadataCache: { recordDelete: vi.fn() } as never,
+                pendingRenameConfirmations,
+                shutdown,
+                userActions: {} as never,
+                syncState: {
+                    mode: "watching",
+                    socket: {} as never,
+                    pendingRemoteChanges: [],
+                },
+            }
+        )
+
+        const oldExists = await fs.stat(path.join(filesDir, "Old.tsx")).then(() => true, () => false)
+        const newExists = await fs.stat(path.join(filesDir, "New.tsx")).then(() => true, () => false)
+        expect(oldExists).toBe(true)
+        expect(newExists).toBe(false)
+        expect(pendingRenameConfirmations.size).toBe(0)
+
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
     it("uses current file content when cleanup runs after a newer local change", async () => {
         const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-late-"))
         const filesDir = path.join(tmpDir, "files")

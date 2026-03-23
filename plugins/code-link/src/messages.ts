@@ -95,7 +95,7 @@ export function createMessageHandler({
                 break
             }
             case "sync-complete":
-                log.debug("Sync complete, transitioning to idle")
+                log.debug("Sync complete. Transitioning out of conflict mode.")
                 dispatch({ type: "clear-conflicts" })
                 break
             default:

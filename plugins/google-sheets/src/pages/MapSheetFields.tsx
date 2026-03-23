@@ -226,10 +226,6 @@ export function MapSheetFieldsPage({
                     field.name = maybeOverride
                 }
 
-                if (field.type === "file") {
-                    field.allowedFileTypes = []
-                }
-
                 return field
             })
 

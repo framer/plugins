@@ -846,5 +846,13 @@ function mapFieldToFramer(field: SheetCollectionFieldInput): ManagedCollectionFi
         }
     }
 
-    return field
+    if (field.type === "file") {
+        return {
+            ...field,
+            type: "file",
+            allowedFileTypes: [],
+        }
+    }
+
+    return field as ManagedCollectionFieldInput
 }

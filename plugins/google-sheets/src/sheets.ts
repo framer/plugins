@@ -3,7 +3,7 @@ import {
     type FieldDataEntryInput,
     type FieldDataInput,
     framer,
-    ManagedCollection,
+    type ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import * as v from "valibot"
@@ -226,6 +226,10 @@ function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?:
 }
 
 export type CollectionFieldType = ManagedCollectionFieldInput["type"]
+export type VirtualFieldType = CollectionFieldType | "dateTime"
+export type SheetCollectionFieldInput = Omit<ManagedCollectionFieldInput, "type"> & {
+    type: VirtualFieldType
+}
 
 export interface PluginContextNew {
     type: "new"
@@ -237,7 +241,7 @@ export interface PluginContextUpdate {
     type: "update"
     spreadsheetId: string
     sheetTitle: string
-    collectionFields: ManagedCollectionFieldInput[]
+    collectionFields: SheetCollectionFieldInput[]
     collection: ManagedCollection
     hasChangedFields: boolean
     ignoredColumns: string[]
@@ -283,7 +287,7 @@ export interface SyncResult extends SyncStatus {
 }
 
 interface ProcessSheetRowParams {
-    fieldTypes: CollectionFieldType[]
+    fieldTypes: VirtualFieldType[]
     row: Row
     rowIndex: number
     columnCount: number
@@ -297,10 +301,10 @@ export interface SyncMutationOptions {
     spreadsheetId: string
     sheetTitle: string
     fetchedSheet?: Sheet
-    fields: ManagedCollectionFieldInput[]
+    fields: SheetCollectionFieldInput[]
     slugColumn: string | null
     ignoredColumns: string[]
-    colFieldTypes: CollectionFieldType[]
+    colFieldTypes: VirtualFieldType[]
     lastSyncedTime: string | null
 }
 
@@ -344,7 +348,7 @@ function isValidISODate(dateString: string): boolean {
     }
 }
 
-function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue): FieldDataEntryInput | null {
+function getFieldDataEntryInput(type: VirtualFieldType, cellValue: CellValue): FieldDataEntryInput | null {
     switch (type) {
         case "number": {
             const num = Number(cellValue)
@@ -357,12 +361,13 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
         case "boolean": {
             return isDefined(cellValue) ? { type, value: CELL_BOOLEAN_VALUES.includes(cellValue) } : null
         }
-        case "date": {
+        case "date":
+        case "dateTime": {
             // Google Sheets numeric date values (Lotus 1-2-3 format)
             if (typeof cellValue === "number") {
                 try {
                     const date = extractDateFromSerialNumber(cellValue)
-                    return { type, value: date.toISOString() }
+                    return { type: "date", value: date.toISOString() }
                 } catch {
                     return null
                 }
@@ -370,7 +375,7 @@ function getFieldDataEntryInput(type: CollectionFieldType, cellValue: CellValue)
 
             // ISO date format
             if (typeof cellValue === "string" && isValidISODate(cellValue)) {
-                return { type, value: cellValue }
+                return { type: "date", value: cellValue }
             }
 
             return null
@@ -442,11 +447,17 @@ function processSheetRow({
                 case "image":
                 case "file":
                 case "link":
-                case "date":
                 case "color":
                     fieldDataEntryInput = {
                         value: null,
                         type: fieldType,
+                    }
+                    break
+                case "date":
+                case "dateTime":
+                    fieldDataEntryInput = {
+                        value: null,
+                        type: "date",
                     }
                     break
             }
@@ -638,7 +649,7 @@ export async function syncSheet({
 
 export async function getPluginContext(): Promise<PluginContext> {
     const collection = await framer.getActiveManagedCollection()
-    let collectionFields = await collection.getFields()
+    let collectionFields = (await collection.getFields()).map(mapFieldFromFramer)
 
     const tokens = await auth.getTokens()
     const isAuthenticated = !!tokens
@@ -787,8 +798,12 @@ export const useSyncSheetMutation = ({
     return useMutation({
         mutationFn: async (args: SyncMutationOptions) => {
             const collection = await framer.getActiveManagedCollection()
-            await collection.setFields(args.fields)
-            return await syncSheet(args)
+            const fields = args.fields.map(mapFieldToFramer)
+            await collection.setFields(fields)
+            return await syncSheet({
+                ...args,
+                fields,
+            })
         },
         onSuccess,
         onError,
@@ -812,4 +827,24 @@ async function salvageIgnoredColumns(
     await setIgnoredColumns(result)
 
     return result
+}
+
+function mapFieldFromFramer(field: ManagedCollectionFieldInput): SheetCollectionFieldInput {
+    if (field.type === "date" && "displayTime" in field && field.displayTime === true) {
+        return { ...field, type: "dateTime" }
+    }
+
+    return field
+}
+
+function mapFieldToFramer(field: SheetCollectionFieldInput): ManagedCollectionFieldInput {
+    if (field.type === "dateTime") {
+        return {
+            ...field,
+            type: "date",
+            displayTime: true,
+        }
+    }
+
+    return field
 }

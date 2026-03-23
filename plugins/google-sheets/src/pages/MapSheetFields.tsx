@@ -1,13 +1,22 @@
 import cx from "classnames"
-import { framer, type ManagedCollectionFieldInput, useIsAllowedTo } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { IconChevron } from "../components/Icons"
-import type { CellValue, CollectionFieldType, HeaderRow, PluginContext, Row, SyncMutationOptions } from "../sheets"
+import type {
+    CellValue,
+    CollectionFieldType,
+    HeaderRow,
+    PluginContext,
+    Row,
+    SheetCollectionFieldInput,
+    SyncMutationOptions,
+    VirtualFieldType,
+} from "../sheets"
 import { generateUniqueNames, isDefined, syncMethods } from "../utils"
 
 interface FieldTypeOption {
-    type: CollectionFieldType
+    type: VirtualFieldType
     label: string
 }
 
@@ -15,6 +24,7 @@ const fieldTypeOptions: FieldTypeOption[] = [
     { type: "string", label: "Plain Text" },
     { type: "formattedText", label: "Formatted Text" },
     { type: "date", label: "Date" },
+    { type: "dateTime", label: "Date & Time" },
     { type: "link", label: "Link" },
     { type: "image", label: "Image" },
     { type: "color", label: "Color" },
@@ -23,7 +33,7 @@ const fieldTypeOptions: FieldTypeOption[] = [
     { type: "file", label: "File" },
 ]
 
-const getInitialSlugColumn = (context: PluginContext, slugFields: ManagedCollectionFieldInput[]): string => {
+const getInitialSlugColumn = (context: PluginContext, slugFields: SheetCollectionFieldInput[]): string => {
     if (context.type === "update" && context.slugColumn) {
         return context.slugColumn
     }
@@ -85,7 +95,7 @@ const inferFieldType = (cellValue: CellValue): CollectionFieldType => {
     return "string"
 }
 
-const getFieldType = (context: PluginContext, columnId: string, cellValue?: CellValue): CollectionFieldType => {
+const getFieldType = (context: PluginContext, columnId: string, cellValue?: CellValue): VirtualFieldType => {
     // Determine if the field type is already configured
     if ("collectionFields" in context) {
         const field = context.collectionFields.find(field => field.id === columnId)
@@ -101,7 +111,7 @@ const createFieldConfig = (
     uniqueColumnNames: string[],
     context: PluginContext,
     row?: Row
-): ManagedCollectionFieldInput[] => {
+): SheetCollectionFieldInput[] => {
     return headerRow
         .map((_, columnIndex) => {
             const sanitizedName = uniqueColumnNames[columnIndex]
@@ -111,7 +121,7 @@ const createFieldConfig = (
                 id: sanitizedName,
                 name: sanitizedName,
                 type: getFieldType(context, sanitizedName, row?.[columnIndex]),
-            } as ManagedCollectionFieldInput
+            } as SheetCollectionFieldInput
         })
         .filter(isDefined)
 }
@@ -127,7 +137,7 @@ const getFieldNameOverrides = (context: PluginContext): Record<string, string> =
     return result
 }
 
-const getPossibleSlugFields = (fieldConfig: ManagedCollectionFieldInput[]): ManagedCollectionFieldInput[] => {
+const getPossibleSlugFields = (fieldConfig: SheetCollectionFieldInput[]): SheetCollectionFieldInput[] => {
     return fieldConfig.filter(field => field.type === "string")
 }
 
@@ -151,7 +161,7 @@ export function MapSheetFieldsPage({
     rows,
 }: Props) {
     const uniqueColumnNames = useMemo(() => generateUniqueNames(headerRow), [headerRow])
-    const [fieldConfig, setFieldConfig] = useState<ManagedCollectionFieldInput[]>(() =>
+    const [fieldConfig, setFieldConfig] = useState<SheetCollectionFieldInput[]>(() =>
         createFieldConfig(headerRow, uniqueColumnNames, pluginContext, rows[0])
     )
     const [disabledColumns, setDisabledColumns] = useState(
@@ -182,14 +192,14 @@ export function MapSheetFieldsPage({
         }))
     }
 
-    const handleFieldTypeChange = (id: string, type: CollectionFieldType) => {
+    const handleFieldTypeChange = (id: string, type: VirtualFieldType) => {
         setFieldConfig(current =>
             current.map(field => {
                 if (field.id === id) {
                     return {
                         ...field,
                         type,
-                    } as ManagedCollectionFieldInput
+                    } as SheetCollectionFieldInput
                 }
                 return field
             })
@@ -280,7 +290,7 @@ export function MapSheetFieldsPage({
                                     disabled={isDisabled || !isAllowedToManage}
                                     value={field.type}
                                     onChange={e => {
-                                        handleFieldTypeChange(field.id, e.target.value as CollectionFieldType)
+                                        handleFieldTypeChange(field.id, e.target.value as VirtualFieldType)
                                     }}
                                     title={isAllowedToManage ? undefined : "Insufficient permissions"}
                                 >

@@ -23,6 +23,11 @@ describe("toDirectoryName", () => {
         expect(toDirectoryName(" -Project")).toBe("Project")
         expect(toDirectoryName("Project- ")).toBe("Project")
     })
+
+    it("handles emoji prefixed names", () => {
+        expect(toDirectoryName("🧠 Logic")).toBe("Logic")
+        expect(toDirectoryName("🎨 Design System")).toBe("Design System")
+    })
 })
 
 describe("findOrCreateProjectDirectory", () => {

@@ -23,6 +23,7 @@ export function toDirectoryName(name: string): string {
         .replace(/[^a-zA-Z0-9 -]/g, "-")
         .trim()
         .replace(/^-+|-+$/g, "")
+        .trim()
         .replace(/-+/g, "-")
 }
 

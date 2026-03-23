@@ -20,11 +20,12 @@ export function CheckboxTextfield({ value, darken, checked, onChange, disabled }
     return (
         <div
             className={cx(
-                "flex bg-tertiary rounded-lg items-center pl-[10px] select-none h-[30px] cursor-pointer",
+                "flex bg-tertiary rounded-lg items-center px-[10px] select-none h-[30px] cursor-pointer overflow-hidden",
                 darken && "opacity-50"
             )}
             onClick={disabled ? undefined : toggle}
             role={disabled ? undefined : "button"}
+            title={value}
         >
             <input
                 type="checkbox"
@@ -36,7 +37,7 @@ export function CheckboxTextfield({ value, darken, checked, onChange, disabled }
                 disabled={disabled}
                 className="cursor-pointer"
             />
-            <span className="w-full pl-2 text-primary">{value}</span>
+            <span className="w-full pl-2 text-primary truncate">{value}</span>
         </div>
     )
 }

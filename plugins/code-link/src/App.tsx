@@ -229,15 +229,12 @@ export function App() {
             } else {
                 sendMessage({
                     type: "delete-cancelled",
-                    files: state.pendingDeletes.reduce<{ fileName: string; content: string }[]>(
-                        (acc, d) => {
-                            if (d.content !== undefined) {
-                                acc.push({ fileName: d.fileName, content: d.content })
-                            }
-                            return acc
-                        },
-                        []
-                    ),
+                    files: state.pendingDeletes.reduce<{ fileName: string; content: string }[]>((acc, d) => {
+                        if (d.content !== undefined) {
+                            acc.push({ fileName: d.fileName, content: d.content })
+                        }
+                        return acc
+                    }, []),
                 })
             }
         }

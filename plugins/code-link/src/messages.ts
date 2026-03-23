@@ -13,6 +13,7 @@ type MessageHandlerAction =
     | { type: "set-mode"; mode: Mode }
     | { type: "pending-deletes"; files: PendingDelete[] }
     | { type: "conflicts"; conflicts: ConflictSummary[] }
+    | { type: "clear-conflicts" }
 
 export function createMessageHandler({
     dispatch,
@@ -95,7 +96,7 @@ export function createMessageHandler({
             }
             case "sync-complete":
                 log.debug("Sync complete, transitioning to idle")
-                dispatch({ type: "set-mode", mode: "idle" })
+                dispatch({ type: "clear-conflicts" })
                 break
             default:
                 log.warn("Unknown message type:", (message as unknown as { type: string }).type)

@@ -58,20 +58,13 @@ function reducer(state: State, action: Action): State {
             }
         case "set-mode":
             // Don't dismiss conflict resolution while conflicts are pending,
-            // but allow "replaced" (another tab took over) and "idle" (controller resolved all conflicts).
-            if (
-                state.mode === "conflict_resolution" &&
-                state.conflicts.length > 0 &&
-                action.mode !== "replaced" &&
-                action.mode !== "idle"
-            ) {
+            // but always allow "replaced" so the plugin can close when another tab takes over.
+            if (state.mode === "conflict_resolution" && state.conflicts.length > 0 && action.mode !== "replaced") {
                 return state
             }
             return {
                 ...state,
                 mode: action.mode,
-                // Clear stale conflicts when leaving conflict resolution
-                ...(state.mode === "conflict_resolution" && action.mode === "idle" ? { conflicts: [] } : {}),
             }
         case "socket-disconnected":
             return {

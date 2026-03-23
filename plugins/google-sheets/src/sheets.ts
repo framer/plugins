@@ -649,7 +649,8 @@ export async function syncSheet({
 
 export async function getPluginContext(): Promise<PluginContext> {
     const collection = await framer.getActiveManagedCollection()
-    let collectionFields = (await collection.getFields()).map(mapFieldFromFramer)
+    const originalCollectionFields = await collection.getFields()
+    let collectionFields = originalCollectionFields.map(mapFieldFromFramer)
 
     const tokens = await auth.getTokens()
     const isAuthenticated = !!tokens

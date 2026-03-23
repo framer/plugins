@@ -12,10 +12,10 @@
         "check-typescript": "run g:check-typescript"
     },
     "dependencies": {
-        "@tailwindcss/vite": "^4.1.13",
-        "@vitejs/plugin-react-swc": "^4.0.1",
-        "vite": "^7.1.11",
-        "vite-plugin-framer": "^1.0.7",
+        "@tailwindcss/vite": "^4.2.2",
+        "@vitejs/plugin-react": "^6.0.1",
+        "vite": "^8.0.1",
+        "vite-plugin-framer": "^1.1.0",
         "vite-plugin-mkcert": "^1.17.8"
     }
 }

@@ -3,8 +3,7 @@
 Plugin for syncing Ashby jobs into the Framer CMS.
 
 API Docs: https://developers.ashbyhq.com/docs/public-job-posting-api
-Public Job Board Name: `deel`, `linear`, `hyperspell`
 
-**By:** @FerminBD, @clementroche
+**By:** @FerminBD and @clementroche
 
-![Ashby Image](../../assets/hero.png)
+![Ashby Image](../../assets/ashby.png)

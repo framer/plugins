@@ -1,4 +1,4 @@
-import type { Field, ManagedCollection, ManagedCollectionField, ManagedCollectionFieldInput } from "framer-plugin"
+import type { ManagedCollection, ManagedCollectionField, ManagedCollectionFieldInput } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { memo, useEffect, useMemo, useState } from "react"
 import type { DataSource } from "./data"
@@ -21,20 +21,6 @@ function ChevronIcon() {
         </svg>
     )
 }
-
-const fieldTypeOptions: { type: Field["type"]; label: string }[] = [
-    { type: "string", label: "Plain Text" },
-    { type: "formattedText", label: "Formatted Text" },
-    { type: "date", label: "Date" },
-    { type: "link", label: "Link" },
-    { type: "image", label: "Image" },
-    { type: "color", label: "Color" },
-    { type: "boolean", label: "Toggle" },
-    { type: "number", label: "Number" },
-    { type: "enum", label: "Option" },
-    { type: "file", label: "File" },
-    { type: "array", label: "Gallery" },
-]
 
 interface FieldMappingRowProps {
     field: PossibleField
@@ -73,13 +59,10 @@ const FieldMappingRow = memo(
                     label: collection.name,
                 }))
             } else if (Array.isArray(field.allowedTypes)) {
-                selectOptions = field.allowedTypes.map(type => {
-                    const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1)
-                    return {
-                        id: type,
-                        label: fieldTypeOptions.find(option => option.type === type)?.label ?? capitalizedType,
-                    }
-                })
+                selectOptions = field.allowedTypes.map(type => ({
+                    id: type,
+                    label: getFieldTypeLabel(field, type),
+                }))
             }
         }
 
@@ -465,9 +448,43 @@ function processFields(fields: PossibleField[]): ManagedCollectionField[] {
                         ...value,
                         cases: field.cases,
                     }
+                case "date":
+                    return {
+                        ...value,
+                        displayTime: field.displayTime,
+                    }
             }
 
             return value
         })
         .filter((field): field is ManagedCollectionField => field !== null)
+}
+
+function getFieldTypeLabel(field: PossibleField, type: string): string {
+    switch (type) {
+        case "string":
+            return "Plain Text"
+        case "formattedText":
+            return "Formatted Text"
+        case "date":
+            return field.type === "date" && field.displayTime ? "Date & Time" : "Date"
+        case "link":
+            return "Link"
+        case "image":
+            return "Image"
+        case "color":
+            return "Color"
+        case "boolean":
+            return "Toggle"
+        case "number":
+            return "Number"
+        case "enum":
+            return "Option"
+        case "file":
+            return "File"
+        case "array":
+            return "Gallery"
+        default:
+            return "Unknown Type"
+    }
 }

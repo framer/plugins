@@ -140,6 +140,9 @@ export function initConnection(port: number, certs: CertBundle): Promise<Connect
                 },
 
                 close(): void {
+                    for (const client of wss.clients) {
+                        client.close(1001 /* Going away */)
+                    }
                     wss.close()
                     httpsServer.close()
                 },

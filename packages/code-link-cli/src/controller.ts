@@ -969,8 +969,13 @@ async function executeEffect(
                 const oldPath = path.join(config.filesDir, oldFileName)
                 const newPath = path.join(config.filesDir, normalizedNewFileName)
                 try {
+                    // Prefer the current on-disk content for echo prevention, since effect.content
+                    // may be stale if the user edited the file after the rename was scheduled.
+                    const currentContent = await readFileSafe(normalizedNewFileName, config.filesDir)
+                    const contentForHash = currentContent ?? content
+
                     // Echo prevention: mark the undo rename so the watcher ignores it
-                    hashTracker.remember(oldFileName, content)
+                    hashTracker.remember(oldFileName, contentForHash)
                     hashTracker.markDelete(normalizedNewFileName)
                     // Ensure parent directory exists (rename may have moved file out of a folder)
                     await fs.mkdir(path.dirname(oldPath), { recursive: true })
@@ -978,6 +983,9 @@ async function executeEffect(
                     debug(`Undid local rename: ${normalizedNewFileName} -> ${oldFileName}`)
                 } catch (undoErr) {
                     warn(`Failed to undo local rename ${normalizedNewFileName} -> ${oldFileName}:`, undoErr)
+                    // Revert echo-prevention markers so a failed undo doesn't poison tracker state
+                    hashTracker.forget(oldFileName)
+                    hashTracker.clearDelete(normalizedNewFileName)
                 }
             }
 

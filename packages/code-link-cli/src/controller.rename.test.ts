@@ -405,6 +405,10 @@ describe("rename confirmation bookkeeping", () => {
         // No pending rename confirmation should be created
         expect(pendingRenameConfirmations.size).toBe(0)
 
+        // Clean up tracker timers to avoid dangling setTimeout
+        hashTracker.clearDelete("New.tsx")
+        hashTracker.forget("Old.tsx")
+
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
 
@@ -451,6 +455,10 @@ describe("rename confirmation bookkeeping", () => {
         const newExists = await fs.stat(path.join(filesDir, "New.tsx")).then(() => true, () => false)
         expect(oldExists).toBe(true)
         expect(newExists).toBe(false)
+
+        // Clean up tracker timers to avoid dangling setTimeout
+        hashTracker.clearDelete("New.tsx")
+        hashTracker.forget("Old.tsx")
 
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
@@ -502,6 +510,10 @@ describe("rename confirmation bookkeeping", () => {
         expect(newExists).toBe(false)
         expect(pendingRenameConfirmations.size).toBe(0)
 
+        // Clean up tracker timers to avoid dangling setTimeout
+        hashTracker.clearDelete("New.tsx")
+        hashTracker.forget("Old.tsx")
+
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
 
@@ -552,6 +564,10 @@ describe("rename confirmation bookkeeping", () => {
         const newExists = await fs.stat(path.join(filesDir, "Button.tsx")).then(() => true, () => false)
         expect(oldExists).toBe(true)
         expect(newExists).toBe(false)
+
+        // Clean up tracker timers to avoid dangling setTimeout
+        hashTracker.clearDelete("Button.tsx")
+        hashTracker.forget("components/Button.tsx")
 
         await fs.rm(tmpDir, { recursive: true, force: true })
     })

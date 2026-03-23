@@ -181,10 +181,19 @@ html,
 
 .single-file-view {
     display: flex;
-
     justify-content: space-between;
     align-items: center;
     padding-bottom: 15px;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.single-file-view .file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
 }
 
 .list-header {
@@ -231,6 +240,7 @@ html,
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
 }
 
 .list .lines-changed {

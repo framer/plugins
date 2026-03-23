@@ -72,9 +72,20 @@ function reducer(state: State, action: Action): State {
                 mode: "info",
             }
         case "pending-deletes":
-            // Queue deletes but don't switch mode during conflict resolution
+            // During conflict resolution, merge deletes into the conflict panel
             if (state.mode === "conflict_resolution" && state.conflicts.length > 0) {
-                return { ...state, pendingDeletes: [...state.pendingDeletes, ...action.files] }
+                const newConflicts = action.files
+                    .filter(file => file.content !== undefined)
+                    .map(file => ({
+                        fileName: file.fileName,
+                        localContent: null,
+                        remoteContent: file.content!,
+                    }))
+                return {
+                    ...state,
+                    conflicts: [...state.conflicts, ...newConflicts],
+                    pendingDeletes: [...state.pendingDeletes, ...action.files],
+                }
             }
             return {
                 ...state,
@@ -90,10 +101,7 @@ function reducer(state: State, action: Action): State {
                 mode: "conflict_resolution",
             }
         case "clear-conflicts":
-            if (state.pendingDeletes.length > 0) {
-                return { ...state, conflicts: [], mode: "delete_confirmation" }
-            }
-            return { ...state, conflicts: [], mode: "idle" }
+            return { ...state, conflicts: [], pendingDeletes: [], mode: "idle" }
     }
 }
 
@@ -208,7 +216,23 @@ export function App() {
     }, [])
 
     const resolveConflicts = (choice: "local" | "remote") => {
-        // Send all conflict resolutions at once
+        // Resolve merged deletes first — CLI is awaiting delete-confirmed/cancelled
+        if (state.pendingDeletes.length > 0) {
+            if (choice === "local") {
+                sendMessage({
+                    type: "delete-confirmed",
+                    fileNames: state.pendingDeletes.map(d => d.fileName),
+                })
+            } else {
+                sendMessage({
+                    type: "delete-cancelled",
+                    files: state.pendingDeletes
+                        .filter(d => d.content !== undefined)
+                        .map(d => ({ fileName: d.fileName, content: d.content! })),
+                })
+            }
+        }
+
         sendMessage({
             type: "conflicts-resolved",
             resolution: choice,

@@ -705,11 +705,12 @@ async function executeEffect(
         installer: Installer | null
         fileMetadataCache: FileMetadataCache
         pendingRenameConfirmations: Map<string, PendingRenameConfirmation>
+        shutdown: () => Promise<void>
         userActions: PluginUserPromptCoordinator
         syncState: SyncState
     }
 ): Promise<SyncEvent[]> {
-    const { config, hashTracker, installer, fileMetadataCache, pendingRenameConfirmations, userActions, syncState } =
+    const { config, hashTracker, installer, fileMetadataCache, pendingRenameConfirmations, shutdown, userActions, syncState } =
         context
 
     switch (effect.type) {
@@ -1034,6 +1035,14 @@ async function executeEffect(
         }
 
         case "SYNC_COMPLETE": {
+            const shutdownIfOneOffSync = async () => {
+                if (!config.once) return false
+
+                status("Sync complete, exiting...")
+                await shutdown()
+                return true
+            }
+
             const wasDisconnected = wasRecentlyDisconnected()
 
             // Notify plugin that sync is complete
@@ -1047,7 +1056,8 @@ async function executeEffect(
                     success(
                         `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
                     )
-                    status("Watching for changes...")
+
+                    if (!await shutdownIfOneOffSync()) status("Watching for changes...")
                 }
                 resetDisconnectState()
                 return []
@@ -1078,7 +1088,7 @@ async function executeEffect(
                 tryGitInit(config.projectDir)
             }
 
-            status("Watching for changes...")
+            if (!await shutdownIfOneOffSync()) status("Watching for changes...")
             return []
         }
 
@@ -1099,6 +1109,7 @@ export async function start(config: Config): Promise<void> {
     const fileMetadataCache = new FileMetadataCache()
     const pendingRenameConfirmations = new Map<string, PendingRenameConfirmation>()
     let installer: Installer | null = null
+    let isShuttingDown = false
 
     // State machine state
     let syncState: SyncState = {
@@ -1138,6 +1149,7 @@ export async function start(config: Config): Promise<void> {
                 installer,
                 fileMetadataCache,
                 pendingRenameConfirmations,
+                shutdown,
                 userActions,
                 syncState,
             })
@@ -1156,7 +1168,7 @@ export async function start(config: Config): Promise<void> {
         info("")
         info("To fix this:")
         info("  1. Re-run this command — certificate generation is often a one-time issue")
-        info(`  2. Manually delete "${String(CERT_DIR)}" and try again`)
+        info(`  2. Manually delete "${CERT_DIR}" and try again`)
         info("")
         throw new Error("TLS certificate generation failed")
     }
@@ -1349,6 +1361,10 @@ export async function start(config: Config): Promise<void> {
     })
 
     connection.on("disconnect", (client: WebSocket) => {
+        if (isShuttingDown) {
+            debug("[STATE] Ignoring disconnect during shutdown")
+            return
+        }
         if (syncState.socket !== client) {
             debug("[STATE] Ignoring disconnect from stale socket")
             return
@@ -1372,6 +1388,22 @@ export async function start(config: Config): Promise<void> {
     // Watcher will be initialized after handshake when filesDir is set
     let watcher: ReturnType<typeof initWatcher> | null = null
 
+    const shutdown = async () => {
+        if (isShuttingDown) return
+
+        debug("[STATE] Shutting down...")
+
+        isShuttingDown = true
+        userActions.cleanup()
+
+        if (watcher) {
+            await watcher.close()
+            watcher = null
+        }
+
+        connection.close()
+    }
+
     const startWatcher = () => {
         if (!config.filesDir || watcher) return
         watcher = initWatcher(config.filesDir)
@@ -1386,10 +1418,7 @@ export async function start(config: Config): Promise<void> {
         console.log() // newline after ^C
         status("Shutting down...")
         void (async () => {
-            if (watcher) {
-                await watcher.close()
-            }
-            connection.close()
+            await shutdown()
             process.exit(0)
         })()
     })

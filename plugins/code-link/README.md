@@ -23,8 +23,9 @@ Two-way sync between Framer code files and your local filesystem.
 
 ## CLI Options
 
-| Flag | Description |
-| --- | --- |
-| `-n, --name <name>` | Project name for the created directory |
-| `-d, --dir <directory>` | Target project directory |
-| `-v, --verbose` | Enable debug logging |
+| Flag                    | Description                            |
+| ----------------------- | -------------------------------------- |
+| `-n, --name <name>`     | Project name for the created directory |
+| `-d, --dir <directory>` | Target project directory               |
+| `--once`                | Exit after the initial sync completes  |
+| `-v, --verbose`         | Enable debug logging                   |

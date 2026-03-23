@@ -33,7 +33,7 @@ describe("initConnection", () => {
         })
 
         const messageReceived = new Promise<{ type: string }>(resolve => {
-            connection.on("message", message => resolve(message))
+            connection.on("message", message => { resolve(message); })
         })
 
         const outboundReceived = new Promise<{ type: string }>((resolve, reject) => {
@@ -47,7 +47,7 @@ describe("initConnection", () => {
         })
 
         await new Promise<void>((resolve, reject) => {
-            client.once("open", () => resolve())
+            client.once("open", () => { resolve(); })
             client.once("error", reject)
         })
 
@@ -66,6 +66,37 @@ describe("initConnection", () => {
 
         client.close()
         connection.close()
+    })
+
+    it("closes connected websocket clients when the server shuts down", async () => {
+        const port = await getFreePort()
+        const connection = await initConnection(port, { key: TEST_KEY, cert: TEST_CERT })
+        const client = new WebSocket(`wss://localhost:${port}`, {
+            rejectUnauthorized: false,
+        })
+
+        await new Promise<void>((resolve, reject) => {
+            client.once("open", resolve)
+            client.once("error", reject)
+        })
+
+        client.send(JSON.stringify({ type: "handshake", projectId: "project-id", projectName: "Project Name" }))
+
+        await new Promise<{ projectId: string; projectName: string }>(resolve => {
+            connection.on("handshake", (_socket, message) => {
+                resolve(message)
+            })
+        })
+
+        const closeReceived = new Promise<number>(resolve => {
+            client.once("close", code => {
+                resolve(code)
+            })
+        })
+
+        connection.close()
+
+        await expect(closeReceived).resolves.toBe(1001)
     })
 })
 
@@ -102,7 +133,7 @@ describe("initConnection error handling", () => {
         const onError = vi.fn()
         connection.on("error", onError)
 
-        const errorHandler = (onSpy.mock.calls as Array<[string, unknown]>).find(([event]) => event === "error")?.[1] as
+        const errorHandler = (onSpy.mock.calls as [string, unknown][]).find(([event]) => event === "error")?.[1] as
             | ((error: NodeJS.ErrnoException) => void)
             | undefined
         expect(errorHandler).toBeTypeOf("function")

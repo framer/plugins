@@ -35,6 +35,7 @@ program
     .argument("[projectHash]", "Framer Project ID Hash (auto-detected from package.json if omitted)")
     .option("-n, --name <name>", "Project name (optional)")
     .option("-d, --dir <directory>", "Explicit project directory")
+    .option("--once", "Exit after the initial sync completes")
     .option("-v, --verbose", "Enable verbose logging")
     .option("--log-level <level>", "Set log level (debug, info, warn, error)")
     .option("--dangerously-auto-delete", "Automatically delete remote files without confirmation")
@@ -45,6 +46,7 @@ program
             options: {
                 name?: string
                 dir?: string
+                once?: boolean
                 verbose?: boolean
                 logLevel?: string
                 dangerouslyAutoDelete?: boolean
@@ -90,6 +92,7 @@ program
                 filesDir: null, // Will be set during handshake
                 dangerouslyAutoDelete: options.dangerouslyAutoDelete ?? false,
                 allowUnsupportedNpm: options.unsupportedNpm ?? false,
+                once: options.once ?? false,
                 explicitDirectory: options.dir,
                 explicitName: options.name,
             }

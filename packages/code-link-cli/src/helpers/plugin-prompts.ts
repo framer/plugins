@@ -24,6 +24,7 @@ interface PendingAction {
 
 export class PluginUserPromptCoordinator {
     private pendingActions = new Map<string, PendingAction>()
+    private emptyResolvers: Array<() => void> = []
 
     /**
      * Register a pending action and return a typed promise
@@ -128,6 +129,17 @@ export class PluginUserPromptCoordinator {
     }
 
     /**
+     * Returns a promise that resolves when all pending actions have settled.
+     * If no actions are pending, resolves immediately.
+     */
+    whenEmpty(): Promise<void> {
+        if (this.pendingActions.size === 0) return Promise.resolve()
+        return new Promise(resolve => {
+            this.emptyResolvers.push(resolve)
+        })
+    }
+
+    /**
      * Handle incoming confirmation response
      */
     handleConfirmation(actionId: string, value: boolean): boolean {
@@ -140,6 +152,7 @@ export class PluginUserPromptCoordinator {
         this.pendingActions.delete(actionId)
         pending.resolve(value)
         debug(`Confirmed: ${actionId}`)
+        this.flushEmptyResolvers()
         return true
     }
 
@@ -152,5 +165,13 @@ export class PluginUserPromptCoordinator {
             debug(`Cancelled pending action: ${actionId}`)
         }
         this.pendingActions.clear()
+        this.flushEmptyResolvers()
+    }
+
+    private flushEmptyResolvers(): void {
+        if (this.pendingActions.size === 0 && this.emptyResolvers.length > 0) {
+            for (const resolve of this.emptyResolvers) resolve()
+            this.emptyResolvers = []
+        }
     }
 }

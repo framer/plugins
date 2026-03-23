@@ -1148,6 +1148,9 @@ async function executeEffect(
         }
 
         case "SYNC_COMPLETE": {
+            // Wait for any in-flight user prompts (e.g. delete confirmations) to settle
+            // before notifying the plugin that sync is complete
+            await userActions.whenEmpty()
             const wasDisconnected = wasRecentlyDisconnected()
 
             // Notify plugin that sync is complete

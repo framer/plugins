@@ -972,6 +972,8 @@ async function executeEffect(
                     // Echo prevention: mark the undo rename so the watcher ignores it
                     hashTracker.remember(oldFileName, content)
                     hashTracker.markDelete(normalizedNewFileName)
+                    // Ensure parent directory exists (rename may have moved file out of a folder)
+                    await fs.mkdir(path.dirname(oldPath), { recursive: true })
                     await fs.rename(newPath, oldPath)
                     debug(`Undid local rename: ${normalizedNewFileName} -> ${oldFileName}`)
                 } catch (undoErr) {

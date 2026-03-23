@@ -505,6 +505,57 @@ describe("rename confirmation bookkeeping", () => {
         await fs.rm(tmpDir, { recursive: true, force: true })
     })
 
+    it("undoes local rename back into a subfolder when send fails", async () => {
+        sendMessage.mockResolvedValue(false)
+
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-undo-folder-"))
+        const filesDir = path.join(tmpDir, "files")
+        await fs.mkdir(filesDir, { recursive: true })
+        // File was moved out of components/ to root
+        await fs.writeFile(path.join(filesDir, "Button.tsx"), "export const Button = () => null", "utf-8")
+
+        const hashTracker = createHashTracker()
+        const pendingRenameConfirmations = new Map<string, { oldFileName: string; content: string }>()
+
+        await executeEffect(
+            {
+                type: "SEND_FILE_RENAME",
+                oldFileName: "components/Button.tsx",
+                newFileName: "Button.tsx",
+                content: "export const Button = () => null",
+            },
+            {
+                config: {
+                    port: 0,
+                    projectHash: "project",
+                    projectDir: tmpDir,
+                    filesDir,
+                    dangerouslyAutoDelete: false,
+                    allowUnsupportedNpm: false,
+                } satisfies Config,
+                hashTracker,
+                installer: null,
+                fileMetadataCache: { recordDelete: vi.fn() } as never,
+                pendingRenameConfirmations,
+                shutdown,
+                userActions: {} as never,
+                syncState: {
+                    mode: "watching",
+                    socket: {} as never,
+                    pendingRemoteChanges: [],
+                },
+            }
+        )
+
+        // File should be moved back into the subfolder
+        const oldExists = await fs.stat(path.join(filesDir, "components", "Button.tsx")).then(() => true, () => false)
+        const newExists = await fs.stat(path.join(filesDir, "Button.tsx")).then(() => true, () => false)
+        expect(oldExists).toBe(true)
+        expect(newExists).toBe(false)
+
+        await fs.rm(tmpDir, { recursive: true, force: true })
+    })
+
     it("uses current file content when cleanup runs after a newer local change", async () => {
         const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-late-"))
         const filesDir = path.join(tmpDir, "files")

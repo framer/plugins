@@ -74,13 +74,16 @@ function reducer(state: State, action: Action): State {
         case "pending-deletes":
             // During conflict resolution, merge deletes into the conflict panel
             if (state.mode === "conflict_resolution" && state.conflicts.length > 0) {
-                const newConflicts = action.files
-                    .filter(file => file.content !== undefined)
-                    .map(file => ({
-                        fileName: file.fileName,
-                        localContent: null,
-                        remoteContent: file.content!,
-                    }))
+                const newConflicts = action.files.reduce<ConflictSummary[]>((acc, file) => {
+                    if (file.content !== undefined) {
+                        acc.push({
+                            fileName: file.fileName,
+                            localContent: null,
+                            remoteContent: file.content,
+                        })
+                    }
+                    return acc
+                }, [])
                 return {
                     ...state,
                     conflicts: [...state.conflicts, ...newConflicts],
@@ -226,9 +229,15 @@ export function App() {
             } else {
                 sendMessage({
                     type: "delete-cancelled",
-                    files: state.pendingDeletes
-                        .filter(d => d.content !== undefined)
-                        .map(d => ({ fileName: d.fileName, content: d.content! })),
+                    files: state.pendingDeletes.reduce<{ fileName: string; content: string }[]>(
+                        (acc, d) => {
+                            if (d.content !== undefined) {
+                                acc.push({ fileName: d.fileName, content: d.content })
+                            }
+                            return acc
+                        },
+                        []
+                    ),
                 })
             }
         }

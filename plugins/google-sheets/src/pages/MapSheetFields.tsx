@@ -3,25 +3,41 @@ import { framer, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
 import { IconChevron } from "../components/Icons"
-import type {
-    CellValue,
-    HeaderRow,
-    PluginContext,
-    Row,
-    SheetCollectionFieldInput,
-    SyncMutationOptions,
-    VirtualFieldType,
-} from "../sheets"
-import { generateUniqueNames, isDefined, syncMethods } from "../utils"
+import type { CellValue, HeaderRow, PluginContext, PluginContextUpdate, Row, SyncMutationOptions } from "../sheets"
+import { generateHashId, generateUniqueNames, isDefined, syncMethods } from "../utils"
+
+type FieldType =
+    | "string"
+    | "number"
+    | "boolean"
+    | "formattedText"
+    | "enum"
+    | "date"
+    | "dateTime"
+    | "link"
+    | "image"
+    | "color"
+    | "file"
+    | "collectionReference"
+    | "multiCollectionReference"
+    | "array"
 
 interface FieldTypeOption {
-    type: VirtualFieldType
+    type: FieldType
     label: string
+}
+
+interface EditableField {
+    id: string
+    name: string
+    type: FieldType
+    cases?: { id: string; name: string }[]
 }
 
 const fieldTypeOptions: FieldTypeOption[] = [
     { type: "string", label: "Plain Text" },
     { type: "formattedText", label: "Formatted Text" },
+    { type: "enum", label: "Option" },
     { type: "date", label: "Date" },
     { type: "dateTime", label: "Date & Time" },
     { type: "link", label: "Link" },
@@ -32,12 +48,17 @@ const fieldTypeOptions: FieldTypeOption[] = [
     { type: "file", label: "File" },
 ]
 
-const getInitialSlugColumn = (context: PluginContext, slugFields: SheetCollectionFieldInput[]): string => {
-    if (context.type === "update" && context.slugColumn) {
+function isUpdateContext(context: PluginContext): context is PluginContextUpdate {
+    return context.type === "update"
+}
+
+const getInitialSlugColumn = (context: PluginContext, slugFields: EditableField[]): string => {
+    if (isUpdateContext(context) && context.slugColumn) {
         return context.slugColumn
     }
 
-    return slugFields[0]?.id ?? ""
+    const firstSlugField = slugFields[0]
+    return firstSlugField?.id ?? ""
 }
 
 const getLastSyncedTime = (context: PluginContext, slugColumn: string): string | null => {
@@ -54,7 +75,7 @@ const getLastSyncedTime = (context: PluginContext, slugColumn: string): string |
     return context.lastSyncedTime
 }
 
-const inferFieldType = (cellValue: CellValue): VirtualFieldType => {
+const inferFieldType = (cellValue: CellValue): FieldType => {
     if (typeof cellValue === "boolean") return "boolean"
     if (typeof cellValue === "number") return "number"
 
@@ -102,9 +123,9 @@ const inferFieldType = (cellValue: CellValue): VirtualFieldType => {
     return "string"
 }
 
-const getFieldType = (context: PluginContext, columnId: string, cellValue?: CellValue): VirtualFieldType => {
+const getFieldType = (context: PluginContext, columnId: string, cellValue?: CellValue): FieldType => {
     // Determine if the field type is already configured
-    if ("collectionFields" in context) {
+    if (isUpdateContext(context)) {
         const field = context.collectionFields.find(field => field.id === columnId)
         return field?.type ?? "string"
     }
@@ -118,24 +139,27 @@ const createFieldConfig = (
     uniqueColumnNames: string[],
     context: PluginContext,
     row?: Row
-): SheetCollectionFieldInput[] => {
-    return headerRow
-        .map((_, columnIndex) => {
-            const sanitizedName = uniqueColumnNames[columnIndex]
-            if (!sanitizedName) return null
+): EditableField[] => {
+    const fields: EditableField[] = []
 
-            return {
-                id: sanitizedName,
-                name: sanitizedName,
-                type: getFieldType(context, sanitizedName, row?.[columnIndex]),
-            } as SheetCollectionFieldInput
+    for (const [columnIndex] of headerRow.entries()) {
+        const sanitizedName = uniqueColumnNames[columnIndex]
+        if (!sanitizedName) continue
+        const initialType: FieldType = getFieldType(context, sanitizedName, row?.[columnIndex])
+
+        fields.push({
+            id: sanitizedName,
+            name: sanitizedName,
+            type: initialType,
         })
-        .filter(isDefined)
+    }
+
+    return fields
 }
 
 const getFieldNameOverrides = (context: PluginContext): Record<string, string> => {
     const result: Record<string, string> = {}
-    if (context.type !== "update") return result
+    if (!isUpdateContext(context)) return result
 
     for (const field of context.collectionFields) {
         result[field.id] = field.name
@@ -144,7 +168,7 @@ const getFieldNameOverrides = (context: PluginContext): Record<string, string> =
     return result
 }
 
-const getPossibleSlugFields = (fieldConfig: SheetCollectionFieldInput[]): SheetCollectionFieldInput[] => {
+const getPossibleSlugFields = (fieldConfig: EditableField[]): EditableField[] => {
     return fieldConfig.filter(field => field.type === "string")
 }
 
@@ -168,11 +192,11 @@ export function MapSheetFieldsPage({
     rows,
 }: Props) {
     const uniqueColumnNames = useMemo(() => generateUniqueNames(headerRow), [headerRow])
-    const [fieldConfig, setFieldConfig] = useState<SheetCollectionFieldInput[]>(() =>
+    const [fieldConfig, setFieldConfig] = useState<EditableField[]>(() =>
         createFieldConfig(headerRow, uniqueColumnNames, pluginContext, rows[0])
     )
-    const [disabledColumns, setDisabledColumns] = useState(
-        () => new Set<string>(pluginContext.type === "update" ? pluginContext.ignoredColumns : [])
+    const [disabledColumns, setDisabledColumns] = useState<Set<string>>(
+        () => new Set<string>(isUpdateContext(pluginContext) ? pluginContext.ignoredColumns : [])
     )
     const slugFields = useMemo(() => getPossibleSlugFields(fieldConfig), [fieldConfig])
     const [slugColumn, setSlugColumn] = useState<string>(() => getInitialSlugColumn(pluginContext, slugFields))
@@ -199,18 +223,16 @@ export function MapSheetFieldsPage({
         }))
     }
 
-    const handleFieldTypeChange = (id: string, type: VirtualFieldType) => {
-        setFieldConfig(current =>
-            current.map(field => {
-                if (field.id === id) {
-                    return {
-                        ...field,
-                        type,
-                    } as SheetCollectionFieldInput
-                }
-                return field
-            })
-        )
+    const handleFieldTypeChange = (id: string, type: FieldType) => {
+        setFieldConfig(current => {
+            const nextFields: EditableField[] = []
+
+            for (const field of current) {
+                nextFields.push(field.id === id ? { ...field, type } : field)
+            }
+
+            return nextFields
+        })
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -218,28 +240,59 @@ export function MapSheetFieldsPage({
 
         if (isPending) return
 
-        const allFields = fieldConfig
-            .filter(field => !disabledColumns.has(field.id))
-            .map(field => {
-                const maybeOverride = fieldNameOverrides[field.id]
-                if (maybeOverride) {
-                    field.name = maybeOverride
-                }
+        const allFields: EditableField[] = []
+        for (const field of fieldConfig) {
+            if (disabledColumns.has(field.id)) continue
 
-                return field
-            })
+            const result: EditableField = { ...field }
+            const maybeOverride = fieldNameOverrides[result.id]
+            if (maybeOverride) {
+                result.name = maybeOverride
+            }
+
+            if (result.type === "enum") {
+                const colIndex = uniqueColumnNames.indexOf(result.id)
+                if (colIndex !== -1) {
+                    const uniqueValues: string[] = []
+                    const seenValues = new Set<string>()
+                    for (const row of rows) {
+                        const rawValue = row[colIndex]
+                        if (!isDefined(rawValue)) continue
+
+                        const normalizedValue = String(rawValue).trim()
+                        if (!normalizedValue || seenValues.has(normalizedValue)) continue
+
+                        seenValues.add(normalizedValue)
+                        uniqueValues.push(normalizedValue)
+                    }
+                    result.cases = uniqueValues.map(value => ({
+                        id: generateHashId(value),
+                        name: value,
+                    }))
+                }
+            }
+
+            allFields.push(result)
+        }
+
+        const colFieldTypes: FieldType[] = []
+        for (const field of fieldConfig) {
+            colFieldTypes.push(field.type)
+        }
 
         await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
-        onSubmit({
-            fields: allFields,
+        const submitOptions: SyncMutationOptions = {
+            fields: allFields as SyncMutationOptions["fields"],
             spreadsheetId,
             sheetTitle,
-            colFieldTypes: fieldConfig.map(field => field.type),
+            colFieldTypes: colFieldTypes as SyncMutationOptions["colFieldTypes"],
             ignoredColumns: Array.from(disabledColumns),
             slugColumn,
             lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),
-        })
+        }
+
+        onSubmit(submitOptions)
     }
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
@@ -293,7 +346,7 @@ export function MapSheetFieldsPage({
                                     disabled={isDisabled || !isAllowedToManage}
                                     value={field.type}
                                     onChange={e => {
-                                        handleFieldTypeChange(field.id, e.target.value as VirtualFieldType)
+                                        handleFieldTypeChange(field.id, e.target.value as FieldType)
                                     }}
                                     title={isAllowedToManage ? undefined : "Insufficient permissions"}
                                 >

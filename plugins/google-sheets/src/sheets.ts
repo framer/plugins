@@ -227,8 +227,14 @@ function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?:
 
 export type CollectionFieldType = ManagedCollectionFieldInput["type"]
 export type VirtualFieldType = CollectionFieldType | "dateTime"
+export interface EnumCase {
+    id: string
+    name: string
+}
+
 export type SheetCollectionFieldInput = Omit<ManagedCollectionFieldInput, "type"> & {
     type: VirtualFieldType
+    cases?: EnumCase[]
 }
 
 export interface PluginContextNew {
@@ -380,6 +386,12 @@ function getFieldDataEntryInput(type: VirtualFieldType, cellValue: CellValue): F
 
             return null
         }
+        case "enum": {
+            if (!isDefined(cellValue)) return null
+            const enumValue = String(cellValue).trim()
+            if (!enumValue) return null
+            return { type: "enum", value: generateHashId(enumValue) }
+        }
         case "image":
         case "link":
         case "file":
@@ -460,6 +472,9 @@ function processSheetRow({
                         type: "date",
                     }
                     break
+                case "enum":
+                    // Empty enum cells are valid (no selection) — skip silently
+                    continue
             }
         }
 
@@ -598,6 +613,40 @@ export async function syncSheet({
         throw new Error(
             `Empty header cell${pluralSuffix} found in column${pluralSuffix} ${columnList}. All header row cells must contain values.`
         )
+    }
+
+    // Update enum field definitions with cases derived from column data so new
+    // values that appeared since the last sync are recognised.
+    const hasEnumFields = colFieldTypes.includes("enum")
+    if (hasEnumFields && framer.isAllowedTo("ManagedCollection.setFields")) {
+        const updatedFields = fields.map(field => {
+            if (field.type !== "enum") return mapFieldToFramer(field)
+
+            const colIndex = uniqueHeaderRowNames.indexOf(field.id)
+            if (colIndex === -1) return mapFieldToFramer(field)
+
+            const uniqueValues = [
+                ...new Set(
+                    rows
+                        .map(row => row[colIndex])
+                        .filter(isDefined)
+                        .map(v => String(v).trim())
+                        .filter(Boolean)
+                ),
+            ]
+
+            return {
+                id: field.id,
+                name: field.name,
+                type: "enum" as const,
+                cases: uniqueValues.map(value => ({
+                    id: generateHashId(value),
+                    name: value,
+                })),
+            } as ManagedCollectionFieldInput
+        })
+
+        await collection.setFields(updatedFields)
     }
 
     const { collectionItems, status } = processSheet(rows, {
@@ -853,6 +902,15 @@ function mapFieldToFramer(field: SheetCollectionFieldInput): ManagedCollectionFi
             type: "file",
             allowedFileTypes: [],
         }
+    }
+
+    if (field.type === "enum") {
+        return {
+            id: field.id,
+            name: field.name,
+            type: "enum",
+            cases: field.cases ?? [],
+        } as ManagedCollectionFieldInput
     }
 
     return field as ManagedCollectionFieldInput

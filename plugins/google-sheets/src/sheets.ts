@@ -9,6 +9,7 @@ import {
 import * as v from "valibot"
 import auth from "./auth"
 import { logSyncResult } from "./debug.ts"
+import { areEnumCasesEqual, getEnumCasesForColumn, mergeEnumCases } from "./enumCases"
 import { queryClient } from "./main.tsx"
 import { assert, columnToLetter, generateHashId, generateUniqueNames, isDefined, listFormatter, slugify } from "./utils"
 
@@ -312,48 +313,6 @@ export interface SyncMutationOptions {
     ignoredColumns: string[]
     colFieldTypes: VirtualFieldType[]
     lastSyncedTime: string | null
-}
-
-function getEnumCasesForColumn(rows: Row[], colIndex: number): EnumCase[] {
-    const cases: EnumCase[] = []
-    const seenValues = new Set<string>()
-
-    for (const row of rows) {
-        const rawValue = row[colIndex]
-        if (!isDefined(rawValue)) continue
-
-        const normalizedValue = String(rawValue).trim()
-        if (!normalizedValue || seenValues.has(normalizedValue)) continue
-
-        seenValues.add(normalizedValue)
-        cases.push({
-            id: generateHashId(normalizedValue),
-            name: normalizedValue,
-        })
-    }
-
-    return cases
-}
-
-function mergeEnumCases(existingCases: EnumCase[] | undefined, derivedCases: EnumCase[]): EnumCase[] {
-    const mergedCases: EnumCase[] = []
-    const seenCaseNames = new Set<string>()
-
-    for (const existingCase of existingCases ?? []) {
-        if (seenCaseNames.has(existingCase.name)) continue
-
-        seenCaseNames.add(existingCase.name)
-        mergedCases.push(existingCase)
-    }
-
-    for (const derivedCase of derivedCases) {
-        if (seenCaseNames.has(derivedCase.name)) continue
-
-        seenCaseNames.add(derivedCase.name)
-        mergedCases.push(derivedCase)
-    }
-
-    return mergedCases
 }
 
 const BASE_DATE_1900 = new Date(Date.UTC(1899, 11, 30))
@@ -660,7 +619,9 @@ export async function syncSheet({
     // Update enum field definitions with cases derived from column data so new
     // values that appeared since the last sync are recognised.
     const hasEnumFields = colFieldTypes.includes("enum")
-    if (hasEnumFields && framer.isAllowedTo("ManagedCollection.setFields")) {
+    if (hasEnumFields) {
+        const canSetFields = framer.isAllowedTo("ManagedCollection.setFields")
+        let shouldUpdateFields = false
         const updatedFields = fields.map(field => {
             if (field.type !== "enum") return mapFieldToFramer(field)
 
@@ -674,6 +635,17 @@ export async function syncSheet({
                 )
             }
 
+            if (!areEnumCasesEqual(field.cases, cases)) {
+                if (!canSetFields) {
+                    throw new Error(
+                        "This sheet has enum columns with values that are not configured on the collection, " +
+                            "but the plugin does not have permission to update collection fields."
+                    )
+                }
+
+                shouldUpdateFields = true
+            }
+
             const enumField: Extract<ManagedCollectionFieldInput, { type: "enum" }> = {
                 id: field.id,
                 name: field.name,
@@ -684,7 +656,9 @@ export async function syncSheet({
             return enumField
         })
 
-        await collection.setFields(updatedFields)
+        if (canSetFields && shouldUpdateFields) {
+            await collection.setFields(updatedFields)
+        }
     }
 
     const { collectionItems, status } = processSheet(rows, {

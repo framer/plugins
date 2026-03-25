@@ -2,9 +2,10 @@ import cx from "classnames"
 import { framer, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
+import { getEnumCasesForColumn, mergeEnumCases } from "../enumCases"
 import { IconChevron } from "../components/Icons"
 import type { CellValue, HeaderRow, PluginContext, PluginContextUpdate, Row, SyncMutationOptions } from "../sheets"
-import { generateHashId, generateUniqueNames, isDefined, syncMethods } from "../utils"
+import { generateUniqueNames, syncMethods } from "../utils"
 
 type FieldType = SyncMutationOptions["colFieldTypes"][number]
 
@@ -40,51 +41,6 @@ function getConfiguredField(
     if (!isUpdateContext(context)) return undefined
 
     return context.collectionFields.find(field => field.id === columnId)
-}
-
-function getEnumCasesForColumn(rows: Row[], colIndex: number): NonNullable<EditableField["cases"]> {
-    const cases: NonNullable<EditableField["cases"]> = []
-    const seenValues = new Set<string>()
-
-    for (const row of rows) {
-        const rawValue = row[colIndex]
-        if (!isDefined(rawValue)) continue
-
-        const normalizedValue = String(rawValue).trim()
-        if (!normalizedValue || seenValues.has(normalizedValue)) continue
-
-        seenValues.add(normalizedValue)
-        cases.push({
-            id: generateHashId(normalizedValue),
-            name: normalizedValue,
-        })
-    }
-
-    return cases
-}
-
-function mergeEnumCases(
-    existingCases: EditableField["cases"],
-    derivedCases: NonNullable<EditableField["cases"]>
-): NonNullable<EditableField["cases"]> {
-    const mergedCases: NonNullable<EditableField["cases"]> = []
-    const seenCaseNames = new Set<string>()
-
-    for (const existingCase of existingCases ?? []) {
-        if (seenCaseNames.has(existingCase.name)) continue
-
-        seenCaseNames.add(existingCase.name)
-        mergedCases.push(existingCase)
-    }
-
-    for (const derivedCase of derivedCases) {
-        if (seenCaseNames.has(derivedCase.name)) continue
-
-        seenCaseNames.add(derivedCase.name)
-        mergedCases.push(derivedCase)
-    }
-
-    return mergedCases
 }
 
 function isUpdateContext(context: PluginContext): context is PluginContextUpdate {

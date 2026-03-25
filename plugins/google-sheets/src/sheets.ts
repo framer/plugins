@@ -314,6 +314,48 @@ export interface SyncMutationOptions {
     lastSyncedTime: string | null
 }
 
+function getEnumCasesForColumn(rows: Row[], colIndex: number): EnumCase[] {
+    const cases: EnumCase[] = []
+    const seenValues = new Set<string>()
+
+    for (const row of rows) {
+        const rawValue = row[colIndex]
+        if (!isDefined(rawValue)) continue
+
+        const normalizedValue = String(rawValue).trim()
+        if (!normalizedValue || seenValues.has(normalizedValue)) continue
+
+        seenValues.add(normalizedValue)
+        cases.push({
+            id: generateHashId(normalizedValue),
+            name: normalizedValue,
+        })
+    }
+
+    return cases
+}
+
+function mergeEnumCases(existingCases: EnumCase[] | undefined, derivedCases: EnumCase[]): EnumCase[] {
+    const mergedCases: EnumCase[] = []
+    const seenCaseNames = new Set<string>()
+
+    for (const existingCase of existingCases ?? []) {
+        if (seenCaseNames.has(existingCase.name)) continue
+
+        seenCaseNames.add(existingCase.name)
+        mergedCases.push(existingCase)
+    }
+
+    for (const derivedCase of derivedCases) {
+        if (seenCaseNames.has(derivedCase.name)) continue
+
+        seenCaseNames.add(derivedCase.name)
+        mergedCases.push(derivedCase)
+    }
+
+    return mergedCases
+}
+
 const BASE_DATE_1900 = new Date(Date.UTC(1899, 11, 30))
 const BASE_DATE_1904 = new Date(Date.UTC(1904, 0, 1))
 const MS_PER_DAY = 24 * 60 * 60 * 1000 // hours * minutes * seconds * milliseconds
@@ -625,23 +667,12 @@ export async function syncSheet({
             const colIndex = uniqueHeaderRowNames.indexOf(field.id)
             if (colIndex === -1) return mapFieldToFramer(field)
 
-            const uniqueValues: string[] = []
-            const seenValues = new Set<string>()
-            for (const row of rows) {
-                const rawValue = row[colIndex]
-                if (!isDefined(rawValue)) continue
-
-                const normalizedValue = String(rawValue).trim()
-                if (!normalizedValue || seenValues.has(normalizedValue)) continue
-
-                seenValues.add(normalizedValue)
-                uniqueValues.push(normalizedValue)
+            const cases = mergeEnumCases(field.cases, getEnumCasesForColumn(rows, colIndex))
+            if (cases.length === 0) {
+                throw new Error(
+                    `Enum field "${field.name}" requires at least one non-empty value before it can be synced.`
+                )
             }
-
-            const cases: Extract<ManagedCollectionFieldInput, { type: "enum" }>["cases"] = uniqueValues.map(value => ({
-                id: generateHashId(value),
-                name: value,
-            }))
 
             const enumField: Extract<ManagedCollectionFieldInput, { type: "enum" }> = {
                 id: field.id,
@@ -912,12 +943,16 @@ function mapFieldToFramer(field: SheetCollectionFieldInput): ManagedCollectionFi
     }
 
     if (field.type === "enum") {
-        return {
+        assert(field.cases && field.cases.length > 0, `Enum field "${field.name}" requires at least one case`)
+
+        const enumField: Extract<ManagedCollectionFieldInput, { type: "enum" }> = {
             id: field.id,
             name: field.name,
             type: "enum",
-            cases: field.cases ?? [],
-        } as ManagedCollectionFieldInput
+            cases: field.cases,
+        }
+
+        return enumField
     }
 
     return field as ManagedCollectionFieldInput

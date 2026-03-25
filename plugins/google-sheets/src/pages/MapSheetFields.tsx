@@ -33,6 +33,60 @@ function isFieldType(value: string): value is FieldType {
     return fieldTypeOptions.some(option => option.type === value)
 }
 
+function getConfiguredField(
+    context: PluginContext,
+    columnId: string
+): PluginContextUpdate["collectionFields"][number] | undefined {
+    if (!isUpdateContext(context)) return undefined
+
+    return context.collectionFields.find(field => field.id === columnId)
+}
+
+function getEnumCasesForColumn(rows: Row[], colIndex: number): NonNullable<EditableField["cases"]> {
+    const cases: NonNullable<EditableField["cases"]> = []
+    const seenValues = new Set<string>()
+
+    for (const row of rows) {
+        const rawValue = row[colIndex]
+        if (!isDefined(rawValue)) continue
+
+        const normalizedValue = String(rawValue).trim()
+        if (!normalizedValue || seenValues.has(normalizedValue)) continue
+
+        seenValues.add(normalizedValue)
+        cases.push({
+            id: generateHashId(normalizedValue),
+            name: normalizedValue,
+        })
+    }
+
+    return cases
+}
+
+function mergeEnumCases(
+    existingCases: EditableField["cases"],
+    derivedCases: NonNullable<EditableField["cases"]>
+): NonNullable<EditableField["cases"]> {
+    const mergedCases: NonNullable<EditableField["cases"]> = []
+    const seenCaseNames = new Set<string>()
+
+    for (const existingCase of existingCases ?? []) {
+        if (seenCaseNames.has(existingCase.name)) continue
+
+        seenCaseNames.add(existingCase.name)
+        mergedCases.push(existingCase)
+    }
+
+    for (const derivedCase of derivedCases) {
+        if (seenCaseNames.has(derivedCase.name)) continue
+
+        seenCaseNames.add(derivedCase.name)
+        mergedCases.push(derivedCase)
+    }
+
+    return mergedCases
+}
+
 function isUpdateContext(context: PluginContext): context is PluginContextUpdate {
     return context.type === "update"
 }
@@ -110,10 +164,8 @@ const inferFieldType = (cellValue: CellValue): FieldType => {
 
 const getFieldType = (context: PluginContext, columnId: string, cellValue?: CellValue): FieldType => {
     // Determine if the field type is already configured
-    if (isUpdateContext(context)) {
-        const field = context.collectionFields.find(field => field.id === columnId)
-        return field?.type ?? "string"
-    }
+    const configuredField = getConfiguredField(context, columnId)
+    if (configuredField) return configuredField.type
 
     // Otherwise, infer the field type from the cell value
     return cellValue ? inferFieldType(cellValue) : "string"
@@ -130,12 +182,14 @@ const createFieldConfig = (
     for (const [columnIndex] of headerRow.entries()) {
         const sanitizedName = uniqueColumnNames[columnIndex]
         if (!sanitizedName) continue
+        const configuredField = getConfiguredField(context, sanitizedName)
         const initialType: FieldType = getFieldType(context, sanitizedName, row?.[columnIndex])
 
         fields.push({
             id: sanitizedName,
             name: sanitizedName,
             type: initialType,
+            cases: configuredField?.cases,
         })
     }
 
@@ -238,22 +292,18 @@ export function MapSheetFieldsPage({
             if (result.type === "enum") {
                 const colIndex = uniqueColumnNames.indexOf(result.id)
                 if (colIndex !== -1) {
-                    const uniqueValues: string[] = []
-                    const seenValues = new Set<string>()
-                    for (const row of rows) {
-                        const rawValue = row[colIndex]
-                        if (!isDefined(rawValue)) continue
+                    result.cases = mergeEnumCases(result.cases, getEnumCasesForColumn(rows, colIndex))
+                }
 
-                        const normalizedValue = String(rawValue).trim()
-                        if (!normalizedValue || seenValues.has(normalizedValue)) continue
-
-                        seenValues.add(normalizedValue)
-                        uniqueValues.push(normalizedValue)
-                    }
-                    result.cases = uniqueValues.map(value => ({
-                        id: generateHashId(value),
-                        name: value,
-                    }))
+                if (!result.cases || result.cases.length === 0) {
+                    framer.notify(
+                        `"${result.name}" needs at least one non-empty value before it can be imported as an Option field.`,
+                        {
+                            variant: "error",
+                            durationMs: 5000,
+                        }
+                    )
+                    return
                 }
             }
 

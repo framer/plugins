@@ -6,33 +6,14 @@ import { IconChevron } from "../components/Icons"
 import type { CellValue, HeaderRow, PluginContext, PluginContextUpdate, Row, SyncMutationOptions } from "../sheets"
 import { generateHashId, generateUniqueNames, isDefined, syncMethods } from "../utils"
 
-type FieldType =
-    | "string"
-    | "number"
-    | "boolean"
-    | "formattedText"
-    | "enum"
-    | "date"
-    | "dateTime"
-    | "link"
-    | "image"
-    | "color"
-    | "file"
-    | "collectionReference"
-    | "multiCollectionReference"
-    | "array"
+type FieldType = SyncMutationOptions["colFieldTypes"][number]
 
 interface FieldTypeOption {
     type: FieldType
     label: string
 }
 
-interface EditableField {
-    id: string
-    name: string
-    type: FieldType
-    cases?: { id: string; name: string }[]
-}
+type EditableField = SyncMutationOptions["fields"][number]
 
 const fieldTypeOptions: FieldTypeOption[] = [
     { type: "string", label: "Plain Text" },
@@ -47,6 +28,10 @@ const fieldTypeOptions: FieldTypeOption[] = [
     { type: "number", label: "Number" },
     { type: "file", label: "File" },
 ]
+
+function isFieldType(value: string): value is FieldType {
+    return fieldTypeOptions.some(option => option.type === value)
+}
 
 function isUpdateContext(context: PluginContext): context is PluginContextUpdate {
     return context.type === "update"
@@ -240,7 +225,7 @@ export function MapSheetFieldsPage({
 
         if (isPending) return
 
-        const allFields: EditableField[] = []
+        const allFields: SyncMutationOptions["fields"] = []
         for (const field of fieldConfig) {
             if (disabledColumns.has(field.id)) continue
 
@@ -275,7 +260,7 @@ export function MapSheetFieldsPage({
             allFields.push(result)
         }
 
-        const colFieldTypes: FieldType[] = []
+        const colFieldTypes: SyncMutationOptions["colFieldTypes"] = []
         for (const field of fieldConfig) {
             colFieldTypes.push(field.type)
         }
@@ -283,10 +268,10 @@ export function MapSheetFieldsPage({
         await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
         const submitOptions: SyncMutationOptions = {
-            fields: allFields as SyncMutationOptions["fields"],
+            fields: allFields,
             spreadsheetId,
             sheetTitle,
-            colFieldTypes: colFieldTypes as SyncMutationOptions["colFieldTypes"],
+            colFieldTypes,
             ignoredColumns: Array.from(disabledColumns),
             slugColumn,
             lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),
@@ -346,7 +331,9 @@ export function MapSheetFieldsPage({
                                     disabled={isDisabled || !isAllowedToManage}
                                     value={field.type}
                                     onChange={e => {
-                                        handleFieldTypeChange(field.id, e.target.value as FieldType)
+                                        if (isFieldType(e.target.value)) {
+                                            handleFieldTypeChange(field.id, e.target.value)
+                                        }
                                     }}
                                     title={isAllowedToManage ? undefined : "Insufficient permissions"}
                                 >

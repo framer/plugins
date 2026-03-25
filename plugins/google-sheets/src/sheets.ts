@@ -625,25 +625,32 @@ export async function syncSheet({
             const colIndex = uniqueHeaderRowNames.indexOf(field.id)
             if (colIndex === -1) return mapFieldToFramer(field)
 
-            const uniqueValues = [
-                ...new Set(
-                    rows
-                        .map(row => row[colIndex])
-                        .filter(isDefined)
-                        .map(v => String(v).trim())
-                        .filter(Boolean)
-                ),
-            ]
+            const uniqueValues: string[] = []
+            const seenValues = new Set<string>()
+            for (const row of rows) {
+                const rawValue = row[colIndex]
+                if (!isDefined(rawValue)) continue
 
-            return {
+                const normalizedValue = String(rawValue).trim()
+                if (!normalizedValue || seenValues.has(normalizedValue)) continue
+
+                seenValues.add(normalizedValue)
+                uniqueValues.push(normalizedValue)
+            }
+
+            const cases: Extract<ManagedCollectionFieldInput, { type: "enum" }>["cases"] = uniqueValues.map(value => ({
+                id: generateHashId(value),
+                name: value,
+            }))
+
+            const enumField: Extract<ManagedCollectionFieldInput, { type: "enum" }> = {
                 id: field.id,
                 name: field.name,
-                type: "enum" as const,
-                cases: uniqueValues.map(value => ({
-                    id: generateHashId(value),
-                    name: value,
-                })),
-            } as ManagedCollectionFieldInput
+                type: "enum",
+                cases,
+            }
+
+            return enumField
         })
 
         await collection.setFields(updatedFields)

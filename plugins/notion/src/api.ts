@@ -103,7 +103,7 @@ let notionClientSingleton: Client | null = null
  * Uses a simple queue-based approach with minimum time between requests.
  */
 const REQUEST_INTERVAL_MS = 350 // ~3 requests per second with small buffer
-const VIEW_QUERY_PAGE_SIZE = 100
+const QUERY_PAGE_SIZE = 100
 let lastRequestTime = 0
 let requestQueue: Promise<void> = Promise.resolve()
 
@@ -246,7 +246,7 @@ async function listViews(databaseId: string, startCursor?: string): Promise<Pagi
 
 export async function getDatabaseViews(
     databaseId: string
-): Promise<Array<{ id: string; name: string; dataSourceId: string | null }>> {
+): Promise<{ id: string; name: string; dataSourceId: string | null }[]> {
     const viewRefs = await collectPaginatedAPI(
         (args: { start_cursor?: string }) => listViews(databaseId, args.start_cursor),
         {}
@@ -488,46 +488,20 @@ export async function getDatabaseItems(
     const data: PageObjectResponse[] = []
     let itemCount = 0
 
-    if (viewId) {
-        const notion = getNotionClient()
-        const firstPage = await notionApiRequest<ViewQueryResponse>(`/v1/views/${viewId}/queries`, {
-            method: "POST",
-            body: JSON.stringify({ page_size: VIEW_QUERY_PAGE_SIZE }),
-        })
+    const notion = getNotionClient()
+    const view = viewId ? await notionApiRequest<ViewObjectResponse>(`/v1/views/${viewId}`) : null
 
-        const queryId = firstPage.id
-        const pageRefs: PageReferenceResponse[] = [...firstPage.results]
-        let nextCursor = firstPage.next_cursor
+    const queryIterator = iteratePaginatedAPI(notion.dataSources.query, {
+        data_source_id: dataSourceId,
+        page_size: QUERY_PAGE_SIZE,
+        ...(view?.filter ? { filter: view.filter as never } : {}),
+        ...(Array.isArray(view?.sorts) && view.sorts.length > 0 ? { sorts: view.sorts as never } : {}),
+    })
 
-        while (nextCursor) {
-            const params = new URLSearchParams({
-                start_cursor: nextCursor,
-                page_size: String(VIEW_QUERY_PAGE_SIZE),
-            })
-            const page = await notionApiRequest<PaginatedList<PageReferenceResponse>>(
-                `/v1/views/${viewId}/queries/${queryId}?${params.toString()}`
-            )
-            pageRefs.push(...page.results)
-            nextCursor = page.next_cursor
-        }
-
-        for (const pageRef of pageRefs) {
-            const page = await notion.pages.retrieve({ page_id: pageRef.id })
-            if (!isFullPage(page)) continue
-            data.push(page)
-            itemCount++
-            onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: false })
-        }
-    } else {
-        const queryIterator = iteratePaginatedAPI(getNotionClient().dataSources.query, {
-            data_source_id: dataSourceId,
-        })
-
-        for await (const item of queryIterator) {
-            data.push(item as PageObjectResponse)
-            itemCount++
-            onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: false })
-        }
+    for await (const item of queryIterator) {
+        data.push(item as PageObjectResponse)
+        itemCount++
+        onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: false })
     }
 
     onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: true })
@@ -574,22 +548,8 @@ interface ViewObjectResponse {
     id: string
     name: string
     data_source_id: string | null
-}
-
-interface PageReferenceResponse {
-    object: "page"
-    id: string
-}
-
-interface ViewQueryResponse {
-    object: "view_query"
-    id: string
-    view_id: string
-    expires_at: string
-    total_count: number
-    results: PageReferenceResponse[]
-    next_cursor: string | null
-    has_more: boolean
+    filter?: unknown
+    sorts?: unknown[] | null
 }
 
 function getNotionApiHeaders() {
@@ -605,7 +565,9 @@ function getNotionApiHeaders() {
 async function notionApiRequest<T>(path: string, init?: RequestInit): Promise<T> {
     const headers = new Headers(getNotionApiHeaders())
     if (init?.headers) {
-        new Headers(init.headers).forEach((value, key) => headers.set(key, value))
+        new Headers(init.headers).forEach((value, key) => {
+            headers.set(key, value)
+        })
     }
 
     const response = await fetchWithRetry(`${API_BASE_URL}/notion${path}`, {

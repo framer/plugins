@@ -396,8 +396,13 @@ export async function syncCollection(
         itemIdsToDelete.delete(itemId)
     }
 
-    await collection.removeItems(Array.from(itemIdsToDelete))
-    await collection.addItems(items)
+    if (itemIdsToDelete.size > 0) {
+        await collection.removeItems(Array.from(itemIdsToDelete))
+    }
+
+    if (items.length > 0) {
+        await collection.addItems(items)
+    }
 
     await Promise.all([
         collection.setPluginData(

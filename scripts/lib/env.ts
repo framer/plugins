@@ -7,9 +7,17 @@ export const BooleanEnvSchema = v.pipe(
     v.transform(val => ["true", "1", "yes"].includes(val.toLowerCase()))
 )
 
+/** Treats empty strings as undefined, since GitHub Actions sets unset inputs to "". */
+const OptionalNonEmptyString = v.optional(
+    v.pipe(
+        v.string(),
+        v.transform(val => (val === "" ? undefined : val))
+    )
+)
+
 export const EnvSchema = v.object({
     PLUGIN_PATH: v.pipe(v.string(), v.minLength(1)),
-    CHANGELOG: v.optional(v.pipe(v.string(), v.minLength(1))),
+    CHANGELOG: OptionalNonEmptyString,
     PR_BODY: v.optional(v.string()),
     SLACK_WEBHOOK_URL: v.optional(v.string()),
     SLACK_ERROR_WEBHOOK_URL: v.optional(v.string()),

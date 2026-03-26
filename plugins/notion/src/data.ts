@@ -4,7 +4,7 @@ import {
     type FieldDataEntryInput,
     type FieldDataInput,
     framer,
-    ManagedCollection,
+    type ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import pLimit from "p-limit"
@@ -12,10 +12,10 @@ import * as v from "valibot"
 import {
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
-    getDatabaseViews,
-    getDataSourceFromDatabaseId,
     getDatabaseFieldsInfo,
     getDatabaseItems,
+    getDatabaseViews,
+    getDataSourceFromDatabaseId,
     getNotionDataSources,
     getPageBlocksAsRichText,
     getSlugValue,
@@ -778,8 +778,6 @@ export function getFieldDataEntryForProperty(
                                             },
                                         },
                                     }
-                                case undefined:
-                                    return
                                 default:
                                     file satisfies never
                             }

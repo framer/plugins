@@ -1,8 +1,8 @@
 import { Client, collectPaginatedAPI, isFullBlock, isFullDataSource, isFullPage } from "@notionhq/client"
 import type {
     BlockObjectResponse,
-    DataSourceObjectResponse,
     DatabaseObjectResponse,
+    DataSourceObjectResponse,
     GetDataSourceResponse,
     PageObjectResponse,
     RichTextItemResponse,

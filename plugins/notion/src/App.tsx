@@ -21,6 +21,7 @@ import { showAccessErrorUI, showFieldMappingUI, showLoginUI, showProgressUI } fr
 interface AppProps {
     collection: ManagedCollection
     previousDatabaseId: string | null
+    previousDataSourceId: string | null
     previousSlugFieldId: string | null
     previousLastSynced: string | null
     previousIgnoredFieldIds: string | null
@@ -31,6 +32,7 @@ interface AppProps {
 export function App({
     collection,
     previousDatabaseId,
+    previousDataSourceId,
     previousSlugFieldId,
     previousLastSynced,
     previousIgnoredFieldIds,
@@ -62,6 +64,7 @@ export function App({
                 const { didSync } = await syncExistingCollection(
                     collection,
                     previousDatabaseId,
+                    previousDataSourceId,
                     previousSlugFieldId,
                     previousIgnoredFieldIds,
                     previousLastSynced,
@@ -94,6 +97,7 @@ export function App({
         isSyncMode,
         collection,
         previousDatabaseId,
+        previousDataSourceId,
         previousSlugFieldId,
         previousIgnoredFieldIds,
         previousLastSynced,
@@ -116,6 +120,7 @@ export function App({
         <ManageApp
             collection={collection}
             previousDatabaseId={previousDatabaseId}
+            previousDataSourceId={previousDataSourceId}
             previousSlugFieldId={previousSlugFieldId}
             previousLastSynced={previousLastSynced}
             previousIgnoredFieldIds={previousIgnoredFieldIds}
@@ -128,6 +133,7 @@ export function App({
 function ManageApp({
     collection,
     previousDatabaseId,
+    previousDataSourceId,
     previousSlugFieldId,
     previousLastSynced,
     previousIgnoredFieldIds,
@@ -138,6 +144,7 @@ function ManageApp({
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDatabaseId))
     const [hasAccessError, setHasAccessError] = useState(false)
     const [isSyncing, setIsSyncing] = useState(false)
+    const [showDataSourceSelect, setShowDataSourceSelect] = useState(false)
 
     // Support self-referencing databases by allowing the current collection to be referenced.
     const databaseIdMap = useMemo(() => {
@@ -157,7 +164,7 @@ function ManageApp({
                 } else if (dataSource || isLoadingDataSource) {
                     await showFieldMappingUI()
                 } else {
-                    await showLoginUI()
+                    await showLoginUI(showDataSourceSelect)
                 }
             } catch (error) {
                 console.error(error)
@@ -168,7 +175,7 @@ function ManageApp({
         }
 
         void showUI()
-    }, [dataSource, isLoadingDataSource, hasAccessError, isSyncing])
+    }, [dataSource, isLoadingDataSource, hasAccessError, isSyncing, showDataSourceSelect])
 
     useEffect(() => {
         if (!previousDatabaseId) {
@@ -178,7 +185,7 @@ function ManageApp({
         const abortController = new AbortController()
 
         setIsLoadingDataSource(true)
-        getDataSource(previousDatabaseId, abortController.signal)
+        getDataSource(previousDatabaseId, previousDataSourceId, abortController.signal)
             .then(setDataSource)
             .catch((error: unknown) => {
                 if (abortController.signal.aborted) return
@@ -210,7 +217,7 @@ function ManageApp({
         return () => {
             abortController.abort()
         }
-    }, [previousDatabaseId, previousDatabaseName])
+    }, [previousDatabaseId, previousDataSourceId, previousDatabaseName])
 
     useEffect(() => {
         void framer.setMenu([
@@ -246,7 +253,12 @@ function ManageApp({
     }
 
     if (!dataSource) {
-        return <SelectDataSource onSelectDataSource={setDataSource} />
+        return (
+            <SelectDataSource
+                onSelectDataSource={setDataSource}
+                onDataSourceSelectVisibilityChange={setShowDataSourceSelect}
+            />
+        )
     }
 
     return (

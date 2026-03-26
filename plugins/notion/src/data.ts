@@ -12,6 +12,7 @@ import * as v from "valibot"
 import {
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
+    getDatabaseDataSources,
     getDataSourceFromDatabaseId,
     getDatabaseFieldsInfo,
     getDatabaseItems,
@@ -45,6 +46,11 @@ export interface DataSource {
     databaseUrl: string | null
 }
 
+export interface DataSourceOption {
+    id: string
+    name: string
+}
+
 export async function getDataSources(): Promise<DataSource[]> {
     const dataSources = await getNotionDataSources()
 
@@ -60,12 +66,24 @@ export async function getDataSources(): Promise<DataSource[]> {
     })
 }
 
+export async function getDataSourceOptions(databaseId: string): Promise<DataSourceOption[]> {
+    const options = await getDatabaseDataSources(databaseId)
+    return options.map(option => ({
+        id: option.id,
+        name: option.name || "Untitled Data Source",
+    }))
+}
+
 /**
  * Retrieve Notion database by database_id and resolve to first data source.
  * When a database has multiple data sources, only the first one is used.
  */
-export async function getDataSource(databaseId: string, abortSignal?: AbortSignal): Promise<DataSource> {
-    const { database, dataSource } = await getDataSourceFromDatabaseId(databaseId)
+export async function getDataSource(
+    databaseId: string,
+    dataSourceId: string | null,
+    abortSignal?: AbortSignal
+): Promise<DataSource> {
+    const { database, dataSource } = await getDataSourceFromDatabaseId(databaseId, dataSourceId)
 
     if (abortSignal?.aborted) {
         throw new Error("Database loading cancelled")
@@ -76,7 +94,7 @@ export async function getDataSource(databaseId: string, abortSignal?: AbortSigna
         dataSourceId: dataSource.id,
         name: richTextToPlainText(dataSource.title) || "Untitled Database",
         schema: dataSource,
-        databaseUrl: database.url ?? null,
+        databaseUrl: dataSource.url || database.url || null,
     }
 }
 
@@ -379,6 +397,7 @@ export async function syncCollection(
             ignoredFieldIds.size > 0 ? JSON.stringify(Array.from(ignoredFieldIds)) : null
         ),
         collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, dataSource.id),
+        collection.setPluginData(PLUGIN_KEYS.DATA_SOURCE_ID, dataSource.dataSourceId),
         collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
         collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id),
         collection.setPluginData(PLUGIN_KEYS.DATABASE_NAME, richTextToPlainText(dataSource.schema.title)),
@@ -411,6 +430,7 @@ export function shouldSyncExistingCollection({
 export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDatabaseId: string | null,
+    previousDataSourceId: string | null,
     previousSlugFieldId: string | null,
     previousIgnoredFieldIds: string | null,
     previousLastSynced: string | null,
@@ -429,7 +449,7 @@ export async function syncExistingCollection(
     await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
     try {
-        const dataSource = await getDataSource(previousDatabaseId)
+        const dataSource = await getDataSource(previousDatabaseId, previousDataSourceId)
         const existingFields = await collection.getFields()
 
         const dataSourceFieldsInfo = getDatabaseFieldsInfo(dataSource.schema, databaseIdMap)

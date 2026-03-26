@@ -18,12 +18,14 @@ export async function showFieldMappingUI() {
     })
 }
 
-export async function showLoginUI() {
+export async function showLoginUI(showDataSourceSelect = false) {
+    const height = 345 + (showDataSourceSelect ? 40 : 0)
+
     await framer.showUI({
         width: 260,
-        height: 345,
+        height,
         minWidth: 260,
-        minHeight: 345,
+        minHeight: height,
         resizable: false,
     })
 }

@@ -15,6 +15,7 @@ import { assert } from "./utils"
 export const API_BASE_URL = "https://notion-plugin-api.framer-team.workers.dev"
 export const PLUGIN_KEYS = {
     DATABASE_ID: "notionPluginDatabaseId",
+    DATA_SOURCE_ID: "notionPluginDataSourceId",
     LAST_SYNCED: "notionPluginLastSynced",
     IGNORED_FIELD_IDS: "notionPluginIgnoredFieldIds",
     SLUG_FIELD_ID: "notionPluginSlugId",
@@ -236,6 +237,17 @@ export async function getNotionDataSources(): Promise<DataSourceObjectResponse[]
     return firstDataSources
 }
 
+export async function getDatabaseDataSources(databaseId: string): Promise<{ id: string; name: string }[]> {
+    const notion = getNotionClient()
+    const database = await notion.databases.retrieve({ database_id: databaseId })
+
+    if ("data_sources" in database && Array.isArray(database.data_sources)) {
+        return database.data_sources
+    }
+
+    return []
+}
+
 export function assertFieldTypeMatchesPropertyType(
     propertyType: NotionProperty["type"],
     fieldType: VirtualFieldType
@@ -259,22 +271,24 @@ export function assertFieldTypeMatchesPropertyType(
  * When a database has multiple data sources, only the first one is used.
  */
 export async function getDataSourceFromDatabaseId(
-    databaseId: string
+    databaseId: string,
+    dataSourceId: string | null
 ): Promise<{ database: DatabaseObjectResponse; dataSource: DataSourceObjectResponse }> {
     const notion = getNotionClient()
     const database = await notion.databases.retrieve({ database_id: databaseId })
 
     const dataSources = "data_sources" in database && Array.isArray(database.data_sources) ? database.data_sources : []
-    const firstDataSourceRef = dataSources[0]
-    if (!firstDataSourceRef) {
+    const selectedDataSourceRef =
+        (dataSourceId ? dataSources.find(ds => ds.id === dataSourceId) : null) ?? dataSources[0]
+    if (!selectedDataSourceRef) {
         throw new Error(`Database ${databaseId} has no data sources`)
     }
     const dataSource = await notion.dataSources.retrieve({
-        data_source_id: firstDataSourceRef.id,
+        data_source_id: selectedDataSourceRef.id,
     })
 
     if (!isFullDataSource(dataSource)) {
-        throw new Error(`Data source ${firstDataSourceRef.id} is not a full data source`)
+        throw new Error(`Data source ${selectedDataSourceRef.id} is not a full data source`)
     }
 
     return {

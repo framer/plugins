@@ -21,9 +21,9 @@ export async function showFieldMappingUI() {
 export async function showLoginUI() {
     await framer.showUI({
         width: 320,
-        height: 367,
+        height: 372,
         minWidth: 320,
-        minHeight: 367,
+        minHeight: 372,
         resizable: false,
     })
 }

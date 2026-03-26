@@ -147,48 +147,50 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
             </div>
 
             <form onSubmit={e => void handleSubmit(e)}>
-                <div className="property-control">
-                    <p>Database</p>
-                    <select
-                        id="collection"
-                        onChange={event => {
-                            setSelectedDatabaseId(event.target.value)
-                        }}
-                        value={selectedDatabaseId ?? ""}
-                        disabled={status === Status.Loading}
-                        className={status === Status.Refreshing ? "refreshing" : ""}
-                    >
-                        <option value="" disabled>
-                            {status === Status.Loading ? "Loading…" : "Choose Database…"}
-                        </option>
-                        {dataSources.map(({ id, name }) => (
-                            <option key={id} value={id}>
-                                {name}
+                <div className="property-controls-list">
+                    <div className="property-control">
+                        <p>Database</p>
+                        <select
+                            id="collection"
+                            onChange={event => {
+                                setSelectedDatabaseId(event.target.value)
+                            }}
+                            value={selectedDatabaseId ?? ""}
+                            disabled={status === Status.Loading}
+                            className={status === Status.Refreshing ? "refreshing" : ""}
+                        >
+                            <option value="" disabled>
+                                {status === Status.Loading ? "Loading…" : "Choose Database…"}
                             </option>
-                        ))}
-                    </select>
-                    {status === Status.Refreshing && <div className="framer-spinner" />}
-                </div>
+                            {dataSources.map(({ id, name }) => (
+                                <option key={id} value={id}>
+                                    {name}
+                                </option>
+                            ))}
+                        </select>
+                        {status === Status.Refreshing && <div className="framer-spinner" />}
+                    </div>
 
-                <div className="property-control">
-                    <p>Data Source</p>
-                    <select
-                        id="data-source"
-                        onChange={event => {
-                            setSelectedDataSourceId(event.target.value)
-                        }}
-                        value={selectedDataSourceId ?? ""}
-                        disabled={!hasDataSources || status === Status.Loading}
-                    >
-                        <option value="" disabled>
-                            {status === Status.Loading ? "Loading…" : "Choose Data Source…"}
-                        </option>
-                        {databaseDataSources?.map(({ id, name }) => (
-                            <option key={id} value={id}>
-                                {name}
+                    <div className="property-control">
+                        <p>Data Source</p>
+                        <select
+                            id="data-source"
+                            onChange={event => {
+                                setSelectedDataSourceId(event.target.value)
+                            }}
+                            value={selectedDataSourceId ?? ""}
+                            disabled={!hasDataSources || status === Status.Loading}
+                        >
+                            <option value="" disabled>
+                                {status === Status.Loading ? "Loading…" : "Choose Data Source…"}
                             </option>
-                        ))}
-                    </select>
+                            {databaseDataSources?.map(({ id, name }) => (
+                                <option key={id} value={id}>
+                                    {databaseDataSources.length === 1 ? "All Items" : name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 <button disabled={!selectedDatabaseId || status === Status.Loading}>

@@ -75,5 +75,6 @@ export const listFormatter = new Intl.ListFormat("en", {
 export const syncMethods = [
     "ManagedCollection.removeItems",
     "ManagedCollection.addItems",
+    "ManagedCollection.setItemOrder",
     "ManagedCollection.setPluginData",
 ] as const satisfies ProtectedMethod[]

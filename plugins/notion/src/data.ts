@@ -404,6 +404,21 @@ export async function syncCollection(
         await collection.addItems(items)
     }
 
+    // Ensure collection item order matches the source Notion database order.
+    const itemIds = await collection.getItemIds()
+    const currentCollectionItemIds = new Set(itemIds)
+    const notionOrderedItemIds = databaseItems.map(item => item.id)
+    const orderedItemIds = notionOrderedItemIds.filter(itemId => currentCollectionItemIds.has(itemId))
+
+    // Keep any unexpected remaining items at the end.
+    for (const itemId of currentCollectionItemIds) {
+        if (!orderedItemIds.includes(itemId)) {
+            orderedItemIds.push(itemId)
+        }
+    }
+
+    await collection.setItemOrder(orderedItemIds)
+
     await Promise.all([
         collection.setPluginData(
             PLUGIN_KEYS.IGNORED_FIELD_IDS,

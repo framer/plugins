@@ -11,7 +11,7 @@ export const BooleanEnvSchema = v.pipe(
 const OptionalNonEmptyString = v.optional(
     v.pipe(
         v.string(),
-        v.transform(val => (val === "" ? undefined : val))
+        v.transform(val => (val.trim() ? val : undefined))
     )
 )
 

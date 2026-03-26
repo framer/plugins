@@ -279,7 +279,7 @@ export function FieldMapping({
                     existingFields,
                     setSyncProgress
                 )
-                framer.closePlugin("Synchronization successful", { variant: "success" })
+                // framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
                 if (error instanceof FramerPluginClosedError) return
                 console.error(error)

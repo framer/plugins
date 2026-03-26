@@ -12,7 +12,7 @@ import * as v from "valibot"
 import {
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
-    getDatabaseDataSources,
+    getDatabaseViews,
     getDataSourceFromDatabaseId,
     getDatabaseFieldsInfo,
     getDatabaseItems,
@@ -39,6 +39,8 @@ export interface DataSource {
     id: string
     /** Data source ID - used for API calls (query, etc.) */
     dataSourceId: string
+    /** View ID - used for view queries and persisted plugin state */
+    viewId: string | null
     name: string
     /** Schema with properties - from the first data source when database has multiple */
     schema: DataSourceObjectResponse
@@ -46,7 +48,7 @@ export interface DataSource {
     databaseUrl: string | null
 }
 
-export interface DataSourceOption {
+export interface ViewOption {
     id: string
     name: string
 }
@@ -59,6 +61,7 @@ export async function getDataSources(): Promise<DataSource[]> {
         return {
             id: databaseId,
             dataSourceId: ds.id,
+            viewId: null,
             name: richTextToPlainText(ds.title) || "Untitled Database",
             schema: ds,
             databaseUrl: null, // Search results don't include database URL
@@ -66,24 +69,26 @@ export async function getDataSources(): Promise<DataSource[]> {
     })
 }
 
-export async function getDataSourceOptions(databaseId: string): Promise<DataSourceOption[]> {
-    const options = await getDatabaseDataSources(databaseId)
-    return options.map(option => ({
-        id: option.id,
-        name: option.name || "Untitled Data Source",
-    }))
+export async function getViewOptions(databaseId: string): Promise<ViewOption[]> {
+    const options = await getDatabaseViews(databaseId)
+    return options
+        .filter(option => option.dataSourceId)
+        .map(option => ({
+            id: option.id,
+            name: option.name || "Untitled View",
+        }))
 }
 
 /**
- * Retrieve Notion database by database_id and resolve to first data source.
- * When a database has multiple data sources, only the first one is used.
+ * Retrieve Notion database by database_id and resolve to selected view data source.
+ * If no view is selected, falls back to the first data source in the database.
  */
 export async function getDataSource(
     databaseId: string,
-    dataSourceId: string | null,
+    viewId: string | null,
     abortSignal?: AbortSignal
 ): Promise<DataSource> {
-    const { database, dataSource } = await getDataSourceFromDatabaseId(databaseId, dataSourceId)
+    const { database, dataSource, viewId: resolvedViewId } = await getDataSourceFromDatabaseId(databaseId, viewId)
 
     if (abortSignal?.aborted) {
         throw new Error("Database loading cancelled")
@@ -92,6 +97,7 @@ export async function getDataSource(
     return {
         id: database.id,
         dataSourceId: dataSource.id,
+        viewId: resolvedViewId,
         name: richTextToPlainText(dataSource.title) || "Untitled Database",
         schema: dataSource,
         databaseUrl: dataSource.url || database.url || null,
@@ -169,9 +175,11 @@ export async function syncCollection(
         }
     }
 
+    const collectionItemIds = await collection.getItemIds()
+    const existingItemIds = new Set(collectionItemIds)
     const seenItemIds = new Set<string>()
 
-    const databaseItems = await getDatabaseItems(dataSource.dataSourceId, reportProgress)
+    const databaseItems = await getDatabaseItems(dataSource.dataSourceId, dataSource.viewId, reportProgress)
 
     // Validate slugs before fetching page content
     const seenSlugs = new Set<string>()
@@ -240,7 +248,7 @@ export async function syncCollection(
             seenItemIds.add(item.id)
 
             let isUnchanged = false
-            if (isUnchangedSinceLastSync(item.last_edited_time, lastSynced)) {
+            if (existingItemIds.has(item.id) && isUnchangedSinceLastSync(item.last_edited_time, lastSynced)) {
                 if (import.meta.env.MODE === "development") {
                     console.warn({
                         message: `Skipping content update. last updated: ${formatDate(item.last_edited_time)}, last synced: ${lastSynced ? formatDate(lastSynced) : "never"}`,
@@ -383,7 +391,7 @@ export async function syncCollection(
         }
     }
 
-    const itemIdsToDelete = new Set(await collection.getItemIds())
+    const itemIdsToDelete = new Set(existingItemIds)
     for (const itemId of seenItemIds) {
         itemIdsToDelete.delete(itemId)
     }
@@ -397,7 +405,7 @@ export async function syncCollection(
             ignoredFieldIds.size > 0 ? JSON.stringify(Array.from(ignoredFieldIds)) : null
         ),
         collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, dataSource.id),
-        collection.setPluginData(PLUGIN_KEYS.DATA_SOURCE_ID, dataSource.dataSourceId),
+        collection.setPluginData(PLUGIN_KEYS.VIEW_ID, dataSource.viewId),
         collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
         collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id),
         collection.setPluginData(PLUGIN_KEYS.DATABASE_NAME, richTextToPlainText(dataSource.schema.title)),
@@ -430,7 +438,7 @@ export function shouldSyncExistingCollection({
 export async function syncExistingCollection(
     collection: ManagedCollection,
     previousDatabaseId: string | null,
-    previousDataSourceId: string | null,
+    previousViewId: string | null,
     previousSlugFieldId: string | null,
     previousIgnoredFieldIds: string | null,
     previousLastSynced: string | null,
@@ -449,7 +457,7 @@ export async function syncExistingCollection(
     await framer.setCloseWarning("Synchronization in progress. Closing will cancel the sync.")
 
     try {
-        const dataSource = await getDataSource(previousDatabaseId, previousDataSourceId)
+        const dataSource = await getDataSource(previousDatabaseId, previousViewId)
         const existingFields = await collection.getFields()
 
         const dataSourceFieldsInfo = getDatabaseFieldsInfo(dataSource.schema, databaseIdMap)

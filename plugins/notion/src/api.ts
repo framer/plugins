@@ -15,7 +15,7 @@ import { assert } from "./utils"
 export const API_BASE_URL = "https://notion-plugin-api.framer-team.workers.dev"
 export const PLUGIN_KEYS = {
     DATABASE_ID: "notionPluginDatabaseId",
-    DATA_SOURCE_ID: "notionPluginDataSourceId",
+    VIEW_ID: "notionPluginViewId",
     LAST_SYNCED: "notionPluginLastSynced",
     IGNORED_FIELD_IDS: "notionPluginIgnoredFieldIds",
     SLUG_FIELD_ID: "notionPluginSlugId",
@@ -103,6 +103,7 @@ let notionClientSingleton: Client | null = null
  * Uses a simple queue-based approach with minimum time between requests.
  */
 const REQUEST_INTERVAL_MS = 350 // ~3 requests per second with small buffer
+const VIEW_QUERY_PAGE_SIZE = 100
 let lastRequestTime = 0
 let requestQueue: Promise<void> = Promise.resolve()
 
@@ -237,15 +238,32 @@ export async function getNotionDataSources(): Promise<DataSourceObjectResponse[]
     return firstDataSources
 }
 
-export async function getDatabaseDataSources(databaseId: string): Promise<{ id: string; name: string }[]> {
-    const notion = getNotionClient()
-    const database = await notion.databases.retrieve({ database_id: databaseId })
+async function listViews(databaseId: string, startCursor?: string): Promise<PaginatedList<ViewReferenceResponse>> {
+    const params = new URLSearchParams({ database_id: databaseId })
+    if (startCursor) params.set("start_cursor", startCursor)
+    return notionApiRequest<PaginatedList<ViewReferenceResponse>>(`/v1/views?${params.toString()}`)
+}
 
-    if ("data_sources" in database && Array.isArray(database.data_sources)) {
-        return database.data_sources
-    }
+export async function getDatabaseViews(
+    databaseId: string
+): Promise<Array<{ id: string; name: string; dataSourceId: string | null }>> {
+    const viewRefs = await collectPaginatedAPI(
+        (args: { start_cursor?: string }) => listViews(databaseId, args.start_cursor),
+        {}
+    )
 
-    return []
+    const views = await Promise.all(
+        viewRefs.map(async viewRef => {
+            const view = await notionApiRequest<ViewObjectResponse>(`/v1/views/${viewRef.id}`)
+            return {
+                id: view.id,
+                name: view.name || "Untitled View",
+                dataSourceId: view.data_source_id,
+            }
+        })
+    )
+
+    return views
 }
 
 export function assertFieldTypeMatchesPropertyType(
@@ -272,14 +290,24 @@ export function assertFieldTypeMatchesPropertyType(
  */
 export async function getDataSourceFromDatabaseId(
     databaseId: string,
-    dataSourceId: string | null
-): Promise<{ database: DatabaseObjectResponse; dataSource: DataSourceObjectResponse }> {
+    viewId: string | null
+): Promise<{ database: DatabaseObjectResponse; dataSource: DataSourceObjectResponse; viewId: string | null }> {
     const notion = getNotionClient()
     const database = await notion.databases.retrieve({ database_id: databaseId })
 
     const dataSources = "data_sources" in database && Array.isArray(database.data_sources) ? database.data_sources : []
-    const selectedDataSourceRef =
-        (dataSourceId ? dataSources.find(ds => ds.id === dataSourceId) : null) ?? dataSources[0]
+    let selectedDataSourceRef = dataSources[0]
+    let resolvedViewId: string | null = null
+
+    // Prefer the selected view. If no view is saved, fall back to first data source.
+    if (viewId) {
+        const view = await notionApiRequest<ViewObjectResponse>(`/v1/views/${viewId}`)
+        if (view.data_source_id) {
+            selectedDataSourceRef = dataSources.find(ds => ds.id === view.data_source_id) ?? selectedDataSourceRef
+            resolvedViewId = view.id
+        }
+    }
+
     if (!selectedDataSourceRef) {
         throw new Error(`Database ${databaseId} has no data sources`)
     }
@@ -294,6 +322,7 @@ export async function getDataSourceFromDatabaseId(
     return {
         database: database as DatabaseObjectResponse,
         dataSource,
+        viewId: resolvedViewId,
     }
 }
 
@@ -453,21 +482,52 @@ export async function getPageBlocksAsRichText(pageId: string) {
 
 export async function getDatabaseItems(
     dataSourceId: string,
+    viewId: string | null,
     onProgress?: (progress: { current: number; total: number; hasFinishedLoading: boolean }) => void
 ): Promise<PageObjectResponse[]> {
-    const notion = getNotionClient()
-
     const data: PageObjectResponse[] = []
     let itemCount = 0
 
-    const queryIterator = iteratePaginatedAPI(notion.dataSources.query, {
-        data_source_id: dataSourceId,
-    })
+    if (viewId) {
+        const notion = getNotionClient()
+        const firstPage = await notionApiRequest<ViewQueryResponse>(`/v1/views/${viewId}/queries`, {
+            method: "POST",
+            body: JSON.stringify({ page_size: VIEW_QUERY_PAGE_SIZE }),
+        })
 
-    for await (const item of queryIterator) {
-        data.push(item as PageObjectResponse)
-        itemCount++
-        onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: false })
+        const queryId = firstPage.id
+        const pageRefs: PageReferenceResponse[] = [...firstPage.results]
+        let nextCursor = firstPage.next_cursor
+
+        while (nextCursor) {
+            const params = new URLSearchParams({
+                start_cursor: nextCursor,
+                page_size: String(VIEW_QUERY_PAGE_SIZE),
+            })
+            const page = await notionApiRequest<PaginatedList<PageReferenceResponse>>(
+                `/v1/views/${viewId}/queries/${queryId}?${params.toString()}`
+            )
+            pageRefs.push(...page.results)
+            nextCursor = page.next_cursor
+        }
+
+        for (const pageRef of pageRefs) {
+            const page = await notion.pages.retrieve({ page_id: pageRef.id })
+            if (!isFullPage(page)) continue
+            data.push(page)
+            itemCount++
+            onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: false })
+        }
+    } else {
+        const queryIterator = iteratePaginatedAPI(getNotionClient().dataSources.query, {
+            data_source_id: dataSourceId,
+        })
+
+        for await (const item of queryIterator) {
+            data.push(item as PageObjectResponse)
+            itemCount++
+            onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: false })
+        }
     }
 
     onProgress?.({ current: 0, total: itemCount, hasFinishedLoading: true })
@@ -502,6 +562,63 @@ interface PaginatedList<T> {
     results: T[]
     next_cursor: string | null
     has_more: boolean
+}
+
+interface ViewReferenceResponse {
+    object: "view"
+    id: string
+}
+
+interface ViewObjectResponse {
+    object: "view"
+    id: string
+    name: string
+    data_source_id: string | null
+}
+
+interface PageReferenceResponse {
+    object: "page"
+    id: string
+}
+
+interface ViewQueryResponse {
+    object: "view_query"
+    id: string
+    view_id: string
+    expires_at: string
+    total_count: number
+    results: PageReferenceResponse[]
+    next_cursor: string | null
+    has_more: boolean
+}
+
+function getNotionApiHeaders() {
+    const token = localStorage.getItem(PLUGIN_KEYS.BEARER_TOKEN)
+    if (!token) throw new Error("Notion API token is missing")
+    return {
+        Authorization: `Bearer ${token}`,
+        "Notion-Version": "2026-03-11",
+        "Content-Type": "application/json",
+    }
+}
+
+async function notionApiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+    const headers = new Headers(getNotionApiHeaders())
+    if (init?.headers) {
+        new Headers(init.headers).forEach((value, key) => headers.set(key, value))
+    }
+
+    const response = await fetchWithRetry(`${API_BASE_URL}/notion${path}`, {
+        ...init,
+        headers,
+    })
+
+    if (!response.ok) {
+        const errorBody = await response.text()
+        throw new Error(`Notion API request failed (${response.status}): ${errorBody || response.statusText}`)
+    }
+
+    return (await response.json()) as T
 }
 
 /**

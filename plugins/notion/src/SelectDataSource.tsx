@@ -1,6 +1,6 @@
 import { framer } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { type DataSource, getDataSource, getDataSourceOptions, getDataSources } from "./data"
+import { type DataSource, getDataSource, getDataSources, getViewOptions } from "./data"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
@@ -15,13 +15,13 @@ enum Status {
 
 export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
     const [selectedDatabaseId, setSelectedDatabaseId] = useState<string | null>(null)
-    const [selectedDataSourceId, setSelectedDataSourceId] = useState<string | null>(null)
+    const [selectedViewId, setSelectedViewId] = useState<string | null>(null)
     const [status, setStatus] = useState<Status>(Status.Loading)
     const [dataSources, setDataSources] = useState<DataSource[]>([])
-    const [databaseDataSources, setDatabaseDataSources] = useState<{ id: string; name: string }[] | null>(null)
+    const [databaseViews, setDatabaseViews] = useState<{ id: string; name: string }[] | null>(null)
     const isFirstFocusRef = useRef(true)
 
-    const hasDataSources = (databaseDataSources?.length ?? 0) > 0
+    const hasViews = (databaseViews?.length ?? 0) > 0
 
     const fetchDataSources = useCallback(async (status: Status) => {
         try {
@@ -67,30 +67,27 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
 
     useEffect(() => {
         if (!selectedDatabaseId) {
-            setDatabaseDataSources(null)
-            setSelectedDataSourceId(null)
+            setDatabaseViews(null)
+            setSelectedViewId(null)
             return
         }
 
         let cancelled = false
-        setDatabaseDataSources(null)
-        setSelectedDataSourceId(null)
+        setDatabaseViews(null)
+        setSelectedViewId(null)
 
         const task = async () => {
             try {
-                const fetchDataSourceOptions = getDataSourceOptions as (
-                    databaseId: string
-                ) => Promise<{ id: string; name: string }[]>
-                const options = await fetchDataSourceOptions(selectedDatabaseId)
+                const options = await getViewOptions(selectedDatabaseId)
                 if (cancelled) return
-                setDatabaseDataSources(options)
+                setDatabaseViews(options)
                 if (options.length > 0) {
-                    setSelectedDataSourceId(options[0]?.id ?? null)
+                    setSelectedViewId(options[0]?.id ?? null)
                 }
             } catch (error) {
                 if (cancelled) return
                 console.error(error)
-                setDatabaseDataSources([])
+                setDatabaseViews([])
             }
         }
 
@@ -104,7 +101,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
         event.preventDefault()
 
         if (!selectedDatabaseId) return
-        if (hasDataSources && !selectedDataSourceId) return
+        if (hasViews && !selectedViewId) return
 
         try {
             setStatus(Status.Loading)
@@ -117,8 +114,8 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
 
             await framer.setCloseWarning("Synchronization setup in progress. Closing will cancel the sync.")
 
-            // Fetch full DataSource with databaseUrl for "View in Notion" link
-            const dataSource = await getDataSource(selectedDatabaseId, selectedDataSourceId)
+            // Fetch full data source schema using selected view as the source of truth.
+            const dataSource = await getDataSource(selectedDatabaseId, selectedViewId)
             onSelectDataSource(dataSource)
         } catch (error) {
             await framer.setCloseWarning(false)
@@ -159,9 +156,11 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                             disabled={status === Status.Loading}
                             className={status === Status.Refreshing ? "refreshing" : ""}
                         >
-                            <option value="" disabled>
-                                {status === Status.Loading ? "Loading…" : "Choose Database…"}
-                            </option>
+                            {status === Status.Loading && (
+                                <option value="" disabled>
+                                    Loading…
+                                </option>
+                            )}
                             {dataSources.map(({ id, name }) => (
                                 <option key={id} value={id}>
                                     {name}
@@ -172,21 +171,23 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                     </div>
 
                     <div className="property-control">
-                        <p>Data Source</p>
+                        <p>View</p>
                         <select
-                            id="data-source"
+                            id="view"
                             onChange={event => {
-                                setSelectedDataSourceId(event.target.value)
+                                setSelectedViewId(event.target.value)
                             }}
-                            value={selectedDataSourceId ?? ""}
-                            disabled={!hasDataSources || status === Status.Loading}
+                            value={selectedViewId ?? ""}
+                            disabled={!hasViews || status === Status.Loading}
                         >
-                            <option value="" disabled>
-                                {status === Status.Loading ? "Loading…" : "Choose Data Source…"}
-                            </option>
-                            {databaseDataSources?.map(({ id, name }) => (
+                            {status === Status.Loading && (
+                                <option value="" disabled>
+                                    Loading…
+                                </option>
+                            )}
+                            {databaseViews?.map(({ id, name }) => (
                                 <option key={id} value={id}>
-                                    {databaseDataSources.length === 1 ? "All Items" : name}
+                                    {name}
                                 </option>
                             ))}
                         </select>

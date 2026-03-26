@@ -33,7 +33,7 @@ if (!tokens) {
 
 const [
     previousDatabaseId,
-    previousDataSourceId,
+    previousViewId,
     previousSlugFieldId,
     previousLastSynced,
     previousIgnoredFieldIds,
@@ -41,7 +41,7 @@ const [
     existingCollectionDatabaseIdMap,
 ] = await Promise.all([
     activeCollection.getPluginData(PLUGIN_KEYS.DATABASE_ID),
-    activeCollection.getPluginData(PLUGIN_KEYS.DATA_SOURCE_ID),
+    activeCollection.getPluginData(PLUGIN_KEYS.VIEW_ID),
     activeCollection.getPluginData(PLUGIN_KEYS.SLUG_FIELD_ID),
     activeCollection.getPluginData(PLUGIN_KEYS.LAST_SYNCED),
     activeCollection.getPluginData(PLUGIN_KEYS.IGNORED_FIELD_IDS),
@@ -54,7 +54,7 @@ ReactDOM.createRoot(root).render(
         <App
             collection={activeCollection}
             previousDatabaseId={previousDatabaseId}
-            previousDataSourceId={previousDataSourceId}
+            previousViewId={previousViewId}
             previousSlugFieldId={previousSlugFieldId}
             previousLastSynced={previousLastSynced}
             previousIgnoredFieldIds={previousIgnoredFieldIds}

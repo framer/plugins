@@ -21,7 +21,7 @@ import { showAccessErrorUI, showFieldMappingUI, showLoginUI, showProgressUI } fr
 interface AppProps {
     collection: ManagedCollection
     previousDatabaseId: string | null
-    previousDataSourceId: string | null
+    previousViewId: string | null
     previousSlugFieldId: string | null
     previousLastSynced: string | null
     previousIgnoredFieldIds: string | null
@@ -32,7 +32,7 @@ interface AppProps {
 export function App({
     collection,
     previousDatabaseId,
-    previousDataSourceId,
+    previousViewId,
     previousSlugFieldId,
     previousLastSynced,
     previousIgnoredFieldIds,
@@ -64,7 +64,7 @@ export function App({
                 const { didSync } = await syncExistingCollection(
                     collection,
                     previousDatabaseId,
-                    previousDataSourceId,
+                    previousViewId,
                     previousSlugFieldId,
                     previousIgnoredFieldIds,
                     previousLastSynced,
@@ -97,7 +97,7 @@ export function App({
         isSyncMode,
         collection,
         previousDatabaseId,
-        previousDataSourceId,
+        previousViewId,
         previousSlugFieldId,
         previousIgnoredFieldIds,
         previousLastSynced,
@@ -120,7 +120,7 @@ export function App({
         <ManageApp
             collection={collection}
             previousDatabaseId={previousDatabaseId}
-            previousDataSourceId={previousDataSourceId}
+            previousViewId={previousViewId}
             previousSlugFieldId={previousSlugFieldId}
             previousLastSynced={previousLastSynced}
             previousIgnoredFieldIds={previousIgnoredFieldIds}
@@ -133,7 +133,7 @@ export function App({
 function ManageApp({
     collection,
     previousDatabaseId,
-    previousDataSourceId,
+    previousViewId,
     previousSlugFieldId,
     previousLastSynced,
     previousIgnoredFieldIds,
@@ -184,7 +184,7 @@ function ManageApp({
         const abortController = new AbortController()
 
         setIsLoadingDataSource(true)
-        getDataSource(previousDatabaseId, previousDataSourceId, abortController.signal)
+        getDataSource(previousDatabaseId, previousViewId, abortController.signal)
             .then(setDataSource)
             .catch((error: unknown) => {
                 if (abortController.signal.aborted) return
@@ -216,7 +216,7 @@ function ManageApp({
         return () => {
             abortController.abort()
         }
-    }, [previousDatabaseId, previousDataSourceId, previousDatabaseName])
+    }, [previousDatabaseId, previousViewId, previousDatabaseName])
 
     useEffect(() => {
         void framer.setMenu([

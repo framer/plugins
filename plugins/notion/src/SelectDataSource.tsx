@@ -4,7 +4,6 @@ import { type DataSource, getDataSource, getDataSourceOptions, getDataSources } 
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
-    onDataSourceSelectVisibilityChange: (visible: boolean) => void
 }
 
 enum Status {
@@ -14,7 +13,7 @@ enum Status {
     Refreshing = "refreshing",
 }
 
-export function SelectDataSource({ onSelectDataSource, onDataSourceSelectVisibilityChange }: SelectDataSourceProps) {
+export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
     const [selectedDatabaseId, setSelectedDatabaseId] = useState<string | null>(null)
     const [selectedDataSourceId, setSelectedDataSourceId] = useState<string | null>(null)
     const [status, setStatus] = useState<Status>(Status.Loading)
@@ -22,7 +21,7 @@ export function SelectDataSource({ onSelectDataSource, onDataSourceSelectVisibil
     const [databaseDataSources, setDatabaseDataSources] = useState<{ id: string; name: string }[] | null>(null)
     const isFirstFocusRef = useRef(true)
 
-    const showDataSourceSelect = (databaseDataSources?.length ?? 0) > 1
+    const hasDataSources = (databaseDataSources?.length ?? 0) > 0
 
     const fetchDataSources = useCallback(async (status: Status) => {
         try {
@@ -85,7 +84,7 @@ export function SelectDataSource({ onSelectDataSource, onDataSourceSelectVisibil
                 const options = await fetchDataSourceOptions(selectedDatabaseId)
                 if (cancelled) return
                 setDatabaseDataSources(options)
-                if (options.length > 1) {
+                if (options.length > 0) {
                     setSelectedDataSourceId(options[0]?.id ?? null)
                 }
             } catch (error) {
@@ -101,15 +100,11 @@ export function SelectDataSource({ onSelectDataSource, onDataSourceSelectVisibil
         }
     }, [selectedDatabaseId])
 
-    useEffect(() => {
-        onDataSourceSelectVisibilityChange(showDataSourceSelect)
-    }, [onDataSourceSelectVisibilityChange, showDataSourceSelect])
-
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
 
         if (!selectedDatabaseId) return
-        if (showDataSourceSelect && !selectedDataSourceId) return
+        if (hasDataSources && !selectedDataSourceId) return
 
         try {
             setStatus(Status.Loading)
@@ -142,7 +137,9 @@ export function SelectDataSource({ onSelectDataSource, onDataSourceSelectVisibil
     return (
         <main className="framer-hide-scrollbar setup">
             <div className="intro">
-                <img src="/notion-connect.png" className="select-database-img" />
+                <div className="select-database-img-container">
+                    <img src="/notion-connect.png" />
+                </div>
                 <p>
                     To manually connect a database, open it in Notion, click on the three dots icon in the top right
                     corner, then select Connections and connect to Framer.
@@ -150,7 +147,8 @@ export function SelectDataSource({ onSelectDataSource, onDataSourceSelectVisibil
             </div>
 
             <form onSubmit={e => void handleSubmit(e)}>
-                <label htmlFor="collection" className="collection-label">
+                <div className="property-control">
+                    <p>Database</p>
                     <select
                         id="collection"
                         onChange={event => {
@@ -158,6 +156,7 @@ export function SelectDataSource({ onSelectDataSource, onDataSourceSelectVisibil
                         }}
                         value={selectedDatabaseId ?? ""}
                         disabled={status === Status.Loading}
+                        className={status === Status.Refreshing ? "refreshing" : ""}
                     >
                         <option value="" disabled>
                             {status === Status.Loading ? "Loading…" : "Choose Database…"}
@@ -169,37 +168,30 @@ export function SelectDataSource({ onSelectDataSource, onDataSourceSelectVisibil
                         ))}
                     </select>
                     {status === Status.Refreshing && <div className="framer-spinner" />}
-                </label>
+                </div>
 
-                {showDataSourceSelect && (
-                    <label htmlFor="data-source" className="collection-label">
-                        <select
-                            id="data-source"
-                            onChange={event => {
-                                setSelectedDataSourceId(event.target.value)
-                            }}
-                            value={selectedDataSourceId ?? ""}
-                            disabled={status === Status.Loading}
-                        >
-                            <option value="" disabled>
-                                Choose Data Source…
+                <div className="property-control">
+                    <p>Data Source</p>
+                    <select
+                        id="data-source"
+                        onChange={event => {
+                            setSelectedDataSourceId(event.target.value)
+                        }}
+                        value={selectedDataSourceId ?? ""}
+                        disabled={!hasDataSources || status === Status.Loading}
+                    >
+                        <option value="" disabled>
+                            {status === Status.Loading ? "Loading…" : "Choose Data Source…"}
+                        </option>
+                        {databaseDataSources?.map(({ id, name }) => (
+                            <option key={id} value={id}>
+                                {name}
                             </option>
-                            {databaseDataSources?.map(({ id, name }) => (
-                                <option key={id} value={id}>
-                                    {name}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                )}
+                        ))}
+                    </select>
+                </div>
 
-                <button
-                    disabled={
-                        !selectedDatabaseId ||
-                        status === Status.Loading ||
-                        (showDataSourceSelect && !selectedDataSourceId)
-                    }
-                >
+                <button disabled={!selectedDatabaseId || status === Status.Loading}>
                     {status === Status.Loading ? <div className="framer-spinner" /> : "Next"}
                 </button>
             </form>

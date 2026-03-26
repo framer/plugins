@@ -144,7 +144,6 @@ function ManageApp({
     const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDatabaseId))
     const [hasAccessError, setHasAccessError] = useState(false)
     const [isSyncing, setIsSyncing] = useState(false)
-    const [showDataSourceSelect, setShowDataSourceSelect] = useState(false)
 
     // Support self-referencing databases by allowing the current collection to be referenced.
     const databaseIdMap = useMemo(() => {
@@ -164,7 +163,7 @@ function ManageApp({
                 } else if (dataSource || isLoadingDataSource) {
                     await showFieldMappingUI()
                 } else {
-                    await showLoginUI(showDataSourceSelect)
+                    await showLoginUI()
                 }
             } catch (error) {
                 console.error(error)
@@ -175,7 +174,7 @@ function ManageApp({
         }
 
         void showUI()
-    }, [dataSource, isLoadingDataSource, hasAccessError, isSyncing, showDataSourceSelect])
+    }, [dataSource, isLoadingDataSource, hasAccessError, isSyncing])
 
     useEffect(() => {
         if (!previousDatabaseId) {
@@ -253,12 +252,7 @@ function ManageApp({
     }
 
     if (!dataSource) {
-        return (
-            <SelectDataSource
-                onSelectDataSource={setDataSource}
-                onDataSourceSelectVisibilityChange={setShowDataSourceSelect}
-            />
-        )
+        return <SelectDataSource onSelectDataSource={setDataSource} />
     }
 
     return (

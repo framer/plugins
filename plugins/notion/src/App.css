@@ -85,7 +85,7 @@ p a {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: start;
     height: 100%;
     width: 100%;
     flex: 1;
@@ -97,9 +97,20 @@ p a {
     color: var(--framer-color-text-tertiary);
 }
 
-.intro img {
+.intro .select-database-img-container {
     width: 100%;
+    height: 158px;
     border-radius: 8px;
+    overflow: clip;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f2f2f2;
+}
+
+.intro .select-database-img-container img {
+    height: 100%;
+    object-fit: contain;
 }
 
 .setup label {
@@ -112,19 +123,30 @@ p a {
     color: var(--framer-color-text-secondary);
 }
 
-.collection-label {
+.property-control {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-left: 15px;
     position: relative;
 }
 
-.collection-label .framer-spinner {
+.property-control select {
+    width: 170px;
+}
+
+.property-control .framer-spinner {
     position: absolute;
     right: 26px;
     top: 9px;
     pointer-events: none;
 }
 
-.setup select {
-    width: 100%;
+select.refreshing {
+    padding-right: 44px;
 }
 
 .mapping {

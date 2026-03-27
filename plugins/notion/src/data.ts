@@ -52,6 +52,7 @@ export interface DataSource {
 export interface ViewOption {
     id: string
     name: string
+    type: unknown
 }
 
 export async function getDataSources(): Promise<DataSource[]> {
@@ -74,10 +75,13 @@ export async function getViewOptions(databaseId: string): Promise<ViewOption[]> 
     const options = await getDatabaseViews(databaseId)
     return options
         .filter(option => option.dataSourceId)
-        .map(option => ({
-            id: option.id,
-            name: option.name || "Untitled View",
-        }))
+        .map(option => {
+            return {
+                id: option.id,
+                name: option.name || "Untitled View",
+                type: option.type,
+            }
+        })
 }
 
 /**

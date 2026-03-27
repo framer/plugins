@@ -1,6 +1,6 @@
-import { framer } from "framer-plugin"
+import { framer, type NormalMenuItem } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { type DataSource, getDataSource, getDataSources, getViewOptions } from "./data"
+import { type DataSource, getDataSource, getDataSources, getViewOptions, type ViewOption } from "./data"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
@@ -13,13 +13,27 @@ enum Status {
     Refreshing = "refreshing",
 }
 
+const VIEW_TYPE_LABELS: Record<string, string> = {
+    table: "Table",
+    board: "Board",
+    calendar: "Calendar",
+    timeline: "Timeline",
+    gallery: "Gallery",
+    list: "List",
+    form: "Form",
+    chart: "Chart",
+    map: "Map",
+    dashboard: "Dashboard",
+}
+
 export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
     const [selectedDatabaseId, setSelectedDatabaseId] = useState<string | null>(null)
     const [selectedViewId, setSelectedViewId] = useState<string | null>(null)
     const [status, setStatus] = useState<Status>(Status.Loading)
     const [dataSources, setDataSources] = useState<DataSource[]>([])
-    const [databaseViews, setDatabaseViews] = useState<{ id: string; name: string }[] | null>(null)
+    const [databaseViews, setDatabaseViews] = useState<ViewOption[] | null>(null)
     const isFirstFocusRef = useRef(true)
+    const viewControlRef = useRef<HTMLDivElement>(null)
 
     const fetchDataSources = useCallback(async (status: Status) => {
         try {
@@ -126,6 +140,49 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
         }
     }
 
+    const openViewMenu = () => {
+        if (status === Status.Loading) return
+
+        const rect = viewControlRef.current?.getBoundingClientRect()
+
+        const viewMenuItems: NormalMenuItem[] = (databaseViews ?? []).map(({ id, name, type }) => {
+            const viewTypeKey = typeof type === "string" ? type : undefined
+            const viewType = viewTypeKey ? (VIEW_TYPE_LABELS[viewTypeKey] ?? viewTypeKey) : String(type)
+            return {
+                label: name,
+                checked: selectedViewId === id,
+                secondaryLabel: viewType,
+                onAction: () => {
+                    setSelectedViewId(id)
+                },
+            }
+        })
+
+        void framer.showContextMenu(
+            [
+                {
+                    label: "All Items",
+                    checked: selectedViewId === null,
+                    onAction: () => {
+                        setSelectedViewId(null)
+                    },
+                },
+                {
+                    type: "separator",
+                },
+                ...viewMenuItems,
+            ],
+            {
+                location: {
+                    x: (rect?.right ?? 0) - 4,
+                    y: (rect?.bottom ?? 0) + 4,
+                },
+                width: rect?.width ?? 0,
+                placement: "bottom-left",
+            }
+        )
+    }
+
     return (
         <main className="framer-hide-scrollbar setup">
             <div className="intro">
@@ -165,29 +222,21 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                         {status === Status.Refreshing && <div className="framer-spinner" />}
                     </div>
 
-                    <div className="property-control">
+                    <div ref={viewControlRef} className="property-control">
                         <p>View</p>
-                        <select
-                            id="view"
-                            onChange={event => {
-                                setSelectedViewId(event.target.value || null)
-                            }}
-                            value={selectedViewId ?? ""}
-                            disabled={status === Status.Loading}
+                        <div
+                            className="view-dropdown"
+                            onClick={openViewMenu}
+                            role="button"
+                            tabIndex={status === Status.Loading ? -1 : 0}
+                            aria-disabled={status === Status.Loading}
                         >
-                            <option value="">All Items</option>
-                            <hr />
-                            {status === Status.Loading && (
-                                <option value="" disabled>
-                                    Loading…
-                                </option>
-                            )}
-                            {databaseViews?.map(({ id, name }) => (
-                                <option key={id} value={id}>
-                                    {name}
-                                </option>
-                            ))}
-                        </select>
+                            {status === Status.Loading
+                                ? "Loading…"
+                                : selectedViewId
+                                  ? (databaseViews?.find(view => view.id === selectedViewId)?.name ?? selectedViewId)
+                                  : "All Items"}
+                        </div>
                     </div>
                 </div>
 

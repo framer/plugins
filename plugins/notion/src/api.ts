@@ -246,7 +246,7 @@ async function listViews(databaseId: string, startCursor?: string): Promise<Pagi
 
 export async function getDatabaseViews(
     databaseId: string
-): Promise<{ id: string; name: string; dataSourceId: string | null }[]> {
+): Promise<{ id: string; name: string; type: string; dataSourceId: string | null }[]> {
     const viewRefs = await collectPaginatedAPI(
         (args: { start_cursor?: string }) => listViews(databaseId, args.start_cursor),
         {}
@@ -258,6 +258,7 @@ export async function getDatabaseViews(
             return {
                 id: view.id,
                 name: view.name || "Untitled View",
+                type: view.type,
                 dataSourceId: view.data_source_id,
             }
         })
@@ -556,6 +557,7 @@ interface ViewObjectResponse {
     object: "view"
     id: string
     name: string
+    type: string
     data_source_id: string | null
     parent?: {
         type?: string

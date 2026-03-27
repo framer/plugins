@@ -4,9 +4,9 @@ import {
     framer,
     type ManagedCollection,
     type ManagedCollectionField,
+    type MenuItem,
     type NormalMenuItem,
     useIsAllowedTo,
-    type MenuItem,
 } from "framer-plugin"
 import { useEffect, useMemo, useRef, useState } from "react"
 import {
@@ -361,7 +361,7 @@ export function FieldMapping({
                     existingFields,
                     setSyncProgress
                 )
-                // framer.closePlugin("Synchronization successful", { variant: "success" })
+                framer.closePlugin("Synchronization successful", { variant: "success" })
             } catch (error) {
                 if (error instanceof FramerPluginClosedError) return
                 console.error(error)

@@ -13,11 +13,11 @@ import {
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
     getDatabaseFieldsInfo,
-    getFirstDatabaseDataSourceId,
     getDatabaseIdFromViewId,
     getDatabaseItems,
     getDatabaseViews,
     getDataSourceFromDatabaseId,
+    getFirstDatabaseDataSourceId,
     getNotionDataSources,
     getPageBlocksAsRichText,
     getSlugValue,
@@ -70,6 +70,8 @@ export const VIEW_TYPE_LABELS: Record<string, string> = {
     dashboard: "Dashboard",
 }
 
+const UNSUPPORTED_VIEW_TYPES = new Set<string>(["form", "dashboard"])
+
 export async function getDataSources(): Promise<DataSource[]> {
     const dataSources = await getNotionDataSources()
 
@@ -89,7 +91,7 @@ export async function getDataSources(): Promise<DataSource[]> {
 export async function getViewOptions(databaseId: string): Promise<ViewOption[]> {
     const options = await getDatabaseViews(databaseId)
     return options
-        .filter(option => option.dataSourceId)
+        .filter(option => option.dataSourceId && !UNSUPPORTED_VIEW_TYPES.has(option.type))
         .map(option => {
             return {
                 id: option.id,

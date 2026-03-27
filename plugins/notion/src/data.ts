@@ -13,6 +13,7 @@ import {
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
     getDatabaseFieldsInfo,
+    getDatabaseIdFromViewId,
     getDatabaseItems,
     getDatabaseViews,
     getDataSourceFromDatabaseId,
@@ -84,7 +85,7 @@ export async function getViewOptions(databaseId: string): Promise<ViewOption[]> 
  * If no view is selected, falls back to the first data source in the database.
  */
 export async function getDataSource(
-    databaseId: string,
+    databaseId: string | null,
     viewId: string | null,
     abortSignal?: AbortSignal
 ): Promise<DataSource> {
@@ -424,7 +425,7 @@ export async function syncCollection(
             PLUGIN_KEYS.IGNORED_FIELD_IDS,
             ignoredFieldIds.size > 0 ? JSON.stringify(Array.from(ignoredFieldIds)) : null
         ),
-        collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, dataSource.id),
+        collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, dataSource.viewId ? null : dataSource.id),
         collection.setPluginData(PLUGIN_KEYS.VIEW_ID, dataSource.viewId),
         collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
         collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id),
@@ -443,12 +444,19 @@ export function parseIgnoredFieldIds(ignoredFieldIdsStringified: string | null):
 export function shouldSyncExistingCollection({
     previousSlugFieldId,
     previousDatabaseId,
+    previousViewId,
 }: {
     previousSlugFieldId: string | null
     previousDatabaseId: string | null
+    previousViewId: string | null
 }): boolean {
     const isAllowedToSync = framer.isAllowedTo(...syncMethods)
-    if (framer.mode !== "syncManagedCollection" || !previousSlugFieldId || !previousDatabaseId || !isAllowedToSync) {
+    if (
+        framer.mode !== "syncManagedCollection" ||
+        !previousSlugFieldId ||
+        (!previousDatabaseId && !previousViewId) ||
+        !isAllowedToSync
+    ) {
         return false
     }
 
@@ -467,9 +475,9 @@ export async function syncExistingCollection(
     onProgress?: (progress: SyncProgress) => void
 ): Promise<{ didSync: boolean }> {
     if (
-        !shouldSyncExistingCollection({ previousSlugFieldId, previousDatabaseId }) ||
+        !shouldSyncExistingCollection({ previousSlugFieldId, previousDatabaseId, previousViewId }) ||
         !previousSlugFieldId ||
-        !previousDatabaseId
+        (!previousDatabaseId && !previousViewId)
     ) {
         return { didSync: false }
     }
@@ -515,7 +523,7 @@ export async function syncExistingCollection(
         framer.notify(
             error instanceof Error
                 ? error.message
-                : `Failed to sync database “${previousDatabaseName ?? previousDatabaseId}”`,
+                : `Failed to sync database “${previousDatabaseName ?? previousDatabaseId ?? "unknown"}”`,
             { variant: "error", durationMs: Infinity }
         )
         return { didSync: false }
@@ -886,8 +894,17 @@ export async function getExistingCollectionDatabaseIdMap(): Promise<DatabaseIdMa
     for (const collection of await framer.getCollections()) {
         const task = async () => {
             const collectionDatabaseId = await collection.getPluginData(PLUGIN_KEYS.DATABASE_ID)
-            if (!collectionDatabaseId) return
-            databaseIdMap.set(collectionDatabaseId, collection.id)
+            if (collectionDatabaseId) {
+                databaseIdMap.set(collectionDatabaseId, collection.id)
+                return
+            }
+
+            const collectionViewId = await collection.getPluginData(PLUGIN_KEYS.VIEW_ID)
+            if (!collectionViewId) return
+
+            const databaseIdFromView = await getDatabaseIdFromViewId(collectionViewId)
+            if (!databaseIdFromView) return
+            databaseIdMap.set(databaseIdFromView, collection.id)
         }
 
         promises.push(task())

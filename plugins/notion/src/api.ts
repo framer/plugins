@@ -289,27 +289,36 @@ export function assertFieldTypeMatchesPropertyType(
  * When a database has multiple data sources, only the first one is used.
  */
 export async function getDataSourceFromDatabaseId(
-    databaseId: string,
+    databaseId: string | null,
     viewId: string | null
 ): Promise<{ database: DatabaseObjectResponse; dataSource: DataSourceObjectResponse; viewId: string | null }> {
     const notion = getNotionClient()
-    const database = await notion.databases.retrieve({ database_id: databaseId })
+    let resolvedDatabaseId = databaseId
+    let resolvedViewId: string | null = null
+    let selectedView: ViewObjectResponse | null = null
+
+    if (viewId) {
+        selectedView = await notionApiRequest<ViewObjectResponse>(`/v1/views/${viewId}`)
+        resolvedViewId = selectedView.id
+        resolvedDatabaseId = getViewDatabaseId(selectedView) ?? resolvedDatabaseId
+    }
+
+    if (!resolvedDatabaseId) {
+        throw new Error("Neither database ID nor view ID could resolve a database")
+    }
+
+    const database = await notion.databases.retrieve({ database_id: resolvedDatabaseId })
 
     const dataSources = "data_sources" in database && Array.isArray(database.data_sources) ? database.data_sources : []
     let selectedDataSourceRef = dataSources[0]
-    let resolvedViewId: string | null = null
 
-    // Prefer the selected view. If no view is saved, fall back to first data source.
-    if (viewId) {
-        const view = await notionApiRequest<ViewObjectResponse>(`/v1/views/${viewId}`)
-        if (view.data_source_id) {
-            selectedDataSourceRef = dataSources.find(ds => ds.id === view.data_source_id) ?? selectedDataSourceRef
-            resolvedViewId = view.id
-        }
+    // Prefer selected view's data source. If no view is selected, fall back to first data source.
+    if (selectedView?.data_source_id) {
+        selectedDataSourceRef = dataSources.find(ds => ds.id === selectedView.data_source_id) ?? selectedDataSourceRef
     }
 
     if (!selectedDataSourceRef) {
-        throw new Error(`Database ${databaseId} has no data sources`)
+        throw new Error(`Database ${resolvedDatabaseId} has no data sources`)
     }
     const dataSource = await notion.dataSources.retrieve({
         data_source_id: selectedDataSourceRef.id,
@@ -548,8 +557,21 @@ interface ViewObjectResponse {
     id: string
     name: string
     data_source_id: string | null
+    parent?: {
+        type?: string
+        database_id?: string
+    }
     filter?: unknown
     sorts?: unknown[] | null
+}
+
+function getViewDatabaseId(view: ViewObjectResponse): string | null {
+    return view.parent?.type === "database_id" ? (view.parent.database_id ?? null) : null
+}
+
+export async function getDatabaseIdFromViewId(viewId: string): Promise<string | null> {
+    const view = await notionApiRequest<ViewObjectResponse>(`/v1/views/${viewId}`)
+    return getViewDatabaseId(view)
 }
 
 function getNotionApiHeaders() {

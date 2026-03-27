@@ -21,8 +21,6 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
     const [databaseViews, setDatabaseViews] = useState<{ id: string; name: string }[] | null>(null)
     const isFirstFocusRef = useRef(true)
 
-    const hasViews = (databaseViews?.length ?? 0) > 0
-
     const fetchDataSources = useCallback(async (status: Status) => {
         try {
             setStatus(status)
@@ -81,9 +79,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                 const options = await getViewOptions(selectedDatabaseId)
                 if (cancelled) return
                 setDatabaseViews(options)
-                if (options.length > 0) {
-                    setSelectedViewId(options[0]?.id ?? null)
-                }
+                setSelectedViewId(null)
             } catch (error) {
                 if (cancelled) return
                 console.error(error)
@@ -101,7 +97,6 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
         event.preventDefault()
 
         if (!selectedDatabaseId) return
-        if (hasViews && !selectedViewId) return
 
         try {
             setStatus(Status.Loading)
@@ -175,11 +170,13 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
                         <select
                             id="view"
                             onChange={event => {
-                                setSelectedViewId(event.target.value)
+                                setSelectedViewId(event.target.value || null)
                             }}
                             value={selectedViewId ?? ""}
-                            disabled={!hasViews || status === Status.Loading}
+                            disabled={status === Status.Loading}
                         >
+                            <option value="">All Items</option>
+                            <hr />
                             {status === Status.Loading && (
                                 <option value="" disabled>
                                     Loading…

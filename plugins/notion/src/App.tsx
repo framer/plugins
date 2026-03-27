@@ -43,6 +43,7 @@ export function App({
         shouldSyncExistingCollection({
             previousSlugFieldId,
             previousDatabaseId,
+            previousViewId,
         })
     )
     const [progress, setProgress] = useState<SyncProgress>({
@@ -141,7 +142,7 @@ function ManageApp({
     existingCollectionDatabaseIdMap,
 }: AppProps) {
     const [dataSource, setDataSource] = useState<DataSource | null>(null)
-    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDatabaseId))
+    const [isLoadingDataSource, setIsLoadingDataSource] = useState(Boolean(previousDatabaseId ?? previousViewId))
     const [hasAccessError, setHasAccessError] = useState(false)
     const [isSyncing, setIsSyncing] = useState(false)
 
@@ -177,7 +178,7 @@ function ManageApp({
     }, [dataSource, isLoadingDataSource, hasAccessError, isSyncing])
 
     useEffect(() => {
-        if (!previousDatabaseId) {
+        if (!previousDatabaseId && !previousViewId) {
             return
         }
 
@@ -202,7 +203,7 @@ function ManageApp({
                     setHasAccessError(true)
                 } else {
                     framer.notify(
-                        `Error loading previously configured database "${previousDatabaseName ?? previousDatabaseId}": ${error instanceof Error ? error.message : "Unknown error"}`,
+                        `Error loading previously configured database "${previousDatabaseName ?? previousDatabaseId ?? previousViewId ?? "unknown"}": ${error instanceof Error ? error.message : "Unknown error"}`,
                         { variant: "error" }
                     )
                 }

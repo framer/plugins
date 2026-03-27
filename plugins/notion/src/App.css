@@ -149,8 +149,8 @@ select.refreshing {
 }
 
 .view-dropdown {
-    width: 170px;
     background-color: var(--framer-color-bg-tertiary);
+    color: var(--framer-color-text);
     border-radius: 8px;
     padding: 0px 8px;
     height: 30px;
@@ -160,13 +160,21 @@ select.refreshing {
     cursor: pointer;
 }
 
+.setup .view-dropdown {
+    width: 170px;
+}
+
+.mapping .view-dropdown {
+    width: 100%;
+}
+
 .mapping {
     padding-bottom: 0;
 }
 
 .mapping form {
     height: 100%;
-    gap: 10px;
+    gap: 15px;
 }
 
 .mapping .fields {
@@ -174,19 +182,18 @@ select.refreshing {
     grid-template-columns: 1fr 8px 1fr 1fr;
     gap: 10px;
     margin-bottom: auto;
-    padding-bottom: 10px;
+    padding-bottom: 5px;
     align-items: center;
     color: var(--framer-color-text-tertiary);
 }
 
-.mapping .slug-field {
+.mapping .field-container {
     display: flex;
     flex-direction: column;
     width: 100%;
     justify-content: space-between;
     gap: 10px;
     color: var(--framer-color-text-tertiary);
-    padding-bottom: 10px;
 }
 
 .mapping .source-field {

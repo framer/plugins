@@ -1,6 +1,13 @@
 import { framer, type NormalMenuItem } from "framer-plugin"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { type DataSource, getDataSource, getDataSources, getViewOptions, type ViewOption } from "./data"
+import {
+    type DataSource,
+    getDataSource,
+    getDataSources,
+    getViewOptions,
+    VIEW_TYPE_LABELS,
+    type ViewOption,
+} from "./data"
 
 interface SelectDataSourceProps {
     onSelectDataSource: (dataSource: DataSource) => void
@@ -11,19 +18,6 @@ enum Status {
     Ready = "ready",
     Error = "error",
     Refreshing = "refreshing",
-}
-
-const VIEW_TYPE_LABELS: Record<string, string> = {
-    table: "Table",
-    board: "Board",
-    calendar: "Calendar",
-    timeline: "Timeline",
-    gallery: "Gallery",
-    list: "List",
-    form: "Form",
-    chart: "Chart",
-    map: "Map",
-    dashboard: "Dashboard",
 }
 
 export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) {
@@ -146,8 +140,7 @@ export function SelectDataSource({ onSelectDataSource }: SelectDataSourceProps) 
         const rect = viewControlRef.current?.getBoundingClientRect()
 
         const viewMenuItems: NormalMenuItem[] = (databaseViews ?? []).map(({ id, name, type }) => {
-            const viewTypeKey = typeof type === "string" ? type : undefined
-            const viewType = viewTypeKey ? (VIEW_TYPE_LABELS[viewTypeKey] ?? viewTypeKey) : String(type)
+            const viewType = VIEW_TYPE_LABELS[type] ?? type
             return {
                 label: name,
                 checked: selectedViewId === id,

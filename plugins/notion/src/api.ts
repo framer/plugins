@@ -267,6 +267,13 @@ export async function getDatabaseViews(
     return views
 }
 
+export async function getFirstDatabaseDataSourceId(databaseId: string): Promise<string | null> {
+    const notion = getNotionClient()
+    const database = await notion.databases.retrieve({ database_id: databaseId })
+    const dataSources = "data_sources" in database && Array.isArray(database.data_sources) ? database.data_sources : []
+    return dataSources[0]?.id ?? null
+}
+
 export function assertFieldTypeMatchesPropertyType(
     propertyType: NotionProperty["type"],
     fieldType: VirtualFieldType

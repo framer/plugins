@@ -4,9 +4,11 @@ import {
     framer,
     type ManagedCollection,
     type ManagedCollectionField,
+    type NormalMenuItem,
     useIsAllowedTo,
+    type MenuItem,
 } from "framer-plugin"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
     type FieldId,
     type FieldInfo,
@@ -19,10 +21,12 @@ import {
     type DatabaseIdMap,
     type DataSource,
     fieldsInfoToCollectionFields,
+    getViewOptionsForDataSource,
     mergeFieldsInfoWithExistingFields,
     parseIgnoredFieldIds,
     type SyncProgress,
     syncCollection,
+    VIEW_TYPE_LABELS,
 } from "./data"
 import { Progress } from "./Progress"
 import { assert, syncMethods } from "./utils"
@@ -181,6 +185,40 @@ export function FieldMapping({
     const [ignoredFieldIds, setIgnoredFieldIds] = useState(parseIgnoredFieldIds(previousIgnoredFieldIds))
     const [existingFields, setExistingFields] = useState<ManagedCollectionField[]>([])
     const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null)
+    const [selectedViewId, setSelectedViewId] = useState<string | null>(dataSource.viewId)
+    const [viewOptions, setViewOptions] = useState<{ id: string; name: string; type: string }[]>([])
+    const [showAllItemsOption, setShowAllItemsOption] = useState(false)
+    const viewControlRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        setSelectedViewId(dataSource.viewId)
+    }, [dataSource.viewId])
+
+    useEffect(() => {
+        let cancelled = false
+
+        const task = async () => {
+            try {
+                const { views, showAllItemsOption } = await getViewOptionsForDataSource(
+                    dataSource.id,
+                    dataSource.dataSourceId
+                )
+                if (cancelled) return
+                setViewOptions(views.map(({ id, name, type }) => ({ id, name, type })))
+                setShowAllItemsOption(showAllItemsOption)
+            } catch (error) {
+                if (cancelled) return
+                console.error("Failed to load view options:", error)
+                setViewOptions([])
+                setShowAllItemsOption(false)
+            }
+        }
+
+        void task()
+        return () => {
+            cancelled = true
+        }
+    }, [dataSource.id, dataSource.dataSourceId])
 
     useEffect(() => {
         const abortController = new AbortController()
@@ -205,6 +243,50 @@ export function FieldMapping({
             abortController.abort()
         }
     }, [initialSlugFieldId, dataSource, collection, initialFieldsInfo])
+
+    const openViewMenu = () => {
+        if (isSyncing || isLoadingFields || !isAllowedToManage) return
+
+        const rect = viewControlRef.current?.getBoundingClientRect()
+        const items: MenuItem[] = []
+
+        if (showAllItemsOption) {
+            items.push(
+                {
+                    label: "All Items",
+                    checked: selectedViewId === null,
+                    onAction: () => {
+                        setSelectedViewId(null)
+                    },
+                },
+                { type: "separator" }
+            )
+        }
+
+        const viewMenuItems: NormalMenuItem[] = viewOptions.map(({ id, name, type }) => {
+            const viewType = VIEW_TYPE_LABELS[type] ?? type
+            return {
+                label: name,
+                checked: selectedViewId === id,
+                secondaryLabel: viewType,
+                onAction: () => {
+                    setSelectedViewId(id)
+                },
+            }
+        })
+
+        items.push(...viewMenuItems)
+        if (items.length === 0) return
+
+        void framer.showContextMenu(items, {
+            location: {
+                x: (rect?.left ?? 0) + 4,
+                y: (rect?.bottom ?? 0) + 4,
+            },
+            width: rect?.width ?? 0,
+            placement: "bottom-right",
+        })
+    }
 
     const changeFieldName = (fieldId: string, name: string) => {
         setFieldsInfo(prevFieldsInfo => {
@@ -271,7 +353,7 @@ export function FieldMapping({
                 await collection.setFields(fieldsToSync)
                 await syncCollection(
                     collection,
-                    dataSource,
+                    { ...dataSource, viewId: selectedViewId },
                     fieldsToSync,
                     slugField,
                     ignoredFieldIds,
@@ -323,7 +405,21 @@ export function FieldMapping({
         <main className="framer-hide-scrollbar mapping">
             <hr className="sticky-divider" />
             <form onSubmit={handleSubmit}>
-                <label className="slug-field" htmlFor="slugField">
+                <div ref={viewControlRef} className="field-container">
+                    <span>View</span>
+                    <div
+                        className="view-dropdown field-input"
+                        onClick={openViewMenu}
+                        role="button"
+                        tabIndex={!isAllowedToManage ? -1 : 0}
+                        aria-disabled={!isAllowedToManage}
+                    >
+                        {selectedViewId
+                            ? (viewOptions.find(view => view.id === selectedViewId)?.name ?? selectedViewId)
+                            : "All Items"}
+                    </div>
+                </div>
+                <label className="field-container" htmlFor="slugField">
                     <span>Slug Field</span>
                     <select
                         required

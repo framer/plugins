@@ -13,6 +13,7 @@ import {
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
     getDatabaseFieldsInfo,
+    getFirstDatabaseDataSourceId,
     getDatabaseIdFromViewId,
     getDatabaseItems,
     getDatabaseViews,
@@ -52,7 +53,21 @@ export interface DataSource {
 export interface ViewOption {
     id: string
     name: string
-    type: unknown
+    type: string
+    dataSourceId: string | null
+}
+
+export const VIEW_TYPE_LABELS: Record<string, string> = {
+    table: "Table",
+    board: "Board",
+    calendar: "Calendar",
+    timeline: "Timeline",
+    gallery: "Gallery",
+    list: "List",
+    form: "Form",
+    chart: "Chart",
+    map: "Map",
+    dashboard: "Dashboard",
 }
 
 export async function getDataSources(): Promise<DataSource[]> {
@@ -80,8 +95,24 @@ export async function getViewOptions(databaseId: string): Promise<ViewOption[]> 
                 id: option.id,
                 name: option.name || "Untitled View",
                 type: option.type,
+                dataSourceId: option.dataSourceId,
             }
         })
+}
+
+export async function getViewOptionsForDataSource(
+    databaseId: string,
+    dataSourceId: string
+): Promise<{ views: ViewOption[]; showAllItemsOption: boolean }> {
+    const [allViews, firstDataSourceId] = await Promise.all([
+        getViewOptions(databaseId),
+        getFirstDatabaseDataSourceId(databaseId),
+    ])
+
+    return {
+        views: allViews.filter(view => view.dataSourceId === dataSourceId),
+        showAllItemsOption: firstDataSourceId === dataSourceId,
+    }
 }
 
 /**

@@ -788,7 +788,7 @@ __metadata:
     "@tailwindcss/vite": "npm:^4.2.2"
     "@vitejs/plugin-react": "npm:^6.0.1"
     vite: "npm:^8.0.1"
-    vite-plugin-framer: "npm:^1.1.0"
+    vite-plugin-framer: "npm:^1.1.1"
     vite-plugin-mkcert: "npm:^1.17.8"
   languageName: unknown
   linkType: soft
@@ -9291,6 +9291,19 @@ __metadata:
   peerDependencies:
     vite: ">=5.0.0"
   checksum: 10/67cab2769b2205279d8c24a886ea796a38f7d1a48f8005c81c2a0e95adf42b3bac0c62dd32845961ebd97c9b8d8cd3c964e91780c7d243cd210e0551efa2e1fd
+  languageName: node
+  linkType: hard
+
+"vite-plugin-framer@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "vite-plugin-framer@npm:1.1.1"
+  dependencies:
+    browserslist: "npm:^4.28.1"
+    browserslist-to-esbuild: "npm:^2.1.1"
+    picocolors: "npm:^1.1.1"
+  peerDependencies:
+    vite: ">=5.0.0"
+  checksum: 10/dbe4e02519988457b9c63c543dab5b20b1785e4d34444671c354ee147304b8aa11ea875107fc65dbdf7224899bd4130d84f3d5d8c1e12c541e9072feaab3b6b2
   languageName: node
   linkType: hard
 

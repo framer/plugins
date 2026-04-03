@@ -631,14 +631,14 @@ export async function syncSheet({
             const cases = mergeEnumCases(field.cases, getEnumCasesForColumn(rows, colIndex))
             if (cases.length === 0) {
                 throw new Error(
-                    `Enum field "${field.name}" requires at least one non-empty value before it can be synced.`
+                    `Option field "${field.name}" requires at least one non-empty value before it can be synced.`
                 )
             }
 
             if (!areEnumCasesEqual(field.cases, cases)) {
                 if (!canSetFields) {
                     throw new Error(
-                        "This sheet has enum columns with values that are not configured on the collection, " +
+                        "This sheet has option columns with values that are not configured on the collection, " +
                             "but the plugin does not have permission to update collection fields."
                     )
                 }
@@ -917,7 +917,7 @@ function mapFieldToFramer(field: SheetCollectionFieldInput): ManagedCollectionFi
     }
 
     if (field.type === "enum") {
-        assert(field.cases && field.cases.length > 0, `Enum field "${field.name}" requires at least one case`)
+        assert(field.cases && field.cases.length > 0, `Option field "${field.name}" requires at least one case`)
 
         const enumField: Extract<ManagedCollectionFieldInput, { type: "enum" }> = {
             id: field.id,

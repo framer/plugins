@@ -10,7 +10,16 @@ import * as v from "valibot"
 import auth from "./auth"
 import { logSyncResult } from "./debug.ts"
 import { queryClient } from "./main.tsx"
-import { assert, columnToLetter, generateHashId, generateUniqueNames, isDefined, listFormatter, slugify } from "./utils"
+import {
+    assert,
+    columnToLetter,
+    generateHashId,
+    generateUniqueNames,
+    hashStringToEnumCaseId,
+    isDefined,
+    listFormatter,
+    slugify,
+} from "./utils"
 
 const USER_INFO_API_URL = "https://www.googleapis.com/oauth2/v1"
 const SHEETS_API_URL = "https://sheets.googleapis.com/v4"
@@ -306,6 +315,11 @@ export interface SyncMutationOptions {
     ignoredColumns: string[]
     colFieldTypes: VirtualFieldType[]
     lastSyncedTime: string | null
+    /**
+     * When false (e.g. sync-only mode), schema is only applied when enum fields need refreshed cases.
+     * When true (default), collection fields are always updated from the mapping.
+     */
+    configureFields?: boolean
 }
 
 const BASE_DATE_1900 = new Date(Date.UTC(1899, 11, 30))
@@ -348,6 +362,54 @@ function isValidISODate(dateString: string): boolean {
     }
 }
 
+function isEnumCellValueEmpty(cell: CellValue | undefined): boolean {
+    if (!isDefined(cell)) return true
+    if (typeof cell === "string" && cell.trim() === "") return true
+    return false
+}
+
+function buildEnumCasesForColumn(rows: Row[], colIndex: number): { id: string; name: string }[] {
+    const unique = new Set<string>()
+    let hasEmptyCell = false
+
+    for (const row of rows) {
+        const cell = row[colIndex]
+        if (isEnumCellValueEmpty(cell)) {
+            hasEmptyCell = true
+            continue
+        }
+        unique.add(String(cell))
+    }
+
+    const sorted = Array.from(unique).sort((a, b) => a.localeCompare(b))
+    const valueCases = sorted.map(text => ({
+        id: hashStringToEnumCaseId(text),
+        name: text,
+    }))
+
+    if (!hasEmptyCell) {
+        return valueCases
+    }
+
+    return [{ id: "null", name: "None" }, ...valueCases]
+}
+
+function enrichFieldsWithEnumCases(
+    fields: SheetCollectionFieldInput[],
+    uniqueHeaderRowNames: string[],
+    rows: Row[]
+): SheetCollectionFieldInput[] {
+    return fields.map(field => {
+        if (field.type !== "enum") return field
+
+        const colIndex = uniqueHeaderRowNames.indexOf(field.id)
+        if (colIndex === -1) return field
+
+        const cases = buildEnumCasesForColumn(rows, colIndex)
+        return { ...field, type: "enum", cases }
+    })
+}
+
 function getFieldDataEntryInput(type: VirtualFieldType, cellValue: CellValue): FieldDataEntryInput | null {
     switch (type) {
         case "number": {
@@ -388,6 +450,10 @@ function getFieldDataEntryInput(type: VirtualFieldType, cellValue: CellValue): F
         case "string": {
             if (!isDefined(cellValue)) return null
             return { type, value: String(cellValue) }
+        }
+        case "enum": {
+            if (isEnumCellValueEmpty(cellValue)) return null
+            return { type: "enum", value: hashStringToEnumCaseId(String(cellValue)) }
         }
         default:
             return null
@@ -458,6 +524,12 @@ function processSheetRow({
                     fieldDataEntryInput = {
                         value: null,
                         type: "date",
+                    }
+                    break
+                case "enum":
+                    fieldDataEntryInput = {
+                        value: "null",
+                        type: "enum",
                     }
                     break
             }
@@ -565,6 +637,7 @@ export async function syncSheet({
     ignoredColumns,
     slugColumn,
     colFieldTypes,
+    configureFields,
 }: SyncMutationOptions) {
     if (fields.length === 0) {
         throw new Error("Expected to have at least one field selected to sync.")
@@ -576,6 +649,13 @@ export async function syncSheet({
     const [headerRow, ...rows] = sheet.values
 
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
+    const enrichedFields = enrichFieldsWithEnumCases(fields, uniqueHeaderRowNames, rows)
+    const needsFieldSchemaUpdate = !configureFields || enrichedFields.some(field => field.type === "enum")
+
+    if (needsFieldSchemaUpdate) {
+        await collection.setFields(enrichedFields.map(mapFieldToFramer))
+    }
+
     const headerRowHash = generateHeaderRowHash(headerRow, ignoredColumns)
 
     // Find the longest row length to check if any sheet rows are longer than the header row
@@ -798,13 +878,7 @@ export const useSyncSheetMutation = ({
 }) => {
     return useMutation({
         mutationFn: async (args: SyncMutationOptions) => {
-            const collection = await framer.getActiveManagedCollection()
-            const fields = args.fields.map(mapFieldToFramer)
-            await collection.setFields(fields)
-            return await syncSheet({
-                ...args,
-                fields,
-            })
+            return await syncSheet(args)
         },
         onSuccess,
         onError,

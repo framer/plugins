@@ -616,48 +616,80 @@ export async function syncSheet({
         )
     }
 
-    // Update enum field definitions with cases derived from column data so new
-    // values that appeared since the last sync are recognised.
+    // Enum fields: (1) merge sheet values into field cases before updating items so
+    // new options exist in the schema and existing rows stay valid; (2) after items
+    // match the sheet, set cases to sheet-derived only so unused options are removed.
     const hasEnumFields = colFieldTypes.includes("enum")
+    let canSetFieldsForEnums = false
+    let enumFieldsNeedPruneAfterSync = false
+    let expandedEnumFields: ManagedCollectionFieldInput[] | undefined
+
     if (hasEnumFields) {
-        const canSetFields = framer.isAllowedTo("ManagedCollection.setFields")
-        let shouldUpdateFields = false
-        const updatedFields = fields.map(field => {
+        canSetFieldsForEnums = framer.isAllowedTo("ManagedCollection.setFields")
+
+        expandedEnumFields = fields.map(field => {
             if (field.type !== "enum") return mapFieldToFramer(field)
 
             const colIndex = uniqueHeaderRowNames.indexOf(field.id)
             if (colIndex === -1) return mapFieldToFramer(field)
 
-            const cases = mergeEnumCases(field.cases, getEnumCasesForColumn(rows, colIndex))
-            if (cases.length === 0) {
+            const derivedCases = getEnumCasesForColumn(rows, colIndex)
+            const expandedCases =
+                derivedCases.length > 0
+                    ? mergeEnumCases(field.cases, derivedCases)
+                    : (field.cases ?? [])
+            if (expandedCases.length === 0) {
                 throw new Error(
                     `Option field "${field.name}" requires at least one non-empty value before it can be synced.`
                 )
-            }
-
-            if (!areEnumCasesEqual(field.cases, cases)) {
-                if (!canSetFields) {
-                    throw new Error(
-                        "This sheet has option columns with values that are not configured on the collection, " +
-                            "but the plugin does not have permission to update collection fields."
-                    )
-                }
-
-                shouldUpdateFields = true
             }
 
             const enumField: Extract<ManagedCollectionFieldInput, { type: "enum" }> = {
                 id: field.id,
                 name: field.name,
                 type: "enum",
-                cases,
+                cases: expandedCases,
             }
 
             return enumField
         })
 
-        if (canSetFields && shouldUpdateFields) {
-            await collection.setFields(updatedFields)
+        let shouldExpandEnumFields = false
+        for (let i = 0; i < fields.length; i++) {
+            const field = fields[i]
+            const mapped = expandedEnumFields[i]
+            if (field === undefined || mapped === undefined) continue
+            if (field.type === "enum" && mapped.type === "enum" && !areEnumCasesEqual(field.cases, mapped.cases)) {
+                shouldExpandEnumFields = true
+                break
+            }
+        }
+
+        for (let i = 0; i < fields.length; i++) {
+            const field = fields[i]
+            const mapped = expandedEnumFields[i]
+            if (field === undefined || mapped === undefined) continue
+            if (field.type !== "enum" || mapped.type !== "enum") continue
+
+            const colIndex = uniqueHeaderRowNames.indexOf(field.id)
+            if (colIndex === -1) continue
+
+            const derivedCases = getEnumCasesForColumn(rows, colIndex)
+            if (derivedCases.length === 0) continue
+            if (!areEnumCasesEqual(mapped.cases, derivedCases)) {
+                enumFieldsNeedPruneAfterSync = true
+            }
+        }
+
+        if (shouldExpandEnumFields && !canSetFieldsForEnums) {
+            throw new Error(
+                "This sheet has option columns with values that are not configured on the collection, " +
+                    "but the plugin does not have permission to update collection fields."
+            )
+        }
+
+        if (canSetFieldsForEnums && shouldExpandEnumFields) {
+            await collection.setFields(expandedEnumFields)
         }
     }
 
@@ -681,6 +713,42 @@ export async function syncSheet({
     if (collectionItems.length > 0) {
         await collection.addItems(collectionItems)
         await collection.setItemOrder(collectionItems.map(collectionItem => collectionItem.id))
+    }
+
+    if (hasEnumFields && enumFieldsNeedPruneAfterSync) {
+        if (!canSetFieldsForEnums) {
+            throw new Error(
+                "This sheet no longer uses some option values that are still on the collection, " +
+                    "but the plugin does not have permission to update collection fields."
+            )
+        }
+
+        assert(expandedEnumFields !== undefined, "Expected expanded enum field list when pruning option fields")
+
+        const prunedFields = fields.map((field, fieldIndex) => {
+            if (field.type !== "enum") return mapFieldToFramer(field)
+
+            const colIndex = uniqueHeaderRowNames.indexOf(field.id)
+            if (colIndex === -1) return mapFieldToFramer(field)
+
+            const derivedCases = getEnumCasesForColumn(rows, colIndex)
+            const expandedForField = expandedEnumFields[fieldIndex]
+            if (expandedForField === undefined) return mapFieldToFramer(field)
+            if (derivedCases.length === 0) {
+                return expandedForField.type === "enum" ? expandedForField : mapFieldToFramer(field)
+            }
+
+            const enumField: Extract<ManagedCollectionFieldInput, { type: "enum" }> = {
+                id: field.id,
+                name: field.name,
+                type: "enum",
+                cases: derivedCases,
+            }
+
+            return enumField
+        })
+
+        await collection.setFields(prunedFields)
     }
 
     const spreadsheetInfo = await fetchSpreadsheetInfo(spreadsheetId)

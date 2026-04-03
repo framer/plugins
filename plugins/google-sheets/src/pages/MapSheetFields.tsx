@@ -2,7 +2,7 @@ import cx from "classnames"
 import { framer, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
-import { getEnumCasesForColumn, mergeEnumCases } from "../enumCases"
+import { getEnumCasesForColumn } from "../enumCases"
 import { IconChevron } from "../components/Icons"
 import type { CellValue, HeaderRow, PluginContext, PluginContextUpdate, Row, SyncMutationOptions } from "../sheets"
 import { generateUniqueNames, syncMethods } from "../utils"
@@ -19,7 +19,6 @@ type EditableField = SyncMutationOptions["fields"][number]
 const fieldTypeOptions: FieldTypeOption[] = [
     { type: "string", label: "Plain Text" },
     { type: "formattedText", label: "Formatted Text" },
-    { type: "enum", label: "Option" },
     { type: "date", label: "Date" },
     { type: "dateTime", label: "Date & Time" },
     { type: "link", label: "Link" },
@@ -27,6 +26,7 @@ const fieldTypeOptions: FieldTypeOption[] = [
     { type: "color", label: "Color" },
     { type: "boolean", label: "Toggle" },
     { type: "number", label: "Number" },
+    { type: "enum", label: "Option" },
     { type: "file", label: "File" },
 ]
 
@@ -248,7 +248,7 @@ export function MapSheetFieldsPage({
             if (result.type === "enum") {
                 const colIndex = uniqueColumnNames.indexOf(result.id)
                 if (colIndex !== -1) {
-                    result.cases = mergeEnumCases(result.cases, getEnumCasesForColumn(rows, colIndex))
+                    result.cases = getEnumCasesForColumn(rows, colIndex)
                 }
 
                 if (!result.cases || result.cases.length === 0) {

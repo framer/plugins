@@ -387,11 +387,11 @@ function buildEnumCasesForColumn(rows: Row[], colIndex: number): { id: string; n
         name: text,
     }))
 
-    if (!hasEmptyCell) {
-        return valueCases
+    if (hasEmptyCell) {
+        return [{ id: "null", name: "None" }, ...valueCases]
     }
 
-    return [{ id: "null", name: "None" }, ...valueCases]
+    return valueCases
 }
 
 function enrichFieldsWithEnumCases(

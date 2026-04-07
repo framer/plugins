@@ -316,8 +316,8 @@ export interface SyncMutationOptions {
     colFieldTypes: VirtualFieldType[]
     lastSyncedTime: string | null
     /**
-     * When false (e.g. sync-only mode), schema is only applied when enum fields need refreshed cases.
-     * When true (default), collection fields are always updated from the mapping.
+     * When false (sync-only mode), schema is only applied when enum fields need refreshed cases.
+     * When true, collection fields are always updated from the mapping.
      */
     configureFields: boolean
 }

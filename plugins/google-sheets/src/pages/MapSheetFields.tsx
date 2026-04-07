@@ -29,6 +29,7 @@ const fieldTypeOptions: FieldTypeOption[] = [
     { type: "color", label: "Color" },
     { type: "boolean", label: "Toggle" },
     { type: "number", label: "Number" },
+    { type: "enum", label: "Option" },
     { type: "file", label: "File" },
 ]
 
@@ -239,6 +240,7 @@ export function MapSheetFieldsPage({
             ignoredColumns: Array.from(disabledColumns),
             slugColumn,
             lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),
+            configureFields: true,
         })
     }
 
@@ -322,7 +324,7 @@ export function MapSheetFieldsPage({
                     <button
                         disabled={!isAllowedToManage}
                         title={isAllowedToManage ? undefined : "Insufficient permissions"}
-                        className="whitespace-nowrap inline-block"
+                        className={cx("whitespace-nowrap", !isPending && "inline-block")}
                     >
                         {isPending ? <div className="framer-spinner" /> : `Import from ${sheetTitle}`}
                     </button>

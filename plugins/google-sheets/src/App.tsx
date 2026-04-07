@@ -190,7 +190,9 @@ export function App({ pluginContext }: AppProps) {
     const mode = framer.mode
 
     // Not a hook because we don't want to re-run the effect
-    const isAllowedToSync = framer.isAllowedTo(...syncMethods)
+    const hasEnumField = context.type === "update" && context.collectionFields.some(field => field.type === "enum")
+    const isAllowedToSync =
+        framer.isAllowedTo(...syncMethods) && (!hasEnumField || framer.isAllowedTo("ManagedCollection.setFields"))
     const shouldSyncOnly = mode === "syncManagedCollection" && shouldSyncImmediately(context) && isAllowedToSync
 
     useLayoutEffect(() => {
@@ -212,7 +214,7 @@ export function App({ pluginContext }: AppProps) {
 
         const task = async () => {
             try {
-                await framer.setCloseWarning("Synchronisation setup in progress. Closing will cancel the sync.")
+                await framer.setCloseWarning("Synchronization setup in progress. Closing will cancel the sync.")
 
                 await syncSheet({
                     ignoredColumns,
@@ -227,6 +229,7 @@ export function App({ pluginContext }: AppProps) {
                         const field = fields.find(field => field.name === colName)
                         return field?.type ?? "string"
                     }),
+                    configureFields: false,
                 })
 
                 await framer.setCloseWarning(false)

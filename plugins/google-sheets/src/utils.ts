@@ -74,6 +74,29 @@ export function generateHashId(text: string): string {
 }
 
 /**
+ * Stable 32-character lowercase hex id derived from text (enum case ids from cell values).
+ */
+export function hashStringToEnumCaseId(text: string): string {
+    let h0 = 5381
+    let h1 = 52711
+    let h2 = 0
+    let h3 = 0
+    for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i)
+        h0 = (Math.imul(h0, 33) ^ c) >>> 0
+        h1 = (Math.imul(h1, 33) ^ (c + i)) >>> 0
+        h2 = (Math.imul(h2, 33) + c) >>> 0
+        h3 = (h3 + Math.imul(c, i + 1)) >>> 0
+    }
+    return [
+        h0.toString(16).padStart(8, "0"),
+        h1.toString(16).padStart(8, "0"),
+        h2.toString(16).padStart(8, "0"),
+        h3.toString(16).padStart(8, "0"),
+    ].join("")
+}
+
+/**
  * Generates unique names by appending a suffix if the name is already used.
  */
 export function generateUniqueNames(names: string[]): string[] {

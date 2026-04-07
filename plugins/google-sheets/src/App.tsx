@@ -214,7 +214,7 @@ export function App({ pluginContext }: AppProps) {
 
         const task = async () => {
             try {
-                await framer.setCloseWarning("Synchronisation setup in progress. Closing will cancel the sync.")
+                await framer.setCloseWarning("Synchronization setup in progress. Closing will cancel the sync.")
 
                 await syncSheet({
                     ignoredColumns,
@@ -224,12 +224,12 @@ export function App({ pluginContext }: AppProps) {
                     spreadsheetId,
                     sheetTitle,
                     fields,
-                    configureFields: false,
                     // Determine if the field type is already configured, otherwise default to "string"
                     colFieldTypes: headerRow.map(colName => {
                         const field = fields.find(field => field.name === colName)
                         return field?.type ?? "string"
                     }),
+                    configureFields: false,
                 })
 
                 await framer.setCloseWarning(false)

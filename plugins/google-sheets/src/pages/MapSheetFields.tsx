@@ -240,6 +240,7 @@ export function MapSheetFieldsPage({
             ignoredColumns: Array.from(disabledColumns),
             slugColumn,
             lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),
+            configureFields: true,
         })
     }
 

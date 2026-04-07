@@ -319,7 +319,7 @@ export interface SyncMutationOptions {
      * When false (e.g. sync-only mode), schema is only applied when enum fields need refreshed cases.
      * When true (default), collection fields are always updated from the mapping.
      */
-    configureFields?: boolean
+    configureFields: boolean
 }
 
 const BASE_DATE_1900 = new Date(Date.UTC(1899, 11, 30))
@@ -650,7 +650,7 @@ export async function syncSheet({
 
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
     const enrichedFields = enrichFieldsWithEnumCases(fields, uniqueHeaderRowNames, rows)
-    const needsFieldSchemaUpdate = !configureFields || enrichedFields.some(field => field.type === "enum")
+    const needsFieldSchemaUpdate = configureFields || enrichedFields.some(field => field.type === "enum")
 
     if (needsFieldSchemaUpdate) {
         await collection.setFields(enrichedFields.map(mapFieldToFramer))

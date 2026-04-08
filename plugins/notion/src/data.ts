@@ -233,8 +233,13 @@ export async function syncCollection(
 
                 // Skip field value if the item has not changed and the field type has not changed.
                 // Always synced property types are never skipped.
-                if (isUnchanged && !updatedFieldIds.has(field.id) && !alwaysSyncedPropertyTypes.includes(property.type))
+                if (
+                    isUnchanged &&
+                    !updatedFieldIds.has(field.id) &&
+                    !alwaysSyncedPropertyTypes.includes(property.type)
+                ) {
                     continue
+                }
 
                 const fieldEntry = getFieldDataEntryForProperty(property, field)
                 if (fieldEntry) {

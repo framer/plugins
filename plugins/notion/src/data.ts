@@ -4,12 +4,13 @@ import {
     type FieldDataEntryInput,
     type FieldDataInput,
     framer,
-    ManagedCollection,
+    type ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import pLimit from "p-limit"
 import * as v from "valibot"
 import {
+    alwaysSyncedPropertyTypes,
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
     getDatabase,
@@ -230,8 +231,10 @@ export async function syncCollection(
                 const field = fieldsById.get(property.id)
                 if (!field) continue
 
-                // Skip field value if the item has not changed and the field type has not changed
-                if (isUnchanged && !updatedFieldIds.has(field.id)) continue
+                // Skip field value if the item has not changed and the field type has not changed.
+                // Always synced property types are never skipped.
+                if (isUnchanged && !updatedFieldIds.has(field.id) && !alwaysSyncedPropertyTypes.includes(property.type))
+                    continue
 
                 const fieldEntry = getFieldDataEntryForProperty(property, field)
                 if (fieldEntry) {

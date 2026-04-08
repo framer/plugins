@@ -85,6 +85,12 @@ export const supportedCMSTypeByNotionPropertyType = {
     formula: ["string", "number", "boolean", "date", "dateTime", "link", "color"],
 } satisfies Partial<Record<NotionProperty["type"], readonly VirtualFieldType[]>>
 
+/**
+ * These Notion property types are always re-synced even when the page's `last_edited_time` is unchanged.
+ * Formula results and relation values can change without the last edited time being updated in Notion.
+ */
+export const alwaysSyncedPropertyTypes = ["formula", "relation"]
+
 // Naive implementation to be authenticated, a token could be expired.
 // For simplicity we just close the plugin and clear storage in that case.
 export function isAuthenticated() {

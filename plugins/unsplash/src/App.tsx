@@ -15,7 +15,6 @@ import { Blurhash } from "react-blurhash"
 import { ErrorBoundary } from "react-error-boundary"
 import { getRandomPhoto, type UnsplashPhoto, useListPhotosInfinite } from "./api"
 import { SearchIcon } from "./icons"
-import { Spinner } from "./Spinner"
 
 const mode = framer.mode
 
@@ -96,7 +95,7 @@ export function App() {
                     disabled={!isAllowedToUpsertImage}
                     title={isAllowedToUpsertImage ? undefined : "Insufficient permissions"}
                 >
-                    {addRandomMutation.isPending ? <Spinner size="normal" inheritColor /> : "Random Image"}
+                    {addRandomMutation.isPending ? <div className="framer-spinner" /> : "Random Image"}
                 </button>
             </div>
         </div>
@@ -321,7 +320,7 @@ const GridItem = memo(function GridItem({
                                 loading && "bg-black-dimmed"
                             )}
                         >
-                            {loading && <Spinner size="medium" />}
+                            {loading && <div className="framer-spinner bg-reversed" />}
                         </div>
                         {!imageLoaded && photo.blur_hash && (
                             <div className="absolute top-0 left-0">

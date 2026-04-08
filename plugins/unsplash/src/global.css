@@ -14,7 +14,7 @@
     --color-primary: var(--framer-color-text);
     --color-secondary: var(--framer-color-text-secondary);
     --color-tertiary: var(--framer-color-text-tertiary);
-    --color-inverted: var(--framer-color-text-inverted);
+    --color-reversed: var(--framer-color-text-reversed);
 
     --border-color-divider: var(--framer-color-divider);
 

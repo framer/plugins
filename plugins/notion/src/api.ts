@@ -2,7 +2,6 @@ import { Client, collectPaginatedAPI, isFullBlock, isFullDatabase, isFullPage } 
 import type {
     BlockObjectResponse,
     GetDatabaseResponse,
-    GetPagePropertyResponse,
     PageObjectResponse,
     RichTextItemResponse,
 } from "@notionhq/client/build/src/api-endpoints"
@@ -421,7 +420,7 @@ export async function fetchRelationIdsForPageProperty(pageId: string, propertyId
     })
 
     if (response.object === "list") {
-        return response.results.flatMap(item => (item.type === "relation" ? [item.relation.id] : []))
+        return response.results.map(item => (item.type === "relation" ? item.relation.id : "")).filter(id => id !== "")
     }
     if (response.type === "relation") {
         return [response.relation.id]

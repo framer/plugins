@@ -405,6 +405,29 @@ export async function getPageBlocksAsRichText(pageId: string) {
     return blocksToHtml(blocks)
 }
 
+const RELATION_PROPERTY_PAGE_SIZE = 100
+
+/**
+ * Loads up to {@link RELATION_PROPERTY_PAGE_SIZE} related page ids when the relation is truncated on
+ * retrieve-page / query (has_more). Does not paginate past the first page.
+ */
+export async function fetchRelationIdsForPageProperty(pageId: string, propertyId: string): Promise<string[]> {
+    const notion = getNotionClient()
+    const response = await notion.pages.properties.retrieve({
+        page_id: pageId,
+        property_id: propertyId,
+        page_size: RELATION_PROPERTY_PAGE_SIZE,
+    })
+
+    if (response.object === "list") {
+        return response.results.map(item => (item.type === "relation" ? item.relation.id : "")).filter(id => id !== "")
+    }
+    if (response.type === "relation") {
+        return [response.relation.id]
+    }
+    return []
+}
+
 export async function getDatabaseItems(
     database: GetDatabaseResponse,
     onProgress?: (progress: { current: number; total: number; hasFinishedLoading: boolean }) => void

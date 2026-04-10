@@ -13,6 +13,7 @@ import {
     alwaysSyncedPropertyTypes,
     assertFieldTypeMatchesPropertyType,
     type FieldInfo,
+    fetchRelationIdsForPageProperty,
     getDatabase,
     getDatabaseFieldsInfo,
     getDatabaseItems,
@@ -241,7 +242,7 @@ export async function syncCollection(
                     continue
                 }
 
-                const fieldEntry = getFieldDataEntryForProperty(property, field)
+                const fieldEntry = await getFieldDataEntryForProperty(property, field, item.id)
                 if (fieldEntry) {
                     fieldData[field.id] = fieldEntry
                 } else {
@@ -624,10 +625,11 @@ export function fieldsInfoToCollectionFields(
     return fields
 }
 
-export function getFieldDataEntryForProperty(
+async function getFieldDataEntryForProperty(
     property: PageObjectResponse["properties"][string],
-    field: ManagedCollectionFieldInput
-): FieldDataEntryInput | null {
+    field: ManagedCollectionFieldInput,
+    itemId: string
+): Promise<FieldDataEntryInput | null> {
     switch (property.type) {
         case "checkbox": {
             return { type: "boolean", value: property.checkbox }
@@ -691,7 +693,14 @@ export function getFieldDataEntryForProperty(
         }
         case "relation": {
             if (field.type === "multiCollectionReference") {
-                return { type: "multiCollectionReference", value: property.relation.map(({ id }) => id) }
+                let relationItemIds: string[] = []
+                if ("has_more" in property && property.has_more) {
+                    relationItemIds = await fetchRelationIdsForPageProperty(itemId, property.id)
+                } else {
+                    relationItemIds = property.relation.map(({ id }) => id)
+                }
+
+                return { type: "multiCollectionReference", value: relationItemIds }
             } else if (field.type === "collectionReference") {
                 return { type: "collectionReference", value: property.relation[0]?.id ?? null }
             }

@@ -67,6 +67,17 @@ const fuse = new Fuse(icons, {
     useExtendedSearch: true,
 })
 
+function formatIconDisplayName(displayName?: string): string {
+    if (!displayName) return "Unknown"
+
+    const withoutSuffix = displayName.replace(/Icon$/, "")
+
+    return withoutSuffix
+        .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+        .trim()
+}
+
 function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
     const { searchQuery, weight } = props
 
@@ -91,6 +102,8 @@ function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
                 svg,
                 name: "Icon",
             })
+
+            framer.notify(`Inserted ${formatIconDisplayName(Icon.displayName)} icon`, { variant: "success" })
         },
         [weight]
     )
@@ -115,6 +128,17 @@ function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
                             name: "Icon",
                             svg: renderToStaticMarkup(<Icon size={32} color={"black"} weight={weight} />),
                         })}
+                        onDragComplete={result => {
+                            if (result.status === "success") {
+                                framer.notify(`Inserted ${formatIconDisplayName(Icon.displayName)} icon`, {
+                                    variant: "success",
+                                })
+                            } else {
+                                framer.notify(`Failed to insert ${formatIconDisplayName(Icon.displayName)} icon`, {
+                                    variant: "error",
+                                })
+                            }
+                        }}
                         key={entry.name}
                     >
                         <button
@@ -124,7 +148,7 @@ function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
                                 void handleIconClick(entry)
                             }}
                             disabled={!isAllowedToAddSVG}
-                            title={isAllowedToAddSVG ? undefined : "Insufficient permissions"}
+                            title={formatIconDisplayName(Icon.displayName)}
                         >
                             <Icon size={32} color={"var(--framer-color-text)"} weight={weight} />
                         </button>

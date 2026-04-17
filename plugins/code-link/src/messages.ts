@@ -4,7 +4,6 @@ import {
     type Mode,
     normalizeCodeFilePathWithExtension,
     type PendingDelete,
-    type SyncTracker,
 } from "@code-link/shared"
 import type { CodeFilesAPI } from "./api"
 import * as log from "./utils/logger"
@@ -17,11 +16,9 @@ type MessageHandlerAction =
 export function createMessageHandler({
     dispatch,
     api,
-    syncTracker,
 }: {
     dispatch: (action: MessageHandlerAction) => void
     api: CodeFilesAPI
-    syncTracker: SyncTracker
 }) {
     return async function handleMessage(message: CliToPluginMessage, socket: WebSocket) {
         log.debug("Handling message:", message.type)
@@ -38,15 +35,15 @@ export function createMessageHandler({
             case "file-change":
                 log.debug("Applying remote change:", message.fileName)
                 await api.applyRemoteChange(message.fileName, message.content, socket)
-                syncTracker.remember(normalizeCodeFilePathWithExtension(message.fileName), message.content)
+                api.remember(normalizeCodeFilePathWithExtension(message.fileName), message.content)
                 dispatch({ type: "set-mode", mode: "idle" })
                 break
             case "file-rename": {
                 const { oldFileName, newFileName, content } = message
                 log.debug(`Renaming file: ${oldFileName} → ${newFileName}`)
                 if (await api.applyRemoteRename(oldFileName, newFileName, socket)) {
-                    syncTracker.forget(normalizeCodeFilePathWithExtension(oldFileName))
-                    syncTracker.remember(normalizeCodeFilePathWithExtension(newFileName), content)
+                    api.forget(normalizeCodeFilePathWithExtension(oldFileName))
+                    api.remember(normalizeCodeFilePathWithExtension(newFileName), content)
                 }
                 dispatch({ type: "set-mode", mode: "idle" })
                 break

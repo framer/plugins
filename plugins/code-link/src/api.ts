@@ -1,5 +1,6 @@
-import { normalizeCodeFilePathWithExtension, type SyncTracker } from "@code-link/shared"
+import { normalizeCodeFilePathWithExtension } from "@code-link/shared"
 import { framer } from "framer-plugin"
+import { PluginBase } from "./plugin-base"
 import * as log from "./utils/logger"
 
 /**
@@ -8,47 +9,7 @@ import * as log from "./utils/logger"
  * Tries to be as stateless as possible.
  */
 
-export class CodeFilesAPI {
-    private lastSnapshot = new Map<string, string>()
-
-    // Keep the snapshot aligned with the state Framer should expose, even while a remote mutation is in flight.
-    private async withExpectedSnapshotPatch<T>(
-        patch: {
-            upserts?: { fileName: string; content: string }[]
-            deletes?: string[]
-        },
-        run: () => Promise<T>
-    ): Promise<T> {
-        const previousEntries = new Map<string, string | undefined>()
-
-        for (const fileName of patch.deletes ?? []) {
-            if (!previousEntries.has(fileName)) {
-                previousEntries.set(fileName, this.lastSnapshot.get(fileName))
-            }
-            this.lastSnapshot.delete(fileName)
-        }
-
-        for (const entry of patch.upserts ?? []) {
-            if (!previousEntries.has(entry.fileName)) {
-                previousEntries.set(entry.fileName, this.lastSnapshot.get(entry.fileName))
-            }
-            this.lastSnapshot.set(entry.fileName, entry.content)
-        }
-
-        try {
-            return await run()
-        } catch (error) {
-            for (const [fileName, previousContent] of previousEntries) {
-                if (previousContent === undefined) {
-                    this.lastSnapshot.delete(fileName)
-                } else {
-                    this.lastSnapshot.set(fileName, previousContent)
-                }
-            }
-            throw error
-        }
-    }
-
+export class CodeFilesAPI extends PluginBase {
     private async getCodeFilesWithNormalizedPaths() {
         // Always all files instead of single file calls.
         // The API internally does that anyways.
@@ -77,7 +38,7 @@ export class CodeFilesAPI {
         files.forEach(file => this.lastSnapshot.set(file.name, file.content))
     }
 
-    async handleFramerFilesChanged(socket: WebSocket, tracker: SyncTracker) {
+    async handleFramerFilesChanged(socket: WebSocket) {
         const files = await this.getCodeFilesWithNormalizedPaths()
         const seen = new Set<string>()
 
@@ -95,7 +56,7 @@ export class CodeFilesAPI {
                         content: file.content,
                     })
                 )
-                tracker.remember(file.name, file.content)
+                this.remember(file.name, file.content)
                 this.lastSnapshot.set(file.name, file.content)
             }
         }

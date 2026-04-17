@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { WebSocket } from "ws"
 import { transition } from "./controller.ts"
 import { DEFAULT_REMOTE_DRIFT_MS, filterEchoedFiles } from "./helpers/files.ts"
-import { createHashTracker } from "./utils/hash-tracker.ts"
+import { createHashTracker } from "./sync-base.ts"
 
 // Readable coverage of core controller functionality
 

@@ -1,14 +1,6 @@
-import {
-    type ConflictSummary,
-    createSyncTracker,
-    type Mode,
-    type PendingDelete,
-    type ProjectInfo,
-    type SyncTracker,
-    shortProjectHash,
-} from "@code-link/shared"
+import { type ConflictSummary, type Mode, type PendingDelete, type ProjectInfo, shortProjectHash } from "@code-link/shared"
 import { framer } from "framer-plugin"
-import { useCallback, useEffect, useReducer, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { CodeFilesAPI } from "./api"
 import { createMessageHandler } from "./messages"
 import { copyToClipboard } from "./utils/clipboard"
@@ -89,9 +81,61 @@ export function App() {
     const [state, dispatch] = useReducer(reducer, initialState)
     const socketRef = useRef<WebSocket | null>(null)
     const api = useConstant<CodeFilesAPI>(() => new CodeFilesAPI())
-    const syncTracker = useConstant<SyncTracker>(createSyncTracker)
 
     const command = state.project && `npx framer-code-link ${shortProjectHash(state.project.id)}`
+
+    useLayoutEffect(() => {
+        switch (state.mode) {
+            case "delete_confirmation":
+                if (state.pendingDeletes.length === 1) {
+                    void framer.showUI({
+                        width: 260,
+                        height: 187,
+                        position: "center",
+                        resizable: false,
+                    })
+                } else {
+                    void framer.showUI({
+                        width: 320,
+                        height: 420,
+                        position: "center",
+                        resizable: "width",
+                    })
+                }
+                break
+            case "conflict_resolution":
+                void framer.showUI({
+                    width: 320,
+                    height: 420,
+                    position: "center",
+                    resizable: "width",
+                })
+                break
+            case "info":
+                void framer.showUI({
+                    width: 260,
+                    height: 360,
+                    position: "center",
+                    resizable: false,
+                })
+                break
+            case "replaced":
+                break
+            default:
+                void framer.setBackgroundMessage(backgroundStatusFromMode(state.mode))
+                void framer.hideUI()
+        }
+    }, [state.mode, state.pendingDeletes.length])
+
+    const replacedClosedRef = useRef(false)
+    useEffect(() => {
+        if (state.mode === "replaced" && !replacedClosedRef.current) {
+            replacedClosedRef.current = true
+            void framer.closePlugin("Replaced by another Plugin connection", {
+                variant: "info",
+            })
+        }
+    }, [state.mode])
 
     // Permissions check
     useEffect(() => {
@@ -138,14 +182,14 @@ export function App() {
             log.debug("Framer files changed")
             const socket = socketRef.current
             if (socket && socket.readyState === WebSocket.OPEN) {
-                void api.handleFramerFilesChanged(socket, syncTracker)
+                void api.handleFramerFilesChanged(socket)
             }
         })
 
         return () => {
             unsubscribeCodeFiles()
         }
-    }, [state.project, state.permissionsGranted, api, syncTracker])
+    }, [state.project, state.permissionsGranted, api])
 
     // Socket connection
     useEffect(() => {
@@ -171,7 +215,7 @@ export function App() {
             dispatch({ type: "set-mode", mode: "replaced" })
         }
 
-        const handleMessage = createMessageHandler({ dispatch, api, syncTracker })
+        const handleMessage = createMessageHandler({ dispatch, api })
         const controller = createSocketConnectionController({
             project: state.project,
             setSocket,
@@ -186,7 +230,7 @@ export function App() {
             log.debug("Cleaning up socket connection")
             controller.stop()
         }
-    }, [state.project, state.permissionsGranted, api, syncTracker])
+    }, [state.project, state.permissionsGranted, api])
 
     const sendMessage = useCallback((payload: unknown) => {
         const socket = socketRef.current
@@ -230,49 +274,17 @@ export function App() {
 
     switch (state.mode) {
         case "delete_confirmation":
-            if (state.pendingDeletes.length === 1) {
-                // @TODO: Possibly await this to avoid flash
-                void framer.showUI({
-                    width: 260,
-                    height: 187,
-                    position: "center",
-                    resizable: false,
-                })
-            } else {
-                void framer.showUI({
-                    width: 320,
-                    height: 420,
-                    position: "center",
-                    resizable: "width",
-                })
-            }
             return <DeletePanel files={state.pendingDeletes} onConfirm={confirmDeletes} onKeep={keepDeletes} />
 
         case "conflict_resolution":
-            void framer.showUI({
-                width: 320,
-                height: 420,
-                position: "center",
-                resizable: "width",
-            })
             return <ConflictPanel conflicts={state.conflicts} onResolve={resolveConflicts} />
 
         case "info":
-            void framer.showUI({
-                width: 260,
-                height: 360,
-                position: "center",
-                resizable: false,
-            })
             return <InfoPanel command={command} />
 
         case "replaced":
-            return framer.closePlugin("Replaced by another Plugin connection", {
-                variant: "info",
-            })
+            return null
         default:
-            void framer.setBackgroundMessage(backgroundStatusFromMode(state.mode))
-            void framer.hideUI()
             return null
     }
 }

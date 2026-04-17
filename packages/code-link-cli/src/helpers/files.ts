@@ -14,7 +14,7 @@ import { fileKeyForLookup, normalizePath, pluralize, sanitizeFilePath } from "@c
 import fs from "fs/promises"
 import path from "path"
 import type { Conflict, ConflictResolution, ConflictVersionData, FileInfo } from "../types.ts"
-import type { createHashTracker, HashTracker } from "../utils/hash-tracker.ts"
+import type { HashTracker } from "../sync-base.ts"
 import { debug, warn } from "../utils/logging.ts"
 import { hashFileContent, type PersistedFileState } from "../utils/state-persistence.ts"
 
@@ -399,7 +399,7 @@ export async function readFileSafe(fileName: string, filesDir: string): Promise<
  * Filter out files whose content matches the last remembered hash.
  * Used to skip inbound echoes of our own local sends.
  */
-export function filterEchoedFiles(files: FileInfo[], hashTracker: ReturnType<typeof createHashTracker>): FileInfo[] {
+export function filterEchoedFiles(files: FileInfo[], hashTracker: HashTracker): FileInfo[] {
     return files.filter(file => {
         return !hashTracker.shouldSkip(file.name, file.content)
     })

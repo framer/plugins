@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { WebSocket } from "ws"
 import { executeEffect } from "./controller.ts"
+import { SyncKernel } from "./kernel.ts"
 import type { Config } from "./types.ts"
 
 const { sendMessage, status, success, tryGitInit, wasRecentlyDisconnected, didShowDisconnect, resetDisconnectState } =
@@ -76,12 +77,8 @@ describe("SYNC_COMPLETE once mode", () => {
             },
             {
                 config: createConfig({ once: true }),
-                hashTracker: {} as never,
-                installer: null,
-                fileMetadataCache: {} as never,
-                pendingRenameConfirmations: new Map(),
+                kernel: new SyncKernel(),
                 shutdown,
-                userActions: {} as never,
                 syncState: {
                     mode: "watching",
                     socket: mockSocket,
@@ -91,7 +88,7 @@ describe("SYNC_COMPLETE once mode", () => {
         )
 
         expect(sendMessage).toHaveBeenCalledWith(mockSocket, { type: "sync-complete" })
-        expect(status).toHaveBeenCalledWith("Initial sync complete, exiting...")
+        expect(status).toHaveBeenCalledWith("Sync complete, exiting...")
         expect(shutdown).toHaveBeenCalledTimes(1)
     })
 
@@ -107,12 +104,8 @@ describe("SYNC_COMPLETE once mode", () => {
             },
             {
                 config: createConfig({ once: false }),
-                hashTracker: {} as never,
-                installer: null,
-                fileMetadataCache: {} as never,
-                pendingRenameConfirmations: new Map(),
+                kernel: new SyncKernel(),
                 shutdown,
-                userActions: {} as never,
                 syncState: {
                     mode: "watching",
                     socket: mockSocket,

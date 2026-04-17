@@ -24,11 +24,12 @@ import {
 import { tryGitInit } from "./helpers/git.ts"
 import { Installer } from "./helpers/installer.ts"
 import { PluginUserPromptCoordinator } from "./helpers/plugin-prompts.ts"
+import { SyncKernel, type PendingRenameConfirmation } from "./kernel.ts"
 import { validateIncomingChange } from "./helpers/sync-validator.ts"
 import { initWatcher } from "./helpers/watcher.ts"
 import type { Config, Conflict, ConflictVersionData, FileInfo, WatcherEvent } from "./types.ts"
-import { FileMetadataCache, type FileSyncMetadata } from "./utils/file-metadata-cache.ts"
-import { createHashTracker } from "./utils/hash-tracker.ts"
+import type { FileMetadataCache, FileSyncMetadata } from "./utils/file-metadata-cache.ts"
+import type { HashTracker } from "./sync-base.ts"
 import {
     cancelDisconnectMessage,
     debug,
@@ -45,6 +46,7 @@ import {
     warn,
     wasRecentlyDisconnected,
 } from "./utils/logging.ts"
+import type { EffectResult } from "./effect-result.ts"
 import { findOrCreateProjectDirectory } from "./utils/project.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
 
@@ -183,11 +185,6 @@ type Effect =
           level: "info" | "debug" | "warn" | "success"
           message: string
       }
-
-interface PendingRenameConfirmation {
-    oldFileName: string
-    content: string
-}
 
 /** Log helper */
 function log(level: "info" | "debug" | "warn" | "success", message: string): Effect {
@@ -694,24 +691,134 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 }
 
 /**
+ * Pure description of SEND_LOCAL_CHANGE for EffectResult-based tests and specs.
+ */
+export function describeSendLocalChange(
+    effect: { fileName: string; content: string },
+    read: { fileMetadataCache: FileMetadataCache; hashTracker: HashTracker }
+): EffectResult | null {
+    const contentHash = hashFileContent(effect.content)
+    const metadata = read.fileMetadataCache.get(effect.fileName)
+
+    if (metadata?.lastSyncedHash === contentHash) {
+        debug(`Skipping local change for ${effect.fileName}: matches last synced content`)
+        return null
+    }
+
+    if (read.hashTracker.shouldSkip(effect.fileName, effect.content)) {
+        return null
+    }
+
+    debug(`Local change detected: ${effect.fileName}`)
+
+    return {
+        sends: [
+            {
+                type: "file-change",
+                fileName: effect.fileName,
+                content: effect.content,
+            },
+        ],
+        fileUp: effect.fileName,
+        installerProcess: { fileName: effect.fileName, content: effect.content },
+    }
+}
+
+async function applyEffectResult(
+    result: EffectResult,
+    ctx: {
+        config: Config
+        hashTracker: HashTracker
+        fileMetadataCache: FileMetadataCache
+        pendingRenameConfirmations: Map<string, PendingRenameConfirmation>
+        installer: Installer | null
+        syncState: SyncState
+    }
+): Promise<void> {
+    const { hashTracker, fileMetadataCache, pendingRenameConfirmations, installer, syncState } = ctx
+
+    if (result.log) {
+        const logFns = { info, warn, success, debug }
+        logFns[result.log.level](result.log.message)
+    }
+
+    if (result.persistState) {
+        await fileMetadataCache.flush()
+    }
+
+    if (result.sends && syncState.socket) {
+        for (const payload of result.sends) {
+            try {
+                const sent = await sendMessage(syncState.socket, payload)
+                if (sent && payload.type === "file-change") {
+                    hashTracker.remember(payload.fileName, payload.content)
+                }
+                if (sent && result.fileUp) {
+                    fileUp(result.fileUp)
+                }
+                if (sent && result.installerProcess && installer) {
+                    installer.process(result.installerProcess.fileName, result.installerProcess.content)
+                }
+            } catch {
+                warn(
+                    `Failed to push ${payload.type === "file-change" ? (payload as { fileName: string }).fileName : payload.type}`
+                )
+            }
+        }
+    }
+
+    if (result.kernelOps) {
+        for (const op of result.kernelOps) {
+            if (op.op === "recordRemoteApplied") {
+                fileMetadataCache.recordSyncedSnapshot(op.path, op.hash, op.modifiedAt)
+            } else if (op.op === "recordDelete") {
+                hashTracker.forget(op.path)
+                fileMetadataCache.recordDelete(op.path)
+            } else if (op.op === "registerPendingRename") {
+                pendingRenameConfirmations.set(normalizeCodeFilePathWithExtension(op.newPath), {
+                    oldFileName: op.oldPath,
+                    content: op.content,
+                })
+            } else if (op.op === "completePendingRename") {
+                pendingRenameConfirmations.delete(normalizeCodeFilePathWithExtension(op.newPath))
+            }
+        }
+    }
+}
+
+/**
  * Effect executor - interprets effects and calls helpers
  * Returns additional events that should be processed (e.g., CONFLICTS_DETECTED after DETECT_CONFLICTS)
  */
-async function executeEffect(
-    effect: Effect,
-    context: {
-        config: Config
-        hashTracker: ReturnType<typeof createHashTracker>
-        installer: Installer | null
-        fileMetadataCache: FileMetadataCache
-        pendingRenameConfirmations: Map<string, PendingRenameConfirmation>
-        shutdown: () => Promise<void>
-        userActions: PluginUserPromptCoordinator
-        syncState: SyncState
-    }
-): Promise<SyncEvent[]> {
-    const { config, hashTracker, installer, fileMetadataCache, pendingRenameConfirmations, shutdown, userActions, syncState } =
-        context
+type ExecuteEffectContext =
+    | {
+          config: Config
+          kernel: SyncKernel
+          shutdown: () => Promise<void>
+          syncState: SyncState
+      }
+    | {
+          config: Config
+          hashTracker: HashTracker
+          installer: Installer | null
+          fileMetadataCache: FileMetadataCache
+          pendingRenameConfirmations: Map<string, PendingRenameConfirmation>
+          shutdown: () => Promise<void>
+          userActions: PluginUserPromptCoordinator
+          syncState: SyncState
+      }
+
+async function executeEffect(effect: Effect, context: ExecuteEffectContext): Promise<SyncEvent[]> {
+    const { config, shutdown, syncState } = context
+    const hashTracker =
+        "kernel" in context ? context.kernel.base : context.hashTracker
+    const fileMetadataCache =
+        "kernel" in context ? context.kernel.base.fileMetadataCache : context.fileMetadataCache
+    const pendingRenameConfirmations =
+        "kernel" in context ? context.kernel.pendingRenameConfirmations : context.pendingRenameConfirmations
+    const userActions =
+        "kernel" in context ? context.kernel.userActions : context.userActions
+    const installer = "kernel" in context ? context.kernel.installer : context.installer
 
     switch (effect.type) {
         case "INIT_WORKSPACE": {
@@ -908,40 +1015,20 @@ async function executeEffect(
         }
 
         case "SEND_LOCAL_CHANGE": {
-            const contentHash = hashFileContent(effect.content)
-            const metadata = fileMetadataCache.get(effect.fileName)
-
-            // Skip if file matches last confirmed remote content
-            if (metadata?.lastSyncedHash === contentHash) {
-                debug(`Skipping local change for ${effect.fileName}: matches last synced content`)
+            const described = describeSendLocalChange(effect, { fileMetadataCache, hashTracker })
+            if (!described) {
                 return []
             }
-
-            // Echo prevention: skip if we just wrote this exact content
-            if (hashTracker.shouldSkip(effect.fileName, effect.content)) {
-                return []
-            }
-
-            debug(`Local change detected: ${effect.fileName}`)
 
             try {
-                // Send change to plugin
-                if (syncState.socket) {
-                    await sendMessage(syncState.socket, {
-                        type: "file-change",
-                        fileName: effect.fileName,
-                        content: effect.content,
-                    })
-                    fileUp(effect.fileName)
-                }
-
-                // Only remember hash after successful send (prevents re-sending on failure)
-                hashTracker.remember(effect.fileName, effect.content)
-
-                // Trigger type installer
-                if (installer) {
-                    installer.process(effect.fileName, effect.content)
-                }
+                await applyEffectResult(described, {
+                    config,
+                    hashTracker,
+                    fileMetadataCache,
+                    pendingRenameConfirmations,
+                    installer,
+                    syncState,
+                })
             } catch (err) {
                 warn(`Failed to push ${effect.fileName}`)
             }
@@ -1105,10 +1192,7 @@ async function executeEffect(
  * Starts the sync controller with the given configuration
  */
 export async function start(config: Config): Promise<void> {
-    const hashTracker = createHashTracker()
-    const fileMetadataCache = new FileMetadataCache()
-    const pendingRenameConfirmations = new Map<string, PendingRenameConfirmation>()
-    let installer: Installer | null = null
+    const kernel = new SyncKernel()
     let isShuttingDown = false
 
     // State machine state
@@ -1117,8 +1201,6 @@ export async function start(config: Config): Promise<void> {
         socket: null,
         pendingRemoteChanges: [],
     }
-
-    const userActions = new PluginUserPromptCoordinator()
 
     // State Machine Helper
     // Process events through state machine and execute effects recursively
@@ -1145,12 +1227,8 @@ export async function start(config: Config): Promise<void> {
 
             const followUpEvents = await executeEffect(effect, {
                 config,
-                hashTracker,
-                installer,
-                fileMetadataCache,
-                pendingRenameConfirmations,
+                kernel,
                 shutdown,
-                userActions,
                 syncState,
             })
 
@@ -1200,7 +1278,7 @@ export async function start(config: Config): Promise<void> {
                     return
                 }
                 debug(`New handshake received in ${syncState.mode} mode, resetting sync state`)
-                pendingRenameConfirmations.clear()
+                kernel.pendingRenameConfirmations.clear()
                 await processEvent({ type: "DISCONNECT" })
             }
 
@@ -1222,12 +1300,12 @@ export async function start(config: Config): Promise<void> {
             })
 
             // Initialize installer if needed
-            if (config.projectDir && !installer) {
-                installer = new Installer({
+            if (config.projectDir && !kernel.installer) {
+                kernel.installer = new Installer({
                     projectDir: config.projectDir,
                     allowUnsupportedNpm: config.allowUnsupportedNpm,
                 })
-                await installer.initialize()
+                await kernel.installer.initialize()
                 // Start file watcher now that we have a directory
                 startWatcher()
             }
@@ -1237,7 +1315,7 @@ export async function start(config: Config): Promise<void> {
     // Message Handler
     async function handleMessage(message: PluginToCliMessage) {
         // Ensure project is initialized before handling messages
-        if (!config.projectDir || !installer) {
+        if (!config.projectDir || !kernel.installer) {
             warn("Received message before handshake completed - ignoring")
             return
         }
@@ -1266,7 +1344,7 @@ export async function start(config: Config): Promise<void> {
                         // use local receipt time. Conflict detection uses content hashes, not timestamps.
                         modifiedAt: Date.now(),
                     },
-                    fileMeta: fileMetadataCache.get(message.fileName),
+                    fileMeta: kernel.base.fileMetadataCache.get(message.fileName),
                 }
                 break
 
@@ -1285,7 +1363,7 @@ export async function start(config: Config): Promise<void> {
                 const unmatched: string[] = []
 
                 for (const fileName of message.fileNames) {
-                    const handled = userActions.handleConfirmation(`delete:${fileName}`, true)
+                    const handled = kernel.userActions.handleConfirmation(`delete:${fileName}`, true)
 
                     if (!handled) {
                         unmatched.push(fileName)
@@ -1301,7 +1379,7 @@ export async function start(config: Config): Promise<void> {
 
             case "delete-cancelled": {
                 for (const file of message.files) {
-                    userActions.handleConfirmation(`delete:${file.fileName}`, false)
+                    kernel.userActions.handleConfirmation(`delete:${file.fileName}`, false)
 
                     await processEvent({
                         type: "LOCAL_DELETE_REJECTED",
@@ -1323,7 +1401,7 @@ export async function start(config: Config): Promise<void> {
 
             case "error":
                 if (message.fileName) {
-                    pendingRenameConfirmations.delete(normalizeCodeFilePathWithExtension(message.fileName))
+                    kernel.pendingRenameConfirmations.delete(normalizeCodeFilePathWithExtension(message.fileName))
                 }
                 warn(message.message)
                 return
@@ -1374,9 +1452,9 @@ export async function start(config: Config): Promise<void> {
             status("Disconnected, waiting to reconnect...")
         })
         void (async () => {
-            pendingRenameConfirmations.clear()
+            kernel.pendingRenameConfirmations.clear()
             await processEvent({ type: "DISCONNECT" })
-            userActions.cleanup()
+            kernel.userActions.cleanup()
         })()
     })
 
@@ -1394,7 +1472,7 @@ export async function start(config: Config): Promise<void> {
         debug("[STATE] Shutting down...")
 
         isShuttingDown = true
-        userActions.cleanup()
+        kernel.userActions.cleanup()
 
         if (watcher) {
             await watcher.close()

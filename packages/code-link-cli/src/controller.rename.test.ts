@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import type { WebSocket } from "ws"
 import { executeEffect } from "./controller.ts"
 import type { Config } from "./types.ts"
-import { createHashTracker } from "./utils/hash-tracker.ts"
+import { createHashTracker } from "./sync-base.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
 
 const { sendMessage } = vi.hoisted(() => ({

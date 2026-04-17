@@ -10,6 +10,8 @@
  */
 
 import pc from "picocolors"
+import { createScheduler } from "../scheduler.ts"
+import { TIMINGS } from "../timings.ts"
 
 export enum LogLevel {
     DEBUG = 0,
@@ -37,12 +39,9 @@ function rewriteLastLine(text: string): void {
 }
 
 // Reconnect suppression state
-let disconnectTimer: ReturnType<typeof setTimeout> | null = null
+const disconnectScheduler = createScheduler()
 let isShowingDisconnect = false
 let hadRecentDisconnect = false
-// Only show disconnect if down for 4+ seconds
-// Allows for swtiching between Canvas and Code Editor
-const DISCONNECT_DELAY_MS = 4000
 
 export function setLogLevel(level: LogLevel): void {
     currentLevel = level
@@ -196,28 +195,20 @@ export function status(message: string): void {
  * If reconnection happens before the delay, the message is cancelled.
  */
 export function scheduleDisconnectMessage(callback: () => void): void {
-    // Clear any existing timer
-    if (disconnectTimer) {
-        clearTimeout(disconnectTimer)
-    }
-
+    disconnectScheduler.cancel("disconnectNotice")
     hadRecentDisconnect = true
     isShowingDisconnect = false
-    disconnectTimer = setTimeout(() => {
+    disconnectScheduler.after("disconnectNotice", TIMINGS.disconnectNotice, () => {
         isShowingDisconnect = true
         callback()
-        disconnectTimer = null
-    }, DISCONNECT_DELAY_MS)
+    })
 }
 
 /**
  * Cancel pending disconnect message (called on reconnect)
  */
 export function cancelDisconnectMessage(): void {
-    if (disconnectTimer) {
-        clearTimeout(disconnectTimer)
-        disconnectTimer = null
-    }
+    disconnectScheduler.cancel("disconnectNotice")
 }
 
 /**

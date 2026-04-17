@@ -16,8 +16,6 @@ export {
 
 // Utilities
 export { getPortFromHash } from "./ports.ts"
-// Sync tracker
-export { createSyncTracker, type SyncTracker } from "./sync-tracker.ts"
 export type {
     CancelledDelete,
     CliToPluginMessage,

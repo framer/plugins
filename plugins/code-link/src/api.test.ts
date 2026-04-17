@@ -1,6 +1,6 @@
-import type { SyncTracker } from "@code-link/shared"
 import { afterEach, describe, expect, it, type Mock, vi } from "vitest"
 import { CodeFilesAPI } from "./api"
+import { PluginBase } from "./plugin-base"
 
 const { framerMock } = vi.hoisted(() => ({
     framerMock: {
@@ -61,23 +61,6 @@ function expectFileSyncedMessage(
     }
 }
 
-function createTracker() {
-    const remember = vi.fn()
-    const shouldSkip = vi.fn()
-    const forget = vi.fn()
-    const clear = vi.fn()
-
-    return {
-        tracker: {
-            remember,
-            shouldSkip,
-            forget,
-            clear,
-        } satisfies SyncTracker,
-        remember,
-    }
-}
-
 function createCodeFile({ content, name, path }: { content: string; name?: string; path?: string }) {
     return {
         content,
@@ -91,12 +74,12 @@ function createCodeFile({ content, name, path }: { content: string; name?: strin
 }
 
 function setup() {
-    const tracker = createTracker()
+    const api = new CodeFilesAPI()
+    const rememberSpy = vi.spyOn(PluginBase.prototype, "remember")
     return {
-        api: new CodeFilesAPI(),
+        api,
         socket: createSocket(),
-        tracker: tracker.tracker,
-        trackerRemember: tracker.remember,
+        rememberSpy,
     }
 }
 
@@ -124,7 +107,7 @@ describe("CodeFilesAPI", () => {
     })
 
     it("publishes a normalized snapshot with ensured extensions and seeds later diffing", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
 
         const files = [
             createCodeFile({ path: "components/Foo.tsx", content: "export const Foo = 1" }),
@@ -149,14 +132,14 @@ describe("CodeFilesAPI", () => {
         socket.send.mockClear()
         mockCodeFiles(files)
 
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(trackerRemember).not.toHaveBeenCalled()
+        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("emits incremental file changes and deletes", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
 
         await publishSnapshotAndClear({
             api,
@@ -172,7 +155,7 @@ describe("CodeFilesAPI", () => {
             createCodeFile({ name: "Added.tsx", content: "export const Added = 1" }),
         ])
 
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(getSentMessages(socket)).toHaveLength(3)
         expect(getSentMessages(socket)).toEqual(
@@ -194,13 +177,13 @@ describe("CodeFilesAPI", () => {
                 },
             ])
         )
-        expect(trackerRemember).toHaveBeenCalledTimes(2)
-        expect(trackerRemember).toHaveBeenNthCalledWith(1, "Changed.tsx", "export const Changed = 2")
-        expect(trackerRemember).toHaveBeenNthCalledWith(2, "Added.tsx", "export const Added = 1")
+        expect(rememberSpy).toHaveBeenCalledTimes(2)
+        expect(rememberSpy).toHaveBeenNthCalledWith(1, "Changed.tsx", "export const Changed = 2")
+        expect(rememberSpy).toHaveBeenNthCalledWith(2, "Added.tsx", "export const Added = 1")
     })
 
     it("normalizes extensionless remote changes and seeds snapshot state after a successful write", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
         const content = "export const New = 1"
 
         framerMock.getCodeFiles.mockResolvedValueOnce([])
@@ -217,14 +200,14 @@ describe("CodeFilesAPI", () => {
         socket.send.mockClear()
         mockCodeFiles([createCodeFile({ name: "New.tsx", content })])
 
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(trackerRemember).not.toHaveBeenCalled()
+        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("updates an existing extensionless Framer file instead of creating a duplicate", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
         const oldContent = "export const New = 1"
         const newContent = "export const New = 2"
         const existing = createCodeFile({ name: "New", content: oldContent })
@@ -241,14 +224,14 @@ describe("CodeFilesAPI", () => {
         socket.send.mockClear()
         mockCodeFiles([createCodeFile({ name: "New", content: newContent })])
 
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(trackerRemember).not.toHaveBeenCalled()
+        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("seeds snapshot before a remote write finishes to avoid echoing subscription updates", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
         const oldContent = "export const Race = 1"
         const newContent = "export const Race = 2"
         const existing = createCodeFile({ name: "Race.tsx", content: oldContent })
@@ -263,7 +246,7 @@ describe("CodeFilesAPI", () => {
         existing.setFileContent.mockImplementation(async (content: string) => {
             existing.content = content
             framerMock.getCodeFiles.mockResolvedValue([existing])
-            await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+            await api.handleFramerFilesChanged(socket as unknown as WebSocket)
         })
 
         await api.applyRemoteChange("Race.tsx", newContent, socket as unknown as WebSocket)
@@ -271,11 +254,11 @@ describe("CodeFilesAPI", () => {
         const sentMessages = getSentMessages(socket)
         expect(sentMessages).toHaveLength(1)
         expectFileSyncedMessage(sentMessages[0], "Race.tsx")
-        expect(trackerRemember).not.toHaveBeenCalled()
+        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("does not update snapshot state when a remote write fails", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
         const oldContent = "export const Broken = 1"
         const newContent = "export const Broken = 2"
         const existing = createCodeFile({ name: "Broken.tsx", content: oldContent })
@@ -297,7 +280,7 @@ describe("CodeFilesAPI", () => {
 
         mockCodeFiles([createCodeFile({ name: "Broken.tsx", content: newContent })])
 
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(getSentMessages(socket)).toEqual([
             {
@@ -306,11 +289,11 @@ describe("CodeFilesAPI", () => {
                 content: newContent,
             },
         ])
-        expect(trackerRemember).toHaveBeenCalledWith("Broken.tsx", newContent)
+        expect(rememberSpy).toHaveBeenCalledWith("Broken.tsx", newContent)
     })
 
     it("renames a file to a normalized target and updates snapshot state", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
         const content = "export const Old = 1"
         const existing = createCodeFile({ name: "Old.tsx", content })
 
@@ -332,14 +315,14 @@ describe("CodeFilesAPI", () => {
         socket.send.mockClear()
         mockCodeFiles([createCodeFile({ name: "New.tsx", content })])
 
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(trackerRemember).not.toHaveBeenCalled()
+        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("seeds snapshot before a remote rename finishes to avoid echoing subscription updates", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
         const content = "export const Old = 1"
         const existing = createCodeFile({ name: "Old.tsx", content })
 
@@ -353,7 +336,7 @@ describe("CodeFilesAPI", () => {
         existing.rename.mockImplementation(async (targetName: string) => {
             existing.name = targetName
             framerMock.getCodeFiles.mockResolvedValue([existing])
-            await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+            await api.handleFramerFilesChanged(socket as unknown as WebSocket)
         })
 
         await expect(api.applyRemoteRename("Old.tsx", "New", socket as unknown as WebSocket)).resolves.toBe(true)
@@ -361,11 +344,11 @@ describe("CodeFilesAPI", () => {
         const sentMessages = getSentMessages(socket)
         expect(sentMessages).toHaveLength(1)
         expectFileSyncedMessage(sentMessages[0], "New.tsx")
-        expect(trackerRemember).not.toHaveBeenCalled()
+        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("finds an extensionless rename source using its normalized name", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
         const content = "export const Old = 1"
         const existing = createCodeFile({ name: "Old", content })
 
@@ -384,14 +367,14 @@ describe("CodeFilesAPI", () => {
         socket.send.mockClear()
         mockCodeFiles([createCodeFile({ name: "New", content })])
 
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(trackerRemember).not.toHaveBeenCalled()
+        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("deletes an extensionless Framer file using a normalized name", async () => {
-        const { api, socket, tracker } = setup()
+        const { api, socket } = setup()
         const existing = createCodeFile({ name: "DeleteMe", content: "export const DeleteMe = 1" })
 
         await publishSnapshotAndClear({
@@ -407,12 +390,12 @@ describe("CodeFilesAPI", () => {
         expect(existing.remove).toHaveBeenCalled()
 
         mockCodeFiles([])
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
         expect(socket.send).not.toHaveBeenCalled()
     })
 
     it("seeds snapshot before a remote delete finishes to avoid echoing subscription updates", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
         const content = "export const DeleteMe = 1"
         const existing = createCodeFile({ name: "DeleteMe.tsx", content })
 
@@ -425,17 +408,17 @@ describe("CodeFilesAPI", () => {
         framerMock.getCodeFiles.mockResolvedValueOnce([existing])
         existing.remove.mockImplementation(async () => {
             framerMock.getCodeFiles.mockResolvedValue([])
-            await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+            await api.handleFramerFilesChanged(socket as unknown as WebSocket)
         })
 
         await api.applyRemoteDelete("DeleteMe.tsx")
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(trackerRemember).not.toHaveBeenCalled()
+        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("restores snapshot state when a remote delete fails", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
         const content = "export const DeleteMe = 1"
         const existing = createCodeFile({ name: "DeleteMe.tsx", content })
 
@@ -451,10 +434,10 @@ describe("CodeFilesAPI", () => {
         await expect(api.applyRemoteDelete("DeleteMe.tsx")).rejects.toThrow("delete failed")
 
         mockCodeFiles([createCodeFile({ name: "DeleteMe.tsx", content })])
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(trackerRemember).not.toHaveBeenCalled()
+        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("returns an error when rename cannot fetch code files", async () => {
@@ -474,7 +457,7 @@ describe("CodeFilesAPI", () => {
     })
 
     it("returns an error for missing rename sources and clears stale snapshot state", async () => {
-        const { api, socket, tracker } = setup()
+        const { api, socket } = setup()
 
         await publishSnapshotAndClear({
             api,
@@ -497,13 +480,13 @@ describe("CodeFilesAPI", () => {
         socket.send.mockClear()
         mockCodeFiles([])
 
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
     })
 
     it("returns an error when rename throws and does not confirm sync", async () => {
-        const { api, socket, tracker, trackerRemember } = setup()
+        const { api, socket, rememberSpy } = setup()
         const content = "export const Old = 1"
         const existing = createCodeFile({ name: "Old.tsx", content })
 
@@ -528,9 +511,9 @@ describe("CodeFilesAPI", () => {
 
         socket.send.mockClear()
         mockCodeFiles([createCodeFile({ name: "Old.tsx", content })])
-        await api.handleFramerFilesChanged(socket as unknown as WebSocket, tracker)
+        await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(trackerRemember).not.toHaveBeenCalled()
+        expect(rememberSpy).not.toHaveBeenCalled()
     })
 })

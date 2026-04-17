@@ -124,7 +124,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
     if (isCreatingNew) {
         return (
             <div className="collection-creation-container">
-                <div className="collection-selector">
+                <div className={creationError ? "collection-selector error" : "collection-selector"}>
                     <div className="collection-icon-container">
                         <CollectionIcon />
                     </div>
@@ -132,7 +132,7 @@ export function CollectionSelector({ forceCreate, collection, onCollectionChange
                     <input
                         ref={inputRef}
                         type="text"
-                        className={creationError ? "collection-select error" : "collection-select"}
+                        className="collection-select"
                         value={newCollectionName}
                         onChange={handleCollectionNameChange}
                         onKeyDown={handleKeyDown}

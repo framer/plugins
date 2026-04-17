@@ -37,6 +37,11 @@
     overflow-y: scroll;
 }
 
+.search-input-container {
+    position: relative;
+    width: 100%;
+}
+
 .search-input {
     height: 30px;
     width: 100%;
@@ -44,6 +49,7 @@
     line-height: 24px;
     font-weight: 500 !important;
     font-family: "Inter", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    padding-left: 33px;
 }
 
 .search-input::placeholder {
@@ -53,6 +59,17 @@
     font-weight: 500;
     font-size: 12px;
     font-family: "Inter", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+.search-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 11px;
+    top: 0;
+    bottom: 0;
+    color: var(--framer-color-text-tertiary);
 }
 
 .grid {

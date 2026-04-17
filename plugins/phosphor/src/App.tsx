@@ -1,6 +1,7 @@
 import { Draggable, framer, useIsAllowedTo } from "framer-plugin"
 import Fuse from "fuse.js"
 import { Suspense, useCallback, useDeferredValue, useMemo, useState } from "react"
+import SearchIcon from "./SearchIcon"
 import "./App.css"
 
 import { icons as iconData } from "@phosphor-icons/core"
@@ -141,16 +142,21 @@ export function App() {
     return (
         <>
             <div className="search-container">
-                <input
-                    autoComplete="nope"
-                    autoCorrect="off"
-                    autoFocus
-                    className="search-input"
-                    onChange={e => {
-                        setSearchQuery(e.target.value)
-                    }}
-                    placeholder="Search…"
-                />
+                <div className="search-input-container">
+                    <input
+                        autoComplete="nope"
+                        autoCorrect="off"
+                        autoFocus
+                        className="search-input"
+                        onChange={e => {
+                            setSearchQuery(e.target.value)
+                        }}
+                        placeholder="Search…"
+                    />
+                    <div className="search-icon">
+                        <SearchIcon />
+                    </div>
+                </div>
                 <select
                     className="weight-selector"
                     value={weight}

@@ -5,7 +5,7 @@
  * Helpers should provide data and never hold control.
  */
 
-import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
+import type { CliSyncMode, CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
 import { normalizeCodeFilePathWithExtension, pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
@@ -54,6 +54,18 @@ import { hashFileContent } from "./utils/state-persistence.ts"
  * Explicit sync lifecycle modes
  */
 export type SyncMode = "disconnected" | "handshaking" | "snapshot_processing" | "conflict_resolution" | "watching"
+
+function toCliSyncMode(mode: SyncMode): CliSyncMode | null {
+    switch (mode) {
+        case "handshaking":
+        case "snapshot_processing":
+        case "conflict_resolution":
+        case "watching":
+            return mode
+        case "disconnected":
+            return null
+    }
+}
 
 /**
  * Shared state that persists across all lifecycle modes
@@ -1208,8 +1220,19 @@ export async function start(config: Config): Promise<void> {
         const socketState = syncState.socket?.readyState
         debug(`[STATE] Processing event: ${event.type} (mode: ${syncState.mode}, socket: ${socketState ?? "none"})`)
 
+        const previousMode = syncState.mode
         const result = transition(syncState, event)
         syncState = result.state
+
+        if (previousMode !== syncState.mode) {
+            const cliMode = toCliSyncMode(syncState.mode)
+            if (cliMode !== null && syncState.socket) {
+                await sendMessage(syncState.socket, {
+                    type: "sync-mode",
+                    mode: cliMode,
+                })
+            }
+        }
 
         if (result.effects.length > 0) {
             debug(

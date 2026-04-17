@@ -214,6 +214,39 @@ describe("start() integration", () => {
         expect(ws1.lastCloseCode).toBe(CLOSE_CODE_REPLACED)
     })
 
+    it("emits sync-mode messages for the major CLI mode transitions", async () => {
+        tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-int-"))
+        const projectHash = "integration-sync-mode-789"
+        const start = await loadStart()
+        await start(baseConfig(projectHash))
+
+        const id = shortProjectHash(projectHash)
+        const ws = harness.createFakeWs()
+        ws.receive({ type: "handshake", projectId: id, projectName: "P" })
+        await vi.waitFor(() =>
+            expect(
+                ws.sent.some(payload => {
+                    const message = JSON.parse(payload) as { type?: string; mode?: string }
+                    return message.type === "sync-mode" && message.mode === "handshaking"
+                })
+            ).toBe(true)
+        )
+        await vi.waitFor(() => expect(initWatcherMock).toHaveBeenCalled(), { timeout: 5000 })
+
+        ws.receive({ type: "request-files" })
+        await vi.waitFor(() => ws.sent.some(s => JSON.parse(s).type === "file-list"))
+
+        ws.receive({ type: "file-list", files: [] })
+        await vi.waitFor(() => {
+            const syncModes = ws.sent
+                .map(payload => JSON.parse(payload) as { type?: string; mode?: string })
+                .filter(message => message.type === "sync-mode")
+                .map(message => message.mode)
+
+            expect(syncModes).toEqual(expect.arrayContaining(["handshaking", "snapshot_processing", "watching"]))
+        })
+    })
+
     it("ignores watcher change events while snapshot_processing (during detectConflicts)", async () => {
         tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-int-"))
         const filesDir = path.join(tmpDir, "files")

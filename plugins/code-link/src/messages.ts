@@ -1,7 +1,7 @@
 import {
+    type CliSyncMode,
     type CliToPluginMessage,
     type ConflictSummary,
-    type Mode,
     normalizeCodeFilePathWithExtension,
     type PendingDelete,
 } from "@code-link/shared"
@@ -9,7 +9,7 @@ import type { CodeFilesAPI } from "./api"
 import * as log from "./utils/logger"
 
 type MessageHandlerAction =
-    | { type: "set-mode"; mode: Mode }
+    | { type: "sync-mode"; syncMode: CliSyncMode }
     | { type: "pending-deletes"; files: PendingDelete[] }
     | { type: "conflicts"; conflicts: ConflictSummary[] }
 
@@ -27,16 +27,14 @@ export function createMessageHandler({
             case "request-files":
                 log.debug("Publishing snapshot to CLI")
                 await api.publishSnapshot(socket)
-                dispatch({
-                    type: "set-mode",
-                    mode: "syncing",
-                })
+                break
+            case "sync-mode":
+                dispatch({ type: "sync-mode", syncMode: message.mode })
                 break
             case "file-change":
                 log.debug("Applying remote change:", message.fileName)
                 await api.applyRemoteChange(message.fileName, message.content, socket)
                 api.remember(normalizeCodeFilePathWithExtension(message.fileName), message.content)
-                dispatch({ type: "set-mode", mode: "idle" })
                 break
             case "file-rename": {
                 const { oldFileName, newFileName, content } = message
@@ -45,7 +43,6 @@ export function createMessageHandler({
                     api.forget(normalizeCodeFilePathWithExtension(oldFileName))
                     api.remember(normalizeCodeFilePathWithExtension(newFileName), content)
                 }
-                dispatch({ type: "set-mode", mode: "idle" })
                 break
             }
             case "file-delete":
@@ -91,8 +88,7 @@ export function createMessageHandler({
                 break
             }
             case "sync-complete":
-                log.debug("Sync complete, transitioning to idle")
-                dispatch({ type: "set-mode", mode: "idle" })
+                log.debug("Sync complete")
                 break
             default:
                 log.warn("Unknown message type:", (message as unknown as { type: string }).type)

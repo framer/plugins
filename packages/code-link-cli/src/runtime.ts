@@ -1,12 +1,13 @@
-import { normalizeCodeFilePathWithExtension } from "@code-link/shared"
+import { normalizeCodeFilePathWithExtension, type SyncPhase } from "@code-link/shared"
 import type { Installer } from "./helpers/installer.ts"
 import { createPromptSession, PluginUserPromptCoordinator } from "./helpers/plugin-prompts.ts"
 import { createScheduler } from "./scheduler.ts"
 import { TIMINGS } from "./timings.ts"
 import type { Conflict } from "./types.ts"
-import type { PeerBaseView } from "./sync-base.ts"
-import { SyncBase as SyncBaseImpl } from "./sync-base.ts"
-import type { FileMetadataCache } from "./utils/file-metadata-cache.ts"
+import type { SyncMemoryHandle } from "./sync-memory.ts"
+import { SyncMemory } from "./sync-memory.ts"
+import type { FileMetadataCache, FileSyncMetadata } from "./utils/file-metadata-cache.ts"
+import type { PersistedFileState } from "./utils/state-persistence.ts"
 import type { WebSocket } from "ws"
 
 export interface PendingRenameConfirmation {
@@ -15,11 +16,47 @@ export interface PendingRenameConfirmation {
 }
 
 /**
- * Owns mutable sync runtime state: peer base model, prompts, pending renames, installer,
+ * Subset of the metadata cache that `describeEffect` may call.
+ * Only reads — no `record*`, no `flush`.
+ */
+export interface ReadonlyFileMetadataCache {
+    get(fileName: string): FileSyncMetadata | undefined
+    has(fileName: string): boolean
+    size(): number
+    getPersistedState(): Map<string, PersistedFileState>
+}
+
+/**
+ * Read-only projection of SyncRuntime handed to `describeEffect`.
+ *
+ * Invariant: describe must not mutate runtime state. Anything that would mutate
+ * must be returned as a `RuntimeOp` and applied by `applyEffectResult`. The
+ * narrower type at the describe boundary makes that a compile error, not a
+ * convention.
+ *
+ * `SyncRuntime` satisfies this structurally, so call sites just pass the runtime.
+ */
+export interface ReadonlyRuntime {
+    shouldSkipInboundEcho(path: string, content: string): boolean
+    shouldSkipDeleteEcho(path: string): boolean
+    isEcho(path: string, content: string): boolean
+    isDeleteEcho(path: string): boolean
+    getPendingRename(newPath: string): PendingRenameConfirmation | undefined
+    readonly metadata: ReadonlyFileMetadataCache
+    readonly disconnectUi: {
+        didShowNotice(): boolean
+        wasRecentlyDisconnected(): boolean
+    }
+    readonly lastEmittedSyncPhase: SyncPhase | null
+    readonly connectionId: number
+}
+
+/**
+ * Owns mutable sync runtime state: sync memory, prompts, pending renames, installer,
  * disconnect UI flags, and connection identity for prompt sessions.
  */
-export class SyncKernel {
-    private readonly sync: SyncBaseImpl = new SyncBaseImpl()
+export class SyncRuntime {
+    private readonly sync: SyncMemory = new SyncMemory()
     private readonly pendingRenameConfirmations = new Map<string, PendingRenameConfirmation>()
     private readonly userActions = new PluginUserPromptCoordinator()
     private readonly disconnectScheduler = createScheduler()
@@ -31,6 +68,20 @@ export class SyncKernel {
 
     private isShowingDisconnect = false
     private hadRecentDisconnect = false
+
+    private lastEmittedPhase: SyncPhase | null = null
+
+    noteEmittedSyncPhase(phase: SyncPhase): void {
+        this.lastEmittedPhase = phase
+    }
+
+    clearEmittedSyncPhase(): void {
+        this.lastEmittedPhase = null
+    }
+
+    get lastEmittedSyncPhase(): SyncPhase | null {
+        return this.lastEmittedPhase
+    }
 
     /** Increment and return a new connection id (call on each successful HANDSHAKE). */
     mintConnectionId(): number {
@@ -64,11 +115,11 @@ export class SyncKernel {
         },
     }
 
-    peerBaseView(): PeerBaseView {
-        return this.sync.peerBaseView()
+    memoryHandle(): SyncMemoryHandle {
+        return this.sync.memoryHandle()
     }
 
-    // --- SyncBase + metadata (narrow surface) ---
+    // --- SyncMemory + metadata (narrow surface) ---
 
     isEcho(path: string, content: string): boolean {
         return this.sync.isEcho(path, content)

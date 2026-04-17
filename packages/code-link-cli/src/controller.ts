@@ -1,28 +1,47 @@
 /**
  * CLI Controller
  *
- * All runtime state and orchestration of the sync lifecycle.
- * Helpers should provide data and never hold control.
+ * Three-step trace for any sync change. Pick any sync behaviour, you can read
+ * the whole story end-to-end in three places:
  *
- * ## How a sync event flows
+ *   1. transition(state, event)        — pure next state + Effect[]
+ *   2. describeEffect(effect, readCtx) — pure EffectResult (may read disk, never mutates)
+ *   3. applyEffectResult(result, ctx)  — fixed pipeline (ONLY place that mutates or does I/O)
  *
- * 1. **Ingress** — WebSocket messages, fs watcher, and handshake enqueue one `SyncEvent` at a time via
- *    `EventQueue` so `processEvent` never interleaves across await boundaries.
- * 2. **transition** — Pure function: `(state, event) → { state, effects }`. No I/O.
- * 3. **executeEffect** — For each effect: may await helpers (list files, detect conflicts); builds or
- *    delegates to `EffectResult`; **`applyEffectResult`** runs the fixed pipeline below.
- * 4. **applyEffectResult** (fixed order):
- *    - `log`
- *    - **pre-send kernel ops** — `recordLocalSend`, `registerPendingRename`, `recordDelete`
- *    - **writes** — remember-on-peer then disk (`writeRemoteFiles`)
- *    - **deletes** — tombstone/forget then disk (`deleteLocalFile`)
- *    - **sends** — WebSocket; then `fileUp` / installer hooks for successful `file-change`
- *    - **post-send kernel ops** — `recordRemoteApplied`, `completePendingRename`, `schedule`, `cancel`
- *    - **persistState** — flush metadata cache
- *    - Echo and delete-tombstone state live in `SyncKernel` / `SyncBase`, not scattered in helpers.
+ * The describe step's `ctx.runtime` is `ReadonlyRuntime`, so violating step 2's
+ * purity invariant is a compile error.
+ *
+ * Apply pipeline (see EffectResult for field definitions):
+ *
+ *   1. logs                  — emit each via emitLog
+ *   2. pre-send runtime ops  — recordLocalSend, registerPendingRename, recordDelete,
+ *                              forgetPath, clearDeleteTombstone, initWorkspace,
+ *                              loadPersistedState. `applyRuntimeOp` is async and
+ *                              handles every variant (the two disk-touching ones
+ *                              inline), so this step is a simple `for … await`.
+ *   3. writes                — filterEchoedFiles (if skipEcho) + writeRemoteFiles;
+ *                              fileDown unless silent; recordRemoteApplied per file
+ *                              via applyRuntimeOp (single-site mutation)
+ *   4. deletes               — deleteLocalFile; fileDelete; recordDelete via applyRuntimeOp
+ *   5. sends                 — sendMessage each; on any successful file-change:
+ *                              fileUp + installer.process
+ *   6. awaitPrompt           — runtime.request{Delete,Conflict}Decisions; confirmed
+ *                              deletes flow back through recordDelete runtimeOp
+ *   7. post-send runtime ops — recordRemoteApplied, completePendingRename,
+ *                              noteEmittedSyncPhase, resetDisconnectState
+ *   8. persistState          — runtime.metadata.flush()
+ *   9. tryGitInit            — first-sync only, best effort
+ *  10. shutdown               — if result.shutdown: await ctx.shutdown()
+ *  11. followUps              — returned as SyncEvent[]; runtime enqueues inline
+ *                              (parent still holds the queue slot, no re-entry)
+ *
+ * All state mutation flows through one function (`applyRuntimeOp`). Echo safety is
+ * a property of ordering: pre-send runtime ops run before writes/sends; writeRemoteFiles
+ * itself calls memory.rememberRemoteWrite BEFORE fs.writeFile so inbound hashes are
+ * armed before disk events can fire.
  */
 
-import type { CliToPluginMessage, PluginToCliMessage, SyncPhase } from "@code-link/shared"
+import type { PluginToCliMessage } from "@code-link/shared"
 import { normalizeCodeFilePathWithExtension, pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
@@ -41,11 +60,10 @@ import {
 import { tryGitInit } from "./helpers/git.ts"
 import { conflictPromptActionId, deletePromptActionId } from "./helpers/plugin-prompts.ts"
 import { Installer } from "./helpers/installer.ts"
-import { SyncKernel, type PendingRenameConfirmation } from "./kernel.ts"
+import { SyncRuntime, type ReadonlyRuntime } from "./runtime.ts"
 import { validateIncomingChange } from "./helpers/sync-validator.ts"
 import { initWatcher } from "./helpers/watcher.ts"
-import type { Config, Conflict, ConflictVersionData, FileInfo, InternalPhase, WatcherEvent } from "./types.ts"
-import type { FileSyncMetadata } from "./utils/file-metadata-cache.ts"
+import type { Config } from "./types.ts"
 import {
     debug,
     error,
@@ -57,142 +75,13 @@ import {
     success,
     warn,
 } from "./utils/logging.ts"
-import type { EffectResult, KernelOp } from "./effect-result.ts"
+import type { EffectResult, RuntimeOp, LogEntry } from "./effect-result.ts"
 import { createEventQueue } from "./event-queue.ts"
 import { findOrCreateProjectDirectory } from "./utils/project.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
-
-/**
- * Shared state that persists across all lifecycle modes
- */
-interface SyncStateBase {
-    pendingRemoteChanges: FileInfo[]
-}
-
-type DisconnectedState = SyncStateBase & {
-    internalPhase: "disconnected"
-    socket: null
-}
-
-type HandshakingState = SyncStateBase & {
-    internalPhase: "handshaking"
-    socket: WebSocket
-}
-
-type SnapshotProcessingState = SyncStateBase & {
-    internalPhase: "snapshot_processing"
-    socket: WebSocket
-}
-
-type ConflictResolutionState = SyncStateBase & {
-    internalPhase: "conflict_resolution"
-    socket: WebSocket
-    pendingConflicts: Conflict[]
-}
-
-type WatchingState = SyncStateBase & {
-    internalPhase: "watching"
-    socket: WebSocket
-}
-
-export type SyncState =
-    | DisconnectedState
-    | HandshakingState
-    | SnapshotProcessingState
-    | ConflictResolutionState
-    | WatchingState
-
-/**
- * Events that drive state transitions
- */
-type SyncEvent =
-    | {
-          type: "HANDSHAKE"
-          socket: WebSocket
-          projectInfo: { projectId: string; projectName: string }
-      }
-    | { type: "REQUEST_FILES" }
-    | { type: "REMOTE_FILE_LIST"; files: FileInfo[] }
-    | {
-          type: "CONFLICTS_DETECTED"
-          conflicts: Conflict[]
-          safeWrites: FileInfo[]
-          localOnly: FileInfo[]
-      }
-    | { type: "REMOTE_FILE_CHANGE"; file: FileInfo; fileMeta?: FileSyncMetadata }
-    | { type: "REMOTE_FILE_DELETE"; fileName: string }
-    | { type: "LOCAL_DELETE_APPROVED"; fileName: string }
-    | { type: "LOCAL_DELETE_REJECTED"; fileName: string; content: string }
-    | {
-          type: "CONFLICTS_RESOLVED"
-          resolution: "local" | "remote"
-      }
-    | {
-          type: "FILE_SYNCED_CONFIRMATION"
-          fileName: string
-          remoteModifiedAt: number
-      }
-    | { type: "DISCONNECT" }
-    | { type: "WATCHER_EVENT"; event: WatcherEvent }
-    | {
-          type: "CONFLICT_VERSION_RESPONSE"
-          versions: ConflictVersionData[]
-      }
-
-/**
- * Side effects emitted by transitions
- */
-type Effect =
-    | {
-          type: "INIT_WORKSPACE"
-          projectInfo: { projectId: string; projectName: string }
-      }
-    | { type: "LOAD_PERSISTED_STATE" }
-    | { type: "SEND_MESSAGE"; payload: CliToPluginMessage }
-    | { type: "EMIT_SYNC_PHASE"; phase: SyncPhase }
-    | { type: "LIST_LOCAL_FILES" }
-    | { type: "DETECT_CONFLICTS"; remoteFiles: FileInfo[] }
-    | {
-          type: "WRITE_FILES"
-          files: FileInfo[]
-          silent?: boolean
-          skipEcho?: boolean
-      }
-    | { type: "DELETE_LOCAL_FILES"; names: string[] }
-    | { type: "REQUEST_CONFLICT_DECISIONS"; conflicts: Conflict[] }
-    | { type: "REQUEST_CONFLICT_VERSIONS"; conflicts: Conflict[] }
-    | {
-          type: "UPDATE_FILE_METADATA"
-          fileName: string
-          remoteModifiedAt: number
-      }
-    | {
-          type: "SEND_LOCAL_CHANGE"
-          fileName: string
-          content: string
-      }
-    | {
-          type: "LOCAL_INITIATED_FILE_DELETE"
-          fileNames: string[]
-      }
-    | {
-          type: "SEND_FILE_RENAME"
-          oldFileName: string
-          newFileName: string
-          content: string
-      }
-    | { type: "PERSIST_STATE" }
-    | {
-          type: "SYNC_COMPLETE"
-          totalCount: number
-          updatedCount: number
-          unchangedCount: number
-      }
-    | {
-          type: "LOG"
-          level: "info" | "debug" | "warn" | "success"
-          message: string
-      }
+import type { Effect, SyncEvent, SyncState } from "./sync-events.ts"
+export type { SyncState } from "./sync-events.ts"
+export type { ReadonlyRuntime } from "./runtime.ts"
 
 /** Log helper */
 function log(level: "info" | "debug" | "warn" | "success", message: string): Effect {
@@ -203,8 +92,18 @@ export interface TransitionRead {
     wasRecentlyDisconnected?: () => boolean
 }
 
-function isPreSendKernelOp(op: KernelOp): boolean {
-    return op.op === "recordLocalSend" || op.op === "registerPendingRename" || op.op === "recordDelete"
+const PRE_SEND_RUNTIME_OPS: ReadonlySet<RuntimeOp["op"]> = new Set([
+    "recordLocalSend",
+    "registerPendingRename",
+    "recordDelete",
+    "forgetPath",
+    "clearDeleteTombstone",
+    "initWorkspace",
+    "loadPersistedState",
+])
+
+function isPreSendRuntimeOp(op: RuntimeOp): boolean {
+    return PRE_SEND_RUNTIME_OPS.has(op.op)
 }
 
 /**
@@ -229,13 +128,18 @@ function transition(state: SyncState, event: SyncEvent, read: TransitionRead = {
             )
 
             return {
-                state: {
-                    ...state,
-                    internalPhase: "handshaking",
-                    socket: event.socket,
-                },
+                state: { internalPhase: "handshaking", socket: event.socket },
                 effects,
             }
+        }
+
+        case "RESEND_SYNC_PHASE": {
+            // Duplicate handshake from already-active socket — re-announce current phase.
+            effects.push(
+                log("debug", `Re-emitting sync-phase=${event.phase} for duplicate handshake`),
+                { type: "EMIT_SYNC_PHASE", phase: event.phase }
+            )
+            return { state, effects }
         }
 
         case "FILE_SYNCED_CONFIRMATION": {
@@ -251,25 +155,8 @@ function transition(state: SyncState, event: SyncEvent, read: TransitionRead = {
 
         case "DISCONNECT": {
             effects.push({ type: "PERSIST_STATE" }, log("debug", "Disconnected, persisting state"))
-
-            if (state.internalPhase === "conflict_resolution") {
-                const { pendingConflicts: _discarded, ...rest } = state
-                return {
-                    state: {
-                        ...rest,
-                        internalPhase: "disconnected",
-                        socket: null,
-                    },
-                    effects,
-                }
-            }
-
             return {
-                state: {
-                    ...state,
-                    internalPhase: "disconnected",
-                    socket: null,
-                },
+                state: { internalPhase: "disconnected", socket: null },
                 effects,
             }
         }
@@ -298,18 +185,13 @@ function transition(state: SyncState, event: SyncEvent, read: TransitionRead = {
             effects.push(log("debug", `Received file list: ${pluralize(event.files.length, "file")}`))
 
             // During initial file list, detect conflicts between remote snapshot and local files
-            effects.push({
-                type: "DETECT_CONFLICTS",
-                remoteFiles: event.files,
-            })
+            effects.push({ type: "DETECT_CONFLICTS", remoteFiles: event.files })
 
-            // Transition to snapshot_processing - conflict detection effect will determine next mode
+            // Transition to snapshot_processing; conflict detection effect will determine next mode.
+            // Note: the remote file list is NOT carried in state — the follow-up CONFLICTS_DETECTED
+            // event carries `remoteTotal` so transitions stay purely event-sourced.
             return {
-                state: {
-                    ...state,
-                    internalPhase: "snapshot_processing",
-                    pendingRemoteChanges: event.files,
-                },
+                state: { internalPhase: "snapshot_processing", socket: state.socket },
                 effects,
             }
         }
@@ -320,7 +202,7 @@ function transition(state: SyncState, event: SyncEvent, read: TransitionRead = {
                 return { state, effects }
             }
 
-            const { conflicts, safeWrites, localOnly } = event
+            const { conflicts, safeWrites, localOnly, remoteTotal } = event
 
             // detectConflicts returns:
             // - safeWrites = files we can apply (remote-only or local unchanged)
@@ -365,35 +247,27 @@ function transition(state: SyncState, event: SyncEvent, read: TransitionRead = {
 
                 return {
                     state: {
-                        ...state,
                         internalPhase: "conflict_resolution",
+                        socket: state.socket,
                         pendingConflicts: conflicts,
                     },
                     effects,
                 }
             }
 
-            // No conflicts - transition to watching
-            const remoteTotal = state.pendingRemoteChanges.length
+            // No conflicts → transition to watching. `remoteTotal` is the count the
+            // remote sent; `safeWrites` is the subset we actually wrote, so
+            // everything else remote-side was already up-to-date locally.
             const totalCount = remoteTotal + localOnly.length
             const updatedCount = safeWrites.length + localOnly.length
             const unchangedCount = Math.max(0, remoteTotal - safeWrites.length)
             effects.push(
                 { type: "PERSIST_STATE" },
-                {
-                    type: "SYNC_COMPLETE",
-                    totalCount,
-                    updatedCount,
-                    unchangedCount,
-                }
+                { type: "SYNC_COMPLETE", totalCount, updatedCount, unchangedCount }
             )
 
             return {
-                state: {
-                    ...state,
-                    internalPhase: "watching",
-                    pendingRemoteChanges: [],
-                },
+                state: { internalPhase: "watching", socket: state.socket },
                 effects,
             }
         }
@@ -539,12 +413,8 @@ function transition(state: SyncState, event: SyncEvent, read: TransitionRead = {
                 }
             )
 
-            const { pendingConflicts: _discarded, ...rest } = state
             return {
-                state: {
-                    ...rest,
-                    internalPhase: "watching",
-                },
+                state: { internalPhase: "watching", socket: state.socket },
                 effects,
             }
         }
@@ -689,13 +559,8 @@ function transition(state: SyncState, event: SyncEvent, read: TransitionRead = {
                 }
             )
 
-            const { pendingConflicts: _discarded, ...rest } = state
             return {
-                state: {
-                    ...rest,
-                    internalPhase: "watching",
-                    pendingRemoteChanges: [],
-                },
+                state: { internalPhase: "watching", socket: state.socket },
                 effects,
             }
         }
@@ -707,319 +572,221 @@ function transition(state: SyncState, event: SyncEvent, read: TransitionRead = {
     }
 }
 
+// ─── describe: pure, may await disk reads, never mutates ────────────────────────
+
 /**
- * Pure description of SEND_LOCAL_CHANGE for EffectResult-based tests and specs.
+ * Context handed to `describeEffect`.
+ *
+ * `runtime` is typed `ReadonlyRuntime` — describe is a compile error away from
+ * mutating runtime state. Describe may `await` disk reads (listFiles,
+ * detectConflicts, readFileSafe), but any mutation must leave via `RuntimeOp[]`
+ * in the returned `EffectResult`.
  */
-export function describeSendLocalChange(effect: { fileName: string; content: string }, kernel: SyncKernel): EffectResult | null {
+export interface DescribeCtx {
+    config: Config
+    runtime: ReadonlyRuntime
+    syncState: SyncState
+}
+
+/**
+ * Pure description of SEND_LOCAL_CHANGE. Exported for spec-style tests.
+ *
+ * Never returns null — a "skip" is still an `EffectResult` (usually just a
+ * debug `logs` entry). This keeps `describeEffect` totally declarative.
+ */
+export function describeSendLocalChange(
+    effect: { fileName: string; content: string },
+    runtime: ReadonlyRuntime
+): EffectResult {
     const contentHash = hashFileContent(effect.content)
-    const metadata = kernel.metadata.get(effect.fileName)
+    const metadata = runtime.metadata.get(effect.fileName)
 
     if (metadata?.lastSyncedHash === contentHash) {
-        debug(`Skipping local change for ${effect.fileName}: matches last synced content`)
-        return null
+        return {
+            logs: [
+                {
+                    level: "debug",
+                    message: `Skipping local change for ${effect.fileName}: matches last synced content`,
+                },
+            ],
+        }
     }
 
-    if (kernel.shouldSkipInboundEcho(effect.fileName, effect.content)) {
-        return null
+    if (runtime.shouldSkipInboundEcho(effect.fileName, effect.content)) {
+        return {}
     }
-
-    debug(`Local change detected: ${effect.fileName}`)
 
     return {
-        kernelOps: [{ op: "recordLocalSend", path: effect.fileName, content: effect.content }],
-        sends: [
-            {
-                type: "file-change",
-                fileName: effect.fileName,
-                content: effect.content,
-            },
-        ],
+        logs: [{ level: "debug", message: `Local change detected: ${effect.fileName}` }],
+        runtimeOps: [{ op: "recordLocalSend", path: effect.fileName, content: effect.content }],
+        sends: [{ type: "file-change", fileName: effect.fileName, content: effect.content }],
         fileUp: effect.fileName,
         installerProcess: { fileName: effect.fileName, content: effect.content },
     }
 }
 
-function applyPreKernelOp(op: KernelOp, kernel: SyncKernel): void {
-    const fileMetadataCache = kernel.metadata
-    if (op.op === "recordLocalSend") {
-        kernel.rememberLocalSend(op.path, op.content)
-    } else if (op.op === "recordDelete") {
-        kernel.forgetPath(op.path)
-        fileMetadataCache.recordDelete(op.path)
-    } else if (op.op === "registerPendingRename") {
-        kernel.setPendingRename(op.newPath, {
-            oldFileName: op.oldPath,
-            content: op.content,
+/** Status line emitted at the end of SYNC_COMPLETE (pre-shutdown in once mode). */
+function syncCompleteStatusLog(config: Config): LogEntry {
+    return config.once
+        ? { level: "status", message: "Sync complete, exiting..." }
+        : { level: "status", message: "Watching for changes..." }
+}
+
+function describeSyncComplete(
+    effect: Extract<Effect, { type: "SYNC_COMPLETE" }>,
+    ctx: DescribeCtx
+): EffectResult {
+    const { runtime, config } = ctx
+    const logs: LogEntry[] = []
+    const wasDisconnected = runtime.disconnectUi.wasRecentlyDisconnected()
+
+    if (wasDisconnected) {
+        const didShow = runtime.disconnectUi.didShowNotice()
+        if (didShow) {
+            logs.push({
+                level: "success",
+                message: `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`,
+            })
+            logs.push(syncCompleteStatusLog(config))
+        }
+        return {
+            logs,
+            sends: [{ type: "sync-phase", phase: "ready" }],
+            runtimeOps: [{ op: "noteEmittedSyncPhase", phase: "ready" }, { op: "resetDisconnectState" }],
+            // Reconnect without a visible notice stays silent; otherwise honour once.
+            shutdown: didShow && !!config.once,
+        }
+    }
+
+    const relative = config.projectDir ? path.relative(process.cwd(), config.projectDir) : null
+    const relativeDirectory = relative != null ? (relative ? "./" + relative : ".") : null
+
+    if (effect.totalCount === 0 && relativeDirectory) {
+        logs.push({
+            level: "success",
+            message: config.projectDirCreated
+                ? `Created ${relativeDirectory} folder`
+                : `Syncing to ${relativeDirectory} folder`,
+        })
+    } else if (relativeDirectory && config.projectDirCreated) {
+        logs.push({
+            level: "success",
+            message: `Created ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} added)`,
+        })
+    } else if (relativeDirectory) {
+        logs.push({
+            level: "success",
+            message: `Synced into ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} updated, ${effect.unchangedCount} unchanged)`,
+        })
+    } else {
+        logs.push({
+            level: "success",
+            message: `Synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`,
         })
     }
-}
+    logs.push(syncCompleteStatusLog(config))
 
-function applyPostKernelOp(op: KernelOp, kernel: SyncKernel): void {
-    const fileMetadataCache = kernel.metadata
-    if (op.op === "recordRemoteApplied") {
-        const h = hashFileContent(op.content)
-        fileMetadataCache.recordSyncedSnapshot(op.path, h, op.modifiedAt)
-    } else if (op.op === "completePendingRename") {
-        kernel.deletePendingRename(normalizeCodeFilePathWithExtension(op.newPath))
-    } else if (op.op === "schedule" || op.op === "cancel") {
-        warn(`KernelOp ${op.op} not wired on SyncKernel yet`)
-    }
-}
-
-async function applyEffectResult(
-    result: EffectResult,
-    ctx: {
-        kernel: SyncKernel
-        config: Config
-        syncState: SyncState
-    }
-): Promise<void> {
-    const { kernel, config, syncState } = ctx
-    const fileMetadataCache = kernel.metadata
-    const peer = kernel.peerBaseView()
-    const installer = kernel.installer
-
-    if (result.log) {
-        const logFns = { info, warn, success, debug }
-        logFns[result.log.level](result.log.message)
-    }
-
-    const ops = result.kernelOps ?? []
-    for (const op of ops) {
-        if (isPreSendKernelOp(op)) {
-            applyPreKernelOp(op, kernel)
-        }
-    }
-
-    if (result.writes?.files && config.filesDir) {
-        const filesToWrite =
-            result.writes.skipEcho === true ? filterEchoedFiles(result.writes.files, peer) : result.writes.files
-
-        if (filesToWrite.length > 0) {
-            await writeRemoteFiles(filesToWrite, config.filesDir, peer, installer ?? undefined)
-            for (const file of filesToWrite) {
-                if (!result.writes.silent) {
-                    fileDown(file.name)
-                }
-                const remoteTimestamp = file.modifiedAt ?? Date.now()
-                fileMetadataCache.recordRemoteWrite(file.name, file.content, remoteTimestamp)
-            }
-        }
-    }
-
-    if (result.deletes && config.filesDir) {
-        for (const fileName of result.deletes) {
-            await deleteLocalFile(fileName, config.filesDir, peer)
-            fileDelete(fileName)
-            fileMetadataCache.recordDelete(fileName)
-        }
-    }
-
-    if (result.sends && syncState.socket) {
-        for (const payload of result.sends) {
-            try {
-                const sent = await sendMessage(syncState.socket, payload)
-                if (sent && result.fileUp) {
-                    fileUp(result.fileUp)
-                }
-                if (sent && result.installerProcess && installer) {
-                    installer.process(result.installerProcess.fileName, result.installerProcess.content)
-                }
-            } catch {
-                warn(
-                    `Failed to push ${payload.type === "file-change" ? (payload as { fileName: string }).fileName : payload.type}`
-                )
-            }
-        }
-    }
-
-    for (const op of ops) {
-        if (!isPreSendKernelOp(op)) {
-            applyPostKernelOp(op, kernel)
-        }
-    }
-
-    if (result.persistState) {
-        await fileMetadataCache.flush()
+    return {
+        logs,
+        sends: [{ type: "sync-phase", phase: "ready" }],
+        runtimeOps: [{ op: "noteEmittedSyncPhase", phase: "ready" }],
+        tryGitInit: !!(config.projectDirCreated && config.projectDir),
+        shutdown: !!config.once,
     }
 }
 
 /**
- * Effect executor - interprets effects and calls helpers
- * Returns additional events that should be processed (e.g., CONFLICTS_DETECTED after DETECT_CONFLICTS)
+ * The pure describe step. Every effect variant returns an `EffectResult` —
+ * no mutation, no runtime writes, no logger calls. Disk reads are the only
+ * side effect allowed (and only via helpers: listFiles / detectConflicts /
+ * readFileSafe).
+ *
+ * Exported so tests can `toEqual(…)` the returned value without running apply.
  */
-interface ExecuteEffectContext {
-    config: Config
-    kernel: SyncKernel
-    shutdown: () => Promise<void>
-    syncState: SyncState
-    /** When set (from `start()`), updates last-emitted phase for handshake re-emit. */
-    sendSyncPhaseToPlugin?: (phase: SyncPhase) => Promise<void>
-}
-
-async function executeEffect(effect: Effect, context: ExecuteEffectContext): Promise<SyncEvent[]> {
-    const { config, kernel, shutdown, syncState } = context
-    const sendSyncPhase =
-        context.sendSyncPhaseToPlugin ??
-        (async (phase: SyncPhase) => {
-            if (syncState.socket) {
-                await sendMessage(syncState.socket, { type: "sync-phase", phase })
-            }
-        })
-    const fileMetadataCache = kernel.metadata
-    const peer = kernel.peerBaseView()
-    const installer = kernel.installer
+export async function describeEffect(effect: Effect, ctx: DescribeCtx): Promise<EffectResult> {
+    const { config, runtime, syncState } = ctx
+    const fileMetadataCache = runtime.metadata
 
     switch (effect.type) {
         case "INIT_WORKSPACE": {
-            // Initialize project directory if not already set
-            if (!config.projectDir) {
-                const projectName = config.explicitName ?? effect.projectInfo.projectName
-
-                const directoryInfo = await findOrCreateProjectDirectory({
-                    projectHash: config.projectHash,
-                    projectName,
-                    explicitDirectory: config.explicitDirectory,
-                })
-                config.projectDir = directoryInfo.directory
-                config.projectDirCreated = directoryInfo.created
-
-                if (directoryInfo.nameCollision) {
-                    warn(`Folder ${projectName} already exists`)
-                }
-
-                // May allow customization of file directory in the future
-                config.filesDir = `${config.projectDir}/files`
-                debug(`Files directory: ${config.filesDir}`)
-                await fs.mkdir(config.filesDir, { recursive: true })
-            }
-            return []
+            return { runtimeOps: [{ op: "initWorkspace", projectInfo: effect.projectInfo }] }
         }
 
         case "LOAD_PERSISTED_STATE": {
-            if (config.projectDir) {
-                await fileMetadataCache.initialize(config.projectDir)
-                debug(`Loaded persisted metadata for ${pluralize(fileMetadataCache.size(), "file")}`)
-            }
-            return []
+            return { runtimeOps: [{ op: "loadPersistedState" }] }
         }
 
         case "LIST_LOCAL_FILES": {
-            if (!config.filesDir) {
-                return []
-            }
-
-            // List all local files and send to plugin
+            if (!config.filesDir) return {}
             const files = await listFiles(config.filesDir)
-
-            if (syncState.socket) {
-                await sendMessage(syncState.socket, {
-                    type: "file-list",
-                    files,
-                })
-            }
-
-            return []
+            return { sends: [{ type: "file-list", files }] }
         }
 
         case "DETECT_CONFLICTS": {
-            if (!config.filesDir) {
-                return []
-            }
+            if (!config.filesDir) return {}
 
-            // Use existing helper to detect conflicts
             const { conflicts, writes, localOnly, unchanged } = await detectConflicts(
                 effect.remoteFiles,
                 config.filesDir,
                 { persistedState: fileMetadataCache.getPersistedState() }
             )
 
-            // Record metadata for unchanged files so watcher add events get skipped
-            // (chokidar ignoreInitial=false fires late adds that would otherwise re-upload)
-            for (const file of unchanged) {
-                fileMetadataCache.recordRemoteWrite(file.name, file.content, file.modifiedAt ?? Date.now())
-            }
+            // Record metadata for unchanged files so late watcher add events get skipped
+            // (chokidar ignoreInitial=false fires late adds that would otherwise re-upload).
+            const runtimeOps: RuntimeOp[] = unchanged.map(file => ({
+                op: "recordRemoteApplied" as const,
+                path: file.name,
+                content: file.content,
+                modifiedAt: file.modifiedAt ?? Date.now(),
+            }))
 
-            // Return CONFLICTS_DETECTED event to continue the flow
-            return [
-                {
-                    type: "CONFLICTS_DETECTED",
-                    conflicts,
-                    safeWrites: writes,
-                    localOnly,
-                },
-            ]
+            return {
+                runtimeOps,
+                followUps: [
+                    {
+                        type: "CONFLICTS_DETECTED",
+                        conflicts,
+                        safeWrites: writes,
+                        localOnly,
+                        remoteTotal: effect.remoteFiles.length,
+                    },
+                ],
+            }
         }
 
         case "SEND_MESSAGE": {
-            if (syncState.socket) {
-                const sent = await sendMessage(syncState.socket, effect.payload)
-                if (!sent) {
-                    warn(`Failed to send message: ${effect.payload.type}`)
-                }
-            } else {
-                warn(`No socket available to send: ${effect.payload.type}`)
-            }
-            return []
+            return { sends: [effect.payload] }
         }
 
         case "EMIT_SYNC_PHASE": {
-            await sendSyncPhase(effect.phase)
-            return []
+            return {
+                sends: [{ type: "sync-phase", phase: effect.phase }],
+                runtimeOps: [{ op: "noteEmittedSyncPhase", phase: effect.phase }],
+            }
         }
 
         case "WRITE_FILES": {
-            if (config.filesDir) {
-                // skipEcho skip writes that match peer echo state (inbound echo)
-                // it is opt-in: some callers still need side-effects (metadata/logs)
-                // even when content matches the last hash tracked in-memory.
-                const filesToWrite =
-                    effect.skipEcho === true ? filterEchoedFiles(effect.files, peer) : effect.files
-
-                if (effect.skipEcho && filesToWrite.length !== effect.files.length) {
-                    const skipped = effect.files.length - filesToWrite.length
-                    debug(`Skipped ${pluralize(skipped, "echoed change")}`)
-                }
-
-                if (filesToWrite.length === 0) {
-                    return []
-                }
-
-                await writeRemoteFiles(filesToWrite, config.filesDir, peer, installer ?? undefined)
-                for (const file of filesToWrite) {
-                    if (!effect.silent) {
-                        fileDown(file.name)
-                    }
-                    const remoteTimestamp = file.modifiedAt ?? Date.now()
-                    fileMetadataCache.recordRemoteWrite(file.name, file.content, remoteTimestamp)
-                }
+            return {
+                writes: { files: effect.files, silent: effect.silent, skipEcho: effect.skipEcho },
             }
-            return []
         }
 
         case "DELETE_LOCAL_FILES": {
-            if (config.filesDir) {
-                for (const fileName of effect.names) {
-                    await deleteLocalFile(fileName, config.filesDir, peer)
-                    fileDelete(fileName)
-                    fileMetadataCache.recordDelete(fileName)
-                }
-            }
-            return []
+            return { deletes: effect.names }
         }
 
         case "REQUEST_CONFLICT_DECISIONS": {
-            await kernel.requestConflictDecisions(syncState.socket, effect.conflicts)
-
-            return []
+            return { awaitPrompt: { kind: "conflictDecisions", conflicts: effect.conflicts } }
         }
 
         case "REQUEST_CONFLICT_VERSIONS": {
             if (!syncState.socket) {
-                warn("Cannot request conflict versions without active socket")
-                return []
+                return {
+                    logs: [
+                        { level: "warn", message: "Cannot request conflict versions without active socket" },
+                    ],
+                }
             }
-
             const persistedState = fileMetadataCache.getPersistedState()
             const versionRequests = effect.conflicts.map(conflict => {
                 const persisted = persistedState.get(conflict.fileName)
@@ -1028,128 +795,327 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
                     lastSyncedAt: conflict.lastSyncedAt ?? persisted?.timestamp,
                 }
             })
-
-            debug(`Requesting remote version data for ${pluralize(versionRequests.length, "file")}`)
-
-            await sendMessage(syncState.socket, {
-                type: "conflict-version-request",
-                conflicts: versionRequests,
-            })
-
-            return []
+            return {
+                logs: [
+                    {
+                        level: "debug",
+                        message: `Requesting remote version data for ${pluralize(versionRequests.length, "file")}`,
+                    },
+                ],
+                sends: [{ type: "conflict-version-request", conflicts: versionRequests }],
+            }
         }
 
         case "UPDATE_FILE_METADATA": {
-            if (!config.filesDir || !config.projectDir) {
-                return []
-            }
+            if (!config.filesDir || !config.projectDir) return {}
 
-            // Read current file content to compute hash
             const currentContent = await readFileSafe(effect.fileName, config.filesDir)
-            // Rename cleanup waits for the plugin's file-synced acknowledgment.
-            const pendingRenameConfirmation = kernel.getPendingRename(normalizeCodeFilePathWithExtension(effect.fileName))
-            const syncedContent = currentContent ?? pendingRenameConfirmation?.content ?? null
+            const pendingRename = runtime.getPendingRename(normalizeCodeFilePathWithExtension(effect.fileName))
+            const syncedContent = currentContent ?? pendingRename?.content ?? null
+
+            const runtimeOps: RuntimeOp[] = []
 
             if (syncedContent !== null) {
-                const contentHash = hashFileContent(syncedContent)
-                fileMetadataCache.recordSyncedSnapshot(effect.fileName, contentHash, effect.remoteModifiedAt)
+                runtimeOps.push({
+                    op: "recordRemoteApplied",
+                    path: effect.fileName,
+                    content: syncedContent,
+                    modifiedAt: effect.remoteModifiedAt,
+                })
             }
 
-            if (pendingRenameConfirmation) {
-                kernel.forgetPath(pendingRenameConfirmation.oldFileName)
-                fileMetadataCache.recordDelete(pendingRenameConfirmation.oldFileName)
+            if (pendingRename) {
+                runtimeOps.push({ op: "recordDelete", path: pendingRename.oldFileName })
                 if (currentContent !== null) {
-                    kernel.rememberLocalSend(effect.fileName, currentContent)
+                    runtimeOps.push({ op: "recordLocalSend", path: effect.fileName, content: currentContent })
                 }
-                kernel.deletePendingRename(normalizeCodeFilePathWithExtension(effect.fileName))
+                runtimeOps.push({ op: "completePendingRename", newPath: effect.fileName })
             }
 
-            return []
+            return { runtimeOps }
         }
 
         case "SEND_LOCAL_CHANGE": {
-            const described = describeSendLocalChange(effect, kernel)
-            if (!described) {
-                return []
-            }
-
-            try {
-                await applyEffectResult(described, {
-                    kernel,
-                    config,
-                    syncState,
-                })
-            } catch (err) {
-                warn(`Failed to push ${effect.fileName}`)
-            }
-
-            return []
+            return describeSendLocalChange(effect, runtime)
         }
 
         case "SEND_FILE_RENAME": {
             const normalizedNewFileName = normalizeCodeFilePathWithExtension(effect.newFileName)
             const isEchoedRename =
-                kernel.shouldSkipInboundEcho(normalizedNewFileName, effect.content) &&
-                kernel.shouldSkipDeleteEcho(effect.oldFileName)
+                runtime.shouldSkipInboundEcho(normalizedNewFileName, effect.content) &&
+                runtime.shouldSkipDeleteEcho(effect.oldFileName)
 
             if (isEchoedRename) {
-                kernel.forgetPath(normalizedNewFileName)
-                kernel.clearDeleteTombstone(effect.oldFileName)
-                debug(`Skipping echoed rename ${effect.oldFileName} -> ${effect.newFileName}`)
-                return []
+                return {
+                    logs: [
+                        {
+                            level: "debug",
+                            message: `Skipping echoed rename ${effect.oldFileName} -> ${effect.newFileName}`,
+                        },
+                    ],
+                    runtimeOps: [
+                        { op: "forgetPath", path: normalizedNewFileName },
+                        { op: "clearDeleteTombstone", path: effect.oldFileName },
+                    ],
+                }
             }
 
-            try {
-                if (!syncState.socket) {
-                    warn(`No socket available to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
-                    return []
+            if (!syncState.socket) {
+                return {
+                    logs: [
+                        {
+                            level: "warn",
+                            message: `No socket available to send rename ${effect.oldFileName} -> ${effect.newFileName}`,
+                        },
+                    ],
                 }
-
-                const sent = await sendMessage(syncState.socket, {
-                    type: "file-rename",
-                    oldFileName: effect.oldFileName,
-                    newFileName: normalizedNewFileName,
-                    content: effect.content,
-                })
-                if (!sent) {
-                    warn(`Failed to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
-                    return []
-                }
-
-                kernel.setPendingRename(normalizeCodeFilePathWithExtension(effect.newFileName), {
-                    oldFileName: effect.oldFileName,
-                    content: effect.content,
-                })
-            } catch (err) {
-                warn(`Failed to send rename ${effect.oldFileName} -> ${effect.newFileName}`)
             }
 
-            return []
+            return {
+                sends: [
+                    {
+                        type: "file-rename",
+                        oldFileName: effect.oldFileName,
+                        newFileName: normalizedNewFileName,
+                        content: effect.content,
+                    },
+                ],
+                runtimeOps: [
+                    {
+                        op: "registerPendingRename",
+                        oldPath: effect.oldFileName,
+                        newPath: normalizedNewFileName,
+                        content: effect.content,
+                    },
+                ],
+            }
         }
 
         case "LOCAL_INITIATED_FILE_DELETE": {
-            // Echo prevention: filter out remote-initiated deletes
-            const filesToDelete = effect.fileNames.filter(fileName => {
-                const shouldSkip = kernel.shouldSkipDeleteEcho(fileName)
-                if (shouldSkip) {
-                    kernel.clearDeleteTombstone(fileName)
+            const echoed: string[] = []
+            const filesToDelete: string[] = []
+            for (const fileName of effect.fileNames) {
+                if (runtime.shouldSkipDeleteEcho(fileName)) {
+                    echoed.push(fileName)
+                } else {
+                    filesToDelete.push(fileName)
                 }
-                return !shouldSkip
-            })
-
-            if (filesToDelete.length === 0) {
-                return []
             }
 
-            try {
-                const confirmedFiles = await kernel.requestDeleteDecision(syncState.socket, {
+            const runtimeOps: RuntimeOp[] = echoed.map(p => ({ op: "clearDeleteTombstone" as const, path: p }))
+            if (filesToDelete.length === 0) {
+                return { runtimeOps }
+            }
+
+            return {
+                runtimeOps,
+                awaitPrompt: {
+                    kind: "deleteConfirmation",
                     fileNames: filesToDelete,
                     requireConfirmation: !config.dangerouslyAutoDelete,
+                },
+            }
+        }
+
+        case "PERSIST_STATE": {
+            return { persistState: true }
+        }
+
+        case "SYNC_COMPLETE": {
+            return describeSyncComplete(effect, ctx)
+        }
+
+        case "LOG": {
+            return { logs: [{ level: effect.level, message: effect.message }] }
+        }
+    }
+}
+
+// ─── apply: fixed pipeline — the only place that mutates or does I/O ────────────
+
+/**
+ * Dispatch a log entry to the matching logger.
+ *
+ * Every mutation outside runtime state (printing) flows through here so that
+ * describe can stay pure and tests can assert `logs: […]` on the returned
+ * `EffectResult`.
+ */
+function emitLog(entry: LogEntry): void {
+    const logFns: Record<LogEntry["level"], (m: string) => void> = {
+        info,
+        warn,
+        success,
+        debug,
+        status,
+    }
+    logFns[entry.level](entry.message)
+}
+
+/**
+ * The ONE place that mutates `SyncRuntime`, its embedded caches, or `config`.
+ * Every mutation in `applyEffectResult` flows through here; grep for
+ * `applyRuntimeOp(` to audit state-change paths.
+ *
+ * Async because two ops (initWorkspace, loadPersistedState) do disk I/O. Callers
+ * always `await`.
+ */
+async function applyRuntimeOp(op: RuntimeOp, runtime: SyncRuntime, config: Config): Promise<void> {
+    const fileMetadataCache = runtime.metadata
+    switch (op.op) {
+        case "recordLocalSend":
+            runtime.rememberLocalSend(op.path, op.content)
+            return
+        case "recordRemoteApplied":
+            fileMetadataCache.recordSyncedSnapshot(op.path, hashFileContent(op.content), op.modifiedAt)
+            return
+        case "recordDelete":
+            runtime.forgetPath(op.path)
+            fileMetadataCache.recordDelete(op.path)
+            return
+        case "registerPendingRename":
+            runtime.setPendingRename(op.newPath, { oldFileName: op.oldPath, content: op.content })
+            return
+        case "completePendingRename":
+            runtime.deletePendingRename(normalizeCodeFilePathWithExtension(op.newPath))
+            return
+        case "forgetPath":
+            runtime.forgetPath(op.path)
+            return
+        case "clearDeleteTombstone":
+            runtime.clearDeleteTombstone(op.path)
+            return
+        case "initWorkspace": {
+            // First HANDSHAKE: resolve / create the project directory, stash the
+            // absolute paths on `config`, and mkdir the files subdir.
+            if (config.projectDir) return
+            const projectName = config.explicitName ?? op.projectInfo.projectName
+            const directoryInfo = await findOrCreateProjectDirectory({
+                projectHash: config.projectHash,
+                projectName,
+                explicitDirectory: config.explicitDirectory,
+            })
+            config.projectDir = directoryInfo.directory
+            config.projectDirCreated = directoryInfo.created
+            if (directoryInfo.nameCollision) warn(`Folder ${projectName} already exists`)
+            config.filesDir = `${config.projectDir}/files`
+            debug(`Files directory: ${config.filesDir}`)
+            await fs.mkdir(config.filesDir, { recursive: true })
+            return
+        }
+        case "loadPersistedState": {
+            if (!config.projectDir) return
+            await runtime.metadata.initialize(config.projectDir)
+            debug(`Loaded persisted metadata for ${pluralize(runtime.metadata.size(), "file")}`)
+            return
+        }
+        case "noteEmittedSyncPhase":
+            runtime.noteEmittedSyncPhase(op.phase)
+            return
+        case "resetDisconnectState":
+            runtime.disconnectUi.reset()
+            return
+    }
+}
+
+export interface ApplyCtx {
+    config: Config
+    runtime: SyncRuntime
+    syncState: SyncState
+    shutdown: () => Promise<void>
+}
+
+/**
+ * The fixed pipeline. See EffectResult's file comment for the step numbers.
+ * Returns follow-up SyncEvents the runtime should enqueue inline.
+ */
+export async function applyEffectResult(result: EffectResult, ctx: ApplyCtx): Promise<SyncEvent[]> {
+    const { runtime, config, syncState, shutdown } = ctx
+    const fileMetadataCache = runtime.metadata
+    const memory = runtime.memoryHandle()
+    const installer = runtime.installer
+
+    // 1. logs
+    if (result.logs) for (const entry of result.logs) emitLog(entry)
+
+    // 2. pre-send runtime ops — applyRuntimeOp is the single mutation site and
+    // handles the two async ops (initWorkspace, loadPersistedState) inline.
+    const ops = result.runtimeOps ?? []
+    for (const op of ops) {
+        if (!isPreSendRuntimeOp(op)) continue
+        await applyRuntimeOp(op, runtime, config)
+    }
+
+    // 3. writes — filter echoes, write, then record metadata via applyRuntimeOp (single mutation site)
+    if (result.writes?.files && config.filesDir) {
+        const filesToWrite =
+            result.writes.skipEcho === true ? filterEchoedFiles(result.writes.files, memory) : result.writes.files
+
+        if (result.writes.skipEcho && filesToWrite.length !== result.writes.files.length) {
+            const skipped = result.writes.files.length - filesToWrite.length
+            debug(`Skipped ${pluralize(skipped, "echoed change")}`)
+        }
+
+        if (filesToWrite.length > 0) {
+            await writeRemoteFiles(filesToWrite, config.filesDir, memory, installer ?? undefined)
+            for (const file of filesToWrite) {
+                if (!result.writes.silent) fileDown(file.name)
+                await applyRuntimeOp(
+                    {
+                        op: "recordRemoteApplied",
+                        path: file.name,
+                        content: file.content,
+                        modifiedAt: file.modifiedAt ?? Date.now(),
+                    },
+                    runtime,
+                    config
+                )
+            }
+        }
+    }
+
+    // 4. deletes — markDeleteBeforeUnlink is handled inside deleteLocalFile; then recordDelete runtimeOp
+    if (result.deletes && config.filesDir) {
+        for (const fileName of result.deletes) {
+            await deleteLocalFile(fileName, config.filesDir, memory)
+            fileDelete(fileName)
+            await applyRuntimeOp({ op: "recordDelete", path: fileName }, runtime, config)
+        }
+    }
+
+    // 5. sends — on any successful `file-change`: fileUp + installerProcess
+    let sawSuccessfulFileChange = false
+    if (result.sends && syncState.socket) {
+        for (const payload of result.sends) {
+            try {
+                const sent = await sendMessage(syncState.socket, payload)
+                if (sent && payload.type === "file-change") sawSuccessfulFileChange = true
+            } catch {
+                const label = payload.type === "file-change" ? payload.fileName : payload.type
+                warn(`Failed to push ${label}`)
+            }
+        }
+    }
+    if (sawSuccessfulFileChange) {
+        if (result.fileUp) fileUp(result.fileUp)
+        if (result.installerProcess && installer) {
+            installer.process(result.installerProcess.fileName, result.installerProcess.content)
+        }
+    }
+
+    // 6. awaitPrompt — runtime.request{Delete,Conflict}Decisions awaits the plugin's
+    // reply. The Promise is resolved by handleMessage (out-of-queue) calling
+    // runtime.resolvePendingAction BEFORE enqueuing the follow-up SyncEvent, so this
+    // await cannot deadlock the serial EventQueue.
+    if (result.awaitPrompt) {
+        if (result.awaitPrompt.kind === "deleteConfirmation") {
+            try {
+                const confirmedFiles = await runtime.requestDeleteDecision(syncState.socket, {
+                    fileNames: result.awaitPrompt.fileNames,
+                    requireConfirmation: result.awaitPrompt.requireConfirmation,
                 })
 
                 for (const fileName of confirmedFiles) {
-                    kernel.forgetPath(fileName)
-                    fileMetadataCache.recordDelete(fileName)
+                    await applyRuntimeOp({ op: "recordDelete", path: fileName }, runtime, config)
                     fileDelete(fileName)
                 }
 
@@ -1160,106 +1126,56 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
                     })
                 }
             } catch (err) {
-                console.warn(`Failed to handle deletion for ${filesToDelete.join(", ")}:`, err)
-            }
-
-            return []
-        }
-
-        case "PERSIST_STATE": {
-            await fileMetadataCache.flush()
-            return []
-        }
-
-        case "SYNC_COMPLETE": {
-            const shutdownIfOneOffSync = async () => {
-                if (!config.once) return false
-
-                status("Sync complete, exiting...")
-                await shutdown()
-                return true
-            }
-
-            const wasDisconnected = kernel.disconnectUi.wasRecentlyDisconnected()
-
-            if (wasDisconnected) {
-                // Only show reconnect message if we actually showed the disconnect notice
-                if (kernel.disconnectUi.didShowNotice()) {
-                    success(
-                        `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
-                    )
-                    await sendSyncPhase("ready")
-                    if (!await shutdownIfOneOffSync()) status("Watching for changes...")
-                } else {
-                    await sendSyncPhase("ready")
-                }
-                kernel.disconnectUi.reset()
-                return []
-            }
-
-            const relative = config.projectDir ? path.relative(process.cwd(), config.projectDir) : null
-            const relativeDirectory = relative != null ? (relative ? "./" + relative : ".") : null
-
-            if (effect.totalCount === 0 && relativeDirectory) {
-                if (config.projectDirCreated) {
-                    success(`Created ${relativeDirectory} folder`)
-                } else {
-                    success(`Syncing to ${relativeDirectory} folder`)
-                }
-            } else if (relativeDirectory && config.projectDirCreated) {
-                success(`Created ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} added)`)
-            } else if (relativeDirectory) {
-                success(
-                    `Synced into ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} updated, ${effect.unchangedCount} unchanged)`
-                )
-            } else {
-                success(
-                    `Synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
+                warn(
+                    `Failed to handle deletion for ${result.awaitPrompt.fileNames.join(", ")}: ${String(err)}`
                 )
             }
-            // Git init after first sync so initial commit includes all synced files
-            if (config.projectDirCreated && config.projectDir) {
-                tryGitInit(config.projectDir)
-            }
-
-            // Effect-stable: plugin only sees `ready` after this handler's work (including git init).
-            await sendSyncPhase("ready")
-
-            if (!await shutdownIfOneOffSync()) status("Watching for changes...")
-            return []
-        }
-
-        case "LOG": {
-            const logFns = { info, warn, success, debug }
-            const logFn = logFns[effect.level]
-            logFn(effect.message)
-            return []
+        } else {
+            await runtime.requestConflictDecisions(syncState.socket, result.awaitPrompt.conflicts)
         }
     }
+
+    // 7. post-send runtime ops
+    for (const op of ops) {
+        if (isPreSendRuntimeOp(op)) continue
+        await applyRuntimeOp(op, runtime, config)
+    }
+
+    // 8. persistState
+    if (result.persistState) await fileMetadataCache.flush()
+
+    // 9. tryGitInit — first-sync only, best effort
+    if (result.tryGitInit && config.projectDir) {
+        tryGitInit(config.projectDir)
+    }
+
+    // 10. shutdown (SYNC_COMPLETE with config.once). Status log already in step 1.
+    if (result.shutdown) {
+        await shutdown()
+    }
+
+    return result.followUps ?? []
+}
+
+/**
+ * Thin wrapper: describe (pure, may read) → apply (fixed pipeline).
+ */
+async function executeEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEvent[]> {
+    const described = await describeEffect(effect, ctx)
+    return applyEffectResult(described, ctx)
 }
 
 /**
  * Starts the sync controller with the given configuration
  */
 export async function start(config: Config): Promise<void> {
-    const kernel = new SyncKernel()
+    const runtime = new SyncRuntime()
     let isShuttingDown = false
 
     // State machine state
     let syncState: SyncState = {
         internalPhase: "disconnected",
         socket: null,
-        pendingRemoteChanges: [],
-    }
-
-    /** Last sync-phase sent to the plugin (for re-emit on duplicate handshake). */
-    let lastEmittedSyncPhase: SyncPhase | null = null
-
-    const sendSyncPhaseToPlugin = async (phase: SyncPhase) => {
-        lastEmittedSyncPhase = phase
-        if (syncState.socket) {
-            await sendMessage(syncState.socket, { type: "sync-phase", phase })
-        }
     }
 
     const eventQueue = createEventQueue()
@@ -1277,7 +1193,7 @@ export async function start(config: Config): Promise<void> {
         )
 
         const result = transition(syncState, event, {
-            wasRecentlyDisconnected: () => kernel.disconnectUi.wasRecentlyDisconnected(),
+            wasRecentlyDisconnected: () => runtime.disconnectUi.wasRecentlyDisconnected(),
         })
         syncState = result.state
 
@@ -1297,10 +1213,9 @@ export async function start(config: Config): Promise<void> {
 
             const followUpEvents = await executeEffect(effect, {
                 config,
-                kernel,
+                runtime,
                 shutdown,
                 syncState,
-                sendSyncPhaseToPlugin,
             })
 
             // Follow-ups must not re-enter the serial queue (parent still holds the queue slot).
@@ -1341,25 +1256,29 @@ export async function start(config: Config): Promise<void> {
         }
 
         void (async () => {
-            kernel.disconnectUi.cancelNotice()
+            runtime.disconnectUi.cancelNotice()
 
             if (syncState.internalPhase !== "disconnected") {
                 if (syncState.socket === client) {
-                    debug(`Ignoring duplicate handshake from active socket (internalPhase=${syncState.internalPhase})`)
-                    void sendSyncPhaseToPlugin(lastEmittedSyncPhase ?? "initial_sync")
+                    // Duplicate handshake on the already-active socket.
+                    // Route through the state machine instead of imperatively sending,
+                    // so EMIT_SYNC_PHASE (runtimeOp `noteEmittedSyncPhase` + send) flows
+                    // through the normal describe→apply pipeline.
+                    const phase = runtime.lastEmittedSyncPhase ?? "initial_sync"
+                    await processEvent({ type: "RESEND_SYNC_PHASE", phase })
                     return
                 }
                 debug(`New handshake received (internalPhase=${syncState.internalPhase}), resetting sync state`)
-                kernel.clearPendingRenames()
+                runtime.clearPendingRenames()
                 await processEvent({ type: "DISCONNECT" })
             }
 
-            kernel.mintConnectionId()
+            runtime.mintConnectionId()
 
             // Only show "Connected" on initial connection, not reconnects
             // Reconnect confirmation happens in SYNC_COMPLETE
-            const wasDisconnected = kernel.disconnectUi.wasRecentlyDisconnected()
-            if (!wasDisconnected && !kernel.disconnectUi.didShowNotice()) {
+            const wasDisconnected = runtime.disconnectUi.wasRecentlyDisconnected()
+            if (!wasDisconnected && !runtime.disconnectUi.didShowNotice()) {
                 success(`Connected to ${message.projectName}`)
             }
 
@@ -1374,12 +1293,12 @@ export async function start(config: Config): Promise<void> {
             })
 
             // Initialize installer if needed
-            if (config.projectDir && !kernel.installer) {
-                kernel.installer = new Installer({
+            if (config.projectDir && !runtime.installer) {
+                runtime.installer = new Installer({
                     projectDir: config.projectDir,
                     allowUnsupportedNpm: config.allowUnsupportedNpm,
                 })
-                await kernel.installer.initialize()
+                await runtime.installer.initialize()
                 // Start file watcher now that we have a directory
                 startWatcher()
             }
@@ -1389,7 +1308,7 @@ export async function start(config: Config): Promise<void> {
     // Message Handler
     async function handleMessage(message: PluginToCliMessage) {
         // Ensure project is initialized before handling messages
-        if (!config.projectDir || !kernel.installer) {
+        if (!config.projectDir || !runtime.installer) {
             warn("Received message before handshake completed - ignoring")
             return
         }
@@ -1418,7 +1337,7 @@ export async function start(config: Config): Promise<void> {
                         // use local receipt time. Conflict detection uses content hashes, not timestamps.
                         modifiedAt: Date.now(),
                     },
-                    fileMeta: kernel.metadata.get(message.fileName),
+                    fileMeta: runtime.metadata.get(message.fileName),
                 }
                 break
 
@@ -1434,13 +1353,13 @@ export async function start(config: Config): Promise<void> {
             }
 
             case "delete-confirmed": {
-                if (!message.session || message.session.connectionId !== kernel.connectionId) {
+                if (!message.session || message.session.connectionId !== runtime.connectionId) {
                     warn("Ignoring stale delete-confirmed (session mismatch)")
                     return
                 }
                 const { session } = message
                 for (const fileName of message.fileNames) {
-                    const handled = kernel.resolvePendingAction(deletePromptActionId(session, fileName), true)
+                    const handled = runtime.resolvePendingAction(deletePromptActionId(session, fileName), true)
 
                     if (!handled) {
                         warn(`Ignoring stale delete confirmation for ${fileName}`)
@@ -1451,13 +1370,13 @@ export async function start(config: Config): Promise<void> {
             }
 
             case "delete-cancelled": {
-                if (!message.session || message.session.connectionId !== kernel.connectionId) {
+                if (!message.session || message.session.connectionId !== runtime.connectionId) {
                     warn("Ignoring stale delete-cancelled (session mismatch)")
                     return
                 }
                 const { session } = message
                 for (const file of message.files) {
-                    const handled = kernel.resolvePendingAction(deletePromptActionId(session, file.fileName), false)
+                    const handled = runtime.resolvePendingAction(deletePromptActionId(session, file.fileName), false)
                     if (!handled) {
                         warn(`Ignoring stale delete cancellation for ${file.fileName}`)
                         continue
@@ -1483,19 +1402,19 @@ export async function start(config: Config): Promise<void> {
 
             case "error":
                 if (message.fileName) {
-                    kernel.deletePendingRename(normalizeCodeFilePathWithExtension(message.fileName))
+                    runtime.deletePendingRename(normalizeCodeFilePathWithExtension(message.fileName))
                 }
                 warn(message.message)
                 return
 
             case "conflicts-resolved": {
-                if (!message.session || message.session.connectionId !== kernel.connectionId) {
+                if (!message.session || message.session.connectionId !== runtime.connectionId) {
                     warn("Ignoring stale conflicts-resolved (session mismatch)")
                     return
                 }
                 const { session, resolution, fileNames } = message
                 for (const fileName of fileNames) {
-                    kernel.resolvePendingAction(conflictPromptActionId(session, fileName), resolution)
+                    runtime.resolvePendingAction(conflictPromptActionId(session, fileName), resolution)
                 }
                 event = {
                     type: "CONFLICTS_RESOLVED",
@@ -1539,14 +1458,14 @@ export async function start(config: Config): Promise<void> {
             return
         }
         // Schedule disconnect message with delay - if reconnect happens quickly, we skip it
-        kernel.disconnectUi.scheduleNotice(() => {
+        runtime.disconnectUi.scheduleNotice(() => {
             status("Disconnected, waiting to reconnect...")
         })
         void (async () => {
-            kernel.clearPendingRenames()
+            runtime.clearPendingRenames()
             await processEvent({ type: "DISCONNECT" })
-            lastEmittedSyncPhase = null
-            kernel.cleanupUserActions()
+            runtime.clearEmittedSyncPhase()
+            runtime.cleanupUserActions()
         })()
     })
 
@@ -1564,7 +1483,7 @@ export async function start(config: Config): Promise<void> {
         debug("[STATE] Shutting down...")
 
         isShuttingDown = true
-        kernel.cleanupUserActions()
+        runtime.cleanupUserActions()
 
         if (watcher) {
             await watcher.close()

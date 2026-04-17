@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { WebSocket } from "ws"
 import { transition } from "./controller.ts"
 import { DEFAULT_REMOTE_DRIFT_MS, filterEchoedFiles } from "./helpers/files.ts"
-import { SyncBase } from "./sync-base.ts"
+import { SyncMemory } from "./sync-memory.ts"
 
 // Readable coverage of core controller functionality
 
@@ -12,7 +12,6 @@ function disconnectedState() {
     return {
         internalPhase: "disconnected" as const,
         socket: null,
-        pendingRemoteChanges: [],
     }
 }
 
@@ -20,7 +19,6 @@ function watchingState() {
     return {
         internalPhase: "watching" as const,
         socket: mockSocket,
-        pendingRemoteChanges: [],
     }
 }
 
@@ -28,7 +26,6 @@ function handshakingState() {
     return {
         internalPhase: "handshaking" as const,
         socket: mockSocket,
-        pendingRemoteChanges: [],
     }
 }
 
@@ -36,7 +33,6 @@ function snapshotProcessingState() {
     return {
         internalPhase: "snapshot_processing" as const,
         socket: mockSocket,
-        pendingRemoteChanges: [],
     }
 }
 
@@ -55,7 +51,6 @@ function conflictResolutionState(
         internalPhase: "conflict_resolution" as const,
         socket: mockSocket,
         pendingConflicts,
-        pendingRemoteChanges: [],
     }
 }
 
@@ -73,6 +68,7 @@ describe("Code Link", () => {
                     { name: "Button.tsx", content: "export const Button = () => <button/>", modifiedAt: Date.now() },
                 ],
                 localOnly: [],
+                remoteTotal: 1,
             })
 
             expect(result.state.internalPhase).toBe("watching")
@@ -92,6 +88,7 @@ describe("Code Link", () => {
                         modifiedAt: Date.now(),
                     },
                 ],
+                remoteTotal: 0,
             })
 
             expect(result.state.internalPhase).toBe("watching")
@@ -118,6 +115,7 @@ describe("Code Link", () => {
                 conflicts: [conflict],
                 safeWrites: [],
                 localOnly: [],
+                remoteTotal: 1,
             })
 
             expect(result.state.internalPhase).toBe("conflict_resolution")
@@ -136,6 +134,7 @@ describe("Code Link", () => {
                 conflicts: [],
                 safeWrites: [],
                 localOnly: [],
+                remoteTotal: 0,
             })
 
             expect(result.state.internalPhase).toBe("watching")
@@ -247,7 +246,7 @@ describe("Code Link", () => {
                 file: { name: "Button.tsx", content: "late arrival", modifiedAt: Date.now() },
             })
 
-            expect(result.state.pendingRemoteChanges).toHaveLength(0)
+            expect(result.state.internalPhase).toBe("snapshot_processing")
             expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(false)
             expect(result.effects.some(e => e.type === "LOG")).toBe(true)
         })
@@ -284,6 +283,7 @@ describe("Code Link", () => {
                     },
                 ],
                 localOnly: [],
+                remoteTotal: 1,
             })
 
             expect(result.state.internalPhase).toBe("watching")
@@ -306,6 +306,7 @@ describe("Code Link", () => {
                         modifiedAt: Date.now(),
                     },
                 ],
+                remoteTotal: 0,
             })
 
             expect(result.state.internalPhase).toBe("watching")
@@ -506,7 +507,7 @@ describe("Code Link", () => {
 
     describe("Echo Prevention", () => {
         it("skips inbound changes matching last outbound", () => {
-            const tracker = new SyncBase().peerBaseView()
+            const tracker = new SyncMemory().memoryHandle()
             tracker.rememberRemoteWrite("Button.tsx", "content we just sent")
 
             const filtered = filterEchoedFiles(
@@ -518,7 +519,7 @@ describe("Code Link", () => {
         })
 
         it("applies inbound changes with different content", () => {
-            const tracker = new SyncBase().peerBaseView()
+            const tracker = new SyncMemory().memoryHandle()
             tracker.rememberRemoteWrite("Button.tsx", "old content")
 
             const filtered = filterEchoedFiles(

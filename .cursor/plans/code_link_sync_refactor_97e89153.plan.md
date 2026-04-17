@@ -1,6 +1,6 @@
 ---
 name: Code Link Sync Refactor
-overview: "Refactor Code Link's CLI and plugin around four changes that together make the state model traceable and testable for humans and AI: concentrate mutable state in a SyncKernel, formalize echo/conflict detection as a SyncBase data model, make effects pure via EffectResult, and route all timers through a named Scheduler. Follow-up: wire protocol uses coarse SyncPhase (initial_sync | ready) via sync-phase messages; internal CLI state uses internalPhase (never sent raw). Plugin socket controller stays untouched."
+overview: "Refactor Code Link's CLI and plugin around four changes that together make the state model traceable and testable for humans and AI: concentrate mutable state in a SyncRuntime, formalize echo/conflict detection as a SyncBase data model, make effects pure via EffectResult, and route all timers through a named Scheduler. Follow-up: wire protocol uses coarse SyncPhase (initial_sync | ready) via sync-phase messages; internal CLI state uses internalPhase (never sent raw). Plugin socket controller stays untouched."
 todos:
   - id: step-1
     content: "Add 3 cross-component integration tests driving start(): watcher-during-snapshot-processing, reconnect-during-conflict-resolution, handshake-replaces-active-socket. Use real fs (tempdir) + fake Watcher + in-memory WebSocket. Existing 3082 lines of tests stay untouched."
@@ -9,7 +9,7 @@ todos:
     content: Introduce Scheduler and timings.ts; replace every CLI setTimeout with named scheduler calls. Plugin timing untouched.
     status: completed
   - id: step-3
-    content: Introduce SyncKernel wrapping existing hashTracker, fileMetadataCache, pendingRenameConfirmations, userActions; effects receive kernel.
+    content: Introduce SyncRuntime wrapping existing hashTracker, fileMetadataCache, pendingRenameConfirmations, userActions; effects receive runtime.
     status: completed
   - id: step-4
     content: Introduce SyncBase; collapse hashTracker and watcher echo buffers into base lookups; delete utils/hash-tracker.ts.
@@ -18,7 +18,7 @@ todos:
     content: "Plugin side: introduce PluginBase, collapse api.ts lastSnapshot and sync-tracker.ts into it; delete sync-tracker.ts. Port withExpectedSnapshotPatch rollback. Socket controller untouched."
     status: completed
   - id: step-6
-    content: "EffectResult + fixed applyEffectResult pipeline; describeSendLocalChange; executeEffect uses SyncKernel only (no dual context). rename/once tests rewritten (no vi.mock/module mocks; connection.sendMessage may use spy). Stretch: not every executeEffect branch is pure describe→apply yet."
+    content: "EffectResult + fixed applyEffectResult pipeline; describeSendLocalChange; executeEffect uses SyncRuntime only (no dual context). rename/once tests rewritten (no vi.mock/module mocks; connection.sendMessage may use spy). Stretch: not every executeEffect branch is pure describe→apply yet."
     status: completed
   - id: step-7
     content: "Superseded by sync-phase work: plugin pluginMode + syncPhase (SyncPhase from CLI); framer UI driven by useLayoutEffect from pluginMode. Removed sync-mode/CliSyncMode; ready only from SYNC_COMPLETE effect boundary."
@@ -40,18 +40,18 @@ The refactor is four concrete changes plus several follow-on cleanup steps, each
 
 **Done:** Steps **1–9** (all checklist items closed).
 
-- **1–5, 7:** Unchanged from earlier: integration tests, `Scheduler`/`timings`, `SyncKernel`, `SyncBase` / `PeerBaseView`, plugin `PluginBase`, sync-phase / `internalPhase`, `sync-tracker` removed.
-- **6:** `EffectResult` + `applyEffectResult` (ordered pipeline), `describeSendLocalChange` with declarative `recordLocalSend`, `executeEffect` context is kernel-only. `controller.rename.test.ts` / `controller.once.test.ts` no longer use `vi.mock` / `as never`; optional `vi.spyOn(connection.sendMessage)` for WS boundary. **Remaining stretch (optional):** migrate every `executeEffect` `switch` arm to a pure `describeEffect` + single apply path.
+- **1–5, 7:** Unchanged from earlier: integration tests, `Scheduler`/`timings`, `SyncRuntime`, `SyncBase` / `PeerBaseView`, plugin `PluginBase`, sync-phase / `internalPhase`, `sync-tracker` removed.
+- **6:** `EffectResult` + `applyEffectResult` (ordered pipeline), `describeSendLocalChange` with declarative `recordLocalSend`, `executeEffect` context is runtime-only. `controller.rename.test.ts` / `controller.once.test.ts` no longer use `vi.mock` / `as never`; optional `vi.spyOn(connection.sendMessage)` for WS boundary. **Remaining stretch (optional):** migrate every `executeEffect` `switch` arm to a pure `describeEffect` + single apply path.
 - **8:** Plugin **`UiState`** (`state.ui.kind`: loading, info, syncing, idle, deletePrompt, conflictPrompt, replaced, error); **`Mode`** removed from `@code-link/shared`.
 - **9:** **`PromptSession`** on CLI↔plugin prompt messages; **`resolvePendingAction`** + session-scoped action ids; conflict `conflicts-resolved` resolves pending promises (was a latent gap).
 
-**Also landed (was “deferred” in an older draft):** serial **`EventQueue`** for top-level `processEvent` ingress; disconnect UI state folded into **`kernel.disconnectUi`** (not `logging.ts` module globals).
+**Also landed (was “deferred” in an older draft):** serial **`EventQueue`** for top-level `processEvent` ingress; disconnect UI state folded into **`runtime.disconnectUi`** (not `logging.ts` module globals).
 
 **Still true:** `plugins/code-link/src/utils/sockets.ts` untouched; user-visible sync/delete/conflict/reconnect behavior preserved.
 
 ## The thesis in one line
 
-Every mutation goes through a named kernel method. Every echo/conflict question becomes a lookup against one data model. Every effect is a pure function describing what should change. Every timer has a name.
+Every mutation goes through a named runtime method. Every echo/conflict question becomes a lookup against one data model. Every effect is a pure function describing what should change. Every timer has a name.
 
 ## Protocol changes
 
@@ -71,7 +71,7 @@ No shared closure state. No cross-effect mutation. No timers hidden in the hot p
 
 ```mermaid
 flowchart TD
-    subgraph runtime [Runtime]
+    subgraph ingress [Serial queue + apply]
         queue[Event Queue]
         applyResult[Apply EffectResult]
     end
@@ -79,7 +79,7 @@ flowchart TD
         transition[transition]
         effects[executeEffect pure, returns EffectResult]
     end
-    subgraph kernel [SyncKernel owns all state]
+    subgraph syncRuntime [SyncRuntime owns all state]
         base[SyncBase - the data model]
         scheduler[Scheduler - named timers]
         prompts[Prompt coordinator]
@@ -87,9 +87,9 @@ flowchart TD
     end
     queue --> transition
     transition --> effects
-    effects -->|"reads kernel"| base
+    effects -->|"reads (readonly)"| base
     effects --> applyResult
-    applyResult -->|"writes"| base
+    applyResult -->|"mutates"| base
     applyResult -->|"schedules"| scheduler
     applyResult -->|"enqueues follow-ups"| queue
 ```
@@ -109,15 +109,15 @@ The repo has 3,082 lines of tests. Most lock in behavior we must preserve. **`co
 - `[plugins/code-link/src/api.test.ts](plugins/code-link/src/api.test.ts)` (536 lines) — `withExpectedSnapshotPatch` rollback; mocks are at the Framer SDK boundary, legitimate
 - `[plugins/code-link/src/utils/sockets.test.ts](plugins/code-link/src/utils/sockets.test.ts)` (134 lines) — mocks `WebSocket` which is an external boundary, legitimate
 
-**Step 6 rewrite (done):** those files now use **`SyncKernel` + real temp dirs** where needed and **`vi.spyOn(connection.sendMessage)`** only for the WS boundary — not internal context mocks.
+**Step 6 rewrite (done):** those files now use **`SyncRuntime` + real temp dirs** where needed and **`vi.spyOn(connection.sendMessage)`** only for the WS boundary — not internal context mocks.
 
 The refactor preserves all 2,537 legitimate lines in the “keep as-is” list. Step 1 adds cross-component `start()` coverage in `controller.integration.test.ts`.
 
 ## The four changes
 
-### 1. `SyncKernel` — concentrates the 11 mutable stores
+### 1. `SyncRuntime` — concentrates the 11 mutable stores
 
-New file `[packages/code-link-cli/src/kernel.ts](packages/code-link-cli/src/kernel.ts)`. Owns every piece of mutable sync state. Exposes narrow named methods instead of raw maps.
+New file `[packages/code-link-cli/src/runtime.ts](packages/code-link-cli/src/runtime.ts)`. Owns every piece of mutable sync state. Exposes narrow named methods instead of raw maps.
 
 Replaces direct access to:
 
@@ -131,7 +131,7 @@ Replaces direct access to:
 Illustrative shape (exact method set determined during implementation):
 
 ```ts
-interface SyncKernel {
+interface SyncRuntime {
   base: SyncBase
   scheduler: Scheduler
   recordLocalSend(path: string, hash: string): void
@@ -147,7 +147,7 @@ interface SyncKernel {
 
 ### 2. `SyncBase` — the formal data model for echo and conflict
 
-The conceptual third tree, implemented as one owned structure inside the kernel. Not a new persisted file — it subsumes `[fileMetadataCache](packages/code-link-cli/src/utils/file-metadata-cache.ts)` which already holds most of this shape.
+The conceptual third tree, implemented as one owned structure inside `SyncRuntime` (via `SyncBase` + metadata). Not a new persisted file — it subsumes `[fileMetadataCache](packages/code-link-cli/src/utils/file-metadata-cache.ts)` which already holds most of this shape.
 
 ```ts
 interface SyncBaseEntry {
@@ -166,13 +166,13 @@ interface SyncBase {
 }
 ```
 
-Every echo check in the codebase becomes `kernel.base.isEcho(path, hash)`. The three current systems collapse:
+Every echo check in the codebase becomes a `SyncBase` / `PeerBaseView` lookup (e.g. `isEcho(path, hash)`). The three current systems collapse:
 
 - `[utils/hash-tracker.ts](packages/code-link-cli/src/utils/hash-tracker.ts)` — deleted. Its `shouldSkip`, `shouldSkipDelete`, `markDelete`, `clearDelete`, `forget`, `remember` all become `SyncBase` operations.
 - `contentHashCache` / `pendingDeletes` / `pendingAdds` / `recentSanitizations` in `[helpers/watcher.ts](packages/code-link-cli/src/helpers/watcher.ts)` — the buffers that exist for rename coalescing stay (they're data-structure, not echo). Echo suppression (`recentSanitizations`) becomes a base lookup.
 - The 5s delete echo window becomes an explicit `tombstone: true` entry with a base-owned TTL, documented in one place.
 
-Plugin side gets a parallel `PluginBase` in the kernel shape, replacing `[api.ts](plugins/code-link/src/api.ts)` `lastSnapshot` and `[packages/code-link-shared/src/sync-tracker.ts](packages/code-link-shared/src/sync-tracker.ts)`. Deleted: `sync-tracker.ts`.
+Plugin side gets a parallel `PluginBase` in the same “single mutable owner” shape, replacing `[api.ts](plugins/code-link/src/api.ts)` `lastSnapshot` and `[packages/code-link-shared/src/sync-tracker.ts](packages/code-link-shared/src/sync-tracker.ts)`. Deleted: `sync-tracker.ts`.
 
 Conflict detection (currently in `[helpers/files.ts](packages/code-link-cli/src/helpers/files.ts)` `detectConflicts`) reads from `base.snapshot()`. Same code, clearer source.
 
@@ -192,7 +192,7 @@ async function executeEffect(effect: Effect, context: {
 With:
 
 ```ts
-type KernelOp =
+type RuntimeOp =
   | { op: "recordLocalSend"; path: string; hash: string }
   | { op: "recordRemoteApplied"; path: string; hash: string; modifiedAt: number }
   | { op: "recordDelete"; path: string }
@@ -203,7 +203,7 @@ type KernelOp =
 
 interface EffectResult {
   followUps?: SyncEvent[]
-  kernelOps?: KernelOp[]
+  runtimeOps?: RuntimeOp[]
   sends?: CliToPluginMessage[]
   writes?: FileWrite[]
   deletes?: string[]
@@ -212,11 +212,11 @@ interface EffectResult {
 
 async function executeEffect(
   effect: Effect,
-  readOnly: { kernel: ReadonlyKernel; config: Config; syncState: SyncState }
+  readOnly: { runtime: ReadonlyRuntime; config: Config; syncState: SyncState }
 ): Promise<EffectResult>
 ```
 
-The runtime (`processEvent` in `[controller.ts:1125](packages/code-link-cli/src/controller.ts)`) drains effects: execute → apply `kernelOps` atomically → perform `writes/deletes/sends` I/O → enqueue `followUps`. Between effects the kernel is always in a consistent state.
+The controller loop (`processEvent` in `[controller.ts](packages/code-link-cli/src/controller.ts)`) drains effects: describe → apply `runtimeOps` / writes / deletes / sends → enqueue `followUps`. Between effects `SyncRuntime` is always in a consistent state.
 
 Conversion strategy: **compatibility shim**. Runtime accepts both old-style (mutates context, returns `SyncEvent[]`) and new-style (read-only, returns `EffectResult`) effects during the migration. Land one effect at a time. Shim deleted at end of Step 6. This keeps each PR small and bisectable.
 
@@ -229,8 +229,8 @@ await executeEffect(effect, { hashTracker: hashTracker as never, ... })
 expect(hashTracker.remember).toHaveBeenCalledWith("Foo.tsx", content)
 
 // After: 5 lines, zero mocks, zero casts
-const result = await executeEffect(effect, { kernel: readOnly, config, syncState })
-expect(result.kernelOps).toContainEqual({ op: "recordLocalSend", path: "Foo.tsx", hash: hashOf(content) })
+const result = await describeEffect(effect, { runtime: readOnly, config, syncState })
+expect(result.runtimeOps).toContainEqual({ op: "recordLocalSend", path: "Foo.tsx", hash: hashOf(content) })
 expect(result.sends).toContainEqual({ type: "file-changed", fileName: "Foo.tsx", content })
 ```
 
@@ -238,7 +238,7 @@ Goal: both files contain zero `vi.mock`, zero `vi.fn`, zero `as never` by the en
 
 ### 4. `Scheduler` — every timer has a name
 
-New `Scheduler` inside the kernel. Replaces every `setTimeout` in the CLI with a named scheduled task. Current behaviors unchanged; durations centralized in a new `[packages/code-link-cli/src/timings.ts](packages/code-link-cli/src/timings.ts)` file with documented rationale.
+New `Scheduler` owned by `SyncRuntime` (disconnect notice timing, etc.). Replaces every `setTimeout` in the CLI with a named scheduled task. Current behaviors unchanged; durations centralized in a new `[packages/code-link-cli/src/timings.ts](packages/code-link-cli/src/timings.ts)` file with documented rationale.
 
 ```ts
 type ScheduledTask =
@@ -280,10 +280,10 @@ A test-time `FakeScheduler` makes every timing-dependent behavior deterministic.
 | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | 1    | Add targeted end-to-end tests that drive `start()` across component seams. See scope below.                                                                                                                                                                                                                            | No — tests only                                             |
 | 2    | Introduce `Scheduler` + `[timings.ts](packages/code-link-cli/src/timings.ts)`. Replace every CLI `setTimeout` with named scheduler calls. Durations unchanged.                                                                                                                                                         | No                                                          |
-| 3    | Introduce `SyncKernel`. Initially wraps existing `hashTracker`, `fileMetadataCache`, `pendingRenameConfirmations`, `userActions`. Effects receive kernel instead of raw maps.                                                                                                                                          | No                                                          |
+| 3    | Introduce `SyncRuntime`. Initially wraps existing `hashTracker`, `fileMetadataCache`, `pendingRenameConfirmations`, `userActions`. Effects receive `SyncRuntime` instead of raw maps.                                                                                                                                          | No                                                          |
 | 4    | Introduce `SyncBase`. Collapse `hashTracker` and watcher echo buffers into `SyncBase` lookups. Delete `[utils/hash-tracker.ts](packages/code-link-cli/src/utils/hash-tracker.ts)`.                                                                                                                                     | No (tombstone replaces 5s window with equivalent semantics) |
 | 5    | Plugin side: introduce `PluginBase`, collapse `[api.ts](plugins/code-link/src/api.ts)` `lastSnapshot` + `[sync-tracker.ts](packages/code-link-shared/src/sync-tracker.ts)` into it. Delete `sync-tracker.ts`. Port `withExpectedSnapshotPatch` rollback semantics into `PluginBase`.                                   | No user-visible change                                      |
-| 6    | **Done:** `EffectResult` pipeline + `describeSendLocalChange`; kernel-only `executeEffect`; rename/once tests without module mocks. (Stretch: pure describe for every effect branch.)                                                                                                                                   | No                                                          |
+| 6    | **Done:** `EffectResult` pipeline + `describeSendLocalChange`; runtime-only `executeEffect`; rename/once tests without module mocks. (Stretch: pure describe for every effect branch.)                                                                                                                                   | No                                                          |
 | 7    | **Done (revised):** Was sync-phase / `pluginMode`; superseded in UI by **Step 8** `UiState` while CLI still uses **`syncPhase`** + **`internalPhase`**.                                                                                                                                                               | Protocol break vs old `sync-mode`; beta OK                  |
 | 8    | **Done:** Discriminated **`UiState`** in `app-state.ts`; **`App.tsx`** switches on **`state.ui.kind`**.                                                                                                                                                                                                              | No user-visible change                                      |
 | 9    | **Done:** **`PromptSession`** on prompt-related messages; stale responses ignored by connection id.                                                                                                                                                                                                                    | No user-visible change; protocol change                     |
@@ -325,7 +325,7 @@ These are correct, well-tested, or unrelated. The refactor must not touch them. 
 **CLI side — protected logic within in-scope files:**
 
 - `transition()` in `[controller.ts](packages/code-link-cli/src/controller.ts)` — **updated**: `SyncState` uses **`internalPhase`** (was `mode`); `HANDSHAKE` adds **`EMIT_SYNC_PHASE`** (`initial_sync`). `SyncEvent` / core `Effect` variants otherwise same spirit.
-- `detectConflicts`, `autoResolveConflicts`, drift windows, sanitization in `[helpers/files.ts](packages/code-link-cli/src/helpers/files.ts)` — unchanged; only the data source shifts from `fileMetadataCache` to `kernel.base.snapshot()`.
+- `detectConflicts`, `autoResolveConflicts`, drift windows, sanitization in `[helpers/files.ts](packages/code-link-cli/src/helpers/files.ts)` — unchanged; only the data source shifts from ad-hoc maps to `PeerBaseView` / persisted metadata as appropriate.
 - `[helpers/git.ts](packages/code-link-cli/src/helpers/git.ts)`, `[helpers/skills.ts](packages/code-link-cli/src/helpers/skills.ts)`, `[helpers/certs.ts](packages/code-link-cli/src/helpers/certs.ts)`, `[helpers/installer.ts](packages/code-link-cli/src/helpers/installer.ts)` — external I/O boundaries, already correctly mocked. Do not touch.
 - `[helpers/sync-validator.ts](packages/code-link-cli/src/helpers/sync-validator.ts)` — pure, stays pure; only its consumer changes.
 - `[utils/state-persistence.ts](packages/code-link-cli/src/utils/state-persistence.ts)` — on-disk format unchanged.
@@ -361,9 +361,9 @@ These are correct, well-tested, or unrelated. The refactor must not touch them. 
 - `**SyncBase` tombstone changes echo timing** — Step 1 test 1 plus the existing rapid-delete tests in `files.test.ts` cover this. Tombstone TTL matches current 5s `hashTracker` window. Centralized and documented.
 - `**Protocol changes create mixed-version risk`** — acceptable when the simplification is worth it. Land CLI + plugin protocol updates together in the same branch/PR, document the rationale, and add/update tests for the new message flow. Backward compatibility with mixed old/new commits is optional, not required here.
 - `**Plugin reconnect/prompt state is still hard to read**` — Step 8 removes implicit precedence rules by making UI state a discriminated union. If reconnect safety still depends on "knowing the flow," Step 9 adds prompt/session identity and turns it into an equality check.
-- `**EffectResult` conversion is a large diff** — land one effect at a time behind a compatibility shim that accepts both old-style (mutates kernel) and new-style (returns result). Remove shim at the end.
+- `**EffectResult` conversion is a large diff** — land one effect at a time behind a compatibility shim that accepts both old-style (mutates runtime) and new-style (returns result). Remove shim at the end.
 - `**PluginBase` drops `withExpectedSnapshotPatch` transactional rollback** — port rollback semantics into `PluginBase.apply`; `[api.test.ts](plugins/code-link/src/api.test.ts)` (536 lines) covers this.
-- **Logging module state migration** — `[utils/logging.ts](packages/code-link-cli/src/utils/logging.ts)` `disconnectTimer` / `hadRecentDisconnect` / `isShowingDisconnect` fold into kernel during Step 2 via the scheduler, or during Step 3 if easier. Small, isolated.
+- **Logging module state migration** — `[utils/logging.ts](packages/code-link-cli/src/utils/logging.ts)` `disconnectTimer` / `hadRecentDisconnect` / `isShowingDisconnect` fold into `SyncRuntime.disconnectUi` during Step 2 via the scheduler, or during Step 3 if easier. Small, isolated.
 
 ## Review ergonomics after landing
 
@@ -371,7 +371,7 @@ A reviewer or AI answering "is X safe?" reads three files in order:
 
 1. The `transition()` case arm in `[controller.ts](packages/code-link-cli/src/controller.ts)` — pure, local.
 2. The `executeEffect` case — pure function, inputs visible, `EffectResult` visible.
-3. The `SyncBase` or `Scheduler` method the effect's `kernelOps` reference — named, under 20 lines.
+3. The `SyncBase` or `Scheduler` method the effect's `runtimeOps` reference — named, under 20 lines.
 
 No closure state to trace. No cross-effect mutation to consider. No timers to reason about without a name. The answer is local.
 

@@ -1,5 +1,5 @@
 /**
- * Single data model for peer agreement, inbound echo suppression, and delete tombstones.
+ * Single data model for sync agreement: inbound echo suppression and delete tombstones.
  * Owns persisted metadata; in-memory echo/delete windows match legacy hash-tracker semantics.
  */
 
@@ -10,10 +10,10 @@ import { FileMetadataCache } from "./utils/file-metadata-cache.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
 
 /**
- * Narrow surface for disk helpers (`writeRemoteFiles`, `deleteLocalFile`, `filterEchoedFiles`).
- * Implemented by `SyncBase` via `peerBaseView()`.
+ * Narrow handle on `SyncMemory` for disk helpers (`writeRemoteFiles`, `deleteLocalFile`,
+ * `filterEchoedFiles`). Returned by `SyncMemory.memoryHandle()`.
  */
-export interface PeerBaseView {
+export interface SyncMemoryHandle {
     rememberRemoteWrite(filePath: string, content: string): void
     shouldSkipInboundEcho(filePath: string, content: string): boolean
     markDeleteBeforeUnlink(filePath: string): void
@@ -22,7 +22,7 @@ export interface PeerBaseView {
     shouldSkipDeleteEcho(filePath: string): boolean
 }
 
-export class SyncBase {
+export class SyncMemory {
     readonly fileMetadataCache = new FileMetadataCache()
 
     private readonly hashes = new Map<string, string>()
@@ -78,7 +78,7 @@ export class SyncBase {
     }
 
     /**
-     * Echo/conflict “base” snapshot: persisted agreement state (legacy fileMetadataCache shape).
+     * Echo/conflict memory snapshot: persisted agreement state (legacy fileMetadataCache shape).
      */
     snapshot() {
         return this.fileMetadataCache.getPersistedState()
@@ -97,7 +97,7 @@ export class SyncBase {
         return this.shouldSkipDeleteEcho(path)
     }
 
-    peerBaseView(): PeerBaseView {
+    memoryHandle(): SyncMemoryHandle {
         return {
             rememberRemoteWrite: (filePath, content) => this.rememberContentHash(filePath, content),
             shouldSkipInboundEcho: (filePath, content) => this.shouldSkipInboundEcho(filePath, content),

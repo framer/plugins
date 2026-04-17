@@ -2,8 +2,8 @@
 name: finish code-link refactor
 overview: Finish steps 6, 8, 9. Every effect becomes describe()->EffectResult->apply() with one fixed pipeline; plugin UI becomes a discriminated union; delete/conflict prompts carry session ids. One branch, no shim, no effect-test mocks.
 todos:
-  - id: narrow-kernel
-    content: Narrow SyncKernel API + introduce PeerBaseView; migrate helpers/files.ts off HashTracker; delete HashTracker export
+  - id: narrow-runtime
+    content: Narrow SyncRuntime API + introduce PeerBaseView; migrate helpers/files.ts off HashTracker; delete HashTracker export
     status: completed
   - id: describe-apply
     content: Convert every effect to describe()->EffectResult; rewrite applyEffectResult with fixed 8-step pipeline; delete old ExecuteEffectContext union
@@ -21,7 +21,7 @@ todos:
     content: Add Session (connectionId + promptId) to delete/conflict messages both sides; CLI ignores stale; extend tests
     status: completed
   - id: logging-state
-    content: Fold logging.ts module state into kernel.disconnectUi
+    content: Fold logging.ts module state into runtime.disconnectUi
     status: completed
   - id: typecheck-green
     content: Run tsc + vitest on both packages; confirm zero mocks in effect tests
@@ -35,20 +35,20 @@ Every branch of control reads the same way:
 
 1. `transition()` case (pure; already correct).
 2. `describeX(effect, read)` -> `EffectResult` (pure; new).
-3. `applyEffectResult(result, kernel)` (single function; fixed order).
+3. `applyEffectResult(result, runtime)` (single function; fixed order).
 
 One place holds ordering rules. One place holds state. Zero closures, zero per-effect mocks.
 
 ## Pipeline (locks ordering for all effects)
 
-`applyEffectResult(result, kernel, syncState)` runs, in order:
+`applyEffectResult(result, ctx)` runs, in order (see `controller.ts` for the current step list):
 
 1. `log` - emit immediately.
-2. `writes` - `writeRemoteFiles`: `kernel.recordRemoteApplied(path, hash, mtime)` BEFORE `fs.writeFile` (echo-safe), then `fileDown` unless silent.
-3. `deletes` - `kernel.markDelete(path)` BEFORE `fs.unlink`; on success `kernel.forgetEcho(path)` + `kernel.recordDelete(path)`; on ENOENT same; on other error `kernel.clearDeleteMark(path)`.
-4. `sends` - `sendMessage`. For `file-change` post-ack `kernel.recordLocalSend(path, content)` then `fileUp(path)`; for `file-rename` post-ack `kernel.registerPendingRename(old, new, content)`.
-5. `kernelOps` - pure recorded ops run last (no I/O): `recordRemoteApplied`, `recordDelete`, `completePendingRename`, `schedule`, `cancel`.
-6. `persistState` - `kernel.flush()`.
+2. `writes` - `writeRemoteFiles`: record remote metadata via `applyRuntimeOp` / `recordRemoteApplied` AFTER disk write (see pipeline comment in `controller.ts`).
+3. `deletes` - `deleteLocalFile` then `recordDelete` via `applyRuntimeOp`.
+4. `sends` - `sendMessage`. For `file-change` post-ack: `recordLocalSend` + `fileUp` via the fixed pipeline; for `file-rename` post-ack `registerPendingRename`, etc.
+5. `runtimeOps` - pre/post-send ops: `recordLocalSend`, `registerPendingRename`, `recordRemoteApplied`, `completePendingRename`, `noteEmittedSyncPhase`, etc.
+6. `persistState` - `metadata.flush()`.
 7. `installerProcess` - only if corresponding `file-change` send succeeded.
 8. `followUps` - returned as `SyncEvent[]` to runtime.
 
@@ -58,12 +58,12 @@ Two implicit echo rules live inside apply:
 
 Only ordering gotchas; everything else flat.
 
-## SyncKernel narrow API (replaces HashTracker leak)
+## SyncRuntime narrow API (replaces HashTracker leak)
 
-[packages/code-link-cli/src/kernel.ts](packages/code-link-cli/src/kernel.ts):
+[packages/code-link-cli/src/runtime.ts](packages/code-link-cli/src/runtime.ts):
 
 ```ts
-interface SyncKernel {
+interface SyncRuntime {
   isEcho(path: string, content: string): boolean
   isDeleteEcho(path: string): boolean
   metadataFor(path: string): FileSyncMetadata | undefined
@@ -100,23 +100,23 @@ Rewrite big switch in [controller.ts](packages/code-link-cli/src/controller.ts):
 async function executeEffect(effect: Effect, read: ReadCtx): Promise<EffectResult>
 ```
 
-`ReadCtx = { config, kernel: ReadonlyKernel, syncState }`. Pure async (may read disk for `DETECT_CONFLICTS`, `UPDATE_FILE_METADATA`, `LIST_LOCAL_FILES`). No kernel mutation inside.
+`ReadCtx = { config, runtime: ReadonlyRuntime, syncState }`. Pure async (may read disk for `DETECT_CONFLICTS`, `UPDATE_FILE_METADATA`, `LIST_LOCAL_FILES`). No runtime mutation inside describe.
 
-- `INIT_WORKSPACE` -> `kernelOps:[{op:"initWorkspace", projectInfo}]`.
-- `LOAD_PERSISTED_STATE` -> `kernelOps:[{op:"loadPersistedState"}]`.
+- `INIT_WORKSPACE` -> `runtimeOps:[{op:"initWorkspace", projectInfo}]`.
+- `LOAD_PERSISTED_STATE` -> `runtimeOps:[{op:"loadPersistedState"}]`.
 - `LIST_LOCAL_FILES` -> read `listFiles(filesDir)`; `sends:[{type:"file-list", files}]`.
-- `DETECT_CONFLICTS` -> run `detectConflicts`; `kernelOps: unchanged.map(recordRemoteApplied)`; `followUps:[{type:"CONFLICTS_DETECTED",...}]`.
+- `DETECT_CONFLICTS` -> run `detectConflicts`; `runtimeOps: unchanged.map(recordRemoteApplied)`; `followUps:[{type:"CONFLICTS_DETECTED",...}]`.
 - `SEND_MESSAGE` -> `sends:[payload]`.
-- `EMIT_SYNC_PHASE` -> `sends:[{type:"sync-phase",phase}]` + `kernelOps:[{op:"noteEmittedSyncPhase",phase}]`.
+- `EMIT_SYNC_PHASE` -> `sends:[{type:"sync-phase",phase}]` + `runtimeOps:[{op:"noteEmittedSyncPhase",phase}]`.
 - `WRITE_FILES` -> `writes:{files: skipEcho ? filterEchoed(files) : files, silent, skipEcho}` (apply records `recordRemoteApplied` per file before disk).
 - `DELETE_LOCAL_FILES` -> `deletes: names`.
-- `REQUEST_CONFLICT_DECISIONS` / `REQUEST_CONFLICT_VERSIONS` -> `sends:[...]` + `kernelOps:[{op:"awaitConflictDecisions", session, conflicts}]`.
+- `REQUEST_CONFLICT_DECISIONS` / `REQUEST_CONFLICT_VERSIONS` -> `sends:[...]` + `runtimeOps:[{op:"awaitConflictDecisions", session, conflicts}]`.
 - `SEND_LOCAL_CHANGE` -> existing `describeSendLocalChange` (already pure); apply handles post-send remember + fileUp + installer.
-- `SEND_FILE_RENAME` -> describe checks echo via `read.kernel.isEcho` + `isDeleteEcho`; if echo, `kernelOps:[{op:"forgetEcho",path:new},{op:"clearDeleteMark",path:old}]`; else `sends:[{type:"file-rename",...}]` + `kernelOps:[{op:"registerPendingRename",...}]` applied post-ack.
-- `LOCAL_INITIATED_FILE_DELETE` -> partitions files via `isDeleteEcho`; `kernelOps:[{op:"clearDeleteMark",...}]` for echoes; `sends:[{type:"file-delete",requireConfirmation,session}]` + `kernelOps:[{op:"awaitDeleteDecision", session, files}]`.
-- `UPDATE_FILE_METADATA` -> reads current content + pending rename; `kernelOps` describing (`recordRemoteApplied` + optional `recordDelete(oldRename)` + `recordLocalSend(new)` + `completePendingRename(new)`).
+- `SEND_FILE_RENAME` -> describe checks echo via `read.runtime.isEcho` + `isDeleteEcho`; if echo, `runtimeOps:[{op:"forgetEcho",path:new},{op:"clearDeleteMark",path:old}]`; else `sends:[{type:"file-rename",...}]` + `runtimeOps:[{op:"registerPendingRename",...}]` applied post-ack.
+- `LOCAL_INITIATED_FILE_DELETE` -> partitions files via `isDeleteEcho`; `runtimeOps:[{op:"clearDeleteMark",...}]` for echoes; `sends:[{type:"file-delete",requireConfirmation,session}]` + `runtimeOps:[{op:"awaitDeleteDecision", session, files}]`.
+- `UPDATE_FILE_METADATA` -> reads current content + pending rename; `runtimeOps` describing (`recordRemoteApplied` + optional `recordDelete(oldRename)` + `recordLocalSend(new)` + `completePendingRename(new)`).
 - `PERSIST_STATE` -> `persistState: true`.
-- `SYNC_COMPLETE` -> `sends:[{type:"sync-phase",phase:"ready"}]`, `log`, `followUps: config.once ? [{type:"SHUTDOWN"}] : []`, `kernelOps:[{op:"resetDisconnectState"}]`. New `SHUTDOWN` effect calls `shutdown()` in apply.
+- `SYNC_COMPLETE` -> `sends:[{type:"sync-phase",phase:"ready"}]`, `log`, `followUps: config.once ? [{type:"SHUTDOWN"}] : []`, `runtimeOps:[{op:"resetDisconnectState"}]`. New `SHUTDOWN` effect calls `shutdown()` in apply.
 - `LOG` -> `log`.
 
 After: delete old `ExecuteEffectContext` union, compatibility branch, `hashTracker.remember` call in `applyEffectResult`'s send loop (moved into `recordLocalSend` op applied post-ack).
@@ -124,23 +124,23 @@ After: delete old `ExecuteEffectContext` union, compatibility branch, `hashTrack
 ## Test rewrite (rename + once)
 
 - [controller.rename.test.ts](packages/code-link-cli/src/controller.rename.test.ts) and [controller.once.test.ts](packages/code-link-cli/src/controller.once.test.ts) stop mocking context.
-- Each test: real `SyncKernel`, call `executeEffect(effect, {config, kernel, syncState})`, assert returned `EffectResult` with `toEqual` / `toContainEqual`.
+- Each test: real `SyncRuntime`, call `describeEffect(effect, { config, runtime, syncState })`, assert returned `EffectResult` with `toEqual` / `toContainEqual`.
 - Zero `vi.mock`, zero `vi.fn`, zero `as never`.
 - Example (rename echo):
 
 ```ts
-const kernel = new SyncKernel()
-kernel.recordLocalSend("New.tsx", content)
-kernel.markDelete("Old.tsx")
+const runtime = new SyncRuntime()
+runtime.rememberLocalSend("New.tsx", content)
+runtime.markDeleteBeforeUnlink("Old.tsx")
 
-const result = await executeEffect(
+const result = await describeEffect(
   { type: "SEND_FILE_RENAME", oldFileName: "Old.tsx", newFileName: "New.tsx", content },
-  { config, kernel: kernel.readonly(), syncState: watchingSyncState }
+  { config, runtime, syncState: watchingSyncState }
 )
 
 expect(result).toEqual({
   log: { level: "debug", message: expect.stringContaining("Skipping echoed rename") },
-  kernelOps: [
+  runtimeOps: [
     { op: "forgetEcho", path: "New.tsx" },
     { op: "clearDeleteMark", path: "Old.tsx" },
   ],
@@ -186,7 +186,7 @@ Protocol (CLI + plugin one branch):
 - CLI -> plugin: `file-delete` + `conflicts-detected` gain `session`.
 - Plugin -> CLI: `delete-confirmed` + `delete-cancelled` + `conflicts-resolved` echo `session`.
 
-CLI: handshake increments `connectionId`; kernel stores promises keyed by session; incoming responses with mismatched `connectionId` ignored + warn logged.
+CLI: handshake increments `connectionId`; `SyncRuntime` stores promises keyed by session; incoming responses with mismatched `connectionId` ignored + warn logged.
 
 Plugin: session stored in `delete_confirmation`/`conflict_resolution` kind; `socket-disconnected`/`socket-replaced` discards prompt state (union guarantees).
 
@@ -197,19 +197,19 @@ Tests: extend "ignores stale delete confirmations after reconnect" integration t
 ## Extras for AI-traceability
 
 - Serial `processEvent`: new `EventQueue` in [controller.ts](packages/code-link-cli/src/controller.ts); single in-flight flag + FIFO pending array; invariant: exactly one `processEvent` runs at a time.
-- Fold logging module state (`isShowingDisconnect`, `hadRecentDisconnect`) into `kernel.disconnectUi` with named getters/setters; [logging.ts](packages/code-link-cli/src/utils/logging.ts) keeps only printing.
+- Fold logging module state (`isShowingDisconnect`, `hadRecentDisconnect`) into `runtime.disconnectUi` with named getters/setters; [logging.ts](packages/code-link-cli/src/utils/logging.ts) keeps only printing.
 - Delete `HashTracker` export from [sync-base.ts](packages/code-link-cli/src/sync-base.ts); callers use `PeerBaseView`.
 - Top-of-file comment on `controller.ts` links the three-step trace: transition -> executeEffect (describe) -> applyEffectResult (fixed pipeline).
 
 ## Order of work
 
-1. Narrow kernel API + `PeerBaseView`; migrate `helpers/files.ts`. No behavior change.
+1. Narrow `SyncRuntime` API + `PeerBaseView`; migrate `helpers/files.ts`. No behavior change.
 2. Convert every effect to `describe()`-returning `EffectResult`. Rewrite `applyEffectResult` to fixed 8-step pipeline. Delete old `ExecuteEffectContext` union + hashTracker-mutating send path.
 3. Rewrite `controller.rename.test.ts` + `controller.once.test.ts` to value-equality on `EffectResult`; zero mocks.
 4. Add serial `EventQueue`.
 5. Plugin discriminated-union `UiState`; rewire `App.tsx`; update `app-state.test.ts`; delete `Mode` from shared.
 6. Add `Session` to delete/conflict protocol both sides; update `plugin-prompts.ts`, `messages.ts`, plugin reducer; extend integration tests.
-7. Fold logging module state into kernel.
+7. Fold logging module state into runtime.
 8. `tsc` + `vitest` both packages; all green.
 
 ## Success metric
@@ -218,6 +218,6 @@ For any change to sync behavior, reader answers safety with exactly three reads:
 
 1. `transition()` case for the event.
 2. `describe...` returning `EffectResult`.
-3. Corresponding step in `applyEffectResult`'s fixed pipeline (and, if echo-related, the kernel method named in a `kernelOp`).
+3. Corresponding step in `applyEffectResult`'s fixed pipeline (and, if echo-related, the `RuntimeOp` applied there).
 
 No closure state. No cross-effect mutation. No unnamed timers. No hidden "when does this run".

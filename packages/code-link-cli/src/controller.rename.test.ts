@@ -1,13 +1,20 @@
+/**
+ * Rename + metadata bookkeeping specs.
+ *
+ * Style: value-equality on the `EffectResult` returned by `describeEffect`.
+ * No `vi.mock`, no `vi.fn`, no `vi.spyOn` — these tests inspect the pure
+ * description of what the controller wants to do. Actual mutation is exercised
+ * by the integration test.
+ */
+
 import fs from "fs/promises"
 import os from "os"
 import path from "path"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { describe, expect, it } from "vitest"
 import type { WebSocket } from "ws"
-import { describeSendLocalChange, executeEffect } from "./controller.ts"
-import { SyncKernel } from "./kernel.ts"
+import { describeEffect, describeSendLocalChange, type DescribeCtx } from "./controller.ts"
+import { SyncRuntime } from "./runtime.ts"
 import type { Config } from "./types.ts"
-import { hashFileContent } from "./utils/state-persistence.ts"
-import * as connection from "./helpers/connection.ts"
 
 const mockSocket = {} as WebSocket
 
@@ -23,248 +30,238 @@ function baseConfig(overrides: Partial<Config> = {}): Config {
     }
 }
 
-describe("rename confirmation bookkeeping", () => {
-    let sendSpy: ReturnType<typeof vi.spyOn>
+function watchingCtx(runtime: SyncRuntime, config: Config = baseConfig()): DescribeCtx {
+    return {
+        config,
+        runtime,
+        syncState: { internalPhase: "watching", socket: mockSocket },
+    }
+}
 
-    afterEach(() => {
-        sendSpy?.mockRestore()
-    })
-
-    it("skips echoed remote renames when write and delete collapse into one watcher rename", async () => {
-        const kernel = new SyncKernel()
+describe("SEND_FILE_RENAME — describe", () => {
+    it("returns echo-cleanup runtimeOps when the rename is an echoed write+delete", async () => {
+        const runtime = new SyncRuntime()
         const content = "export const New = () => null"
-        kernel.rememberLocalSend("New.tsx", content)
-        kernel.markDeleteBeforeUnlink("Old.tsx")
+        runtime.rememberLocalSend("New.tsx", content)
+        runtime.markDeleteBeforeUnlink("Old.tsx")
 
-        sendSpy = vi.spyOn(connection, "sendMessage").mockResolvedValue(true)
+        const result = await describeEffect(
+            { type: "SEND_FILE_RENAME", oldFileName: "Old.tsx", newFileName: "New.tsx", content },
+            watchingCtx(runtime)
+        )
 
-        await executeEffect(
+        expect(result).toEqual({
+            logs: [{ level: "debug", message: "Skipping echoed rename Old.tsx -> New.tsx" }],
+            runtimeOps: [
+                { op: "forgetPath", path: "New.tsx" },
+                { op: "clearDeleteTombstone", path: "Old.tsx" },
+            ],
+        })
+    })
+
+    it("describes a file-rename send + registerPendingRename runtimeOp for a fresh rename", async () => {
+        const runtime = new SyncRuntime()
+        const content = "export const New = () => null"
+
+        const result = await describeEffect(
+            { type: "SEND_FILE_RENAME", oldFileName: "Old.tsx", newFileName: "New.tsx", content },
+            watchingCtx(runtime)
+        )
+
+        expect(result).toEqual({
+            sends: [{ type: "file-rename", oldFileName: "Old.tsx", newFileName: "New.tsx", content }],
+            runtimeOps: [
+                {
+                    op: "registerPendingRename",
+                    oldPath: "Old.tsx",
+                    newPath: "New.tsx",
+                    content,
+                },
+            ],
+        })
+    })
+
+    it("normalizes an extensionless rename target in both the send and the runtimeOp", async () => {
+        const runtime = new SyncRuntime()
+        const content = "export const New = () => null"
+
+        const result = await describeEffect(
+            { type: "SEND_FILE_RENAME", oldFileName: "Old.tsx", newFileName: "New", content },
+            watchingCtx(runtime)
+        )
+
+        expect(result).toEqual({
+            sends: [{ type: "file-rename", oldFileName: "Old.tsx", newFileName: "New.tsx", content }],
+            runtimeOps: [
+                {
+                    op: "registerPendingRename",
+                    oldPath: "Old.tsx",
+                    newPath: "New.tsx",
+                    content,
+                },
+            ],
+        })
+    })
+
+    it("warns when there is no active socket instead of emitting a send", async () => {
+        const runtime = new SyncRuntime()
+        const ctx: DescribeCtx = {
+            config: baseConfig(),
+            runtime,
+            syncState: { internalPhase: "disconnected", socket: null },
+        }
+
+        const result = await describeEffect(
             {
                 type: "SEND_FILE_RENAME",
                 oldFileName: "Old.tsx",
                 newFileName: "New.tsx",
-                content,
+                content: "x",
             },
-            {
-                config: baseConfig(),
-                kernel,
-                shutdown: async () => {},
-                syncState: {
-                    internalPhase: "watching",
-                    socket: mockSocket,
-                    pendingRemoteChanges: [],
-                },
-            }
+            ctx
         )
 
-        expect(sendSpy).not.toHaveBeenCalled()
-        expect(kernel.shouldSkipDeleteEcho("Old.tsx")).toBe(false)
-        expect(kernel.shouldSkipInboundEcho("New.tsx", content)).toBe(false)
-        expect(kernel.getPendingRename("New.tsx")).toBeUndefined()
-    })
-
-    it("waits for file-synced before deleting old tracking", async () => {
-        const kernel = new SyncKernel()
-        sendSpy = vi.spyOn(connection, "sendMessage").mockResolvedValue(true)
-
-        await executeEffect(
-            {
-                type: "SEND_FILE_RENAME",
-                oldFileName: "Old.tsx",
-                newFileName: "New.tsx",
-                content: "export const New = () => null",
-            },
-            {
-                config: baseConfig(),
-                kernel,
-                shutdown: async () => {},
-                syncState: {
-                    internalPhase: "watching",
-                    socket: mockSocket,
-                    pendingRemoteChanges: [],
+        expect(result).toEqual({
+            logs: [
+                {
+                    level: "warn",
+                    message: "No socket available to send rename Old.tsx -> New.tsx",
                 },
-            }
-        )
-
-        expect(sendSpy).toHaveBeenCalledWith(expect.anything(), {
-            type: "file-rename",
-            oldFileName: "Old.tsx",
-            newFileName: "New.tsx",
-            content: "export const New = () => null",
-        })
-        expect(kernel.getPendingRename("New.tsx")).toEqual({
-            oldFileName: "Old.tsx",
-            content: "export const New = () => null",
+            ],
         })
     })
+})
 
-    it("normalizes extensionless rename targets for later confirmation lookup", async () => {
-        const kernel = new SyncKernel()
-        sendSpy = vi.spyOn(connection, "sendMessage").mockResolvedValue(true)
-
-        await executeEffect(
-            {
-                type: "SEND_FILE_RENAME",
-                oldFileName: "Old.tsx",
-                newFileName: "New",
-                content: "export const New = () => null",
-            },
-            {
-                config: baseConfig(),
-                kernel,
-                shutdown: async () => {},
-                syncState: {
-                    internalPhase: "watching",
-                    socket: mockSocket,
-                    pendingRemoteChanges: [],
-                },
-            }
-        )
-
-        expect(sendSpy).toHaveBeenCalledWith(expect.anything(), {
-            type: "file-rename",
-            oldFileName: "Old.tsx",
-            newFileName: "New.tsx",
-            content: "export const New = () => null",
-        })
-        expect(kernel.getPendingRename("New.tsx")).toEqual({
-            oldFileName: "Old.tsx",
-            content: "export const New = () => null",
-        })
-        // Extensionless input normalizes to the same key as "New.tsx"
-        expect(kernel.getPendingRename("New")).toEqual(kernel.getPendingRename("New.tsx"))
-    })
-
-    it("applies old-file cleanup after file-synced arrives", async () => {
+describe("UPDATE_FILE_METADATA — describe", () => {
+    it("describes rename cleanup ops when a pending rename is settled with current disk content", async () => {
         const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-"))
         const filesDir = path.join(tmpDir, "files")
         await fs.mkdir(filesDir, { recursive: true })
-        await fs.writeFile(path.join(filesDir, "New.tsx"), "export const New = () => null", "utf-8")
+        const content = "export const New = () => null"
+        await fs.writeFile(path.join(filesDir, "New.tsx"), content, "utf-8")
 
-        const kernel = new SyncKernel()
-        kernel.setPendingRename("New.tsx", { oldFileName: "Old.tsx", content: "export const New = () => null" })
+        try {
+            const runtime = new SyncRuntime()
+            runtime.setPendingRename("New.tsx", { oldFileName: "Old.tsx", content })
 
-        await executeEffect(
-            {
-                type: "UPDATE_FILE_METADATA",
-                fileName: "New.tsx",
-                remoteModifiedAt: 1234,
-            },
-            {
-                config: baseConfig({ projectDir: tmpDir, filesDir }),
-                kernel,
-                shutdown: async () => {},
-                syncState: {
-                    internalPhase: "watching",
-                    socket: mockSocket,
-                    pendingRemoteChanges: [],
-                },
-            }
-        )
+            const result = await describeEffect(
+                { type: "UPDATE_FILE_METADATA", fileName: "New.tsx", remoteModifiedAt: 1234 },
+                watchingCtx(runtime, baseConfig({ projectDir: tmpDir, filesDir }))
+            )
 
-        const meta = kernel.metadata.get("New.tsx")
-        expect(meta?.lastSyncedHash).toBe(hashFileContent("export const New = () => null"))
-        expect(kernel.metadata.get("Old.tsx")).toBeUndefined()
-        expect(kernel.getPendingRename("New.tsx")).toBeUndefined()
-
-        await fs.rm(tmpDir, { recursive: true, force: true })
+            expect(result).toEqual({
+                runtimeOps: [
+                    { op: "recordRemoteApplied", path: "New.tsx", content, modifiedAt: 1234 },
+                    { op: "recordDelete", path: "Old.tsx" },
+                    { op: "recordLocalSend", path: "New.tsx", content },
+                    { op: "completePendingRename", newPath: "New.tsx" },
+                ],
+            })
+        } finally {
+            await fs.rm(tmpDir, { recursive: true, force: true })
+        }
     })
 
-    it("applies old-file cleanup when file-synced uses a normalized rename target", async () => {
-        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-normalized-"))
-        const filesDir = path.join(tmpDir, "files")
-        await fs.mkdir(filesDir, { recursive: true })
-
-        const kernel = new SyncKernel()
-        sendSpy = vi.spyOn(connection, "sendMessage").mockResolvedValue(true)
-
-        await executeEffect(
-            {
-                type: "SEND_FILE_RENAME",
-                oldFileName: "Old.tsx",
-                newFileName: "New",
-                content: "export const New = () => null",
-            },
-            {
-                config: baseConfig({ projectDir: tmpDir, filesDir }),
-                kernel,
-                shutdown: async () => {},
-                syncState: {
-                    internalPhase: "watching",
-                    socket: mockSocket,
-                    pendingRemoteChanges: [],
-                },
-            }
-        )
-
-        await executeEffect(
-            {
-                type: "UPDATE_FILE_METADATA",
-                fileName: "New.tsx",
-                remoteModifiedAt: 1234,
-            },
-            {
-                config: baseConfig({ projectDir: tmpDir, filesDir }),
-                kernel,
-                shutdown: async () => {},
-                syncState: {
-                    internalPhase: "watching",
-                    socket: mockSocket,
-                    pendingRemoteChanges: [],
-                },
-            }
-        )
-
-        const meta = kernel.metadata.get("New.tsx")
-        expect(meta?.lastSyncedHash).toBe(hashFileContent("export const New = () => null"))
-        expect(kernel.getPendingRename("New.tsx")).toBeUndefined()
-
-        await fs.rm(tmpDir, { recursive: true, force: true })
-    })
-
-    it("uses current file content when cleanup runs after a newer local change", async () => {
+    it("uses current disk content for recordRemoteApplied when a newer local change has landed", async () => {
         const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-late-"))
         const filesDir = path.join(tmpDir, "files")
         await fs.mkdir(filesDir, { recursive: true })
         await fs.writeFile(path.join(filesDir, "New.tsx"), "export const New = 2", "utf-8")
 
-        const kernel = new SyncKernel()
-        kernel.setPendingRename("New.tsx", { oldFileName: "Old.tsx", content: "export const New = 1" })
+        try {
+            const runtime = new SyncRuntime()
+            runtime.setPendingRename("New.tsx", {
+                oldFileName: "Old.tsx",
+                content: "export const New = 1",
+            })
 
-        await executeEffect(
-            {
-                type: "UPDATE_FILE_METADATA",
-                fileName: "New.tsx",
-                remoteModifiedAt: 1234,
-            },
-            {
-                config: baseConfig({ projectDir: tmpDir, filesDir }),
-                kernel,
-                shutdown: async () => {},
-                syncState: {
-                    internalPhase: "watching",
-                    socket: mockSocket,
-                    pendingRemoteChanges: [],
-                },
-            }
-        )
+            const result = await describeEffect(
+                { type: "UPDATE_FILE_METADATA", fileName: "New.tsx", remoteModifiedAt: 1234 },
+                watchingCtx(runtime, baseConfig({ projectDir: tmpDir, filesDir }))
+            )
 
-        expect(kernel.metadata.get("New.tsx")?.lastSyncedHash).toBe(hashFileContent("export const New = 2"))
-        expect(kernel.getPendingRename("New.tsx")).toBeUndefined()
+            expect(result.runtimeOps).toContainEqual({
+                op: "recordRemoteApplied",
+                path: "New.tsx",
+                content: "export const New = 2",
+                modifiedAt: 1234,
+            })
+            expect(result.runtimeOps).toContainEqual({
+                op: "recordLocalSend",
+                path: "New.tsx",
+                content: "export const New = 2",
+            })
+            expect(result.runtimeOps).toContainEqual({ op: "completePendingRename", newPath: "New.tsx" })
+        } finally {
+            await fs.rm(tmpDir, { recursive: true, force: true })
+        }
+    })
 
-        await fs.rm(tmpDir, { recursive: true, force: true })
+    it("falls back to the pending rename content when the file is gone from disk", async () => {
+        const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-rename-missing-"))
+        const filesDir = path.join(tmpDir, "files")
+        await fs.mkdir(filesDir, { recursive: true })
+
+        try {
+            const runtime = new SyncRuntime()
+            const pending = "export const New = () => null"
+            runtime.setPendingRename("New.tsx", { oldFileName: "Old.tsx", content: pending })
+
+            const result = await describeEffect(
+                { type: "UPDATE_FILE_METADATA", fileName: "New.tsx", remoteModifiedAt: 5678 },
+                watchingCtx(runtime, baseConfig({ projectDir: tmpDir, filesDir }))
+            )
+
+            expect(result).toEqual({
+                runtimeOps: [
+                    { op: "recordRemoteApplied", path: "New.tsx", content: pending, modifiedAt: 5678 },
+                    { op: "recordDelete", path: "Old.tsx" },
+                    { op: "completePendingRename", newPath: "New.tsx" },
+                ],
+            })
+        } finally {
+            await fs.rm(tmpDir, { recursive: true, force: true })
+        }
     })
 })
 
 describe("describeSendLocalChange", () => {
-    it("returns EffectResult with recordLocalSend when a push is needed", () => {
-        const kernel = new SyncKernel()
-        const r = describeSendLocalChange({ fileName: "A.tsx", content: "x" }, kernel)
-        expect(r).toEqual({
-            kernelOps: [{ op: "recordLocalSend", path: "A.tsx", content: "x" }],
+    it("describes a push with recordLocalSend runtimeOp and file-change send", () => {
+        const runtime = new SyncRuntime()
+
+        const result = describeSendLocalChange({ fileName: "A.tsx", content: "x" }, runtime)
+
+        expect(result).toEqual({
+            logs: [{ level: "debug", message: "Local change detected: A.tsx" }],
+            runtimeOps: [{ op: "recordLocalSend", path: "A.tsx", content: "x" }],
             sends: [{ type: "file-change", fileName: "A.tsx", content: "x" }],
             fileUp: "A.tsx",
             installerProcess: { fileName: "A.tsx", content: "x" },
         })
+    })
+
+    it("skips the push when the content matches the last synced hash", () => {
+        const runtime = new SyncRuntime()
+        runtime.metadata.recordRemoteWrite("A.tsx", "x", 100)
+
+        const result = describeSendLocalChange({ fileName: "A.tsx", content: "x" }, runtime)
+
+        expect(result).toEqual({
+            logs: [
+                {
+                    level: "debug",
+                    message: "Skipping local change for A.tsx: matches last synced content",
+                },
+            ],
+        })
+    })
+
+    it("returns an empty result when the change is an inbound echo", () => {
+        const runtime = new SyncRuntime()
+        runtime.rememberLocalSend("A.tsx", "x")
+
+        const result = describeSendLocalChange({ fileName: "A.tsx", content: "x" }, runtime)
+
+        expect(result).toEqual({})
     })
 })

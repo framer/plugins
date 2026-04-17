@@ -193,6 +193,10 @@ select:not(:disabled) {
     display: inline-block;
 }
 
+.import-button.syncing {
+    display: flex;
+}
+
 /* Login */
 
 .login-steps {

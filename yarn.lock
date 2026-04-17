@@ -3834,6 +3834,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
+    classnames: "npm:^2.5.1"
     framer-plugin: "npm:^3.10.3"
     happy-dom: "npm:^20.8.9"
     marked: "npm:^17.0.1"

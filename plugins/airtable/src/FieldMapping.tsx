@@ -1,3 +1,4 @@
+import cx from "classnames"
 import type { ManagedCollection, ManagedCollectionField, ManagedCollectionFieldInput } from "framer-plugin"
 import { FramerPluginClosedError, framer, useIsAllowedTo } from "framer-plugin"
 import { memo, useEffect, useMemo, useState } from "react"
@@ -401,7 +402,7 @@ export function FieldMapping({ collection, dataSource, initialSlugFieldId }: Fie
             <footer>
                 <hr className="sticky-top" />
                 <button
-                    className="import-button"
+                    className={cx("import-button", isSyncing && "syncing")}
                     type="submit"
                     disabled={isSyncing || !isAllowedToManage}
                     tabIndex={0}

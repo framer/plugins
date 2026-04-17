@@ -1,125 +1,19 @@
 import {
-    type CliSyncMode,
     type ConflictSummary,
     type Mode,
     type PendingDelete,
-    type ProjectInfo,
     shortProjectHash,
 } from "@code-link/shared"
 import { framer } from "framer-plugin"
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { CodeFilesAPI } from "./api"
+import { initialState, reducer } from "./app-state"
 import { createMessageHandler } from "./messages"
-import { modeFromSyncMode } from "./sync-mode"
 import { copyToClipboard } from "./utils/clipboard"
 import { computeLineDiff } from "./utils/diffing"
 import * as log from "./utils/logger"
 import { createSocketConnectionController } from "./utils/sockets"
 import { useConstant } from "./utils/useConstant"
-
-interface State {
-    mode: Mode
-    project?: ProjectInfo
-    permissionsGranted: boolean
-    syncMode: CliSyncMode | null
-    pendingDeletes: PendingDelete[]
-    conflicts: ConflictSummary[]
-}
-
-type Action =
-    | { type: "project-loaded"; project: ProjectInfo }
-    | { type: "permissions-updated"; granted: boolean }
-    | { type: "set-mode"; mode: Mode }
-    | { type: "socket-disconnected"; message: string }
-    | { type: "socket-replaced" }
-    | { type: "sync-mode"; syncMode: CliSyncMode }
-    | { type: "pending-deletes"; files: PendingDelete[] }
-    | { type: "clear-pending-deletes" }
-    | { type: "conflicts"; conflicts: ConflictSummary[] }
-    | { type: "clear-conflicts" }
-
-const initialState: State = {
-    mode: "loading",
-    permissionsGranted: false,
-    syncMode: null,
-    pendingDeletes: [],
-    conflicts: [],
-}
-
-function reducer(state: State, action: Action): State {
-    switch (action.type) {
-        case "project-loaded":
-            return {
-                ...state,
-                project: action.project,
-            }
-        case "permissions-updated":
-            return {
-                ...state,
-                permissionsGranted: action.granted,
-                syncMode: action.granted ? state.syncMode : null,
-                mode: action.granted ? (state.mode === "info" ? "loading" : state.mode) : "info",
-            }
-        case "set-mode":
-            return {
-                ...state,
-                mode: action.mode,
-            }
-        case "socket-disconnected":
-            return {
-                ...state,
-                mode: "info",
-                syncMode: null,
-            }
-        case "socket-replaced":
-            return {
-                ...state,
-                mode: "replaced",
-                syncMode: null,
-            }
-        case "sync-mode": {
-            const nextMode =
-                state.pendingDeletes.length > 0
-                    ? "delete_confirmation"
-                    : state.conflicts.length > 0
-                      ? "conflict_resolution"
-                      : state.mode === "replaced"
-                        ? "replaced"
-                        : !state.permissionsGranted
-                          ? "info"
-                          : modeFromSyncMode(action.syncMode)
-            return {
-                ...state,
-                mode: nextMode,
-                syncMode: action.syncMode,
-            }
-        }
-        case "pending-deletes":
-            return {
-                ...state,
-                pendingDeletes: [...state.pendingDeletes, ...action.files],
-                mode: "delete_confirmation",
-            }
-        case "clear-pending-deletes":
-            return {
-                ...state,
-                pendingDeletes: [],
-                mode: state.conflicts.length > 0 ? "conflict_resolution" : modeFromSyncMode(state.syncMode),
-            }
-        case "conflicts":
-            return {
-                ...state,
-                conflicts: action.conflicts,
-                mode: "conflict_resolution",
-            }
-        case "clear-conflicts":
-            return {
-                ...state,
-                conflicts: [],
-                mode: state.pendingDeletes.length > 0 ? "delete_confirmation" : modeFromSyncMode(state.syncMode),
-            }
-    }
-}
 
 export function App() {
     const [state, dispatch] = useReducer(reducer, initialState)

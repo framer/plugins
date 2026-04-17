@@ -325,4 +325,33 @@ describe("start() integration", () => {
         ws2.receive({ type: "handshake", projectId: id, projectName: "P" })
         await vi.waitFor(() => expect(harness.activeClient).toBe(ws2))
     })
+
+    it("ignores stale delete confirmations after reconnect", async () => {
+        tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-int-"))
+        const projectHash = "integration-stale-delete-789"
+        const start = await loadStart()
+        await start(baseConfig(projectHash))
+
+        const id = shortProjectHash(projectHash)
+        const ws1 = harness.createFakeWs()
+        ws1.receive({ type: "handshake", projectId: id, projectName: "P" })
+        await vi.waitFor(() => expect(initWatcherMock).toHaveBeenCalled(), { timeout: 5000 })
+
+        const filePath = path.join(tmpDir, "files", "Ghost.tsx")
+        const content = "export const Ghost = 1"
+        await fs.writeFile(filePath, content, "utf-8")
+
+        ws1.close(1000)
+        await vi.waitFor(() => expect(harness.activeClient).toBeNull())
+
+        const ws2 = harness.createFakeWs()
+        ws2.receive({ type: "handshake", projectId: id, projectName: "P" })
+        await vi.waitFor(() => expect(harness.activeClient).toBe(ws2))
+
+        ws2.receive({ type: "delete-confirmed", fileNames: ["Ghost.tsx"] })
+
+        await vi.waitFor(async () => {
+            expect(await fs.readFile(filePath, "utf-8")).toBe(content)
+        })
+    })
 })

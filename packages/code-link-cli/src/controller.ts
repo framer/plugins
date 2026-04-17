@@ -1383,18 +1383,12 @@ export async function start(config: Config): Promise<void> {
             }
 
             case "delete-confirmed": {
-                const unmatched: string[] = []
-
                 for (const fileName of message.fileNames) {
                     const handled = kernel.userActions.handleConfirmation(`delete:${fileName}`, true)
 
                     if (!handled) {
-                        unmatched.push(fileName)
+                        warn(`Ignoring stale delete confirmation for ${fileName}`)
                     }
-                }
-
-                for (const fileName of unmatched) {
-                    await processEvent({ type: "LOCAL_DELETE_APPROVED", fileName })
                 }
 
                 return
@@ -1402,7 +1396,11 @@ export async function start(config: Config): Promise<void> {
 
             case "delete-cancelled": {
                 for (const file of message.files) {
-                    kernel.userActions.handleConfirmation(`delete:${file.fileName}`, false)
+                    const handled = kernel.userActions.handleConfirmation(`delete:${file.fileName}`, false)
+                    if (!handled) {
+                        warn(`Ignoring stale delete cancellation for ${file.fileName}`)
+                        continue
+                    }
 
                     await processEvent({
                         type: "LOCAL_DELETE_REJECTED",

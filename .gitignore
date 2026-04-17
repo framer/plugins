@@ -4,6 +4,7 @@
 .vscode/*.log
 *.local
 dist
+*.tsbuildinfo
 node_modules
 npm-debug.log*
 plugin.zip

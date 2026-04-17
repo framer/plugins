@@ -1,26 +1,45 @@
-import { hashContent, normalizeCodeFilePath } from "@code-link/shared"
+import { hashContent, normalizeCodeFilePathWithExtension } from "@code-link/shared"
 
 /**
- * Plugin-side sync state: Framer snapshot mirror + echo hashes (CLI ↔ Framer loop suppression).
+ * Plugin-side peer state: one map of normalized path → latest known content (snapshot + echo suppression).
  */
 export class PluginBase {
-    protected lastSnapshot = new Map<string, string>()
-    private contentHashes = new Map<string, string>()
+    private readonly byPath = new Map<string, string>()
 
     remember(fileName: string, content: string): void {
-        this.contentHashes.set(normalizeCodeFilePath(fileName), hashContent(content))
+        const key = normalizeCodeFilePathWithExtension(fileName)
+        this.byPath.set(key, content)
     }
 
+    /** True when inbound content matches what we last recorded for this path (echo / no-op). */
     shouldSkip(fileName: string, content: string): boolean {
-        return this.contentHashes.get(normalizeCodeFilePath(fileName)) === hashContent(content)
+        const key = normalizeCodeFilePathWithExtension(fileName)
+        return hashContent(this.byPath.get(key) ?? "") === hashContent(content)
     }
 
     forget(fileName: string): void {
-        this.contentHashes.delete(normalizeCodeFilePath(fileName))
+        this.byPath.delete(normalizeCodeFilePathWithExtension(fileName))
     }
 
     clear(): void {
-        this.contentHashes.clear()
+        this.byPath.clear()
+    }
+
+    getSnapshotContent(fileName: string): string | undefined {
+        return this.byPath.get(normalizeCodeFilePathWithExtension(fileName))
+    }
+
+    setSnapshotContent(fileName: string, content: string): void {
+        this.byPath.set(normalizeCodeFilePathWithExtension(fileName), content)
+    }
+
+    deleteSnapshotEntry(fileName: string): void {
+        this.byPath.delete(normalizeCodeFilePathWithExtension(fileName))
+    }
+
+    /** Paths currently tracked in the snapshot (normalized keys). */
+    getSnapshotPaths(): string[] {
+        return [...this.byPath.keys()]
     }
 
     protected async withExpectedSnapshotPatch<T>(
@@ -33,17 +52,19 @@ export class PluginBase {
         const previousEntries = new Map<string, string | undefined>()
 
         for (const fileName of patch.deletes ?? []) {
-            if (!previousEntries.has(fileName)) {
-                previousEntries.set(fileName, this.lastSnapshot.get(fileName))
+            const key = normalizeCodeFilePathWithExtension(fileName)
+            if (!previousEntries.has(key)) {
+                previousEntries.set(key, this.byPath.get(key))
             }
-            this.lastSnapshot.delete(fileName)
+            this.byPath.delete(key)
         }
 
         for (const entry of patch.upserts ?? []) {
-            if (!previousEntries.has(entry.fileName)) {
-                previousEntries.set(entry.fileName, this.lastSnapshot.get(entry.fileName))
+            const key = normalizeCodeFilePathWithExtension(entry.fileName)
+            if (!previousEntries.has(key)) {
+                previousEntries.set(key, this.byPath.get(key))
             }
-            this.lastSnapshot.set(entry.fileName, entry.content)
+            this.byPath.set(key, entry.content)
         }
 
         try {
@@ -51,9 +72,9 @@ export class PluginBase {
         } catch (error) {
             for (const [fileName, previousContent] of previousEntries) {
                 if (previousContent === undefined) {
-                    this.lastSnapshot.delete(fileName)
+                    this.byPath.delete(fileName)
                 } else {
-                    this.lastSnapshot.set(fileName, previousContent)
+                    this.byPath.set(fileName, previousContent)
                 }
             }
             throw error

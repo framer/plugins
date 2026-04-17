@@ -5,6 +5,8 @@
  * Manages pending promises that resolve when the user responds in Framer.
  */
 
+import type { PromptSession } from "@code-link/shared"
+import { randomUUID } from "node:crypto"
 import type { WebSocket } from "ws"
 import type { Conflict } from "../types.ts"
 import { debug } from "../utils/logging.ts"
@@ -20,6 +22,14 @@ class PluginDisconnectedError extends Error {
 interface PendingAction {
     resolve: (value: unknown) => void
     reject: (error: Error) => void
+}
+
+export function deletePromptActionId(session: PromptSession, fileName: string): string {
+    return `delete:${session.connectionId}:${session.promptId}:${fileName}`
+}
+
+export function conflictPromptActionId(session: PromptSession, fileName: string): string {
+    return `conflict:${session.connectionId}:${session.promptId}:${fileName}`
 }
 
 export class PluginUserPromptCoordinator {
@@ -44,7 +54,11 @@ export class PluginUserPromptCoordinator {
      */
     async requestDeleteDecision(
         socket: WebSocket | null,
-        { fileNames, requireConfirmation }: { fileNames: string[]; requireConfirmation: boolean }
+        {
+            fileNames,
+            requireConfirmation,
+            session,
+        }: { fileNames: string[]; requireConfirmation: boolean; session: PromptSession }
     ): Promise<string[]> {
         if (!socket) {
             throw new Error("Cannot request delete decision: plugin not connected")
@@ -55,9 +69,8 @@ export class PluginUserPromptCoordinator {
         }
 
         if (requireConfirmation) {
-            // Create a promise for each file's confirmation
             const confirmationPromises = fileNames.map(fileName =>
-                this.awaitAction<boolean>(`delete:${fileName}`, "delete confirmation")
+                this.awaitAction<boolean>(deletePromptActionId(session, fileName), "delete confirmation")
                     .then(confirmed => (confirmed ? fileName : null))
                     .catch(err => {
                         if (err instanceof PluginDisconnectedError) {
@@ -72,6 +85,7 @@ export class PluginUserPromptCoordinator {
                 type: "file-delete",
                 fileNames,
                 requireConfirmation: true,
+                session,
             })
 
             const results = await Promise.all(confirmationPromises)
@@ -82,6 +96,7 @@ export class PluginUserPromptCoordinator {
             type: "file-delete",
             fileNames,
             requireConfirmation: false,
+            session,
         })
 
         return fileNames
@@ -92,7 +107,8 @@ export class PluginUserPromptCoordinator {
      */
     async requestConflictDecisions(
         socket: WebSocket | null,
-        conflicts: Conflict[]
+        conflicts: Conflict[],
+        session: PromptSession
     ): Promise<Map<string, "local" | "remote">> {
         if (!socket) {
             throw new Error("Cannot request conflict decision: plugin not connected")
@@ -104,12 +120,16 @@ export class PluginUserPromptCoordinator {
 
         const pending = conflicts.map(conflict => ({
             fileName: conflict.fileName,
-            promise: this.awaitAction<"local" | "remote">(`conflict:${conflict.fileName}`, "conflict resolution"),
+            promise: this.awaitAction<"local" | "remote">(
+                conflictPromptActionId(session, conflict.fileName),
+                "conflict resolution"
+            ),
         }))
 
         await sendMessage(socket, {
             type: "conflicts-detected",
             conflicts,
+            session,
         })
 
         try {
@@ -128,19 +148,26 @@ export class PluginUserPromptCoordinator {
     }
 
     /**
-     * Handle incoming confirmation response
+     * Resolve a pending prompt (boolean for deletes, resolution for conflicts).
      */
-    handleConfirmation(actionId: string, value: boolean): boolean {
+    resolvePendingAction<T>(actionId: string, value: T): boolean {
         const pending = this.pendingActions.get(actionId)
         if (!pending) {
-            debug(`Unexpected confirmation for ${actionId}`)
+            debug(`Unexpected prompt resolution for ${actionId}`)
             return false
         }
 
         this.pendingActions.delete(actionId)
         pending.resolve(value)
-        debug(`Confirmed: ${actionId}`)
+        debug(`Resolved: ${actionId}`)
         return true
+    }
+
+    /**
+     * @deprecated use resolvePendingAction
+     */
+    handleConfirmation(actionId: string, value: boolean): boolean {
+        return this.resolvePendingAction(actionId, value)
     }
 
     /**
@@ -153,4 +180,8 @@ export class PluginUserPromptCoordinator {
         }
         this.pendingActions.clear()
     }
+}
+
+export function createPromptSession(connectionId: number): PromptSession {
+    return { connectionId, promptId: randomUUID() }
 }

@@ -1,20 +1,19 @@
 import { describe, expect, it } from "vitest"
 import { initialState, reducer, type State } from "./app-state"
 
+const testSession = { connectionId: 1, promptId: "test-prompt" }
+
 function withPromptState(overrides: Partial<State> = {}): State {
     return {
         ...initialState,
         permissionsGranted: true,
         syncPhase: "initial_sync",
-        pluginMode: "delete_confirmation",
-        pendingDeletes: [{ fileName: "Button.tsx", content: "export const Button = 1" }],
-        conflicts: [
-            {
-                fileName: "Card.tsx",
-                localContent: "local",
-                remoteContent: "remote",
-            },
-        ],
+        ui: {
+            kind: "deletePrompt",
+            session: testSession,
+            deletes: [{ fileName: "Button.tsx", content: "export const Button = 1" }],
+            source: "runtime",
+        },
         ...overrides,
     }
 }
@@ -26,19 +25,15 @@ describe("plugin app state", () => {
             message: "socket closed",
         })
 
-        expect(disconnected.pluginMode).toBe("info")
+        expect(disconnected.ui.kind).toBe("info")
         expect(disconnected.syncPhase).toBeNull()
-        expect(disconnected.pendingDeletes).toEqual([])
-        expect(disconnected.conflicts).toEqual([])
 
         const reconnected = reducer(disconnected, {
             type: "sync-phase",
             syncPhase: "initial_sync",
         })
 
-        expect(reconnected.pluginMode).toBe("syncing")
-        expect(reconnected.pendingDeletes).toEqual([])
-        expect(reconnected.conflicts).toEqual([])
+        expect(reconnected.ui.kind).toBe("syncing")
     })
 
     it("clears stale prompts when permissions are lost", () => {
@@ -47,10 +42,8 @@ describe("plugin app state", () => {
             granted: false,
         })
 
-        expect(next.pluginMode).toBe("info")
+        expect(next.ui.kind).toBe("info")
         expect(next.syncPhase).toBeNull()
-        expect(next.pendingDeletes).toEqual([])
-        expect(next.conflicts).toEqual([])
     })
 
     it("clears stale prompts when the plugin is replaced", () => {
@@ -58,9 +51,7 @@ describe("plugin app state", () => {
             type: "socket-replaced",
         })
 
-        expect(next.pluginMode).toBe("replaced")
+        expect(next.ui.kind).toBe("replaced")
         expect(next.syncPhase).toBeNull()
-        expect(next.pendingDeletes).toEqual([])
-        expect(next.conflicts).toEqual([])
     })
 })

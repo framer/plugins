@@ -1,13 +1,8 @@
-import {
-    type ConflictSummary,
-    type Mode,
-    type PendingDelete,
-    shortProjectHash,
-} from "@code-link/shared"
+import { type ConflictSummary, type PendingDelete, shortProjectHash } from "@code-link/shared"
 import { framer } from "framer-plugin"
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { CodeFilesAPI } from "./api"
-import { initialState, reducer } from "./app-state"
+import { initialState, type UiState, reducer } from "./app-state"
 import { createMessageHandler } from "./messages"
 import { copyToClipboard } from "./utils/clipboard"
 import { computeLineDiff } from "./utils/diffing"
@@ -23,9 +18,9 @@ export function App() {
     const command = state.project && `npx framer-code-link ${shortProjectHash(state.project.id)}`
 
     useLayoutEffect(() => {
-        switch (state.pluginMode) {
-            case "delete_confirmation":
-                if (state.pendingDeletes.length === 1) {
+        switch (state.ui.kind) {
+            case "deletePrompt":
+                if (state.ui.deletes.length === 1) {
                     void framer.showUI({
                         width: 260,
                         height: 187,
@@ -41,7 +36,7 @@ export function App() {
                     })
                 }
                 break
-            case "conflict_resolution":
+            case "conflictPrompt":
                 void framer.showUI({
                     width: 320,
                     height: 420,
@@ -60,20 +55,20 @@ export function App() {
             case "replaced":
                 break
             default:
-                void framer.setBackgroundMessage(backgroundStatusFromMode(state.pluginMode))
+                void framer.setBackgroundMessage(backgroundStatusFromUi(state.ui))
                 void framer.hideUI()
         }
-    }, [state.pluginMode, state.pendingDeletes.length])
+    }, [state.ui])
 
     const replacedClosedRef = useRef(false)
     useEffect(() => {
-        if (state.pluginMode === "replaced" && !replacedClosedRef.current) {
+        if (state.ui.kind === "replaced" && !replacedClosedRef.current) {
             replacedClosedRef.current = true
             void framer.closePlugin("Replaced by another Plugin connection", {
                 variant: "info",
             })
         }
-    }, [state.pluginMode])
+    }, [state.ui.kind])
 
     // Permissions check
     useEffect(() => {
@@ -147,7 +142,7 @@ export function App() {
             dispatch({ type: "socket-disconnected", message })
         }
         const handleConnected = () => {
-            dispatch({ type: "set-plugin-mode", pluginMode: "loading" })
+            dispatch({ type: "socket-connected" })
         }
         const handleReplaced = () => {
             dispatch({ type: "socket-replaced" })
@@ -178,44 +173,50 @@ export function App() {
     }, [])
 
     const resolveConflicts = (choice: "local" | "remote") => {
-        // Send all conflict resolutions at once
+        if (state.ui.kind !== "conflictPrompt") {
+            return
+        }
         sendMessage({
             type: "conflicts-resolved",
             resolution: choice,
+            session: state.ui.session,
+            fileNames: state.ui.conflicts.map(c => c.fileName),
         })
         dispatch({ type: "clear-conflicts" })
     }
 
     const confirmDeletes = () => {
-        if (state.pendingDeletes.length === 0) {
+        if (state.ui.kind !== "deletePrompt" || state.ui.deletes.length === 0) {
             return
         }
 
         sendMessage({
             type: "delete-confirmed",
-            fileNames: state.pendingDeletes.map(file => file.fileName),
+            fileNames: state.ui.deletes.map(file => file.fileName),
+            session: state.ui.session,
         })
         dispatch({ type: "clear-pending-deletes" })
     }
 
     const keepDeletes = () => {
-        if (state.pendingDeletes.length === 0) {
+        if (state.ui.kind !== "deletePrompt" || state.ui.deletes.length === 0) {
             return
         }
 
         sendMessage({
             type: "delete-cancelled",
-            files: state.pendingDeletes,
+            files: state.ui.deletes,
+            session: state.ui.session,
         })
         dispatch({ type: "clear-pending-deletes" })
     }
 
-    switch (state.pluginMode) {
-        case "delete_confirmation":
-            return <DeletePanel files={state.pendingDeletes} onConfirm={confirmDeletes} onKeep={keepDeletes} />
+    switch (state.ui.kind) {
+        case "deletePrompt":
+            return <DeletePanel files={state.ui.deletes} onConfirm={confirmDeletes} onKeep={keepDeletes} />
 
-        case "conflict_resolution":
-            return <ConflictPanel conflicts={state.conflicts} onResolve={resolveConflicts} />
+        case "conflictPrompt":
+            return <ConflictPanel conflicts={state.ui.conflicts} onResolve={resolveConflicts} />
 
         case "info":
             return <InfoPanel command={command} />
@@ -227,20 +228,24 @@ export function App() {
     }
 }
 
-function backgroundStatusFromMode(mode: Mode | undefined): string | null {
-    switch (mode) {
+function backgroundStatusFromUi(ui: UiState): string | null {
+    switch (ui.kind) {
         case "loading":
             return "Loading…"
         case "info":
             return null
         case "syncing":
             return "Syncing…"
-        case "delete_confirmation":
+        case "deletePrompt":
             return null
-        case "conflict_resolution":
+        case "conflictPrompt":
             return null
         case "idle":
             return "Watching Files…"
+        case "error":
+            return null
+        case "replaced":
+            return null
         default:
             return "Loading…"
     }

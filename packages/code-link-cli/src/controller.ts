@@ -3,6 +3,23 @@
  *
  * All runtime state and orchestration of the sync lifecycle.
  * Helpers should provide data and never hold control.
+ *
+ * ## How a sync event flows
+ *
+ * 1. **Ingress** — WebSocket messages, fs watcher, and handshake enqueue one `SyncEvent` at a time via
+ *    `EventQueue` so `processEvent` never interleaves across await boundaries.
+ * 2. **transition** — Pure function: `(state, event) → { state, effects }`. No I/O.
+ * 3. **executeEffect** — For each effect: may await helpers (list files, detect conflicts); builds or
+ *    delegates to `EffectResult`; **`applyEffectResult`** runs the fixed pipeline below.
+ * 4. **applyEffectResult** (fixed order):
+ *    - `log`
+ *    - **pre-send kernel ops** — `recordLocalSend`, `registerPendingRename`, `recordDelete`
+ *    - **writes** — remember-on-peer then disk (`writeRemoteFiles`)
+ *    - **deletes** — tombstone/forget then disk (`deleteLocalFile`)
+ *    - **sends** — WebSocket; then `fileUp` / installer hooks for successful `file-change`
+ *    - **post-send kernel ops** — `recordRemoteApplied`, `completePendingRename`, `schedule`, `cancel`
+ *    - **persistState** — flush metadata cache
+ *    - Echo and delete-tombstone state live in `SyncKernel` / `SyncBase`, not scattered in helpers.
  */
 
 import type { CliToPluginMessage, PluginToCliMessage, SyncPhase } from "@code-link/shared"
@@ -22,39 +39,28 @@ import {
     writeRemoteFiles,
 } from "./helpers/files.ts"
 import { tryGitInit } from "./helpers/git.ts"
+import { conflictPromptActionId, deletePromptActionId } from "./helpers/plugin-prompts.ts"
 import { Installer } from "./helpers/installer.ts"
-import { PluginUserPromptCoordinator } from "./helpers/plugin-prompts.ts"
 import { SyncKernel, type PendingRenameConfirmation } from "./kernel.ts"
 import { validateIncomingChange } from "./helpers/sync-validator.ts"
 import { initWatcher } from "./helpers/watcher.ts"
-import type { Config, Conflict, ConflictVersionData, FileInfo, WatcherEvent } from "./types.ts"
-import type { FileMetadataCache, FileSyncMetadata } from "./utils/file-metadata-cache.ts"
-import type { HashTracker } from "./sync-base.ts"
+import type { Config, Conflict, ConflictVersionData, FileInfo, InternalPhase, WatcherEvent } from "./types.ts"
+import type { FileSyncMetadata } from "./utils/file-metadata-cache.ts"
 import {
-    cancelDisconnectMessage,
     debug,
-    didShowDisconnect,
     error,
     fileDelete,
     fileDown,
     fileUp,
     info,
-    resetDisconnectState,
-    scheduleDisconnectMessage,
     status,
     success,
     warn,
-    wasRecentlyDisconnected,
 } from "./utils/logging.ts"
-import type { EffectResult } from "./effect-result.ts"
+import type { EffectResult, KernelOp } from "./effect-result.ts"
+import { createEventQueue } from "./event-queue.ts"
 import { findOrCreateProjectDirectory } from "./utils/project.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
-
-/**
- * Internal CLI phases (`internalPhase`). May advance before effects finish — never send raw on the wire;
- * use coarse `SyncPhase` via `EMIT_SYNC_PHASE` / `SYNC_COMPLETE` only.
- */
-export type InternalPhase = "disconnected" | "handshaking" | "snapshot_processing" | "conflict_resolution" | "watching"
 
 /**
  * Shared state that persists across all lifecycle modes
@@ -193,11 +199,19 @@ function log(level: "info" | "debug" | "warn" | "success", message: string): Eff
     return { type: "LOG", level, message }
 }
 
+export interface TransitionRead {
+    wasRecentlyDisconnected?: () => boolean
+}
+
+function isPreSendKernelOp(op: KernelOp): boolean {
+    return op.op === "recordLocalSend" || op.op === "registerPendingRename" || op.op === "recordDelete"
+}
+
 /**
  * Pure state transition function
  * Takes current state + event, returns new state + effects to execute
  */
-function transition(state: SyncState, event: SyncEvent): { state: SyncState; effects: Effect[] } {
+function transition(state: SyncState, event: SyncEvent, read: TransitionRead = {}): { state: SyncState; effects: Effect[] } {
     const effects: Effect[] = []
 
     switch (event.type) {
@@ -317,7 +331,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             // Apply safe writes
             if (safeWrites.length > 0) {
                 effects.push(log("debug", `Applying ${safeWrites.length} safe writes`))
-                if (wasRecentlyDisconnected()) {
+                if (read.wasRecentlyDisconnected?.()) {
                     effects.push(log("success", `Applied ${pluralize(safeWrites.length, "file")} during sync`))
                 }
                 effects.push({
@@ -696,25 +710,23 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 /**
  * Pure description of SEND_LOCAL_CHANGE for EffectResult-based tests and specs.
  */
-export function describeSendLocalChange(
-    effect: { fileName: string; content: string },
-    read: { fileMetadataCache: FileMetadataCache; hashTracker: HashTracker }
-): EffectResult | null {
+export function describeSendLocalChange(effect: { fileName: string; content: string }, kernel: SyncKernel): EffectResult | null {
     const contentHash = hashFileContent(effect.content)
-    const metadata = read.fileMetadataCache.get(effect.fileName)
+    const metadata = kernel.metadata.get(effect.fileName)
 
     if (metadata?.lastSyncedHash === contentHash) {
         debug(`Skipping local change for ${effect.fileName}: matches last synced content`)
         return null
     }
 
-    if (read.hashTracker.shouldSkip(effect.fileName, effect.content)) {
+    if (kernel.shouldSkipInboundEcho(effect.fileName, effect.content)) {
         return null
     }
 
     debug(`Local change detected: ${effect.fileName}`)
 
     return {
+        kernelOps: [{ op: "recordLocalSend", path: effect.fileName, content: effect.content }],
         sends: [
             {
                 type: "file-change",
@@ -727,35 +739,86 @@ export function describeSendLocalChange(
     }
 }
 
+function applyPreKernelOp(op: KernelOp, kernel: SyncKernel): void {
+    const fileMetadataCache = kernel.metadata
+    if (op.op === "recordLocalSend") {
+        kernel.rememberLocalSend(op.path, op.content)
+    } else if (op.op === "recordDelete") {
+        kernel.forgetPath(op.path)
+        fileMetadataCache.recordDelete(op.path)
+    } else if (op.op === "registerPendingRename") {
+        kernel.setPendingRename(op.newPath, {
+            oldFileName: op.oldPath,
+            content: op.content,
+        })
+    }
+}
+
+function applyPostKernelOp(op: KernelOp, kernel: SyncKernel): void {
+    const fileMetadataCache = kernel.metadata
+    if (op.op === "recordRemoteApplied") {
+        const h = hashFileContent(op.content)
+        fileMetadataCache.recordSyncedSnapshot(op.path, h, op.modifiedAt)
+    } else if (op.op === "completePendingRename") {
+        kernel.deletePendingRename(normalizeCodeFilePathWithExtension(op.newPath))
+    } else if (op.op === "schedule" || op.op === "cancel") {
+        warn(`KernelOp ${op.op} not wired on SyncKernel yet`)
+    }
+}
+
 async function applyEffectResult(
     result: EffectResult,
     ctx: {
+        kernel: SyncKernel
         config: Config
-        hashTracker: HashTracker
-        fileMetadataCache: FileMetadataCache
-        pendingRenameConfirmations: Map<string, PendingRenameConfirmation>
-        installer: Installer | null
         syncState: SyncState
     }
 ): Promise<void> {
-    const { hashTracker, fileMetadataCache, pendingRenameConfirmations, installer, syncState } = ctx
+    const { kernel, config, syncState } = ctx
+    const fileMetadataCache = kernel.metadata
+    const peer = kernel.peerBaseView()
+    const installer = kernel.installer
 
     if (result.log) {
         const logFns = { info, warn, success, debug }
         logFns[result.log.level](result.log.message)
     }
 
-    if (result.persistState) {
-        await fileMetadataCache.flush()
+    const ops = result.kernelOps ?? []
+    for (const op of ops) {
+        if (isPreSendKernelOp(op)) {
+            applyPreKernelOp(op, kernel)
+        }
+    }
+
+    if (result.writes?.files && config.filesDir) {
+        const filesToWrite =
+            result.writes.skipEcho === true ? filterEchoedFiles(result.writes.files, peer) : result.writes.files
+
+        if (filesToWrite.length > 0) {
+            await writeRemoteFiles(filesToWrite, config.filesDir, peer, installer ?? undefined)
+            for (const file of filesToWrite) {
+                if (!result.writes.silent) {
+                    fileDown(file.name)
+                }
+                const remoteTimestamp = file.modifiedAt ?? Date.now()
+                fileMetadataCache.recordRemoteWrite(file.name, file.content, remoteTimestamp)
+            }
+        }
+    }
+
+    if (result.deletes && config.filesDir) {
+        for (const fileName of result.deletes) {
+            await deleteLocalFile(fileName, config.filesDir, peer)
+            fileDelete(fileName)
+            fileMetadataCache.recordDelete(fileName)
+        }
     }
 
     if (result.sends && syncState.socket) {
         for (const payload of result.sends) {
             try {
                 const sent = await sendMessage(syncState.socket, payload)
-                if (sent && payload.type === "file-change") {
-                    hashTracker.remember(payload.fileName, payload.content)
-                }
                 if (sent && result.fileUp) {
                     fileUp(result.fileUp)
                 }
@@ -770,22 +833,14 @@ async function applyEffectResult(
         }
     }
 
-    if (result.kernelOps) {
-        for (const op of result.kernelOps) {
-            if (op.op === "recordRemoteApplied") {
-                fileMetadataCache.recordSyncedSnapshot(op.path, op.hash, op.modifiedAt)
-            } else if (op.op === "recordDelete") {
-                hashTracker.forget(op.path)
-                fileMetadataCache.recordDelete(op.path)
-            } else if (op.op === "registerPendingRename") {
-                pendingRenameConfirmations.set(normalizeCodeFilePathWithExtension(op.newPath), {
-                    oldFileName: op.oldPath,
-                    content: op.content,
-                })
-            } else if (op.op === "completePendingRename") {
-                pendingRenameConfirmations.delete(normalizeCodeFilePathWithExtension(op.newPath))
-            }
+    for (const op of ops) {
+        if (!isPreSendKernelOp(op)) {
+            applyPostKernelOp(op, kernel)
         }
+    }
+
+    if (result.persistState) {
+        await fileMetadataCache.flush()
     }
 }
 
@@ -793,45 +848,27 @@ async function applyEffectResult(
  * Effect executor - interprets effects and calls helpers
  * Returns additional events that should be processed (e.g., CONFLICTS_DETECTED after DETECT_CONFLICTS)
  */
-type ExecuteEffectContext =
-    | {
-          config: Config
-          kernel: SyncKernel
-          shutdown: () => Promise<void>
-          syncState: SyncState
-          /** When set (from `start()`), updates last-emitted phase for handshake re-emit. */
-          sendSyncPhaseToPlugin?: (phase: SyncPhase) => Promise<void>
-      }
-    | {
-          config: Config
-          hashTracker: HashTracker
-          installer: Installer | null
-          fileMetadataCache: FileMetadataCache
-          pendingRenameConfirmations: Map<string, PendingRenameConfirmation>
-          shutdown: () => Promise<void>
-          userActions: PluginUserPromptCoordinator
-          syncState: SyncState
-      }
+interface ExecuteEffectContext {
+    config: Config
+    kernel: SyncKernel
+    shutdown: () => Promise<void>
+    syncState: SyncState
+    /** When set (from `start()`), updates last-emitted phase for handshake re-emit. */
+    sendSyncPhaseToPlugin?: (phase: SyncPhase) => Promise<void>
+}
 
 async function executeEffect(effect: Effect, context: ExecuteEffectContext): Promise<SyncEvent[]> {
-    const { config, shutdown, syncState } = context
+    const { config, kernel, shutdown, syncState } = context
     const sendSyncPhase =
-        "sendSyncPhaseToPlugin" in context && context.sendSyncPhaseToPlugin
-            ? context.sendSyncPhaseToPlugin
-            : async (phase: SyncPhase) => {
-                  if (syncState.socket) {
-                      await sendMessage(syncState.socket, { type: "sync-phase", phase })
-                  }
-              }
-    const hashTracker =
-        "kernel" in context ? context.kernel.base : context.hashTracker
-    const fileMetadataCache =
-        "kernel" in context ? context.kernel.base.fileMetadataCache : context.fileMetadataCache
-    const pendingRenameConfirmations =
-        "kernel" in context ? context.kernel.pendingRenameConfirmations : context.pendingRenameConfirmations
-    const userActions =
-        "kernel" in context ? context.kernel.userActions : context.userActions
-    const installer = "kernel" in context ? context.kernel.installer : context.installer
+        context.sendSyncPhaseToPlugin ??
+        (async (phase: SyncPhase) => {
+            if (syncState.socket) {
+                await sendMessage(syncState.socket, { type: "sync-phase", phase })
+            }
+        })
+    const fileMetadataCache = kernel.metadata
+    const peer = kernel.peerBaseView()
+    const installer = kernel.installer
 
     switch (effect.type) {
         case "INIT_WORKSPACE": {
@@ -933,11 +970,11 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
 
         case "WRITE_FILES": {
             if (config.filesDir) {
-                // skipEcho skip writes that match hashTracker (inbound echo)
+                // skipEcho skip writes that match peer echo state (inbound echo)
                 // it is opt-in: some callers still need side-effects (metadata/logs)
                 // even when content matches the last hash tracked in-memory.
                 const filesToWrite =
-                    effect.skipEcho === true ? filterEchoedFiles(effect.files, hashTracker) : effect.files
+                    effect.skipEcho === true ? filterEchoedFiles(effect.files, peer) : effect.files
 
                 if (effect.skipEcho && filesToWrite.length !== effect.files.length) {
                     const skipped = effect.files.length - filesToWrite.length
@@ -948,7 +985,7 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
                     return []
                 }
 
-                await writeRemoteFiles(filesToWrite, config.filesDir, hashTracker, installer ?? undefined)
+                await writeRemoteFiles(filesToWrite, config.filesDir, peer, installer ?? undefined)
                 for (const file of filesToWrite) {
                     if (!effect.silent) {
                         fileDown(file.name)
@@ -963,7 +1000,7 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
         case "DELETE_LOCAL_FILES": {
             if (config.filesDir) {
                 for (const fileName of effect.names) {
-                    await deleteLocalFile(fileName, config.filesDir, hashTracker)
+                    await deleteLocalFile(fileName, config.filesDir, peer)
                     fileDelete(fileName)
                     fileMetadataCache.recordDelete(fileName)
                 }
@@ -972,7 +1009,7 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
         }
 
         case "REQUEST_CONFLICT_DECISIONS": {
-            await userActions.requestConflictDecisions(syncState.socket, effect.conflicts)
+            await kernel.requestConflictDecisions(syncState.socket, effect.conflicts)
 
             return []
         }
@@ -1010,9 +1047,7 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
             // Read current file content to compute hash
             const currentContent = await readFileSafe(effect.fileName, config.filesDir)
             // Rename cleanup waits for the plugin's file-synced acknowledgment.
-            const pendingRenameConfirmation = pendingRenameConfirmations.get(
-                normalizeCodeFilePathWithExtension(effect.fileName)
-            )
+            const pendingRenameConfirmation = kernel.getPendingRename(normalizeCodeFilePathWithExtension(effect.fileName))
             const syncedContent = currentContent ?? pendingRenameConfirmation?.content ?? null
 
             if (syncedContent !== null) {
@@ -1021,30 +1056,27 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
             }
 
             if (pendingRenameConfirmation) {
-                hashTracker.forget(pendingRenameConfirmation.oldFileName)
+                kernel.forgetPath(pendingRenameConfirmation.oldFileName)
                 fileMetadataCache.recordDelete(pendingRenameConfirmation.oldFileName)
                 if (currentContent !== null) {
-                    hashTracker.remember(effect.fileName, currentContent)
+                    kernel.rememberLocalSend(effect.fileName, currentContent)
                 }
-                pendingRenameConfirmations.delete(normalizeCodeFilePathWithExtension(effect.fileName))
+                kernel.deletePendingRename(normalizeCodeFilePathWithExtension(effect.fileName))
             }
 
             return []
         }
 
         case "SEND_LOCAL_CHANGE": {
-            const described = describeSendLocalChange(effect, { fileMetadataCache, hashTracker })
+            const described = describeSendLocalChange(effect, kernel)
             if (!described) {
                 return []
             }
 
             try {
                 await applyEffectResult(described, {
+                    kernel,
                     config,
-                    hashTracker,
-                    fileMetadataCache,
-                    pendingRenameConfirmations,
-                    installer,
                     syncState,
                 })
             } catch (err) {
@@ -1057,12 +1089,12 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
         case "SEND_FILE_RENAME": {
             const normalizedNewFileName = normalizeCodeFilePathWithExtension(effect.newFileName)
             const isEchoedRename =
-                hashTracker.shouldSkip(normalizedNewFileName, effect.content) &&
-                hashTracker.shouldSkipDelete(effect.oldFileName)
+                kernel.shouldSkipInboundEcho(normalizedNewFileName, effect.content) &&
+                kernel.shouldSkipDeleteEcho(effect.oldFileName)
 
             if (isEchoedRename) {
-                hashTracker.forget(normalizedNewFileName)
-                hashTracker.clearDelete(effect.oldFileName)
+                kernel.forgetPath(normalizedNewFileName)
+                kernel.clearDeleteTombstone(effect.oldFileName)
                 debug(`Skipping echoed rename ${effect.oldFileName} -> ${effect.newFileName}`)
                 return []
             }
@@ -1084,7 +1116,7 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
                     return []
                 }
 
-                pendingRenameConfirmations.set(normalizeCodeFilePathWithExtension(effect.newFileName), {
+                kernel.setPendingRename(normalizeCodeFilePathWithExtension(effect.newFileName), {
                     oldFileName: effect.oldFileName,
                     content: effect.content,
                 })
@@ -1098,9 +1130,9 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
         case "LOCAL_INITIATED_FILE_DELETE": {
             // Echo prevention: filter out remote-initiated deletes
             const filesToDelete = effect.fileNames.filter(fileName => {
-                const shouldSkip = hashTracker.shouldSkipDelete(fileName)
+                const shouldSkip = kernel.shouldSkipDeleteEcho(fileName)
                 if (shouldSkip) {
-                    hashTracker.clearDelete(fileName)
+                    kernel.clearDeleteTombstone(fileName)
                 }
                 return !shouldSkip
             })
@@ -1110,13 +1142,13 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
             }
 
             try {
-                const confirmedFiles = await userActions.requestDeleteDecision(syncState.socket, {
+                const confirmedFiles = await kernel.requestDeleteDecision(syncState.socket, {
                     fileNames: filesToDelete,
                     requireConfirmation: !config.dangerouslyAutoDelete,
                 })
 
                 for (const fileName of confirmedFiles) {
-                    hashTracker.forget(fileName)
+                    kernel.forgetPath(fileName)
                     fileMetadataCache.recordDelete(fileName)
                     fileDelete(fileName)
                 }
@@ -1148,11 +1180,11 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
                 return true
             }
 
-            const wasDisconnected = wasRecentlyDisconnected()
+            const wasDisconnected = kernel.disconnectUi.wasRecentlyDisconnected()
 
             if (wasDisconnected) {
                 // Only show reconnect message if we actually showed the disconnect notice
-                if (didShowDisconnect()) {
+                if (kernel.disconnectUi.didShowNotice()) {
                     success(
                         `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
                     )
@@ -1161,7 +1193,7 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
                 } else {
                     await sendSyncPhase("ready")
                 }
-                resetDisconnectState()
+                kernel.disconnectUi.reset()
                 return []
             }
 
@@ -1230,15 +1262,23 @@ export async function start(config: Config): Promise<void> {
         }
     }
 
-    // State Machine Helper
-    // Process events through state machine and execute effects recursively
-    async function processEvent(event: SyncEvent) {
+    const eventQueue = createEventQueue()
+
+    // Top-level ingress (WS, watcher, disconnect) serializes through the queue — one event at a time.
+    // Follow-up events from `executeEffect` run inline on the same turn (no re-enqueue) to avoid deadlock.
+    function processEvent(event: SyncEvent): Promise<void> {
+        return eventQueue.enqueue(() => processEventInner(event))
+    }
+
+    async function processEventInner(event: SyncEvent) {
         const socketState = syncState.socket?.readyState
         debug(
             `[STATE] Processing event: ${event.type} (internalPhase: ${syncState.internalPhase}, socket: ${socketState ?? "none"})`
         )
 
-        const result = transition(syncState, event)
+        const result = transition(syncState, event, {
+            wasRecentlyDisconnected: () => kernel.disconnectUi.wasRecentlyDisconnected(),
+        })
         syncState = result.state
 
         if (result.effects.length > 0) {
@@ -1263,9 +1303,9 @@ export async function start(config: Config): Promise<void> {
                 sendSyncPhaseToPlugin,
             })
 
-            // Recursively process follow-up events
+            // Follow-ups must not re-enter the serial queue (parent still holds the queue slot).
             for (const followUpEvent of followUpEvents) {
-                await processEvent(followUpEvent)
+                await processEventInner(followUpEvent)
             }
         }
     }
@@ -1301,7 +1341,7 @@ export async function start(config: Config): Promise<void> {
         }
 
         void (async () => {
-            cancelDisconnectMessage()
+            kernel.disconnectUi.cancelNotice()
 
             if (syncState.internalPhase !== "disconnected") {
                 if (syncState.socket === client) {
@@ -1310,14 +1350,16 @@ export async function start(config: Config): Promise<void> {
                     return
                 }
                 debug(`New handshake received (internalPhase=${syncState.internalPhase}), resetting sync state`)
-                kernel.pendingRenameConfirmations.clear()
+                kernel.clearPendingRenames()
                 await processEvent({ type: "DISCONNECT" })
             }
 
+            kernel.mintConnectionId()
+
             // Only show "Connected" on initial connection, not reconnects
             // Reconnect confirmation happens in SYNC_COMPLETE
-            const wasDisconnected = wasRecentlyDisconnected()
-            if (!wasDisconnected && !didShowDisconnect()) {
+            const wasDisconnected = kernel.disconnectUi.wasRecentlyDisconnected()
+            if (!wasDisconnected && !kernel.disconnectUi.didShowNotice()) {
                 success(`Connected to ${message.projectName}`)
             }
 
@@ -1376,7 +1418,7 @@ export async function start(config: Config): Promise<void> {
                         // use local receipt time. Conflict detection uses content hashes, not timestamps.
                         modifiedAt: Date.now(),
                     },
-                    fileMeta: kernel.base.fileMetadataCache.get(message.fileName),
+                    fileMeta: kernel.metadata.get(message.fileName),
                 }
                 break
 
@@ -1392,8 +1434,13 @@ export async function start(config: Config): Promise<void> {
             }
 
             case "delete-confirmed": {
+                if (!message.session || message.session.connectionId !== kernel.connectionId) {
+                    warn("Ignoring stale delete-confirmed (session mismatch)")
+                    return
+                }
+                const { session } = message
                 for (const fileName of message.fileNames) {
-                    const handled = kernel.userActions.handleConfirmation(`delete:${fileName}`, true)
+                    const handled = kernel.resolvePendingAction(deletePromptActionId(session, fileName), true)
 
                     if (!handled) {
                         warn(`Ignoring stale delete confirmation for ${fileName}`)
@@ -1404,8 +1451,13 @@ export async function start(config: Config): Promise<void> {
             }
 
             case "delete-cancelled": {
+                if (!message.session || message.session.connectionId !== kernel.connectionId) {
+                    warn("Ignoring stale delete-cancelled (session mismatch)")
+                    return
+                }
+                const { session } = message
                 for (const file of message.files) {
-                    const handled = kernel.userActions.handleConfirmation(`delete:${file.fileName}`, false)
+                    const handled = kernel.resolvePendingAction(deletePromptActionId(session, file.fileName), false)
                     if (!handled) {
                         warn(`Ignoring stale delete cancellation for ${file.fileName}`)
                         continue
@@ -1431,17 +1483,26 @@ export async function start(config: Config): Promise<void> {
 
             case "error":
                 if (message.fileName) {
-                    kernel.pendingRenameConfirmations.delete(normalizeCodeFilePathWithExtension(message.fileName))
+                    kernel.deletePendingRename(normalizeCodeFilePathWithExtension(message.fileName))
                 }
                 warn(message.message)
                 return
 
-            case "conflicts-resolved":
+            case "conflicts-resolved": {
+                if (!message.session || message.session.connectionId !== kernel.connectionId) {
+                    warn("Ignoring stale conflicts-resolved (session mismatch)")
+                    return
+                }
+                const { session, resolution, fileNames } = message
+                for (const fileName of fileNames) {
+                    kernel.resolvePendingAction(conflictPromptActionId(session, fileName), resolution)
+                }
                 event = {
                     type: "CONFLICTS_RESOLVED",
-                    resolution: message.resolution,
+                    resolution,
                 }
                 break
+            }
 
             case "conflict-version-response":
                 event = {
@@ -1478,14 +1539,14 @@ export async function start(config: Config): Promise<void> {
             return
         }
         // Schedule disconnect message with delay - if reconnect happens quickly, we skip it
-        scheduleDisconnectMessage(() => {
+        kernel.disconnectUi.scheduleNotice(() => {
             status("Disconnected, waiting to reconnect...")
         })
         void (async () => {
-            kernel.pendingRenameConfirmations.clear()
+            kernel.clearPendingRenames()
             await processEvent({ type: "DISCONNECT" })
             lastEmittedSyncPhase = null
-            kernel.userActions.cleanup()
+            kernel.cleanupUserActions()
         })()
     })
 
@@ -1503,7 +1564,7 @@ export async function start(config: Config): Promise<void> {
         debug("[STATE] Shutting down...")
 
         isShuttingDown = true
-        kernel.userActions.cleanup()
+        kernel.cleanupUserActions()
 
         if (watcher) {
             await watcher.close()

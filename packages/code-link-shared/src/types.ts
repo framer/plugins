@@ -1,12 +1,16 @@
 // Shared types between plugin and CLI
 
-export type Mode = "loading" | "info" | "syncing" | "delete_confirmation" | "conflict_resolution" | "idle" | "replaced"
-
 /** Coarse sync lifecycle phase from CLI → plugin (effect-stable; not internal runtime state). */
 export type SyncPhase = "initial_sync" | "ready"
 
 /** Custom close code sent when a new plugin tab replaces the active one. */
 export const CLOSE_CODE_REPLACED = 4001
+
+/** Identifies a user prompt across reconnects (CLI mints per prompt). */
+export interface PromptSession {
+    connectionId: number
+    promptId: string
+}
 
 export interface ProjectInfo {
     id: string
@@ -59,9 +63,10 @@ export type CliToPluginMessage =
           type: "file-delete"
           fileNames: string[]
           requireConfirmation?: boolean
+          session?: PromptSession
       }
     | { type: "file-rename"; oldFileName: string; newFileName: string; content: string }
-    | { type: "conflicts-detected"; conflicts: ConflictSummary[] }
+    | { type: "conflicts-detected"; conflicts: ConflictSummary[]; session: PromptSession }
     | {
           type: "conflict-version-request"
           conflicts: ConflictVersionRequest[]
@@ -90,12 +95,14 @@ export type PluginToCliMessage =
     | { type: "file-list"; files: FileInfo[] }
     | { type: "file-change"; fileName: string; content: string }
     | { type: "file-delete"; fileNames: string[] }
-    | { type: "delete-confirmed"; fileNames: string[] }
-    | { type: "delete-cancelled"; files: CancelledDelete[] }
+    | { type: "delete-confirmed"; fileNames: string[]; session: PromptSession }
+    | { type: "delete-cancelled"; files: CancelledDelete[]; session: PromptSession }
     | { type: "file-synced"; fileName: string; remoteModifiedAt: number }
     | {
           type: "conflicts-resolved"
           resolution: "local" | "remote"
+          session: PromptSession
+          fileNames: string[]
       }
     | {
           type: "conflict-version-response"

@@ -18,15 +18,15 @@ export {
 export { getPortFromHash } from "./ports.ts"
 export type {
     CancelledDelete,
-    SyncPhase,
     CliToPluginMessage,
     ConflictSummary,
     ConflictVersionData,
     ConflictVersionRequest,
     FileInfo,
-    Mode,
     PendingDelete,
     PluginToCliMessage,
     ProjectInfo,
+    PromptSession,
+    SyncPhase,
 } from "./types.ts"
 export { CLOSE_CODE_REPLACED, isCliToPluginMessage } from "./types.ts"

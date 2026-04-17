@@ -14,7 +14,7 @@ import { fileKeyForLookup, normalizePath, pluralize, sanitizeFilePath } from "@c
 import fs from "fs/promises"
 import path from "path"
 import type { Conflict, ConflictResolution, ConflictVersionData, FileInfo } from "../types.ts"
-import type { HashTracker } from "../sync-base.ts"
+import type { PeerBaseView } from "../sync-base.ts"
 import { debug, warn } from "../utils/logging.ts"
 import { hashFileContent, type PersistedFileState } from "../utils/state-persistence.ts"
 
@@ -315,12 +315,12 @@ export function autoResolveConflicts(
 
 /**
  * Writes remote files to disk and updates hash tracker to prevent echoes
- * CRITICAL: Update hashTracker BEFORE writing to disk
+ * CRITICAL: Update peer echo state BEFORE writing to disk
  */
 export async function writeRemoteFiles(
     files: FileInfo[],
     filesDir: string,
-    hashTracker: HashTracker,
+    peer: PeerBaseView,
     installer?: { process: (fileName: string, content: string) => void }
 ): Promise<void> {
     debug(`Writing ${pluralize(files.length, "remote file")}`)
@@ -333,8 +333,8 @@ export async function writeRemoteFiles(
             // Ensure directory exists
             await fs.mkdir(path.dirname(fullPath), { recursive: true })
 
-            // CRITICAL ORDER: Update hash tracker FIRST (in memory)
-            hashTracker.remember(normalized.relativePath, file.content)
+            // CRITICAL ORDER: Update peer echo state FIRST (in memory)
+            peer.rememberRemoteWrite(normalized.relativePath, file.content)
 
             // THEN write to disk
             await fs.writeFile(fullPath, file.content, "utf-8")
@@ -352,32 +352,32 @@ export async function writeRemoteFiles(
 /**
  * Deletes a local file from disk
  */
-export async function deleteLocalFile(fileName: string, filesDir: string, hashTracker: HashTracker): Promise<void> {
+export async function deleteLocalFile(fileName: string, filesDir: string, peer: PeerBaseView): Promise<void> {
     const normalized = resolveRemoteReference(filesDir, fileName)
 
     try {
         // CRITICAL ORDER: Mark delete FIRST (in memory) to prevent echo
-        hashTracker.markDelete(normalized.relativePath)
+        peer.markDeleteBeforeUnlink(normalized.relativePath)
 
         // THEN delete from disk
         await fs.unlink(normalized.absolutePath)
 
         // Clear the hash immediately
-        hashTracker.forget(normalized.relativePath)
+        peer.forgetPath(normalized.relativePath)
 
         debug(`Deleted file: ${normalized.relativePath}`)
     } catch (err) {
         const nodeError = err as NodeJS.ErrnoException
 
         if (nodeError.code === "ENOENT") {
-            // Treat missing files as already deleted to keep hash tracker in sync
-            hashTracker.forget(normalized.relativePath)
+            // Treat missing files as already deleted to keep peer state in sync
+            peer.forgetPath(normalized.relativePath)
             debug(`File already deleted: ${normalized.relativePath}`)
             return
         }
 
         // Clear pending delete marker immediately on failure
-        hashTracker.clearDelete(normalized.relativePath)
+        peer.clearDeleteTombstone(normalized.relativePath)
         warn(`Failed to delete file ${fileName}:`, err)
     }
 }
@@ -399,9 +399,9 @@ export async function readFileSafe(fileName: string, filesDir: string): Promise<
  * Filter out files whose content matches the last remembered hash.
  * Used to skip inbound echoes of our own local sends.
  */
-export function filterEchoedFiles(files: FileInfo[], hashTracker: HashTracker): FileInfo[] {
+export function filterEchoedFiles(files: FileInfo[], peer: PeerBaseView): FileInfo[] {
     return files.filter(file => {
-        return !hashTracker.shouldSkip(file.name, file.content)
+        return !peer.shouldSkipInboundEcho(file.name, file.content)
     })
 }
 

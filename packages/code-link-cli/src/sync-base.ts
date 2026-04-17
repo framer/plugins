@@ -9,18 +9,20 @@ import { TIMINGS } from "./timings.ts"
 import { FileMetadataCache } from "./utils/file-metadata-cache.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
 
-/** Echo + delete tombstone surface used by disk helpers (legacy hash-tracker API). */
-export interface HashTracker {
-    remember(filePath: string, content: string): void
-    shouldSkip(filePath: string, content: string): boolean
-    forget(filePath: string): void
-    clear(): void
-    markDelete(filePath: string): void
-    shouldSkipDelete(filePath: string): boolean
-    clearDelete(filePath: string): void
+/**
+ * Narrow surface for disk helpers (`writeRemoteFiles`, `deleteLocalFile`, `filterEchoedFiles`).
+ * Implemented by `SyncBase` via `peerBaseView()`.
+ */
+export interface PeerBaseView {
+    rememberRemoteWrite(filePath: string, content: string): void
+    shouldSkipInboundEcho(filePath: string, content: string): boolean
+    markDeleteBeforeUnlink(filePath: string): void
+    forgetPath(filePath: string): void
+    clearDeleteTombstone(filePath: string): void
+    shouldSkipDeleteEcho(filePath: string): boolean
 }
 
-export class SyncBase implements HashTracker {
+export class SyncBase {
     readonly fileMetadataCache = new FileMetadataCache()
 
     private readonly hashes = new Map<string, string>()
@@ -31,26 +33,27 @@ export class SyncBase implements HashTracker {
         return normalizeCodeFilePathWithExtension(filePath)
     }
 
-    remember(filePath: string, content: string): void {
+    /** Remember expected content hash (local outbound echo or pre-remote-write). */
+    rememberContentHash(filePath: string, content: string): void {
         const hash = hashFileContent(content)
         this.hashes.set(this.keyFor(filePath), hash)
     }
 
-    shouldSkip(filePath: string, content: string): boolean {
+    shouldSkipInboundEcho(filePath: string, content: string): boolean {
         const currentHash = hashFileContent(content)
         const storedHash = this.hashes.get(this.keyFor(filePath))
         return storedHash === currentHash
     }
 
-    forget(filePath: string): void {
+    forgetPath(filePath: string): void {
         this.hashes.delete(this.keyFor(filePath))
     }
 
-    clear(): void {
+    clearInboundHashes(): void {
         this.hashes.clear()
     }
 
-    markDelete(filePath: string): void {
+    markDeleteBeforeUnlink(filePath: string): void {
         const key = this.keyFor(filePath)
         this.scheduler.cancel("tombstoneExpiry", key)
         this.tombstoneKeys.add(key)
@@ -64,11 +67,11 @@ export class SyncBase implements HashTracker {
         )
     }
 
-    shouldSkipDelete(filePath: string): boolean {
+    shouldSkipDeleteEcho(filePath: string): boolean {
         return this.tombstoneKeys.has(this.keyFor(filePath))
     }
 
-    clearDelete(filePath: string): void {
+    clearDeleteTombstone(filePath: string): void {
         const key = this.keyFor(filePath)
         this.scheduler.cancel("tombstoneExpiry", key)
         this.tombstoneKeys.delete(key)
@@ -87,15 +90,21 @@ export class SyncBase implements HashTracker {
         if (meta?.lastSyncedHash === h) {
             return true
         }
-        return this.shouldSkip(path, content)
+        return this.shouldSkipInboundEcho(path, content)
     }
 
     isDeleteEcho(path: string): boolean {
-        return this.shouldSkipDelete(path)
+        return this.shouldSkipDeleteEcho(path)
     }
-}
 
-/** Backward-compatible factory (tests + helpers expect `createHashTracker`). */
-export function createHashTracker(): SyncBase {
-    return new SyncBase()
+    peerBaseView(): PeerBaseView {
+        return {
+            rememberRemoteWrite: (filePath, content) => this.rememberContentHash(filePath, content),
+            shouldSkipInboundEcho: (filePath, content) => this.shouldSkipInboundEcho(filePath, content),
+            markDeleteBeforeUnlink: (filePath: string) => this.markDeleteBeforeUnlink(filePath),
+            forgetPath: (filePath: string) => this.forgetPath(filePath),
+            clearDeleteTombstone: (filePath: string) => this.clearDeleteTombstone(filePath),
+            shouldSkipDeleteEcho: (filePath: string) => this.shouldSkipDeleteEcho(filePath),
+        }
+    }
 }

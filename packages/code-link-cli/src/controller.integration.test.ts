@@ -351,7 +351,11 @@ describe("start() integration", () => {
         ws2.receive({ type: "handshake", projectId: id, projectName: "P" })
         await vi.waitFor(() => expect(harness.activeClient).toBe(ws2))
 
-        ws2.receive({ type: "delete-confirmed", fileNames: ["Ghost.tsx"] })
+        ws2.receive({
+            type: "delete-confirmed",
+            fileNames: ["Ghost.tsx"],
+            session: { connectionId: 0, promptId: "stale" },
+        })
 
         await vi.waitFor(async () => {
             expect(await fs.readFile(filePath, "utf-8")).toBe(content)

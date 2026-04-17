@@ -18,17 +18,17 @@ todos:
     content: "Plugin side: introduce PluginBase, collapse api.ts lastSnapshot and sync-tracker.ts into it; delete sync-tracker.ts. Port withExpectedSnapshotPatch rollback. Socket controller untouched."
     status: completed
   - id: step-6
-    content: Convert effects to return EffectResult behind a compatibility shim (one per PR); rewrite mock-heavy tests in controller.rename/once as value-equality assertions; delete shim at end. Zero vi.mock/vi.fn/as never in effect tests.
-    status: pending
+    content: "EffectResult + fixed applyEffectResult pipeline; describeSendLocalChange; executeEffect uses SyncKernel only (no dual context). rename/once tests rewritten (no vi.mock/module mocks; connection.sendMessage may use spy). Stretch: not every executeEffect branch is pure describe→apply yet."
+    status: completed
   - id: step-7
     content: "Superseded by sync-phase work: plugin pluginMode + syncPhase (SyncPhase from CLI); framer UI driven by useLayoutEffect from pluginMode. Removed sync-mode/CliSyncMode; ready only from SYNC_COMPLETE effect boundary."
     status: completed
   - id: step-8
-    content: "Plugin side: replace mode + syncMode + pendingDeletes + conflicts precedence logic with an explicit discriminated-union UI state/reducer so prompt lifetime is local and obvious."
-    status: pending
+    content: "Plugin: discriminated UiState (state.ui.kind); reducer without pluginMode precedence chains; Mode removed from shared."
+    status: completed
   - id: step-9
-    content: "Optional: add prompt/session ids to delete/conflict request-response flows so reconnect safety comes from identity checks instead of heuristics."
-    status: pending
+    content: "PromptSession (connectionId + promptId) on file-delete/conflicts-detected and delete-*/conflicts-resolved; CLI ignores stale sessions; integration test for stale delete-confirmed."
+    status: completed
 isProject: false
 ---
 
@@ -36,13 +36,18 @@ isProject: false
 
 The refactor is four concrete changes plus several follow-on cleanup steps, each independently mergeable behind the existing test suite. No UX change, no CLI flag change. Protocol changes are allowed if they're worth it: they must materially simplify the state model, remove duplicated state/logic, or make transitions more explicit. The plugin's `SocketConnectionController` stays untouched.
 
-## Implementation status (post–sync-phase cleanup)
+## Implementation status (updated)
 
-**Done:** Steps 1–5; core of step 7 (plugin derives **pluginMode** from **`syncPhase: SyncPhase`** (`initial_sync` | `ready`) plus prompts; CLI uses **`internalPhase`** on `SyncState` and emits **`sync-phase` only from effect boundaries** — `EMIT_SYNC_PHASE` / `SYNC_COMPLETE`, not on every `transition()`). Removed **`sync-mode` / `CliSyncMode` / `sync-complete`**. Integration tests assert `initial_sync` before `ready`.
+**Done:** Steps **1–9** (all checklist items closed).
 
-**Not identical to original plan:** `transition()` and `SyncState` **did** change (discriminator `internalPhase`, `EMIT_SYNC_PHASE` on `HANDSHAKE`). `executeEffect` is still largely imperative; `EffectResult` exists but full migration is **step 6 (pending)**. Step 8 (single discriminated-union UI state) **still pending** — current reducer uses **pluginMode + syncPhase + prompts** but not a full union type. Step 9 optional.
+- **1–5, 7:** Unchanged from earlier: integration tests, `Scheduler`/`timings`, `SyncKernel`, `SyncBase` / `PeerBaseView`, plugin `PluginBase`, sync-phase / `internalPhase`, `sync-tracker` removed.
+- **6:** `EffectResult` + `applyEffectResult` (ordered pipeline), `describeSendLocalChange` with declarative `recordLocalSend`, `executeEffect` context is kernel-only. `controller.rename.test.ts` / `controller.once.test.ts` no longer use `vi.mock` / `as never`; optional `vi.spyOn(connection.sendMessage)` for WS boundary. **Remaining stretch (optional):** migrate every `executeEffect` `switch` arm to a pure `describeEffect` + single apply path.
+- **8:** Plugin **`UiState`** (`state.ui.kind`: loading, info, syncing, idle, deletePrompt, conflictPrompt, replaced, error); **`Mode`** removed from `@code-link/shared`.
+- **9:** **`PromptSession`** on CLI↔plugin prompt messages; **`resolvePendingAction`** + session-scoped action ids; conflict `conflicts-resolved` resolves pending promises (was a latent gap).
 
-**Still true:** socket controller untouched; user-visible behavior preserved for sync/delete/conflict/reconnect flows.
+**Also landed (was “deferred” in an older draft):** serial **`EventQueue`** for top-level `processEvent` ingress; disconnect UI state folded into **`kernel.disconnectUi`** (not `logging.ts` module globals).
+
+**Still true:** `plugins/code-link/src/utils/sockets.ts` untouched; user-visible sync/delete/conflict/reconnect behavior preserved.
 
 ## The thesis in one line
 
@@ -93,7 +98,7 @@ flowchart TD
 
 ## Existing test coverage
 
-The repo has 3,082 lines of tests. Most lock in behavior we must preserve. Two files are heavily mock-based and will be **rewritten** in Step 6, not preserved:
+The repo has 3,082 lines of tests. Most lock in behavior we must preserve. **`controller.rename.test.ts` / `controller.once.test.ts` were rewritten** (Step 6): no `vi.mock` / `as never`; connection may be spied for sends.
 
 **Keep as-is (~2,537 lines) — these test real behavior at real boundaries:**
 
@@ -104,12 +109,9 @@ The repo has 3,082 lines of tests. Most lock in behavior we must preserve. Two f
 - `[plugins/code-link/src/api.test.ts](plugins/code-link/src/api.test.ts)` (536 lines) — `withExpectedSnapshotPatch` rollback; mocks are at the Framer SDK boundary, legitimate
 - `[plugins/code-link/src/utils/sockets.test.ts](plugins/code-link/src/utils/sockets.test.ts)` (134 lines) — mocks `WebSocket` which is an external boundary, legitimate
 
-**Rewrite in Step 6 (~545 lines) — mock-heavy internal tests:**
+**Step 6 rewrite (done):** those files now use **`SyncKernel` + real temp dirs** where needed and **`vi.spyOn(connection.sendMessage)`** only for the WS boundary — not internal context mocks.
 
-- `[controller.rename.test.ts](packages/code-link-cli/src/controller.rename.test.ts)` (418 lines, **71 `vi.fn/mock` calls, 23 `as never` casts**) — stubs `hashTracker`, `fileMetadataCache`, `userActions`, even `syncState.socket` because `executeEffect` receives mutable context. These stub-and-assert patterns exist *because* effects aren't pure — `EffectResult` makes them obsolete.
-- `[controller.once.test.ts](packages/code-link-cli/src/controller.once.test.ts)` (127 lines, 20 mocks, 6 `as never` casts) — same pattern.
-
-The refactor preserves all 2,537 legitimate lines. The 545 mock-heavy lines become ~200 lines of `EffectResult` value-equality assertions. Step 1 below only adds tests for the gap nothing covers: end-to-end flow through `start()`.
+The refactor preserves all 2,537 legitimate lines in the “keep as-is” list. Step 1 adds cross-component `start()` coverage in `controller.integration.test.ts`.
 
 ## The four changes
 
@@ -281,19 +283,17 @@ A test-time `FakeScheduler` makes every timing-dependent behavior deterministic.
 | 3    | Introduce `SyncKernel`. Initially wraps existing `hashTracker`, `fileMetadataCache`, `pendingRenameConfirmations`, `userActions`. Effects receive kernel instead of raw maps.                                                                                                                                          | No                                                          |
 | 4    | Introduce `SyncBase`. Collapse `hashTracker` and watcher echo buffers into `SyncBase` lookups. Delete `[utils/hash-tracker.ts](packages/code-link-cli/src/utils/hash-tracker.ts)`.                                                                                                                                     | No (tombstone replaces 5s window with equivalent semantics) |
 | 5    | Plugin side: introduce `PluginBase`, collapse `[api.ts](plugins/code-link/src/api.ts)` `lastSnapshot` + `[sync-tracker.ts](packages/code-link-shared/src/sync-tracker.ts)` into it. Delete `sync-tracker.ts`. Port `withExpectedSnapshotPatch` rollback semantics into `PluginBase`.                                   | No user-visible change                                      |
-| 6    | Convert effects to return `EffectResult` behind a compatibility shim (one effect per PR). Rewrite mock-heavy tests in `controller.rename.test.ts` / `controller.once.test.ts` as value-equality assertions. Delete shim when last effect converts. End state: zero `vi.mock` / `vi.fn` / `as never` in effect tests.   | No                                                          |
-| 7    | **Done (revised):** Plugin **`pluginMode`** + CLI **`syncPhase`** (`SyncPhase`: `initial_sync` \| `ready`); wire **`sync-phase`**; never raw **`internalPhase`**. Framer UI from `useLayoutEffect` on **`pluginMode`**.                                                                                                 | Protocol break vs old `sync-mode`; beta OK                  |
-| 8    | Optional polish: full discriminated-union UI state (today: **`pluginMode` + `syncPhase` + prompts** in one reducer).                                                                                                                                                                                                   | No user-visible change                                      |
-| 9    | Optional hardening: add prompt/session ids to delete/conflict flows so reconnect safety is enforced by identity checks. CLI ignores stale ids; plugin clears or supersedes prompts by session. Do this only if the extra protocol surface still pays for itself after Step 8.                                          | No user-visible change; optional protocol change            |
+| 6    | **Done:** `EffectResult` pipeline + `describeSendLocalChange`; kernel-only `executeEffect`; rename/once tests without module mocks. (Stretch: pure describe for every effect branch.)                                                                                                                                   | No                                                          |
+| 7    | **Done (revised):** Was sync-phase / `pluginMode`; superseded in UI by **Step 8** `UiState` while CLI still uses **`syncPhase`** + **`internalPhase`**.                                                                                                                                                               | Protocol break vs old `sync-mode`; beta OK                  |
+| 8    | **Done:** Discriminated **`UiState`** in `app-state.ts`; **`App.tsx`** switches on **`state.ui.kind`**.                                                                                                                                                                                                              | No user-visible change                                      |
+| 9    | **Done:** **`PromptSession`** on prompt-related messages; stale responses ignored by connection id.                                                                                                                                                                                                                    | No user-visible change; protocol change                     |
 
 
-Each step passes the existing 3,082-line test suite plus the new Step 1 tests. Deferred (per your call): the pure watcher rename helper extraction and the serial event queue.
+Each step passes the existing test suite plus Step 1 integration tests. **Serial event queue** for `start()` ingress is implemented. Optional follow-on: pure watcher rename helper extraction.
 
 ## Junior-friendly follow-ons
 
-Step 8 is about local clarity, not new behavior. **`pluginMode` + `syncPhase` + `pendingDeletes` + `conflicts`** are already centralized in **`app-state.ts`**; a further step is a stricter discriminated union if desired.
-
-Step 9 is optional. If Step 8 already makes reconnect behavior obvious enough, stop there. If not, add prompt/session ids so stale responses are impossible by construction rather than merely unlikely by flow control.
+Steps **8–9 are done** (discriminated UI state + session ids). Optional further polish: **`CodeFilesAPI` composition over inheritance** for `PluginBase`, and **full pure `describeEffect` per effect** (Step 6 stretch).
 
 ## Step 1 — narrow scope
 
@@ -381,5 +381,5 @@ Mocks exist only at real external boundaries: Framer SDK (`[api.test.ts](plugins
 
 - Adding a new effect means adding one case to `executeEffect`, one test that passes an `Effect` and asserts on `EffectResult`. No mock setup. No `as never`.
 - When a reviewer asks "does this effect do the right thing?", the test reads like a spec: given this effect, produce exactly this `EffectResult`.
-- Zero `vi.mock` in the three internal test files (`controller.test.ts`, `controller.rename.test.ts`, `controller.once.test.ts`) after Step 6.
+- `controller.rename.test.ts` / `controller.once.test.ts`: no `vi.mock` (Step 6). `controller.test.ts` remains pure `transition()` tests.
 

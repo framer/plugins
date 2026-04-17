@@ -34,8 +34,8 @@ export class CodeFilesAPI extends PluginBase {
     async publishSnapshot(socket: WebSocket) {
         const files = await this.getCodeFilesWithNormalizedPaths()
         socket.send(JSON.stringify({ type: "file-list", files }))
-        this.lastSnapshot.clear()
-        files.forEach(file => this.lastSnapshot.set(file.name, file.content))
+        this.clear()
+        files.forEach(file => this.setSnapshotContent(file.name, file.content))
     }
 
     async handleFramerFilesChanged(socket: WebSocket) {
@@ -45,7 +45,7 @@ export class CodeFilesAPI extends PluginBase {
         for (const file of files) {
             seen.add(file.name)
 
-            const previous = this.lastSnapshot.get(file.name)
+            const previous = this.getSnapshotContent(file.name)
             if (previous !== file.content) {
                 // Generally only a small number of files change.
                 // So we just send each change one by one.
@@ -57,11 +57,11 @@ export class CodeFilesAPI extends PluginBase {
                     })
                 )
                 this.remember(file.name, file.content)
-                this.lastSnapshot.set(file.name, file.content)
+                this.setSnapshotContent(file.name, file.content)
             }
         }
 
-        for (const fileName of Array.from(this.lastSnapshot.keys())) {
+        for (const fileName of this.getSnapshotPaths()) {
             if (!seen.has(fileName)) {
                 socket.send(
                     JSON.stringify({
@@ -70,7 +70,7 @@ export class CodeFilesAPI extends PluginBase {
                         requireConfirmation: false,
                     })
                 )
-                this.lastSnapshot.delete(fileName)
+                this.deleteSnapshotEntry(fileName)
             }
         }
     }
@@ -196,7 +196,7 @@ export class CodeFilesAPI extends PluginBase {
         )
 
         if (!existing) {
-            this.lastSnapshot.delete(sourceFileName)
+            this.deleteSnapshotEntry(sourceFileName)
             const message = `Rename failed: ${oldFileName} not found in Framer`
             log.warn(message)
             socket.send(
@@ -209,7 +209,7 @@ export class CodeFilesAPI extends PluginBase {
             return false
         }
 
-        const content = this.lastSnapshot.get(sourceFileName) ?? existing.content
+        const content = this.getSnapshotContent(sourceFileName) ?? existing.content
 
         try {
             await this.withExpectedSnapshotPatch(

@@ -10,8 +10,6 @@
  */
 
 import pc from "picocolors"
-import { createScheduler } from "../scheduler.ts"
-import { TIMINGS } from "../timings.ts"
 
 export enum LogLevel {
     DEBUG = 0,
@@ -37,11 +35,6 @@ function rewriteLastLine(text: string): void {
         process.stdout.write(`${text}\n`)
     }
 }
-
-// Reconnect suppression state
-const disconnectScheduler = createScheduler()
-let isShowingDisconnect = false
-let hadRecentDisconnect = false
 
 export function setLogLevel(level: LogLevel): void {
     currentLevel = level
@@ -188,47 +181,4 @@ export function status(message: string): void {
         flushDedupe()
         console.log(pc.dim(`  ${message}`))
     }
-}
-
-/**
- * Schedule a delayed disconnect message.
- * If reconnection happens before the delay, the message is cancelled.
- */
-export function scheduleDisconnectMessage(callback: () => void): void {
-    disconnectScheduler.cancel("disconnectNotice")
-    hadRecentDisconnect = true
-    isShowingDisconnect = false
-    disconnectScheduler.after("disconnectNotice", TIMINGS.disconnectNotice, () => {
-        isShowingDisconnect = true
-        callback()
-    })
-}
-
-/**
- * Cancel pending disconnect message (called on reconnect)
- */
-export function cancelDisconnectMessage(): void {
-    disconnectScheduler.cancel("disconnectNotice")
-}
-
-/**
- * Check if we showed a disconnect message (need to show reconnect)
- */
-export function didShowDisconnect(): boolean {
-    return isShowingDisconnect
-}
-
-/**
- * Check if we recently saw a disconnect (even if the message was suppressed)
- */
-export function wasRecentlyDisconnected(): boolean {
-    return hadRecentDisconnect
-}
-
-/**
- * Reset disconnect state after successful reconnect
- */
-export function resetDisconnectState(): void {
-    isShowingDisconnect = false
-    hadRecentDisconnect = false
 }

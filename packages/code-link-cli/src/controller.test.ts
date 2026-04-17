@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import type { WebSocket } from "ws"
 import { transition } from "./controller.ts"
 import { DEFAULT_REMOTE_DRIFT_MS, filterEchoedFiles } from "./helpers/files.ts"
-import { createHashTracker } from "./sync-base.ts"
+import { SyncBase } from "./sync-base.ts"
 
 // Readable coverage of core controller functionality
 
@@ -506,8 +506,8 @@ describe("Code Link", () => {
 
     describe("Echo Prevention", () => {
         it("skips inbound changes matching last outbound", () => {
-            const tracker = createHashTracker()
-            tracker.remember("Button.tsx", "content we just sent")
+            const tracker = new SyncBase().peerBaseView()
+            tracker.rememberRemoteWrite("Button.tsx", "content we just sent")
 
             const filtered = filterEchoedFiles(
                 [{ name: "Button.tsx", content: "content we just sent", modifiedAt: Date.now() }],
@@ -518,8 +518,8 @@ describe("Code Link", () => {
         })
 
         it("applies inbound changes with different content", () => {
-            const tracker = createHashTracker()
-            tracker.remember("Button.tsx", "old content")
+            const tracker = new SyncBase().peerBaseView()
+            tracker.rememberRemoteWrite("Button.tsx", "old content")
 
             const filtered = filterEchoedFiles(
                 [{ name: "Button.tsx", content: "new content from framer", modifiedAt: Date.now() }],

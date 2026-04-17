@@ -4,7 +4,7 @@ import type { ScheduledTask } from "./timings.ts"
 
 export type KernelOp =
     | { op: "recordLocalSend"; path: string; content: string }
-    | { op: "recordRemoteApplied"; path: string; hash: string; modifiedAt: number }
+    | { op: "recordRemoteApplied"; path: string; content: string; modifiedAt: number }
     | { op: "recordDelete"; path: string }
     | { op: "registerPendingRename"; oldPath: string; newPath: string; content: string }
     | { op: "completePendingRename"; newPath: string }

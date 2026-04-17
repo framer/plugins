@@ -5,6 +5,7 @@
  * Determines if a change should be applied, queued, or rejected.
  */
 
+import type { InternalPhase } from "../types.ts"
 import type { FileSyncMetadata } from "../utils/file-metadata-cache.ts"
 
 /**
@@ -24,7 +25,7 @@ export type ChangeValidation =
  * Note: This is for INCOMING changes from remote. Local changes (from watcher)
  * are handled separately and always sent during watching mode.
  */
-export function validateIncomingChange(fileMeta: FileSyncMetadata | undefined, currentMode: string): ChangeValidation {
+export function validateIncomingChange(fileMeta: FileSyncMetadata | undefined, currentMode: InternalPhase): ChangeValidation {
     // Queue changes that arrive during snapshot processing
     if (currentMode === "snapshot_processing" || currentMode === "handshaking") {
         return { action: "queue", reason: "snapshot-in-progress" }

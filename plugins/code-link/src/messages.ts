@@ -3,6 +3,7 @@ import {
     type ConflictSummary,
     normalizeCodeFilePathWithExtension,
     type PendingDelete,
+    type PromptSession,
     type SyncPhase,
 } from "@code-link/shared"
 import type { CodeFilesAPI } from "./api"
@@ -10,8 +11,8 @@ import * as log from "./utils/logger"
 
 type MessageHandlerAction =
     | { type: "sync-phase"; syncPhase: SyncPhase }
-    | { type: "pending-deletes"; files: PendingDelete[] }
-    | { type: "conflicts"; conflicts: ConflictSummary[] }
+    | { type: "pending-deletes"; files: PendingDelete[]; session: PromptSession; source: "initial" | "runtime" }
+    | { type: "conflicts"; conflicts: ConflictSummary[]; session: PromptSession }
 
 export function createMessageHandler({
     dispatch,
@@ -47,6 +48,10 @@ export function createMessageHandler({
             }
             case "file-delete":
                 if (message.requireConfirmation) {
+                    if (!message.session) {
+                        log.warn("file-delete missing session; ignoring confirmation request")
+                        break
+                    }
                     log.debug(`Delete requires confirmation for ${message.fileNames.length} file(s)`)
                     const files: PendingDelete[] = []
                     for (const fileName of message.fileNames) {
@@ -63,6 +68,8 @@ export function createMessageHandler({
                     dispatch({
                         type: "pending-deletes",
                         files,
+                        session: message.session,
+                        source: "runtime",
                     })
                 } else {
                     for (const fileName of message.fileNames) {
@@ -73,7 +80,11 @@ export function createMessageHandler({
                 break
             case "conflicts-detected":
                 log.debug(`Received ${message.conflicts.length} conflicts from CLI`)
-                dispatch({ type: "conflicts", conflicts: message.conflicts })
+                if (!message.session) {
+                    log.warn("conflicts-detected missing session; ignoring")
+                    break
+                }
+                dispatch({ type: "conflicts", conflicts: message.conflicts, session: message.session })
                 break
             case "conflict-version-request": {
                 log.debug(`Fetching conflict versions for ${message.conflicts.length} files`)

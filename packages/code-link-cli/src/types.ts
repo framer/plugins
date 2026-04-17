@@ -2,6 +2,14 @@
  * Core types for the controller-centric CLI architecture
  */
 
+/** CLI sync runtime phase (internal; not the coarse `SyncPhase` sent to the plugin). */
+export type InternalPhase =
+    | "disconnected"
+    | "handshaking"
+    | "snapshot_processing"
+    | "conflict_resolution"
+    | "watching"
+
 // Re-export shared types for convenience
 export type {
     CliToPluginMessage,

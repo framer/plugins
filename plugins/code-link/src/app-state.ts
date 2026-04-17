@@ -1,51 +1,53 @@
-import {
-    type ConflictSummary,
-    type Mode,
-    type PendingDelete,
-    type ProjectInfo,
-    type SyncPhase,
+import type {
+    ConflictSummary,
+    PendingDelete,
+    ProjectInfo,
+    PromptSession,
+    SyncPhase,
 } from "@code-link/shared"
-import { modeFromSyncPhase } from "./sync-phase"
+
+export type UiState =
+    | { kind: "loading" }
+    | { kind: "info" }
+    | { kind: "syncing" }
+    | { kind: "idle" }
+    | { kind: "deletePrompt"; session: PromptSession; deletes: PendingDelete[]; source: "initial" | "runtime" }
+    | { kind: "conflictPrompt"; session: PromptSession; conflicts: ConflictSummary[] }
+    | { kind: "replaced" }
+    | { kind: "error"; message: string }
 
 export interface State {
-    /** User-visible UI mode (derived + overlays; never sent on the wire). */
-    pluginMode: Mode
+    ui: UiState
     project?: ProjectInfo
     permissionsGranted: boolean
     /** Last effect-stable phase reported by the CLI (`sync-phase` message). */
     syncPhase: SyncPhase | null
-    pendingDeletes: PendingDelete[]
-    conflicts: ConflictSummary[]
 }
 
 export type Action =
     | { type: "project-loaded"; project: ProjectInfo }
     | { type: "permissions-updated"; granted: boolean }
-    | { type: "set-plugin-mode"; pluginMode: Mode }
+    | { type: "socket-connected" }
     | { type: "socket-disconnected"; message: string }
     | { type: "socket-replaced" }
     | { type: "sync-phase"; syncPhase: SyncPhase }
-    | { type: "pending-deletes"; files: PendingDelete[] }
+    | { type: "pending-deletes"; files: PendingDelete[]; session: PromptSession; source: "initial" | "runtime" }
     | { type: "clear-pending-deletes" }
-    | { type: "conflicts"; conflicts: ConflictSummary[] }
+    | { type: "conflicts"; conflicts: ConflictSummary[]; session: PromptSession }
     | { type: "clear-conflicts" }
 
 export const initialState: State = {
-    pluginMode: "loading",
+    ui: { kind: "loading" },
     permissionsGranted: false,
     syncPhase: null,
-    pendingDeletes: [],
-    conflicts: [],
 }
 
-function clearPromptState(state: State, nextPluginMode: Mode, nextSyncPhase: SyncPhase | null): State {
-    return {
-        ...state,
-        pluginMode: nextPluginMode,
-        syncPhase: nextSyncPhase,
-        pendingDeletes: [],
-        conflicts: [],
-    }
+function baseUiAfterPromptClear(state: State): UiState {
+    if (state.ui.kind === "replaced") return state.ui
+    if (!state.permissionsGranted) return { kind: "info" }
+    if (state.syncPhase === "initial_sync") return { kind: "syncing" }
+    if (state.syncPhase === "ready") return { kind: "idle" }
+    return { kind: "loading" }
 }
 
 export function reducer(state: State, action: Action): State {
@@ -58,66 +60,94 @@ export function reducer(state: State, action: Action): State {
         case "permissions-updated":
             if (!action.granted) {
                 return {
-                    ...clearPromptState(state, "info", null),
+                    ...state,
                     permissionsGranted: false,
+                    ui: { kind: "info" },
+                    syncPhase: null,
                 }
             }
             return {
                 ...state,
                 permissionsGranted: true,
-                pluginMode: state.pluginMode === "info" ? "loading" : state.pluginMode,
+                ui: state.ui.kind === "info" ? { kind: "loading" } : state.ui,
             }
-        case "set-plugin-mode":
+        case "socket-connected":
             return {
                 ...state,
-                pluginMode: action.pluginMode,
+                ui: { kind: "loading" },
             }
         case "socket-disconnected":
-            return clearPromptState(state, "info", null)
-        case "socket-replaced":
-            return clearPromptState(state, "replaced", null)
-        case "sync-phase": {
-            const nextPluginMode =
-                state.pendingDeletes.length > 0
-                    ? "delete_confirmation"
-                    : state.conflicts.length > 0
-                      ? "conflict_resolution"
-                      : state.pluginMode === "replaced"
-                        ? "replaced"
-                        : !state.permissionsGranted
-                          ? "info"
-                          : modeFromSyncPhase(action.syncPhase)
             return {
                 ...state,
-                pluginMode: nextPluginMode,
+                ui: { kind: "info" },
+                syncPhase: null,
+            }
+        case "socket-replaced":
+            return {
+                ...state,
+                ui: { kind: "replaced" },
+                syncPhase: null,
+            }
+        case "sync-phase": {
+            if (state.ui.kind === "deletePrompt" || state.ui.kind === "conflictPrompt") {
+                return {
+                    ...state,
+                    syncPhase: action.syncPhase,
+                }
+            }
+            if (state.ui.kind === "replaced") {
+                return {
+                    ...state,
+                    syncPhase: action.syncPhase,
+                }
+            }
+            if (!state.permissionsGranted) {
+                return {
+                    ...state,
+                    syncPhase: action.syncPhase,
+                    ui: { kind: "info" },
+                }
+            }
+            const next: UiState =
+                action.syncPhase === "initial_sync"
+                    ? { kind: "syncing" }
+                    : action.syncPhase === "ready"
+                      ? { kind: "idle" }
+                      : { kind: "loading" }
+            return {
+                ...state,
                 syncPhase: action.syncPhase,
+                ui: next,
             }
         }
         case "pending-deletes":
             return {
                 ...state,
-                pendingDeletes: [...state.pendingDeletes, ...action.files],
-                pluginMode: "delete_confirmation",
+                ui: {
+                    kind: "deletePrompt",
+                    session: action.session,
+                    deletes: [...(state.ui.kind === "deletePrompt" ? state.ui.deletes : []), ...action.files],
+                    source: action.source,
+                },
             }
         case "clear-pending-deletes":
             return {
                 ...state,
-                pendingDeletes: [],
-                pluginMode:
-                    state.conflicts.length > 0 ? "conflict_resolution" : modeFromSyncPhase(state.syncPhase),
+                ui: baseUiAfterPromptClear(state),
             }
         case "conflicts":
             return {
                 ...state,
-                conflicts: action.conflicts,
-                pluginMode: "conflict_resolution",
+                ui: {
+                    kind: "conflictPrompt",
+                    session: action.session,
+                    conflicts: action.conflicts,
+                },
             }
         case "clear-conflicts":
             return {
                 ...state,
-                conflicts: [],
-                pluginMode:
-                    state.pendingDeletes.length > 0 ? "delete_confirmation" : modeFromSyncPhase(state.syncPhase),
+                ui: baseUiAfterPromptClear(state),
             }
     }
 }

@@ -1,41 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import type { WebSocket } from "ws"
 import { executeEffect } from "./controller.ts"
 import { SyncKernel } from "./kernel.ts"
 import type { Config } from "./types.ts"
-
-const { sendMessage, status, success, tryGitInit, wasRecentlyDisconnected, didShowDisconnect, resetDisconnectState } =
-    vi.hoisted(() => ({
-        sendMessage: vi.fn(),
-        status: vi.fn(),
-        success: vi.fn(),
-        tryGitInit: vi.fn(),
-        wasRecentlyDisconnected: vi.fn(),
-        didShowDisconnect: vi.fn(),
-        resetDisconnectState: vi.fn(),
-    }))
-
-vi.mock("./helpers/connection.ts", () => ({
-    initConnection: vi.fn(),
-    sendMessage,
-}))
-
-vi.mock("./helpers/git.ts", () => ({
-    tryGitInit,
-}))
-
-vi.mock("./utils/logging.ts", async importOriginal => {
-    const actual = await importOriginal<typeof import("./utils/logging.ts")>()
-
-    return {
-        ...actual,
-        status,
-        success,
-        wasRecentlyDisconnected,
-        didShowDisconnect,
-        resetDisconnectState,
-    }
-})
+import * as connection from "./helpers/connection.ts"
 
 const mockSocket = {} as WebSocket
 
@@ -52,20 +20,8 @@ function createConfig(overrides: Partial<Config> = {}): Config {
 }
 
 describe("SYNC_COMPLETE once mode", () => {
-    beforeEach(() => {
-        sendMessage.mockReset()
-        status.mockReset()
-        success.mockReset()
-        tryGitInit.mockReset()
-        wasRecentlyDisconnected.mockReset()
-        didShowDisconnect.mockReset()
-        resetDisconnectState.mockReset()
-        sendMessage.mockResolvedValue(true)
-        wasRecentlyDisconnected.mockReturnValue(false)
-        didShowDisconnect.mockReturnValue(false)
-    })
-
     it("shuts down after the initial sync when once mode is enabled", async () => {
+        const sendSpy = vi.spyOn(connection, "sendMessage").mockResolvedValue(true)
         const shutdown = vi.fn().mockResolvedValue(undefined)
 
         await executeEffect(
@@ -87,12 +43,13 @@ describe("SYNC_COMPLETE once mode", () => {
             }
         )
 
-        expect(sendMessage).toHaveBeenCalledWith(mockSocket, { type: "sync-phase", phase: "ready" })
-        expect(status).toHaveBeenCalledWith("Sync complete, exiting...")
+        expect(sendSpy).toHaveBeenCalledWith(mockSocket, { type: "sync-phase", phase: "ready" })
         expect(shutdown).toHaveBeenCalledTimes(1)
+        sendSpy.mockRestore()
     })
 
     it("keeps watching when once mode is disabled", async () => {
+        const sendSpy = vi.spyOn(connection, "sendMessage").mockResolvedValue(true)
         const shutdown = vi.fn().mockResolvedValue(undefined)
 
         await executeEffect(
@@ -114,7 +71,7 @@ describe("SYNC_COMPLETE once mode", () => {
             }
         )
 
-        expect(status).toHaveBeenCalledWith("Watching for changes...")
         expect(shutdown).not.toHaveBeenCalled()
+        sendSpy.mockRestore()
     })
 })

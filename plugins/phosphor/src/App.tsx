@@ -67,15 +67,14 @@ const fuse = new Fuse(icons, {
     useExtendedSearch: true,
 })
 
-function formatIconDisplayName(displayName?: string): string {
-    if (!displayName) return "Unknown"
+function formatIconName(name?: string): string {
+    if (!name) return "Unknown"
 
-    const withoutSuffix = displayName.replace(/Icon$/, "")
-
-    return withoutSuffix
-        .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
-        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-        .trim()
+    return name
+        .split("-")
+        .filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ")
 }
 
 function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
@@ -103,7 +102,7 @@ function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
                 name: "Icon",
             })
 
-            framer.notify(`Inserted ${formatIconDisplayName(Icon.displayName)} icon`, { variant: "success" })
+            framer.notify(`Inserted ${formatIconName(entry.name)} icon`, { variant: "success" })
         },
         [weight]
     )
@@ -130,11 +129,11 @@ function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
                         })}
                         onDragComplete={result => {
                             if (result.status === "success") {
-                                framer.notify(`Inserted ${formatIconDisplayName(Icon.displayName)} icon`, {
+                                framer.notify(`Inserted ${formatIconName(entry.name)} icon`, {
                                     variant: "success",
                                 })
                             } else {
-                                framer.notify(`Failed to insert ${formatIconDisplayName(Icon.displayName)} icon`, {
+                                framer.notify(`Failed to insert ${formatIconName(entry.name)} icon`, {
                                     variant: "error",
                                 })
                             }
@@ -148,7 +147,7 @@ function IconGrid(props: { searchQuery: string; weight: IconWeight }) {
                                 void handleIconClick(entry)
                             }}
                             disabled={!isAllowedToAddSVG}
-                            title={formatIconDisplayName(Icon.displayName)}
+                            title={formatIconName(entry.name)}
                         >
                             <Icon size={32} color={"var(--framer-color-text)"} weight={weight} />
                         </button>

@@ -79,6 +79,7 @@ function FieldMappingRow({
                     onToggleIgnored(id)
                 }}
                 tabIndex={0}
+                title={originalName}
             >
                 <input type="checkbox" checked={!disabled} tabIndex={-1} readOnly />
                 <span>{originalName}</span>

@@ -130,6 +130,11 @@ select:not(:disabled) {
     gap: 8px;
 }
 
+.mapping .source-field span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .mapping .source-field[aria-disabled="true"] {
     opacity: 0.5;
 }

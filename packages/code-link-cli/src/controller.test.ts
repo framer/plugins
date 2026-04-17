@@ -10,7 +10,7 @@ const mockSocket = {} as WebSocket
 
 function disconnectedState() {
     return {
-        mode: "disconnected" as const,
+        internalPhase: "disconnected" as const,
         socket: null,
         pendingRemoteChanges: [],
     }
@@ -18,7 +18,7 @@ function disconnectedState() {
 
 function watchingState() {
     return {
-        mode: "watching" as const,
+        internalPhase: "watching" as const,
         socket: mockSocket,
         pendingRemoteChanges: [],
     }
@@ -26,7 +26,7 @@ function watchingState() {
 
 function handshakingState() {
     return {
-        mode: "handshaking" as const,
+        internalPhase: "handshaking" as const,
         socket: mockSocket,
         pendingRemoteChanges: [],
     }
@@ -34,7 +34,7 @@ function handshakingState() {
 
 function snapshotProcessingState() {
     return {
-        mode: "snapshot_processing" as const,
+        internalPhase: "snapshot_processing" as const,
         socket: mockSocket,
         pendingRemoteChanges: [],
     }
@@ -52,7 +52,7 @@ function conflictResolutionState(
     }[]
 ) {
     return {
-        mode: "conflict_resolution" as const,
+        internalPhase: "conflict_resolution" as const,
         socket: mockSocket,
         pendingConflicts,
         pendingRemoteChanges: [],
@@ -75,7 +75,7 @@ describe("Code Link", () => {
                 localOnly: [],
             })
 
-            expect(result.state.mode).toBe("watching")
+            expect(result.state.internalPhase).toBe("watching")
             expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
         })
 
@@ -94,7 +94,7 @@ describe("Code Link", () => {
                 ],
             })
 
-            expect(result.state.mode).toBe("watching")
+            expect(result.state.internalPhase).toBe("watching")
             const sendEffects = result.effects.filter(e => e.type === "SEND_MESSAGE")
             expect(
                 sendEffects.some(
@@ -120,7 +120,7 @@ describe("Code Link", () => {
                 localOnly: [],
             })
 
-            expect(result.state.mode).toBe("conflict_resolution")
+            expect(result.state.internalPhase).toBe("conflict_resolution")
             expect(result.effects.some(e => e.type === "REQUEST_CONFLICT_VERSIONS")).toBe(true)
         })
     })
@@ -138,7 +138,7 @@ describe("Code Link", () => {
                 localOnly: [],
             })
 
-            expect(result.state.mode).toBe("watching")
+            expect(result.state.internalPhase).toBe("watching")
             expect(result.effects.filter(e => e.type === "WRITE_FILES")).toHaveLength(0)
             expect(result.effects.filter(e => e.type === "SEND_MESSAGE")).toHaveLength(0)
             expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
@@ -160,7 +160,7 @@ describe("Code Link", () => {
                 versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 5_000 }], // remote unchanged
             })
 
-            expect(result.state.mode).toBe("watching")
+            expect(result.state.internalPhase).toBe("watching")
             expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(true)
             expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
         })
@@ -181,7 +181,7 @@ describe("Code Link", () => {
                 versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 10_000 }], // remote changed
             })
 
-            expect(result.state.mode).toBe("watching")
+            expect(result.state.internalPhase).toBe("watching")
             expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
             expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
         })
@@ -204,7 +204,7 @@ describe("Code Link", () => {
                 versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: syncTime + DEFAULT_REMOTE_DRIFT_MS + 1000 }],
             })
 
-            expect(result.state.mode).toBe("conflict_resolution")
+            expect(result.state.internalPhase).toBe("conflict_resolution")
             expect(result.effects.some(e => e.type === "REQUEST_CONFLICT_DECISIONS")).toBe(true)
         })
     })
@@ -286,7 +286,7 @@ describe("Code Link", () => {
                 localOnly: [],
             })
 
-            expect(result.state.mode).toBe("watching")
+            expect(result.state.internalPhase).toBe("watching")
             const writeEffect = result.effects.find(e => e.type === "WRITE_FILES")
             expect(writeEffect).toMatchObject({
                 files: [{ name: "components/Button.tsx" }],
@@ -308,7 +308,7 @@ describe("Code Link", () => {
                 ],
             })
 
-            expect(result.state.mode).toBe("watching")
+            expect(result.state.internalPhase).toBe("watching")
             const sendEffects = result.effects.filter(e => e.type === "SEND_MESSAGE")
             expect(
                 sendEffects.some(
@@ -447,7 +447,7 @@ describe("Code Link", () => {
 
             const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "remote" })
 
-            expect(result.state.mode).toBe("watching")
+            expect(result.state.internalPhase).toBe("watching")
             expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
             const writes = result.effects.filter(e => e.type === "WRITE_FILES")
             expect(writes).toHaveLength(2)
@@ -473,7 +473,7 @@ describe("Code Link", () => {
 
             const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "local" })
 
-            expect(result.state.mode).toBe("watching")
+            expect(result.state.internalPhase).toBe("watching")
             const sends = result.effects.filter(e => e.type === "SEND_MESSAGE")
             expect(sends).toHaveLength(2)
         })
@@ -578,7 +578,7 @@ describe("Code Link", () => {
             const state = watchingState()
             const result = transition(state, { type: "DISCONNECT" })
 
-            expect(result.state.mode).toBe("disconnected")
+            expect(result.state.internalPhase).toBe("disconnected")
             expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
         })
     })
@@ -595,9 +595,10 @@ describe("Code Link", () => {
                 projectInfo: { projectId: "abc123", projectName: "My Project" },
             })
 
-            expect(result.state.mode).toBe("handshaking")
+            expect(result.state.internalPhase).toBe("handshaking")
             expect(result.effects.some(e => e.type === "INIT_WORKSPACE")).toBe(true)
             expect(result.effects.some(e => e.type === "SEND_MESSAGE")).toBe(true)
+            expect(result.effects.some(e => e.type === "EMIT_SYNC_PHASE" && e.phase === "initial_sync")).toBe(true)
         })
 
         it("requests file list after handshake", () => {
@@ -619,7 +620,7 @@ describe("Code Link", () => {
                 files: [{ name: "Test.tsx", content: "content", modifiedAt: Date.now() }],
             })
 
-            expect(result.state.mode).toBe("snapshot_processing")
+            expect(result.state.internalPhase).toBe("snapshot_processing")
             expect(result.effects.some(e => e.type === "DETECT_CONFLICTS")).toBe(true)
         })
     })

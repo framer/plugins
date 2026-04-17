@@ -5,7 +5,7 @@
  * Helpers should provide data and never hold control.
  */
 
-import type { CliSyncMode, CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
+import type { CliToPluginMessage, PluginToCliMessage, SyncPhase } from "@code-link/shared"
 import { normalizeCodeFilePathWithExtension, pluralize, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
@@ -51,21 +51,10 @@ import { findOrCreateProjectDirectory } from "./utils/project.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
 
 /**
- * Explicit sync lifecycle modes
+ * Internal CLI phases (`internalPhase`). May advance before effects finish — never send raw on the wire;
+ * use coarse `SyncPhase` via `EMIT_SYNC_PHASE` / `SYNC_COMPLETE` only.
  */
-export type SyncMode = "disconnected" | "handshaking" | "snapshot_processing" | "conflict_resolution" | "watching"
-
-function toCliSyncMode(mode: SyncMode): CliSyncMode | null {
-    switch (mode) {
-        case "handshaking":
-        case "snapshot_processing":
-        case "conflict_resolution":
-        case "watching":
-            return mode
-        case "disconnected":
-            return null
-    }
-}
+export type InternalPhase = "disconnected" | "handshaking" | "snapshot_processing" | "conflict_resolution" | "watching"
 
 /**
  * Shared state that persists across all lifecycle modes
@@ -75,28 +64,28 @@ interface SyncStateBase {
 }
 
 type DisconnectedState = SyncStateBase & {
-    mode: "disconnected"
+    internalPhase: "disconnected"
     socket: null
 }
 
 type HandshakingState = SyncStateBase & {
-    mode: "handshaking"
+    internalPhase: "handshaking"
     socket: WebSocket
 }
 
 type SnapshotProcessingState = SyncStateBase & {
-    mode: "snapshot_processing"
+    internalPhase: "snapshot_processing"
     socket: WebSocket
 }
 
 type ConflictResolutionState = SyncStateBase & {
-    mode: "conflict_resolution"
+    internalPhase: "conflict_resolution"
     socket: WebSocket
     pendingConflicts: Conflict[]
 }
 
 type WatchingState = SyncStateBase & {
-    mode: "watching"
+    internalPhase: "watching"
     socket: WebSocket
 }
 
@@ -154,6 +143,7 @@ type Effect =
       }
     | { type: "LOAD_PERSISTED_STATE" }
     | { type: "SEND_MESSAGE"; payload: CliToPluginMessage }
+    | { type: "EMIT_SYNC_PHASE"; phase: SyncPhase }
     | { type: "LIST_LOCAL_FILES" }
     | { type: "DETECT_CONFLICTS"; remoteFiles: FileInfo[] }
     | {
@@ -212,21 +202,22 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 
     switch (event.type) {
         case "HANDSHAKE": {
-            if (state.mode !== "disconnected") {
-                effects.push(log("warn", `Received HANDSHAKE in mode ${state.mode}, ignoring`))
+            if (state.internalPhase !== "disconnected") {
+                effects.push(log("warn", `Received HANDSHAKE in internalPhase=${state.internalPhase}, ignoring`))
                 return { state, effects }
             }
 
             effects.push(
                 { type: "INIT_WORKSPACE", projectInfo: event.projectInfo },
                 { type: "LOAD_PERSISTED_STATE" },
-                { type: "SEND_MESSAGE", payload: { type: "request-files" } }
+                { type: "SEND_MESSAGE", payload: { type: "request-files" } },
+                { type: "EMIT_SYNC_PHASE", phase: "initial_sync" }
             )
 
             return {
                 state: {
                     ...state,
-                    mode: "handshaking",
+                    internalPhase: "handshaking",
                     socket: event.socket,
                 },
                 effects,
@@ -247,12 +238,12 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
         case "DISCONNECT": {
             effects.push({ type: "PERSIST_STATE" }, log("debug", "Disconnected, persisting state"))
 
-            if (state.mode === "conflict_resolution") {
+            if (state.internalPhase === "conflict_resolution") {
                 const { pendingConflicts: _discarded, ...rest } = state
                 return {
                     state: {
                         ...rest,
-                        mode: "disconnected",
+                        internalPhase: "disconnected",
                         socket: null,
                     },
                     effects,
@@ -262,7 +253,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             return {
                 state: {
                     ...state,
-                    mode: "disconnected",
+                    internalPhase: "disconnected",
                     socket: null,
                 },
                 effects,
@@ -272,7 +263,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
         case "REQUEST_FILES": {
             // Plugin is asking for our local file list
             // Valid in any mode except disconnected
-            if (state.mode === "disconnected") {
+            if (state.internalPhase === "disconnected") {
                 effects.push(log("warn", "Received REQUEST_FILES while disconnected, ignoring"))
                 return { state, effects }
             }
@@ -285,8 +276,8 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
         }
 
         case "REMOTE_FILE_LIST": {
-            if (state.mode !== "handshaking") {
-                effects.push(log("warn", `Received REMOTE_FILE_LIST in mode ${state.mode}, ignoring`))
+            if (state.internalPhase !== "handshaking") {
+                effects.push(log("warn", `Received REMOTE_FILE_LIST in internalPhase=${state.internalPhase}, ignoring`))
                 return { state, effects }
             }
 
@@ -302,7 +293,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             return {
                 state: {
                     ...state,
-                    mode: "snapshot_processing",
+                    internalPhase: "snapshot_processing",
                     pendingRemoteChanges: event.files,
                 },
                 effects,
@@ -310,8 +301,8 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
         }
 
         case "CONFLICTS_DETECTED": {
-            if (state.mode !== "snapshot_processing") {
-                effects.push(log("warn", `Received CONFLICTS_DETECTED in mode ${state.mode}, ignoring`))
+            if (state.internalPhase !== "snapshot_processing") {
+                effects.push(log("warn", `Received CONFLICTS_DETECTED in internalPhase=${state.internalPhase}, ignoring`))
                 return { state, effects }
             }
 
@@ -361,7 +352,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
                 return {
                     state: {
                         ...state,
-                        mode: "conflict_resolution",
+                        internalPhase: "conflict_resolution",
                         pendingConflicts: conflicts,
                     },
                     effects,
@@ -386,7 +377,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             return {
                 state: {
                     ...state,
-                    mode: "watching",
+                    internalPhase: "watching",
                     pendingRemoteChanges: [],
                 },
                 effects,
@@ -395,7 +386,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 
         case "REMOTE_FILE_CHANGE": {
             // Use helper to validate the incoming change
-            const validation = validateIncomingChange(event.fileMeta, state.mode)
+            const validation = validateIncomingChange(event.fileMeta, state.internalPhase)
 
             if (validation.action === "queue") {
                 // Changes during initial sync are ignored - the snapshot handles reconciliation
@@ -420,7 +411,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 
         case "REMOTE_FILE_DELETE": {
             // Reject if not connected
-            if (state.mode === "disconnected") {
+            if (state.internalPhase === "disconnected") {
                 effects.push(log("warn", `Rejected delete while disconnected: ${event.fileName}`))
                 return { state, effects }
             }
@@ -466,8 +457,8 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
 
         case "CONFLICTS_RESOLVED": {
             // Only valid in conflict_resolution mode
-            if (state.mode !== "conflict_resolution") {
-                effects.push(log("warn", `Received CONFLICTS_RESOLVED in mode ${state.mode}, ignoring`))
+            if (state.internalPhase !== "conflict_resolution") {
+                effects.push(log("warn", `Received CONFLICTS_RESOLVED in internalPhase=${state.internalPhase}, ignoring`))
                 return { state, effects }
             }
 
@@ -538,7 +529,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             return {
                 state: {
                     ...rest,
-                    mode: "watching",
+                    internalPhase: "watching",
                 },
                 effects,
             }
@@ -549,8 +540,8 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             const { kind, relativePath, content } = event.event
 
             // Only process changes in watching mode
-            if (state.mode !== "watching") {
-                effects.push(log("debug", `Ignoring watcher event in ${state.mode} mode: ${kind} ${relativePath}`))
+            if (state.internalPhase !== "watching") {
+                effects.push(log("debug", `Ignoring watcher event in internalPhase=${state.internalPhase}: ${kind} ${relativePath}`))
                 return { state, effects }
             }
 
@@ -600,8 +591,8 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
         }
 
         case "CONFLICT_VERSION_RESPONSE": {
-            if (state.mode !== "conflict_resolution") {
-                effects.push(log("warn", `Received CONFLICT_VERSION_RESPONSE in mode ${state.mode}, ignoring`))
+            if (state.internalPhase !== "conflict_resolution") {
+                effects.push(log("warn", `Received CONFLICT_VERSION_RESPONSE in internalPhase=${state.internalPhase}, ignoring`))
                 return { state, effects }
             }
 
@@ -688,7 +679,7 @@ function transition(state: SyncState, event: SyncEvent): { state: SyncState; eff
             return {
                 state: {
                     ...rest,
-                    mode: "watching",
+                    internalPhase: "watching",
                     pendingRemoteChanges: [],
                 },
                 effects,
@@ -808,6 +799,8 @@ type ExecuteEffectContext =
           kernel: SyncKernel
           shutdown: () => Promise<void>
           syncState: SyncState
+          /** When set (from `start()`), updates last-emitted phase for handshake re-emit. */
+          sendSyncPhaseToPlugin?: (phase: SyncPhase) => Promise<void>
       }
     | {
           config: Config
@@ -822,6 +815,14 @@ type ExecuteEffectContext =
 
 async function executeEffect(effect: Effect, context: ExecuteEffectContext): Promise<SyncEvent[]> {
     const { config, shutdown, syncState } = context
+    const sendSyncPhase =
+        "sendSyncPhaseToPlugin" in context && context.sendSyncPhaseToPlugin
+            ? context.sendSyncPhaseToPlugin
+            : async (phase: SyncPhase) => {
+                  if (syncState.socket) {
+                      await sendMessage(syncState.socket, { type: "sync-phase", phase })
+                  }
+              }
     const hashTracker =
         "kernel" in context ? context.kernel.base : context.hashTracker
     const fileMetadataCache =
@@ -922,6 +923,11 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
             } else {
                 warn(`No socket available to send: ${effect.payload.type}`)
             }
+            return []
+        }
+
+        case "EMIT_SYNC_PHASE": {
+            await sendSyncPhase(effect.phase)
             return []
         }
 
@@ -1144,19 +1150,16 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
 
             const wasDisconnected = wasRecentlyDisconnected()
 
-            // Notify plugin that sync is complete
-            if (syncState.socket) {
-                await sendMessage(syncState.socket, { type: "sync-complete" })
-            }
-
             if (wasDisconnected) {
                 // Only show reconnect message if we actually showed the disconnect notice
                 if (didShowDisconnect()) {
                     success(
                         `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
                     )
-
+                    await sendSyncPhase("ready")
                     if (!await shutdownIfOneOffSync()) status("Watching for changes...")
+                } else {
+                    await sendSyncPhase("ready")
                 }
                 resetDisconnectState()
                 return []
@@ -1187,6 +1190,9 @@ async function executeEffect(effect: Effect, context: ExecuteEffectContext): Pro
                 tryGitInit(config.projectDir)
             }
 
+            // Effect-stable: plugin only sees `ready` after this handler's work (including git init).
+            await sendSyncPhase("ready")
+
             if (!await shutdownIfOneOffSync()) status("Watching for changes...")
             return []
         }
@@ -1209,30 +1215,31 @@ export async function start(config: Config): Promise<void> {
 
     // State machine state
     let syncState: SyncState = {
-        mode: "disconnected",
+        internalPhase: "disconnected",
         socket: null,
         pendingRemoteChanges: [],
+    }
+
+    /** Last sync-phase sent to the plugin (for re-emit on duplicate handshake). */
+    let lastEmittedSyncPhase: SyncPhase | null = null
+
+    const sendSyncPhaseToPlugin = async (phase: SyncPhase) => {
+        lastEmittedSyncPhase = phase
+        if (syncState.socket) {
+            await sendMessage(syncState.socket, { type: "sync-phase", phase })
+        }
     }
 
     // State Machine Helper
     // Process events through state machine and execute effects recursively
     async function processEvent(event: SyncEvent) {
         const socketState = syncState.socket?.readyState
-        debug(`[STATE] Processing event: ${event.type} (mode: ${syncState.mode}, socket: ${socketState ?? "none"})`)
+        debug(
+            `[STATE] Processing event: ${event.type} (internalPhase: ${syncState.internalPhase}, socket: ${socketState ?? "none"})`
+        )
 
-        const previousMode = syncState.mode
         const result = transition(syncState, event)
         syncState = result.state
-
-        if (previousMode !== syncState.mode) {
-            const cliMode = toCliSyncMode(syncState.mode)
-            if (cliMode !== null && syncState.socket) {
-                await sendMessage(syncState.socket, {
-                    type: "sync-mode",
-                    mode: cliMode,
-                })
-            }
-        }
 
         if (result.effects.length > 0) {
             debug(
@@ -1253,6 +1260,7 @@ export async function start(config: Config): Promise<void> {
                 kernel,
                 shutdown,
                 syncState,
+                sendSyncPhaseToPlugin,
             })
 
             // Recursively process follow-up events
@@ -1295,12 +1303,13 @@ export async function start(config: Config): Promise<void> {
         void (async () => {
             cancelDisconnectMessage()
 
-            if (syncState.mode !== "disconnected") {
+            if (syncState.internalPhase !== "disconnected") {
                 if (syncState.socket === client) {
-                    debug(`Ignoring duplicate handshake from active socket in ${syncState.mode} mode`)
+                    debug(`Ignoring duplicate handshake from active socket (internalPhase=${syncState.internalPhase})`)
+                    void sendSyncPhaseToPlugin(lastEmittedSyncPhase ?? "initial_sync")
                     return
                 }
-                debug(`New handshake received in ${syncState.mode} mode, resetting sync state`)
+                debug(`New handshake received (internalPhase=${syncState.internalPhase}), resetting sync state`)
                 kernel.pendingRenameConfirmations.clear()
                 await processEvent({ type: "DISCONNECT" })
             }
@@ -1475,6 +1484,7 @@ export async function start(config: Config): Promise<void> {
         void (async () => {
             kernel.pendingRenameConfirmations.clear()
             await processEvent({ type: "DISCONNECT" })
+            lastEmittedSyncPhase = null
             kernel.userActions.cleanup()
         })()
     })

@@ -23,7 +23,7 @@ export function App() {
     const command = state.project && `npx framer-code-link ${shortProjectHash(state.project.id)}`
 
     useLayoutEffect(() => {
-        switch (state.mode) {
+        switch (state.pluginMode) {
             case "delete_confirmation":
                 if (state.pendingDeletes.length === 1) {
                     void framer.showUI({
@@ -60,20 +60,20 @@ export function App() {
             case "replaced":
                 break
             default:
-                void framer.setBackgroundMessage(backgroundStatusFromMode(state.mode))
+                void framer.setBackgroundMessage(backgroundStatusFromMode(state.pluginMode))
                 void framer.hideUI()
         }
-    }, [state.mode, state.pendingDeletes.length])
+    }, [state.pluginMode, state.pendingDeletes.length])
 
     const replacedClosedRef = useRef(false)
     useEffect(() => {
-        if (state.mode === "replaced" && !replacedClosedRef.current) {
+        if (state.pluginMode === "replaced" && !replacedClosedRef.current) {
             replacedClosedRef.current = true
             void framer.closePlugin("Replaced by another Plugin connection", {
                 variant: "info",
             })
         }
-    }, [state.mode])
+    }, [state.pluginMode])
 
     // Permissions check
     useEffect(() => {
@@ -147,7 +147,7 @@ export function App() {
             dispatch({ type: "socket-disconnected", message })
         }
         const handleConnected = () => {
-            dispatch({ type: "set-mode", mode: "loading" })
+            dispatch({ type: "set-plugin-mode", pluginMode: "loading" })
         }
         const handleReplaced = () => {
             dispatch({ type: "socket-replaced" })
@@ -210,7 +210,7 @@ export function App() {
         dispatch({ type: "clear-pending-deletes" })
     }
 
-    switch (state.mode) {
+    switch (state.pluginMode) {
         case "delete_confirmation":
             return <DeletePanel files={state.pendingDeletes} onConfirm={confirmDeletes} onKeep={keepDeletes} />
 

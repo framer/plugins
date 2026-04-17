@@ -1,28 +1,28 @@
 ---
 name: Code Link Sync Refactor
-overview: "Refactor Code Link's CLI and plugin around four changes that together make the state model traceable and testable for humans and AI: concentrate mutable state in a SyncKernel, formalize echo/conflict detection as a SyncBase data model, make effects pure via EffectResult, and route all timers through a named Scheduler. Protocol changes are allowed if they materially simplify the model. transition() stays untouched. Plugin socket controller stays untouched."
+overview: "Refactor Code Link's CLI and plugin around four changes that together make the state model traceable and testable for humans and AI: concentrate mutable state in a SyncKernel, formalize echo/conflict detection as a SyncBase data model, make effects pure via EffectResult, and route all timers through a named Scheduler. Follow-up: wire protocol uses coarse SyncPhase (initial_sync | ready) via sync-phase messages; internal CLI state uses internalPhase (never sent raw). Plugin socket controller stays untouched."
 todos:
   - id: step-1
     content: "Add 3 cross-component integration tests driving start(): watcher-during-snapshot-processing, reconnect-during-conflict-resolution, handshake-replaces-active-socket. Use real fs (tempdir) + fake Watcher + in-memory WebSocket. Existing 3082 lines of tests stay untouched."
-    status: pending
+    status: completed
   - id: step-2
     content: Introduce Scheduler and timings.ts; replace every CLI setTimeout with named scheduler calls. Plugin timing untouched.
-    status: pending
+    status: completed
   - id: step-3
     content: Introduce SyncKernel wrapping existing hashTracker, fileMetadataCache, pendingRenameConfirmations, userActions; effects receive kernel.
-    status: pending
+    status: completed
   - id: step-4
     content: Introduce SyncBase; collapse hashTracker and watcher echo buffers into base lookups; delete utils/hash-tracker.ts.
-    status: pending
+    status: completed
   - id: step-5
     content: "Plugin side: introduce PluginBase, collapse api.ts lastSnapshot and sync-tracker.ts into it; delete sync-tracker.ts. Port withExpectedSnapshotPatch rollback. Socket controller untouched."
-    status: pending
+    status: completed
   - id: step-6
     content: Convert effects to return EffectResult behind a compatibility shim (one per PR); rewrite mock-heavy tests in controller.rename/once as value-equality assertions; delete shim at end. Zero vi.mock/vi.fn/as never in effect tests.
     status: pending
   - id: step-7
-    content: Align plugin Mode as projection of CLI SyncMode; move framer.showUI/hideUI/setBackgroundMessage into effect handler on mode transitions.
-    status: pending
+    content: "Superseded by sync-phase work: plugin pluginMode + syncPhase (SyncPhase from CLI); framer UI driven by useLayoutEffect from pluginMode. Removed sync-mode/CliSyncMode; ready only from SYNC_COMPLETE effect boundary."
+    status: completed
   - id: step-8
     content: "Plugin side: replace mode + syncMode + pendingDeletes + conflicts precedence logic with an explicit discriminated-union UI state/reducer so prompt lifetime is local and obvious."
     status: pending
@@ -34,7 +34,15 @@ isProject: false
 
 # Code Link Sync Refactor
 
-The refactor is four concrete changes plus several follow-on cleanup steps, each independently mergeable behind the existing test suite. No UX change, no CLI flag change. Protocol changes are allowed if they're worth it: they must materially simplify the state model, remove duplicated state/logic, or make transitions more explicit. `transition()` stays bit-for-bit identical. The plugin's `SocketConnectionController` stays untouched.
+The refactor is four concrete changes plus several follow-on cleanup steps, each independently mergeable behind the existing test suite. No UX change, no CLI flag change. Protocol changes are allowed if they're worth it: they must materially simplify the state model, remove duplicated state/logic, or make transitions more explicit. The plugin's `SocketConnectionController` stays untouched.
+
+## Implementation status (post–sync-phase cleanup)
+
+**Done:** Steps 1–5; core of step 7 (plugin derives **pluginMode** from **`syncPhase: SyncPhase`** (`initial_sync` | `ready`) plus prompts; CLI uses **`internalPhase`** on `SyncState` and emits **`sync-phase` only from effect boundaries** — `EMIT_SYNC_PHASE` / `SYNC_COMPLETE`, not on every `transition()`). Removed **`sync-mode` / `CliSyncMode` / `sync-complete`**. Integration tests assert `initial_sync` before `ready`.
+
+**Not identical to original plan:** `transition()` and `SyncState` **did** change (discriminator `internalPhase`, `EMIT_SYNC_PHASE` on `HANDSHAKE`). `executeEffect` is still largely imperative; `EffectResult` exists but full migration is **step 6 (pending)**. Step 8 (single discriminated-union UI state) **still pending** — current reducer uses **pluginMode + syncPhase + prompts** but not a full union type. Step 9 optional.
+
+**Still true:** socket controller untouched; user-visible behavior preserved for sync/delete/conflict/reconnect flows.
 
 ## The thesis in one line
 
@@ -266,24 +274,24 @@ A test-time `FakeScheduler` makes every timing-dependent behavior deterministic.
 ## Sequencing — nine independently mergeable steps
 
 
-| Step | Change                                                                                                                                                                                                                                                                                                                                             | Behavior change?                                            |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| 1    | Add targeted end-to-end tests that drive `start()` across component seams. See scope below.                                                                                                                                                                                                                                                        | No — tests only                                             |
-| 2    | Introduce `Scheduler` + `[timings.ts](packages/code-link-cli/src/timings.ts)`. Replace every CLI `setTimeout` with named scheduler calls. Durations unchanged.                                                                                                                                                                                     | No                                                          |
-| 3    | Introduce `SyncKernel`. Initially wraps existing `hashTracker`, `fileMetadataCache`, `pendingRenameConfirmations`, `userActions`. Effects receive kernel instead of raw maps.                                                                                                                                                                      | No                                                          |
-| 4    | Introduce `SyncBase`. Collapse `hashTracker` and watcher echo buffers into `SyncBase` lookups. Delete `[utils/hash-tracker.ts](packages/code-link-cli/src/utils/hash-tracker.ts)`.                                                                                                                                                                 | No (tombstone replaces 5s window with equivalent semantics) |
-| 5    | Plugin side: introduce `PluginBase`, collapse `[api.ts](plugins/code-link/src/api.ts)` `lastSnapshot` + `[sync-tracker.ts](packages/code-link-shared/src/sync-tracker.ts)` into it. Delete `sync-tracker.ts`. Port `withExpectedSnapshotPatch` rollback semantics into `PluginBase`.                                                                       | No user-visible change                                      |
-| 6    | Convert effects to return `EffectResult` behind a compatibility shim (one effect per PR). Rewrite mock-heavy tests in `controller.rename.test.ts` / `controller.once.test.ts` as value-equality assertions. Delete shim when last effect converts. End state: zero `vi.mock` / `vi.fn` / `as never` in effect tests.                                       | No                                                          |
-| 7    | Align plugin `Mode` with CLI `SyncMode` as a projection. Move `framer.showUI` / `hideUI` / `setBackgroundMessage` out of render switch in `[App.tsx:231](plugins/code-link/src/App.tsx)` into an effect handler on mode transitions. A wire message change is allowed here if it materially simplifies mode ownership.                                       | No user-visible change; protocol change allowed if worth it |
-| 8    | Plugin-side clarity pass: replace `mode + syncMode + pendingDeletes + conflicts` precedence logic with an explicit discriminated-union UI state/reducer. Goal: a junior dev can read one reducer and answer "what screen is active?" and "what prompt is active?" without cross-file inference.                                                             | No user-visible change                                      |
-| 9    | Optional hardening: add prompt/session ids to delete/conflict flows so reconnect safety is enforced by identity checks. CLI ignores stale ids; plugin clears or supersedes prompts by session. Do this only if the extra protocol surface still pays for itself after Step 8.                                                                              | No user-visible change; optional protocol change            |
+| Step | Change                                                                                                                                                                                                                                                                                                                 | Behavior change?                                            |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| 1    | Add targeted end-to-end tests that drive `start()` across component seams. See scope below.                                                                                                                                                                                                                            | No — tests only                                             |
+| 2    | Introduce `Scheduler` + `[timings.ts](packages/code-link-cli/src/timings.ts)`. Replace every CLI `setTimeout` with named scheduler calls. Durations unchanged.                                                                                                                                                         | No                                                          |
+| 3    | Introduce `SyncKernel`. Initially wraps existing `hashTracker`, `fileMetadataCache`, `pendingRenameConfirmations`, `userActions`. Effects receive kernel instead of raw maps.                                                                                                                                          | No                                                          |
+| 4    | Introduce `SyncBase`. Collapse `hashTracker` and watcher echo buffers into `SyncBase` lookups. Delete `[utils/hash-tracker.ts](packages/code-link-cli/src/utils/hash-tracker.ts)`.                                                                                                                                     | No (tombstone replaces 5s window with equivalent semantics) |
+| 5    | Plugin side: introduce `PluginBase`, collapse `[api.ts](plugins/code-link/src/api.ts)` `lastSnapshot` + `[sync-tracker.ts](packages/code-link-shared/src/sync-tracker.ts)` into it. Delete `sync-tracker.ts`. Port `withExpectedSnapshotPatch` rollback semantics into `PluginBase`.                                   | No user-visible change                                      |
+| 6    | Convert effects to return `EffectResult` behind a compatibility shim (one effect per PR). Rewrite mock-heavy tests in `controller.rename.test.ts` / `controller.once.test.ts` as value-equality assertions. Delete shim when last effect converts. End state: zero `vi.mock` / `vi.fn` / `as never` in effect tests.   | No                                                          |
+| 7    | **Done (revised):** Plugin **`pluginMode`** + CLI **`syncPhase`** (`SyncPhase`: `initial_sync` \| `ready`); wire **`sync-phase`**; never raw **`internalPhase`**. Framer UI from `useLayoutEffect` on **`pluginMode`**.                                                                                                 | Protocol break vs old `sync-mode`; beta OK                  |
+| 8    | Optional polish: full discriminated-union UI state (today: **`pluginMode` + `syncPhase` + prompts** in one reducer).                                                                                                                                                                                                   | No user-visible change                                      |
+| 9    | Optional hardening: add prompt/session ids to delete/conflict flows so reconnect safety is enforced by identity checks. CLI ignores stale ids; plugin clears or supersedes prompts by session. Do this only if the extra protocol surface still pays for itself after Step 8.                                          | No user-visible change; optional protocol change            |
 
 
 Each step passes the existing 3,082-line test suite plus the new Step 1 tests. Deferred (per your call): the pure watcher rename helper extraction and the serial event queue.
 
 ## Junior-friendly follow-ons
 
-Step 8 is about local clarity, not new behavior. Today the plugin UI state is spread across `mode`, `syncMode`, `pendingDeletes`, and `conflicts`, which forces readers to reconstruct precedence rules in their head. Replace that with one discriminated-union reducer state so prompt lifetime and background state are explicit.
+Step 8 is about local clarity, not new behavior. **`pluginMode` + `syncPhase` + `pendingDeletes` + `conflicts`** are already centralized in **`app-state.ts`**; a further step is a stricter discriminated union if desired.
 
 Step 9 is optional. If Step 8 already makes reconnect behavior obvious enough, stop there. If not, add prompt/session ids so stale responses are impossible by construction rather than merely unlikely by flow control.
 
@@ -312,11 +320,11 @@ These are correct, well-tested, or unrelated. The refactor must not touch them. 
 - `[plugins/code-link/src/utils/sockets.ts](plugins/code-link/src/utils/sockets.ts)` (390 lines, covered by `[sockets.test.ts](plugins/code-link/src/utils/sockets.test.ts)`) — `SocketConnectionController`, visibility/focus handling, `CLOSE_CODE_REPLACED`, connect-timeout graduation (1500ms → 3000ms), hidden-tab grace. Its three internal timers (`connectTrigger`, `connectTimeout`, `hiddenGrace`) already have names. **Step 2's `Scheduler` does not extend to the plugin.**
 - `[plugins/code-link/src/main.tsx](plugins/code-link/src/main.tsx)`, `[App.css](plugins/code-link/src/App.css)`
 - `[plugins/code-link/src/utils/clipboard.ts](plugins/code-link/src/utils/clipboard.ts)`, `[diffing.ts](plugins/code-link/src/utils/diffing.ts)`, `[logger.ts](plugins/code-link/src/utils/logger.ts)`, `[useConstant.ts](plugins/code-link/src/utils/useConstant.ts)`
-- `[messages.ts](plugins/code-link/src/messages.ts)` — only touched by Step 5 (drop `sync-tracker` import) and Step 7 (mode projection). Other steps: leave alone.
+- `[messages.ts](plugins/code-link/src/messages.ts)` — handles **`sync-phase`** (`phase: SyncPhase`); no longer `sync-mode` / `sync-complete`.
 
 **CLI side — protected logic within in-scope files:**
 
-- `transition()` signature and every case arm in `[controller.ts](packages/code-link-cli/src/controller.ts)` — bit-for-bit unchanged. `SyncState` / `SyncEvent` / `Effect` type definitions unchanged.
+- `transition()` in `[controller.ts](packages/code-link-cli/src/controller.ts)` — **updated**: `SyncState` uses **`internalPhase`** (was `mode`); `HANDSHAKE` adds **`EMIT_SYNC_PHASE`** (`initial_sync`). `SyncEvent` / core `Effect` variants otherwise same spirit.
 - `detectConflicts`, `autoResolveConflicts`, drift windows, sanitization in `[helpers/files.ts](packages/code-link-cli/src/helpers/files.ts)` — unchanged; only the data source shifts from `fileMetadataCache` to `kernel.base.snapshot()`.
 - `[helpers/git.ts](packages/code-link-cli/src/helpers/git.ts)`, `[helpers/skills.ts](packages/code-link-cli/src/helpers/skills.ts)`, `[helpers/certs.ts](packages/code-link-cli/src/helpers/certs.ts)`, `[helpers/installer.ts](packages/code-link-cli/src/helpers/installer.ts)` — external I/O boundaries, already correctly mocked. Do not touch.
 - `[helpers/sync-validator.ts](packages/code-link-cli/src/helpers/sync-validator.ts)` — pure, stays pure; only its consumer changes.
@@ -342,16 +350,16 @@ These are correct, well-tested, or unrelated. The refactor must not touch them. 
 - The 5s delete echo behavior (now a named tombstone)
 - On-disk format of persisted state in `[utils/state-persistence.ts](packages/code-link-cli/src/utils/state-persistence.ts)`
 - Every CLI flag
-- `transition()` signature and every case arm
+- `transition()` shape (event → state + effects); internal field is now **`internalPhase`**
 - Public API: `start(config)` from `[controller.ts](packages/code-link-cli/src/controller.ts)`
 - All UX: conflict modal, delete confirmation, reconnect behavior, tab replacement
 - **The plugin's `[SocketConnectionController](plugins/code-link/src/utils/sockets.ts)`** — visibility/focus handling, `CLOSE_CODE_REPLACED`, connect-timeout graduation, hidden-tab grace. Zero changes; it's correct and hard-won.
-- All 3,082 existing test lines keep passing unchanged.
+- Core behavioral tests preserved; some lines updated for **`internalPhase`**, **`sync-phase`**, and **`pluginMode` / `syncPhase`**.
 
 ## Risks and mitigations
 
 - `**SyncBase` tombstone changes echo timing** — Step 1 test 1 plus the existing rapid-delete tests in `files.test.ts` cover this. Tombstone TTL matches current 5s `hashTracker` window. Centralized and documented.
-- `**Protocol changes create mixed-version risk**` — acceptable when the simplification is worth it. Land CLI + plugin protocol updates together in the same branch/PR, document the rationale, and add/update tests for the new message flow. Backward compatibility with mixed old/new commits is optional, not required here.
+- `**Protocol changes create mixed-version risk`** — acceptable when the simplification is worth it. Land CLI + plugin protocol updates together in the same branch/PR, document the rationale, and add/update tests for the new message flow. Backward compatibility with mixed old/new commits is optional, not required here.
 - `**Plugin reconnect/prompt state is still hard to read**` — Step 8 removes implicit precedence rules by making UI state a discriminated union. If reconnect safety still depends on "knowing the flow," Step 9 adds prompt/session identity and turns it into an equality check.
 - `**EffectResult` conversion is a large diff** — land one effect at a time behind a compatibility shim that accepts both old-style (mutates kernel) and new-style (returns result). Remove shim at the end.
 - `**PluginBase` drops `withExpectedSnapshotPatch` transactional rollback** — port rollback semantics into `PluginBase.apply`; `[api.test.ts](plugins/code-link/src/api.test.ts)` (536 lines) covers this.

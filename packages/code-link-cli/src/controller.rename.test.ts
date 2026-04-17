@@ -58,7 +58,7 @@ describe("rename confirmation bookkeeping", () => {
                 shutdown,
                 userActions: {} as never,
                 syncState: {
-                    mode: "watching",
+                    internalPhase: "watching",
                     socket: mockSocket,
                     pendingRemoteChanges: [],
                 },
@@ -111,7 +111,7 @@ describe("rename confirmation bookkeeping", () => {
                 shutdown,
                 userActions: {} as never,
                 syncState: {
-                    mode: "watching",
+                    internalPhase: "watching",
                     socket: {} as never,
                     pendingRemoteChanges: [],
                 },
@@ -172,7 +172,7 @@ describe("rename confirmation bookkeeping", () => {
                 shutdown,
                 userActions: {} as never,
                 syncState: {
-                    mode: "watching",
+                    internalPhase: "watching",
                     socket: {} as never,
                     pendingRemoteChanges: [],
                 },
@@ -237,7 +237,7 @@ describe("rename confirmation bookkeeping", () => {
                 shutdown,
                 userActions: {} as never,
                 syncState: {
-                    mode: "watching",
+                    internalPhase: "watching",
                     socket: mockSocket,
                     pendingRemoteChanges: [],
                 },
@@ -302,7 +302,7 @@ describe("rename confirmation bookkeeping", () => {
                 shutdown,
                 userActions: {} as never,
                 syncState: {
-                    mode: "watching",
+                    internalPhase: "watching",
                     socket: {} as never,
                     pendingRemoteChanges: [],
                 },
@@ -331,7 +331,7 @@ describe("rename confirmation bookkeeping", () => {
                 shutdown,
                 userActions: {} as never,
                 syncState: {
-                    mode: "watching",
+                    internalPhase: "watching",
                     socket: mockSocket,
                     pendingRemoteChanges: [],
                 },
@@ -396,7 +396,7 @@ describe("rename confirmation bookkeeping", () => {
                 shutdown,
                 userActions: {} as never,
                 syncState: {
-                    mode: "watching",
+                    internalPhase: "watching",
                     socket: mockSocket,
                     pendingRemoteChanges: [],
                 },

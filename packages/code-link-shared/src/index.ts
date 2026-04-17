@@ -18,7 +18,7 @@ export {
 export { getPortFromHash } from "./ports.ts"
 export type {
     CancelledDelete,
-    CliSyncMode,
+    SyncPhase,
     CliToPluginMessage,
     ConflictSummary,
     ConflictVersionData,

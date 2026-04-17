@@ -80,14 +80,14 @@ describe("SYNC_COMPLETE once mode", () => {
                 kernel: new SyncKernel(),
                 shutdown,
                 syncState: {
-                    mode: "watching",
+                    internalPhase: "watching",
                     socket: mockSocket,
                     pendingRemoteChanges: [],
                 },
             }
         )
 
-        expect(sendMessage).toHaveBeenCalledWith(mockSocket, { type: "sync-complete" })
+        expect(sendMessage).toHaveBeenCalledWith(mockSocket, { type: "sync-phase", phase: "ready" })
         expect(status).toHaveBeenCalledWith("Sync complete, exiting...")
         expect(shutdown).toHaveBeenCalledTimes(1)
     })
@@ -107,7 +107,7 @@ describe("SYNC_COMPLETE once mode", () => {
                 kernel: new SyncKernel(),
                 shutdown,
                 syncState: {
-                    mode: "watching",
+                    internalPhase: "watching",
                     socket: mockSocket,
                     pendingRemoteChanges: [],
                 },

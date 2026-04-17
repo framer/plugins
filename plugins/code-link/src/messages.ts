@@ -1,15 +1,15 @@
 import {
-    type CliSyncMode,
     type CliToPluginMessage,
     type ConflictSummary,
     normalizeCodeFilePathWithExtension,
     type PendingDelete,
+    type SyncPhase,
 } from "@code-link/shared"
 import type { CodeFilesAPI } from "./api"
 import * as log from "./utils/logger"
 
 type MessageHandlerAction =
-    | { type: "sync-mode"; syncMode: CliSyncMode }
+    | { type: "sync-phase"; syncPhase: SyncPhase }
     | { type: "pending-deletes"; files: PendingDelete[] }
     | { type: "conflicts"; conflicts: ConflictSummary[] }
 
@@ -28,8 +28,8 @@ export function createMessageHandler({
                 log.debug("Publishing snapshot to CLI")
                 await api.publishSnapshot(socket)
                 break
-            case "sync-mode":
-                dispatch({ type: "sync-mode", syncMode: message.mode })
+            case "sync-phase":
+                dispatch({ type: "sync-phase", syncPhase: message.phase })
                 break
             case "file-change":
                 log.debug("Applying remote change:", message.fileName)
@@ -87,9 +87,6 @@ export function createMessageHandler({
                 )
                 break
             }
-            case "sync-complete":
-                log.debug("Sync complete")
-                break
             default:
                 log.warn("Unknown message type:", (message as unknown as { type: string }).type)
                 break

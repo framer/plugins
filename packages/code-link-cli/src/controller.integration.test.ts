@@ -214,9 +214,9 @@ describe("start() integration", () => {
         expect(ws1.lastCloseCode).toBe(CLOSE_CODE_REPLACED)
     })
 
-    it("emits sync-mode messages for the major CLI mode transitions", async () => {
+    it("emits sync-phase initial_sync then ready only after SYNC_COMPLETE effects", async () => {
         tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-int-"))
-        const projectHash = "integration-sync-mode-789"
+        const projectHash = "integration-sync-phase-789"
         const start = await loadStart()
         await start(baseConfig(projectHash))
 
@@ -226,8 +226,8 @@ describe("start() integration", () => {
         await vi.waitFor(() =>
             expect(
                 ws.sent.some(payload => {
-                    const message = JSON.parse(payload) as { type?: string; mode?: string }
-                    return message.type === "sync-mode" && message.mode === "handshaking"
+                    const message = JSON.parse(payload) as { type?: string; phase?: string }
+                    return message.type === "sync-phase" && message.phase === "initial_sync"
                 })
             ).toBe(true)
         )
@@ -238,12 +238,15 @@ describe("start() integration", () => {
 
         ws.receive({ type: "file-list", files: [] })
         await vi.waitFor(() => {
-            const syncModes = ws.sent
-                .map(payload => JSON.parse(payload) as { type?: string; mode?: string })
-                .filter(message => message.type === "sync-mode")
-                .map(message => message.mode)
+            const phases = ws.sent
+                .map(payload => JSON.parse(payload) as { type?: string; phase?: string })
+                .filter(message => message.type === "sync-phase")
+                .map(message => message.phase)
 
-            expect(syncModes).toEqual(expect.arrayContaining(["handshaking", "snapshot_processing", "watching"]))
+            const idxInitial = phases.indexOf("initial_sync")
+            const idxReady = phases.indexOf("ready")
+            expect(idxInitial).toBeGreaterThanOrEqual(0)
+            expect(idxReady).toBeGreaterThan(idxInitial)
         })
     })
 

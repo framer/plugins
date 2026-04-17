@@ -1,17 +1,19 @@
 import {
-    type CliSyncMode,
     type ConflictSummary,
     type Mode,
     type PendingDelete,
     type ProjectInfo,
+    type SyncPhase,
 } from "@code-link/shared"
-import { modeFromSyncMode } from "./sync-mode"
+import { modeFromSyncPhase } from "./sync-phase"
 
 export interface State {
-    mode: Mode
+    /** User-visible UI mode (derived + overlays; never sent on the wire). */
+    pluginMode: Mode
     project?: ProjectInfo
     permissionsGranted: boolean
-    syncMode: CliSyncMode | null
+    /** Last effect-stable phase reported by the CLI (`sync-phase` message). */
+    syncPhase: SyncPhase | null
     pendingDeletes: PendingDelete[]
     conflicts: ConflictSummary[]
 }
@@ -19,28 +21,28 @@ export interface State {
 export type Action =
     | { type: "project-loaded"; project: ProjectInfo }
     | { type: "permissions-updated"; granted: boolean }
-    | { type: "set-mode"; mode: Mode }
+    | { type: "set-plugin-mode"; pluginMode: Mode }
     | { type: "socket-disconnected"; message: string }
     | { type: "socket-replaced" }
-    | { type: "sync-mode"; syncMode: CliSyncMode }
+    | { type: "sync-phase"; syncPhase: SyncPhase }
     | { type: "pending-deletes"; files: PendingDelete[] }
     | { type: "clear-pending-deletes" }
     | { type: "conflicts"; conflicts: ConflictSummary[] }
     | { type: "clear-conflicts" }
 
 export const initialState: State = {
-    mode: "loading",
+    pluginMode: "loading",
     permissionsGranted: false,
-    syncMode: null,
+    syncPhase: null,
     pendingDeletes: [],
     conflicts: [],
 }
 
-function clearPromptState(state: State, nextMode: Mode, nextSyncMode: CliSyncMode | null): State {
+function clearPromptState(state: State, nextPluginMode: Mode, nextSyncPhase: SyncPhase | null): State {
     return {
         ...state,
-        mode: nextMode,
-        syncMode: nextSyncMode,
+        pluginMode: nextPluginMode,
+        syncPhase: nextSyncPhase,
         pendingDeletes: [],
         conflicts: [],
     }
@@ -63,57 +65,59 @@ export function reducer(state: State, action: Action): State {
             return {
                 ...state,
                 permissionsGranted: true,
-                mode: state.mode === "info" ? "loading" : state.mode,
+                pluginMode: state.pluginMode === "info" ? "loading" : state.pluginMode,
             }
-        case "set-mode":
+        case "set-plugin-mode":
             return {
                 ...state,
-                mode: action.mode,
+                pluginMode: action.pluginMode,
             }
         case "socket-disconnected":
             return clearPromptState(state, "info", null)
         case "socket-replaced":
             return clearPromptState(state, "replaced", null)
-        case "sync-mode": {
-            const nextMode =
+        case "sync-phase": {
+            const nextPluginMode =
                 state.pendingDeletes.length > 0
                     ? "delete_confirmation"
                     : state.conflicts.length > 0
                       ? "conflict_resolution"
-                      : state.mode === "replaced"
+                      : state.pluginMode === "replaced"
                         ? "replaced"
                         : !state.permissionsGranted
                           ? "info"
-                          : modeFromSyncMode(action.syncMode)
+                          : modeFromSyncPhase(action.syncPhase)
             return {
                 ...state,
-                mode: nextMode,
-                syncMode: action.syncMode,
+                pluginMode: nextPluginMode,
+                syncPhase: action.syncPhase,
             }
         }
         case "pending-deletes":
             return {
                 ...state,
                 pendingDeletes: [...state.pendingDeletes, ...action.files],
-                mode: "delete_confirmation",
+                pluginMode: "delete_confirmation",
             }
         case "clear-pending-deletes":
             return {
                 ...state,
                 pendingDeletes: [],
-                mode: state.conflicts.length > 0 ? "conflict_resolution" : modeFromSyncMode(state.syncMode),
+                pluginMode:
+                    state.conflicts.length > 0 ? "conflict_resolution" : modeFromSyncPhase(state.syncPhase),
             }
         case "conflicts":
             return {
                 ...state,
                 conflicts: action.conflicts,
-                mode: "conflict_resolution",
+                pluginMode: "conflict_resolution",
             }
         case "clear-conflicts":
             return {
                 ...state,
                 conflicts: [],
-                mode: state.pendingDeletes.length > 0 ? "delete_confirmation" : modeFromSyncMode(state.syncMode),
+                pluginMode:
+                    state.pendingDeletes.length > 0 ? "delete_confirmation" : modeFromSyncPhase(state.syncPhase),
             }
     }
 }

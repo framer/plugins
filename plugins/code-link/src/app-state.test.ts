@@ -5,8 +5,8 @@ function withPromptState(overrides: Partial<State> = {}): State {
     return {
         ...initialState,
         permissionsGranted: true,
-        syncMode: "conflict_resolution",
-        mode: "delete_confirmation",
+        syncPhase: "initial_sync",
+        pluginMode: "delete_confirmation",
         pendingDeletes: [{ fileName: "Button.tsx", content: "export const Button = 1" }],
         conflicts: [
             {
@@ -20,23 +20,23 @@ function withPromptState(overrides: Partial<State> = {}): State {
 }
 
 describe("plugin app state", () => {
-    it("clears stale prompts on disconnect before the next sync-mode arrives", () => {
+    it("clears stale prompts on disconnect before the next sync-phase arrives", () => {
         const disconnected = reducer(withPromptState(), {
             type: "socket-disconnected",
             message: "socket closed",
         })
 
-        expect(disconnected.mode).toBe("info")
-        expect(disconnected.syncMode).toBeNull()
+        expect(disconnected.pluginMode).toBe("info")
+        expect(disconnected.syncPhase).toBeNull()
         expect(disconnected.pendingDeletes).toEqual([])
         expect(disconnected.conflicts).toEqual([])
 
         const reconnected = reducer(disconnected, {
-            type: "sync-mode",
-            syncMode: "snapshot_processing",
+            type: "sync-phase",
+            syncPhase: "initial_sync",
         })
 
-        expect(reconnected.mode).toBe("syncing")
+        expect(reconnected.pluginMode).toBe("syncing")
         expect(reconnected.pendingDeletes).toEqual([])
         expect(reconnected.conflicts).toEqual([])
     })
@@ -47,8 +47,8 @@ describe("plugin app state", () => {
             granted: false,
         })
 
-        expect(next.mode).toBe("info")
-        expect(next.syncMode).toBeNull()
+        expect(next.pluginMode).toBe("info")
+        expect(next.syncPhase).toBeNull()
         expect(next.pendingDeletes).toEqual([])
         expect(next.conflicts).toEqual([])
     })
@@ -58,8 +58,8 @@ describe("plugin app state", () => {
             type: "socket-replaced",
         })
 
-        expect(next.mode).toBe("replaced")
-        expect(next.syncMode).toBeNull()
+        expect(next.pluginMode).toBe("replaced")
+        expect(next.syncPhase).toBeNull()
         expect(next.pendingDeletes).toEqual([])
         expect(next.conflicts).toEqual([])
     })

@@ -1,7 +1,9 @@
 // Shared types between plugin and CLI
 
 export type Mode = "loading" | "info" | "syncing" | "delete_confirmation" | "conflict_resolution" | "idle" | "replaced"
-export type CliSyncMode = "handshaking" | "snapshot_processing" | "conflict_resolution" | "watching"
+
+/** Coarse sync lifecycle phase from CLI → plugin (effect-stable; not internal runtime state). */
+export type SyncPhase = "initial_sync" | "ready"
 
 /** Custom close code sent when a new plugin tab replaces the active one. */
 export const CLOSE_CODE_REPLACED = 4001
@@ -51,7 +53,7 @@ export interface ConflictVersionData {
 export type CliToPluginMessage =
     | { type: "request-files" }
     | { type: "file-list"; files: FileInfo[] }
-    | { type: "sync-mode"; mode: CliSyncMode }
+    | { type: "sync-phase"; phase: SyncPhase }
     | { type: "file-change"; fileName: string; content: string }
     | {
           type: "file-delete"
@@ -64,18 +66,15 @@ export type CliToPluginMessage =
           type: "conflict-version-request"
           conflicts: ConflictVersionRequest[]
       }
-    | { type: "sync-complete" }
-
 const cliToPluginMessageTypes = [
     "request-files",
     "file-list",
-    "sync-mode",
+    "sync-phase",
     "file-change",
     "file-delete",
     "file-rename",
     "conflicts-detected",
     "conflict-version-request",
-    "sync-complete",
 ] as const
 
 export function isCliToPluginMessage(data: unknown): data is CliToPluginMessage {

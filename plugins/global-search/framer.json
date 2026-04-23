@@ -2,5 +2,6 @@
     "id": "73ea97",
     "name": "Text Search",
     "modes": ["canvas"],
+    "prereleaseStyles": true,
     "icon": "/icon.svg"
 }

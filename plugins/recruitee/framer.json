@@ -2,5 +2,6 @@
     "id": "r3cruI",
     "name": "Recruitee",
     "modes": ["syncManagedCollection", "configureManagedCollection"],
+    "prereleaseStyles": true,
     "icon": "/icon.svg"
 }

@@ -2,5 +2,6 @@
     "id": "rypq3O",
     "name": "Doodles",
     "modes": ["canvas", "image"],
+    "prereleaseStyles": true,
     "icon": "/icon.png"
 }

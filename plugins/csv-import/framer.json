@@ -2,5 +2,6 @@
     "id": "cbaf26",
     "name": "CSV Import",
     "modes": ["collection"],
+    "prereleaseStyles": true,
     "icon": "/icon.svg"
 }

@@ -2,5 +2,6 @@
     "id": "aa78c0",
     "name": "Airtable",
     "modes": ["configureManagedCollection", "syncManagedCollection"],
+    "prereleaseStyles": true,
     "icon": "/icon.png"
 }

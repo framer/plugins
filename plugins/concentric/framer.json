@@ -2,5 +2,6 @@
     "id": "pEvFy0",
     "name": "Concentric",
     "icon": "/icon.png",
-    "modes": ["canvas"]
+    "modes": ["canvas"],
+    "prereleaseStyles": true
 }

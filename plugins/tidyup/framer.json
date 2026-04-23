@@ -2,5 +2,6 @@
     "id": "ZY9oHz",
     "name": "Tidy Up",
     "modes": ["canvas"],
+    "prereleaseStyles": true,
     "icon": "/icon.png"
 }

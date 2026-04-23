@@ -4,8 +4,8 @@ import type { BrowserOptions } from "extract-colors/lib/types/Options"
 import {
     type CanvasNode,
     type ColorStop,
-    type Gradient,
     framer,
+    type Gradient,
     LinearGradient,
     supportsBackgroundGradient,
     supportsBackgroundImage,

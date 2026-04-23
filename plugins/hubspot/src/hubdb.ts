@@ -6,7 +6,7 @@ import {
     type FieldDataEntryInput,
     type FieldDataInput,
     framer,
-    ManagedCollection,
+    type ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import { fetchPublishedTable, fetchTableRows, type HubDBFile, type HubDBImage, type HubDBValueOption } from "./api"

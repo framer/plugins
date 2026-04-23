@@ -73,8 +73,8 @@ export class GlobalSearchIndexer {
 
     private async getNodeText(node: IndexableNode): Promise<string | null> {
         if (includedAttributes.includes("text") && isTextNode(node)) {
-            const html = await node.getHTML()
-            return html ? stripMarkup(html) : null
+            const text = await node.getText()
+            return text ?? null
         }
         return null
     }

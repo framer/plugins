@@ -50,7 +50,7 @@ export const Upload = forwardRef(function Upload(
                     <button
                         ref={buttonRef}
                         type="button"
-                        className="upload-cta"
+                        className="framer-button-secondary upload-cta"
                         disabled={!isAllowed}
                         title={getPermissionTitle(isAllowed)}
                     >

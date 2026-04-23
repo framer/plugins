@@ -14,6 +14,7 @@ main {
     --framer-color-tint: #493fac;
     --framer-color-tint-dark: #493fac;
     --framer-color-tint-extra-dark: #493fac;
+    --framer-color-tint-dimmed: rgba(73, 63, 172, 0.12);
 }
 
 form {

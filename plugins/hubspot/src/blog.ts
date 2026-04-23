@@ -4,7 +4,7 @@ import {
     type FieldDataEntryInput,
     type FieldDataInput,
     framer,
-    ManagedCollection,
+    type ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
 import { fetchAllBlogPosts } from "./api"

@@ -4,6 +4,7 @@ import type { BrowserOptions } from "extract-colors/lib/types/Options"
 import {
     type CanvasNode,
     type ColorStop,
+    type Gradient,
     framer,
     LinearGradient,
     supportsBackgroundGradient,
@@ -68,8 +69,8 @@ export function App() {
                 return { color: color.hex, position: index / (colors.length - 1) }
             })
 
-            const gradient = node.backgroundGradient
-                ? node.backgroundGradient.cloneWithAttributes({ stops: colorStops })
+            const gradient: Gradient = node.backgroundGradient
+                ? (node.backgroundGradient.cloneWithAttributes({ stops: colorStops }) as unknown as Gradient)
                 : new LinearGradient({ angle: 90, stops: colorStops })
 
             await framer.setAttributes(node.id, {
@@ -114,8 +115,8 @@ export function App() {
                 <>
                     <div className="interface">{colorList}</div>
                     <button
+                        className="framer-button-secondary"
                         disabled={!supportsGradient || !isAllowedToSetAttributes}
-                        style={{ opacity: supportsGradient ? 1 : 0.5 }}
                         onClick={() => {
                             if (!currentSelection) return
                             void setAsGradient(currentSelection, colors)

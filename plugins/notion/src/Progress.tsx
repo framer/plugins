@@ -51,7 +51,7 @@ export function Progress({
                 />
             </div>
             <p>
-                {current > 0 ? "Syncing" : "Loading data"}… please keep the plugin open until the process is complete.
+                {current > 0 ? "Syncing" : "Loading data"}… please keep the Plugin open until the process is complete.
             </p>
         </main>
     )

@@ -49,7 +49,7 @@ select:not(:disabled) {
     justify-content: center;
     width: 100%;
     min-height: 200px;
-    background-color: var(--framer-color-bg-secondary);
+    background-color: var(--framer-color-bg-tertiary);
     border-radius: 10px;
 }
 

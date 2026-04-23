@@ -238,21 +238,8 @@ body[data-framer-theme="dark"] .error-container {
     user-select: none;
 }
 
-.framer-button-primary {
-    --framer-color-text-reversed: #000;
-    background-color: #fff !important;
-}
-
-body[data-framer-theme="light"] {
-    .framer-button-primary {
-        --framer-color-text-reversed: #fff;
-        background-color: #000 !important;
-    }
-}
-
 .upload-cta {
     width: 100%;
-    background: var(--framer-color-bg-tertiary);
 }
 
 .asset-buttons {

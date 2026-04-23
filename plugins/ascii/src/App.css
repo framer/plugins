@@ -228,18 +228,6 @@ body[data-framer-theme="light"] .gui-label {
     opacity: 0.33;
 }
 
-.framer-button-primary {
-    --framer-color-text-reversed: #000;
-    background-color: #fff !important;
-}
-
-body[data-framer-theme="light"] {
-    .framer-button-primary {
-        --framer-color-text-reversed: #fff;
-        background-color: #000 !important;
-    }
-}
-
 .upload-cta {
     width: 100%;
 }

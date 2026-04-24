@@ -83,8 +83,8 @@ describe("createMessageHandler", () => {
     it("acknowledges delete prompt paths that are already missing in Framer", async () => {
         const dispatch = vi.fn()
         const api = {
-            readCurrentContent: vi.fn(async (fileName: string) =>
-                fileName === "Existing.tsx" ? "existing content" : undefined
+            readCurrentContent: vi.fn((fileName: string) =>
+                Promise.resolve(fileName === "Existing.tsx" ? "existing content" : undefined)
             ),
         } as unknown as import("./api").CodeFilesAPI
         const handleMessage = createMessageHandler({ dispatch, api })
@@ -113,7 +113,7 @@ describe("createMessageHandler", () => {
     it("acknowledges all missing delete prompt paths without opening an empty prompt", async () => {
         const dispatch = vi.fn()
         const api = {
-            readCurrentContent: vi.fn(async () => undefined),
+            readCurrentContent: vi.fn(() => Promise.resolve(undefined)),
         } as unknown as import("./api").CodeFilesAPI
         const handleMessage = createMessageHandler({ dispatch, api })
         const session = { connectionId: 1, promptId: "deletes" }

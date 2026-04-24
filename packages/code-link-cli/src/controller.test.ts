@@ -392,28 +392,42 @@ describe("Code Link", () => {
             ).toBe(false)
         })
 
-        it("deletes from Framer after user confirms", () => {
+        it("routes delete confirmation responses through prompt resolution", () => {
             const state = watchingState()
             const result = transition(state, {
-                type: "LOCAL_DELETE_APPROVED",
-                fileName: "Deleted.tsx",
+                type: "DELETE_CONFIRMED",
+                session: testSession,
+                fileNames: ["Deleted.tsx"],
             })
 
-            expect(result.effects.some(e => e.type === "DELETE_LOCAL_FILES")).toBe(true)
-            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
+            expect(result.effects).toEqual([
+                {
+                    type: "RESOLVE_DELETE_PROMPT",
+                    session: testSession,
+                    confirmedFileNames: ["Deleted.tsx"],
+                    cancelledFiles: [],
+                },
+            ])
         })
 
-        it("restores file when user cancels local delete", () => {
+        it("routes delete cancellation responses through prompt resolution", () => {
             const state = watchingState()
             const result = transition(state, {
-                type: "LOCAL_DELETE_REJECTED",
-                fileName: "Restored.tsx",
-                content: "export const Restored = () => <div>Back!</div>",
+                type: "DELETE_CANCELLED",
+                session: testSession,
+                files: [{ fileName: "Restored.tsx", content: "export const Restored = () => <div>Back!</div>" }],
             })
 
-            expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
-            const effect = result.effects.find(e => e.type === "WRITE_FILES")
-            expect(effect).toMatchObject({ files: [{ name: "Restored.tsx" }] })
+            expect(result.effects).toEqual([
+                {
+                    type: "RESOLVE_DELETE_PROMPT",
+                    session: testSession,
+                    confirmedFileNames: [],
+                    cancelledFiles: [
+                        { fileName: "Restored.tsx", content: "export const Restored = () => <div>Back!</div>" },
+                    ],
+                },
+            ])
         })
     })
 

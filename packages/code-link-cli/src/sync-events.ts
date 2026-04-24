@@ -1,8 +1,8 @@
 /**
  * Event + Effect + State types for the CLI state machine.
  *
- * Extracted so `effect-result.ts` can reference `SyncEvent` without depending on
- * `controller.ts` (which imports `effect-result.ts`).
+ * Kept separate from the controller so tests and helper modules can reference
+ * the state-machine vocabulary without importing controller startup code.
  */
 
 import type { CancelledDelete, CliToPluginMessage, PromptSession, SyncPhase } from "@code-link/shared"
@@ -66,8 +66,6 @@ export type SyncEvent =
     | { type: "RESEND_SYNC_PHASE"; phase: SyncPhase }
     | { type: "REMOTE_FILE_CHANGE"; file: FileInfo; fileMeta?: FileSyncMetadata }
     | { type: "REMOTE_FILE_DELETE"; fileName: string }
-    | { type: "LOCAL_DELETE_APPROVED"; fileName: string }
-    | { type: "LOCAL_DELETE_REJECTED"; fileName: string; content: string }
     | { type: "DELETE_CONFIRMED"; session: PromptSession; fileNames: string[] }
     | { type: "DELETE_CANCELLED"; session: PromptSession; files: CancelledDelete[] }
     | { type: "CONFLICTS_RESOLVED"; session: PromptSession; resolution: "local" | "remote"; fileNames: string[] }

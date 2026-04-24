@@ -4,7 +4,7 @@ import os from "os"
 import path from "path"
 import { describe, expect, it } from "vitest"
 import type { WebSocket } from "ws"
-import { type ApplyCtx, applyEffectResult, type DescribeCtx, describeEffect } from "./controller.ts"
+import { type ApplyCtx, applyEffect } from "./controller.ts"
 import { SyncRuntime } from "./runtime.ts"
 import type { SyncState } from "./sync-events.ts"
 import type { Config } from "./types.ts"
@@ -35,33 +35,23 @@ function socket({ open = true }: { open?: boolean } = {}) {
     }
 }
 
-function applyCtx(runtime: SyncRuntime, ws: WebSocket | null): ApplyCtx {
+function applyCtx(runtime: SyncRuntime, ws: WebSocket | null, overrides: Partial<Config> = {}): ApplyCtx {
     const syncState: SyncState =
         ws === null ? { internalPhase: "disconnected", socket: null } : { internalPhase: "watching", socket: ws }
     return {
-        config: config(),
+        config: config(overrides),
         runtime,
         syncState,
         shutdown: async () => {},
     }
 }
 
-describe("applyEffectResult transaction boundaries", () => {
+describe("applyEffect transaction boundaries", () => {
     it("does not record a local send when the socket send fails", async () => {
         const runtime = new SyncRuntime()
         const closed = socket({ open: false })
 
-        await applyEffectResult(
-            {
-                sends: [
-                    {
-                        message: { type: "file-change", fileName: "A.tsx", content: "x" },
-                        onSent: [{ op: "recordLocalSend", path: "A.tsx", content: "x" }],
-                    },
-                ],
-            },
-            applyCtx(runtime, closed.ws)
-        )
+        await applyEffect({ type: "SEND_LOCAL_CHANGE", fileName: "A.tsx", content: "x" }, applyCtx(runtime, closed.ws))
 
         expect(runtime.shouldSkipInboundEcho("A.tsx", "x")).toBe(false)
     })
@@ -70,26 +60,12 @@ describe("applyEffectResult transaction boundaries", () => {
         const runtime = new SyncRuntime()
         const closed = socket({ open: false })
 
-        await applyEffectResult(
+        await applyEffect(
             {
-                sends: [
-                    {
-                        message: {
-                            type: "file-rename",
-                            oldFileName: "Old.tsx",
-                            newFileName: "New.tsx",
-                            content: "x",
-                        },
-                        onSent: [
-                            {
-                                op: "registerPendingRename",
-                                oldPath: "Old.tsx",
-                                newPath: "New.tsx",
-                                content: "x",
-                            },
-                        ],
-                    },
-                ],
+                type: "SEND_FILE_RENAME",
+                oldFileName: "Old.tsx",
+                newFileName: "New.tsx",
+                content: "x",
             },
             applyCtx(runtime, closed.ws)
         )
@@ -107,11 +83,10 @@ describe("applyEffectResult transaction boundaries", () => {
             const runtime = new SyncRuntime()
             runtime.configureWorkspace(tmpDir, false)
 
-            await applyEffectResult(
+            await applyEffect(
                 {
-                    writes: {
-                        files: [{ name: "Blocked.tsx/Nested.tsx", content: "x", modifiedAt: 1 }],
-                    },
+                    type: "WRITE_FILES",
+                    files: [{ name: "Blocked.tsx/Nested.tsx", content: "x", modifiedAt: 1 }],
                 },
                 applyCtx(runtime, null)
             )
@@ -133,7 +108,7 @@ describe("applyEffectResult transaction boundaries", () => {
             runtime.configureWorkspace(tmpDir, false)
             runtime.recordSyncedContent("Folder.tsx", "x", 1)
 
-            await applyEffectResult({ deletes: ["Folder.tsx"] }, applyCtx(runtime, null))
+            await applyEffect({ type: "DELETE_LOCAL_FILES", names: ["Folder.tsx"] }, applyCtx(runtime, null))
 
             expect(runtime.metadata.get("Folder.tsx")).toBeDefined()
             expect(runtime.shouldSkipDeleteEcho("Folder.tsx")).toBe(false)
@@ -147,10 +122,7 @@ describe("applyEffectResult transaction boundaries", () => {
         runtime.mintConnectionId()
         const open = socket()
 
-        await applyEffectResult(
-            { prompt: { kind: "deleteConfirmation", fileNames: ["A.tsx"], requireConfirmation: true } },
-            applyCtx(runtime, open.ws)
-        )
+        await applyEffect({ type: "LOCAL_INITIATED_FILE_DELETE", fileNames: ["A.tsx"] }, applyCtx(runtime, open.ws))
 
         expect(open.sent).toEqual([
             expect.objectContaining({
@@ -166,14 +138,11 @@ describe("applyEffectResult transaction boundaries", () => {
         const runtime = new SyncRuntime()
         runtime.recordSyncedContent("A.tsx", "old", 1)
         const open = socket()
-        const ctx: DescribeCtx = {
-            config: config({ dangerouslyAutoDelete: true }),
-            runtime,
-            syncState: { internalPhase: "watching", socket: open.ws },
-        }
 
-        const result = await describeEffect({ type: "LOCAL_INITIATED_FILE_DELETE", fileNames: ["A.tsx"] }, ctx)
-        await applyEffectResult(result, applyCtx(runtime, open.ws))
+        await applyEffect(
+            { type: "LOCAL_INITIATED_FILE_DELETE", fileNames: ["A.tsx"] },
+            applyCtx(runtime, open.ws, { dangerouslyAutoDelete: true })
+        )
 
         expect(open.sent).toEqual([{ type: "file-delete", fileNames: ["A.tsx"] }])
         expect(runtime.metadata.get("A.tsx")).toBeUndefined()
@@ -188,11 +157,8 @@ describe("applyEffectResult transaction boundaries", () => {
         ])
         if (!prompt) throw new Error("Expected conflict prompt")
 
-        await applyEffectResult(
-            {
-                runtimeOps: [{ op: "updateActiveConflictLocal", path: "A.tsx", content: "new" }],
-                refreshConflictPrompt: true,
-            },
+        await applyEffect(
+            { type: "UPDATE_ACTIVE_CONFLICT_LOCAL", fileName: "A.tsx", content: "new" },
             applyCtx(runtime, open.ws)
         )
 
@@ -214,12 +180,8 @@ describe("applyEffectResult transaction boundaries", () => {
         ])
         if (!prompt) throw new Error("Expected conflict prompt")
 
-        await applyEffectResult(
-            {
-                runtimeOps: [{ op: "updateActiveConflictRemote", path: "A.tsx", content: "local", modifiedAt: 123 }],
-                refreshConflictPrompt: true,
-                persistState: true,
-            },
+        await applyEffect(
+            { type: "UPDATE_ACTIVE_CONFLICT_REMOTE", fileName: "A.tsx", content: "local", modifiedAt: 123 },
             applyCtx(runtime, open.ws)
         )
 
@@ -235,37 +197,25 @@ describe("applyEffectResult transaction boundaries", () => {
         const prompt = runtime.startDeletePrompt(["A.tsx", "B.tsx"])
         if (!prompt) throw new Error("Expected delete prompt")
 
-        await applyEffectResult(
-            {
-                runtimeOps: [{ op: "invalidateDeletePromptPath", path: "A.tsx" }],
-                refreshDeletePrompt: true,
-            },
-            applyCtx(runtime, open.ws)
-        )
+        await applyEffect({ type: "INVALIDATE_DELETE_PROMPT_PATH", fileName: "A.tsx" }, applyCtx(runtime, open.ws))
 
         expect(open.sent).toEqual([{ type: "delete-prompt-cleared", session: prompt.session, fileNames: ["A.tsx"] }])
         expect(runtime.getDeletePromptFileNames(prompt.session, ["A.tsx", "B.tsx"])).toEqual(["B.tsx"])
     })
 })
 
-describe("prompt response describe boundaries", () => {
-    it("turns stale delete responses into a log-only result", async () => {
+describe("prompt response apply boundaries", () => {
+    it("ignores stale delete responses without sending deletes", async () => {
         const runtime = new SyncRuntime()
         const stale: PromptSession = { connectionId: 99, promptId: "stale" }
-        const ctx: DescribeCtx = {
-            config: config(),
-            runtime,
-            syncState: { internalPhase: "watching", socket: socket().ws },
-        }
+        const open = socket()
 
-        const result = await describeEffect(
+        await applyEffect(
             { type: "RESOLVE_DELETE_PROMPT", session: stale, confirmedFileNames: ["A.tsx"], cancelledFiles: [] },
-            ctx
+            applyCtx(runtime, open.ws)
         )
 
-        expect(result).toEqual({
-            logs: [{ level: "warn", message: "Ignoring stale delete prompt response (session or paths mismatch)" }],
-        })
+        expect(open.sent).toEqual([])
     })
 
     it("ignores delete prompt responses for paths that were invalidated", async () => {
@@ -274,24 +224,19 @@ describe("prompt response describe boundaries", () => {
         const prompt = runtime.startDeletePrompt(["A.tsx", "B.tsx"])
         if (!prompt) throw new Error("Expected prompt")
         runtime.invalidateDeletePromptPath("A.tsx")
-        const ctx: DescribeCtx = {
-            config: config(),
-            runtime,
-            syncState: { internalPhase: "watching", socket: socket().ws },
-        }
+        const open = socket()
 
-        const result = await describeEffect(
+        await applyEffect(
             {
                 type: "RESOLVE_DELETE_PROMPT",
                 session: prompt.session,
                 confirmedFileNames: ["A.tsx"],
                 cancelledFiles: [],
             },
-            ctx
+            applyCtx(runtime, open.ws)
         )
 
-        expect(result).toEqual({
-            logs: [{ level: "warn", message: "Ignoring stale delete prompt response (session or paths mismatch)" }],
-        })
+        expect(open.sent).toEqual([])
+        expect(runtime.getDeletePromptFileNames(prompt.session, ["A.tsx", "B.tsx"])).toEqual(["B.tsx"])
     })
 })

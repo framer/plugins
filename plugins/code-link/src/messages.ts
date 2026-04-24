@@ -52,12 +52,24 @@ export function createMessageHandler({
                 if (message.requireConfirmation) {
                     log.debug(`Delete requires confirmation for ${message.fileNames.length} file(s)`)
                     const files: PendingDelete[] = []
+                    const missingFileNames: string[] = []
                     for (const fileName of message.fileNames) {
                         const content = await api.readCurrentContent(fileName)
                         // Only include files that exist in Framer (have content to restore)
                         if (content !== undefined) {
                             files.push({ fileName, content })
+                        } else {
+                            missingFileNames.push(fileName)
                         }
+                    }
+                    if (missingFileNames.length > 0) {
+                        socket.send(
+                            JSON.stringify({
+                                type: "delete-confirmed",
+                                fileNames: missingFileNames,
+                                session: message.session,
+                            })
+                        )
                     }
                     if (files.length === 0) {
                         // No files exist in Framer, nothing to confirm

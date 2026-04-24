@@ -46,8 +46,8 @@ describe("SEND_FILE_RENAME", () => {
         const runtime = new SyncRuntime()
         const open = socket()
         const content = "export const New = () => null"
-        runtime.armContentEcho("New.tsx", content)
-        runtime.armExpectedDeleteEcho("Old.tsx")
+        runtime.memory.armContentEcho("New.tsx", content)
+        runtime.memory.armExpectedDeleteEcho("Old.tsx")
 
         await applyEffect(
             { type: "SEND_FILE_RENAME", oldFileName: "Old.tsx", newFileName: "New.tsx", content },
@@ -55,8 +55,8 @@ describe("SEND_FILE_RENAME", () => {
         )
 
         expect(open.sent).toEqual([])
-        expect(runtime.shouldSkipInboundEcho("New.tsx", content)).toBe(false)
-        expect(runtime.shouldSkipDeleteEcho("Old.tsx")).toBe(false)
+        expect(runtime.memory.matchesContentEcho("New.tsx", content)).toBe(false)
+        expect(runtime.memory.matchesExpectedDeleteEcho("Old.tsx")).toBe(false)
     })
 
     it("sends a file rename and registers the pending rename only after send success", async () => {
@@ -117,7 +117,7 @@ describe("UPDATE_FILE_METADATA", () => {
 
             expect(runtime.metadata.get("New.tsx")?.lastRemoteTimestamp).toBe(1234)
             expect(runtime.metadata.get("Old.tsx")).toBeUndefined()
-            expect(runtime.shouldSkipInboundEcho("New.tsx", content)).toBe(true)
+            expect(runtime.memory.matchesContentEcho("New.tsx", content)).toBe(true)
             expect(runtime.getPendingRename("New.tsx")).toBeUndefined()
         } finally {
             await fs.rm(tmpDir, { recursive: true, force: true })
@@ -142,7 +142,7 @@ describe("UPDATE_FILE_METADATA", () => {
             )
 
             expect(runtime.metadata.get("New.tsx")?.lastSyncedHash).toBeDefined()
-            expect(runtime.shouldSkipInboundEcho("New.tsx", "export const New = 2")).toBe(true)
+            expect(runtime.memory.matchesContentEcho("New.tsx", "export const New = 2")).toBe(true)
             expect(runtime.getPendingRename("New.tsx")).toBeUndefined()
         } finally {
             await fs.rm(tmpDir, { recursive: true, force: true })
@@ -164,7 +164,7 @@ describe("UPDATE_FILE_METADATA", () => {
             )
 
             expect(runtime.metadata.get("New.tsx")?.lastRemoteTimestamp).toBe(5678)
-            expect(runtime.shouldSkipInboundEcho("New.tsx", pending)).toBe(false)
+            expect(runtime.memory.matchesContentEcho("New.tsx", pending)).toBe(false)
             expect(runtime.getPendingRename("New.tsx")).toBeUndefined()
         } finally {
             await fs.rm(tmpDir, { recursive: true, force: true })
@@ -180,7 +180,7 @@ describe("SEND_LOCAL_CHANGE", () => {
         await applyEffect({ type: "SEND_LOCAL_CHANGE", fileName: "A.tsx", content: "x" }, ctx(runtime, open.ws))
 
         expect(open.sent).toEqual([{ type: "file-change", fileName: "A.tsx", content: "x" }])
-        expect(runtime.shouldSkipInboundEcho("A.tsx", "x")).toBe(true)
+        expect(runtime.memory.matchesContentEcho("A.tsx", "x")).toBe(true)
     })
 
     it("skips the push when content matches the last synced hash", async () => {
@@ -195,7 +195,7 @@ describe("SEND_LOCAL_CHANGE", () => {
 
     it("skips the push when the change is an inbound echo", async () => {
         const runtime = new SyncRuntime()
-        runtime.armContentEcho("A.tsx", "x")
+        runtime.memory.armContentEcho("A.tsx", "x")
         const open = socket()
 
         await applyEffect({ type: "SEND_LOCAL_CHANGE", fileName: "A.tsx", content: "x" }, ctx(runtime, open.ws))

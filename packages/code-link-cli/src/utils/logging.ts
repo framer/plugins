@@ -11,14 +11,28 @@
 
 import pc from "picocolors"
 
-export enum LogLevel {
-    DEBUG = 0,
-    INFO = 1,
-    WARN = 2,
-    ERROR = 3,
+export const LogLevel = {
+    DEBUG: "debug",
+    INFO: "info",
+    WARN: "warn",
+    ERROR: "error",
+} as const
+
+export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel]
+export type LogEntryLevel = "info" | "debug" | "warn" | "success" | "status"
+
+const LOG_PRIORITY: Record<LogLevel, number> = {
+    [LogLevel.DEBUG]: 0,
+    [LogLevel.INFO]: 1,
+    [LogLevel.WARN]: 2,
+    [LogLevel.ERROR]: 3,
 }
 
-let currentLevel = LogLevel.INFO
+let currentLevel: LogLevel = LogLevel.INFO
+
+function allows(level: LogLevel): boolean {
+    return LOG_PRIORITY[currentLevel] <= LOG_PRIORITY[level]
+}
 
 // Deduplication state
 let lastMessage = ""
@@ -82,7 +96,7 @@ function logWithDedupe(message: string, writer: () => void): void {
 export function banner(version: string, port: number): void {
     console.log()
     let message = `  ${pc.cyan(pc.bold("⚡ Code Link"))} ${pc.dim(`v${version}`)}`
-    if (currentLevel <= LogLevel.DEBUG) {
+    if (allows(LogLevel.DEBUG)) {
         message += `  ${pc.dim("Port")} ${pc.yellow(port)}`
     }
     console.log(message)
@@ -93,7 +107,7 @@ export function banner(version: string, port: number): void {
  * Debug-level logging - only shown with --verbose flag
  */
 export function debug(message: string, ...args: unknown[]): void {
-    if (currentLevel <= LogLevel.DEBUG) {
+    if (allows(LogLevel.DEBUG)) {
         console.debug(pc.dim(`[DEBUG] ${message}`), ...args)
     }
 }
@@ -102,7 +116,7 @@ export function debug(message: string, ...args: unknown[]): void {
  * Info-level logging - shown by default, no prefix
  */
 export function info(message: string, ...args: unknown[]): void {
-    if (currentLevel <= LogLevel.INFO) {
+    if (allows(LogLevel.INFO)) {
         const formatted = args.length > 0 ? `${message} ${args.join(" ")}` : message
         logWithDedupe(formatted, () => {
             console.log(formatted)
@@ -114,7 +128,7 @@ export function info(message: string, ...args: unknown[]): void {
  * Warning-level logging
  */
 export function warn(message: string, ...args: unknown[]): void {
-    if (currentLevel <= LogLevel.WARN) {
+    if (allows(LogLevel.WARN)) {
         if (message === lastMessage) return // Skip exact duplicates silently
         flushDedupe()
         lastMessage = message
@@ -127,7 +141,7 @@ export function warn(message: string, ...args: unknown[]): void {
  * Error-level logging
  */
 export function error(message: string, ...args: unknown[]): void {
-    if (currentLevel <= LogLevel.ERROR) {
+    if (allows(LogLevel.ERROR)) {
         flushDedupe()
         console.error(pc.red(`✗ ${message}`), ...args)
     }
@@ -137,7 +151,7 @@ export function error(message: string, ...args: unknown[]): void {
  * Success message with checkmark
  */
 export function success(message: string, ...args: unknown[]): void {
-    if (currentLevel <= LogLevel.INFO) {
+    if (allows(LogLevel.INFO)) {
         flushDedupe()
         console.log(pc.green(`✓ ${message}`), ...args)
     }
@@ -147,7 +161,7 @@ export function success(message: string, ...args: unknown[]): void {
  * File sync indicators
  */
 export function fileDown(fileName: string): void {
-    if (currentLevel <= LogLevel.INFO) {
+    if (allows(LogLevel.INFO)) {
         const msg = `  ${pc.blue("↓")} ${fileName}`
         logWithDedupe(msg, () => {
             console.log(msg)
@@ -156,7 +170,7 @@ export function fileDown(fileName: string): void {
 }
 
 export function fileUp(fileName: string): void {
-    if (currentLevel <= LogLevel.INFO) {
+    if (allows(LogLevel.INFO)) {
         const msg = `  ${pc.green("↑")} ${fileName}`
         logWithDedupe(msg, () => {
             console.log(msg)
@@ -165,7 +179,7 @@ export function fileUp(fileName: string): void {
 }
 
 export function fileDelete(fileName: string): void {
-    if (currentLevel <= LogLevel.INFO) {
+    if (allows(LogLevel.INFO)) {
         const msg = `  ${pc.red("×")} ${fileName}`
         logWithDedupe(msg, () => {
             console.log(msg)
@@ -177,7 +191,7 @@ export function fileDelete(fileName: string): void {
  * Status message (dimmed, for "watching for changes..." etc)
  */
 export function status(message: string): void {
-    if (currentLevel <= LogLevel.INFO) {
+    if (allows(LogLevel.INFO)) {
         flushDedupe()
         console.log(pc.dim(`  ${message}`))
     }

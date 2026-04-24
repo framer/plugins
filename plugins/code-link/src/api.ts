@@ -1,6 +1,5 @@
 import { normalizeCodeFilePathWithExtension } from "@code-link/shared"
 import { framer } from "framer-plugin"
-import { PluginBase } from "./plugin-base"
 import * as log from "./utils/logger"
 
 /**
@@ -9,7 +8,82 @@ import * as log from "./utils/logger"
  * Tries to be as stateless as possible.
  */
 
-export class CodeFilesAPI extends PluginBase {
+export class CodeFilesAPI {
+    private readonly snapshotByPath = new Map<string, string>()
+
+    remember(fileName: string, content: string): void {
+        this.setSnapshotContent(fileName, content)
+    }
+
+    /** True when inbound content matches what we last recorded for this path (echo / no-op). */
+    shouldSkip(fileName: string, content: string): boolean {
+        const previous = this.getSnapshotContent(fileName)
+        return previous !== undefined && previous === content
+    }
+
+    forget(fileName: string): void {
+        this.deleteSnapshotEntry(fileName)
+    }
+
+    clear(): void {
+        this.snapshotByPath.clear()
+    }
+
+    getSnapshotContent(fileName: string): string | undefined {
+        return this.snapshotByPath.get(normalizeCodeFilePathWithExtension(fileName))
+    }
+
+    private setSnapshotContent(fileName: string, content: string): void {
+        this.snapshotByPath.set(normalizeCodeFilePathWithExtension(fileName), content)
+    }
+
+    private deleteSnapshotEntry(fileName: string): void {
+        this.snapshotByPath.delete(normalizeCodeFilePathWithExtension(fileName))
+    }
+
+    private getSnapshotPaths(): string[] {
+        return [...this.snapshotByPath.keys()]
+    }
+
+    private async withExpectedSnapshotPatch<T>(
+        patch: {
+            upserts?: { fileName: string; content: string }[]
+            deletes?: string[]
+        },
+        run: () => Promise<T>
+    ): Promise<T> {
+        const previousEntries = new Map<string, string | undefined>()
+
+        for (const fileName of patch.deletes ?? []) {
+            const key = normalizeCodeFilePathWithExtension(fileName)
+            if (!previousEntries.has(key)) {
+                previousEntries.set(key, this.snapshotByPath.get(key))
+            }
+            this.snapshotByPath.delete(key)
+        }
+
+        for (const entry of patch.upserts ?? []) {
+            const key = normalizeCodeFilePathWithExtension(entry.fileName)
+            if (!previousEntries.has(key)) {
+                previousEntries.set(key, this.snapshotByPath.get(key))
+            }
+            this.snapshotByPath.set(key, entry.content)
+        }
+
+        try {
+            return await run()
+        } catch (error) {
+            for (const [fileName, previousContent] of previousEntries) {
+                if (previousContent === undefined) {
+                    this.snapshotByPath.delete(fileName)
+                } else {
+                    this.snapshotByPath.set(fileName, previousContent)
+                }
+            }
+            throw error
+        }
+    }
+
     private async getCodeFilesWithNormalizedPaths() {
         // Always all files instead of single file calls.
         // The API internally does that anyways.

@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, type Mock, vi } from "vitest"
 import { CodeFilesAPI } from "./api"
-import { PluginBase } from "./plugin-base"
 
 const { framerMock } = vi.hoisted(() => ({
     framerMock: {
@@ -99,9 +98,9 @@ async function publishSnapshotAndClear({
     socket.send.mockClear()
 }
 
-describe("PluginBase", () => {
+describe("CodeFilesAPI snapshot echo state", () => {
     it("does not treat unseen empty files as echoes", () => {
-        const state = new PluginBase()
+        const state = new CodeFilesAPI()
 
         expect(state.shouldSkip("Empty.tsx", "")).toBe(false)
 
@@ -111,7 +110,7 @@ describe("PluginBase", () => {
     })
 
     it("uses exact content for echo checks", () => {
-        const state = new PluginBase()
+        const state = new CodeFilesAPI()
         const head = "h".repeat(50)
         const tail = "t".repeat(50)
 

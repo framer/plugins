@@ -3,10 +3,9 @@ import { normalizeCodeFilePathWithExtension, type PromptSession, type SyncPhase 
 import path from "path"
 import type { Installer } from "./helpers/installer.ts"
 import { createScheduler, TIMINGS } from "./scheduler.ts"
-import { type FileOperationMemory, SyncMemory } from "./sync-memory.ts"
+import { SyncMemory } from "./sync-memory.ts"
 import type { Conflict } from "./types.ts"
-import type { FileMetadataCache, FileSyncMetadata } from "./utils/file-metadata-cache.ts"
-import type { PersistedFileState } from "./utils/state-persistence.ts"
+import type { FileMetadataCache } from "./utils/file-metadata-cache.ts"
 
 export interface PendingRenameConfirmation {
     oldFileName: string
@@ -17,36 +16,6 @@ export interface RuntimeWorkspace {
     readonly projectDir: string | null
     readonly filesDir: string | null
     readonly projectDirCreated: boolean
-}
-
-export interface ReadonlyFileMetadataCache {
-    get(fileName: string): FileSyncMetadata | undefined
-    has(fileName: string): boolean
-    size(): number
-    getPersistedState(): Map<string, PersistedFileState>
-}
-
-export interface ReadonlyRuntime {
-    readonly workspace: RuntimeWorkspace
-    readonly metadata: ReadonlyFileMetadataCache
-    readonly disconnectUi: {
-        didShowNotice(): boolean
-        wasRecentlyDisconnected(): boolean
-    }
-    readonly lastEmittedSyncPhase: SyncPhase | null
-    readonly connectionId: number
-
-    normalizePath(path: string): string
-    shouldSkipInboundEcho(path: string, content: string): boolean
-    shouldSkipDeleteEcho(path: string): boolean
-    isEcho(path: string, content: string): boolean
-    isDeleteEcho(path: string): boolean
-    getPendingRename(newPath: string): PendingRenameConfirmation | undefined
-    hasActiveDeletePrompt(session: PromptSession): boolean
-    getDeletePromptFileNames(session: PromptSession, fileNames: string[]): string[] | null
-    getConflictPromptConflicts(session: PromptSession, fileNames: string[]): Conflict[] | null
-    isActiveConflictPath(path: string): boolean
-    isActiveDeletePromptPath(path: string): boolean
 }
 
 interface DeletePromptState {
@@ -109,11 +78,11 @@ function normalizeConflict(filePath: (path: string) => string, conflict: Conflic
 /**
  * SyncRuntime owns lifecycle truth.
  *
- * Search this file and `sync-memory.ts` first for race-sensitive state. The
- * controller can read through `ReadonlyRuntime`, but all mutation is named here.
+ * Search this file and `sync-memory.ts` first for race-sensitive state.
+ * Lifecycle state lives here; file-level sync facts live on `memory`.
  */
 export class SyncRuntime {
-    private readonly memory = new SyncMemory()
+    readonly memory = new SyncMemory()
     private readonly pendingRenameConfirmations = new Map<string, PendingRenameConfirmation>()
     private readonly disconnectScheduler = createScheduler()
 
@@ -144,10 +113,6 @@ export class SyncRuntime {
 
     get metadata(): FileMetadataCache {
         return this.memory.metadata
-    }
-
-    fileOperations(): FileOperationMemory {
-        return this.memory
     }
 
     configureWorkspace(projectDir: string, projectDirCreated: boolean): void {
@@ -201,52 +166,6 @@ export class SyncRuntime {
         },
     }
 
-    // SyncMemory Facade
-
-    normalizePath(filePath: string): string {
-        return this.memory.normalizePath(filePath)
-    }
-
-    shouldSkipInboundEcho(filePath: string, content: string): boolean {
-        return this.memory.matchesContentEcho(filePath, content)
-    }
-
-    shouldSkipDeleteEcho(filePath: string): boolean {
-        return this.memory.matchesExpectedDeleteEcho(filePath)
-    }
-
-    isEcho(filePath: string, content: string): boolean {
-        return this.memory.isContentEcho(filePath, content)
-    }
-
-    isDeleteEcho(filePath: string): boolean {
-        return this.memory.matchesExpectedDeleteEcho(filePath)
-    }
-
-    armContentEcho(filePath: string, content: string): void {
-        this.memory.armContentEcho(filePath, content)
-    }
-
-    clearContentEcho(filePath: string): void {
-        this.memory.clearContentEcho(filePath)
-    }
-
-    armExpectedDeleteEcho(filePath: string): void {
-        this.memory.armExpectedDeleteEcho(filePath)
-    }
-
-    clearExpectedDeleteEcho(filePath: string): void {
-        this.memory.clearExpectedDeleteEcho(filePath)
-    }
-
-    recordSyncedContent(filePath: string, content: string, modifiedAt: number): void {
-        this.memory.recordSyncedContent(filePath, content, modifiedAt)
-    }
-
-    recordSyncedDelete(filePath: string): void {
-        this.memory.recordSyncedDelete(filePath)
-    }
-
     // Pending Renames
 
     getPendingRename(newPath: string): PendingRenameConfirmation | undefined {
@@ -274,7 +193,7 @@ export class SyncRuntime {
         }
         const newNames: string[] = []
         for (const fileName of fileNames) {
-            const normalized = this.normalizePath(fileName)
+            const normalized = this.memory.normalizePath(fileName)
             if (prompt.fileNames.has(normalized)) continue
             prompt.fileNames.add(normalized)
             newNames.push(normalized)
@@ -292,7 +211,7 @@ export class SyncRuntime {
         if (!prompt || !sameSession(prompt.session, session)) return null
         const requested =
             fileNames.length > 0
-                ? fileNames.map(fileName => this.normalizePath(fileName))
+                ? fileNames.map(fileName => this.memory.normalizePath(fileName))
                 : [...prompt.fileNames.values()]
         const active = requested.filter(fileName => prompt.fileNames.has(fileName))
         return active.length > 0 ? active : null
@@ -303,19 +222,19 @@ export class SyncRuntime {
         if (!prompt || !sameSession(prompt.session, session)) return false
         const requested = fileNames.length > 0 ? fileNames : [...prompt.fileNames.values()]
         for (const fileName of requested) {
-            prompt.fileNames.delete(this.normalizePath(fileName))
+            prompt.fileNames.delete(this.memory.normalizePath(fileName))
         }
         if (prompt.fileNames.size === 0) this.activeDeletePrompt = null
         return true
     }
 
     isActiveDeletePromptPath(filePath: string): boolean {
-        return this.activeDeletePrompt?.fileNames.has(this.normalizePath(filePath)) ?? false
+        return this.activeDeletePrompt?.fileNames.has(this.memory.normalizePath(filePath)) ?? false
     }
 
     invalidateDeletePromptPath(filePath: string): DeletePromptChange {
         const prompt = this.activeDeletePrompt
-        const normalized = this.normalizePath(filePath)
+        const normalized = this.memory.normalizePath(filePath)
         if (!prompt || !prompt.fileNames.has(normalized)) return { changed: false }
         prompt.fileNames.delete(normalized)
         const cleared = prompt.fileNames.size === 0
@@ -336,7 +255,7 @@ export class SyncRuntime {
         }
 
         for (const conflict of conflicts) {
-            const normalized = normalizeConflict(filePath => this.normalizePath(filePath), conflict)
+            const normalized = normalizeConflict(filePath => this.memory.normalizePath(filePath), conflict)
             if (conflictIsResolved(normalized)) {
                 prompt.conflicts.delete(normalized.fileName)
             } else {
@@ -359,7 +278,7 @@ export class SyncRuntime {
         if (!prompt || !sameSession(prompt.session, session)) return null
         const requested =
             fileNames.length > 0
-                ? fileNames.map(fileName => this.normalizePath(fileName))
+                ? fileNames.map(fileName => this.memory.normalizePath(fileName))
                 : [...prompt.conflicts.keys()]
         const conflicts = requested
             .map(fileName => prompt.conflicts.get(fileName))
@@ -372,19 +291,19 @@ export class SyncRuntime {
         if (!prompt || !sameSession(prompt.session, session)) return false
         const requested = fileNames.length > 0 ? fileNames : [...prompt.conflicts.keys()]
         for (const fileName of requested) {
-            prompt.conflicts.delete(this.normalizePath(fileName))
+            prompt.conflicts.delete(this.memory.normalizePath(fileName))
         }
         if (prompt.conflicts.size === 0) this.activeConflictPrompt = null
         return true
     }
 
     isActiveConflictPath(filePath: string): boolean {
-        return this.activeConflictPrompt?.conflicts.has(this.normalizePath(filePath)) ?? false
+        return this.activeConflictPrompt?.conflicts.has(this.memory.normalizePath(filePath)) ?? false
     }
 
     updateActiveConflictLocal(filePath: string, content: string | null, modifiedAt?: number): ConflictPromptChange {
         const prompt = this.activeConflictPrompt
-        const key = this.normalizePath(filePath)
+        const key = this.memory.normalizePath(filePath)
         const conflict = prompt?.conflicts.get(key)
         if (!prompt || !conflict) return { changed: false }
         const next = {
@@ -407,7 +326,7 @@ export class SyncRuntime {
 
     updateActiveConflictRemote(filePath: string, content: string | null, modifiedAt?: number): ConflictPromptChange {
         const prompt = this.activeConflictPrompt
-        const key = this.normalizePath(filePath)
+        const key = this.memory.normalizePath(filePath)
         const conflict = prompt?.conflicts.get(key)
         if (!prompt || !conflict) return { changed: false }
         const next = {

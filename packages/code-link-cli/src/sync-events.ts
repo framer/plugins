@@ -8,6 +8,9 @@
 import type { CancelledDelete, CliToPluginMessage, PromptSession, SyncPhase } from "@code-link/shared"
 import type { WebSocket } from "ws"
 import type { Conflict, ConflictVersionData, FileInfo, WatcherEvent } from "./types.ts"
+import type { LogEntryLevel } from "./utils/logging.ts"
+
+export type WriteEchoPolicy = "authoritative" | "skip-expected-echoes"
 
 export type DisconnectedState = {
     internalPhase: "disconnected"
@@ -35,6 +38,10 @@ export type WatchingState = {
     socket: WebSocket
 }
 
+/**
+ * `internalPhase` is the controller's private state-machine phase.
+ * Keep it distinct from plugin-visible `sync-phase` messages.
+ */
 export type SyncState =
     | DisconnectedState
     | HandshakingState
@@ -94,7 +101,11 @@ export type Effect =
           type: "WRITE_FILES"
           files: FileInfo[]
           silent?: boolean
-          skipEcho?: boolean
+          /**
+           * Live Framer file-change messages may echo a local send we just made.
+           * Snapshot/conflict writes are authoritative and must not be filtered.
+           */
+          echoPolicy: WriteEchoPolicy
       }
     | { type: "DELETE_LOCAL_FILES"; names: string[] }
     | { type: "REQUEST_CONFLICT_DECISIONS"; conflicts: Conflict[] }
@@ -156,6 +167,6 @@ export type Effect =
       }
     | {
           type: "LOG"
-          level: "info" | "debug" | "warn" | "success"
+          level: LogEntryLevel
           message: string
       }

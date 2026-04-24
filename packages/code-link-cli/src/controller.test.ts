@@ -202,6 +202,66 @@ describe("Code Link", () => {
             expect(result.state.internalPhase).toBe("watching")
             expect(result.effects.some(e => e.type === "REQUEST_CONFLICT_DECISIONS")).toBe(true)
         })
+
+        it("updates pending conflict data from remote changes before showing the prompt", () => {
+            const state = conflictResolutionState([
+                { fileName: "Test.tsx", localContent: "local", remoteContent: "old remote", lastSyncedAt: 5_000 },
+            ])
+
+            const result = transition(state, {
+                type: "REMOTE_FILE_CHANGE",
+                file: { name: "Test.tsx", content: "new remote", modifiedAt: 10_000 },
+            })
+
+            expect(result.state).toMatchObject({
+                internalPhase: "conflict_resolution",
+                pendingConflicts: [
+                    {
+                        fileName: "Test.tsx",
+                        localContent: "local",
+                        remoteContent: "new remote",
+                        remoteModifiedAt: 10_000,
+                    },
+                ],
+            })
+            expect(result.effects).toContainEqual(
+                expect.objectContaining({ type: "LOG", message: "Updating pending conflict from remote change: Test.tsx" })
+            )
+        })
+
+        it("updates pending conflict data from remote deletes before showing the prompt", () => {
+            const state = conflictResolutionState([
+                { fileName: "Test.tsx", localContent: "local", remoteContent: "old remote", lastSyncedAt: 5_000 },
+            ])
+
+            const result = transition(state, { type: "REMOTE_FILE_DELETE", fileName: "Test.tsx" })
+
+            expect(result.state).toMatchObject({
+                internalPhase: "conflict_resolution",
+                pendingConflicts: [{ fileName: "Test.tsx", localContent: "local", remoteContent: null }],
+            })
+            expect(result.effects).toContainEqual(
+                expect.objectContaining({ type: "LOG", message: "Updating pending conflict from remote delete: Test.tsx" })
+            )
+        })
+
+        it("continues syncing unrelated remote changes while awaiting conflict versions", () => {
+            const state = conflictResolutionState([
+                { fileName: "Conflict.tsx", localContent: "local", remoteContent: "remote", lastSyncedAt: 5_000 },
+            ])
+
+            const result = transition(state, {
+                type: "REMOTE_FILE_CHANGE",
+                file: { name: "Unrelated.tsx", content: "remote", modifiedAt: 10_000 },
+            })
+
+            expect(result.state).toBe(state)
+            expect(result.effects).toContainEqual({
+                type: "WRITE_FILES",
+                files: [{ name: "Unrelated.tsx", content: "remote", modifiedAt: 10_000 }],
+                echoPolicy: "skip-expected-echoes",
+            })
+        })
     })
 
     // LIVE EDITING

@@ -2,7 +2,7 @@ import { type ConflictSummary, type PendingDelete, shortProjectHash } from "@cod
 import { framer } from "framer-plugin"
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { CodeFilesAPI } from "./api"
-import { initialState, reducer, type UiState } from "./app-state"
+import { initialState, type PluginViewState, reducer } from "./app-state"
 import { createMessageHandler } from "./messages"
 import { copyToClipboard } from "./utils/clipboard"
 import { computeLineDiff } from "./utils/diffing"
@@ -18,9 +18,9 @@ export function App() {
     const command = state.project && `npx framer-code-link ${shortProjectHash(state.project.id)}`
 
     useLayoutEffect(() => {
-        switch (state.ui.kind) {
+        switch (state.view.kind) {
             case "deletePrompt":
-                if (state.ui.deletes.length === 1) {
+                if (state.view.deletes.length === 1) {
                     void framer.showUI({
                         width: 260,
                         height: 187,
@@ -55,20 +55,20 @@ export function App() {
             case "replaced":
                 break
             default:
-                void framer.setBackgroundMessage(backgroundStatusFromUi(state.ui))
+                void framer.setBackgroundMessage(backgroundStatusFromViewState(state.view))
                 void framer.hideUI()
         }
-    }, [state.ui])
+    }, [state.view])
 
     const replacedClosedRef = useRef(false)
     useEffect(() => {
-        if (state.ui.kind === "replaced" && !replacedClosedRef.current) {
+        if (state.view.kind === "replaced" && !replacedClosedRef.current) {
             replacedClosedRef.current = true
             void framer.closePlugin("Replaced by another Plugin connection", {
                 variant: "info",
             })
         }
-    }, [state.ui.kind])
+    }, [state.view.kind])
 
     // Permissions check
     useEffect(() => {
@@ -173,50 +173,50 @@ export function App() {
     }, [])
 
     const resolveConflicts = (choice: "local" | "remote") => {
-        if (state.ui.kind !== "conflictPrompt") {
+        if (state.view.kind !== "conflictPrompt") {
             return
         }
         sendMessage({
             type: "conflicts-resolved",
             resolution: choice,
-            session: state.ui.session,
-            fileNames: state.ui.conflicts.map(c => c.fileName),
+            session: state.view.session,
+            fileNames: state.view.conflicts.map(c => c.fileName),
         })
         dispatch({ type: "clear-conflicts" })
     }
 
     const confirmDeletes = () => {
-        if (state.ui.kind !== "deletePrompt" || state.ui.deletes.length === 0) {
+        if (state.view.kind !== "deletePrompt" || state.view.deletes.length === 0) {
             return
         }
 
         sendMessage({
             type: "delete-confirmed",
-            fileNames: state.ui.deletes.map(file => file.fileName),
-            session: state.ui.session,
+            fileNames: state.view.deletes.map(file => file.fileName),
+            session: state.view.session,
         })
         dispatch({ type: "clear-pending-deletes" })
     }
 
     const keepDeletes = () => {
-        if (state.ui.kind !== "deletePrompt" || state.ui.deletes.length === 0) {
+        if (state.view.kind !== "deletePrompt" || state.view.deletes.length === 0) {
             return
         }
 
         sendMessage({
             type: "delete-cancelled",
-            files: state.ui.deletes,
-            session: state.ui.session,
+            files: state.view.deletes,
+            session: state.view.session,
         })
         dispatch({ type: "clear-pending-deletes" })
     }
 
-    switch (state.ui.kind) {
+    switch (state.view.kind) {
         case "deletePrompt":
-            return <DeletePanel files={state.ui.deletes} onConfirm={confirmDeletes} onKeep={keepDeletes} />
+            return <DeletePanel files={state.view.deletes} onConfirm={confirmDeletes} onKeep={keepDeletes} />
 
         case "conflictPrompt":
-            return <ConflictPanel conflicts={state.ui.conflicts} onResolve={resolveConflicts} />
+            return <ConflictPanel conflicts={state.view.conflicts} onResolve={resolveConflicts} />
 
         case "info":
             return <InfoPanel command={command} />
@@ -228,8 +228,8 @@ export function App() {
     }
 }
 
-function backgroundStatusFromUi(ui: UiState): string | null {
-    switch (ui.kind) {
+function backgroundStatusFromViewState(viewState: PluginViewState): string | null {
+    switch (viewState.kind) {
         case "loading":
             return "Loading…"
         case "info":

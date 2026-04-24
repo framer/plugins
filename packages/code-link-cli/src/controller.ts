@@ -26,14 +26,24 @@ import {
 import { tryGitInit } from "./helpers/git.ts"
 import { Installer } from "./helpers/installer.ts"
 import { initWatcher } from "./helpers/watcher.ts"
-import { type ReadonlyRuntime, SyncRuntime } from "./runtime.ts"
-import type { Effect, SyncEvent, SyncState } from "./sync-events.ts"
-import type { Config } from "./types.ts"
-import { debug, error, fileDelete, fileDown, fileUp, info, status, success, warn } from "./utils/logging.ts"
+import { type ConflictPromptChange, SyncRuntime } from "./runtime.ts"
+import type { Effect, SyncEvent, SyncState, WriteEchoPolicy } from "./sync-events.ts"
+import type { Config, Conflict, FileInfo } from "./types.ts"
+import {
+    debug,
+    error,
+    fileDelete,
+    fileDown,
+    fileUp,
+    info,
+    type LogEntryLevel,
+    status,
+    success,
+    warn,
+} from "./utils/logging.ts"
 import { findOrCreateProjectDirectory } from "./utils/project.ts"
 import { hashFileContent } from "./utils/state-persistence.ts"
 
-export type { ReadonlyRuntime } from "./runtime.ts"
 export type { SyncState } from "./sync-events.ts"
 
 function createEventQueue(): {
@@ -53,7 +63,7 @@ function createEventQueue(): {
 }
 
 /** Log helper */
-function log(level: "info" | "debug" | "warn" | "success", message: string): Effect {
+function log(level: LogEntryLevel, message: string): Effect {
     return { type: "LOG", level, message }
 }
 
@@ -61,6 +71,27 @@ export interface TransitionRead {
     wasRecentlyDisconnected?: () => boolean
     isActiveConflictPath?: (path: string) => boolean
     isActiveDeletePromptPath?: (path: string) => boolean
+}
+
+function updatePendingConflictRemote(
+    pendingConflicts: Conflict[],
+    fileName: string,
+    content: string | null,
+    modifiedAt?: number
+): { changed: boolean; conflicts: Conflict[] } {
+    const normalized = normalizeCodeFilePathWithExtension(fileName)
+    let changed = false
+    const conflicts = pendingConflicts.map(conflict => {
+        if (normalizeCodeFilePathWithExtension(conflict.fileName) !== normalized) return conflict
+        changed = true
+        return {
+            ...conflict,
+            fileName: normalized,
+            remoteContent: content,
+            remoteModifiedAt: modifiedAt,
+        }
+    })
+    return { changed, conflicts }
 }
 
 /**
@@ -183,6 +214,7 @@ function transition(
                     type: "WRITE_FILES",
                     files: safeWrites,
                     silent: true,
+                    echoPolicy: "authoritative",
                 })
             }
 
@@ -247,16 +279,28 @@ function transition(
                 return { state, effects }
             }
 
-            if (
-                state.internalPhase === "snapshot_processing" ||
-                state.internalPhase === "handshaking" ||
-                state.internalPhase === "conflict_resolution"
-            ) {
+            if (state.internalPhase === "conflict_resolution") {
+                const next = updatePendingConflictRemote(
+                    state.pendingConflicts,
+                    event.file.name,
+                    event.file.content,
+                    event.file.modifiedAt
+                )
+                if (next.changed) {
+                    effects.push(log("debug", `Updating pending conflict from remote change: ${event.file.name}`))
+                    return {
+                        state: { ...state, pendingConflicts: next.conflicts },
+                        effects,
+                    }
+                }
+            }
+
+            if (state.internalPhase === "snapshot_processing" || state.internalPhase === "handshaking") {
                 effects.push(log("debug", `Ignoring file change during sync: ${event.file.name}`))
                 return { state, effects }
             }
 
-            if (state.internalPhase !== "watching") {
+            if (state.internalPhase !== "watching" && state.internalPhase !== "conflict_resolution") {
                 effects.push(log("warn", `Rejected file change: ${event.file.name} (unknown-file)`))
                 return { state, effects }
             }
@@ -265,7 +309,7 @@ function transition(
             effects.push(log("debug", `Applying remote change: ${event.file.name}`), {
                 type: "WRITE_FILES",
                 files: [event.file],
-                skipEcho: true,
+                echoPolicy: "skip-expected-echoes",
             })
 
             return { state, effects }
@@ -289,7 +333,18 @@ function transition(
                 return { state, effects }
             }
 
-            // Reject if not connected
+            if (state.internalPhase === "conflict_resolution") {
+                const next = updatePendingConflictRemote(state.pendingConflicts, event.fileName, null, Date.now())
+                if (next.changed) {
+                    effects.push(log("debug", `Updating pending conflict from remote delete: ${event.fileName}`))
+                    return {
+                        state: { ...state, pendingConflicts: next.conflicts },
+                        effects,
+                    }
+                }
+            }
+
+            // Stale queued socket events can arrive after disconnect/reconnect.
             if (state.internalPhase === "disconnected") {
                 effects.push(log("warn", `Rejected delete while disconnected: ${event.fileName}`))
                 return { state, effects }
@@ -494,6 +549,7 @@ function transition(
                                     modifiedAt: conflict.remoteModifiedAt ?? Date.now(),
                                 },
                             ],
+                            echoPolicy: "authoritative",
                             silent: true, // Auto-resolved during initial sync - no individual indicators
                         })
                     }
@@ -538,13 +594,6 @@ function transition(
 
 // Apply: the only place that mutates or does I/O
 
-type LogLevel = "info" | "debug" | "warn" | "success" | "status"
-
-interface LogEntry {
-    level: LogLevel
-    message: string
-}
-
 export interface ApplyCtx {
     config: Config
     runtime: SyncRuntime
@@ -552,15 +601,33 @@ export interface ApplyCtx {
     shutdown: () => Promise<void>
 }
 
-function emitLog(entry: LogEntry): void {
-    const logFns: Record<LogLevel, (message: string) => void> = { info, debug, warn, success, status }
+function emitLog(entry: { level: LogEntryLevel; message: string }): void {
+    const logFns: Record<LogEntryLevel, (message: string) => void> = { info, debug, warn, success, status }
     logFns[entry.level](entry.message)
 }
 
-function syncCompleteStatusLog(config: Config): LogEntry {
-    return config.once
-        ? { level: "status", message: "Sync complete, exiting..." }
-        : { level: "status", message: "Watching for changes..." }
+function syncCompleteStatusMessage(config: Config): string {
+    return config.once ? "Sync complete, exiting..." : "Watching for changes..."
+}
+
+function syncCompleteSuccessMessage(
+    runtime: SyncRuntime,
+    effect: Extract<Effect, { type: "SYNC_COMPLETE" }>
+): string | null {
+    const relative = runtime.workspace.projectDir ? path.relative(process.cwd(), runtime.workspace.projectDir) : null
+    const relativeDirectory = relative != null ? (relative ? "./" + relative : ".") : null
+    if (effect.totalCount === 0 && relativeDirectory) {
+        return runtime.workspace.projectDirCreated
+            ? `Created ${relativeDirectory} folder`
+            : `Syncing to ${relativeDirectory} folder`
+    }
+    if (relativeDirectory && runtime.workspace.projectDirCreated) {
+        return `Created ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} added)`
+    }
+    if (relativeDirectory) {
+        return `Synced into ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} updated, ${effect.unchangedCount} unchanged)`
+    }
+    return `Synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
 }
 
 function sendFailureLabel(message: CliToPluginMessage): string {
@@ -580,20 +647,20 @@ async function sendToPlugin(socket: WebSocket | null, message: CliToPluginMessag
 async function writeFiles(
     files: Extract<Effect, { type: "WRITE_FILES" }>["files"],
     ctx: ApplyCtx,
-    options: { silent?: boolean; skipEcho?: boolean } = {}
+    options: { silent?: boolean; echoPolicy: WriteEchoPolicy }
 ): Promise<void> {
     const { runtime } = ctx
     if (!runtime.workspace.filesDir) return
-    const memory = runtime.fileOperations()
-    const filesToWrite = options.skipEcho ? filterEchoedFiles(files, memory) : files
-    if (options.skipEcho && filesToWrite.length !== files.length) {
+    const filesToWrite =
+        options.echoPolicy === "skip-expected-echoes" ? filterEchoedFiles(files, runtime.memory) : files
+    if (options.echoPolicy === "skip-expected-echoes" && filesToWrite.length !== files.length) {
         debug(`Skipped ${pluralize(files.length - filesToWrite.length, "echoed change")}`)
     }
-    const results = await writeRemoteFiles(filesToWrite, runtime.workspace.filesDir, memory)
+    const results = await writeRemoteFiles(filesToWrite, runtime.workspace.filesDir, runtime.memory)
     for (const result of results) {
         if (!result.ok) continue
         if (!options.silent) fileDown(result.path)
-        runtime.recordSyncedContent(result.path, result.file.content, result.file.modifiedAt ?? Date.now())
+        runtime.memory.recordSyncedContent(result.path, result.file.content, result.file.modifiedAt ?? Date.now())
         runtime.installer?.process(result.path, result.file.content)
     }
 }
@@ -602,10 +669,10 @@ async function deleteFiles(fileNames: string[], ctx: ApplyCtx): Promise<void> {
     const { runtime } = ctx
     if (!runtime.workspace.filesDir) return
     for (const fileName of fileNames) {
-        const result = await deleteLocalFile(fileName, runtime.workspace.filesDir, runtime.fileOperations())
+        const result = await deleteLocalFile(fileName, runtime.workspace.filesDir, runtime.memory)
         if (!result.ok) continue
         fileDelete(result.fileName)
-        runtime.recordSyncedDelete(result.fileName)
+        runtime.memory.recordSyncedDelete(result.fileName)
     }
 }
 
@@ -616,12 +683,12 @@ async function sendLocalChange(fileName: string, content: string, ctx: ApplyCtx)
         debug(`Skipping local change for ${fileName}: matches last synced content`)
         return
     }
-    if (runtime.shouldSkipInboundEcho(fileName, content)) return
+    if (runtime.memory.matchesContentEcho(fileName, content)) return
 
     debug(`Local change detected: ${fileName}`)
     const sent = await sendToPlugin(syncState.socket, { type: "file-change", fileName, content })
     if (!sent) return
-    runtime.armContentEcho(fileName, content)
+    runtime.memory.armContentEcho(fileName, content)
     fileUp(fileName)
     runtime.installer?.process(fileName, content)
 }
@@ -630,18 +697,19 @@ async function sendFileDelete(fileNames: string[], ctx: ApplyCtx): Promise<void>
     if (fileNames.length === 0) return
     const sent = await sendToPlugin(ctx.syncState.socket, { type: "file-delete", fileNames })
     if (!sent) return
-    for (const fileName of fileNames) ctx.runtime.recordSyncedDelete(fileName)
+    for (const fileName of fileNames) ctx.runtime.memory.recordSyncedDelete(fileName)
 }
 
 async function sendFileRename(effect: Extract<Effect, { type: "SEND_FILE_RENAME" }>, ctx: ApplyCtx): Promise<void> {
     const { runtime, syncState } = ctx
     const newFileName = normalizeCodeFilePathWithExtension(effect.newFileName)
     const isEcho =
-        runtime.shouldSkipInboundEcho(newFileName, effect.content) && runtime.shouldSkipDeleteEcho(effect.oldFileName)
+        runtime.memory.matchesContentEcho(newFileName, effect.content) &&
+        runtime.memory.matchesExpectedDeleteEcho(effect.oldFileName)
     if (isEcho) {
         debug(`Skipping echoed rename ${effect.oldFileName} -> ${effect.newFileName}`)
-        runtime.clearContentEcho(newFileName)
-        runtime.clearExpectedDeleteEcho(effect.oldFileName)
+        runtime.memory.clearContentEcho(newFileName)
+        runtime.memory.clearExpectedDeleteEcho(effect.oldFileName)
         return
     }
     if (!syncState.socket) {
@@ -692,14 +760,11 @@ async function startConflictPrompt(
     }
 }
 
-async function applyConflictChange(
-    change: ReturnType<SyncRuntime["updateActiveConflictLocal"]>,
-    ctx: ApplyCtx
-): Promise<void> {
+async function applyConflictChange(change: ConflictPromptChange, ctx: ApplyCtx): Promise<void> {
     if (!change.changed) return
     for (const resolved of change.resolved) {
-        if (resolved.content === null) ctx.runtime.recordSyncedDelete(resolved.fileName)
-        else ctx.runtime.recordSyncedContent(resolved.fileName, resolved.content, resolved.modifiedAt ?? Date.now())
+        if (resolved.content === null) ctx.runtime.memory.recordSyncedDelete(resolved.fileName)
+        else ctx.runtime.memory.recordSyncedContent(resolved.fileName, resolved.content, resolved.modifiedAt ?? Date.now())
     }
     if (ctx.syncState.socket) {
         await sendToPlugin(
@@ -714,7 +779,6 @@ async function applyConflictChange(
 
 async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE" }>, ctx: ApplyCtx): Promise<void> {
     const { config, runtime, syncState, shutdown } = ctx
-    const logs: LogEntry[] = []
     const wasDisconnected = runtime.disconnectUi.wasRecentlyDisconnected()
     let shouldShutdown = !!config.once
     let shouldTryGitInit = false
@@ -723,45 +787,18 @@ async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE"
         const didShow = runtime.disconnectUi.didShowNotice()
         shouldShutdown = didShow && !!config.once
         if (didShow) {
-            logs.push({
-                level: "success",
-                message: `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`,
-            })
-            logs.push(syncCompleteStatusLog(config))
+            success(
+                `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
+            )
+            status(syncCompleteStatusMessage(config))
         }
     } else {
-        const relative = runtime.workspace.projectDir
-            ? path.relative(process.cwd(), runtime.workspace.projectDir)
-            : null
-        const relativeDirectory = relative != null ? (relative ? "./" + relative : ".") : null
-        if (effect.totalCount === 0 && relativeDirectory) {
-            logs.push({
-                level: "success",
-                message: runtime.workspace.projectDirCreated
-                    ? `Created ${relativeDirectory} folder`
-                    : `Syncing to ${relativeDirectory} folder`,
-            })
-        } else if (relativeDirectory && runtime.workspace.projectDirCreated) {
-            logs.push({
-                level: "success",
-                message: `Created ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} added)`,
-            })
-        } else if (relativeDirectory) {
-            logs.push({
-                level: "success",
-                message: `Synced into ${relativeDirectory} (${pluralize(effect.updatedCount, "file")} updated, ${effect.unchangedCount} unchanged)`,
-            })
-        } else {
-            logs.push({
-                level: "success",
-                message: `Synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`,
-            })
-        }
-        logs.push(syncCompleteStatusLog(config))
+        const message = syncCompleteSuccessMessage(runtime, effect)
+        if (message) success(message)
+        status(syncCompleteStatusMessage(config))
         shouldTryGitInit = !!(runtime.workspace.projectDirCreated && runtime.workspace.projectDir)
     }
 
-    for (const entry of logs) emitLog(entry)
     await sendToPlugin(syncState.socket, { type: "sync-phase", phase: "ready" })
     runtime.noteEmittedSyncPhase("ready")
     if (wasDisconnected) runtime.disconnectUi.reset()
@@ -812,7 +849,7 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
                 { persistedState: runtime.metadata.getPersistedState() }
             )
             for (const file of unchanged) {
-                runtime.recordSyncedContent(file.name, file.content, file.modifiedAt ?? Date.now())
+                runtime.memory.recordSyncedContent(file.name, file.content, file.modifiedAt ?? Date.now())
             }
             return [
                 {
@@ -837,7 +874,7 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
             return []
 
         case "WRITE_FILES":
-            await writeFiles(effect.files, ctx, { silent: effect.silent, skipEcho: effect.skipEcho })
+            await writeFiles(effect.files, ctx, { silent: effect.silent, echoPolicy: effect.echoPolicy })
             return []
 
         case "DELETE_LOCAL_FILES":
@@ -869,10 +906,10 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
             const pendingRename = runtime.getPendingRename(normalizeCodeFilePathWithExtension(effect.fileName))
             const syncedContent = currentContent ?? pendingRename?.content ?? null
             if (syncedContent !== null)
-                runtime.recordSyncedContent(effect.fileName, syncedContent, effect.remoteModifiedAt)
+                runtime.memory.recordSyncedContent(effect.fileName, syncedContent, effect.remoteModifiedAt)
             if (pendingRename) {
-                runtime.recordSyncedDelete(pendingRename.oldFileName)
-                if (currentContent !== null) runtime.armContentEcho(effect.fileName, currentContent)
+                runtime.memory.recordSyncedDelete(pendingRename.oldFileName)
+                if (currentContent !== null) runtime.memory.armContentEcho(effect.fileName, currentContent)
                 runtime.completePendingRename(effect.fileName)
             }
             return []
@@ -889,7 +926,7 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
         case "LOCAL_INITIATED_FILE_DELETE": {
             const filesToDelete: string[] = []
             for (const fileName of effect.fileNames) {
-                if (runtime.shouldSkipDeleteEcho(fileName)) runtime.clearExpectedDeleteEcho(fileName)
+                if (runtime.memory.matchesExpectedDeleteEcho(fileName)) runtime.memory.clearExpectedDeleteEcho(fileName)
                 else filesToDelete.push(fileName)
             }
             if (filesToDelete.length === 0) return []
@@ -908,12 +945,15 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
                 return []
             }
             const active = new Set(activeFileNames)
-            const confirmed = effect.confirmedFileNames.filter(fileName => active.has(runtime.normalizePath(fileName)))
-            const cancelled = effect.cancelledFiles.filter(file => active.has(runtime.normalizePath(file.fileName)))
+            const confirmed = effect.confirmedFileNames.filter(fileName =>
+                active.has(runtime.memory.normalizePath(fileName))
+            )
+            const cancelled = effect.cancelledFiles.filter(file => active.has(runtime.memory.normalizePath(file.fileName)))
             if (cancelled.length > 0) {
                 await writeFiles(
                     cancelled.map(file => ({ name: file.fileName, content: file.content, modifiedAt: Date.now() })),
-                    ctx
+                    ctx,
+                    { echoPolicy: "authoritative" }
                 )
             }
             await sendFileDelete(confirmed, ctx)
@@ -929,21 +969,23 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
                 return []
             }
             if (effect.resolution === "remote") {
-                await writeFiles(
-                    conflicts
-                        .filter(conflict => conflict.remoteContent !== null)
-                        .map(conflict => ({
-                            name: conflict.fileName,
-                            content: conflict.remoteContent!,
-                            modifiedAt: conflict.remoteModifiedAt,
-                        })),
-                    ctx,
-                    { silent: true }
-                )
-                await deleteFiles(
-                    conflicts.filter(conflict => conflict.remoteContent === null).map(conflict => conflict.fileName),
-                    ctx
-                )
+                const filesToWrite: FileInfo[] = []
+                const filesToDelete: string[] = []
+                for (const conflict of conflicts) {
+                    if (conflict.remoteContent === null) {
+                        filesToDelete.push(conflict.fileName)
+                        continue
+                    }
+                    filesToWrite.push({
+                        name: conflict.fileName,
+                        content: conflict.remoteContent,
+                        modifiedAt: conflict.remoteModifiedAt,
+                    })
+                }
+                await Promise.all([
+                    writeFiles(filesToWrite, ctx, { silent: true, echoPolicy: "authoritative" }),
+                    deleteFiles(filesToDelete, ctx),
+                ])
             } else {
                 for (const conflict of conflicts) {
                     if (conflict.localContent === null) await sendFileDelete([conflict.fileName], ctx)
@@ -1005,10 +1047,6 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
     }
 }
 
-async function executeEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEvent[]> {
-    return applyEffect(effect, ctx)
-}
-
 /**
  * Starts the sync controller with the given configuration
  */
@@ -1025,7 +1063,8 @@ export async function start(config: Config): Promise<void> {
     const eventQueue = createEventQueue()
 
     // Top-level ingress (WS, watcher, disconnect) serializes through the queue — one event at a time.
-    // Follow-up events from `executeEffect` run inline on the same turn (no re-enqueue) to avoid deadlock.
+    // Follow-up events from `applyEffect` run inline before the next queued event, so snapshot results
+    // can move the controller back to watching before queued remote changes are processed.
     function processEvent(event: SyncEvent): Promise<void> {
         return eventQueue.enqueue(() => processEventInner(event))
     }
@@ -1057,7 +1096,7 @@ export async function start(config: Config): Promise<void> {
                 debug(`[STATE] Socket not open (state: ${currentSocketState}) before executing ${effect.type}`)
             }
 
-            const followUpEvents = await executeEffect(effect, {
+            const followUpEvents = await applyEffect(effect, {
                 config,
                 runtime,
                 shutdown,
@@ -1322,4 +1361,4 @@ export async function start(config: Config): Promise<void> {
 }
 
 // Export for testing
-export { executeEffect, transition }
+export { transition }

@@ -294,6 +294,46 @@ describe("start() integration", () => {
         spy.mockRestore()
     })
 
+    it("processes queued remote file changes after snapshot follow-ups finish", async () => {
+        tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-int-"))
+        const filesDir = path.join(tmpDir, "files")
+        await fs.mkdir(filesDir, { recursive: true })
+        await fs.writeFile(path.join(filesDir, "A.tsx"), "export const A = 1", "utf-8")
+
+        let ws: ReturnType<typeof harness.createFakeWs> | null = null
+        const filesMod = await import("./helpers/files.ts")
+        const orig = filesMod.detectConflicts
+        const spy = vi.spyOn(filesMod, "detectConflicts").mockImplementation(async (remoteFiles, filesDirArg, opts) => {
+            if (!ws) throw new Error("Expected websocket before detectConflicts")
+            ws.receive({
+                type: "file-change",
+                fileName: "A.tsx",
+                content: "export const A = 2",
+            })
+            return orig(remoteFiles, filesDirArg, opts)
+        })
+
+        const projectHash = "integration-remote-snap-123"
+        const start = await loadStart()
+        await start(baseConfig(projectHash))
+
+        const id = shortProjectHash(projectHash)
+        ws = harness.createFakeWs()
+        ws.receive({ type: "handshake", projectId: id, projectName: "P" })
+        await vi.waitFor(() => expect(initWatcherMock).toHaveBeenCalled(), { timeout: 5000 })
+
+        ws.receive({
+            type: "file-list",
+            files: [{ name: "A.tsx", content: "export const A = 1", modifiedAt: Date.now() }],
+        })
+
+        await vi.waitFor(async () => {
+            expect(await fs.readFile(path.join(filesDir, "A.tsx"), "utf-8")).toBe("export const A = 2")
+        })
+
+        spy.mockRestore()
+    })
+
     it("survives disconnect during conflict resolution and accepts a new handshake", async () => {
         tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-int-"))
         const filesDir = path.join(tmpDir, "files")

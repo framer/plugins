@@ -8,7 +8,7 @@ function withPromptState(overrides: Partial<State> = {}): State {
         ...initialState,
         permissionsGranted: true,
         syncPhase: "initial_sync",
-        ui: {
+        view: {
             kind: "deletePrompt",
             session: testSession,
             deletes: [{ fileName: "Button.tsx", content: "export const Button = 1" }],
@@ -25,7 +25,7 @@ describe("plugin app state", () => {
             message: "socket closed",
         })
 
-        expect(disconnected.ui.kind).toBe("info")
+        expect(disconnected.view.kind).toBe("info")
         expect(disconnected.syncPhase).toBeNull()
 
         const reconnected = reducer(disconnected, {
@@ -33,7 +33,7 @@ describe("plugin app state", () => {
             syncPhase: "initial_sync",
         })
 
-        expect(reconnected.ui.kind).toBe("syncing")
+        expect(reconnected.view.kind).toBe("syncing")
     })
 
     it("clears stale prompts when permissions are lost", () => {
@@ -42,7 +42,7 @@ describe("plugin app state", () => {
             granted: false,
         })
 
-        expect(next.ui.kind).toBe("info")
+        expect(next.view.kind).toBe("info")
         expect(next.syncPhase).toBeNull()
     })
 
@@ -51,13 +51,13 @@ describe("plugin app state", () => {
             type: "socket-replaced",
         })
 
-        expect(next.ui.kind).toBe("replaced")
+        expect(next.view.kind).toBe("replaced")
         expect(next.syncPhase).toBeNull()
     })
 
     it("updates the active conflict prompt instead of queueing stale conflict modals", () => {
         const conflicting = reducer(
-            { ...initialState, permissionsGranted: true, syncPhase: "ready", ui: { kind: "idle" } },
+            { ...initialState, permissionsGranted: true, syncPhase: "ready", view: { kind: "idle" } },
             {
                 type: "conflicts",
                 session: testSession,
@@ -74,7 +74,7 @@ describe("plugin app state", () => {
             ],
         })
 
-        expect(updated.ui).toEqual({
+        expect(updated.view).toEqual({
             kind: "conflictPrompt",
             session: testSession,
             conflicts: [
@@ -86,7 +86,7 @@ describe("plugin app state", () => {
 
     it("ignores conflict clear messages for stale sessions", () => {
         const state = reducer(
-            { ...initialState, permissionsGranted: true, syncPhase: "ready", ui: { kind: "idle" } },
+            { ...initialState, permissionsGranted: true, syncPhase: "ready", view: { kind: "idle" } },
             {
                 type: "conflicts",
                 session: testSession,
@@ -99,7 +99,7 @@ describe("plugin app state", () => {
             session: { connectionId: 2, promptId: "stale" },
         })
 
-        expect(staleClear.ui.kind).toBe("conflictPrompt")
+        expect(staleClear.view.kind).toBe("conflictPrompt")
     })
 
     it("does not let conflict clear messages close an active delete prompt", () => {
@@ -110,7 +110,7 @@ describe("plugin app state", () => {
             session: testSession,
         })
 
-        expect(next.ui).toEqual(state.ui)
+        expect(next.view).toEqual(state.view)
     })
 
     it("does not let unscoped conflict clears close an active delete prompt", () => {
@@ -120,13 +120,13 @@ describe("plugin app state", () => {
             type: "clear-conflicts",
         })
 
-        expect(next.ui).toEqual(state.ui)
+        expect(next.view).toEqual(state.view)
     })
 
     it("removes invalidated delete files without closing the remaining delete prompt", () => {
         const state = withPromptState({
             syncPhase: "ready",
-            ui: {
+            view: {
                 kind: "deletePrompt",
                 session: testSession,
                 deletes: [
@@ -143,7 +143,7 @@ describe("plugin app state", () => {
             fileNames: ["A.tsx"],
         })
 
-        expect(next.ui).toEqual({
+        expect(next.view).toEqual({
             kind: "deletePrompt",
             session: testSession,
             deletes: [{ fileName: "B.tsx", content: "b" }],
@@ -160,12 +160,12 @@ describe("plugin app state", () => {
             fileNames: ["Button.tsx"],
         })
 
-        expect(next.ui).toEqual(state.ui)
+        expect(next.view).toEqual(state.view)
     })
 
     it("does not let unscoped delete clears close an active conflict prompt", () => {
         const state = reducer(
-            { ...initialState, permissionsGranted: true, syncPhase: "ready", ui: { kind: "idle" } },
+            { ...initialState, permissionsGranted: true, syncPhase: "ready", view: { kind: "idle" } },
             {
                 type: "conflicts",
                 session: testSession,
@@ -177,6 +177,6 @@ describe("plugin app state", () => {
             type: "clear-pending-deletes",
         })
 
-        expect(next.ui).toEqual(state.ui)
+        expect(next.view).toEqual(state.view)
     })
 })

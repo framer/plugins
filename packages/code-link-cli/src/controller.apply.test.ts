@@ -53,7 +53,7 @@ describe("applyEffect transaction boundaries", () => {
 
         await applyEffect({ type: "SEND_LOCAL_CHANGE", fileName: "A.tsx", content: "x" }, applyCtx(runtime, closed.ws))
 
-        expect(runtime.shouldSkipInboundEcho("A.tsx", "x")).toBe(false)
+        expect(runtime.memory.matchesContentEcho("A.tsx", "x")).toBe(false)
     })
 
     it("does not register a pending rename when the rename send fails", async () => {
@@ -87,12 +87,13 @@ describe("applyEffect transaction boundaries", () => {
                 {
                     type: "WRITE_FILES",
                     files: [{ name: "Blocked.tsx/Nested.tsx", content: "x", modifiedAt: 1 }],
+                    echoPolicy: "authoritative",
                 },
                 applyCtx(runtime, null)
             )
 
             expect(runtime.metadata.get("Blocked.tsx/Nested.tsx")).toBeUndefined()
-            expect(runtime.shouldSkipInboundEcho("Blocked.tsx/Nested.tsx", "x")).toBe(false)
+            expect(runtime.memory.matchesContentEcho("Blocked.tsx/Nested.tsx", "x")).toBe(false)
         } finally {
             await fs.rm(tmpDir, { recursive: true, force: true })
         }
@@ -106,12 +107,12 @@ describe("applyEffect transaction boundaries", () => {
 
             const runtime = new SyncRuntime()
             runtime.configureWorkspace(tmpDir, false)
-            runtime.recordSyncedContent("Folder.tsx", "x", 1)
+            runtime.memory.recordSyncedContent("Folder.tsx", "x", 1)
 
             await applyEffect({ type: "DELETE_LOCAL_FILES", names: ["Folder.tsx"] }, applyCtx(runtime, null))
 
             expect(runtime.metadata.get("Folder.tsx")).toBeDefined()
-            expect(runtime.shouldSkipDeleteEcho("Folder.tsx")).toBe(false)
+            expect(runtime.memory.matchesExpectedDeleteEcho("Folder.tsx")).toBe(false)
         } finally {
             await fs.rm(tmpDir, { recursive: true, force: true })
         }
@@ -136,7 +137,7 @@ describe("applyEffect transaction boundaries", () => {
 
     it("auto-delete sends exactly one remote delete and records only after send success", async () => {
         const runtime = new SyncRuntime()
-        runtime.recordSyncedContent("A.tsx", "old", 1)
+        runtime.memory.recordSyncedContent("A.tsx", "old", 1)
         const open = socket()
 
         await applyEffect(

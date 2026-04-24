@@ -5,6 +5,10 @@ import { promisify } from "node:util"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 type ExecFileMock = ReturnType<typeof vi.fn>
+type ExecFileCallback = (error: Error | null, stdout?: string, stderr?: string) => void
+type PromisifiableExecFileMock = ExecFileMock & {
+    [promisify.custom]?: (...args: unknown[]) => Promise<{ stdout: string; stderr: string }>
+}
 
 /**
  * Mirror of MKCERT_CHECKSUMS from certs.ts so we can make `createHash` return
@@ -38,13 +42,15 @@ function setupCommonMocks(opts: {
     vi.stubEnv("USERPROFILE", opts.tempHome)
     vi.stubEnv("FRAMER_CODE_LINK_CERT_DIR", opts.certDir)
     vi.stubGlobal("fetch", opts.fetchMock)
-    ;(
-        opts.execFileMock as ExecFileMock & {
-            [promisify.custom]?: (...args: unknown[]) => Promise<{ stdout: string; stderr: string }>
-        }
-    )[promisify.custom] = (...args: unknown[]) =>
+    addPromisifyCustom(opts.execFileMock)
+    vi.doMock("node:child_process", () => ({ execFile: opts.execFileMock }))
+}
+
+function addPromisifyCustom(execFileMock: ExecFileMock) {
+    const promisifiableMock = execFileMock as PromisifiableExecFileMock
+    promisifiableMock[promisify.custom] = (...args: unknown[]) =>
         new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-            opts.execFileMock(...args, (error: Error | null, stdout = "", stderr = "") => {
+            execFileMock(...args, (error: Error | null, stdout = "", stderr = "") => {
                 if (error) {
                     reject(error)
                     return
@@ -52,7 +58,6 @@ function setupCommonMocks(opts: {
                 resolve({ stdout, stderr })
             })
         })
-    vi.doMock("node:child_process", () => ({ execFile: opts.execFileMock }))
 }
 
 function mockCryptoSequence(checksums: string[]) {
@@ -508,7 +513,7 @@ function mockMkcert(
     }
 ) {
     execFileMock.mockImplementation((...args: unknown[]) => {
-        const callback = args.at(-1) as (error: Error | null, stdout?: string, stderr?: string) => void
+        const callback = args.at(-1) as ExecFileCallback
         const commandArgs = args[1] as string[]
         const commandOptions = args[2] as { env?: NodeJS.ProcessEnv } | undefined
 

@@ -1,7 +1,7 @@
+import { randomUUID } from "node:crypto"
 import { normalizeCodeFilePathWithExtension, type PromptSession, type SyncPhase } from "@code-link/shared"
 import path from "path"
 import type { Installer } from "./helpers/installer.ts"
-import { createPromptSession } from "./helpers/plugin-prompts.ts"
 import { createScheduler } from "./scheduler.ts"
 import { type FileOperationMemory, SyncMemory } from "./sync-memory.ts"
 import { TIMINGS } from "./timings.ts"
@@ -62,6 +62,10 @@ interface ConflictPromptState {
 
 function sameSession(a: PromptSession, b: PromptSession): boolean {
     return a.connectionId === b.connectionId && a.promptId === b.promptId
+}
+
+function createPromptSession(connectionId: number): PromptSession {
+    return { connectionId, promptId: randomUUID() }
 }
 
 export interface ResolvedPromptConflict {

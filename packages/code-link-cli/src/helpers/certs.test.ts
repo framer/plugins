@@ -48,9 +48,10 @@ function setupCommonMocks(opts: {
 
 function addPromisifyCustom(execFileMock: ExecFileMock) {
     const promisifiableMock = execFileMock as PromisifiableExecFileMock
+    const invokeExecFile = execFileMock as unknown as (...args: unknown[]) => void
     promisifiableMock[promisify.custom] = (...args: unknown[]) =>
         new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-            execFileMock(...args, (error: Error | null, stdout = "", stderr = "") => {
+            invokeExecFile(...args, (error: Error | null, stdout = "", stderr = "") => {
                 if (error) {
                     reject(error)
                     return

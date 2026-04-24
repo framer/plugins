@@ -7,8 +7,7 @@
  */
 
 import { normalizeCodeFilePathWithExtension } from "@code-link/shared"
-import { createScheduler } from "./scheduler.ts"
-import { TIMINGS } from "./timings.ts"
+import { createScheduler, TIMINGS } from "./scheduler.ts"
 import { FileMetadataCache, type FileSyncMetadata } from "./utils/file-metadata-cache.ts"
 import { hashFileContent, type PersistedFileState } from "./utils/state-persistence.ts"
 

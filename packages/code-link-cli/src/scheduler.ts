@@ -1,6 +1,15 @@
-import type { ScheduledTask } from "./timings.ts"
+export type ScheduledTask = "disconnectNotice" | "tombstoneExpiry" | "renameBuffer" | "sanitizationEchoExpiry"
 
-export type { ScheduledTask } from "./timings.ts"
+export const TIMINGS = {
+    /** Delay before showing "disconnected" in CLI status (allows quick tab switches). */
+    disconnectNotice: 4_000,
+    /** Delete-echo suppression window. */
+    tombstoneExpiry: 5_000,
+    /** Watcher rename/add/delete coalesce window. */
+    renameBuffer: 100,
+    /** Suppress chokidar echo after on-disk path sanitization rename (3x rename buffer). */
+    sanitizationEchoExpiry: 300,
+} as const
 
 /**
  * Named timers for the CLI. Supports optional `key` for concurrent same-task schedules

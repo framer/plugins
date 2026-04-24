@@ -12,7 +12,6 @@ import { normalizeCodeFilePathWithExtension, pluralize, shortProjectHash } from 
 import fs from "fs/promises"
 import path from "path"
 import type { WebSocket } from "ws"
-import { createEventQueue } from "./event-queue.ts"
 import { CERT_DIR, getOrCreateCerts } from "./helpers/certs.ts"
 import { initConnection, sendMessage } from "./helpers/connection.ts"
 import {
@@ -26,7 +25,6 @@ import {
 } from "./helpers/files.ts"
 import { tryGitInit } from "./helpers/git.ts"
 import { Installer } from "./helpers/installer.ts"
-import { validateIncomingChange } from "./helpers/sync-validator.ts"
 import { initWatcher } from "./helpers/watcher.ts"
 import { type ReadonlyRuntime, SyncRuntime } from "./runtime.ts"
 import type { Effect, SyncEvent, SyncState } from "./sync-events.ts"
@@ -37,6 +35,22 @@ import { hashFileContent } from "./utils/state-persistence.ts"
 
 export type { ReadonlyRuntime } from "./runtime.ts"
 export type { SyncState } from "./sync-events.ts"
+
+function createEventQueue(): {
+    enqueue<T>(fn: () => Promise<T>): Promise<T>
+} {
+    let tail: Promise<unknown> = Promise.resolve()
+
+    return {
+        enqueue<T>(fn: () => Promise<T>): Promise<T> {
+            const run = tail.then(() => fn())
+            tail = run.catch(() => {
+                /* keep chain alive */
+            })
+            return run
+        },
+    }
+}
 
 /** Log helper */
 function log(level: "info" | "debug" | "warn" | "success", message: string): Effect {
@@ -233,17 +247,17 @@ function transition(
                 return { state, effects }
             }
 
-            // Use helper to validate the incoming change
-            const validation = validateIncomingChange(event.fileMeta, state.internalPhase)
-
-            if (validation.action === "queue") {
-                // Changes during initial sync are ignored - the snapshot handles reconciliation
+            if (
+                state.internalPhase === "snapshot_processing" ||
+                state.internalPhase === "handshaking" ||
+                state.internalPhase === "conflict_resolution"
+            ) {
                 effects.push(log("debug", `Ignoring file change during sync: ${event.file.name}`))
                 return { state, effects }
             }
 
-            if (validation.action === "reject") {
-                effects.push(log("warn", `Rejected file change: ${event.file.name} (${validation.reason})`))
+            if (state.internalPhase !== "watching") {
+                effects.push(log("warn", `Rejected file change: ${event.file.name} (unknown-file)`))
                 return { state, effects }
             }
 
@@ -1164,11 +1178,10 @@ export async function start(config: Config): Promise<void> {
                     file: {
                         name: message.fileName,
                         content: message.content,
-                        // Remote modifiedAt is expensive to compute (requires getVerions API call), so we
+                        // Remote modifiedAt is expensive to compute (requires getVersions API call), so we
                         // use local receipt time. Conflict detection uses content hashes, not timestamps.
                         modifiedAt: Date.now(),
                     },
-                    fileMeta: runtime.metadata.get(message.fileName),
                 }
                 break
 

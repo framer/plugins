@@ -8,7 +8,6 @@
 import type { CancelledDelete, CliToPluginMessage, PromptSession, SyncPhase } from "@code-link/shared"
 import type { WebSocket } from "ws"
 import type { Conflict, ConflictVersionData, FileInfo, WatcherEvent } from "./types.ts"
-import type { FileSyncMetadata } from "./utils/file-metadata-cache.ts"
 
 export type DisconnectedState = {
     internalPhase: "disconnected"
@@ -64,7 +63,7 @@ export type SyncEvent =
      * sync-phase we last emitted so the plugin's UI catches up.
      */
     | { type: "RESEND_SYNC_PHASE"; phase: SyncPhase }
-    | { type: "REMOTE_FILE_CHANGE"; file: FileInfo; fileMeta?: FileSyncMetadata }
+    | { type: "REMOTE_FILE_CHANGE"; file: FileInfo }
     | { type: "REMOTE_FILE_DELETE"; fileName: string }
     | { type: "DELETE_CONFIRMED"; session: PromptSession; fileNames: string[] }
     | { type: "DELETE_CANCELLED"; session: PromptSession; files: CancelledDelete[] }

@@ -2,7 +2,7 @@ import { type ConflictSummary, type PendingDelete, shortProjectHash } from "@cod
 import { framer } from "framer-plugin"
 import { useCallback, useEffect, useLayoutEffect, useReducer, useRef, useState } from "react"
 import { CodeFilesAPI } from "./api"
-import { initialState, type UiState, reducer } from "./app-state"
+import { initialState, reducer, type UiState } from "./app-state"
 import { createMessageHandler } from "./messages"
 import { copyToClipboard } from "./utils/clipboard"
 import { computeLineDiff } from "./utils/diffing"

@@ -2,11 +2,7 @@
  * Centralized timing constants for the CLI sync runtime.
  * Durations preserve legacy behavior; document rationale when non-obvious.
  */
-export type ScheduledTask =
-    | "disconnectNotice"
-    | "tombstoneExpiry"
-    | "renameBuffer"
-    | "sanitizationEchoExpiry"
+export type ScheduledTask = "disconnectNotice" | "tombstoneExpiry" | "renameBuffer" | "sanitizationEchoExpiry"
 
 export const TIMINGS = {
     /** Delay before showing "disconnected" in CLI status (allows quick tab switches). */

@@ -11,13 +11,13 @@
  * Certs and the mkcert binary are cached in ~/.framer/code-link/.
  */
 
-import { createHash } from "crypto"
-import { execFile } from "child_process"
-import nodeFs from "fs"
-import fs from "fs/promises"
-import os from "os"
-import path from "path"
-import { promisify } from "util"
+import { execFile } from "node:child_process"
+import { createHash } from "node:crypto"
+import nodeFs from "node:fs"
+import fs from "node:fs/promises"
+import os from "node:os"
+import path from "node:path"
+import { promisify } from "node:util"
 import { debug, error, status, warn } from "../utils/logging.ts"
 
 const execFileAsync = promisify(execFile)
@@ -262,10 +262,7 @@ async function syncRootCA(mkcertPath: string): Promise<RootCAState> {
     }
 
     // mkcert marks rootCA-key.pem read-only (0o400); remove before overwriting.
-    await Promise.all([
-        fs.rm(ROOT_CA_CERT_PATH, { force: true }),
-        fs.rm(ROOT_CA_KEY_PATH, { force: true }),
-    ])
+    await Promise.all([fs.rm(ROOT_CA_CERT_PATH, { force: true }), fs.rm(ROOT_CA_KEY_PATH, { force: true })])
     await fs.writeFile(ROOT_CA_CERT_PATH, defaultRootCert, { mode: 0o644 })
     await fs.writeFile(ROOT_CA_KEY_PATH, defaultRootKey, { mode: 0o600 })
 

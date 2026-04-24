@@ -3,13 +3,12 @@
  * Uses real tempdir FS, fake WebSocket surface, mocked TLS/certs and mocked initConnection server.
  */
 
+import { CLOSE_CODE_REPLACED, type PluginToCliMessage, shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import os from "os"
 import path from "path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { CLOSE_CODE_REPLACED, shortProjectHash, type PluginToCliMessage } from "@code-link/shared"
-import type { Config } from "./types.ts"
-import type { WatcherEvent } from "./types.ts"
+import type { Config, WatcherEvent } from "./types.ts"
 
 const { harness, initWatcherMock, emitWatcherChange } = vi.hoisted(() => {
     const READY_STATE = { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 } as const

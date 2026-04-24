@@ -8,9 +8,9 @@ import { isSupportedExtension, normalizePath, sanitizeFilePath } from "@code-lin
 import chokidar from "chokidar"
 import fs from "fs/promises"
 import path from "path"
-import type { WatcherEvent } from "../types.ts"
 import { createScheduler } from "../scheduler.ts"
 import { TIMINGS } from "../timings.ts"
+import type { WatcherEvent } from "../types.ts"
 import { debug, warn } from "../utils/logging.ts"
 import { getRelativePath } from "../utils/node-paths.ts"
 import { hashFileContent } from "../utils/state-persistence.ts"
@@ -315,7 +315,9 @@ export function initWatcher(filesDir: string): Watcher {
             if (existingPendingAdd) {
                 scheduler.cancel("renameBuffer", relativePath)
             }
-            const retainedPreviousContentHash = existingPendingAdd ? existingPendingAdd.previousContentHash : previousContentHash
+            const retainedPreviousContentHash = existingPendingAdd
+                ? existingPendingAdd.previousContentHash
+                : previousContentHash
             scheduler.after(
                 "renameBuffer",
                 TIMINGS.renameBuffer,

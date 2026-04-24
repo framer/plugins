@@ -35,7 +35,9 @@ export class CodeFilesAPI extends PluginBase {
         const files = await this.getCodeFilesWithNormalizedPaths()
         socket.send(JSON.stringify({ type: "file-list", files }))
         this.clear()
-        files.forEach(file => this.setSnapshotContent(file.name, file.content))
+        files.forEach(file => {
+            this.setSnapshotContent(file.name, file.content)
+        })
     }
 
     async handleFramerFilesChanged(socket: WebSocket) {

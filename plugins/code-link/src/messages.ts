@@ -50,10 +50,6 @@ export function createMessageHandler({
             }
             case "file-delete":
                 if (message.requireConfirmation) {
-                    if (!message.session) {
-                        log.warn("file-delete missing session; ignoring confirmation request")
-                        break
-                    }
                     log.debug(`Delete requires confirmation for ${message.fileNames.length} file(s)`)
                     const files: PendingDelete[] = []
                     for (const fileName of message.fileNames) {
@@ -85,10 +81,6 @@ export function createMessageHandler({
                 break
             case "conflicts-detected":
                 log.debug(`Received ${message.conflicts.length} conflicts from CLI`)
-                if (!message.session) {
-                    log.warn("conflicts-detected missing session; ignoring")
-                    break
-                }
                 dispatch({ type: "conflicts", conflicts: message.conflicts, session: message.session })
                 break
             case "conflicts-cleared":

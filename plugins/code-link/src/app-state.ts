@@ -102,12 +102,7 @@ export function reducer(state: State, action: Action): State {
                     ui: { kind: "info" },
                 }
             }
-            const next: UiState =
-                action.syncPhase === "initial_sync"
-                    ? { kind: "syncing" }
-                    : action.syncPhase === "ready"
-                      ? { kind: "idle" }
-                      : { kind: "loading" }
+            const next: UiState = action.syncPhase === "initial_sync" ? { kind: "syncing" } : { kind: "idle" }
             return {
                 ...state,
                 syncPhase: action.syncPhase,

@@ -7,10 +7,9 @@ import { initConnection, sendMessage } from "./connection.ts"
 
 function generateSelfSignedCert(): { key: string; cert: string } {
     const key = execSync("openssl genrsa 2048 2>/dev/null").toString()
-    const cert = execSync(
-        `openssl req -new -x509 -key /dev/stdin -days 365 -subj "/CN=localhost" -nodes 2>/dev/null`,
-        { input: key }
-    ).toString()
+    const cert = execSync(`openssl req -new -x509 -key /dev/stdin -days 365 -subj "/CN=localhost" -nodes 2>/dev/null`, {
+        input: key,
+    }).toString()
     return { key, cert }
 }
 
@@ -33,7 +32,9 @@ describe("initConnection", () => {
         })
 
         const messageReceived = new Promise<{ type: string }>(resolve => {
-            connection.on("message", message => { resolve(message); })
+            connection.on("message", message => {
+                resolve(message)
+            })
         })
 
         const outboundReceived = new Promise<{ type: string }>((resolve, reject) => {
@@ -47,7 +48,9 @@ describe("initConnection", () => {
         })
 
         await new Promise<void>((resolve, reject) => {
-            client.once("open", () => { resolve(); })
+            client.once("open", () => {
+                resolve()
+            })
             client.once("error", reject)
         })
 

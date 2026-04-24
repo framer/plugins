@@ -33,8 +33,8 @@
         "@types/prismjs": "^1.26.5",
         "@types/react": "^18.3.24",
         "@types/react-dom": "^18.3.7",
-        "@vitest/ui": "^4.1.0",
+        "@vitest/ui": "^4.1.5",
         "happy-dom": "^20.8.9",
-        "vitest": "^4.1.0"
+        "vitest": "^4.1.5"
     }
 }

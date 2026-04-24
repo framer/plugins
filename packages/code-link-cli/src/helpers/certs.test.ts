@@ -1,6 +1,7 @@
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
+import { promisify } from "node:util"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 type ExecFileMock = ReturnType<typeof vi.fn>
@@ -24,7 +25,6 @@ const archMap: Record<string, string> = { x64: "amd64", arm64: "arm64" }
 const currentPlatformKey = `${platformMap[process.platform]}-${archMap[process.arch]}`
 const currentPlatformChecksum = MKCERT_CHECKSUMS[currentPlatformKey]
 
-
 // Shared test helpers
 function setupCommonMocks(opts: {
     tempHome: string
@@ -38,27 +38,27 @@ function setupCommonMocks(opts: {
     vi.stubEnv("USERPROFILE", opts.tempHome)
     vi.stubEnv("FRAMER_CODE_LINK_CERT_DIR", opts.certDir)
     vi.stubGlobal("fetch", opts.fetchMock)
-    vi.doMock("child_process", () => ({ execFile: opts.execFileMock }))
-    vi.doMock("util", () => ({
-        promisify:
-            (fn: (...args: unknown[]) => void) =>
-            (...args: unknown[]) =>
-                new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-                    fn(...args, (error: Error | null, stdout = "", stderr = "") => {
-                        if (error) {
-                            reject(error)
-                            return
-                        }
-                        resolve({ stdout, stderr })
-                    })
-                }),
-    }))
+    ;(
+        opts.execFileMock as ExecFileMock & {
+            [promisify.custom]?: (...args: unknown[]) => Promise<{ stdout: string; stderr: string }>
+        }
+    )[promisify.custom] = (...args: unknown[]) =>
+        new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+            opts.execFileMock(...args, (error: Error | null, stdout = "", stderr = "") => {
+                if (error) {
+                    reject(error)
+                    return
+                }
+                resolve({ stdout, stderr })
+            })
+        })
+    vi.doMock("node:child_process", () => ({ execFile: opts.execFileMock }))
 }
 
 function mockCryptoSequence(checksums: string[]) {
     let callIndex = 0
-    vi.doMock("crypto", async () => {
-        const actual = await vi.importActual<typeof import("crypto")>("crypto")
+    vi.doMock("node:crypto", async () => {
+        const actual = await vi.importActual<typeof import("node:crypto")>("node:crypto")
         return {
             ...actual,
             createHash: () => ({
@@ -75,9 +75,8 @@ function mockCryptoConstant(hash: string) {
 }
 
 function teardownMocks() {
-    vi.doUnmock("child_process")
-    vi.doUnmock("util")
-    vi.doUnmock("crypto")
+    vi.doUnmock("node:child_process")
+    vi.doUnmock("node:crypto")
     vi.unstubAllEnvs()
     vi.unstubAllGlobals()
     vi.resetModules()
@@ -91,7 +90,6 @@ function fakeFetchResponse(opts?: { ok?: boolean; status?: number; statusText?: 
         arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
     }
 }
-
 
 // Integration tests — cached binary, root CA syncing, cert generation
 describe("getOrCreateCerts", () => {
@@ -248,7 +246,6 @@ describe("getOrCreateCerts", () => {
     })
 })
 
-
 // Download URL selection
 describe("download URL selection", () => {
     let tempHome: string
@@ -303,7 +300,6 @@ describe("download URL selection", () => {
         }
     })
 })
-
 
 // Binary cache fast-path and SHA-256 verification
 describe("binary cache and SHA-256 verification", () => {
@@ -408,7 +404,6 @@ describe("binary cache and SHA-256 verification", () => {
         await expect(fs.access(path.join(certDir, "mkcert"))).resolves.toBeUndefined()
     })
 })
-
 
 // Error handling
 describe("error handling", () => {

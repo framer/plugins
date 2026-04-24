@@ -9,8 +9,8 @@ import { autoResolveConflicts, DEFAULT_REMOTE_DRIFT_MS, detectConflicts } from "
 function makeConflict(overrides: Partial<Conflict> = {}): Conflict {
     return {
         fileName: overrides.fileName ?? "Test.tsx",
-        localContent: Object.hasOwn(overrides, "localContent") ? overrides.localContent ?? null : "local",
-        remoteContent: Object.hasOwn(overrides, "remoteContent") ? overrides.remoteContent ?? null : "remote",
+        localContent: Object.hasOwn(overrides, "localContent") ? (overrides.localContent ?? null) : "local",
+        remoteContent: Object.hasOwn(overrides, "remoteContent") ? (overrides.remoteContent ?? null) : "remote",
         localModifiedAt: overrides.localModifiedAt ?? Date.now(),
         remoteModifiedAt: overrides.remoteModifiedAt ?? Date.now(),
         lastSyncedAt: Object.hasOwn(overrides, "lastSyncedAt") ? overrides.lastSyncedAt : Date.now(),

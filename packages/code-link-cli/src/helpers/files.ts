@@ -13,8 +13,8 @@
 import { fileKeyForLookup, normalizePath, pluralize, sanitizeFilePath } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
+import type { FileOperationMemory } from "../sync-memory.ts"
 import type { Conflict, ConflictResolution, ConflictVersionData, FileInfo } from "../types.ts"
-import type { SyncMemoryHandle } from "../sync-memory.ts"
 import { debug, warn } from "../utils/logging.ts"
 import { hashFileContent, type PersistedFileState } from "../utils/state-persistence.ts"
 
@@ -317,68 +317,78 @@ export function autoResolveConflicts(
  * Writes remote files to disk and updates hash tracker to prevent echoes
  * CRITICAL: Update sync memory echo state BEFORE writing to disk
  */
+export interface FileWriteResult {
+    file: FileInfo
+    path: string
+    ok: boolean
+}
+
 export async function writeRemoteFiles(
     files: FileInfo[],
     filesDir: string,
-    memory: SyncMemoryHandle,
-    installer?: { process: (fileName: string, content: string) => void }
-): Promise<void> {
+    memory: FileOperationMemory
+): Promise<FileWriteResult[]> {
     debug(`Writing ${pluralize(files.length, "remote file")}`)
+    const results: FileWriteResult[] = []
 
     for (const file of files) {
-        try {
-            const normalized = resolveRemoteReference(filesDir, file.name)
-            const fullPath = normalized.absolutePath
+        const normalized = resolveRemoteReference(filesDir, file.name)
+        const fullPath = normalized.absolutePath
+        const prepared = memory.armContentEcho(normalized.relativePath, file.content)
 
+        try {
             // Ensure directory exists
             await fs.mkdir(path.dirname(fullPath), { recursive: true })
 
-            // CRITICAL ORDER: Update sync memory echo state FIRST (in memory)
-            memory.rememberRemoteWrite(normalized.relativePath, file.content)
-
-            // THEN write to disk
+            // CRITICAL ORDER: content echo is armed before this write.
             await fs.writeFile(fullPath, file.content, "utf-8")
 
             debug(`Wrote file: ${normalized.relativePath}`)
-
-            // Trigger type installer if available
-            installer?.process(normalized.relativePath, file.content)
+            results.push({ file: { ...file, name: normalized.relativePath }, path: normalized.relativePath, ok: true })
         } catch (err) {
+            memory.rollbackWriteFailure(prepared)
             warn(`Failed to write file ${file.name}:`, err)
+            results.push({ file: { ...file, name: normalized.relativePath }, path: normalized.relativePath, ok: false })
         }
     }
+
+    return results
 }
 
 /**
  * Deletes a local file from disk
  */
-export async function deleteLocalFile(fileName: string, filesDir: string, memory: SyncMemoryHandle): Promise<void> {
+export interface FileDeleteResult {
+    fileName: string
+    ok: boolean
+    alreadyMissing: boolean
+}
+
+export async function deleteLocalFile(
+    fileName: string,
+    filesDir: string,
+    memory: FileOperationMemory
+): Promise<FileDeleteResult> {
     const normalized = resolveRemoteReference(filesDir, fileName)
+    const prepared = memory.armDeleteTombstone(normalized.relativePath)
 
     try {
-        // CRITICAL ORDER: Mark delete FIRST (in memory) to prevent echo
-        memory.markDeleteBeforeUnlink(normalized.relativePath)
-
-        // THEN delete from disk
+        // CRITICAL ORDER: delete tombstone is armed before this unlink.
         await fs.unlink(normalized.absolutePath)
 
-        // Clear the hash immediately
-        memory.forgetPath(normalized.relativePath)
-
         debug(`Deleted file: ${normalized.relativePath}`)
+        return { fileName: normalized.relativePath, ok: true, alreadyMissing: false }
     } catch (err) {
         const nodeError = err as NodeJS.ErrnoException
 
         if (nodeError.code === "ENOENT") {
-            // Treat missing files as already deleted to keep sync memory in step
-            memory.forgetPath(normalized.relativePath)
             debug(`File already deleted: ${normalized.relativePath}`)
-            return
+            return { fileName: normalized.relativePath, ok: true, alreadyMissing: true }
         }
 
-        // Clear pending delete marker immediately on failure
-        memory.clearDeleteTombstone(normalized.relativePath)
+        memory.rollbackDeleteFailure(prepared)
         warn(`Failed to delete file ${fileName}:`, err)
+        return { fileName: normalized.relativePath, ok: false, alreadyMissing: false }
     }
 }
 
@@ -399,9 +409,9 @@ export async function readFileSafe(fileName: string, filesDir: string): Promise<
  * Filter out files whose content matches the last remembered hash.
  * Used to skip inbound echoes of our own local sends.
  */
-export function filterEchoedFiles(files: FileInfo[], memory: SyncMemoryHandle): FileInfo[] {
+export function filterEchoedFiles(files: FileInfo[], memory: FileOperationMemory): FileInfo[] {
     return files.filter(file => {
-        return !memory.shouldSkipInboundEcho(file.name, file.content)
+        return !memory.matchesContentEcho(file.name, file.content)
     })
 }
 

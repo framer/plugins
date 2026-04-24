@@ -28,9 +28,11 @@ function createConfig(overrides: Partial<Config> = {}): Config {
 }
 
 function ctx(config: Config): DescribeCtx {
+    const runtime = new SyncRuntime()
+    if (config.projectDir) runtime.configureWorkspace(config.projectDir, config.projectDirCreated ?? false)
     return {
         config,
-        runtime: new SyncRuntime(),
+        runtime,
         syncState: { internalPhase: "watching", socket: mockSocket },
     }
 }
@@ -43,7 +45,7 @@ describe("SYNC_COMPLETE describe", () => {
         )
 
         expect(result.shutdown).toBe(true)
-        expect(result.sends).toEqual([{ type: "sync-phase", phase: "ready" }])
+        expect(result.sends).toEqual([{ message: { type: "sync-phase", phase: "ready" } }])
         expect(result.runtimeOps).toEqual([{ op: "noteEmittedSyncPhase", phase: "ready" }])
         expect(result.logs).toContainEqual({ level: "status", message: "Sync complete, exiting..." })
     })

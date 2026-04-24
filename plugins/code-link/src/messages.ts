@@ -12,7 +12,9 @@ import * as log from "./utils/logger"
 type MessageHandlerAction =
     | { type: "sync-phase"; syncPhase: SyncPhase }
     | { type: "pending-deletes"; files: PendingDelete[]; session: PromptSession; source: "initial" | "runtime" }
+    | { type: "clear-pending-deletes"; session: PromptSession; fileNames?: string[] }
     | { type: "conflicts"; conflicts: ConflictSummary[]; session: PromptSession }
+    | { type: "clear-conflicts"; session: PromptSession }
 
 export function createMessageHandler({
     dispatch,
@@ -78,6 +80,9 @@ export function createMessageHandler({
                     }
                 }
                 break
+            case "delete-prompt-cleared":
+                dispatch({ type: "clear-pending-deletes", session: message.session, fileNames: message.fileNames })
+                break
             case "conflicts-detected":
                 log.debug(`Received ${message.conflicts.length} conflicts from CLI`)
                 if (!message.session) {
@@ -85,6 +90,9 @@ export function createMessageHandler({
                     break
                 }
                 dispatch({ type: "conflicts", conflicts: message.conflicts, session: message.session })
+                break
+            case "conflicts-cleared":
+                dispatch({ type: "clear-conflicts", session: message.session })
                 break
             case "conflict-version-request": {
                 log.debug(`Fetching conflict versions for ${message.conflicts.length} files`)

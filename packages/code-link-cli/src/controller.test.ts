@@ -7,6 +7,7 @@ import { SyncMemory } from "./sync-memory.ts"
 // Readable coverage of core controller functionality
 
 const mockSocket = {} as WebSocket
+const testSession = { connectionId: 1, promptId: "prompt" }
 
 function disconnectedState() {
     return {
@@ -92,12 +93,7 @@ describe("Code Link", () => {
             })
 
             expect(result.state.internalPhase).toBe("watching")
-            const sendEffects = result.effects.filter(e => e.type === "SEND_MESSAGE")
-            expect(
-                sendEffects.some(
-                    e => "payload" in e && (e as { payload: { type: string } }).payload.type === "file-change"
-                )
-            ).toBe(true)
+            expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(true)
         })
 
         it("detects conflicts when both sides have different content", () => {
@@ -203,7 +199,7 @@ describe("Code Link", () => {
                 versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: syncTime + DEFAULT_REMOTE_DRIFT_MS + 1000 }],
             })
 
-            expect(result.state.internalPhase).toBe("conflict_resolution")
+            expect(result.state.internalPhase).toBe("watching")
             expect(result.effects.some(e => e.type === "REQUEST_CONFLICT_DECISIONS")).toBe(true)
         })
     })
@@ -310,14 +306,11 @@ describe("Code Link", () => {
             })
 
             expect(result.state.internalPhase).toBe("watching")
-            const sendEffects = result.effects.filter(e => e.type === "SEND_MESSAGE")
-            expect(
-                sendEffects.some(
-                    e =>
-                        "payload" in e &&
-                        (e as { payload: { fileName?: string } }).payload.fileName === "hooks/useAuth.ts"
-                )
-            ).toBe(true)
+            expect(result.effects).toContainEqual({
+                type: "SEND_LOCAL_CHANGE",
+                fileName: "hooks/useAuth.ts",
+                content: "export function useAuth() {}",
+            })
         })
 
         it("handles watcher events for nested paths", () => {
@@ -446,12 +439,20 @@ describe("Code Link", () => {
                 },
             ])
 
-            const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "remote" })
+            const result = transition(state, {
+                type: "CONFLICTS_RESOLVED",
+                session: testSession,
+                resolution: "remote",
+                fileNames: ["A.tsx", "B.tsx"],
+            })
 
             expect(result.state.internalPhase).toBe("watching")
-            expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
-            const writes = result.effects.filter(e => e.type === "WRITE_FILES")
-            expect(writes).toHaveLength(2)
+            expect(result.effects).toContainEqual({
+                type: "RESOLVE_CONFLICT_PROMPT",
+                session: testSession,
+                resolution: "remote",
+                fileNames: ["A.tsx", "B.tsx"],
+            })
         })
 
         it("uploads all local versions when user picks local", () => {
@@ -472,11 +473,15 @@ describe("Code Link", () => {
                 },
             ])
 
-            const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "local" })
+            const result = transition(state, {
+                type: "CONFLICTS_RESOLVED",
+                session: testSession,
+                resolution: "local",
+                fileNames: ["A.tsx", "B.tsx"],
+            })
 
             expect(result.state.internalPhase).toBe("watching")
-            const sends = result.effects.filter(e => e.type === "SEND_MESSAGE")
-            expect(sends).toHaveLength(2)
+            expect(result.effects.some(e => e.type === "RESOLVE_CONFLICT_PROMPT")).toBe(true)
         })
 
         it("handles deletions within conflicts - remote deleted, local has content", () => {
@@ -484,10 +489,14 @@ describe("Code Link", () => {
                 { fileName: "Deleted.tsx", localContent: "still here locally", remoteContent: null, localClean: false },
             ])
 
-            const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "remote" })
+            const result = transition(state, {
+                type: "CONFLICTS_RESOLVED",
+                session: testSession,
+                resolution: "remote",
+                fileNames: ["Deleted.tsx"],
+            })
 
-            // Remote is null → delete locally
-            expect(result.effects.some(e => e.type === "DELETE_LOCAL_FILES")).toBe(true)
+            expect(result.effects.some(e => e.type === "RESOLVE_CONFLICT_PROMPT")).toBe(true)
         })
 
         it("handles deletion within conflicts - local deleted, remote has content", () => {
@@ -495,10 +504,14 @@ describe("Code Link", () => {
                 { fileName: "Deleted.tsx", localContent: null, remoteContent: "still in framer" },
             ])
 
-            const result = transition(state, { type: "CONFLICTS_RESOLVED", resolution: "local" })
+            const result = transition(state, {
+                type: "CONFLICTS_RESOLVED",
+                session: testSession,
+                resolution: "local",
+                fileNames: ["Deleted.tsx"],
+            })
 
-            // Local is null → request delete confirmation (don't auto-delete from Framer)
-            expect(result.effects.some(e => e.type === "LOCAL_INITIATED_FILE_DELETE")).toBe(true)
+            expect(result.effects.some(e => e.type === "RESOLVE_CONFLICT_PROMPT")).toBe(true)
         })
     })
 
@@ -507,8 +520,8 @@ describe("Code Link", () => {
 
     describe("Echo Prevention", () => {
         it("skips inbound changes matching last outbound", () => {
-            const tracker = new SyncMemory().memoryHandle()
-            tracker.rememberRemoteWrite("Button.tsx", "content we just sent")
+            const tracker = new SyncMemory()
+            tracker.armContentEcho("Button.tsx", "content we just sent")
 
             const filtered = filterEchoedFiles(
                 [{ name: "Button.tsx", content: "content we just sent", modifiedAt: Date.now() }],
@@ -519,8 +532,8 @@ describe("Code Link", () => {
         })
 
         it("applies inbound changes with different content", () => {
-            const tracker = new SyncMemory().memoryHandle()
-            tracker.rememberRemoteWrite("Button.tsx", "old content")
+            const tracker = new SyncMemory()
+            tracker.armContentEcho("Button.tsx", "old content")
 
             const filtered = filterEchoedFiles(
                 [{ name: "Button.tsx", content: "new content from framer", modifiedAt: Date.now() }],
@@ -569,10 +582,12 @@ describe("Code Link", () => {
             const state = watchingState()
             const result = transition(state, {
                 type: "CONFLICTS_RESOLVED",
+                session: testSession,
                 resolution: "remote",
+                fileNames: ["Test.tsx"],
             })
 
-            expect(result.effects.some(e => e.type === "LOG" && e.level === "warn")).toBe(true)
+            expect(result.effects.some(e => e.type === "RESOLVE_CONFLICT_PROMPT")).toBe(true)
         })
 
         it("persists state on disconnect", () => {

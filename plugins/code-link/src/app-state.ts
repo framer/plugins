@@ -1,10 +1,4 @@
-import type {
-    ConflictSummary,
-    PendingDelete,
-    ProjectInfo,
-    PromptSession,
-    SyncPhase,
-} from "@code-link/shared"
+import type { ConflictSummary, PendingDelete, ProjectInfo, PromptSession, SyncPhase } from "@code-link/shared"
 
 export type UiState =
     | { kind: "loading" }
@@ -32,9 +26,9 @@ export type Action =
     | { type: "socket-replaced" }
     | { type: "sync-phase"; syncPhase: SyncPhase }
     | { type: "pending-deletes"; files: PendingDelete[]; session: PromptSession; source: "initial" | "runtime" }
-    | { type: "clear-pending-deletes" }
+    | { type: "clear-pending-deletes"; session?: PromptSession; fileNames?: string[] }
     | { type: "conflicts"; conflicts: ConflictSummary[]; session: PromptSession }
-    | { type: "clear-conflicts" }
+    | { type: "clear-conflicts"; session?: PromptSession }
 
 export const initialState: State = {
     ui: { kind: "loading" },
@@ -121,21 +115,69 @@ export function reducer(state: State, action: Action): State {
             }
         }
         case "pending-deletes":
+            if (
+                state.ui.kind === "deletePrompt" &&
+                state.ui.session.connectionId === action.session.connectionId &&
+                state.ui.session.promptId === action.session.promptId
+            ) {
+                const byPath = new Map(state.ui.deletes.map(file => [file.fileName, file]))
+                for (const file of action.files) byPath.set(file.fileName, file)
+                return {
+                    ...state,
+                    ui: {
+                        kind: "deletePrompt",
+                        session: state.ui.session,
+                        deletes: [...byPath.values()],
+                        source: action.source,
+                    },
+                }
+            }
             return {
                 ...state,
                 ui: {
                     kind: "deletePrompt",
                     session: action.session,
-                    deletes: [...(state.ui.kind === "deletePrompt" ? state.ui.deletes : []), ...action.files],
+                    deletes: action.files,
                     source: action.source,
                 },
             }
         case "clear-pending-deletes":
+            if (action.session) {
+                if (state.ui.kind !== "deletePrompt") return state
+                if (
+                    state.ui.session.connectionId !== action.session.connectionId ||
+                    state.ui.session.promptId !== action.session.promptId
+                ) {
+                    return state
+                }
+            }
+            if (action.fileNames && state.ui.kind === "deletePrompt") {
+                const cleared = new Set(action.fileNames)
+                const deletes = state.ui.deletes.filter(file => !cleared.has(file.fileName))
+                return {
+                    ...state,
+                    ui:
+                        deletes.length > 0
+                            ? {
+                                  kind: "deletePrompt",
+                                  session: state.ui.session,
+                                  deletes,
+                                  source: state.ui.source,
+                              }
+                            : baseUiAfterPromptClear(state),
+                }
+            }
             return {
                 ...state,
                 ui: baseUiAfterPromptClear(state),
             }
         case "conflicts":
+            if (action.conflicts.length === 0) {
+                return {
+                    ...state,
+                    ui: baseUiAfterPromptClear(state),
+                }
+            }
             return {
                 ...state,
                 ui: {
@@ -145,6 +187,15 @@ export function reducer(state: State, action: Action): State {
                 },
             }
         case "clear-conflicts":
+            if (action.session) {
+                if (state.ui.kind !== "conflictPrompt") return state
+                if (
+                    state.ui.session.connectionId !== action.session.connectionId ||
+                    state.ui.session.promptId !== action.session.promptId
+                ) {
+                    return state
+                }
+            }
             return {
                 ...state,
                 ui: baseUiAfterPromptClear(state),

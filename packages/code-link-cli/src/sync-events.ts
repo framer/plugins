@@ -5,7 +5,7 @@
  * `controller.ts` (which imports `effect-result.ts`).
  */
 
-import type { CliToPluginMessage, SyncPhase } from "@code-link/shared"
+import type { CancelledDelete, CliToPluginMessage, PromptSession, SyncPhase } from "@code-link/shared"
 import type { WebSocket } from "ws"
 import type { Conflict, ConflictVersionData, FileInfo, WatcherEvent } from "./types.ts"
 import type { FileSyncMetadata } from "./utils/file-metadata-cache.ts"
@@ -68,7 +68,9 @@ export type SyncEvent =
     | { type: "REMOTE_FILE_DELETE"; fileName: string }
     | { type: "LOCAL_DELETE_APPROVED"; fileName: string }
     | { type: "LOCAL_DELETE_REJECTED"; fileName: string; content: string }
-    | { type: "CONFLICTS_RESOLVED"; resolution: "local" | "remote" }
+    | { type: "DELETE_CONFIRMED"; session: PromptSession; fileNames: string[] }
+    | { type: "DELETE_CANCELLED"; session: PromptSession; files: CancelledDelete[] }
+    | { type: "CONFLICTS_RESOLVED"; session: PromptSession; resolution: "local" | "remote"; fileNames: string[] }
     | {
           type: "FILE_SYNCED_CONFIRMATION"
           fileName: string
@@ -113,6 +115,34 @@ export type Effect =
     | {
           type: "LOCAL_INITIATED_FILE_DELETE"
           fileNames: string[]
+      }
+    | {
+          type: "RESOLVE_DELETE_PROMPT"
+          session: PromptSession
+          confirmedFileNames: string[]
+          cancelledFiles: CancelledDelete[]
+      }
+    | {
+          type: "RESOLVE_CONFLICT_PROMPT"
+          session: PromptSession
+          resolution: "local" | "remote"
+          fileNames: string[]
+      }
+    | {
+          type: "UPDATE_ACTIVE_CONFLICT_LOCAL"
+          fileName: string
+          content: string | null
+          modifiedAt?: number
+      }
+    | {
+          type: "UPDATE_ACTIVE_CONFLICT_REMOTE"
+          fileName: string
+          content: string | null
+          modifiedAt?: number
+      }
+    | {
+          type: "INVALIDATE_DELETE_PROMPT_PATH"
+          fileName: string
       }
     | {
           type: "SEND_FILE_RENAME"

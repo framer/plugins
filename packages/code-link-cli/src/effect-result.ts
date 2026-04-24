@@ -1,11 +1,11 @@
-import type { CliToPluginMessage, SyncPhase } from "@code-link/shared"
-import type { Conflict, FileInfo } from "./types.ts"
+import type { CliToPluginMessage, PromptSession, SyncPhase } from "@code-link/shared"
 import type { SyncEvent } from "./sync-events.ts"
+import type { Conflict, FileInfo } from "./types.ts"
 
 /**
- * Every mutation the apply pipeline can perform on the SyncRuntime (or its
- * embedded caches). Classified pre-send vs. post-send by PRE_SEND_RUNTIME_OPS
- * in controller.ts.
+ * Every mutation the apply pipeline can perform on SyncRuntime/SyncMemory.
+ * Send-success mutations live on SendIntent.onSent so they cannot run before
+ * the socket write succeeds.
  */
 export type RuntimeOp =
     | { op: "recordLocalSend"; path: string; content: string }
@@ -13,12 +13,17 @@ export type RuntimeOp =
     | { op: "recordDelete"; path: string }
     | { op: "registerPendingRename"; oldPath: string; newPath: string; content: string }
     | { op: "completePendingRename"; newPath: string }
-    | { op: "forgetPath"; path: string }
+    | { op: "clearContentEcho"; path: string }
     | { op: "clearDeleteTombstone"; path: string }
     | { op: "initWorkspace"; projectInfo: { projectId: string; projectName: string } }
     | { op: "loadPersistedState" }
     | { op: "noteEmittedSyncPhase"; phase: SyncPhase }
     | { op: "resetDisconnectState" }
+    | { op: "clearDeletePromptFiles"; session: PromptSession; fileNames: string[] }
+    | { op: "clearConflictPromptFiles"; session: PromptSession; fileNames: string[] }
+    | { op: "invalidateDeletePromptPath"; path: string }
+    | { op: "updateActiveConflictLocal"; path: string; content: string | null; modifiedAt?: number }
+    | { op: "updateActiveConflictRemote"; path: string; content: string | null; modifiedAt?: number }
 
 export type LogLevel = "info" | "debug" | "warn" | "success" | "status"
 
@@ -28,13 +33,19 @@ export interface LogEntry {
 }
 
 /**
- * A prompt that the apply pipeline should send to the plugin and await a
- * user decision on. Apply calls the runtime prompt coordinator, which mints
- * the session id and routes incoming responses back into the pipeline.
+ * A prompt update that apply sends to the plugin. Prompt decisions return
+ * later as ordinary SyncEvents; apply never waits for a user decision.
  */
-export type AwaitPromptOp =
+export type PromptIntent =
     | { kind: "deleteConfirmation"; fileNames: string[]; requireConfirmation: boolean }
     | { kind: "conflictDecisions"; conflicts: Conflict[] }
+
+export interface SendIntent {
+    message: CliToPluginMessage
+    onSent?: RuntimeOp[]
+    fileUp?: string
+    installerProcess?: { fileName: string; content: string }
+}
 
 /**
  * Declarative description of what one effect should do.
@@ -43,20 +54,17 @@ export type AwaitPromptOp =
  * returns `{}`. The apply pipeline consumes fields in this fixed order:
  *
  *   1. logs            — emit each entry through the matching log fn
- *   2. pre-send rOps   — recordLocalSend, registerPendingRename, recordDelete,
- *                        forgetPath, clearDeleteTombstone, initWorkspace,
- *                        loadPersistedState
+ *   2. pre-send rOps   — workspace init, echo cleanup, active conflict updates
  *   3. writes          — filterEchoedFiles (if skipEcho), then writeRemoteFiles;
  *                        fileDown per file unless silent;
  *                        metadata recorded post-disk inside this step
- *   4. deletes         — markDeleteBeforeUnlink + fs.unlink (via deleteLocalFile);
+ *   4. deletes         — arm delete tombstone + fs.unlink (via deleteLocalFile);
  *                        fileDelete + recordDelete on success
- *   5. sends           — sendMessage each; on any successful `file-change`:
- *                        fileUp + installerProcess (if set)
- *   6. awaitPrompt     — runtime.request{Delete,Conflict}Decisions; resulting
- *                        confirmations flow back through post-send paths
+ *   5. sends           — sendMessage each; successful sends apply onSent ops
+ *                        and optional fileUp/installerProcess
+ *   6. prompt          — register prompt state, send UI state, return
  *   7. post-send rOps  — recordRemoteApplied, completePendingRename,
- *                        noteEmittedSyncPhase, resetDisconnectState
+ *                        prompt clears, noteEmittedSyncPhase, resetDisconnectState
  *   8. persistState    — metadata cache flush
  *   9. tryGitInit      — first-sync, best-effort
  *  10. shutdown        — call ctx.shutdown() (the `logs[*].level === "status"`
@@ -66,14 +74,12 @@ export type AwaitPromptOp =
 export interface EffectResult {
     logs?: LogEntry[]
     runtimeOps?: RuntimeOp[]
-    sends?: CliToPluginMessage[]
+    sends?: SendIntent[]
     writes?: { files: FileInfo[]; silent?: boolean; skipEcho?: boolean }
     deletes?: string[]
-    /** If any `file-change` in `sends` succeeded: emit the file-up indicator. */
-    fileUp?: string
-    /** If any `file-change` in `sends` succeeded: run installer.process. */
-    installerProcess?: { fileName: string; content: string }
-    awaitPrompt?: AwaitPromptOp
+    prompt?: PromptIntent
+    refreshConflictPrompt?: boolean
+    refreshDeletePrompt?: boolean
     persistState?: boolean
     /** Best-effort git init on first sync if the workspace was just created. */
     tryGitInit?: boolean

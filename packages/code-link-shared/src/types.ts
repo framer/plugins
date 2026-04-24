@@ -59,14 +59,12 @@ export type CliToPluginMessage =
     | { type: "file-list"; files: FileInfo[] }
     | { type: "sync-phase"; phase: SyncPhase }
     | { type: "file-change"; fileName: string; content: string }
-    | {
-          type: "file-delete"
-          fileNames: string[]
-          requireConfirmation?: boolean
-          session?: PromptSession
-      }
+    | { type: "file-delete"; fileNames: string[]; requireConfirmation: true; session: PromptSession }
+    | { type: "file-delete"; fileNames: string[]; requireConfirmation?: false }
+    | { type: "delete-prompt-cleared"; session: PromptSession; fileNames?: string[] }
     | { type: "file-rename"; oldFileName: string; newFileName: string; content: string }
     | { type: "conflicts-detected"; conflicts: ConflictSummary[]; session: PromptSession }
+    | { type: "conflicts-cleared"; session: PromptSession }
     | {
           type: "conflict-version-request"
           conflicts: ConflictVersionRequest[]
@@ -77,8 +75,10 @@ const cliToPluginMessageTypes = [
     "sync-phase",
     "file-change",
     "file-delete",
+    "delete-prompt-cleared",
     "file-rename",
     "conflicts-detected",
+    "conflicts-cleared",
     "conflict-version-request",
 ] as const
 

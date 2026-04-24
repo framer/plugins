@@ -31,6 +31,9 @@ function baseConfig(overrides: Partial<Config> = {}): Config {
 }
 
 function watchingCtx(runtime: SyncRuntime, config: Config = baseConfig()): DescribeCtx {
+    if (config.projectDir && !runtime.workspace.projectDir) {
+        runtime.configureWorkspace(config.projectDir, config.projectDirCreated ?? false)
+    }
     return {
         config,
         runtime,
@@ -42,8 +45,8 @@ describe("SEND_FILE_RENAME — describe", () => {
     it("returns echo-cleanup runtimeOps when the rename is an echoed write+delete", async () => {
         const runtime = new SyncRuntime()
         const content = "export const New = () => null"
-        runtime.rememberLocalSend("New.tsx", content)
-        runtime.markDeleteBeforeUnlink("Old.tsx")
+        runtime.armContentEcho("New.tsx", content)
+        runtime.armDeleteTombstone("Old.tsx")
 
         const result = await describeEffect(
             { type: "SEND_FILE_RENAME", oldFileName: "Old.tsx", newFileName: "New.tsx", content },
@@ -53,7 +56,7 @@ describe("SEND_FILE_RENAME — describe", () => {
         expect(result).toEqual({
             logs: [{ level: "debug", message: "Skipping echoed rename Old.tsx -> New.tsx" }],
             runtimeOps: [
-                { op: "forgetPath", path: "New.tsx" },
+                { op: "clearContentEcho", path: "New.tsx" },
                 { op: "clearDeleteTombstone", path: "Old.tsx" },
             ],
         })
@@ -69,13 +72,17 @@ describe("SEND_FILE_RENAME — describe", () => {
         )
 
         expect(result).toEqual({
-            sends: [{ type: "file-rename", oldFileName: "Old.tsx", newFileName: "New.tsx", content }],
-            runtimeOps: [
+            sends: [
                 {
-                    op: "registerPendingRename",
-                    oldPath: "Old.tsx",
-                    newPath: "New.tsx",
-                    content,
+                    message: { type: "file-rename", oldFileName: "Old.tsx", newFileName: "New.tsx", content },
+                    onSent: [
+                        {
+                            op: "registerPendingRename",
+                            oldPath: "Old.tsx",
+                            newPath: "New.tsx",
+                            content,
+                        },
+                    ],
                 },
             ],
         })
@@ -91,13 +98,17 @@ describe("SEND_FILE_RENAME — describe", () => {
         )
 
         expect(result).toEqual({
-            sends: [{ type: "file-rename", oldFileName: "Old.tsx", newFileName: "New.tsx", content }],
-            runtimeOps: [
+            sends: [
                 {
-                    op: "registerPendingRename",
-                    oldPath: "Old.tsx",
-                    newPath: "New.tsx",
-                    content,
+                    message: { type: "file-rename", oldFileName: "Old.tsx", newFileName: "New.tsx", content },
+                    onSent: [
+                        {
+                            op: "registerPendingRename",
+                            oldPath: "Old.tsx",
+                            newPath: "New.tsx",
+                            content,
+                        },
+                    ],
                 },
             ],
         })
@@ -142,7 +153,7 @@ describe("UPDATE_FILE_METADATA — describe", () => {
 
         try {
             const runtime = new SyncRuntime()
-            runtime.setPendingRename("New.tsx", { oldFileName: "Old.tsx", content })
+            runtime.registerPendingRename("New.tsx", { oldFileName: "Old.tsx", content })
 
             const result = await describeEffect(
                 { type: "UPDATE_FILE_METADATA", fileName: "New.tsx", remoteModifiedAt: 1234 },
@@ -170,7 +181,7 @@ describe("UPDATE_FILE_METADATA — describe", () => {
 
         try {
             const runtime = new SyncRuntime()
-            runtime.setPendingRename("New.tsx", {
+            runtime.registerPendingRename("New.tsx", {
                 oldFileName: "Old.tsx",
                 content: "export const New = 1",
             })
@@ -205,7 +216,7 @@ describe("UPDATE_FILE_METADATA — describe", () => {
         try {
             const runtime = new SyncRuntime()
             const pending = "export const New = () => null"
-            runtime.setPendingRename("New.tsx", { oldFileName: "Old.tsx", content: pending })
+            runtime.registerPendingRename("New.tsx", { oldFileName: "Old.tsx", content: pending })
 
             const result = await describeEffect(
                 { type: "UPDATE_FILE_METADATA", fileName: "New.tsx", remoteModifiedAt: 5678 },
@@ -233,10 +244,14 @@ describe("describeSendLocalChange", () => {
 
         expect(result).toEqual({
             logs: [{ level: "debug", message: "Local change detected: A.tsx" }],
-            runtimeOps: [{ op: "recordLocalSend", path: "A.tsx", content: "x" }],
-            sends: [{ type: "file-change", fileName: "A.tsx", content: "x" }],
-            fileUp: "A.tsx",
-            installerProcess: { fileName: "A.tsx", content: "x" },
+            sends: [
+                {
+                    message: { type: "file-change", fileName: "A.tsx", content: "x" },
+                    onSent: [{ op: "recordLocalSend", path: "A.tsx", content: "x" }],
+                    fileUp: "A.tsx",
+                    installerProcess: { fileName: "A.tsx", content: "x" },
+                },
+            ],
         })
     })
 
@@ -258,7 +273,7 @@ describe("describeSendLocalChange", () => {
 
     it("returns an empty result when the change is an inbound echo", () => {
         const runtime = new SyncRuntime()
-        runtime.rememberLocalSend("A.tsx", "x")
+        runtime.armContentEcho("A.tsx", "x")
 
         const result = describeSendLocalChange({ fileName: "A.tsx", content: "x" }, runtime)
 

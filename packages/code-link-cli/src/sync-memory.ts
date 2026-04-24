@@ -1,110 +1,135 @@
 /**
- * Single data model for sync agreement: inbound echo suppression and delete tombstones.
- * Owns persisted metadata; in-memory echo/delete windows match legacy hash-tracker semantics.
+ * SyncMemory owns file-level sync truth.
+ *
+ * If a race depends on path normalization, content echoes, delete tombstones,
+ * or agreed metadata, it belongs here. Controller/apply code should call these
+ * named operations instead of touching the underlying maps directly.
  */
 
 import { normalizeCodeFilePathWithExtension } from "@code-link/shared"
 import { createScheduler } from "./scheduler.ts"
 import { TIMINGS } from "./timings.ts"
-import { FileMetadataCache } from "./utils/file-metadata-cache.ts"
-import { hashFileContent } from "./utils/state-persistence.ts"
+import { FileMetadataCache, type FileSyncMetadata } from "./utils/file-metadata-cache.ts"
+import { hashFileContent, type PersistedFileState } from "./utils/state-persistence.ts"
 
-/**
- * Narrow handle on `SyncMemory` for disk helpers (`writeRemoteFiles`, `deleteLocalFile`,
- * `filterEchoedFiles`). Returned by `SyncMemory.memoryHandle()`.
- */
-export interface SyncMemoryHandle {
-    rememberRemoteWrite(filePath: string, content: string): void
-    shouldSkipInboundEcho(filePath: string, content: string): boolean
-    markDeleteBeforeUnlink(filePath: string): void
-    forgetPath(filePath: string): void
-    clearDeleteTombstone(filePath: string): void
-    shouldSkipDeleteEcho(filePath: string): boolean
+export interface PreparedContentEcho {
+    path: string
+    content: string
+}
+
+export interface PreparedDeleteTombstone {
+    path: string
+}
+
+export interface FileOperationMemory {
+    armContentEcho(filePath: string, content: string): PreparedContentEcho
+    matchesContentEcho(filePath: string, content: string): boolean
+    rollbackWriteFailure(prepared: PreparedContentEcho): void
+    armDeleteTombstone(filePath: string): PreparedDeleteTombstone
+    rollbackDeleteFailure(prepared: PreparedDeleteTombstone): void
 }
 
 export class SyncMemory {
-    readonly fileMetadataCache = new FileMetadataCache()
+    readonly metadata = new FileMetadataCache()
 
-    private readonly hashes = new Map<string, string>()
-    private readonly tombstoneKeys = new Set<string>()
+    private readonly contentEchoes = new Map<string, string>()
+    private readonly deleteTombstones = new Set<string>()
     private readonly scheduler = createScheduler()
 
-    private keyFor(filePath: string): string {
+    normalizePath(filePath: string): string {
         return normalizeCodeFilePathWithExtension(filePath)
     }
 
-    /** Remember expected content hash (local outbound echo or pre-remote-write). */
-    rememberContentHash(filePath: string, content: string): void {
-        const hash = hashFileContent(content)
-        this.hashes.set(this.keyFor(filePath), hash)
+    // --- agreed metadata -----------------------------------------------------
+
+    metadataFor(filePath: string): FileSyncMetadata | undefined {
+        return this.metadata.get(filePath)
     }
 
-    shouldSkipInboundEcho(filePath: string, content: string): boolean {
-        const currentHash = hashFileContent(content)
-        const storedHash = this.hashes.get(this.keyFor(filePath))
-        return storedHash === currentHash
+    persistedSnapshot(): Map<string, PersistedFileState> {
+        return this.metadata.getPersistedState()
     }
 
-    forgetPath(filePath: string): void {
-        this.hashes.delete(this.keyFor(filePath))
+    recordSyncedContent(filePath: string, content: string, modifiedAt: number): void {
+        this.metadata.recordSyncedSnapshot(filePath, hashFileContent(content), modifiedAt)
     }
 
-    clearInboundHashes(): void {
-        this.hashes.clear()
+    recordSyncedDelete(filePath: string): void {
+        this.clearContentEcho(filePath)
+        this.metadata.recordDelete(filePath)
     }
 
-    markDeleteBeforeUnlink(filePath: string): void {
-        const key = this.keyFor(filePath)
-        this.scheduler.cancel("tombstoneExpiry", key)
-        this.tombstoneKeys.add(key)
+    matchesAgreedContent(filePath: string, content: string): boolean {
+        return this.metadataFor(filePath)?.lastSyncedHash === hashFileContent(content)
+    }
+
+    // --- content echoes ------------------------------------------------------
+
+    armContentEcho(filePath: string, content: string): PreparedContentEcho {
+        const path = this.normalizePath(filePath)
+        this.contentEchoes.set(path, hashFileContent(content))
+        return { path, content }
+    }
+
+    matchesContentEcho(filePath: string, content: string): boolean {
+        return this.contentEchoes.get(this.normalizePath(filePath)) === hashFileContent(content)
+    }
+
+    clearContentEcho(filePath: string): void {
+        this.contentEchoes.delete(this.normalizePath(filePath))
+    }
+
+    clearAllContentEchoes(): void {
+        this.contentEchoes.clear()
+    }
+
+    isContentEcho(filePath: string, content: string): boolean {
+        return this.matchesAgreedContent(filePath, content) || this.matchesContentEcho(filePath, content)
+    }
+
+    commitWriteSuccess(prepared: PreparedContentEcho, modifiedAt: number): void {
+        this.recordSyncedContent(prepared.path, prepared.content, modifiedAt)
+    }
+
+    rollbackWriteFailure(prepared: PreparedContentEcho): void {
+        if (this.matchesContentEcho(prepared.path, prepared.content)) {
+            this.clearContentEcho(prepared.path)
+        }
+    }
+
+    // --- delete tombstones ---------------------------------------------------
+
+    armDeleteTombstone(filePath: string): PreparedDeleteTombstone {
+        const path = this.normalizePath(filePath)
+        this.scheduler.cancel("tombstoneExpiry", path)
+        this.deleteTombstones.add(path)
         this.scheduler.after(
             "tombstoneExpiry",
             TIMINGS.tombstoneExpiry,
             () => {
-                this.tombstoneKeys.delete(key)
+                this.deleteTombstones.delete(path)
             },
-            key
+            path
         )
+        return { path }
     }
 
-    shouldSkipDeleteEcho(filePath: string): boolean {
-        return this.tombstoneKeys.has(this.keyFor(filePath))
+    matchesDeleteTombstone(filePath: string): boolean {
+        return this.deleteTombstones.has(this.normalizePath(filePath))
     }
 
     clearDeleteTombstone(filePath: string): void {
-        const key = this.keyFor(filePath)
-        this.scheduler.cancel("tombstoneExpiry", key)
-        this.tombstoneKeys.delete(key)
+        const path = this.normalizePath(filePath)
+        this.scheduler.cancel("tombstoneExpiry", path)
+        this.deleteTombstones.delete(path)
     }
 
-    /**
-     * Echo/conflict memory snapshot: persisted agreement state (legacy fileMetadataCache shape).
-     */
-    snapshot() {
-        return this.fileMetadataCache.getPersistedState()
+    commitDeleteSuccess(prepared: PreparedDeleteTombstone): void {
+        this.clearContentEcho(prepared.path)
+        this.recordSyncedDelete(prepared.path)
     }
 
-    isEcho(path: string, content: string): boolean {
-        const h = hashFileContent(content)
-        const meta = this.fileMetadataCache.get(path)
-        if (meta?.lastSyncedHash === h) {
-            return true
-        }
-        return this.shouldSkipInboundEcho(path, content)
-    }
-
-    isDeleteEcho(path: string): boolean {
-        return this.shouldSkipDeleteEcho(path)
-    }
-
-    memoryHandle(): SyncMemoryHandle {
-        return {
-            rememberRemoteWrite: (filePath, content) => this.rememberContentHash(filePath, content),
-            shouldSkipInboundEcho: (filePath, content) => this.shouldSkipInboundEcho(filePath, content),
-            markDeleteBeforeUnlink: (filePath: string) => this.markDeleteBeforeUnlink(filePath),
-            forgetPath: (filePath: string) => this.forgetPath(filePath),
-            clearDeleteTombstone: (filePath: string) => this.clearDeleteTombstone(filePath),
-            shouldSkipDeleteEcho: (filePath: string) => this.shouldSkipDeleteEcho(filePath),
-        }
+    rollbackDeleteFailure(prepared: PreparedDeleteTombstone): void {
+        this.clearDeleteTombstone(prepared.path)
     }
 }

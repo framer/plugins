@@ -23,6 +23,12 @@ interface DeletePromptState {
     fileNames: Set<string>
 }
 
+interface DeferredSyncComplete {
+    totalCount: number
+    updatedCount: number
+    unchangedCount: number
+}
+
 interface ConflictPromptState {
     session: PromptSession
     conflicts: Map<string, Conflict>
@@ -88,6 +94,7 @@ export class SyncRuntime {
 
     private activeDeletePrompt: DeletePromptState | null = null
     private activeConflictPrompt: ConflictPromptState | null = null
+    private deferredSyncComplete: DeferredSyncComplete | null = null
 
     installer: Installer | null = null
 
@@ -232,6 +239,28 @@ export class SyncRuntime {
         return this.activeDeletePrompt?.fileNames.has(this.memory.normalizePath(filePath)) ?? false
     }
 
+    hasAnyActiveDeletePrompt(): boolean {
+        return this.activeDeletePrompt !== null
+    }
+
+    deferSyncComplete(syncComplete: DeferredSyncComplete): void {
+        this.deferredSyncComplete =
+            this.deferredSyncComplete === null
+                ? syncComplete
+                : {
+                      totalCount: this.deferredSyncComplete.totalCount + syncComplete.totalCount,
+                      updatedCount: this.deferredSyncComplete.updatedCount + syncComplete.updatedCount,
+                      unchangedCount: this.deferredSyncComplete.unchangedCount + syncComplete.unchangedCount,
+                  }
+    }
+
+    consumeDeferredSyncCompleteIfNoDeletePrompt(): DeferredSyncComplete | null {
+        if (this.activeDeletePrompt !== null) return null
+        const syncComplete = this.deferredSyncComplete
+        this.deferredSyncComplete = null
+        return syncComplete
+    }
+
     invalidateDeletePromptPath(filePath: string): DeletePromptChange {
         const prompt = this.activeDeletePrompt
         const normalized = this.memory.normalizePath(filePath)
@@ -350,6 +379,7 @@ export class SyncRuntime {
     resetPrompts(): void {
         this.activeDeletePrompt = null
         this.activeConflictPrompt = null
+        this.deferredSyncComplete = null
     }
 
     cleanupUserActions(): void {

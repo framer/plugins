@@ -400,4 +400,48 @@ describe("start() integration", () => {
             expect(await fs.readFile(filePath, "utf-8")).toBe(content)
         })
     })
+
+    it("clears pending delete prompts when replacing the active socket", async () => {
+        tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-int-"))
+        const projectHash = "integration-replace-delete-prompt-123"
+        const start = await loadStart()
+        await start({ ...baseConfig(projectHash), dangerouslyAutoDelete: false })
+
+        const id = shortProjectHash(projectHash)
+        const ws1 = harness.createFakeWs()
+        ws1.receive({ type: "handshake", projectId: id, projectName: "P" })
+        await vi.waitFor(() => expect(initWatcherMock).toHaveBeenCalled(), { timeout: 5000 })
+        ws1.receive({ type: "file-list", files: [] })
+        await vi.waitFor(() =>
+            ws1.sent.some(s => JSON.parse(s).type === "sync-phase" && JSON.parse(s).phase === "ready")
+        )
+
+        emitWatcherChange({ kind: "delete", relativePath: "A.tsx" })
+        await vi.waitFor(() =>
+            expect(ws1.sent.some(s => JSON.parse(s).type === "file-delete" && JSON.parse(s).requireConfirmation)).toBe(
+                true
+            )
+        )
+
+        const ws2 = harness.createFakeWs()
+        ws2.receive({ type: "handshake", projectId: id, projectName: "P" })
+        await vi.waitFor(() =>
+            expect(
+                ws2.sent.some(s => JSON.parse(s).type === "sync-phase" && JSON.parse(s).phase === "initial_sync")
+            ).toBe(true)
+        )
+        ws2.receive({ type: "file-list", files: [] })
+        await vi.waitFor(() =>
+            ws2.sent.some(s => JSON.parse(s).type === "sync-phase" && JSON.parse(s).phase === "ready")
+        )
+
+        ws2.sent.length = 0
+        emitWatcherChange({ kind: "delete", relativePath: "A.tsx" })
+
+        await vi.waitFor(() =>
+            expect(ws2.sent.some(s => JSON.parse(s).type === "file-delete" && JSON.parse(s).requireConfirmation)).toBe(
+                true
+            )
+        )
+    })
 })

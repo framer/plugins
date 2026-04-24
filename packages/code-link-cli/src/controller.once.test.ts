@@ -93,6 +93,34 @@ describe("SYNC_COMPLETE apply", () => {
         expect(runtime.lastEmittedSyncPhase).toBe("ready")
     })
 
+    it("defers once-mode shutdown until pending delete prompts resolve", async () => {
+        const runtime = new SyncRuntime()
+        runtime.mintConnectionId()
+        const prompt = runtime.startDeletePrompt(["A.tsx"])
+        if (!prompt) throw new Error("Expected delete prompt")
+        const open = socket()
+        const applyCtx = ctx(runtime, open.ws, createConfig({ once: true }))
+
+        await applyEffect({ type: "SYNC_COMPLETE", totalCount: 1, updatedCount: 1, unchangedCount: 0 }, applyCtx)
+
+        expect(applyCtx.didShutdown()).toBe(false)
+        expect(open.sent).not.toContainEqual({ type: "sync-phase", phase: "ready" })
+
+        await applyEffect(
+            {
+                type: "RESOLVE_DELETE_PROMPT",
+                session: prompt.session,
+                confirmedFileNames: ["A.tsx"],
+                cancelledFiles: [],
+            },
+            applyCtx
+        )
+
+        expect(open.sent).toContainEqual({ type: "file-delete", fileNames: ["A.tsx"] })
+        expect(open.sent).toContainEqual({ type: "sync-phase", phase: "ready" })
+        expect(applyCtx.didShutdown()).toBe(true)
+    })
+
     it("clears resolved conflict prompts before once-mode shutdown", async () => {
         const runtime = new SyncRuntime()
         runtime.mintConnectionId()

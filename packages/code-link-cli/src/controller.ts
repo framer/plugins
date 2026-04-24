@@ -764,7 +764,12 @@ async function applyConflictChange(change: ConflictPromptChange, ctx: ApplyCtx):
     if (!change.changed) return
     for (const resolved of change.resolved) {
         if (resolved.content === null) ctx.runtime.memory.recordSyncedDelete(resolved.fileName)
-        else ctx.runtime.memory.recordSyncedContent(resolved.fileName, resolved.content, resolved.modifiedAt ?? Date.now())
+        else
+            ctx.runtime.memory.recordSyncedContent(
+                resolved.fileName,
+                resolved.content,
+                resolved.modifiedAt ?? Date.now()
+            )
     }
     if (ctx.syncState.socket) {
         await sendToPlugin(
@@ -779,6 +784,16 @@ async function applyConflictChange(change: ConflictPromptChange, ctx: ApplyCtx):
 
 async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE" }>, ctx: ApplyCtx): Promise<void> {
     const { config, runtime, syncState, shutdown } = ctx
+    if (runtime.hasAnyActiveDeletePrompt()) {
+        runtime.deferSyncComplete({
+            totalCount: effect.totalCount,
+            updatedCount: effect.updatedCount,
+            unchangedCount: effect.unchangedCount,
+        })
+        debug("Deferring sync completion until delete prompt resolves")
+        return
+    }
+
     const wasDisconnected = runtime.disconnectUi.wasRecentlyDisconnected()
     let shouldShutdown = !!config.once
     let shouldTryGitInit = false
@@ -948,7 +963,9 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
             const confirmed = effect.confirmedFileNames.filter(fileName =>
                 active.has(runtime.memory.normalizePath(fileName))
             )
-            const cancelled = effect.cancelledFiles.filter(file => active.has(runtime.memory.normalizePath(file.fileName)))
+            const cancelled = effect.cancelledFiles.filter(file =>
+                active.has(runtime.memory.normalizePath(file.fileName))
+            )
             if (cancelled.length > 0) {
                 await writeFiles(
                     cancelled.map(file => ({ name: file.fileName, content: file.content, modifiedAt: Date.now() })),
@@ -959,6 +976,10 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
             await sendFileDelete(confirmed, ctx)
             runtime.clearDeletePromptFiles(effect.session, activeFileNames)
             await runtime.metadata.flush()
+            const deferred = runtime.consumeDeferredSyncCompleteIfNoDeletePrompt()
+            if (deferred) {
+                await applySyncComplete({ type: "SYNC_COMPLETE", ...deferred }, ctx)
+            }
             return []
         }
 
@@ -1029,6 +1050,10 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
                     session: change.session,
                     fileNames: change.fileNames,
                 })
+                const deferred = runtime.consumeDeferredSyncCompleteIfNoDeletePrompt()
+                if (deferred) {
+                    await applySyncComplete({ type: "SYNC_COMPLETE", ...deferred }, ctx)
+                }
             }
             return []
         }
@@ -1154,6 +1179,8 @@ export async function start(config: Config): Promise<void> {
                 }
                 debug(`New handshake received (internalPhase=${syncState.internalPhase}), resetting sync state`)
                 runtime.clearPendingRenames()
+                runtime.clearEmittedSyncPhase()
+                runtime.cleanupUserActions()
                 await processEvent({ type: "DISCONNECT" })
             }
 

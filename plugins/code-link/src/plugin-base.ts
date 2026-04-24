@@ -1,4 +1,4 @@
-import { hashContent, normalizeCodeFilePathWithExtension } from "@code-link/shared"
+import { normalizeCodeFilePathWithExtension } from "@code-link/shared"
 
 /**
  * Plugin-side peer state: one map of normalized path → latest known content (snapshot + echo suppression).
@@ -15,7 +15,7 @@ export class PluginBase {
     shouldSkip(fileName: string, content: string): boolean {
         const key = normalizeCodeFilePathWithExtension(fileName)
         const previous = this.byPath.get(key)
-        return previous !== undefined && hashContent(previous) === hashContent(content)
+        return previous !== undefined && previous === content
     }
 
     forget(fileName: string): void {

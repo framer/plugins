@@ -109,6 +109,16 @@ describe("PluginBase", () => {
 
         expect(state.shouldSkip("Empty.tsx", "")).toBe(true)
     })
+
+    it("uses exact content for echo checks", () => {
+        const state = new PluginBase()
+        const head = "h".repeat(50)
+        const tail = "t".repeat(50)
+
+        state.remember("Collision.tsx", `${head}A${tail}`)
+
+        expect(state.shouldSkip("Collision.tsx", `${head}B${tail}`)).toBe(false)
+    })
 })
 
 describe("CodeFilesAPI", () => {

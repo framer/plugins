@@ -137,8 +137,8 @@ export function reducer(state: State, action: Action): State {
                 },
             }
         case "clear-pending-deletes":
+            if (state.ui.kind !== "deletePrompt") return state
             if (action.session) {
-                if (state.ui.kind !== "deletePrompt") return state
                 if (
                     state.ui.session.connectionId !== action.session.connectionId ||
                     state.ui.session.promptId !== action.session.promptId
@@ -146,7 +146,7 @@ export function reducer(state: State, action: Action): State {
                     return state
                 }
             }
-            if (action.fileNames && state.ui.kind === "deletePrompt") {
+            if (action.fileNames) {
                 const cleared = new Set(action.fileNames)
                 const deletes = state.ui.deletes.filter(file => !cleared.has(file.fileName))
                 return {
@@ -182,8 +182,8 @@ export function reducer(state: State, action: Action): State {
                 },
             }
         case "clear-conflicts":
+            if (state.ui.kind !== "conflictPrompt") return state
             if (action.session) {
-                if (state.ui.kind !== "conflictPrompt") return state
                 if (
                     state.ui.session.connectionId !== action.session.connectionId ||
                     state.ui.session.promptId !== action.session.promptId

@@ -14,7 +14,8 @@ export class PluginBase {
     /** True when inbound content matches what we last recorded for this path (echo / no-op). */
     shouldSkip(fileName: string, content: string): boolean {
         const key = normalizeCodeFilePathWithExtension(fileName)
-        return hashContent(this.byPath.get(key) ?? "") === hashContent(content)
+        const previous = this.byPath.get(key)
+        return previous !== undefined && hashContent(previous) === hashContent(content)
     }
 
     forget(fileName: string): void {

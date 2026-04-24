@@ -75,11 +75,9 @@ function createCodeFile({ content, name, path }: { content: string; name?: strin
 
 function setup() {
     const api = new CodeFilesAPI()
-    const rememberSpy = vi.spyOn(PluginBase.prototype, "remember")
     return {
         api,
         socket: createSocket(),
-        rememberSpy,
     }
 }
 
@@ -101,13 +99,25 @@ async function publishSnapshotAndClear({
     socket.send.mockClear()
 }
 
+describe("PluginBase", () => {
+    it("does not treat unseen empty files as echoes", () => {
+        const state = new PluginBase()
+
+        expect(state.shouldSkip("Empty.tsx", "")).toBe(false)
+
+        state.remember("Empty.tsx", "")
+
+        expect(state.shouldSkip("Empty.tsx", "")).toBe(true)
+    })
+})
+
 describe("CodeFilesAPI", () => {
     afterEach(() => {
         vi.clearAllMocks()
     })
 
     it("publishes a normalized snapshot with ensured extensions and seeds later diffing", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
 
         const files = [
             createCodeFile({ path: "components/Foo.tsx", content: "export const Foo = 1" }),
@@ -135,11 +145,10 @@ describe("CodeFilesAPI", () => {
         await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("emits incremental file changes and deletes", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
 
         await publishSnapshotAndClear({
             api,
@@ -177,13 +186,13 @@ describe("CodeFilesAPI", () => {
                 },
             ])
         )
-        expect(rememberSpy).toHaveBeenCalledTimes(2)
-        expect(rememberSpy).toHaveBeenNthCalledWith(1, "Changed.tsx", "export const Changed = 2")
-        expect(rememberSpy).toHaveBeenNthCalledWith(2, "Added.tsx", "export const Added = 1")
+        expect(api.getSnapshotContent("Changed.tsx")).toBe("export const Changed = 2")
+        expect(api.getSnapshotContent("Added.tsx")).toBe("export const Added = 1")
+        expect(api.getSnapshotContent("Removed.tsx")).toBeUndefined()
     })
 
     it("normalizes extensionless remote changes and seeds snapshot state after a successful write", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
         const content = "export const New = 1"
 
         framerMock.getCodeFiles.mockResolvedValueOnce([])
@@ -203,11 +212,10 @@ describe("CodeFilesAPI", () => {
         await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("updates an existing extensionless Framer file instead of creating a duplicate", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
         const oldContent = "export const New = 1"
         const newContent = "export const New = 2"
         const existing = createCodeFile({ name: "New", content: oldContent })
@@ -227,11 +235,10 @@ describe("CodeFilesAPI", () => {
         await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("seeds snapshot before a remote write finishes to avoid echoing subscription updates", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
         const oldContent = "export const Race = 1"
         const newContent = "export const Race = 2"
         const existing = createCodeFile({ name: "Race.tsx", content: oldContent })
@@ -254,11 +261,10 @@ describe("CodeFilesAPI", () => {
         const sentMessages = getSentMessages(socket)
         expect(sentMessages).toHaveLength(1)
         expectFileSyncedMessage(sentMessages[0], "Race.tsx")
-        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("does not update snapshot state when a remote write fails", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
         const oldContent = "export const Broken = 1"
         const newContent = "export const Broken = 2"
         const existing = createCodeFile({ name: "Broken.tsx", content: oldContent })
@@ -289,11 +295,11 @@ describe("CodeFilesAPI", () => {
                 content: newContent,
             },
         ])
-        expect(rememberSpy).toHaveBeenCalledWith("Broken.tsx", newContent)
+        expect(api.getSnapshotContent("Broken.tsx")).toBe(newContent)
     })
 
     it("renames a file to a normalized target and updates snapshot state", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
         const content = "export const Old = 1"
         const existing = createCodeFile({ name: "Old.tsx", content })
 
@@ -318,11 +324,10 @@ describe("CodeFilesAPI", () => {
         await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("seeds snapshot before a remote rename finishes to avoid echoing subscription updates", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
         const content = "export const Old = 1"
         const existing = createCodeFile({ name: "Old.tsx", content })
 
@@ -344,11 +349,10 @@ describe("CodeFilesAPI", () => {
         const sentMessages = getSentMessages(socket)
         expect(sentMessages).toHaveLength(1)
         expectFileSyncedMessage(sentMessages[0], "New.tsx")
-        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("finds an extensionless rename source using its normalized name", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
         const content = "export const Old = 1"
         const existing = createCodeFile({ name: "Old", content })
 
@@ -370,7 +374,6 @@ describe("CodeFilesAPI", () => {
         await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("deletes an extensionless Framer file using a normalized name", async () => {
@@ -395,7 +398,7 @@ describe("CodeFilesAPI", () => {
     })
 
     it("seeds snapshot before a remote delete finishes to avoid echoing subscription updates", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
         const content = "export const DeleteMe = 1"
         const existing = createCodeFile({ name: "DeleteMe.tsx", content })
 
@@ -414,11 +417,10 @@ describe("CodeFilesAPI", () => {
         await api.applyRemoteDelete("DeleteMe.tsx")
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("restores snapshot state when a remote delete fails", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
         const content = "export const DeleteMe = 1"
         const existing = createCodeFile({ name: "DeleteMe.tsx", content })
 
@@ -437,7 +439,6 @@ describe("CodeFilesAPI", () => {
         await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(rememberSpy).not.toHaveBeenCalled()
     })
 
     it("returns an error when rename cannot fetch code files", async () => {
@@ -486,7 +487,7 @@ describe("CodeFilesAPI", () => {
     })
 
     it("returns an error when rename throws and does not confirm sync", async () => {
-        const { api, socket, rememberSpy } = setup()
+        const { api, socket } = setup()
         const content = "export const Old = 1"
         const existing = createCodeFile({ name: "Old.tsx", content })
 
@@ -514,6 +515,5 @@ describe("CodeFilesAPI", () => {
         await api.handleFramerFilesChanged(socket as unknown as WebSocket)
 
         expect(socket.send).not.toHaveBeenCalled()
-        expect(rememberSpy).not.toHaveBeenCalled()
     })
 })

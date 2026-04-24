@@ -212,7 +212,7 @@ export class SyncRuntime {
     }
 
     shouldSkipDeleteEcho(filePath: string): boolean {
-        return this.memory.matchesDeleteTombstone(filePath)
+        return this.memory.matchesExpectedDeleteEcho(filePath)
     }
 
     isEcho(filePath: string, content: string): boolean {
@@ -220,7 +220,7 @@ export class SyncRuntime {
     }
 
     isDeleteEcho(filePath: string): boolean {
-        return this.memory.matchesDeleteTombstone(filePath)
+        return this.memory.matchesExpectedDeleteEcho(filePath)
     }
 
     armContentEcho(filePath: string, content: string): void {
@@ -231,12 +231,12 @@ export class SyncRuntime {
         this.memory.clearContentEcho(filePath)
     }
 
-    armDeleteTombstone(filePath: string): void {
-        this.memory.armDeleteTombstone(filePath)
+    armExpectedDeleteEcho(filePath: string): void {
+        this.memory.armExpectedDeleteEcho(filePath)
     }
 
-    clearDeleteTombstone(filePath: string): void {
-        this.memory.clearDeleteTombstone(filePath)
+    clearExpectedDeleteEcho(filePath: string): void {
+        this.memory.clearExpectedDeleteEcho(filePath)
     }
 
     recordSyncedContent(filePath: string, content: string, modifiedAt: number): void {

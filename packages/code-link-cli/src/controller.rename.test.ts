@@ -47,7 +47,7 @@ describe("SEND_FILE_RENAME", () => {
         const open = socket()
         const content = "export const New = () => null"
         runtime.armContentEcho("New.tsx", content)
-        runtime.armDeleteTombstone("Old.tsx")
+        runtime.armExpectedDeleteEcho("Old.tsx")
 
         await applyEffect(
             { type: "SEND_FILE_RENAME", oldFileName: "Old.tsx", newFileName: "New.tsx", content },

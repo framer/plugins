@@ -58,7 +58,6 @@ export class CodeFilesAPI extends PluginBase {
                         content: file.content,
                     })
                 )
-                this.remember(file.name, file.content)
                 this.setSnapshotContent(file.name, file.content)
             }
         }

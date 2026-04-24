@@ -1,7 +1,7 @@
 /**
  * SyncMemory owns file-level sync truth.
  *
- * If a race depends on path normalization, content echoes, delete tombstones,
+ * If a race depends on path normalization, content echoes, expected delete echoes,
  * or agreed metadata, it belongs here. Controller/apply code should call these
  * named operations instead of touching the underlying maps directly.
  */
@@ -16,7 +16,7 @@ export interface PreparedContentEcho {
     content: string
 }
 
-export interface PreparedDeleteTombstone {
+export interface PreparedExpectedDeleteEcho {
     path: string
 }
 
@@ -24,15 +24,15 @@ export interface FileOperationMemory {
     armContentEcho(filePath: string, content: string): PreparedContentEcho
     matchesContentEcho(filePath: string, content: string): boolean
     rollbackWriteFailure(prepared: PreparedContentEcho): void
-    armDeleteTombstone(filePath: string): PreparedDeleteTombstone
-    rollbackDeleteFailure(prepared: PreparedDeleteTombstone): void
+    armExpectedDeleteEcho(filePath: string): PreparedExpectedDeleteEcho
+    rollbackExpectedDeleteEcho(prepared: PreparedExpectedDeleteEcho): void
 }
 
 export class SyncMemory {
     readonly metadata = new FileMetadataCache()
 
     private readonly contentEchoes = new Map<string, string>()
-    private readonly deleteTombstones = new Set<string>()
+    private readonly expectedDeleteEchoes = new Set<string>()
     private readonly scheduler = createScheduler()
 
     normalizePath(filePath: string): string {
@@ -96,39 +96,39 @@ export class SyncMemory {
         }
     }
 
-    // Delete Tombstones
+    // Expected Delete Echoes
 
-    armDeleteTombstone(filePath: string): PreparedDeleteTombstone {
+    armExpectedDeleteEcho(filePath: string): PreparedExpectedDeleteEcho {
         const path = this.normalizePath(filePath)
-        this.scheduler.cancel("tombstoneExpiry", path)
-        this.deleteTombstones.add(path)
+        this.scheduler.cancel("expectedDeleteEchoExpiry", path)
+        this.expectedDeleteEchoes.add(path)
         this.scheduler.after(
-            "tombstoneExpiry",
-            TIMINGS.tombstoneExpiry,
+            "expectedDeleteEchoExpiry",
+            TIMINGS.expectedDeleteEchoExpiry,
             () => {
-                this.deleteTombstones.delete(path)
+                this.expectedDeleteEchoes.delete(path)
             },
             path
         )
         return { path }
     }
 
-    matchesDeleteTombstone(filePath: string): boolean {
-        return this.deleteTombstones.has(this.normalizePath(filePath))
+    matchesExpectedDeleteEcho(filePath: string): boolean {
+        return this.expectedDeleteEchoes.has(this.normalizePath(filePath))
     }
 
-    clearDeleteTombstone(filePath: string): void {
+    clearExpectedDeleteEcho(filePath: string): void {
         const path = this.normalizePath(filePath)
-        this.scheduler.cancel("tombstoneExpiry", path)
-        this.deleteTombstones.delete(path)
+        this.scheduler.cancel("expectedDeleteEchoExpiry", path)
+        this.expectedDeleteEchoes.delete(path)
     }
 
-    commitDeleteSuccess(prepared: PreparedDeleteTombstone): void {
+    commitDeleteSuccess(prepared: PreparedExpectedDeleteEcho): void {
         this.clearContentEcho(prepared.path)
         this.recordSyncedDelete(prepared.path)
     }
 
-    rollbackDeleteFailure(prepared: PreparedDeleteTombstone): void {
-        this.clearDeleteTombstone(prepared.path)
+    rollbackExpectedDeleteEcho(prepared: PreparedExpectedDeleteEcho): void {
+        this.clearExpectedDeleteEcho(prepared.path)
     }
 }

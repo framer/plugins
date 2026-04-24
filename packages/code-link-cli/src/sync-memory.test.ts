@@ -21,15 +21,15 @@ describe("SyncMemory invariants", () => {
         expect(memory.matchesContentEcho("A.tsx", "second")).toBe(true)
     })
 
-    it("keeps delete tombstones separate from agreed delete metadata", () => {
+    it("keeps expected delete echoes separate from agreed delete metadata", () => {
         const memory = new SyncMemory()
-        const prepared = memory.armDeleteTombstone("A.tsx")
+        const prepared = memory.armExpectedDeleteEcho("A.tsx")
 
-        expect(memory.matchesDeleteTombstone("A.tsx")).toBe(true)
+        expect(memory.matchesExpectedDeleteEcho("A.tsx")).toBe(true)
 
-        memory.rollbackDeleteFailure(prepared)
+        memory.rollbackExpectedDeleteEcho(prepared)
 
-        expect(memory.matchesDeleteTombstone("A.tsx")).toBe(false)
+        expect(memory.matchesExpectedDeleteEcho("A.tsx")).toBe(false)
     })
 
     it("records agreed content and deletes through one API", () => {

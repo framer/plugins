@@ -98,7 +98,7 @@ describe("applyEffect transaction boundaries", () => {
         }
     })
 
-    it("rolls back delete tombstones and keeps metadata when a local delete fails", async () => {
+    it("rolls back expected delete echoes and keeps metadata when a local delete fails", async () => {
         const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-delete-fail-"))
         try {
             const filesDir = path.join(tmpDir, "files")

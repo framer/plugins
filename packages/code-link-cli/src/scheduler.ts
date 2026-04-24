@@ -1,10 +1,10 @@
-export type ScheduledTask = "disconnectNotice" | "tombstoneExpiry" | "renameBuffer" | "sanitizationEchoExpiry"
+export type ScheduledTask = "disconnectNotice" | "expectedDeleteEchoExpiry" | "renameBuffer" | "sanitizationEchoExpiry"
 
 export const TIMINGS = {
     /** Delay before showing "disconnected" in CLI status (allows quick tab switches). */
     disconnectNotice: 4_000,
     /** Delete-echo suppression window. */
-    tombstoneExpiry: 5_000,
+    expectedDeleteEchoExpiry: 5_000,
     /** Watcher rename/add/delete coalesce window. */
     renameBuffer: 100,
     /** Suppress chokidar echo after on-disk path sanitization rename (3x rename buffer). */
@@ -13,7 +13,7 @@ export const TIMINGS = {
 
 /**
  * Named timers for the CLI. Supports optional `key` for concurrent same-task schedules
- * (e.g. per-path rename buffers, per-path tombstones).
+ * (e.g. per-path rename buffers, per-path expected delete echoes).
  */
 export interface Scheduler {
     after(task: ScheduledTask, delayMs: number, fn: () => void, key?: string): void

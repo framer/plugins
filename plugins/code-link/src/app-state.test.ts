@@ -113,6 +113,16 @@ describe("plugin app state", () => {
         expect(next.ui).toEqual(state.ui)
     })
 
+    it("does not let unscoped conflict clears close an active delete prompt", () => {
+        const state = withPromptState({ syncPhase: "ready" })
+
+        const next = reducer(state, {
+            type: "clear-conflicts",
+        })
+
+        expect(next.ui).toEqual(state.ui)
+    })
+
     it("removes invalidated delete files without closing the remaining delete prompt", () => {
         const state = withPromptState({
             syncPhase: "ready",
@@ -148,6 +158,23 @@ describe("plugin app state", () => {
             type: "clear-pending-deletes",
             session: { connectionId: 2, promptId: "stale" },
             fileNames: ["Button.tsx"],
+        })
+
+        expect(next.ui).toEqual(state.ui)
+    })
+
+    it("does not let unscoped delete clears close an active conflict prompt", () => {
+        const state = reducer(
+            { ...initialState, permissionsGranted: true, syncPhase: "ready", ui: { kind: "idle" } },
+            {
+                type: "conflicts",
+                session: testSession,
+                conflicts: [{ fileName: "A.tsx", localContent: "local", remoteContent: "remote" }],
+            }
+        )
+
+        const next = reducer(state, {
+            type: "clear-pending-deletes",
         })
 
         expect(next.ui).toEqual(state.ui)

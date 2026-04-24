@@ -536,7 +536,7 @@ function transition(
     }
 }
 
-// ─── apply: the only place that mutates or does I/O ─────────────────────────────
+// Apply: the only place that mutates or does I/O
 
 type LogLevel = "info" | "debug" | "warn" | "success" | "status"
 
@@ -641,7 +641,7 @@ async function sendFileRename(effect: Extract<Effect, { type: "SEND_FILE_RENAME"
     if (isEcho) {
         debug(`Skipping echoed rename ${effect.oldFileName} -> ${effect.newFileName}`)
         runtime.clearContentEcho(newFileName)
-        runtime.clearDeleteTombstone(effect.oldFileName)
+        runtime.clearExpectedDeleteEcho(effect.oldFileName)
         return
     }
     if (!syncState.socket) {
@@ -889,7 +889,7 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
         case "LOCAL_INITIATED_FILE_DELETE": {
             const filesToDelete: string[] = []
             for (const fileName of effect.fileNames) {
-                if (runtime.shouldSkipDeleteEcho(fileName)) runtime.clearDeleteTombstone(fileName)
+                if (runtime.shouldSkipDeleteEcho(fileName)) runtime.clearExpectedDeleteEcho(fileName)
                 else filesToDelete.push(fileName)
             }
             if (filesToDelete.length === 0) return []

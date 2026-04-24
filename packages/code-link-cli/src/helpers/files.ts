@@ -370,10 +370,10 @@ export async function deleteLocalFile(
     memory: FileOperationMemory
 ): Promise<FileDeleteResult> {
     const normalized = resolveRemoteReference(filesDir, fileName)
-    const prepared = memory.armDeleteTombstone(normalized.relativePath)
+    const prepared = memory.armExpectedDeleteEcho(normalized.relativePath)
 
     try {
-        // CRITICAL ORDER: delete tombstone is armed before this unlink.
+        // CRITICAL ORDER: expected delete echo is armed before this unlink.
         await fs.unlink(normalized.absolutePath)
 
         debug(`Deleted file: ${normalized.relativePath}`)
@@ -386,7 +386,7 @@ export async function deleteLocalFile(
             return { fileName: normalized.relativePath, ok: true, alreadyMissing: true }
         }
 
-        memory.rollbackDeleteFailure(prepared)
+        memory.rollbackExpectedDeleteEcho(prepared)
         warn(`Failed to delete file ${fileName}:`, err)
         return { fileName: normalized.relativePath, ok: false, alreadyMissing: false }
     }

@@ -40,7 +40,7 @@ export class SyncMemory {
         return normalizeCodeFilePathWithExtension(filePath)
     }
 
-    // --- agreed metadata -----------------------------------------------------
+    // Agreed Metadata
 
     metadataFor(filePath: string): FileSyncMetadata | undefined {
         return this.metadata.get(filePath)
@@ -63,7 +63,7 @@ export class SyncMemory {
         return this.metadataFor(filePath)?.lastSyncedHash === hashFileContent(content)
     }
 
-    // --- content echoes ------------------------------------------------------
+    // Content Echoes
 
     armContentEcho(filePath: string, content: string): PreparedContentEcho {
         const path = this.normalizePath(filePath)
@@ -97,7 +97,7 @@ export class SyncMemory {
         }
     }
 
-    // --- delete tombstones ---------------------------------------------------
+    // Delete Tombstones
 
     armDeleteTombstone(filePath: string): PreparedDeleteTombstone {
         const path = this.normalizePath(filePath)

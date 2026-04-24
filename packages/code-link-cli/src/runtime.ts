@@ -157,7 +157,7 @@ export class SyncRuntime {
         this.workspaceState.projectDirCreated = projectDirCreated
     }
 
-    // --- connection / phase --------------------------------------------------
+    // Connection / Phase
 
     mintConnectionId(): number {
         this.connectionSeq += 1
@@ -202,7 +202,7 @@ export class SyncRuntime {
         },
     }
 
-    // --- SyncMemory facade ---------------------------------------------------
+    // SyncMemory Facade
 
     normalizePath(filePath: string): string {
         return this.memory.normalizePath(filePath)
@@ -248,7 +248,7 @@ export class SyncRuntime {
         this.memory.recordSyncedDelete(filePath)
     }
 
-    // --- pending renames -----------------------------------------------------
+    // Pending Renames
 
     getPendingRename(newPath: string): PendingRenameConfirmation | undefined {
         return this.pendingRenameConfirmations.get(normalizeCodeFilePathWithExtension(newPath))
@@ -266,7 +266,7 @@ export class SyncRuntime {
         this.pendingRenameConfirmations.clear()
     }
 
-    // --- prompt state --------------------------------------------------------
+    // Prompt State
 
     startDeletePrompt(fileNames: string[]): { session: PromptSession; fileNames: string[] } | null {
         const prompt = this.activeDeletePrompt ?? {

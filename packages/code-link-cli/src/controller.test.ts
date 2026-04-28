@@ -151,7 +151,7 @@ describe("Code Link", () => {
             const state = conflictResolutionState([conflict])
 
             const result = transition(state, {
-                type: "CONFLICT_VERSION_RESPONSE",
+                type: "RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS",
                 versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 5_000 }], // remote unchanged
             })
 
@@ -172,7 +172,7 @@ describe("Code Link", () => {
             const state = conflictResolutionState([conflict])
 
             const result = transition(state, {
-                type: "CONFLICT_VERSION_RESPONSE",
+                type: "RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS",
                 versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 10_000 }], // remote changed
             })
 
@@ -194,13 +194,69 @@ describe("Code Link", () => {
             const state = conflictResolutionState([conflict])
 
             const result = transition(state, {
-                type: "CONFLICT_VERSION_RESPONSE",
+                type: "RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS",
                 // Remote changed well after sync (beyond drift threshold)
                 versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: syncTime + DEFAULT_REMOTE_DRIFT_MS + 1000 }],
             })
 
             expect(result.state.internalPhase).toBe("watching")
             expect(result.effects.some(e => e.type === "REQUEST_CONFLICT_DECISIONS")).toBe(true)
+        })
+
+        it("keeps local deletes in the delete confirmation path when no manual conflicts remain", () => {
+            const syncTime = 5_000
+            const conflict = {
+                fileName: "Deleted.tsx",
+                localContent: null,
+                remoteContent: "remote content still exists",
+                lastSyncedAt: syncTime,
+            }
+            const state = conflictResolutionState([conflict])
+
+            const result = transition(state, {
+                type: "RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS",
+                versions: [{ fileName: "Deleted.tsx", latestRemoteVersionMs: syncTime }],
+            })
+
+            expect(result.state.internalPhase).toBe("watching")
+            expect(result.effects).toContainEqual({
+                type: "LOCAL_INITIATED_FILE_DELETE",
+                fileNames: ["Deleted.tsx"],
+            })
+            expect(result.effects.some(e => e.type === "REQUEST_CONFLICT_DECISIONS")).toBe(false)
+            expect(result.effects.some(e => e.type === "SYNC_COMPLETE")).toBe(true)
+        })
+
+        it("rolls local deletes into the conflict prompt when manual conflicts remain", () => {
+            const syncTime = 5_000
+            const localDelete = {
+                fileName: "Deleted.tsx",
+                localContent: null,
+                remoteContent: "remote content still exists",
+                lastSyncedAt: syncTime,
+            }
+            const manualConflict = {
+                fileName: "Changed.tsx",
+                localContent: "local edit",
+                remoteContent: "remote edit",
+                lastSyncedAt: syncTime,
+            }
+            const state = conflictResolutionState([localDelete, manualConflict])
+
+            const result = transition(state, {
+                type: "RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS",
+                versions: [
+                    { fileName: "Deleted.tsx", latestRemoteVersionMs: syncTime },
+                    { fileName: "Changed.tsx", latestRemoteVersionMs: syncTime + DEFAULT_REMOTE_DRIFT_MS + 1000 },
+                ],
+            })
+
+            expect(result.state.internalPhase).toBe("watching")
+            expect(result.effects.some(e => e.type === "LOCAL_INITIATED_FILE_DELETE")).toBe(false)
+            expect(result.effects).toContainEqual({
+                type: "REQUEST_CONFLICT_DECISIONS",
+                conflicts: [manualConflict, localDelete],
+            })
         })
 
         it("updates pending conflict data from remote changes before showing the prompt", () => {

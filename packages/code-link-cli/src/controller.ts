@@ -494,10 +494,13 @@ function transition(
             return { state, effects }
         }
 
-        case "CONFLICT_VERSION_RESPONSE": {
+        case "RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS": {
             if (state.internalPhase !== "conflict_resolution") {
                 effects.push(
-                    log("warn", `Received CONFLICT_VERSION_RESPONSE in internalPhase=${state.internalPhase}, ignoring`)
+                    log(
+                        "warn",
+                        `Received RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS in internalPhase=${state.internalPhase}, ignoring`
+                    )
                 )
                 return { state, effects }
             }
@@ -507,12 +510,12 @@ function transition(
                 event.versions
             )
 
+            const localDeleteConflicts: Conflict[] = []
             if (autoResolvedLocal.length > 0) {
                 effects.push(log("debug", `Auto-resolved ${autoResolvedLocal.length} local changes`))
-                const localDeletes: string[] = []
                 for (const conflict of autoResolvedLocal) {
                     if (conflict.localContent === null) {
-                        localDeletes.push(conflict.fileName)
+                        localDeleteConflicts.push(conflict)
                     } else {
                         effects.push({
                             type: "SEND_LOCAL_CHANGE",
@@ -520,13 +523,6 @@ function transition(
                             content: conflict.localContent,
                         })
                     }
-                }
-                // Batch local deletes into single confirmation prompt
-                if (localDeletes.length > 0) {
-                    effects.push({
-                        type: "LOCAL_INITIATED_FILE_DELETE",
-                        fileNames: localDeletes,
-                    })
                 }
             }
 
@@ -556,16 +552,26 @@ function transition(
                 }
             }
 
-            if (remainingConflicts.length > 0) {
-                effects.push(log("warn", `${pluralize(remainingConflicts.length, "conflict")} require resolution`), {
+            const conflictsForPrompt =
+                remainingConflicts.length > 0 ? [...remainingConflicts, ...localDeleteConflicts] : remainingConflicts
+
+            if (conflictsForPrompt.length > 0) {
+                effects.push(log("warn", `${pluralize(conflictsForPrompt.length, "conflict")} require resolution`), {
                     type: "REQUEST_CONFLICT_DECISIONS",
-                    conflicts: remainingConflicts,
+                    conflicts: conflictsForPrompt,
                 })
 
                 return {
                     state: { internalPhase: "watching", socket: state.socket },
                     effects,
                 }
+            }
+
+            if (localDeleteConflicts.length > 0) {
+                effects.push({
+                    type: "LOCAL_INITIATED_FILE_DELETE",
+                    fileNames: localDeleteConflicts.map(conflict => conflict.fileName),
+                })
             }
 
             const resolvedCount = autoResolvedLocal.length + autoResolvedRemote.length
@@ -780,17 +786,36 @@ async function applyConflictChange(change: ConflictPromptChange, ctx: ApplyCtx):
         )
     }
     if (change.resolved.length > 0) await ctx.runtime.metadata.flush()
+    if (change.cleared && ctx.runtime.lastEmittedSyncPhase !== "ready") {
+        const deferred = ctx.runtime.consumeDeferredSyncCompleteIfNoActivePrompt()
+        if (deferred) {
+            await applySyncComplete({ type: "SYNC_COMPLETE", ...deferred }, ctx)
+            return
+        }
+
+        if (ctx.runtime.hasDeferredSyncComplete()) return
+
+        await applySyncComplete(
+            {
+                type: "SYNC_COMPLETE",
+                totalCount: change.resolved.length,
+                updatedCount: change.resolved.length,
+                unchangedCount: 0,
+            },
+            ctx
+        )
+    }
 }
 
 async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE" }>, ctx: ApplyCtx): Promise<void> {
     const { config, runtime, syncState, shutdown } = ctx
-    if (runtime.hasAnyActiveDeletePrompt()) {
+    if (runtime.hasAnyActivePrompt()) {
         runtime.deferSyncComplete({
             totalCount: effect.totalCount,
             updatedCount: effect.updatedCount,
             unchangedCount: effect.unchangedCount,
         })
-        debug("Deferring sync completion until delete prompt resolves")
+        debug("Deferring sync completion until active prompts resolve")
         return
     }
 
@@ -976,7 +1001,7 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
             await sendFileDelete(confirmed, ctx)
             runtime.clearDeletePromptFiles(effect.session, activeFileNames)
             await runtime.metadata.flush()
-            const deferred = runtime.consumeDeferredSyncCompleteIfNoDeletePrompt()
+            const deferred = runtime.consumeDeferredSyncCompleteIfNoActivePrompt()
             if (deferred) {
                 await applySyncComplete({ type: "SYNC_COMPLETE", ...deferred }, ctx)
             }
@@ -1050,7 +1075,7 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
                     session: change.session,
                     fileNames: change.fileNames,
                 })
-                const deferred = runtime.consumeDeferredSyncCompleteIfNoDeletePrompt()
+                const deferred = runtime.consumeDeferredSyncCompleteIfNoActivePrompt()
                 if (deferred) {
                     await applySyncComplete({ type: "SYNC_COMPLETE", ...deferred }, ctx)
                 }
@@ -1299,7 +1324,7 @@ export async function start(config: Config): Promise<void> {
 
             case "conflict-version-response":
                 event = {
-                    type: "CONFLICT_VERSION_RESPONSE",
+                    type: "RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS",
                     versions: message.versions,
                 }
                 break

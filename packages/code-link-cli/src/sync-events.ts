@@ -83,7 +83,7 @@ export type SyncEvent =
     | { type: "DISCONNECT" }
     | { type: "WATCHER_EVENT"; event: WatcherEvent }
     | {
-          type: "CONFLICT_VERSION_RESPONSE"
+          type: "RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS"
           versions: ConflictVersionData[]
       }
 

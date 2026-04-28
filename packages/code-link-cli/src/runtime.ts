@@ -239,8 +239,8 @@ export class SyncRuntime {
         return this.activeDeletePrompt?.fileNames.has(this.memory.normalizePath(filePath)) ?? false
     }
 
-    hasAnyActiveDeletePrompt(): boolean {
-        return this.activeDeletePrompt !== null
+    hasAnyActivePrompt(): boolean {
+        return this.activeDeletePrompt !== null || this.activeConflictPrompt !== null
     }
 
     deferSyncComplete(syncComplete: DeferredSyncComplete): void {
@@ -254,8 +254,12 @@ export class SyncRuntime {
                   }
     }
 
-    consumeDeferredSyncCompleteIfNoDeletePrompt(): DeferredSyncComplete | null {
-        if (this.activeDeletePrompt !== null) return null
+    hasDeferredSyncComplete(): boolean {
+        return this.deferredSyncComplete !== null
+    }
+
+    consumeDeferredSyncCompleteIfNoActivePrompt(): DeferredSyncComplete | null {
+        if (this.hasAnyActivePrompt()) return null
         const syncComplete = this.deferredSyncComplete
         this.deferredSyncComplete = null
         return syncComplete

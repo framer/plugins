@@ -186,9 +186,13 @@ describe("applyEffect transaction boundaries", () => {
             applyCtx(runtime, open.ws)
         )
 
-        expect(open.sent).toEqual([{ type: "conflicts-cleared", session: prompt.session }])
+        expect(open.sent).toEqual([
+            { type: "conflicts-cleared", session: prompt.session },
+            { type: "sync-phase", phase: "ready" },
+        ])
         expect(runtime.getActiveConflictPrompt()).toBeNull()
         expect(runtime.metadata.get("A.tsx")?.lastRemoteTimestamp).toBe(123)
+        expect(runtime.lastEmittedSyncPhase).toBe("ready")
     })
 
     it("sends delete prompt path invalidations without clearing unrelated pending deletes", async () => {

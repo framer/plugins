@@ -121,6 +121,31 @@ describe("SYNC_COMPLETE apply", () => {
         expect(applyCtx.didShutdown()).toBe(true)
     })
 
+    it("defers once-mode shutdown until pending conflict prompts resolve", async () => {
+        const runtime = new SyncRuntime()
+        runtime.mintConnectionId()
+        const prompt = runtime.startOrUpdateConflictPrompt([
+            { fileName: "A.tsx", localContent: "local", remoteContent: "remote" },
+        ])
+        if (!prompt) throw new Error("Expected conflict prompt")
+        const open = socket()
+        const applyCtx = ctx(runtime, open.ws, createConfig({ once: true }))
+
+        await applyEffect({ type: "SYNC_COMPLETE", totalCount: 1, updatedCount: 1, unchangedCount: 0 }, applyCtx)
+
+        expect(applyCtx.didShutdown()).toBe(false)
+        expect(open.sent).not.toContainEqual({ type: "sync-phase", phase: "ready" })
+
+        await applyEffect(
+            { type: "UPDATE_ACTIVE_CONFLICT_REMOTE", fileName: "A.tsx", content: "local", modifiedAt: 123 },
+            applyCtx
+        )
+
+        expect(open.sent).toContainEqual({ type: "conflicts-cleared", session: prompt.session })
+        expect(open.sent).toContainEqual({ type: "sync-phase", phase: "ready" })
+        expect(applyCtx.didShutdown()).toBe(true)
+    })
+
     it("clears resolved conflict prompts before once-mode shutdown", async () => {
         const runtime = new SyncRuntime()
         runtime.mintConnectionId()
@@ -148,5 +173,28 @@ describe("SYNC_COMPLETE apply", () => {
         expect(applyCtx.didShutdown()).toBe(true)
         expect(activePromptAtShutdown).toBe(false)
         expect(runtime.getActiveConflictPrompt()).toBeNull()
+    })
+
+    it("shuts down in once mode when the final active conflict converges", async () => {
+        const runtime = new SyncRuntime()
+        runtime.mintConnectionId()
+        const open = socket()
+        const prompt = runtime.startOrUpdateConflictPrompt([
+            { fileName: "A.tsx", localContent: "local", remoteContent: "remote" },
+        ])
+        if (!prompt) throw new Error("Expected conflict prompt")
+
+        const applyCtx = ctx(runtime, open.ws, createConfig({ once: true }))
+
+        await applyEffect(
+            { type: "UPDATE_ACTIVE_CONFLICT_REMOTE", fileName: "A.tsx", content: "local", modifiedAt: 123 },
+            applyCtx
+        )
+
+        expect(open.sent).toContainEqual({ type: "conflicts-cleared", session: prompt.session })
+        expect(open.sent).toContainEqual({ type: "sync-phase", phase: "ready" })
+        expect(runtime.getActiveConflictPrompt()).toBeNull()
+        expect(runtime.lastEmittedSyncPhase).toBe("ready")
+        expect(applyCtx.didShutdown()).toBe(true)
     })
 })

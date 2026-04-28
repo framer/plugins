@@ -354,7 +354,6 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                 />
                 {droppedAsset && (
                     <button
-                        className="framer-button-secondary"
                         onClick={() => {
                             setDroppedAsset(null)
                         }}

@@ -9,7 +9,10 @@
  * Usage: yarn tsx scripts/submit-on-merge.ts
  *
  * Environment Variables:
- *   PR_BODY_FILE   - Path to file containing PR body text
+ *   PR_NUMBER      - Pull request number to fetch latest PR body
+ *   GITHUB_REPOSITORY - Repository name in "owner/repo" format
+ *   GITHUB_TOKEN   - GitHub token with pull request read access
+ *   PR_BODY_FILE   - Optional fallback path to file containing PR body text
  *   CHANGED_FILES  - Space-separated list of changed files from the workflow
  *   REPO_ROOT      - Root of the git repository (optional, defaults to parent of scripts/)
  *
@@ -27,6 +30,41 @@ import { extractChangelog, parseChangedPlugins } from "./lib/parse-pr"
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const REPO_ROOT = process.env.REPO_ROOT ?? resolve(__dirname, "..")
 const PLUGINS_DIR = join(REPO_ROOT, "plugins")
+
+async function getPrBody(): Promise<string> {
+    const prNumber = process.env.PR_NUMBER
+    const repository = process.env.GITHUB_REPOSITORY
+    const token = process.env.GITHUB_TOKEN
+
+    if (prNumber && repository && token) {
+        const apiBaseUrl = process.env.GITHUB_API_URL ?? "https://api.github.com"
+        const response = await fetch(`${apiBaseUrl}/repos/${repository}/pulls/${prNumber}`, {
+            headers: {
+                Accept: "application/vnd.github+json",
+                Authorization: `Bearer ${token}`,
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        })
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch latest PR body: ${response.status} ${response.statusText}`)
+        }
+
+        const pullRequest = (await response.json()) as { body?: string | null }
+        return pullRequest.body ?? ""
+    }
+
+    const prBodyFile = process.env.PR_BODY_FILE
+    if (prBodyFile) {
+        if (!existsSync(prBodyFile)) {
+            throw new Error(`PR_BODY_FILE does not exist: ${prBodyFile}`)
+        }
+
+        return readFileSync(prBodyFile, "utf-8")
+    }
+
+    throw new Error("Missing PR body source. Set PR_NUMBER, GITHUB_REPOSITORY, and GITHUB_TOKEN, or set PR_BODY_FILE.")
+}
 
 function getChangedPlugins(changedFiles: string): string[] {
     // Parse plugin names from changed files (pure function from lib)
@@ -72,32 +110,23 @@ function submitPlugin(pluginName: string, changelog: string): void {
     }
 }
 
-function run(): void {
+async function run(): Promise<void> {
     console.log("=".repeat(60))
     console.log("Auto submit to Marketplace on merge")
     console.log("=".repeat(60))
 
     // 1. Validate required environment variables
     log.step("Configuration")
-    const prBodyFile = process.env.PR_BODY_FILE
     const changedFiles = process.env.CHANGED_FILES
-
-    if (!prBodyFile) {
-        throw new Error("Missing required environment variable: PR_BODY_FILE")
-    }
 
     if (!changedFiles) {
         throw new Error("Missing required environment variable: CHANGED_FILES")
     }
 
-    if (!existsSync(prBodyFile)) {
-        throw new Error(`PR_BODY_FILE does not exist: ${prBodyFile}`)
-    }
-
-    const prBody = readFileSync(prBodyFile, "utf-8")
+    const prBody = await getPrBody()
 
     log.info(`Dry run: ${process.env.DRY_RUN === "true" ? "yes" : "no"}`)
-    log.debug(`PR body file: ${prBodyFile}`)
+    log.debug(`PR number: ${process.env.PR_NUMBER ?? "not set"}`)
     log.debug(`PR body length: ${prBody.length} chars`)
     log.debug(`PR body (first 500 chars):\n${prBody.slice(0, 500)}`)
 
@@ -152,7 +181,7 @@ function run(): void {
 }
 
 try {
-    run()
+    await run()
 } catch (error) {
     log.error(error instanceof Error ? error.message : String(error))
     process.exit(1)

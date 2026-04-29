@@ -4,8 +4,8 @@ export const BASE_PATH = ""
  * Convenience method to load an image from a canvas.
  * As a transferable bytes array
  */
-export function bytesFromCanvas(canvas: HTMLCanvasElement): Promise<Uint8Array | null> {
-    return new Promise<Uint8Array>((resolve, reject) => {
+export function bytesFromCanvas(canvas: HTMLCanvasElement): Promise<Uint8Array<ArrayBuffer> | null> {
+    return new Promise<Uint8Array<ArrayBuffer>>((resolve, reject) => {
         canvas.toBlob(blob => {
             if (!blob) throw new Error("Blob does not exist")
 

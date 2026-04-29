@@ -31,7 +31,7 @@ const MenuOption = ({
 
     return (
         <button
-            className={cx("h-[110px] w-full tile col items-center justify-center rounded-md", className)}
+            className={cx("h-[110px] w-full col items-center justify-center rounded-md", className)}
             onClick={() => {
                 if (onClick) {
                     onClick()

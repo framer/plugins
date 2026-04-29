@@ -2,5 +2,6 @@
     "id": "pziQ5j",
     "name": "Flip Image",
     "modes": ["canvas", "editImage"],
+    "prereleaseStyles": true,
     "icon": "/FlipImage.png"
 }

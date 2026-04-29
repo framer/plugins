@@ -75,7 +75,7 @@ export function App() {
                     <div className="flex | justify-between items-center | w-full">
                         <p>New script version available</p>
                         <button
-                            className="framer-button-primary bg-[var(--framer-color-tint-dimmed)] text-[var(--framer-color-tint)] hover:bg-[var(--framer-color-tint-dimmed)] focus:bg-[var(--framer-color-tint-dimmed)] | rounded-[6px] | text-[10px] font-500 | w-[46px] h-[20px]"
+                            className="framer-button-primary | rounded-[6px] | text-[10px] font-500 | w-[46px] h-[20px]"
                             onClick={toggleScript.bind(null, true)}
                         >
                             Update

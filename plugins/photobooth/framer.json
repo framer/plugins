@@ -2,5 +2,6 @@
     "id": "T24Lew",
     "name": "Photobooth",
     "modes": ["canvas", "image"],
+    "prereleaseStyles": true,
     "icon": "/Photobooth.png"
 }

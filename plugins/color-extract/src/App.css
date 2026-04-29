@@ -21,21 +21,6 @@ main::after {
     pointer-events: none;
 }
 
-button {
-    border-radius: 8px;
-    border: none;
-    height: 30px;
-    padding: 0 15px;
-    font-size: 1em;
-    font-weight: 600;
-    font-family: inherit;
-    background-color: var(--framer-color-bg-secondary);
-    color: var(--framer-color-text);
-    cursor: pointer;
-    outline: none;
-    user-select: none;
-}
-
 .interface {
     display: flex;
     width: 100%;

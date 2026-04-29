@@ -2,5 +2,6 @@
     "id": "fa488a",
     "name": "Google Sheets",
     "modes": ["configureManagedCollection", "syncManagedCollection"],
+    "prereleaseStyles": true,
     "icon": "/sheets.svg"
 }

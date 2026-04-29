@@ -1,5 +1,5 @@
 import cn from "clsx"
-import { framer, ImageAsset, useIsAllowedTo } from "framer-plugin"
+import { framer, type ImageAsset, useIsAllowedTo } from "framer-plugin"
 import { Camera, Mesh, Plane, Renderer, Transform } from "ogl"
 import { useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"

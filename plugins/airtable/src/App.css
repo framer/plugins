@@ -49,7 +49,7 @@ select:not(:disabled) {
     justify-content: center;
     width: 100%;
     min-height: 200px;
-    background-color: var(--framer-color-bg-secondary);
+    background-color: var(--framer-color-bg-tertiary);
     border-radius: 10px;
 }
 
@@ -190,7 +190,16 @@ select:not(:disabled) {
 
 .import-button {
     white-space: nowrap;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.import-button span {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Login */

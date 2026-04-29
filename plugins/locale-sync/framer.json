@@ -2,5 +2,6 @@
     "id": "fc872a",
     "name": "Locale Sync",
     "modes": ["localization"],
+    "prereleaseStyles": true,
     "icon": "/icon.svg"
 }

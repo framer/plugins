@@ -14,7 +14,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     esbuild: "npm:^0.25.9"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -3682,7 +3682,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     happy-dom: "npm:^20.8.9"
     marked: "npm:^17.0.1"
     react: "npm:^18.3.1"
@@ -3787,7 +3787,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     clsx: "npm:^2.1.1"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     ogl: "npm:^1.0.11"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -3801,7 +3801,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.2.0"
@@ -4156,7 +4156,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -4194,7 +4194,7 @@ __metadata:
     "@code-link/shared": "workspace:*"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -4214,7 +4214,7 @@ __metadata:
     "@vitest/ui": "npm:^4.1.0"
     clsx: "npm:^2.1.1"
     diff: "npm:^8.0.2"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     happy-dom: "npm:^20.8.9"
     p-retry: "npm:^7.0.0"
     prismjs: "npm:^1.30.0"
@@ -4242,7 +4242,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     extract-colors: "npm:^4.2.1"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     motion: "npm:^12.23.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -4307,7 +4307,7 @@ __metadata:
     "@radix-ui/react-slider": "npm:^1.3.6"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     lightningcss: "npm:^1.30.1"
     motion: "npm:^12.23.12"
     react: "npm:^18.3.1"
@@ -4375,7 +4375,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     csv-parse: "npm:^6.1.0"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.2.0"
@@ -4551,7 +4551,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     radix-ui: "npm:^1.4.3"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -4596,7 +4596,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.7"
     clsx: "npm:^2.1.1"
     colorjs.io: "npm:^0.5.2"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     ogl: "npm:^1.0.11"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -4662,7 +4662,7 @@ __metadata:
     "@radix-ui/react-slider": "npm:^1.3.6"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-sketch-canvas: "npm:^6.2.0"
@@ -5313,7 +5313,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -5412,15 +5412,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"framer-plugin@npm:3.11.0-alpha.11":
-  version: 3.11.0-alpha.11
-  resolution: "framer-plugin@npm:3.11.0-alpha.11"
+"framer-plugin@npm:3.11.0-alpha.12":
+  version: 3.11.0-alpha.12
+  resolution: "framer-plugin@npm:3.11.0-alpha.12"
   dependencies:
     csstype: "npm:^3.1.1"
   peerDependencies:
     react: ^18.2.0
     react-dom: ^18.2.0
-  checksum: 10/ebe26fdb6fb951b4b771a1dc5faa069508dcf6f2fd3fdecab83f8bfe88850fd83f8a3c1f7d0de9726962defd39cf84ef8b7e6fc5b59f505092b496c0e16e617b
+  checksum: 10/140ee046a3953d5377685c0ea465647e60ae642f69272df5aeb0c871abb3b5ffedf3c32db43f9fc787389e4a6f54ba90a02d640d49506a515336f187c2a15cac
   languageName: node
   linkType: hard
 
@@ -5539,7 +5539,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.7"
     "@vitest/ui": "npm:^3.2.4"
     clsx: "npm:^2.1.1"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     happy-dom: "npm:^20.8.9"
     idb: "npm:^8.0.3"
     react: "npm:^18.3.1"
@@ -5573,7 +5573,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.7"
     aveta: "npm:^1.5.2"
     cheerio: "npm:^1.1.2"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
@@ -5590,7 +5590,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     classnames: "npm:^2.5.1"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     react-error-boundary: "npm:^6.0.0"
@@ -5619,7 +5619,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.2.0"
@@ -5755,7 +5755,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     classnames: "npm:^2.5.1"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     motion: "npm:^12.23.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -6138,7 +6138,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -6828,7 +6828,7 @@ __metadata:
     "@notionhq/client": "npm:^3.1.3"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     motion: "npm:^12.29.2"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -7011,7 +7011,7 @@ __metadata:
     "@phosphor-icons/react": "npm:^2.1.10"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     fuse.js: "npm:^7.1.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -7024,7 +7024,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     motion: "npm:^12.23.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -7081,7 +7081,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -7104,7 +7104,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.23"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.2.0"
@@ -7493,7 +7493,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.2.0"
@@ -7517,7 +7517,7 @@ __metadata:
     "@types/papaparse": "npm:^5.3.16"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     papaparse: "npm:^5.5.3"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
@@ -7602,7 +7602,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     classnames: "npm:^2.5.1"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -7888,7 +7888,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -8173,7 +8173,7 @@ __metadata:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     comlink: "npm:^4.4.2"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -8185,7 +8185,7 @@ __metadata:
   dependencies:
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     valibot: "npm:^1.2.0"
@@ -8648,7 +8648,7 @@ __metadata:
     "@types/react-dom": "npm:^18.3.7"
     blurhash: "npm:^2.0.5"
     classnames: "npm:^2.5.1"
-    framer-plugin: "npm:3.11.0-alpha.11"
+    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-blurhash: "npm:^0.3.0"
     react-dom: "npm:^18.3.1"

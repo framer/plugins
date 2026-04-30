@@ -1,6 +1,4 @@
-import type { SVGProps } from "react"
-
-export function CollectionIcon(props: SVGProps<SVGSVGElement>) {
+export function CollectionIcon() {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -10,7 +8,6 @@ export function CollectionIcon(props: SVGProps<SVGSVGElement>) {
             fill="none"
             role="presentation"
             aria-hidden="true"
-            {...props}
         >
             <path
                 d="M 6 0.5 C 8.761 0.5 11 1.619 11 3 C 11 4.381 8.761 5.5 6 5.5 C 3.239 5.5 1 4.381 1 3 C 1 1.619 3.239 0.5 6 0.5 Z"

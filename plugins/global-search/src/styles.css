@@ -35,11 +35,7 @@
     --item-height: 30px;
 }
 
-:where([data-framer-styles="prerelease"]),
-:where([data-framer-styles="prerelease"]) input,
-:where([data-framer-styles="prerelease"]) button,
-:where([data-framer-styles="prerelease"]) textarea,
-:where([data-framer-styles="prerelease"]) select {
+[data-framer-styles="prerelease"] {
     font-feature-settings:
         "cv01" 1,
         "cv05" 1,

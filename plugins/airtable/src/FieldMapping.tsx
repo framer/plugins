@@ -8,8 +8,7 @@ import { isCollectionReference } from "./utils"
 
 function ChevronIcon() {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16">
-            <title>Chevron</title>
+        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16" aria-hidden="true">
             <path
                 d="M 3 11 L 6 8 L 3 5"
                 fill="transparent"
@@ -75,6 +74,7 @@ const FieldMappingRow = memo(
                     onClick={disabled ? undefined : () => onToggleIgnored?.(field.id)}
                     tabIndex={0}
                     disabled={disabled || unsupported || missingCollection}
+                    title={originalFieldName ?? field.id}
                 >
                     <input type="checkbox" checked={!isIgnored} tabIndex={-1} readOnly disabled={disabled} />
                     <span>{originalFieldName ?? field.id}</span>

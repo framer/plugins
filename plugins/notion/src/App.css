@@ -166,6 +166,11 @@ p a {
     gap: 8px;
 }
 
+.mapping .source-field span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .mapping .source-field.unsupported {
     pointer-events: none;
 }

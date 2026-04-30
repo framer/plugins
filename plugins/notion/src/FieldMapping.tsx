@@ -89,6 +89,7 @@ function FieldMappingRow({
                 width="8"
                 height="8"
                 fill="none"
+                aria-hidden="true"
                 style={{ opacity: disabled ? 0.5 : 1 }}
             >
                 <path

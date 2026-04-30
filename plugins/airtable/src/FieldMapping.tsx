@@ -8,7 +8,7 @@ import { isCollectionReference } from "./utils"
 
 function ChevronIcon() {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16" aria-label="Chevron">
+        <svg xmlns="http://www.w3.org/2000/svg" width="8" height="16" aria-hidden="true">
             <path
                 d="M 3 11 L 6 8 L 3 5"
                 fill="transparent"

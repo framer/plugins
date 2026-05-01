@@ -35,6 +35,8 @@
     --item-height: 30px;
 }
 
+/* Prelease Styles: remove after major release */
+/* Conditionally render Inter alternate glyphs */
 [data-framer-styles="prerelease"] {
     font-feature-settings:
         "cv01" 1,

@@ -3841,17 +3841,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aveta@npm:^1.5.2":
-  version: 1.5.2
-  resolution: "aveta@npm:1.5.2"
-  dependencies:
-    yargs: "npm:^17.3.1"
-  bin:
-    aveta: bin/aveta
-  checksum: 10/48381cbc4217d65432185bd0667308a38d9b2f0531187f9348a858f48bfe4673afd0d45a3fbec019519dc2b4d1bfd9113041dc544d2bcd1159847737770a546e
-  languageName: node
-  linkType: hard
-
 "axios@npm:^1.8.3":
   version: 1.13.6
   resolution: "axios@npm:1.13.6"
@@ -4129,17 +4118,6 @@ __metadata:
   version: 2.5.1
   resolution: "classnames@npm:2.5.1"
   checksum: 10/58eb394e8817021b153bb6e7d782cfb667e4ab390cb2e9dac2fc7c6b979d1cc2b2a733093955fc5c94aa79ef5c8c89f11ab77780894509be6afbb91dddd79d15
-  languageName: node
-  linkType: hard
-
-"cliui@npm:^8.0.1":
-  version: 8.0.1
-  resolution: "cliui@npm:8.0.1"
-  dependencies:
-    string-width: "npm:^4.2.0"
-    strip-ansi: "npm:^6.0.1"
-    wrap-ansi: "npm:^7.0.0"
-  checksum: 10/eaa5561aeb3135c2cddf7a3b3f562fc4238ff3b3fc666869ef2adf264be0f372136702f16add9299087fb1907c2e4ec5dbfe83bd24bce815c70a80c6c1a2e950
   languageName: node
   linkType: hard
 
@@ -4998,7 +4976,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"escalade@npm:^3.1.1, escalade@npm:^3.2.0":
+"escalade@npm:^3.2.0":
   version: 3.2.0
   resolution: "escalade@npm:3.2.0"
   checksum: 10/9d7169e3965b2f9ae46971afa392f6e5a25545ea30f2e2dd99c9b0a95a3f52b5653681a84f5b2911a413ddad2d7a93d3514165072f349b5ffc59c75a899970d6
@@ -5481,13 +5459,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-caller-file@npm:^2.0.5":
-  version: 2.0.5
-  resolution: "get-caller-file@npm:2.0.5"
-  checksum: 10/b9769a836d2a98c3ee734a88ba712e62703f1df31b94b784762c433c27a386dd6029ff55c2a920c392e33657d80191edbf18c61487e198844844516f843496b9
-  languageName: node
-  linkType: hard
-
 "get-nonce@npm:^1.0.0":
   version: 1.0.1
   resolution: "get-nonce@npm:1.0.1"
@@ -5583,7 +5554,6 @@ __metadata:
     "@ataverascrespo/react18-ts-textfit": "npm:^1.0.0"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    aveta: "npm:^1.5.2"
     cheerio: "npm:^1.1.2"
     framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
@@ -7620,13 +7590,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"require-directory@npm:^2.1.1":
-  version: 2.1.1
-  resolution: "require-directory@npm:2.1.1"
-  checksum: 10/a72468e2589270d91f06c7d36ec97a88db53ae5d6fe3787fadc943f0b0276b10347f89b363b2a82285f650bdcc135ad4a257c61bdd4d00d6df1fa24875b0ddaf
-  languageName: node
-  linkType: hard
-
 "reselect@npm:5.1.1, reselect@npm:^5.1.0":
   version: 5.1.1
   resolution: "reselect@npm:5.1.1"
@@ -8060,7 +8023,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"string-width-cjs@npm:string-width@^4.2.0, string-width@npm:^4.1.0, string-width@npm:^4.2.0, string-width@npm:^4.2.3":
+"string-width-cjs@npm:string-width@^4.2.0, string-width@npm:^4.1.0":
   version: 4.2.3
   resolution: "string-width@npm:4.2.3"
   dependencies:
@@ -9152,7 +9115,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0, wrap-ansi@npm:^7.0.0":
+"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0":
   version: 7.0.0
   resolution: "wrap-ansi@npm:7.0.0"
   dependencies:
@@ -9189,13 +9152,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"y18n@npm:^5.0.5":
-  version: 5.0.8
-  resolution: "y18n@npm:5.0.8"
-  checksum: 10/5f1b5f95e3775de4514edbb142398a2c37849ccfaf04a015be5d75521e9629d3be29bd4432d23c57f37e5b61ade592fb0197022e9993f81a06a5afbdcda9346d
-  languageName: node
-  linkType: hard
-
 "yallist@npm:^4.0.0":
   version: 4.0.0
   resolution: "yallist@npm:4.0.0"
@@ -9207,28 +9163,6 @@ __metadata:
   version: 5.0.0
   resolution: "yallist@npm:5.0.0"
   checksum: 10/1884d272d485845ad04759a255c71775db0fac56308764b4c77ea56a20d56679fad340213054c8c9c9c26fcfd4c4b2a90df993b7e0aaf3cdb73c618d1d1a802a
-  languageName: node
-  linkType: hard
-
-"yargs-parser@npm:^21.1.1":
-  version: 21.1.1
-  resolution: "yargs-parser@npm:21.1.1"
-  checksum: 10/9dc2c217ea3bf8d858041252d43e074f7166b53f3d010a8c711275e09cd3d62a002969a39858b92bbda2a6a63a585c7127014534a560b9c69ed2d923d113406e
-  languageName: node
-  linkType: hard
-
-"yargs@npm:^17.3.1":
-  version: 17.7.2
-  resolution: "yargs@npm:17.7.2"
-  dependencies:
-    cliui: "npm:^8.0.1"
-    escalade: "npm:^3.1.1"
-    get-caller-file: "npm:^2.0.5"
-    require-directory: "npm:^2.1.1"
-    string-width: "npm:^4.2.3"
-    y18n: "npm:^5.0.5"
-    yargs-parser: "npm:^21.1.1"
-  checksum: 10/abb3e37678d6e38ea85485ed86ebe0d1e3464c640d7d9069805ea0da12f69d5a32df8e5625e370f9c96dd1c2dc088ab2d0a4dd32af18222ef3c4224a19471576
   languageName: node
   linkType: hard
 

@@ -10,11 +10,11 @@
         "check-eslint": "run g:check-eslint",
         "pack": "run g:pack",
         "preview": "run g:preview",
-        "check-typescript": "run g:check-typescript"
+        "check-typescript": "run g:check-typescript",
+        "check-vitest": "run g:check-vitest"
     },
     "dependencies": {
         "@ataverascrespo/react18-ts-textfit": "^1.0.0",
-        "aveta": "^1.5.2",
         "cheerio": "^1.1.2",
         "framer-plugin": "3.11.0-alpha.12",
         "react": "^18.3.1",

@@ -9,7 +9,7 @@ import path from "path"
 import ts from "typescript"
 import type { DependencyVersions, NpmStrategy } from "../types.ts"
 import { extractImports } from "../utils/imports.ts"
-import { debug, error, warn } from "../utils/logging.ts"
+import { debug, error, info, warn } from "../utils/logging.ts"
 import { installSkills } from "./skills.ts"
 
 export interface InstallerConfig {
@@ -386,6 +386,7 @@ export class Installer {
 
         pkg.dependencies = dependencies
         await fs.writeFile(packagePath, JSON.stringify(pkg, null, 4))
+        info("Updated dependencies. Run your package manager to install them.")
         debug(`Updated package.json dependency versions for ${uniquePackageNames.join(", ")}`)
     }
 

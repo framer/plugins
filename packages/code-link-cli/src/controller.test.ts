@@ -11,28 +11,28 @@ const testSession = { connectionId: 1, promptId: "prompt" }
 
 function disconnectedState() {
     return {
-        internalPhase: "disconnected" as const,
+        phase: "disconnected" as const,
         socket: null,
     }
 }
 
 function watchingState() {
     return {
-        internalPhase: "watching" as const,
+        phase: "watching" as const,
         socket: mockSocket,
     }
 }
 
 function handshakingState() {
     return {
-        internalPhase: "handshaking" as const,
+        phase: "handshaking" as const,
         socket: mockSocket,
     }
 }
 
 function snapshotProcessingState() {
     return {
-        internalPhase: "snapshot_processing" as const,
+        phase: "snapshot_processing" as const,
         socket: mockSocket,
     }
 }
@@ -49,7 +49,7 @@ function conflictResolutionState(
     }[]
 ) {
     return {
-        internalPhase: "conflict_resolution" as const,
+        phase: "conflict_resolution" as const,
         socket: mockSocket,
         pendingConflicts,
     }
@@ -72,7 +72,7 @@ describe("Code Link", () => {
                 remoteTotal: 1,
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
         })
 
@@ -92,7 +92,7 @@ describe("Code Link", () => {
                 remoteTotal: 0,
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(true)
         })
 
@@ -114,7 +114,7 @@ describe("Code Link", () => {
                 remoteTotal: 1,
             })
 
-            expect(result.state.internalPhase).toBe("conflict_resolution")
+            expect(result.state.phase).toBe("conflict_resolution")
             expect(result.effects.some(e => e.type === "REQUEST_CONFLICT_VERSIONS")).toBe(true)
         })
     })
@@ -133,7 +133,7 @@ describe("Code Link", () => {
                 remoteTotal: 0,
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects.filter(e => e.type === "WRITE_FILES")).toHaveLength(0)
             expect(result.effects.filter(e => e.type === "SEND_MESSAGE")).toHaveLength(0)
             expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
@@ -155,7 +155,7 @@ describe("Code Link", () => {
                 versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 5_000 }], // remote unchanged
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects.some(e => e.type === "SEND_LOCAL_CHANGE")).toBe(true)
             expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
         })
@@ -176,7 +176,7 @@ describe("Code Link", () => {
                 versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: 10_000 }], // remote changed
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(true)
             expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
         })
@@ -199,7 +199,7 @@ describe("Code Link", () => {
                 versions: [{ fileName: "Test.tsx", latestRemoteVersionMs: syncTime + DEFAULT_REMOTE_DRIFT_MS + 1000 }],
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects.some(e => e.type === "REQUEST_CONFLICT_DECISIONS")).toBe(true)
         })
 
@@ -218,7 +218,7 @@ describe("Code Link", () => {
                 versions: [{ fileName: "Deleted.tsx", latestRemoteVersionMs: syncTime }],
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects).toContainEqual({
                 type: "LOCAL_INITIATED_FILE_DELETE",
                 fileNames: ["Deleted.tsx"],
@@ -251,7 +251,7 @@ describe("Code Link", () => {
                 ],
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects.some(e => e.type === "LOCAL_INITIATED_FILE_DELETE")).toBe(false)
             expect(result.effects).toContainEqual({
                 type: "REQUEST_CONFLICT_DECISIONS",
@@ -270,7 +270,7 @@ describe("Code Link", () => {
             })
 
             expect(result.state).toMatchObject({
-                internalPhase: "conflict_resolution",
+                phase: "conflict_resolution",
                 pendingConflicts: [
                     {
                         fileName: "Test.tsx",
@@ -293,7 +293,7 @@ describe("Code Link", () => {
             const result = transition(state, { type: "REMOTE_FILE_DELETE", fileName: "Test.tsx" })
 
             expect(result.state).toMatchObject({
-                internalPhase: "conflict_resolution",
+                phase: "conflict_resolution",
                 pendingConflicts: [{ fileName: "Test.tsx", localContent: "local", remoteContent: null }],
             })
             expect(result.effects).toContainEqual(
@@ -358,7 +358,7 @@ describe("Code Link", () => {
                 file: { name: "Button.tsx", content: "late arrival", modifiedAt: Date.now() },
             })
 
-            expect(result.state.internalPhase).toBe("snapshot_processing")
+            expect(result.state.phase).toBe("snapshot_processing")
             expect(result.effects.some(e => e.type === "WRITE_FILES")).toBe(false)
             expect(result.effects.some(e => e.type === "LOG")).toBe(true)
         })
@@ -398,7 +398,7 @@ describe("Code Link", () => {
                 remoteTotal: 1,
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             const writeEffect = result.effects.find(e => e.type === "WRITE_FILES")
             expect(writeEffect).toMatchObject({
                 files: [{ name: "components/Button.tsx" }],
@@ -421,7 +421,7 @@ describe("Code Link", () => {
                 remoteTotal: 0,
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects).toContainEqual({
                 type: "SEND_LOCAL_CHANGE",
                 fileName: "hooks/useAuth.ts",
@@ -576,7 +576,7 @@ describe("Code Link", () => {
                 fileNames: ["A.tsx", "B.tsx"],
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects).toContainEqual({
                 type: "RESOLVE_CONFLICT_PROMPT",
                 session: testSession,
@@ -610,7 +610,7 @@ describe("Code Link", () => {
                 fileNames: ["A.tsx", "B.tsx"],
             })
 
-            expect(result.state.internalPhase).toBe("watching")
+            expect(result.state.phase).toBe("watching")
             expect(result.effects.some(e => e.type === "RESOLVE_CONFLICT_PROMPT")).toBe(true)
         })
 
@@ -724,7 +724,7 @@ describe("Code Link", () => {
             const state = watchingState()
             const result = transition(state, { type: "DISCONNECT" })
 
-            expect(result.state.internalPhase).toBe("disconnected")
+            expect(result.state.phase).toBe("disconnected")
             expect(result.effects.some(e => e.type === "PERSIST_STATE")).toBe(true)
         })
     })
@@ -741,10 +741,10 @@ describe("Code Link", () => {
                 projectInfo: { projectId: "abc123", projectName: "My Project" },
             })
 
-            expect(result.state.internalPhase).toBe("handshaking")
+            expect(result.state.phase).toBe("handshaking")
             expect(result.effects.some(e => e.type === "INIT_WORKSPACE")).toBe(true)
             expect(result.effects.some(e => e.type === "SEND_MESSAGE")).toBe(true)
-            expect(result.effects.some(e => e.type === "EMIT_SYNC_PHASE" && e.phase === "initial_sync")).toBe(true)
+            expect(result.effects.some(e => e.type === "EMIT_SYNC_STATUS" && e.status === "initial_sync")).toBe(true)
         })
 
         it("requests file list after handshake", () => {
@@ -766,7 +766,7 @@ describe("Code Link", () => {
                 files: [{ name: "Test.tsx", content: "content", modifiedAt: Date.now() }],
             })
 
-            expect(result.state.internalPhase).toBe("snapshot_processing")
+            expect(result.state.phase).toBe("snapshot_processing")
             expect(result.effects.some(e => e.type === "DETECT_CONFLICTS")).toBe(true)
         })
     })

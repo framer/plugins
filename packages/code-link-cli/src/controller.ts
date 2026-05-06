@@ -3,8 +3,8 @@
  *
  * Trace for any sync change:
  *
- *   1. transition(state, event)        — pure next state + Effect[]
- *   2. applyEffect(effect, ctx)        — the only place that mutates or does I/O
+ *   1. transition(state, event)        — next state + Effect[], no side effects
+ *   2. applyEffect(effect, ctx)        — main place that mutates or does I/O
  */
 
 import type { CliToPluginMessage, PluginToCliMessage } from "@code-link/shared"
@@ -26,7 +26,7 @@ import {
 import { tryGitInit } from "./helpers/git.ts"
 import { Installer } from "./helpers/installer.ts"
 import { initWatcher } from "./helpers/watcher.ts"
-import { type ConflictPromptChange, SyncRuntime } from "./runtime.ts"
+import { type ConflictPromptChange, type PendingSyncCompleteResult, SyncRuntime } from "./runtime.ts"
 import type { Effect, SyncEvent, SyncState, WriteEchoPolicy } from "./sync-events.ts"
 import type { Config, Conflict, FileInfo } from "./types.ts"
 import {
@@ -95,7 +95,7 @@ function updatePendingConflictRemote(
 }
 
 /**
- * Pure state transition function
+ * State transition
  * Takes current state + event, returns new state + effects to execute
  */
 function transition(
@@ -787,13 +787,8 @@ async function applyConflictChange(change: ConflictPromptChange, ctx: ApplyCtx):
     }
     if (change.resolved.length > 0) await ctx.runtime.metadata.flush()
     if (change.cleared && ctx.runtime.lastEmittedSyncPhase !== "ready") {
-        const deferred = ctx.runtime.consumeDeferredSyncCompleteIfNoActivePrompt()
-        if (deferred) {
-            await applySyncComplete({ type: "SYNC_COMPLETE", ...deferred }, ctx)
-            return
-        }
-
-        if (ctx.runtime.hasDeferredSyncComplete()) return
+        const flushed = await flushPendingSyncComplete(ctx)
+        if (flushed !== "empty") return
 
         await applySyncComplete(
             {
@@ -810,7 +805,7 @@ async function applyConflictChange(change: ConflictPromptChange, ctx: ApplyCtx):
 async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE" }>, ctx: ApplyCtx): Promise<void> {
     const { config, runtime, syncState, shutdown } = ctx
     if (runtime.hasAnyActivePrompt()) {
-        runtime.deferSyncComplete({
+        runtime.addPendingSyncComplete({
             totalCount: effect.totalCount,
             updatedCount: effect.updatedCount,
             unchangedCount: effect.unchangedCount,
@@ -844,6 +839,14 @@ async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE"
     if (wasDisconnected) runtime.disconnectUi.reset()
     if (shouldTryGitInit && runtime.workspace.projectDir) tryGitInit(runtime.workspace.projectDir)
     if (shouldShutdown) await shutdown()
+}
+
+async function flushPendingSyncComplete(ctx: ApplyCtx): Promise<PendingSyncCompleteResult["is"]> {
+    const result = ctx.runtime.checkPendingSyncComplete()
+    if (result.is === "ready") {
+        await applySyncComplete({ type: "SYNC_COMPLETE", ...result.payload }, ctx)
+    }
+    return result.is
 }
 
 export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEvent[]> {
@@ -1001,10 +1004,7 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
             await sendFileDelete(confirmed, ctx)
             runtime.clearDeletePromptFiles(effect.session, activeFileNames)
             await runtime.metadata.flush()
-            const deferred = runtime.consumeDeferredSyncCompleteIfNoActivePrompt()
-            if (deferred) {
-                await applySyncComplete({ type: "SYNC_COMPLETE", ...deferred }, ctx)
-            }
+            await flushPendingSyncComplete(ctx)
             return []
         }
 
@@ -1075,10 +1075,7 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
                     session: change.session,
                     fileNames: change.fileNames,
                 })
-                const deferred = runtime.consumeDeferredSyncCompleteIfNoActivePrompt()
-                if (deferred) {
-                    await applySyncComplete({ type: "SYNC_COMPLETE", ...deferred }, ctx)
-                }
+                await flushPendingSyncComplete(ctx)
             }
             return []
         }

@@ -29,6 +29,11 @@ interface DeferredSyncComplete {
     unchangedCount: number
 }
 
+export type PendingSyncCompleteResult =
+    | { is: "ready"; payload: DeferredSyncComplete }
+    | { is: "blocked" }
+    | { is: "empty" }
+
 interface ConflictPromptState {
     session: PromptSession
     conflicts: Map<string, Conflict>
@@ -94,7 +99,7 @@ export class SyncRuntime {
 
     private activeDeletePrompt: DeletePromptState | null = null
     private activeConflictPrompt: ConflictPromptState | null = null
-    private deferredSyncComplete: DeferredSyncComplete | null = null
+    private pendingSyncComplete: DeferredSyncComplete | null = null
 
     installer: Installer | null = null
 
@@ -243,26 +248,29 @@ export class SyncRuntime {
         return this.activeDeletePrompt !== null || this.activeConflictPrompt !== null
     }
 
-    deferSyncComplete(syncComplete: DeferredSyncComplete): void {
-        this.deferredSyncComplete =
-            this.deferredSyncComplete === null
+    addPendingSyncComplete(syncComplete: DeferredSyncComplete): void {
+        this.pendingSyncComplete =
+            this.pendingSyncComplete === null
                 ? syncComplete
                 : {
-                      totalCount: this.deferredSyncComplete.totalCount + syncComplete.totalCount,
-                      updatedCount: this.deferredSyncComplete.updatedCount + syncComplete.updatedCount,
-                      unchangedCount: this.deferredSyncComplete.unchangedCount + syncComplete.unchangedCount,
+                      totalCount: this.pendingSyncComplete.totalCount + syncComplete.totalCount,
+                      updatedCount: this.pendingSyncComplete.updatedCount + syncComplete.updatedCount,
+                      unchangedCount: this.pendingSyncComplete.unchangedCount + syncComplete.unchangedCount,
                   }
     }
 
-    hasDeferredSyncComplete(): boolean {
-        return this.deferredSyncComplete !== null
-    }
-
-    consumeDeferredSyncCompleteIfNoActivePrompt(): DeferredSyncComplete | null {
-        if (this.hasAnyActivePrompt()) return null
-        const syncComplete = this.deferredSyncComplete
-        this.deferredSyncComplete = null
-        return syncComplete
+    /**
+     * Reads the pending sync-complete and clears it when ready to fire.
+     * - `ready`: payload is returned and the slot is cleared.
+     * - `blocked`: payload remains pending until prompts clear.
+     * - `empty`: nothing was pending.
+     */
+    checkPendingSyncComplete(): PendingSyncCompleteResult {
+        if (this.pendingSyncComplete === null) return { is: "empty" }
+        if (this.hasAnyActivePrompt()) return { is: "blocked" }
+        const syncComplete = this.pendingSyncComplete
+        this.pendingSyncComplete = null
+        return { is: "ready", payload: syncComplete }
     }
 
     invalidateDeletePromptPath(filePath: string): DeletePromptChange {
@@ -383,7 +391,7 @@ export class SyncRuntime {
     resetPrompts(): void {
         this.activeDeletePrompt = null
         this.activeConflictPrompt = null
-        this.deferredSyncComplete = null
+        this.pendingSyncComplete = null
     }
 
     cleanupUserActions(): void {

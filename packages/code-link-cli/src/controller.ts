@@ -790,6 +790,7 @@ async function applyConflictChange(change: ConflictPromptChange, ctx: ApplyCtx):
         const flushed = await flushPendingSyncComplete(ctx)
         if (flushed !== "empty") return
 
+        // Nothing was queued; all conflicts resolved, emit completion for this batch.
         await applySyncComplete(
             {
                 type: "SYNC_COMPLETE",

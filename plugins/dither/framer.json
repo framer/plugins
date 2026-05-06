@@ -2,5 +2,6 @@
     "id": "TQeWOY",
     "name": "Dither",
     "modes": ["canvas", "image", "editImage"],
+    "prereleaseStyles": true,
     "icon": "/dither.png"
 }

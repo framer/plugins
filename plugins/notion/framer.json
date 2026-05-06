@@ -2,5 +2,6 @@
     "id": "e00c8d",
     "name": "Notion",
     "modes": ["configureManagedCollection", "syncManagedCollection"],
+    "prereleaseStyles": true,
     "icon": "/icon.svg"
 }

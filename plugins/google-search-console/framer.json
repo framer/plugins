@@ -2,5 +2,6 @@
     "id": "53ebdd",
     "name": "Search Console",
     "modes": ["canvas"],
+    "prereleaseStyles": true,
     "icon": "/icon.png"
 }

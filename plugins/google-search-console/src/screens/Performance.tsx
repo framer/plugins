@@ -1,9 +1,9 @@
-import aveta from "aveta"
 import { type CSSProperties, useMemo, useState } from "react"
 import { Area, AreaChart, ResponsiveContainer, Tooltip, type TooltipContentProps, XAxis } from "recharts"
 import type { NameType, Payload, ValueType } from "recharts/types/component/DefaultTooltipContent"
 import FitText from "../components/FitText"
 import Loading from "../components/Loading"
+import { formatStat } from "../formatStat"
 import type { GoogleQueryResult } from "../types"
 import { mapQueries } from "../utils"
 
@@ -151,7 +151,7 @@ export default function Performance({ performance }: PerformanceProps) {
                             }}
                         >
                             <div>
-                                <FitText>{aveta(totalClicks)}</FitText>
+                                <FitText>{formatStat(totalClicks)}</FitText>
                             </div>
                             <div>{`Click${totalClicks === 1 ? "" : "s"}`}</div>
                         </div>
@@ -166,7 +166,7 @@ export default function Performance({ performance }: PerformanceProps) {
                             }}
                         >
                             <div>
-                                <FitText>{aveta(totalImpressions)}</FitText>
+                                <FitText>{formatStat(totalImpressions)}</FitText>
                             </div>
                             <div>{`Impression${totalImpressions === 1 ? "" : "s"}`}</div>
                         </div>

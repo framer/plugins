@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:where([data-framer-theme="dark"], [data-framer-theme="dark"] *));
@@ -34,6 +33,16 @@
     --spacing: 5px;
     --header-height: 48px;
     --item-height: 30px;
+}
+
+/* Prelease Styles: remove after major release */
+/* Conditionally render Inter alternate glyphs */
+[data-framer-styles="prerelease"] {
+    font-feature-settings:
+        "cv01" 1,
+        "cv05" 1,
+        "cv09" 1,
+        "cv11" 1;
 }
 
 @utility scrollbar-hidden {

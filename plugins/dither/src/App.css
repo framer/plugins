@@ -126,7 +126,7 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
     min-height: 30px;
     border-radius: 8px;
     border: transparent;
-    background-color: rgb(43, 43, 43);
+    background-color: var(--framer-color-bg-tertiary);
     display: flex;
     align-items: center;
     display: flex;
@@ -184,13 +184,13 @@ body[data-framer-theme="dark"] .gui-row .gui-label {
     }
 }
 
-body[data-framer-theme="light"] {
-    .color-input {
-        background-color: #f3f3f3;
+:where([data-framer-styles="prerelease"])[data-framer-theme="dark"] .color-input {
+    background-color: var(--framer-color-control);
+}
 
-        input[type="color"]::after {
-            border: 1px solid rgba(0, 0, 0, 0.15);
-        }
+body[data-framer-theme="light"] .color-input {
+    input[type="color"]::after {
+        border: 1px solid rgba(0, 0, 0, 0.15);
     }
 }
 
@@ -238,21 +238,8 @@ body[data-framer-theme="dark"] .error-container {
     user-select: none;
 }
 
-.framer-button-primary {
-    --framer-color-text-reversed: #000;
-    background-color: #fff !important;
-}
-
-body[data-framer-theme="light"] {
-    .framer-button-primary {
-        --framer-color-text-reversed: #fff;
-        background-color: #000 !important;
-    }
-}
-
 .upload-cta {
     width: 100%;
-    background: var(--framer-color-bg-tertiary);
 }
 
 .asset-buttons {

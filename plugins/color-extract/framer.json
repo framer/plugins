@@ -2,5 +2,6 @@
     "id": "CbX9_9",
     "name": "Color Extract",
     "icon": "/icon.png",
-    "modes": ["canvas"]
+    "modes": ["canvas"],
+    "prereleaseStyles": true
 }

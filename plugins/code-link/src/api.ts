@@ -1,4 +1,4 @@
-import { normalizeCodeFilePathWithExtension, type SyncTracker } from "@code-link/shared"
+import { normalizeCodeFilePathWithExtension } from "@code-link/shared"
 import { framer } from "framer-plugin"
 import * as log from "./utils/logger"
 
@@ -9,9 +9,42 @@ import * as log from "./utils/logger"
  */
 
 export class CodeFilesAPI {
-    private lastSnapshot = new Map<string, string>()
+    private readonly snapshotByPath = new Map<string, string>()
 
-    // Keep the snapshot aligned with the state Framer should expose, even while a remote mutation is in flight.
+    remember(fileName: string, content: string): void {
+        this.setSnapshotContent(fileName, content)
+    }
+
+    /** True when inbound content matches what we last recorded for this path (echo / no-op). */
+    shouldSkip(fileName: string, content: string): boolean {
+        const previous = this.getSnapshotContent(fileName)
+        return previous !== undefined && previous === content
+    }
+
+    forget(fileName: string): void {
+        this.deleteSnapshotEntry(fileName)
+    }
+
+    clear(): void {
+        this.snapshotByPath.clear()
+    }
+
+    getSnapshotContent(fileName: string): string | undefined {
+        return this.snapshotByPath.get(normalizeCodeFilePathWithExtension(fileName))
+    }
+
+    private setSnapshotContent(fileName: string, content: string): void {
+        this.snapshotByPath.set(normalizeCodeFilePathWithExtension(fileName), content)
+    }
+
+    private deleteSnapshotEntry(fileName: string): void {
+        this.snapshotByPath.delete(normalizeCodeFilePathWithExtension(fileName))
+    }
+
+    private getSnapshotPaths(): string[] {
+        return [...this.snapshotByPath.keys()]
+    }
+
     private async withExpectedSnapshotPatch<T>(
         patch: {
             upserts?: { fileName: string; content: string }[]
@@ -22,17 +55,19 @@ export class CodeFilesAPI {
         const previousEntries = new Map<string, string | undefined>()
 
         for (const fileName of patch.deletes ?? []) {
-            if (!previousEntries.has(fileName)) {
-                previousEntries.set(fileName, this.lastSnapshot.get(fileName))
+            const key = normalizeCodeFilePathWithExtension(fileName)
+            if (!previousEntries.has(key)) {
+                previousEntries.set(key, this.snapshotByPath.get(key))
             }
-            this.lastSnapshot.delete(fileName)
+            this.snapshotByPath.delete(key)
         }
 
         for (const entry of patch.upserts ?? []) {
-            if (!previousEntries.has(entry.fileName)) {
-                previousEntries.set(entry.fileName, this.lastSnapshot.get(entry.fileName))
+            const key = normalizeCodeFilePathWithExtension(entry.fileName)
+            if (!previousEntries.has(key)) {
+                previousEntries.set(key, this.snapshotByPath.get(key))
             }
-            this.lastSnapshot.set(entry.fileName, entry.content)
+            this.snapshotByPath.set(key, entry.content)
         }
 
         try {
@@ -40,9 +75,9 @@ export class CodeFilesAPI {
         } catch (error) {
             for (const [fileName, previousContent] of previousEntries) {
                 if (previousContent === undefined) {
-                    this.lastSnapshot.delete(fileName)
+                    this.snapshotByPath.delete(fileName)
                 } else {
-                    this.lastSnapshot.set(fileName, previousContent)
+                    this.snapshotByPath.set(fileName, previousContent)
                 }
             }
             throw error
@@ -73,18 +108,20 @@ export class CodeFilesAPI {
     async publishSnapshot(socket: WebSocket) {
         const files = await this.getCodeFilesWithNormalizedPaths()
         socket.send(JSON.stringify({ type: "file-list", files }))
-        this.lastSnapshot.clear()
-        files.forEach(file => this.lastSnapshot.set(file.name, file.content))
+        this.clear()
+        files.forEach(file => {
+            this.setSnapshotContent(file.name, file.content)
+        })
     }
 
-    async handleFramerFilesChanged(socket: WebSocket, tracker: SyncTracker) {
+    async handleFramerFilesChanged(socket: WebSocket) {
         const files = await this.getCodeFilesWithNormalizedPaths()
         const seen = new Set<string>()
 
         for (const file of files) {
             seen.add(file.name)
 
-            const previous = this.lastSnapshot.get(file.name)
+            const previous = this.getSnapshotContent(file.name)
             if (previous !== file.content) {
                 // Generally only a small number of files change.
                 // So we just send each change one by one.
@@ -95,21 +132,19 @@ export class CodeFilesAPI {
                         content: file.content,
                     })
                 )
-                tracker.remember(file.name, file.content)
-                this.lastSnapshot.set(file.name, file.content)
+                this.setSnapshotContent(file.name, file.content)
             }
         }
 
-        for (const fileName of Array.from(this.lastSnapshot.keys())) {
+        for (const fileName of this.getSnapshotPaths()) {
             if (!seen.has(fileName)) {
                 socket.send(
                     JSON.stringify({
                         type: "file-delete",
                         fileNames: [fileName],
-                        requireConfirmation: false,
                     })
                 )
-                this.lastSnapshot.delete(fileName)
+                this.deleteSnapshotEntry(fileName)
             }
         }
     }
@@ -235,7 +270,7 @@ export class CodeFilesAPI {
         )
 
         if (!existing) {
-            this.lastSnapshot.delete(sourceFileName)
+            this.deleteSnapshotEntry(sourceFileName)
             const message = `Rename failed: ${oldFileName} not found in Framer`
             log.warn(message)
             socket.send(
@@ -248,7 +283,7 @@ export class CodeFilesAPI {
             return false
         }
 
-        const content = this.lastSnapshot.get(sourceFileName) ?? existing.content
+        const content = this.getSnapshotContent(sourceFileName) ?? existing.content
 
         try {
             await this.withExpectedSnapshotPatch(

@@ -12,9 +12,8 @@ vi.mock("@typescript/ata", () => ({
     setupTypeAcquisition: vi.fn(() => mockAta),
 }))
 
-const mockFetch = vi.fn<
-    (input: string | URL | Request) => Promise<{ ok: boolean; status?: number; json: () => Promise<unknown> }>
->()
+const mockFetch =
+    vi.fn<(input: string | URL | Request) => Promise<{ ok: boolean; status?: number; json: () => Promise<unknown> }>>()
 vi.stubGlobal("fetch", mockFetch)
 
 import { Installer } from "./installer.ts"
@@ -36,7 +35,7 @@ beforeEach(async () => {
                     version: "3.0.2",
                     peerDependencies: {
                         "framer-motion": "^12.34.3",
-                        "react": "^18.2.0",
+                        react: "^18.2.0",
                     },
                 }),
             }
@@ -188,7 +187,10 @@ describe("Installer", () => {
             const installer = new Installer({ projectDir: tmpDir })
             await initAndClearAta(installer)
 
-            installer.process("component.tsx", `import React from "react"\nimport { createRoot } from "react-dom/client"`)
+            installer.process(
+                "component.tsx",
+                `import React from "react"\nimport { createRoot } from "react-dom/client"`
+            )
 
             await vi.waitFor(() => {
                 expect(mockAta).toHaveBeenCalled()

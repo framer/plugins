@@ -8,6 +8,7 @@ import { isSupportedExtension, normalizePath, sanitizeFilePath } from "@code-lin
 import chokidar from "chokidar"
 import fs from "fs/promises"
 import path from "path"
+import { createScheduler, TIMINGS } from "../scheduler.ts"
 import type { WatcherEvent } from "../types.ts"
 import { debug, warn } from "../utils/logging.ts"
 import { getRelativePath } from "../utils/node-paths.ts"
@@ -18,19 +19,15 @@ export interface Watcher {
     close(): Promise<void>
 }
 
-const RENAME_BUFFER_MS = 100
-
 interface PendingDelete {
     relativePath: string
     contentHash: string
-    timer: ReturnType<typeof setTimeout>
 }
 
 interface PendingAdd {
     relativePath: string
     contentHash: string
     content: string
-    timer: ReturnType<typeof setTimeout>
     previousContentHash?: string
 }
 
@@ -104,6 +101,7 @@ function matchPendingDeleteForAdd(
  */
 export function initWatcher(filesDir: string): Watcher {
     const handlers: ((event: WatcherEvent) => void)[] = []
+    const scheduler = createScheduler()
 
     // Content hash cache: tracks last-known hash for rename detection
     const contentHashCache = new Map<string, string>()
@@ -181,10 +179,15 @@ export function initWatcher(filesDir: string): Watcher {
                     // Suppress the echo events chokidar will fire for this rename
                     recentSanitizations.add(rawRelativePath) // upcoming unlink echo
                     recentSanitizations.add(nextRelativePath) // upcoming add echo
-                    setTimeout(() => {
-                        recentSanitizations.delete(rawRelativePath)
-                        recentSanitizations.delete(nextRelativePath)
-                    }, RENAME_BUFFER_MS * 3)
+                    scheduler.after(
+                        "sanitizationEchoExpiry",
+                        TIMINGS.sanitizationEchoExpiry,
+                        () => {
+                            recentSanitizations.delete(rawRelativePath)
+                            recentSanitizations.delete(nextRelativePath)
+                        },
+                        `${rawRelativePath}\0${nextRelativePath}`
+                    )
                 } catch (err) {
                     warn(`Failed to rename ${rawRelativePath}`, err)
                     return { relativePath: rawRelativePath, effectiveAbsolutePath: absolutePath }
@@ -214,7 +217,7 @@ export function initWatcher(filesDir: string): Watcher {
 
             const samePathPendingAdd = pendingAdds.get(relativePath)
             if (samePathPendingAdd) {
-                clearTimeout(samePathPendingAdd.timer)
+                scheduler.cancel("renameBuffer", relativePath)
                 pendingAdds.delete(relativePath)
 
                 try {
@@ -234,7 +237,7 @@ export function initWatcher(filesDir: string): Watcher {
 
             const matchedAdd = matchPendingAddForDelete(lastHash, pendingAdds)
             if (matchedAdd) {
-                clearTimeout(matchedAdd.pendingAdd.timer)
+                scheduler.cancel("renameBuffer", matchedAdd.key)
                 pendingAdds.delete(matchedAdd.key)
 
                 // Emit as a single rename event
@@ -249,12 +252,17 @@ export function initWatcher(filesDir: string): Watcher {
 
             if (lastHash) {
                 // No pending add match — buffer this delete
-                const timer = setTimeout(() => {
-                    pendingDeletes.delete(relativePath)
-                    dispatchEvent({ kind: "delete", relativePath })
-                }, RENAME_BUFFER_MS)
+                scheduler.after(
+                    "renameBuffer",
+                    TIMINGS.renameBuffer,
+                    () => {
+                        pendingDeletes.delete(relativePath)
+                        dispatchEvent({ kind: "delete", relativePath })
+                    },
+                    relativePath
+                )
 
-                pendingDeletes.set(relativePath, { relativePath, contentHash: lastHash, timer })
+                pendingDeletes.set(relativePath, { relativePath, contentHash: lastHash })
             } else {
                 // No cached hash — emit delete immediately
                 dispatchEvent({ kind: "delete", relativePath })
@@ -280,7 +288,7 @@ export function initWatcher(filesDir: string): Watcher {
         if (kind === "add") {
             const samePathPendingDelete = pendingDeletes.get(relativePath)
             if (samePathPendingDelete) {
-                clearTimeout(samePathPendingDelete.timer)
+                scheduler.cancel("renameBuffer", relativePath)
                 pendingDeletes.delete(relativePath)
                 dispatchEvent({ kind: "change", relativePath, content })
                 return
@@ -288,7 +296,7 @@ export function initWatcher(filesDir: string): Watcher {
 
             const matchedDelete = matchPendingDeleteForAdd(contentHash, pendingDeletes)
             if (matchedDelete) {
-                clearTimeout(matchedDelete.pendingDelete.timer)
+                scheduler.cancel("renameBuffer", matchedDelete.key)
                 pendingDeletes.delete(matchedDelete.key)
 
                 // Emit as a single rename event
@@ -304,19 +312,25 @@ export function initWatcher(filesDir: string): Watcher {
             // No pending delete match — buffer this add in case a delete arrives soon
             const existingPendingAdd = pendingAdds.get(relativePath)
             if (existingPendingAdd) {
-                clearTimeout(existingPendingAdd.timer)
+                scheduler.cancel("renameBuffer", relativePath)
             }
-            const retainedPreviousContentHash = existingPendingAdd ? existingPendingAdd.previousContentHash : previousContentHash
-            const timer = setTimeout(() => {
-                pendingAdds.delete(relativePath)
-                dispatchEvent({ kind: "add", relativePath, content })
-            }, RENAME_BUFFER_MS)
+            const retainedPreviousContentHash = existingPendingAdd
+                ? existingPendingAdd.previousContentHash
+                : previousContentHash
+            scheduler.after(
+                "renameBuffer",
+                TIMINGS.renameBuffer,
+                () => {
+                    pendingAdds.delete(relativePath)
+                    dispatchEvent({ kind: "add", relativePath, content })
+                },
+                relativePath
+            )
 
             pendingAdds.set(relativePath, {
                 relativePath,
                 contentHash,
                 content,
-                timer,
                 previousContentHash: retainedPreviousContentHash,
             })
             return
@@ -325,7 +339,7 @@ export function initWatcher(filesDir: string): Watcher {
         // If this file has a buffered add, cancel it and dispatch as "add" with fresh content
         const pendingAdd = pendingAdds.get(relativePath)
         if (pendingAdd) {
-            clearTimeout(pendingAdd.timer)
+            scheduler.cancel("renameBuffer", relativePath)
             pendingAdds.delete(relativePath)
             dispatchEvent({ kind: "add", relativePath, content })
             return
@@ -350,12 +364,7 @@ export function initWatcher(filesDir: string): Watcher {
         },
 
         async close(): Promise<void> {
-            for (const pending of pendingDeletes.values()) {
-                clearTimeout(pending.timer)
-            }
-            for (const pending of pendingAdds.values()) {
-                clearTimeout(pending.timer)
-            }
+            scheduler.cancelAll()
             pendingDeletes.clear()
             pendingAdds.clear()
             contentHashCache.clear()

@@ -55,7 +55,7 @@ const CORE_LIBRARIES = ["framer-motion", "framer", "react", "react-dom"]
 /** Packages with pinned type versions — used by ATA's `// types:` comment syntax */
 const DEFAULT_PINNED_TYPE_VERSIONS: Record<string, string> = {
     "framer-motion": "12.34.3",
-    "react": "18.2.0",
+    react: "18.2.0",
     "react-dom": "18.2.0",
     "@types/react": "18.2.0",
     "@types/react-dom": "18.2.0",
@@ -268,7 +268,6 @@ export class Installer {
             warn(`Type fetching failed for ${fileName}`)
             debug(`ATA error for ${fileName}:`, err)
         }
-
     }
 
     /**
@@ -537,7 +536,6 @@ declare module "*.json"
         await fs.writeFile(gitignorePath, content)
         debug("Created .gitignore")
     }
-
 }
 
 function getManifestDependencyVersion(manifest: NpmPackageManifest, packageName: string): string | undefined {

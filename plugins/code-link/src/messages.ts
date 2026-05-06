@@ -1,27 +1,27 @@
 import {
     type CliToPluginMessage,
     type ConflictSummary,
-    type Mode,
     normalizeCodeFilePathWithExtension,
     type PendingDelete,
-    type SyncTracker,
+    type PromptSession,
+    type SyncStatus,
 } from "@code-link/shared"
 import type { CodeFilesAPI } from "./api"
 import * as log from "./utils/logger"
 
 type MessageHandlerAction =
-    | { type: "set-mode"; mode: Mode }
-    | { type: "pending-deletes"; files: PendingDelete[] }
-    | { type: "conflicts"; conflicts: ConflictSummary[] }
+    | { type: "sync-status"; syncStatus: SyncStatus }
+    | { type: "pending-deletes"; files: PendingDelete[]; session: PromptSession; source: "initial" | "runtime" }
+    | { type: "clear-pending-deletes"; session: PromptSession; fileNames?: string[] }
+    | { type: "conflicts"; conflicts: ConflictSummary[]; session: PromptSession }
+    | { type: "clear-conflicts"; session: PromptSession }
 
 export function createMessageHandler({
     dispatch,
     api,
-    syncTracker,
 }: {
     dispatch: (action: MessageHandlerAction) => void
     api: CodeFilesAPI
-    syncTracker: SyncTracker
 }) {
     return async function handleMessage(message: CliToPluginMessage, socket: WebSocket) {
         log.debug("Handling message:", message.type)
@@ -30,37 +30,46 @@ export function createMessageHandler({
             case "request-files":
                 log.debug("Publishing snapshot to CLI")
                 await api.publishSnapshot(socket)
-                dispatch({
-                    type: "set-mode",
-                    mode: "syncing",
-                })
+                break
+            case "sync-status":
+                dispatch({ type: "sync-status", syncStatus: message.status })
                 break
             case "file-change":
                 log.debug("Applying remote change:", message.fileName)
                 await api.applyRemoteChange(message.fileName, message.content, socket)
-                syncTracker.remember(normalizeCodeFilePathWithExtension(message.fileName), message.content)
-                dispatch({ type: "set-mode", mode: "idle" })
+                api.remember(normalizeCodeFilePathWithExtension(message.fileName), message.content)
                 break
             case "file-rename": {
                 const { oldFileName, newFileName, content } = message
                 log.debug(`Renaming file: ${oldFileName} → ${newFileName}`)
                 if (await api.applyRemoteRename(oldFileName, newFileName, socket)) {
-                    syncTracker.forget(normalizeCodeFilePathWithExtension(oldFileName))
-                    syncTracker.remember(normalizeCodeFilePathWithExtension(newFileName), content)
+                    api.forget(normalizeCodeFilePathWithExtension(oldFileName))
+                    api.remember(normalizeCodeFilePathWithExtension(newFileName), content)
                 }
-                dispatch({ type: "set-mode", mode: "idle" })
                 break
             }
             case "file-delete":
-                if (message.requireConfirmation) {
+                if (message.mode === "confirm") {
                     log.debug(`Delete requires confirmation for ${message.fileNames.length} file(s)`)
                     const files: PendingDelete[] = []
+                    const missingFileNames: string[] = []
                     for (const fileName of message.fileNames) {
                         const content = await api.readCurrentContent(fileName)
                         // Only include files that exist in Framer (have content to restore)
                         if (content !== undefined) {
                             files.push({ fileName, content })
+                        } else {
+                            missingFileNames.push(fileName)
                         }
+                    }
+                    if (missingFileNames.length > 0) {
+                        socket.send(
+                            JSON.stringify({
+                                type: "delete-confirmed",
+                                fileNames: missingFileNames,
+                                session: message.session,
+                            })
+                        )
                     }
                     if (files.length === 0) {
                         // No files exist in Framer, nothing to confirm
@@ -69,6 +78,8 @@ export function createMessageHandler({
                     dispatch({
                         type: "pending-deletes",
                         files,
+                        session: message.session,
+                        source: "runtime",
                     })
                 } else {
                     for (const fileName of message.fileNames) {
@@ -77,9 +88,15 @@ export function createMessageHandler({
                     }
                 }
                 break
+            case "delete-prompt-cleared":
+                dispatch({ type: "clear-pending-deletes", session: message.session, fileNames: message.fileNames })
+                break
             case "conflicts-detected":
                 log.debug(`Received ${message.conflicts.length} conflicts from CLI`)
-                dispatch({ type: "conflicts", conflicts: message.conflicts })
+                dispatch({ type: "conflicts", conflicts: message.conflicts, session: message.session })
+                break
+            case "conflicts-cleared":
+                dispatch({ type: "clear-conflicts", session: message.session })
                 break
             case "conflict-version-request": {
                 log.debug(`Fetching conflict versions for ${message.conflicts.length} files`)
@@ -93,10 +110,6 @@ export function createMessageHandler({
                 )
                 break
             }
-            case "sync-complete":
-                log.debug("Sync complete, transitioning to idle")
-                dispatch({ type: "set-mode", mode: "idle" })
-                break
             default:
                 log.warn("Unknown message type:", (message as unknown as { type: string }).type)
                 break

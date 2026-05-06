@@ -4,11 +4,11 @@
  * Wrapper around ws.Server that normalizes handshake and surfaces callbacks.
  */
 
-import { CLOSE_CODE_REPLACED, type CliToPluginMessage, type PluginToCliMessage } from "@code-link/shared"
 import https from "node:https"
+import { CLOSE_CODE_REPLACED, type CliToPluginMessage, type PluginToCliMessage } from "@code-link/shared"
 import { WebSocket, WebSocketServer } from "ws"
-import type { CertBundle } from "./certs.ts"
 import { debug, error, info } from "../utils/logging.ts"
+import type { CertBundle } from "./certs.ts"
 
 export interface ConnectionCallbacks {
     onHandshake: (client: WebSocket, message: { projectId: string; projectName: string }) => void

@@ -16,8 +16,6 @@ export {
 
 // Utilities
 export { getPortFromHash } from "./ports.ts"
-// Sync tracker
-export { createSyncTracker, type SyncTracker } from "./sync-tracker.ts"
 export type {
     CancelledDelete,
     CliToPluginMessage,
@@ -25,9 +23,10 @@ export type {
     ConflictVersionData,
     ConflictVersionRequest,
     FileInfo,
-    Mode,
     PendingDelete,
     PluginToCliMessage,
     ProjectInfo,
+    PromptSession,
+    SyncStatus,
 } from "./types.ts"
 export { CLOSE_CODE_REPLACED, isCliToPluginMessage } from "./types.ts"

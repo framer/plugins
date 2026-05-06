@@ -26,7 +26,7 @@ import {
 import { tryGitInit } from "./helpers/git.ts"
 import { Installer } from "./helpers/installer.ts"
 import { initWatcher } from "./helpers/watcher.ts"
-import { type ConflictPromptChange, type PendingSyncCompleteResult, SyncRuntime } from "./runtime.ts"
+import { type ConflictPromptChange, SyncRuntime } from "./runtime.ts"
 import type { Effect, SyncEvent, SyncState, WriteEchoPolicy } from "./sync-events.ts"
 import type { Config, Conflict, FileInfo } from "./types.ts"
 import {
@@ -805,7 +805,7 @@ async function applyConflictChange(change: ConflictPromptChange, ctx: ApplyCtx):
 async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE" }>, ctx: ApplyCtx): Promise<void> {
     const { config, runtime, syncState, shutdown } = ctx
     if (runtime.hasAnyActivePrompt()) {
-        runtime.addPendingSyncComplete({
+        runtime.deferSyncComplete({
             totalCount: effect.totalCount,
             updatedCount: effect.updatedCount,
             unchangedCount: effect.unchangedCount,
@@ -841,12 +841,12 @@ async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE"
     if (shouldShutdown) await shutdown()
 }
 
-async function flushPendingSyncComplete(ctx: ApplyCtx): Promise<PendingSyncCompleteResult["is"]> {
-    const result = ctx.runtime.checkPendingSyncComplete()
-    if (result.is === "ready") {
+async function flushPendingSyncComplete(ctx: ApplyCtx): Promise<"ready" | "blocked" | "empty"> {
+    const result = ctx.runtime.claimPendingSyncComplete()
+    if (result.status === "ready") {
         await applySyncComplete({ type: "SYNC_COMPLETE", ...result.payload }, ctx)
     }
-    return result.is
+    return result.status
 }
 
 export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEvent[]> {

@@ -123,19 +123,19 @@ describe("SyncRuntime pending sync-complete", () => {
     it("returns empty when no sync-complete is pending", () => {
         const runtime = new SyncRuntime()
 
-        expect(runtime.checkPendingSyncComplete()).toEqual({ is: "empty" })
+        expect(runtime.claimPendingSyncComplete()).toEqual({ status: "empty" })
     })
 
     it("merges pending sync-complete payloads and clears them when ready", () => {
         const runtime = new SyncRuntime()
-        runtime.addPendingSyncComplete({ totalCount: 1, updatedCount: 1, unchangedCount: 0 })
-        runtime.addPendingSyncComplete({ totalCount: 2, updatedCount: 1, unchangedCount: 1 })
+        runtime.deferSyncComplete({ totalCount: 1, updatedCount: 1, unchangedCount: 0 })
+        runtime.deferSyncComplete({ totalCount: 2, updatedCount: 1, unchangedCount: 1 })
 
-        expect(runtime.checkPendingSyncComplete()).toEqual({
-            is: "ready",
+        expect(runtime.claimPendingSyncComplete()).toEqual({
+            status: "ready",
             payload: { totalCount: 3, updatedCount: 2, unchangedCount: 1 },
         })
-        expect(runtime.checkPendingSyncComplete()).toEqual({ is: "empty" })
+        expect(runtime.claimPendingSyncComplete()).toEqual({ status: "empty" })
     })
 
     it("keeps pending sync-complete blocked while prompts are active", () => {
@@ -144,12 +144,12 @@ describe("SyncRuntime pending sync-complete", () => {
         const prompt = runtime.startDeletePrompt(["A.tsx"])
         if (!prompt) throw new Error("Expected delete prompt")
 
-        runtime.addPendingSyncComplete({ totalCount: 1, updatedCount: 1, unchangedCount: 0 })
+        runtime.deferSyncComplete({ totalCount: 1, updatedCount: 1, unchangedCount: 0 })
 
-        expect(runtime.checkPendingSyncComplete()).toEqual({ is: "blocked" })
+        expect(runtime.claimPendingSyncComplete()).toEqual({ status: "blocked" })
         runtime.clearDeletePromptFiles(prompt.session, ["A.tsx"])
-        expect(runtime.checkPendingSyncComplete()).toEqual({
-            is: "ready",
+        expect(runtime.claimPendingSyncComplete()).toEqual({
+            status: "ready",
             payload: { totalCount: 1, updatedCount: 1, unchangedCount: 0 },
         })
     })

@@ -1,4 +1,4 @@
-import type { ConflictSummary, PendingDelete, ProjectInfo, PromptSession, SyncPhase } from "@code-link/shared"
+import type { ConflictSummary, PendingDelete, ProjectInfo, PromptSession, SyncStatus } from "@code-link/shared"
 
 export type PluginViewState =
     | { kind: "loading" }
@@ -11,11 +11,11 @@ export type PluginViewState =
     | { kind: "error"; message: string }
 
 export interface State {
-    view: PluginViewState
+    pluginView: PluginViewState
     project?: ProjectInfo
     permissionsGranted: boolean
-    /** Last effect-stable phase reported by the CLI (`sync-phase` message). */
-    syncPhase: SyncPhase | null
+    /** Last effect-stable status reported by the CLI (`sync-status` message). */
+    syncStatus: SyncStatus | null
 }
 
 export type Action =
@@ -24,23 +24,23 @@ export type Action =
     | { type: "socket-connected" }
     | { type: "socket-disconnected"; message: string }
     | { type: "socket-replaced" }
-    | { type: "sync-phase"; syncPhase: SyncPhase }
+    | { type: "sync-status"; syncStatus: SyncStatus }
     | { type: "pending-deletes"; files: PendingDelete[]; session: PromptSession; source: "initial" | "runtime" }
     | { type: "clear-pending-deletes"; session?: PromptSession; fileNames?: string[] }
     | { type: "conflicts"; conflicts: ConflictSummary[]; session: PromptSession }
     | { type: "clear-conflicts"; session?: PromptSession }
 
 export const initialState: State = {
-    view: { kind: "loading" },
+    pluginView: { kind: "loading" },
     permissionsGranted: false,
-    syncPhase: null,
+    syncStatus: null,
 }
 
 function baseViewAfterPromptClear(state: State): PluginViewState {
-    if (state.view.kind === "replaced") return state.view
+    if (state.pluginView.kind === "replaced") return state.pluginView
     if (!state.permissionsGranted) return { kind: "info" }
-    if (state.syncPhase === "initial_sync") return { kind: "syncing" }
-    if (state.syncPhase === "ready") return { kind: "idle" }
+    if (state.syncStatus === "initial_sync") return { kind: "syncing" }
+    if (state.syncStatus === "ready") return { kind: "idle" }
     return { kind: "loading" }
 }
 
@@ -56,72 +56,72 @@ export function reducer(state: State, action: Action): State {
                 return {
                     ...state,
                     permissionsGranted: false,
-                    view: { kind: "info" },
-                    syncPhase: null,
+                    pluginView: { kind: "info" },
+                    syncStatus: null,
                 }
             }
             return {
                 ...state,
                 permissionsGranted: true,
-                view: state.view.kind === "info" ? { kind: "loading" } : state.view,
+                pluginView: state.pluginView.kind === "info" ? { kind: "loading" } : state.pluginView,
             }
         case "socket-connected":
             return {
                 ...state,
-                view: { kind: "loading" },
+                pluginView: { kind: "loading" },
             }
         case "socket-disconnected":
             return {
                 ...state,
-                view: { kind: "info" },
-                syncPhase: null,
+                pluginView: { kind: "info" },
+                syncStatus: null,
             }
         case "socket-replaced":
             return {
                 ...state,
-                view: { kind: "replaced" },
-                syncPhase: null,
+                pluginView: { kind: "replaced" },
+                syncStatus: null,
             }
-        case "sync-phase": {
-            if (state.view.kind === "deletePrompt" || state.view.kind === "conflictPrompt") {
+        case "sync-status": {
+            if (state.pluginView.kind === "deletePrompt" || state.pluginView.kind === "conflictPrompt") {
                 return {
                     ...state,
-                    syncPhase: action.syncPhase,
+                    syncStatus: action.syncStatus,
                 }
             }
-            if (state.view.kind === "replaced") {
+            if (state.pluginView.kind === "replaced") {
                 return {
                     ...state,
-                    syncPhase: action.syncPhase,
+                    syncStatus: action.syncStatus,
                 }
             }
             if (!state.permissionsGranted) {
                 return {
                     ...state,
-                    syncPhase: action.syncPhase,
-                    view: { kind: "info" },
+                    syncStatus: action.syncStatus,
+                    pluginView: { kind: "info" },
                 }
             }
-            const next: PluginViewState = action.syncPhase === "initial_sync" ? { kind: "syncing" } : { kind: "idle" }
+            const next: PluginViewState = action.syncStatus === "initial_sync" ? { kind: "syncing" } : { kind: "idle" }
             return {
                 ...state,
-                syncPhase: action.syncPhase,
-                view: next,
+                syncStatus: action.syncStatus,
+                pluginView: next,
             }
         }
         case "pending-deletes":
             if (
-                state.view.kind === "deletePrompt" &&
-                state.view.session.connectionId === action.session.connectionId &&
-                state.view.session.promptId === action.session.promptId
+                state.pluginView.kind === "deletePrompt" &&
+                state.pluginView.session.connectionId === action.session.connectionId &&
+                state.pluginView.session.promptId === action.session.promptId
             ) {
-                const byPath = new Map(state.view.deletes.map(file => [file.fileName, file]))
+                const byPath = new Map(state.pluginView.deletes.map(file => [file.fileName, file]))
                 for (const file of action.files) byPath.set(file.fileName, file)
                 return {
                     ...state,
-                    view: {
+                    pluginView: {
                         kind: "deletePrompt",
-                        session: state.view.session,
+                        session: state.pluginView.session,
                         deletes: [...byPath.values()],
                         source: action.source,
                     },
@@ -129,7 +129,7 @@ export function reducer(state: State, action: Action): State {
             }
             return {
                 ...state,
-                view: {
+                pluginView: {
                     kind: "deletePrompt",
                     session: action.session,
                     deletes: action.files,
@@ -137,63 +137,63 @@ export function reducer(state: State, action: Action): State {
                 },
             }
         case "clear-pending-deletes":
-            if (state.view.kind !== "deletePrompt") return state
+            if (state.pluginView.kind !== "deletePrompt") return state
             if (action.session) {
                 if (
-                    state.view.session.connectionId !== action.session.connectionId ||
-                    state.view.session.promptId !== action.session.promptId
+                    state.pluginView.session.connectionId !== action.session.connectionId ||
+                    state.pluginView.session.promptId !== action.session.promptId
                 ) {
                     return state
                 }
             }
             if (action.fileNames) {
                 const cleared = new Set(action.fileNames)
-                const deletes = state.view.deletes.filter(file => !cleared.has(file.fileName))
+                const deletes = state.pluginView.deletes.filter(file => !cleared.has(file.fileName))
                 return {
                     ...state,
-                    view:
+                    pluginView:
                         deletes.length > 0
                             ? {
                                   kind: "deletePrompt",
-                                  session: state.view.session,
+                                  session: state.pluginView.session,
                                   deletes,
-                                  source: state.view.source,
+                                  source: state.pluginView.source,
                               }
                             : baseViewAfterPromptClear(state),
                 }
             }
             return {
                 ...state,
-                view: baseViewAfterPromptClear(state),
+                pluginView: baseViewAfterPromptClear(state),
             }
         case "conflicts":
             if (action.conflicts.length === 0) {
                 return {
                     ...state,
-                    view: baseViewAfterPromptClear(state),
+                    pluginView: baseViewAfterPromptClear(state),
                 }
             }
             return {
                 ...state,
-                view: {
+                pluginView: {
                     kind: "conflictPrompt",
                     session: action.session,
                     conflicts: action.conflicts,
                 },
             }
         case "clear-conflicts":
-            if (state.view.kind !== "conflictPrompt") return state
+            if (state.pluginView.kind !== "conflictPrompt") return state
             if (action.session) {
                 if (
-                    state.view.session.connectionId !== action.session.connectionId ||
-                    state.view.session.promptId !== action.session.promptId
+                    state.pluginView.session.connectionId !== action.session.connectionId ||
+                    state.pluginView.session.promptId !== action.session.promptId
                 ) {
                     return state
                 }
             }
             return {
                 ...state,
-                view: baseViewAfterPromptClear(state),
+                pluginView: baseViewAfterPromptClear(state),
             }
     }
 }

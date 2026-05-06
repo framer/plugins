@@ -18,9 +18,9 @@ export function App() {
     const command = state.project && `npx framer-code-link ${shortProjectHash(state.project.id)}`
 
     useLayoutEffect(() => {
-        switch (state.view.kind) {
+        switch (state.pluginView.kind) {
             case "deletePrompt":
-                if (state.view.deletes.length === 1) {
+                if (state.pluginView.deletes.length === 1) {
                     void framer.showUI({
                         width: 260,
                         height: 187,
@@ -55,20 +55,20 @@ export function App() {
             case "replaced":
                 break
             default:
-                void framer.setBackgroundMessage(backgroundStatusFromViewState(state.view))
+                void framer.setBackgroundMessage(backgroundStatusFromViewState(state.pluginView))
                 void framer.hideUI()
         }
-    }, [state.view])
+    }, [state.pluginView])
 
     const replacedClosedRef = useRef(false)
     useEffect(() => {
-        if (state.view.kind === "replaced" && !replacedClosedRef.current) {
+        if (state.pluginView.kind === "replaced" && !replacedClosedRef.current) {
             replacedClosedRef.current = true
             void framer.closePlugin("Replaced by another Plugin connection", {
                 variant: "info",
             })
         }
-    }, [state.view.kind])
+    }, [state.pluginView.kind])
 
     // Permissions check
     useEffect(() => {
@@ -173,50 +173,50 @@ export function App() {
     }, [])
 
     const resolveConflicts = (choice: "local" | "remote") => {
-        if (state.view.kind !== "conflictPrompt") {
+        if (state.pluginView.kind !== "conflictPrompt") {
             return
         }
         sendMessage({
             type: "conflicts-resolved",
             resolution: choice,
-            session: state.view.session,
-            fileNames: state.view.conflicts.map(c => c.fileName),
+            session: state.pluginView.session,
+            fileNames: state.pluginView.conflicts.map(c => c.fileName),
         })
         dispatch({ type: "clear-conflicts" })
     }
 
     const confirmDeletes = () => {
-        if (state.view.kind !== "deletePrompt" || state.view.deletes.length === 0) {
+        if (state.pluginView.kind !== "deletePrompt" || state.pluginView.deletes.length === 0) {
             return
         }
 
         sendMessage({
             type: "delete-confirmed",
-            fileNames: state.view.deletes.map(file => file.fileName),
-            session: state.view.session,
+            fileNames: state.pluginView.deletes.map(file => file.fileName),
+            session: state.pluginView.session,
         })
         dispatch({ type: "clear-pending-deletes" })
     }
 
     const keepDeletes = () => {
-        if (state.view.kind !== "deletePrompt" || state.view.deletes.length === 0) {
+        if (state.pluginView.kind !== "deletePrompt" || state.pluginView.deletes.length === 0) {
             return
         }
 
         sendMessage({
             type: "delete-cancelled",
-            files: state.view.deletes,
-            session: state.view.session,
+            files: state.pluginView.deletes,
+            session: state.pluginView.session,
         })
         dispatch({ type: "clear-pending-deletes" })
     }
 
-    switch (state.view.kind) {
+    switch (state.pluginView.kind) {
         case "deletePrompt":
-            return <DeletePanel files={state.view.deletes} onConfirm={confirmDeletes} onKeep={keepDeletes} />
+            return <DeletePanel files={state.pluginView.deletes} onConfirm={confirmDeletes} onKeep={keepDeletes} />
 
         case "conflictPrompt":
-            return <ConflictPanel conflicts={state.view.conflicts} onResolve={resolveConflicts} />
+            return <ConflictPanel conflicts={state.pluginView.conflicts} onResolve={resolveConflicts} />
 
         case "info":
             return <InfoPanel command={command} />

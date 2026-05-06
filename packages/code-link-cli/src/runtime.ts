@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { normalizeCodeFilePathWithExtension, type PromptSession, type SyncPhase } from "@code-link/shared"
+import { normalizeCodeFilePathWithExtension, type PromptSession, type SyncStatus } from "@code-link/shared"
 import path from "path"
 import type { Installer } from "./helpers/installer.ts"
 import { createScheduler, TIMINGS } from "./scheduler.ts"
@@ -107,7 +107,7 @@ export class SyncRuntime {
     private activeConnectionId = 0
     private isShowingDisconnect = false
     private hadRecentDisconnect = false
-    private lastEmittedPhase: SyncPhase | null = null
+    private lastEmittedStatus: SyncStatus | null = null
 
     private readonly workspaceState: {
         projectDir: string | null
@@ -133,7 +133,7 @@ export class SyncRuntime {
         this.workspaceState.projectDirCreated = projectDirCreated
     }
 
-    // Connection / Phase
+    // Connection / Status
 
     mintConnectionId(): number {
         this.connectionSeq += 1
@@ -145,16 +145,16 @@ export class SyncRuntime {
         return this.activeConnectionId
     }
 
-    noteEmittedSyncPhase(phase: SyncPhase): void {
-        this.lastEmittedPhase = phase
+    noteEmittedSyncStatus(status: SyncStatus): void {
+        this.lastEmittedStatus = status
     }
 
-    clearEmittedSyncPhase(): void {
-        this.lastEmittedPhase = null
+    clearEmittedSyncStatus(): void {
+        this.lastEmittedStatus = null
     }
 
-    get lastEmittedSyncPhase(): SyncPhase | null {
-        return this.lastEmittedPhase
+    get lastEmittedSyncStatus(): SyncStatus | null {
+        return this.lastEmittedStatus
     }
 
     readonly disconnectUi = {

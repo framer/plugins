@@ -36,7 +36,7 @@ function socket() {
 
 function ctx(runtime: SyncRuntime, ws: WebSocket | null, config: Config = baseConfig()): ApplyCtx {
     const syncState: SyncState =
-        ws === null ? { internalPhase: "disconnected", socket: null } : { internalPhase: "watching", socket: ws }
+        ws === null ? { phase: "disconnected", socket: null } : { phase: "watching", socket: ws }
     if (config.projectDir && !runtime.workspace.projectDir) runtime.configureWorkspace(config.projectDir, false)
     return { config, runtime, syncState, shutdown: async () => {} }
 }

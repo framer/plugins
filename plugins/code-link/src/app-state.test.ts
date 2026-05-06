@@ -7,8 +7,8 @@ function withPromptState(overrides: Partial<State> = {}): State {
     return {
         ...initialState,
         permissionsGranted: true,
-        syncPhase: "initial_sync",
-        view: {
+        syncStatus: "initial_sync",
+        pluginView: {
             kind: "deletePrompt",
             session: testSession,
             deletes: [{ fileName: "Button.tsx", content: "export const Button = 1" }],
@@ -19,21 +19,21 @@ function withPromptState(overrides: Partial<State> = {}): State {
 }
 
 describe("plugin app state", () => {
-    it("clears stale prompts on disconnect before the next sync-phase arrives", () => {
+    it("clears stale prompts on disconnect before the next sync-status arrives", () => {
         const disconnected = reducer(withPromptState(), {
             type: "socket-disconnected",
             message: "socket closed",
         })
 
-        expect(disconnected.view.kind).toBe("info")
-        expect(disconnected.syncPhase).toBeNull()
+        expect(disconnected.pluginView.kind).toBe("info")
+        expect(disconnected.syncStatus).toBeNull()
 
         const reconnected = reducer(disconnected, {
-            type: "sync-phase",
-            syncPhase: "initial_sync",
+            type: "sync-status",
+            syncStatus: "initial_sync",
         })
 
-        expect(reconnected.view.kind).toBe("syncing")
+        expect(reconnected.pluginView.kind).toBe("syncing")
     })
 
     it("clears stale prompts when permissions are lost", () => {
@@ -42,8 +42,8 @@ describe("plugin app state", () => {
             granted: false,
         })
 
-        expect(next.view.kind).toBe("info")
-        expect(next.syncPhase).toBeNull()
+        expect(next.pluginView.kind).toBe("info")
+        expect(next.syncStatus).toBeNull()
     })
 
     it("clears stale prompts when the plugin is replaced", () => {
@@ -51,13 +51,13 @@ describe("plugin app state", () => {
             type: "socket-replaced",
         })
 
-        expect(next.view.kind).toBe("replaced")
-        expect(next.syncPhase).toBeNull()
+        expect(next.pluginView.kind).toBe("replaced")
+        expect(next.syncStatus).toBeNull()
     })
 
     it("updates the active conflict prompt instead of queueing stale conflict modals", () => {
         const conflicting = reducer(
-            { ...initialState, permissionsGranted: true, syncPhase: "ready", view: { kind: "idle" } },
+            { ...initialState, permissionsGranted: true, syncStatus: "ready", pluginView: { kind: "idle" } },
             {
                 type: "conflicts",
                 session: testSession,
@@ -74,7 +74,7 @@ describe("plugin app state", () => {
             ],
         })
 
-        expect(updated.view).toEqual({
+        expect(updated.pluginView).toEqual({
             kind: "conflictPrompt",
             session: testSession,
             conflicts: [
@@ -86,7 +86,7 @@ describe("plugin app state", () => {
 
     it("ignores conflict clear messages for stale sessions", () => {
         const state = reducer(
-            { ...initialState, permissionsGranted: true, syncPhase: "ready", view: { kind: "idle" } },
+            { ...initialState, permissionsGranted: true, syncStatus: "ready", pluginView: { kind: "idle" } },
             {
                 type: "conflicts",
                 session: testSession,
@@ -99,34 +99,34 @@ describe("plugin app state", () => {
             session: { connectionId: 2, promptId: "stale" },
         })
 
-        expect(staleClear.view.kind).toBe("conflictPrompt")
+        expect(staleClear.pluginView.kind).toBe("conflictPrompt")
     })
 
     it("does not let conflict clear messages close an active delete prompt", () => {
-        const state = withPromptState({ syncPhase: "ready" })
+        const state = withPromptState({ syncStatus: "ready" })
 
         const next = reducer(state, {
             type: "clear-conflicts",
             session: testSession,
         })
 
-        expect(next.view).toEqual(state.view)
+        expect(next.pluginView).toEqual(state.pluginView)
     })
 
     it("does not let unscoped conflict clears close an active delete prompt", () => {
-        const state = withPromptState({ syncPhase: "ready" })
+        const state = withPromptState({ syncStatus: "ready" })
 
         const next = reducer(state, {
             type: "clear-conflicts",
         })
 
-        expect(next.view).toEqual(state.view)
+        expect(next.pluginView).toEqual(state.pluginView)
     })
 
     it("removes invalidated delete files without closing the remaining delete prompt", () => {
         const state = withPromptState({
-            syncPhase: "ready",
-            view: {
+            syncStatus: "ready",
+            pluginView: {
                 kind: "deletePrompt",
                 session: testSession,
                 deletes: [
@@ -143,7 +143,7 @@ describe("plugin app state", () => {
             fileNames: ["A.tsx"],
         })
 
-        expect(next.view).toEqual({
+        expect(next.pluginView).toEqual({
             kind: "deletePrompt",
             session: testSession,
             deletes: [{ fileName: "B.tsx", content: "b" }],
@@ -152,7 +152,7 @@ describe("plugin app state", () => {
     })
 
     it("ignores delete clear messages for stale sessions", () => {
-        const state = withPromptState({ syncPhase: "ready" })
+        const state = withPromptState({ syncStatus: "ready" })
 
         const next = reducer(state, {
             type: "clear-pending-deletes",
@@ -160,12 +160,12 @@ describe("plugin app state", () => {
             fileNames: ["Button.tsx"],
         })
 
-        expect(next.view).toEqual(state.view)
+        expect(next.pluginView).toEqual(state.pluginView)
     })
 
     it("does not let unscoped delete clears close an active conflict prompt", () => {
         const state = reducer(
-            { ...initialState, permissionsGranted: true, syncPhase: "ready", view: { kind: "idle" } },
+            { ...initialState, permissionsGranted: true, syncStatus: "ready", pluginView: { kind: "idle" } },
             {
                 type: "conflicts",
                 session: testSession,
@@ -177,6 +177,6 @@ describe("plugin app state", () => {
             type: "clear-pending-deletes",
         })
 
-        expect(next.view).toEqual(state.view)
+        expect(next.pluginView).toEqual(state.pluginView)
     })
 })

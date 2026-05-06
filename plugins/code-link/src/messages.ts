@@ -4,13 +4,13 @@ import {
     normalizeCodeFilePathWithExtension,
     type PendingDelete,
     type PromptSession,
-    type SyncPhase,
+    type SyncStatus,
 } from "@code-link/shared"
 import type { CodeFilesAPI } from "./api"
 import * as log from "./utils/logger"
 
 type MessageHandlerAction =
-    | { type: "sync-phase"; syncPhase: SyncPhase }
+    | { type: "sync-status"; syncStatus: SyncStatus }
     | { type: "pending-deletes"; files: PendingDelete[]; session: PromptSession; source: "initial" | "runtime" }
     | { type: "clear-pending-deletes"; session: PromptSession; fileNames?: string[] }
     | { type: "conflicts"; conflicts: ConflictSummary[]; session: PromptSession }
@@ -31,8 +31,8 @@ export function createMessageHandler({
                 log.debug("Publishing snapshot to CLI")
                 await api.publishSnapshot(socket)
                 break
-            case "sync-phase":
-                dispatch({ type: "sync-phase", syncPhase: message.phase })
+            case "sync-status":
+                dispatch({ type: "sync-status", syncStatus: message.status })
                 break
             case "file-change":
                 log.debug("Applying remote change:", message.fileName)
@@ -49,7 +49,7 @@ export function createMessageHandler({
                 break
             }
             case "file-delete":
-                if (message.requireConfirmation) {
+                if (message.mode === "confirm") {
                     log.debug(`Delete requires confirmation for ${message.fileNames.length} file(s)`)
                     const files: PendingDelete[] = []
                     const missingFileNames: string[] = []

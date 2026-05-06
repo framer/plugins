@@ -142,7 +142,6 @@ export class CodeFilesAPI {
                     JSON.stringify({
                         type: "file-delete",
                         fileNames: [fileName],
-                        requireConfirmation: false,
                     })
                 )
                 this.deleteSnapshotEntry(fileName)

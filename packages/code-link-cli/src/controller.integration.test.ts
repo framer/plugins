@@ -213,9 +213,9 @@ describe("start() integration", () => {
         expect(ws1.lastCloseCode).toBe(CLOSE_CODE_REPLACED)
     })
 
-    it("emits sync-phase initial_sync then ready only after SYNC_COMPLETE effects", async () => {
+    it("emits sync-status initial_sync then ready only after SYNC_COMPLETE effects", async () => {
         tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "code-link-int-"))
-        const projectHash = "integration-sync-phase-789"
+        const projectHash = "integration-sync-status-789"
         const start = await loadStart()
         await start(baseConfig(projectHash))
 
@@ -226,7 +226,7 @@ describe("start() integration", () => {
             expect(
                 ws.sent.some(payload => {
                     const message = JSON.parse(payload) as { type?: string; phase?: string }
-                    return message.type === "sync-phase" && message.phase === "initial_sync"
+                    return message.type === "sync-status" && message.status === "initial_sync"
                 })
             ).toBe(true)
         )
@@ -239,8 +239,8 @@ describe("start() integration", () => {
         await vi.waitFor(() => {
             const phases = ws.sent
                 .map(payload => JSON.parse(payload) as { type?: string; phase?: string })
-                .filter(message => message.type === "sync-phase")
-                .map(message => message.phase)
+                .filter(message => message.type === "sync-status")
+                .map(message => message.status)
 
             const idxInitial = phases.indexOf("initial_sync")
             const idxReady = phases.indexOf("ready")
@@ -413,12 +413,12 @@ describe("start() integration", () => {
         await vi.waitFor(() => expect(initWatcherMock).toHaveBeenCalled(), { timeout: 5000 })
         ws1.receive({ type: "file-list", files: [] })
         await vi.waitFor(() =>
-            ws1.sent.some(s => JSON.parse(s).type === "sync-phase" && JSON.parse(s).phase === "ready")
+            ws1.sent.some(s => JSON.parse(s).type === "sync-status" && JSON.parse(s).status === "ready")
         )
 
         emitWatcherChange({ kind: "delete", relativePath: "A.tsx" })
         await vi.waitFor(() =>
-            expect(ws1.sent.some(s => JSON.parse(s).type === "file-delete" && JSON.parse(s).requireConfirmation)).toBe(
+            expect(ws1.sent.some(s => JSON.parse(s).type === "file-delete" && JSON.parse(s).mode === "confirm")).toBe(
                 true
             )
         )
@@ -427,19 +427,19 @@ describe("start() integration", () => {
         ws2.receive({ type: "handshake", projectId: id, projectName: "P" })
         await vi.waitFor(() =>
             expect(
-                ws2.sent.some(s => JSON.parse(s).type === "sync-phase" && JSON.parse(s).phase === "initial_sync")
+                ws2.sent.some(s => JSON.parse(s).type === "sync-status" && JSON.parse(s).status === "initial_sync")
             ).toBe(true)
         )
         ws2.receive({ type: "file-list", files: [] })
         await vi.waitFor(() =>
-            ws2.sent.some(s => JSON.parse(s).type === "sync-phase" && JSON.parse(s).phase === "ready")
+            ws2.sent.some(s => JSON.parse(s).type === "sync-status" && JSON.parse(s).status === "ready")
         )
 
         ws2.sent.length = 0
         emitWatcherChange({ kind: "delete", relativePath: "A.tsx" })
 
         await vi.waitFor(() =>
-            expect(ws2.sent.some(s => JSON.parse(s).type === "file-delete" && JSON.parse(s).requireConfirmation)).toBe(
+            expect(ws2.sent.some(s => JSON.parse(s).type === "file-delete" && JSON.parse(s).mode === "confirm")).toBe(
                 true
             )
         )

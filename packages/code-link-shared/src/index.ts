@@ -27,6 +27,6 @@ export type {
     PluginToCliMessage,
     ProjectInfo,
     PromptSession,
-    SyncPhase,
+    SyncStatus,
 } from "./types.ts"
 export { CLOSE_CODE_REPLACED, isCliToPluginMessage } from "./types.ts"

@@ -1,7 +1,7 @@
 // Shared types between plugin and CLI
 
-/** Coarse sync lifecycle phase from CLI → plugin (effect-stable; not internal runtime state). */
-export type SyncPhase = "initial_sync" | "ready"
+/** Coarse sync lifecycle status from CLI → plugin (effect-stable; not controller state). */
+export type SyncStatus = "initial_sync" | "ready"
 
 /** Custom close code sent when a new plugin tab replaces the active one. */
 export const CLOSE_CODE_REPLACED = 4001
@@ -57,10 +57,10 @@ export interface ConflictVersionData {
 export type CliToPluginMessage =
     | { type: "request-files" }
     | { type: "file-list"; files: FileInfo[] }
-    | { type: "sync-phase"; phase: SyncPhase }
+    | { type: "sync-status"; status: SyncStatus }
     | { type: "file-change"; fileName: string; content: string }
-    | { type: "file-delete"; fileNames: string[]; requireConfirmation: true; session: PromptSession }
-    | { type: "file-delete"; fileNames: string[]; requireConfirmation?: false }
+    | { type: "file-delete"; mode: "auto"; fileNames: string[] }
+    | { type: "file-delete"; mode: "confirm"; fileNames: string[]; session: PromptSession }
     | { type: "delete-prompt-cleared"; session: PromptSession; fileNames?: string[] }
     | { type: "file-rename"; oldFileName: string; newFileName: string; content: string }
     | { type: "conflicts-detected"; conflicts: ConflictSummary[]; session: PromptSession }
@@ -72,7 +72,7 @@ export type CliToPluginMessage =
 const cliToPluginMessageTypes = [
     "request-files",
     "file-list",
-    "sync-phase",
+    "sync-status",
     "file-change",
     "file-delete",
     "delete-prompt-cleared",

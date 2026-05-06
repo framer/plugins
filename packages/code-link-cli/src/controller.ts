@@ -107,8 +107,8 @@ function transition(
 
     switch (event.type) {
         case "HANDSHAKE": {
-            if (state.internalPhase !== "disconnected") {
-                effects.push(log("warn", `Received HANDSHAKE in internalPhase=${state.internalPhase}, ignoring`))
+            if (state.phase !== "disconnected") {
+                effects.push(log("warn", `Received HANDSHAKE in phase=${state.phase}, ignoring`))
                 return { state, effects }
             }
 
@@ -116,20 +116,20 @@ function transition(
                 { type: "INIT_WORKSPACE", projectInfo: event.projectInfo },
                 { type: "LOAD_PERSISTED_STATE" },
                 { type: "SEND_MESSAGE", payload: { type: "request-files" } },
-                { type: "EMIT_SYNC_PHASE", phase: "initial_sync" }
+                { type: "EMIT_SYNC_STATUS", status: "initial_sync" }
             )
 
             return {
-                state: { internalPhase: "handshaking", socket: event.socket },
+                state: { phase: "handshaking", socket: event.socket },
                 effects,
             }
         }
 
-        case "RESEND_SYNC_PHASE": {
-            // Duplicate handshake from already-active socket — re-announce current phase.
-            effects.push(log("debug", `Re-emitting sync-phase=${event.phase} for duplicate handshake`), {
-                type: "EMIT_SYNC_PHASE",
-                phase: event.phase,
+        case "RESEND_SYNC_STATUS": {
+            // Duplicate handshake from already-active socket — re-announce current status.
+            effects.push(log("debug", `Re-emitting sync-status=${event.status} for duplicate handshake`), {
+                type: "EMIT_SYNC_STATUS",
+                status: event.status,
             })
             return { state, effects }
         }
@@ -148,7 +148,7 @@ function transition(
         case "DISCONNECT": {
             effects.push({ type: "PERSIST_STATE" }, log("debug", "Disconnected, persisting state"))
             return {
-                state: { internalPhase: "disconnected", socket: null },
+                state: { phase: "disconnected", socket: null },
                 effects,
             }
         }
@@ -156,7 +156,7 @@ function transition(
         case "REQUEST_FILES": {
             // Plugin is asking for our local file list
             // Valid in any mode except disconnected
-            if (state.internalPhase === "disconnected") {
+            if (state.phase === "disconnected") {
                 effects.push(log("warn", "Received REQUEST_FILES while disconnected, ignoring"))
                 return { state, effects }
             }
@@ -169,8 +169,8 @@ function transition(
         }
 
         case "REMOTE_FILE_LIST": {
-            if (state.internalPhase !== "handshaking") {
-                effects.push(log("warn", `Received REMOTE_FILE_LIST in internalPhase=${state.internalPhase}, ignoring`))
+            if (state.phase !== "handshaking") {
+                effects.push(log("warn", `Received REMOTE_FILE_LIST in phase=${state.phase}, ignoring`))
                 return { state, effects }
             }
 
@@ -183,15 +183,15 @@ function transition(
             // Note: the remote file list is NOT carried in state — the follow-up CONFLICTS_DETECTED
             // event carries `remoteTotal` so transitions stay purely event-sourced.
             return {
-                state: { internalPhase: "snapshot_processing", socket: state.socket },
+                state: { phase: "snapshot_processing", socket: state.socket },
                 effects,
             }
         }
 
         case "CONFLICTS_DETECTED": {
-            if (state.internalPhase !== "snapshot_processing") {
+            if (state.phase !== "snapshot_processing") {
                 effects.push(
-                    log("warn", `Received CONFLICTS_DETECTED in internalPhase=${state.internalPhase}, ignoring`)
+                    log("warn", `Received CONFLICTS_DETECTED in phase=${state.phase}, ignoring`)
                 )
                 return { state, effects }
             }
@@ -239,7 +239,7 @@ function transition(
 
                 return {
                     state: {
-                        internalPhase: "conflict_resolution",
+                        phase: "conflict_resolution",
                         socket: state.socket,
                         pendingConflicts: conflicts,
                     },
@@ -256,7 +256,7 @@ function transition(
             effects.push({ type: "PERSIST_STATE" }, { type: "SYNC_COMPLETE", totalCount, updatedCount, unchangedCount })
 
             return {
-                state: { internalPhase: "watching", socket: state.socket },
+                state: { phase: "watching", socket: state.socket },
                 effects,
             }
         }
@@ -279,7 +279,7 @@ function transition(
                 return { state, effects }
             }
 
-            if (state.internalPhase === "conflict_resolution") {
+            if (state.phase === "conflict_resolution") {
                 const next = updatePendingConflictRemote(
                     state.pendingConflicts,
                     event.file.name,
@@ -295,12 +295,12 @@ function transition(
                 }
             }
 
-            if (state.internalPhase === "snapshot_processing" || state.internalPhase === "handshaking") {
+            if (state.phase === "snapshot_processing" || state.phase === "handshaking") {
                 effects.push(log("debug", `Ignoring file change during sync: ${event.file.name}`))
                 return { state, effects }
             }
 
-            if (state.internalPhase !== "watching" && state.internalPhase !== "conflict_resolution") {
+            if (state.phase !== "watching" && state.phase !== "conflict_resolution") {
                 effects.push(log("warn", `Rejected file change: ${event.file.name} (unknown-file)`))
                 return { state, effects }
             }
@@ -333,7 +333,7 @@ function transition(
                 return { state, effects }
             }
 
-            if (state.internalPhase === "conflict_resolution") {
+            if (state.phase === "conflict_resolution") {
                 const next = updatePendingConflictRemote(state.pendingConflicts, event.fileName, null, Date.now())
                 if (next.changed) {
                     effects.push(log("debug", `Updating pending conflict from remote delete: ${event.fileName}`))
@@ -345,7 +345,7 @@ function transition(
             }
 
             // Stale queued socket events can arrive after disconnect/reconnect.
-            if (state.internalPhase === "disconnected") {
+            if (state.phase === "disconnected") {
                 effects.push(log("warn", `Rejected delete while disconnected: ${event.fileName}`))
                 return { state, effects }
             }
@@ -390,9 +390,9 @@ function transition(
             })
             return {
                 state:
-                    state.internalPhase === "disconnected"
+                    state.phase === "disconnected"
                         ? state
-                        : { internalPhase: "watching", socket: state.socket },
+                        : { phase: "watching", socket: state.socket },
                 effects,
             }
         }
@@ -402,11 +402,11 @@ function transition(
             const { kind, relativePath, content } = event.event
 
             // Only process changes in watching mode
-            if (state.internalPhase !== "watching") {
+            if (state.phase !== "watching") {
                 effects.push(
                     log(
                         "debug",
-                        `Ignoring watcher event in internalPhase=${state.internalPhase}: ${kind} ${relativePath}`
+                        `Ignoring watcher event in phase=${state.phase}: ${kind} ${relativePath}`
                     )
                 )
                 return { state, effects }
@@ -495,11 +495,11 @@ function transition(
         }
 
         case "RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS": {
-            if (state.internalPhase !== "conflict_resolution") {
+            if (state.phase !== "conflict_resolution") {
                 effects.push(
                     log(
                         "warn",
-                        `Received RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS in internalPhase=${state.internalPhase}, ignoring`
+                        `Received RESOLVE_PENDING_CONFLICTS_WITH_VERSIONS in phase=${state.phase}, ignoring`
                     )
                 )
                 return { state, effects }
@@ -562,7 +562,7 @@ function transition(
                 })
 
                 return {
-                    state: { internalPhase: "watching", socket: state.socket },
+                    state: { phase: "watching", socket: state.socket },
                     effects,
                 }
             }
@@ -586,7 +586,7 @@ function transition(
             )
 
             return {
-                state: { internalPhase: "watching", socket: state.socket },
+                state: { phase: "watching", socket: state.socket },
                 effects,
             }
         }
@@ -701,7 +701,7 @@ async function sendLocalChange(fileName: string, content: string, ctx: ApplyCtx)
 
 async function sendFileDelete(fileNames: string[], ctx: ApplyCtx): Promise<void> {
     if (fileNames.length === 0) return
-    const sent = await sendToPlugin(ctx.syncState.socket, { type: "file-delete", fileNames })
+    const sent = await sendToPlugin(ctx.syncState.socket, { type: "file-delete", mode: "auto", fileNames })
     if (!sent) return
     for (const fileName of fileNames) ctx.runtime.memory.recordSyncedDelete(fileName)
 }
@@ -736,8 +736,8 @@ async function startDeletePrompt(fileNames: string[], ctx: ApplyCtx): Promise<vo
     if (!prompt) return
     const sent = await sendToPlugin(ctx.syncState.socket, {
         type: "file-delete",
+        mode: "confirm",
         fileNames: prompt.fileNames,
-        requireConfirmation: true,
         session: prompt.session,
     })
     if (!sent) {
@@ -786,7 +786,7 @@ async function applyConflictChange(change: ConflictPromptChange, ctx: ApplyCtx):
         )
     }
     if (change.resolved.length > 0) await ctx.runtime.metadata.flush()
-    if (change.cleared && ctx.runtime.lastEmittedSyncPhase !== "ready") {
+    if (change.cleared && ctx.runtime.lastEmittedSyncStatus !== "ready") {
         const flushed = await flushPendingSyncComplete(ctx)
         if (flushed !== "empty") return
 
@@ -834,8 +834,8 @@ async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE"
         shouldTryGitInit = !!(runtime.workspace.projectDirCreated && runtime.workspace.projectDir)
     }
 
-    await sendToPlugin(syncState.socket, { type: "sync-phase", phase: "ready" })
-    runtime.noteEmittedSyncPhase("ready")
+    await sendToPlugin(syncState.socket, { type: "sync-status", status: "ready" })
+    runtime.noteEmittedSyncStatus("ready")
     if (wasDisconnected) runtime.disconnectUi.reset()
     if (shouldTryGitInit && runtime.workspace.projectDir) tryGitInit(runtime.workspace.projectDir)
     if (shouldShutdown) await shutdown()
@@ -911,9 +911,9 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
             else await sendToPlugin(syncState.socket, effect.payload)
             return []
 
-        case "EMIT_SYNC_PHASE":
-            await sendToPlugin(syncState.socket, { type: "sync-phase", phase: effect.phase })
-            runtime.noteEmittedSyncPhase(effect.phase)
+        case "EMIT_SYNC_STATUS":
+            await sendToPlugin(syncState.socket, { type: "sync-status", status: effect.status })
+            runtime.noteEmittedSyncStatus(effect.status)
             return []
 
         case "WRITE_FILES":
@@ -1103,7 +1103,7 @@ export async function start(config: Config): Promise<void> {
 
     // State machine state
     let syncState: SyncState = {
-        internalPhase: "disconnected",
+        phase: "disconnected",
         socket: null,
     }
 
@@ -1119,7 +1119,7 @@ export async function start(config: Config): Promise<void> {
     async function processEventInner(event: SyncEvent) {
         const socketState = syncState.socket?.readyState
         debug(
-            `[STATE] Processing event: ${event.type} (internalPhase: ${syncState.internalPhase}, socket: ${socketState ?? "none"})`
+            `[STATE] Processing event: ${event.type} (phase: ${syncState.phase}, socket: ${socketState ?? "none"})`
         )
 
         const result = transition(syncState, event, {
@@ -1190,18 +1190,18 @@ export async function start(config: Config): Promise<void> {
         void (async () => {
             runtime.disconnectUi.cancelNotice()
 
-            if (syncState.internalPhase !== "disconnected") {
+            if (syncState.phase !== "disconnected") {
                 if (syncState.socket === client) {
                     // Duplicate handshake on the already-active socket.
                     // Route through the state machine instead of imperatively sending,
-                    // so EMIT_SYNC_PHASE stays on the normal transition→apply path.
-                    const phase = runtime.lastEmittedSyncPhase ?? "initial_sync"
-                    await processEvent({ type: "RESEND_SYNC_PHASE", phase })
+                    // so EMIT_SYNC_STATUS stays on the normal transition→apply path.
+                    const status = runtime.lastEmittedSyncStatus ?? "initial_sync"
+                    await processEvent({ type: "RESEND_SYNC_STATUS", status })
                     return
                 }
-                debug(`New handshake received (internalPhase=${syncState.internalPhase}), resetting sync state`)
+                debug(`New handshake received (phase=${syncState.phase}), resetting sync state`)
                 runtime.clearPendingRenames()
-                runtime.clearEmittedSyncPhase()
+                runtime.clearEmittedSyncStatus()
                 runtime.cleanupUserActions()
                 await processEvent({ type: "DISCONNECT" })
             }
@@ -1360,7 +1360,7 @@ export async function start(config: Config): Promise<void> {
         void (async () => {
             runtime.clearPendingRenames()
             await processEvent({ type: "DISCONNECT" })
-            runtime.clearEmittedSyncPhase()
+            runtime.clearEmittedSyncStatus()
             runtime.cleanupUserActions()
         })()
     })

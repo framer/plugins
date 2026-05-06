@@ -37,7 +37,7 @@ function socket({ open = true }: { open?: boolean } = {}) {
 
 function applyCtx(runtime: SyncRuntime, ws: WebSocket | null, overrides: Partial<Config> = {}): ApplyCtx {
     const syncState: SyncState =
-        ws === null ? { internalPhase: "disconnected", socket: null } : { internalPhase: "watching", socket: ws }
+        ws === null ? { phase: "disconnected", socket: null } : { phase: "watching", socket: ws }
     return {
         config: config(overrides),
         runtime,
@@ -129,7 +129,7 @@ describe("applyEffect transaction boundaries", () => {
             expect.objectContaining({
                 type: "file-delete",
                 fileNames: ["A.tsx"],
-                requireConfirmation: true,
+                mode: "confirm",
                 session: expect.objectContaining({ connectionId: 1 }),
             }),
         ])
@@ -145,7 +145,7 @@ describe("applyEffect transaction boundaries", () => {
             applyCtx(runtime, open.ws, { dangerouslyAutoDelete: true })
         )
 
-        expect(open.sent).toEqual([{ type: "file-delete", fileNames: ["A.tsx"] }])
+        expect(open.sent).toEqual([{ type: "file-delete", mode: "auto", fileNames: ["A.tsx"] }])
         expect(runtime.metadata.get("A.tsx")).toBeUndefined()
     })
 
@@ -188,11 +188,11 @@ describe("applyEffect transaction boundaries", () => {
 
         expect(open.sent).toEqual([
             { type: "conflicts-cleared", session: prompt.session },
-            { type: "sync-phase", phase: "ready" },
+            { type: "sync-status", status: "ready" },
         ])
         expect(runtime.getActiveConflictPrompt()).toBeNull()
         expect(runtime.metadata.get("A.tsx")?.lastRemoteTimestamp).toBe(123)
-        expect(runtime.lastEmittedSyncPhase).toBe("ready")
+        expect(runtime.lastEmittedSyncStatus).toBe("ready")
     })
 
     it("sends delete prompt path invalidations without clearing unrelated pending deletes", async () => {

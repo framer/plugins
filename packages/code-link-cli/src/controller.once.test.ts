@@ -41,7 +41,7 @@ function ctx(
     if (config.projectDir && !runtime.workspace.projectDir) {
         runtime.configureWorkspace(config.projectDir, config.projectDirCreated ?? false)
     }
-    const syncState: SyncState = { internalPhase: "watching", socket: ws }
+    const syncState: SyncState = { phase: "watching", socket: ws }
     return {
         config,
         runtime,
@@ -63,8 +63,8 @@ describe("SYNC_COMPLETE apply", () => {
         await applyEffect({ type: "SYNC_COMPLETE", totalCount: 2, updatedCount: 1, unchangedCount: 1 }, applyCtx)
 
         expect(applyCtx.didShutdown()).toBe(true)
-        expect(open.sent).toContainEqual({ type: "sync-phase", phase: "ready" })
-        expect(runtime.lastEmittedSyncPhase).toBe("ready")
+        expect(open.sent).toContainEqual({ type: "sync-status", status: "ready" })
+        expect(runtime.lastEmittedSyncStatus).toBe("ready")
     })
 
     it("keeps watching when once is disabled", async () => {
@@ -75,8 +75,8 @@ describe("SYNC_COMPLETE apply", () => {
         await applyEffect({ type: "SYNC_COMPLETE", totalCount: 2, updatedCount: 1, unchangedCount: 1 }, applyCtx)
 
         expect(applyCtx.didShutdown()).toBe(false)
-        expect(open.sent).toContainEqual({ type: "sync-phase", phase: "ready" })
-        expect(runtime.lastEmittedSyncPhase).toBe("ready")
+        expect(open.sent).toContainEqual({ type: "sync-status", status: "ready" })
+        expect(runtime.lastEmittedSyncStatus).toBe("ready")
     })
 
     it("does not shut down on a reconnect where no notice was shown", async () => {
@@ -90,7 +90,7 @@ describe("SYNC_COMPLETE apply", () => {
 
         expect(applyCtx.didShutdown()).toBe(false)
         expect(runtime.disconnectUi.wasRecentlyDisconnected()).toBe(false)
-        expect(runtime.lastEmittedSyncPhase).toBe("ready")
+        expect(runtime.lastEmittedSyncStatus).toBe("ready")
     })
 
     it("defers once-mode shutdown until pending delete prompts resolve", async () => {
@@ -104,7 +104,7 @@ describe("SYNC_COMPLETE apply", () => {
         await applyEffect({ type: "SYNC_COMPLETE", totalCount: 1, updatedCount: 1, unchangedCount: 0 }, applyCtx)
 
         expect(applyCtx.didShutdown()).toBe(false)
-        expect(open.sent).not.toContainEqual({ type: "sync-phase", phase: "ready" })
+        expect(open.sent).not.toContainEqual({ type: "sync-status", status: "ready" })
 
         await applyEffect(
             {
@@ -116,8 +116,8 @@ describe("SYNC_COMPLETE apply", () => {
             applyCtx
         )
 
-        expect(open.sent).toContainEqual({ type: "file-delete", fileNames: ["A.tsx"] })
-        expect(open.sent).toContainEqual({ type: "sync-phase", phase: "ready" })
+        expect(open.sent).toContainEqual({ type: "file-delete", mode: "auto", fileNames: ["A.tsx"] })
+        expect(open.sent).toContainEqual({ type: "sync-status", status: "ready" })
         expect(applyCtx.didShutdown()).toBe(true)
     })
 
@@ -134,7 +134,7 @@ describe("SYNC_COMPLETE apply", () => {
         await applyEffect({ type: "SYNC_COMPLETE", totalCount: 1, updatedCount: 1, unchangedCount: 0 }, applyCtx)
 
         expect(applyCtx.didShutdown()).toBe(false)
-        expect(open.sent).not.toContainEqual({ type: "sync-phase", phase: "ready" })
+        expect(open.sent).not.toContainEqual({ type: "sync-status", status: "ready" })
 
         await applyEffect(
             { type: "UPDATE_ACTIVE_CONFLICT_REMOTE", fileName: "A.tsx", content: "local", modifiedAt: 123 },
@@ -142,7 +142,7 @@ describe("SYNC_COMPLETE apply", () => {
         )
 
         expect(open.sent).toContainEqual({ type: "conflicts-cleared", session: prompt.session })
-        expect(open.sent).toContainEqual({ type: "sync-phase", phase: "ready" })
+        expect(open.sent).toContainEqual({ type: "sync-status", status: "ready" })
         expect(applyCtx.didShutdown()).toBe(true)
     })
 
@@ -192,9 +192,9 @@ describe("SYNC_COMPLETE apply", () => {
         )
 
         expect(open.sent).toContainEqual({ type: "conflicts-cleared", session: prompt.session })
-        expect(open.sent).toContainEqual({ type: "sync-phase", phase: "ready" })
+        expect(open.sent).toContainEqual({ type: "sync-status", status: "ready" })
         expect(runtime.getActiveConflictPrompt()).toBeNull()
-        expect(runtime.lastEmittedSyncPhase).toBe("ready")
+        expect(runtime.lastEmittedSyncStatus).toBe("ready")
         expect(applyCtx.didShutdown()).toBe(true)
     })
 })

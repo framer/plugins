@@ -22,7 +22,7 @@ vi.mock("./utils/logger", () => ({
 type SentMessage =
     | { type: "file-list"; files: { name: string; content: string }[] }
     | { type: "file-change"; fileName: string; content: string }
-    | { type: "file-delete"; fileNames: string[]; requireConfirmation: boolean }
+    | { type: "file-delete"; fileNames: string[] }
     | { type: "file-synced"; fileName: string; remoteModifiedAt: number }
     | { type: "error"; fileName: string; message: string }
 
@@ -191,7 +191,6 @@ describe("CodeFilesAPI", () => {
                 {
                     type: "file-delete",
                     fileNames: ["Removed.tsx"],
-                    requireConfirmation: false,
                 },
             ])
         )

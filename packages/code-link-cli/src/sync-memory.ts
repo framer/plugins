@@ -82,6 +82,7 @@ export class SyncMemory {
         this.contentEchoes.clear()
     }
 
+    // Identical content to the last synced hash is a no-op echo, not a fresh local change.
     isContentEcho(filePath: string, content: string): boolean {
         return this.matchesAgreedContent(filePath, content) || this.matchesContentEcho(filePath, content)
     }

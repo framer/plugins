@@ -5,7 +5,7 @@
  * the state-machine vocabulary without importing controller startup code.
  */
 
-import type { CancelledDelete, CliToPluginMessage, PromptSession, SyncPhase } from "@code-link/shared"
+import type { CancelledDelete, CliToPluginMessage, PromptSession, SyncStatus } from "@code-link/shared"
 import type { WebSocket } from "ws"
 import type { Conflict, ConflictVersionData, FileInfo, WatcherEvent } from "./types.ts"
 import type { LogEntryLevel } from "./utils/logging.ts"
@@ -13,34 +13,34 @@ import type { LogEntryLevel } from "./utils/logging.ts"
 export type WriteEchoPolicy = "authoritative" | "skip-expected-echoes"
 
 export type DisconnectedState = {
-    internalPhase: "disconnected"
+    phase: "disconnected"
     socket: null
 }
 
 export type HandshakingState = {
-    internalPhase: "handshaking"
+    phase: "handshaking"
     socket: WebSocket
 }
 
 export type SnapshotProcessingState = {
-    internalPhase: "snapshot_processing"
+    phase: "snapshot_processing"
     socket: WebSocket
 }
 
 export type ConflictResolutionState = {
-    internalPhase: "conflict_resolution"
+    phase: "conflict_resolution"
     socket: WebSocket
     pendingConflicts: Conflict[]
 }
 
 export type WatchingState = {
-    internalPhase: "watching"
+    phase: "watching"
     socket: WebSocket
 }
 
 /**
- * `internalPhase` is the controller's private state-machine phase.
- * Keep it distinct from plugin-visible `sync-phase` messages.
+ * `phase` is the controller's private state-machine phase.
+ * Keep it distinct from plugin-visible `sync-status` messages.
  */
 export type SyncState =
     | DisconnectedState
@@ -67,9 +67,9 @@ export type SyncEvent =
       }
     /**
      * Duplicate handshake from an already-active socket. Rebroadcast whichever
-     * sync-phase we last emitted so the plugin's UI catches up.
+     * sync-status we last emitted so the plugin's UI catches up.
      */
-    | { type: "RESEND_SYNC_PHASE"; phase: SyncPhase }
+    | { type: "RESEND_SYNC_STATUS"; status: SyncStatus }
     | { type: "REMOTE_FILE_CHANGE"; file: FileInfo }
     | { type: "REMOTE_FILE_DELETE"; fileName: string }
     | { type: "DELETE_CONFIRMED"; session: PromptSession; fileNames: string[] }
@@ -94,7 +94,7 @@ export type Effect =
       }
     | { type: "LOAD_PERSISTED_STATE" }
     | { type: "SEND_MESSAGE"; payload: CliToPluginMessage }
-    | { type: "EMIT_SYNC_PHASE"; phase: SyncPhase }
+    | { type: "EMIT_SYNC_STATUS"; status: SyncStatus }
     | { type: "LIST_LOCAL_FILES" }
     | { type: "DETECT_CONFLICTS"; remoteFiles: FileInfo[] }
     | {

@@ -14,7 +14,7 @@ function socket() {
 }
 
 describe("createMessageHandler", () => {
-    it("dispatches sync-phase from CLI messages", async () => {
+    it("dispatches sync-status from CLI messages", async () => {
         const dispatch = vi.fn()
         const api = {
             publishSnapshot: vi.fn(),
@@ -22,11 +22,11 @@ describe("createMessageHandler", () => {
 
         const handleMessage = createMessageHandler({ dispatch, api })
 
-        await handleMessage({ type: "sync-phase", phase: "initial_sync" }, {} as WebSocket)
+        await handleMessage({ type: "sync-status", status: "initial_sync" }, {} as WebSocket)
 
         expect(dispatch).toHaveBeenCalledWith({
-            type: "sync-phase",
-            syncPhase: "initial_sync",
+            type: "sync-status",
+            syncStatus: "initial_sync",
         })
     })
 
@@ -94,7 +94,7 @@ describe("createMessageHandler", () => {
         await handleMessage(
             {
                 type: "file-delete",
-                requireConfirmation: true,
+                mode: "confirm",
                 fileNames: ["Existing.tsx", "Missing.tsx"],
                 session,
             },
@@ -122,7 +122,7 @@ describe("createMessageHandler", () => {
         await handleMessage(
             {
                 type: "file-delete",
-                requireConfirmation: true,
+                mode: "confirm",
                 fileNames: ["MissingA.tsx", "MissingB.tsx"],
                 session,
             },

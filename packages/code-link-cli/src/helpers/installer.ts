@@ -3,16 +3,19 @@
  */
 
 import { setupTypeAcquisition } from "@typescript/ata"
+import type { Dirent } from "fs"
 import fs from "fs/promises"
 import path from "path"
 import ts from "typescript"
+import type { DependencyVersions, NpmStrategy } from "../types.ts"
 import { extractImports } from "../utils/imports.ts"
 import { debug, error, warn } from "../utils/logging.ts"
 import { installSkills } from "./skills.ts"
 
 export interface InstallerConfig {
     projectDir: string
-    allowUnsupportedNpm?: boolean
+    npmStrategy?: NpmStrategy
+    requestDependencyVersions?: (packages: string[]) => Promise<DependencyVersions>
 }
 
 /** npm registry package.json exports field value */
@@ -84,16 +87,22 @@ const SUPPORTED_PACKAGES = new Set([
  */
 export class Installer {
     private projectDir: string
-    private allowUnsupportedNpm: boolean
+    private npmStrategy: NpmStrategy
+    private requestDependencyVersions: (packages: string[]) => Promise<DependencyVersions>
     private ata: ReturnType<typeof setupTypeAcquisition>
     private processedImports = new Set<string>()
+    private packageManagerPackages = new Set<string>()
+    private packageJsonRefreshPromise: Promise<void> = Promise.resolve()
     private initializationPromise: Promise<void> | null = null
     private pinnedTypeVersions: Record<string, string> = { ...DEFAULT_PINNED_TYPE_VERSIONS }
     private pinnedTypeVersionsPromise: Promise<void> | null = null
 
     constructor(config: InstallerConfig) {
         this.projectDir = config.projectDir
-        this.allowUnsupportedNpm = config.allowUnsupportedNpm ?? false
+        this.npmStrategy = config.npmStrategy ?? "none"
+        this.requestDependencyVersions =
+            config.requestDependencyVersions ??
+            (async packages => Object.fromEntries(packages.map(packageName => [packageName, null])))
 
         const seenPackages = new Set<string>()
 
@@ -203,6 +212,11 @@ export class Installer {
             this.ensureGitignore(),
         ])
 
+        if (this.npmStrategy === "package-manager") {
+            await this.enqueuePackageJsonRefresh(await this.collectPackageManagerPackageNames())
+            return
+        }
+
         this.pinnedTypeVersionsPromise = this.resolvePinnedTypeVersions()
 
         // Fire-and-forget type installation - don't block initialization
@@ -211,7 +225,7 @@ export class Installer {
                 const coreImports = await this.buildPinnedImports(CORE_LIBRARIES)
 
                 // After pins are resolved, also include package.json deps
-                const packageJsonDeps = this.allowUnsupportedNpm
+                const packageJsonDeps = this.npmStrategy === "acquire-types"
                     ? Object.keys(this.pinnedTypeVersions).filter(name => !SUPPORTED_PACKAGES.has(name))
                     : []
 
@@ -228,11 +242,17 @@ export class Installer {
 
         if (allImports.length === 0) return
 
+        if (this.npmStrategy === "package-manager") {
+            await this.enqueuePackageJsonRefresh(allImports.map(imp => getBasePackageName(imp.name)))
+            return
+        }
+
         // Filter to supported packages unless --unsupported-npm flag is set
-        const imports = this.allowUnsupportedNpm ? allImports : allImports.filter(i => this.isSupportedPackage(i.name))
+        const imports =
+            this.npmStrategy === "acquire-types" ? allImports : allImports.filter(i => this.isSupportedPackage(i.name))
 
         const unsupportedCount = allImports.length - imports.length
-        if (unsupportedCount > 0 && !this.allowUnsupportedNpm) {
+        if (unsupportedCount > 0 && this.npmStrategy !== "acquire-types") {
             const unsupported = allImports.filter(i => !this.isSupportedPackage(i.name)).map(i => i.name)
             debug(`Skipping unsupported packages: ${unsupported.join(", ")} (use --unsupported-npm to enable)`)
         }
@@ -243,7 +263,7 @@ export class Installer {
 
         await this.pinnedTypeVersionsPromise
 
-        if (this.allowUnsupportedNpm) {
+        if (this.npmStrategy === "acquire-types") {
             await this.resolvePackageJsonPins()
         }
 
@@ -260,7 +280,8 @@ export class Installer {
         debug(`Processing imports for ${fileName} (${imports.length} packages)`)
 
         // Build filtered content with only supported imports for ATA
-        const filteredContent = this.allowUnsupportedNpm ? content : await this.buildFilteredImports(imports)
+        const filteredContent =
+            this.npmStrategy === "acquire-types" ? content : await this.buildFilteredImports(imports)
 
         try {
             await this.ata(filteredContent)
@@ -268,6 +289,104 @@ export class Installer {
             warn(`Type fetching failed for ${fileName}`)
             debug(`ATA error for ${fileName}:`, err)
         }
+    }
+
+    private async collectPackageManagerPackageNames(): Promise<string[]> {
+        const packageNames = new Set(CORE_LIBRARIES)
+        await this.addPackageNamesFromDirectory(path.join(this.projectDir, "files"), packageNames)
+        return [...packageNames]
+    }
+
+    private async addPackageNamesFromDirectory(directory: string, packageNames: Set<string>): Promise<void> {
+        let entries: Dirent[]
+        try {
+            entries = await fs.readdir(directory, { withFileTypes: true })
+        } catch {
+            return
+        }
+
+        await Promise.all(
+            entries.map(async entry => {
+                const entryPath = path.join(directory, entry.name)
+
+                if (entry.isDirectory()) {
+                    await this.addPackageNamesFromDirectory(entryPath, packageNames)
+                    return
+                }
+
+                if (!entry.isFile() || JSON_EXTENSION_REGEX.test(entry.name)) {
+                    return
+                }
+
+                try {
+                    const content = await fs.readFile(entryPath, "utf-8")
+                    for (const imported of extractImports(content).filter(i => i.type === "npm")) {
+                        packageNames.add(getBasePackageName(imported.name))
+                    }
+                } catch {
+                    // Best effort; file contents can change while the watcher is active.
+                }
+            })
+        )
+    }
+
+    private async enqueuePackageJsonRefresh(packageNames: string[]): Promise<void> {
+        const missingPackageNames = packageNames
+            .map(name => getBasePackageName(name))
+            .filter(name => {
+                if (this.packageManagerPackages.has(name)) {
+                    return false
+                }
+
+                this.packageManagerPackages.add(name)
+                return true
+            })
+
+        if (missingPackageNames.length === 0) {
+            return this.packageJsonRefreshPromise
+        }
+
+        this.packageJsonRefreshPromise = this.packageJsonRefreshPromise
+            .then(async () => {
+                await this.refreshPackageJsonFromPlugin(missingPackageNames)
+            })
+            .catch((err: unknown) => {
+                warn("Could not refresh package.json dependency versions", err)
+            })
+
+        return this.packageJsonRefreshPromise
+    }
+
+    private async refreshPackageJsonFromPlugin(packageNames: string[]): Promise<void> {
+        const uniquePackageNames = [...new Set(packageNames)].sort()
+        const versions = await this.requestDependencyVersions(uniquePackageNames)
+        const packagePath = path.join(this.projectDir, "package.json")
+
+        const raw = await fs.readFile(packagePath, "utf-8")
+        const pkg = JSON.parse(raw) as ProjectPackageJson
+        const dependencies =
+            typeof pkg.dependencies === "object" && pkg.dependencies !== null && !Array.isArray(pkg.dependencies)
+                ? { ...pkg.dependencies }
+                : {}
+
+        let changed = false
+        for (const packageName of uniquePackageNames) {
+            const version = versions[packageName]
+            if (!version || dependencies[packageName] === version) {
+                continue
+            }
+
+            dependencies[packageName] = version
+            changed = true
+        }
+
+        if (!changed) {
+            return
+        }
+
+        pkg.dependencies = dependencies
+        await fs.writeFile(packagePath, JSON.stringify(pkg, null, 4))
+        debug(`Updated package.json dependency versions for ${uniquePackageNames.join(", ")}`)
     }
 
     /**
@@ -281,7 +400,7 @@ export class Installer {
         }
 
         // Check if base package is supported (e.g., "framer-motion/dist" -> "framer-motion")
-        const basePkg = pkgName.startsWith("@") ? pkgName.split("/").slice(0, 2).join("/") : pkgName.split("/")[0]
+        const basePkg = getBasePackageName(pkgName)
 
         return SUPPORTED_PACKAGES.has(basePkg)
     }
@@ -320,7 +439,7 @@ export class Installer {
             debug(`Falling back to default ATA pins for ${FRAMER_PACKAGE_NAME}`, err)
         }
 
-        if (this.allowUnsupportedNpm) {
+        if (this.npmStrategy === "acquire-types") {
             await this.resolvePackageJsonPins()
         }
     }
@@ -349,7 +468,7 @@ export class Installer {
      * Resolves the base package name for subpath imports (e.g., "framer-motion/dist" -> "framer-motion").
      */
     private pinImport(name: string): string {
-        const base = name.startsWith("@") ? name.split("/").slice(0, 2).join("/") : name.split("/")[0]
+        const base = getBasePackageName(name)
         const version = this.pinnedTypeVersions[base]
         if (version) return `import "${name}"; // types: ${version}`
         return `import "${name}";`
@@ -540,6 +659,15 @@ declare module "*.json"
 
 function getManifestDependencyVersion(manifest: NpmPackageManifest, packageName: string): string | undefined {
     return manifest.peerDependencies?.[packageName] ?? manifest.dependencies?.[packageName]
+}
+
+function getBasePackageName(packageName: string): string {
+    const parts = packageName.split("/")
+    if (packageName.startsWith("@")) {
+        return parts.length >= 2 ? parts.slice(0, 2).join("/") : packageName
+    }
+
+    return parts[0] ?? packageName
 }
 
 function normalizePinnedVersion(version: string | undefined): string | undefined {

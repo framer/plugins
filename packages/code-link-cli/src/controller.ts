@@ -25,10 +25,11 @@ import {
 } from "./helpers/files.ts"
 import { tryGitInit } from "./helpers/git.ts"
 import { Installer } from "./helpers/installer.ts"
+import { resolveNpmStrategy } from "./helpers/npm-strategy.ts"
 import { initWatcher } from "./helpers/watcher.ts"
 import { type ConflictPromptChange, SyncRuntime } from "./runtime.ts"
 import type { Effect, SyncEvent, SyncState, WriteEchoPolicy } from "./sync-events.ts"
-import type { Config, Conflict, FileInfo } from "./types.ts"
+import type { Config, Conflict, DependencyVersions, FileInfo } from "./types.ts"
 import {
     debug,
     error,
@@ -1101,6 +1102,10 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
 export async function start(config: Config): Promise<void> {
     const runtime = new SyncRuntime()
     let isShuttingDown = false
+    let pendingDependencyVersions: {
+        resolve: (versions: DependencyVersions) => void
+        timeout: NodeJS.Timeout
+    } | null = null
 
     // State machine state
     let syncState: SyncState = {
@@ -1109,6 +1114,46 @@ export async function start(config: Config): Promise<void> {
     }
 
     const eventQueue = createEventQueue()
+
+    function nullDependencyVersions(packages: string[]): DependencyVersions {
+        return Object.fromEntries(packages.map(packageName => [packageName, null]))
+    }
+
+    async function requestDependencyVersions(packages: string[]): Promise<DependencyVersions> {
+        if (packages.length === 0) {
+            return {}
+        }
+
+        const socket = syncState.socket
+        if (!socket) {
+            return nullDependencyVersions(packages)
+        }
+
+        if (pendingDependencyVersions) {
+            warn("Dependency version request already pending")
+            return nullDependencyVersions(packages)
+        }
+
+        return await new Promise<DependencyVersions>(resolve => {
+            const timeout = setTimeout(() => {
+                if (pendingDependencyVersions?.resolve === resolve) {
+                    pendingDependencyVersions = null
+                    warn("Timed out waiting for dependency versions from plugin")
+                    resolve(nullDependencyVersions(packages))
+                }
+            }, 10_000)
+
+            pendingDependencyVersions = { resolve, timeout }
+
+            void sendMessage(socket, { type: "request-dependency-versions", packages }).then(sent => {
+                if (!sent && pendingDependencyVersions?.resolve === resolve) {
+                    clearTimeout(timeout)
+                    pendingDependencyVersions = null
+                    resolve(nullDependencyVersions(packages))
+                }
+            })
+        })
+    }
 
     // Top-level ingress (WS, watcher, disconnect) serializes through the queue — one event at a time.
     // Follow-up events from `applyEffect` run inline before the next queued event, so snapshot results
@@ -1228,9 +1273,11 @@ export async function start(config: Config): Promise<void> {
 
             // Initialize installer if needed
             if (runtime.workspace.projectDir && !runtime.installer) {
+                const npmStrategy = await resolveNpmStrategy(config, runtime.workspace.projectDir)
                 runtime.installer = new Installer({
                     projectDir: runtime.workspace.projectDir,
-                    allowUnsupportedNpm: config.allowUnsupportedNpm,
+                    npmStrategy,
+                    requestDependencyVersions,
                 })
                 await runtime.installer.initialize()
                 // Start file watcher now that we have a directory
@@ -1326,6 +1373,19 @@ export async function start(config: Config): Promise<void> {
                     versions: message.versions,
                 }
                 break
+
+            case "dependency-versions": {
+                if (!pendingDependencyVersions) {
+                    warn("Received dependency versions with no pending request")
+                    return
+                }
+
+                clearTimeout(pendingDependencyVersions.timeout)
+                const pending = pendingDependencyVersions
+                pendingDependencyVersions = null
+                pending.resolve(message.versions)
+                return
+            }
 
             default:
                 warn(`Unhandled message type: ${message.type}`)

@@ -9,9 +9,9 @@
 
 import { createRequire } from "node:module"
 import { getPortFromHash } from "@code-link/shared"
-import { Command } from "commander"
+import { Command, InvalidArgumentError } from "commander"
 import { start } from "./controller.ts"
-import type { Config } from "./types.ts"
+import type { Config, NpmStrategy } from "./types.ts"
 import { banner, LogLevel, setLogLevel, warn } from "./utils/logging.ts"
 import { getProjectHashFromCwd } from "./utils/project.ts"
 
@@ -19,6 +19,18 @@ const require = createRequire(import.meta.url)
 const { version } = require("../package.json") as { version: string }
 
 const program = new Command()
+
+function parseUnsupportedNpmMode(mode: string | undefined): NpmStrategy {
+    if (mode === undefined) {
+        return "acquire-types"
+    }
+
+    if (mode === "acquire-types" || mode === "package-manager") {
+        return mode
+    }
+
+    throw new InvalidArgumentError("unsupported npm mode must be 'acquire-types' or 'package-manager'")
+}
 
 program.exitOverride(err => {
     if (err.code === "commander.missingArgument") {
@@ -39,7 +51,11 @@ program
     .option("-v, --verbose", "Enable verbose logging")
     .option("--log-level <level>", "Set log level (debug, info, warn, error)")
     .option("--dangerously-auto-delete", "Automatically delete remote files without confirmation")
-    .option("--unsupported-npm", "Allow type acquisition for unsupported npm packages")
+    .option(
+        "--unsupported-npm [mode]",
+        "Handle unsupported npm packages (acquire-types or package-manager)",
+        parseUnsupportedNpmMode
+    )
     .action(
         async (
             projectHash: string | undefined,
@@ -50,7 +66,7 @@ program
                 verbose?: boolean
                 logLevel?: string
                 dangerouslyAutoDelete?: boolean
-                unsupportedNpm?: boolean
+                unsupportedNpm?: NpmStrategy
             }
         ) => {
             // If no projectHash provided, try to read from cwd's package.json
@@ -91,7 +107,7 @@ program
                 projectDir: null, // Will be set during handshake
                 filesDir: null, // Will be set during handshake
                 dangerouslyAutoDelete: options.dangerouslyAutoDelete ?? false,
-                allowUnsupportedNpm: options.unsupportedNpm ?? false,
+                npmStrategy: options.unsupportedNpm,
                 once: options.once ?? false,
                 explicitDirectory: options.dir,
                 explicitName: options.name,

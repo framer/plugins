@@ -22,6 +22,7 @@ export type {
     ConflictSummary,
     ConflictVersionData,
     ConflictVersionRequest,
+    DependencyVersions,
     FileInfo,
     PendingDelete,
     PluginToCliMessage,

@@ -187,7 +187,7 @@ describe("start() integration", () => {
             projectDir: null,
             filesDir: null,
             dangerouslyAutoDelete: true,
-            allowUnsupportedNpm: false,
+            npmStrategy: "none",
             once: false,
             explicitDirectory: tmpDir,
             explicitName: "TestProject",
@@ -225,7 +225,7 @@ describe("start() integration", () => {
         await vi.waitFor(() =>
             expect(
                 ws.sent.some(payload => {
-                    const message = JSON.parse(payload) as { type?: string; phase?: string }
+                    const message = JSON.parse(payload) as { type?: string; status?: string }
                     return message.type === "sync-status" && message.status === "initial_sync"
                 })
             ).toBe(true)
@@ -238,7 +238,7 @@ describe("start() integration", () => {
         ws.receive({ type: "file-list", files: [] })
         await vi.waitFor(() => {
             const phases = ws.sent
-                .map(payload => JSON.parse(payload) as { type?: string; phase?: string })
+                .map(payload => JSON.parse(payload) as { type?: string; status?: string })
                 .filter(message => message.type === "sync-status")
                 .map(message => message.status)
 

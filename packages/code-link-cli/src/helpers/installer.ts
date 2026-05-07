@@ -9,7 +9,7 @@ import path from "path"
 import ts from "typescript"
 import type { DependencyVersions, NpmStrategy } from "../types.ts"
 import { extractImports } from "../utils/imports.ts"
-import { debug, error, info, warn } from "../utils/logging.ts"
+import { debug, error, status, warn } from "../utils/logging.ts"
 import { installSkills } from "./skills.ts"
 
 export interface InstallerConfig {
@@ -54,6 +54,7 @@ const MAX_FETCH_RETRIES = 3
 const MAX_CONSECUTIVE_FAILURES = 10
 const FRAMER_PACKAGE_NAME = "framer"
 const CORE_LIBRARIES = ["framer-motion", "framer", "react", "react-dom"]
+const PACKAGE_MANAGER_DEV_DEPENDENCIES = ["@types/react", "@types/react-dom"]
 
 /** Packages with pinned type versions — used by ATA's `// types:` comment syntax */
 const DEFAULT_PINNED_TYPE_VERSIONS: Record<string, string> = {
@@ -225,9 +226,10 @@ export class Installer {
                 const coreImports = await this.buildPinnedImports(CORE_LIBRARIES)
 
                 // After pins are resolved, also include package.json deps
-                const packageJsonDeps = this.npmStrategy === "acquire-types"
-                    ? Object.keys(this.pinnedTypeVersions).filter(name => !SUPPORTED_PACKAGES.has(name))
-                    : []
+                const packageJsonDeps =
+                    this.npmStrategy === "acquire-types"
+                        ? Object.keys(this.pinnedTypeVersions).filter(name => !SUPPORTED_PACKAGES.has(name))
+                        : []
 
                 const imports = [...coreImports, ...(await this.buildPinnedImports(packageJsonDeps))].join("\n")
                 await this.ata(imports)
@@ -292,7 +294,7 @@ export class Installer {
     }
 
     private async collectPackageManagerPackageNames(): Promise<string[]> {
-        const packageNames = new Set(CORE_LIBRARIES)
+        const packageNames = new Set([...CORE_LIBRARIES, ...PACKAGE_MANAGER_DEV_DEPENDENCIES])
         await this.addPackageNamesFromDirectory(path.join(this.projectDir, "files"), packageNames)
         return [...packageNames]
     }
@@ -368,16 +370,36 @@ export class Installer {
             typeof pkg.dependencies === "object" && pkg.dependencies !== null && !Array.isArray(pkg.dependencies)
                 ? { ...pkg.dependencies }
                 : {}
+        const devDependencies =
+            typeof pkg.devDependencies === "object" &&
+            pkg.devDependencies !== null &&
+            !Array.isArray(pkg.devDependencies)
+                ? { ...pkg.devDependencies }
+                : {}
 
         let changed = false
         for (const packageName of uniquePackageNames) {
-            const version = versions[packageName]
-            if (!version || dependencies[packageName] === version) {
+            const version = versions[packageName] ?? DEFAULT_PINNED_TYPE_VERSIONS[packageName]
+            if (!version) {
                 continue
             }
 
-            dependencies[packageName] = version
-            changed = true
+            const targetDependencies = PACKAGE_MANAGER_DEV_DEPENDENCIES.includes(packageName)
+                ? devDependencies
+                : dependencies
+            const oppositeDependencies = PACKAGE_MANAGER_DEV_DEPENDENCIES.includes(packageName)
+                ? dependencies
+                : devDependencies
+
+            if (targetDependencies[packageName] !== version) {
+                targetDependencies[packageName] = version
+                changed = true
+            }
+
+            if (oppositeDependencies[packageName] !== undefined) {
+                delete oppositeDependencies[packageName]
+                changed = true
+            }
         }
 
         if (!changed) {
@@ -385,8 +407,9 @@ export class Installer {
         }
 
         pkg.dependencies = dependencies
+        pkg.devDependencies = devDependencies
         await fs.writeFile(packagePath, JSON.stringify(pkg, null, 4))
-        info("Updated dependencies. Run your package manager to install them.")
+        status("Updated dependencies. Run your package manager to install them.")
         debug(`Updated package.json dependency versions for ${uniquePackageNames.join(", ")}`)
     }
 

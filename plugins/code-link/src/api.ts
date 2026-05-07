@@ -2,10 +2,6 @@ import { type DependencyVersions, normalizeCodeFilePathWithExtension } from "@co
 import { framer } from "framer-plugin"
 import * as log from "./utils/logger"
 
-interface FramerWithDependencyVersions {
-    unstable_getDependencyVersion?: (packageName: string) => Promise<string | null>
-}
-
 /**
  * Plugin API Handlers
  *
@@ -195,15 +191,10 @@ export class CodeFilesAPI {
     }
 
     async fetchDependencyVersions(packages: string[]): Promise<DependencyVersions> {
-        const pluginApi = framer as unknown as FramerWithDependencyVersions
-        if (!pluginApi.unstable_getDependencyVersion) {
-            return Object.fromEntries(packages.map(packageName => [packageName, null]))
-        }
-
         const entries = await Promise.all(
             packages.map(async packageName => {
                 try {
-                    const version = await pluginApi.unstable_getDependencyVersion?.(packageName)
+                    const version = await framer.unstable_getDependencyVersion(packageName)
                     return [packageName, version ?? null] as const
                 } catch (err) {
                     log.warn(`Failed to fetch dependency version for ${packageName}`, err)

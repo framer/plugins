@@ -2,13 +2,10 @@ import fs from "fs/promises"
 import path from "path"
 import type { Config, NpmStrategy } from "../types.ts"
 import { debug, warn } from "../utils/logging.ts"
+import { readAndMigratePackageJson } from "../utils/project.ts"
 
-const CONFIG_FIELD = "codeLinkNpmStrategy"
+const CONFIG_FIELD = "codeLink.npmStrategy"
 const LOCKFILES = ["yarn.lock", "pnpm-lock.yaml", "package-lock.json", "bun.lockb"]
-
-interface PackageJsonWithCodeLinkConfig {
-    codeLinkNpmStrategy?: unknown
-}
 
 export async function resolveNpmStrategy(config: Config, projectDir: string): Promise<NpmStrategy> {
     if (config.npmStrategy) {
@@ -34,9 +31,11 @@ export async function resolveNpmStrategy(config: Config, projectDir: string): Pr
 
 async function readPackageJsonStrategy(projectDir: string): Promise<NpmStrategy | null> {
     try {
-        const raw = await fs.readFile(path.join(projectDir, "package.json"), "utf-8")
-        const parsed = JSON.parse(raw) as PackageJsonWithCodeLinkConfig
-        const strategy = parsed.codeLinkNpmStrategy
+        const parsed = await readAndMigratePackageJson(path.join(projectDir, "package.json"))
+        if (!parsed) {
+            return null
+        }
+        const strategy = parsed.codeLink?.npmStrategy
 
         if (strategy === undefined) {
             return null

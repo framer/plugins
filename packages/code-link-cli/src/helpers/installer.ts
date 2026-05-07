@@ -9,7 +9,7 @@ import path from "path"
 import ts from "typescript"
 import type { DependencyVersions, NpmStrategy } from "../types.ts"
 import { extractImports } from "../utils/imports.ts"
-import { debug, error, status, warn } from "../utils/logging.ts"
+import { debug, error, success, warn } from "../utils/logging.ts"
 import { installSkills } from "./skills.ts"
 
 export interface InstallerConfig {
@@ -214,6 +214,7 @@ export class Installer {
         ])
 
         if (this.npmStrategy === "package-manager") {
+            await this.resolvePinnedTypeVersions()
             await this.enqueuePackageJsonRefresh(await this.collectPackageManagerPackageNames())
             return
         }
@@ -379,7 +380,7 @@ export class Installer {
 
         let changed = false
         for (const packageName of uniquePackageNames) {
-            const version = versions[packageName] ?? DEFAULT_PINNED_TYPE_VERSIONS[packageName]
+            const version = versions[packageName] ?? this.pinnedTypeVersions[packageName]
             if (!version) {
                 continue
             }
@@ -409,7 +410,7 @@ export class Installer {
         pkg.dependencies = dependencies
         pkg.devDependencies = devDependencies
         await fs.writeFile(packagePath, JSON.stringify(pkg, null, 4))
-        status("Updated dependencies. Run your package manager to install them.")
+        success("Updated dependencies. Run your package manager to install them.")
         debug(`Updated package.json dependency versions for ${uniquePackageNames.join(", ")}`)
     }
 

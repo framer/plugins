@@ -1,6 +1,6 @@
 {
     "name": "framer-code-link",
-    "version": "0.17.0",
+    "version": "0.21.0-alpha.1",
     "description": "CLI tool for syncing Framer code components - controller-centric architecture",
     "main": "dist/index.mjs",
     "type": "module",
@@ -37,5 +37,6 @@
         "tsdown": "^0.20.1",
         "tsx": "^4.21.0",
         "vitest": "^4.1.5"
-    }
+    },
+    "stableVersion": "0.20.0"
 }

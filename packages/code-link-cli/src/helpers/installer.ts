@@ -9,7 +9,7 @@ import path from "path"
 import ts from "typescript"
 import type { DependencyVersions, NpmStrategy } from "../types.ts"
 import { extractImports } from "../utils/imports.ts"
-import { debug, error, success, warn } from "../utils/logging.ts"
+import { debug, error, status, warn } from "../utils/logging.ts"
 import { installSkills } from "./skills.ts"
 
 export interface InstallerConfig {
@@ -380,7 +380,7 @@ export class Installer {
 
         let changed = false
         for (const packageName of uniquePackageNames) {
-            const version = versions[packageName] ?? this.pinnedTypeVersions[packageName]
+            const version = (versions[packageName] ?? this.pinnedTypeVersions[packageName])?.replace(/^\^/, "")
             if (!version) {
                 continue
             }
@@ -407,10 +407,10 @@ export class Installer {
             return
         }
 
-        pkg.dependencies = dependencies
-        pkg.devDependencies = devDependencies
+        pkg.dependencies = sortDependencyMap(dependencies)
+        pkg.devDependencies = sortDependencyMap(devDependencies)
         await fs.writeFile(packagePath, JSON.stringify(pkg, null, 4))
-        success("Updated dependencies. Run your package manager to install them.")
+        status("Synced project dependencies to package.json. Run your package manager to install them.")
         debug(`Updated package.json dependency versions for ${uniquePackageNames.join(", ")}`)
     }
 
@@ -693,6 +693,10 @@ function getBasePackageName(packageName: string): string {
     }
 
     return parts[0] ?? packageName
+}
+
+function sortDependencyMap(dependencies: NpmDependencyMap): NpmDependencyMap {
+    return Object.fromEntries(Object.entries(dependencies).sort(([a], [b]) => a.localeCompare(b)))
 }
 
 function normalizePinnedVersion(version: string | undefined): string | undefined {

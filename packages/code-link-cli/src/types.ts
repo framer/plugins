@@ -12,7 +12,7 @@ export type {
     PluginToCliMessage,
 } from "@code-link/shared"
 
-export type NpmStrategy = "none" | "acquire-types" | "package-manager"
+export type NpmStrategy = "acquire-types" | "package-manager"
 
 // Configuration
 export interface Config {

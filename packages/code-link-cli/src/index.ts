@@ -53,7 +53,7 @@ program
     .option("--dangerously-auto-delete", "Automatically delete remote files without confirmation")
     .option(
         "--unsupported-npm [mode]",
-        "Handle unsupported npm packages (acquire-types or package-manager)",
+        "Handle unsupported npm packages (default without mode: acquire-types; modes: acquire-types, package-manager)",
         parseUnsupportedNpmMode
     )
     .action(

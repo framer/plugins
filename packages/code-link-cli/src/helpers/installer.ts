@@ -88,19 +88,19 @@ const SUPPORTED_PACKAGES = new Set([
  */
 export class Installer {
     private projectDir: string
-    private npmStrategy: NpmStrategy
+    private npmStrategy: NpmStrategy | undefined
     private requestDependencyVersions: (packages: string[]) => Promise<DependencyVersions>
     private ata: ReturnType<typeof setupTypeAcquisition>
     private processedImports = new Set<string>()
     private packageManagerPackages = new Set<string>()
-    private packageJsonRefreshPromise: Promise<void> = Promise.resolve()
+    private packageJsonUpdatePromise: Promise<void> = Promise.resolve()
     private initializationPromise: Promise<void> | null = null
     private pinnedTypeVersions: Record<string, string> = { ...DEFAULT_PINNED_TYPE_VERSIONS }
     private pinnedTypeVersionsPromise: Promise<void> | null = null
 
     constructor(config: InstallerConfig) {
         this.projectDir = config.projectDir
-        this.npmStrategy = config.npmStrategy ?? "none"
+        this.npmStrategy = config.npmStrategy
         this.requestDependencyVersions =
             config.requestDependencyVersions ??
             (async packages => Object.fromEntries(packages.map(packageName => [packageName, null])))
@@ -184,7 +184,7 @@ export class Installer {
     }
 
     /**
-     * Fire-and-forget processing of a component file to fetch missing types.
+     * Fire-and-forget processing of a component file to fetch missing types or add `package.json` dependencies.
      * JSON files are ignored.
      */
     process(fileName: string, content: string): void {
@@ -215,7 +215,7 @@ export class Installer {
 
         if (this.npmStrategy === "package-manager") {
             await this.resolvePinnedTypeVersions()
-            await this.enqueuePackageJsonRefresh(await this.collectPackageManagerPackageNames())
+            await this.queuePackageJsonUpdate(await this.collectPackageManagerPackageNames())
             return
         }
 
@@ -246,7 +246,7 @@ export class Installer {
         if (allImports.length === 0) return
 
         if (this.npmStrategy === "package-manager") {
-            await this.enqueuePackageJsonRefresh(allImports.map(imp => getBasePackageName(imp.name)))
+            await this.queuePackageJsonUpdate(allImports.map(imp => getBasePackageName(imp.name)))
             return
         }
 
@@ -282,12 +282,8 @@ export class Installer {
         this.processedImports.add(hash)
         debug(`Processing imports for ${fileName} (${imports.length} packages)`)
 
-        // Build filtered content with only supported imports for ATA
-        const filteredContent =
-            this.npmStrategy === "acquire-types" ? content : await this.buildFilteredImports(imports)
-
         try {
-            await this.ata(filteredContent)
+            await this.ata(await this.buildFilteredImports(imports))
         } catch (err) {
             warn(`Type fetching failed for ${fileName}`)
             debug(`ATA error for ${fileName}:`, err)
@@ -333,7 +329,7 @@ export class Installer {
         )
     }
 
-    private async enqueuePackageJsonRefresh(packageNames: string[]): Promise<void> {
+    private async queuePackageJsonUpdate(packageNames: string[]): Promise<void> {
         const missingPackageNames = packageNames
             .map(name => getBasePackageName(name))
             .filter(name => {
@@ -346,21 +342,21 @@ export class Installer {
             })
 
         if (missingPackageNames.length === 0) {
-            return this.packageJsonRefreshPromise
+            return this.packageJsonUpdatePromise
         }
 
-        this.packageJsonRefreshPromise = this.packageJsonRefreshPromise
+        this.packageJsonUpdatePromise = this.packageJsonUpdatePromise
             .then(async () => {
-                await this.refreshPackageJsonFromPlugin(missingPackageNames)
+                await this.updatePackageJsonFromPlugin(missingPackageNames)
             })
             .catch((err: unknown) => {
                 warn("Could not refresh package.json dependency versions", err)
             })
 
-        return this.packageJsonRefreshPromise
+        return this.packageJsonUpdatePromise
     }
 
-    private async refreshPackageJsonFromPlugin(packageNames: string[]): Promise<void> {
+    private async updatePackageJsonFromPlugin(packageNames: string[]): Promise<void> {
         const uniquePackageNames = [...new Set(packageNames)].sort()
         const versions = await this.requestDependencyVersions(uniquePackageNames)
         const packagePath = path.join(this.projectDir, "package.json")
@@ -380,7 +376,7 @@ export class Installer {
 
         let changed = false
         for (const packageName of uniquePackageNames) {
-            const version = (versions[packageName] ?? this.pinnedTypeVersions[packageName])?.replace(/^\^/, "")
+            const version = versions[packageName] ?? this.pinnedTypeVersions[packageName]
             if (!version) {
                 continue
             }

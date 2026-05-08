@@ -187,7 +187,6 @@ describe("start() integration", () => {
             projectDir: null,
             filesDir: null,
             dangerouslyAutoDelete: true,
-            npmStrategy: "none",
             once: false,
             explicitDirectory: tmpDir,
             explicitName: "TestProject",

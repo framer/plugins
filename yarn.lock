@@ -4427,6 +4427,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"es-module-lexer@npm:^1.7.0":
+  version: 1.7.0
+  resolution: "es-module-lexer@npm:1.7.0"
+  checksum: 10/b6f3e576a3fed4d82b0d0ad4bbf6b3a5ad694d2e7ce8c4a069560da3db6399381eaba703616a182b16dde50ce998af64e07dcf49f2ae48153b9e07be3f107087
+  languageName: node
+  linkType: hard
+
 "es-module-lexer@npm:^2.0.0":
   version: 2.0.0
   resolution: "es-module-lexer@npm:2.0.0"
@@ -4995,6 +5002,7 @@ __metadata:
     "@typescript/ata": "npm:^0.9.8"
     chokidar: "npm:^5.0.0"
     commander: "npm:^14.0.3"
+    parse-imports: "npm:^3.0.0"
     prettier: "npm:^3.7.4"
     tsdown: "npm:^0.20.1"
     tsx: "npm:^4.21.0"
@@ -6564,6 +6572,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"parse-imports@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "parse-imports@npm:3.0.0"
+  dependencies:
+    es-module-lexer: "npm:^1.7.0"
+    slashes: "npm:^3.0.12"
+  checksum: 10/0ebba4405e8ddb2c4a5851aca70898850bd2526bdead97591866b0e36c768507a27881cec0c471fb193d92254663dcba8f729a3d27210a8c40147509788b9012
+  languageName: node
+  linkType: hard
+
 "parse5-htmlparser2-tree-adapter@npm:^7.1.0":
   version: 7.1.0
   resolution: "parse5-htmlparser2-tree-adapter@npm:7.1.0"
@@ -7478,6 +7496,13 @@ __metadata:
   version: 4.1.0
   resolution: "signal-exit@npm:4.1.0"
   checksum: 10/c9fa63bbbd7431066174a48ba2dd9986dfd930c3a8b59de9c29d7b6854ec1c12a80d15310869ea5166d413b99f041bfa3dd80a7947bcd44ea8e6eb3ffeabfa1f
+  languageName: node
+  linkType: hard
+
+"slashes@npm:^3.0.12":
+  version: 3.0.12
+  resolution: "slashes@npm:3.0.12"
+  checksum: 10/c221d73765013db64f3eaf49dacc6b99a5d5477e63720c1bb71d1af647965dda23ab100ca1eb622e080f11ffe68e1e0a233b7b908073260bed4ec819ff1d3e42
   languageName: node
   linkType: hard
 

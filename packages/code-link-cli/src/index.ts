@@ -9,7 +9,7 @@
 
 import { createRequire } from "node:module"
 import { getPortFromHash } from "@code-link/shared"
-import { Command, InvalidArgumentError } from "commander"
+import { Command, InvalidArgumentError, Option } from "commander"
 import { start } from "./controller.ts"
 import type { Config, NpmStrategy } from "./types.ts"
 import { banner, LogLevel, setLogLevel, warn } from "./utils/logging.ts"
@@ -20,11 +20,7 @@ const { version } = require("../package.json") as { version: string }
 
 const program = new Command()
 
-function parseUnsupportedNpmMode(mode: string | undefined): NpmStrategy {
-    if (mode === undefined) {
-        return "acquire-types"
-    }
-
+function parseUnsupportedNpmMode(mode: string): NpmStrategy {
     if (mode === "acquire-types" || mode === "package-manager") {
         return mode
     }
@@ -51,10 +47,13 @@ program
     .option("-v, --verbose", "Enable verbose logging")
     .option("--log-level <level>", "Set log level (debug, info, warn, error)")
     .option("--dangerously-auto-delete", "Automatically delete remote files without confirmation")
-    .option(
-        "--unsupported-npm [mode]",
-        "Handle unsupported npm packages (default without mode: acquire-types; modes: acquire-types, package-manager)",
-        parseUnsupportedNpmMode
+    .addOption(
+        new Option(
+            "--unsupported-npm [mode]",
+            "Handle unsupported npm packages (default without mode: acquire-types; modes: acquire-types, package-manager)"
+        )
+            .argParser(parseUnsupportedNpmMode)
+            .preset("acquire-types")
     )
     .action(
         async (

@@ -3,12 +3,11 @@
  */
 
 import { setupTypeAcquisition } from "@typescript/ata"
-import type { Dirent } from "fs"
 import fs from "fs/promises"
 import path from "path"
+import { parseImports } from "parse-imports"
 import ts from "typescript"
-import type { DependencyVersions, NpmStrategy } from "../types.ts"
-import { extractImports } from "../utils/imports.ts"
+import type { DependencyVersions, FileInfo, NpmStrategy } from "../types.ts"
 import { debug, error, status, warn } from "../utils/logging.ts"
 import { installSkills } from "./skills.ts"
 
@@ -68,10 +67,9 @@ const DEFAULT_PINNED_TYPE_VERSIONS: Record<string, string> = {
 const JSON_EXTENSION_REGEX = /\.json$/i
 
 /**
- * Packages that are officially supported for type acquisition.
- * Use --unsupported-npm flag to allow other packages.
+ * Packages that receive ATA types even when unsupported npm is not enabled.
  */
-const SUPPORTED_PACKAGES = new Set([
+const DEFAULT_PACKAGES = new Set([
     "framer",
     "framer-motion",
     "react",
@@ -184,21 +182,28 @@ export class Installer {
     }
 
     /**
-     * Fire-and-forget processing of a component file to fetch missing types or add `package.json` dependencies.
+     * Process component files to fetch missing types or add `package.json` dependencies.
      * JSON files are ignored.
      */
-    process(fileName: string, content: string): void {
-        if (!content || JSON_EXTENSION_REGEX.test(fileName)) {
-            return
+    async processFiles(files: FileInfo[]): Promise<void> {
+        const packageNames = new Set<string>()
+
+        for (const file of files) {
+            if (!file.content || JSON_EXTENSION_REGEX.test(file.name)) {
+                continue
+            }
+
+            try {
+                const imports = await extractNpmPackageNames(file.content)
+                for (const packageName of imports) {
+                    packageNames.add(packageName)
+                }
+            } catch (err: unknown) {
+                debug(`Type installer failed to parse imports for ${file.name}`, err)
+            }
         }
 
-        Promise.resolve()
-            .then(async () => {
-                await this.processImports(fileName, content)
-            })
-            .catch((err: unknown) => {
-                debug(`Type installer failed for ${fileName}`, err)
-            })
+        await this.processNpmPackages(packageNames, files.length)
     }
 
     // Internal helpers
@@ -215,7 +220,6 @@ export class Installer {
 
         if (this.npmStrategy === "package-manager") {
             await this.resolvePinnedTypeVersions()
-            await this.queuePackageJsonUpdate(await this.collectPackageManagerPackageNames())
             return
         }
 
@@ -229,7 +233,7 @@ export class Installer {
                 // After pins are resolved, also include package.json deps
                 const packageJsonDeps =
                     this.npmStrategy === "acquire-types"
-                        ? Object.keys(this.pinnedTypeVersions).filter(name => !SUPPORTED_PACKAGES.has(name))
+                        ? Object.keys(this.pinnedTypeVersions).filter(name => !DEFAULT_PACKAGES.has(name))
                         : []
 
                 const imports = [...coreImports, ...(await this.buildPinnedImports(packageJsonDeps))].join("\n")
@@ -240,27 +244,35 @@ export class Installer {
             })
     }
 
-    private async processImports(fileName: string, content: string): Promise<void> {
-        const allImports = extractImports(content).filter(i => i.type === "npm")
+    private async processNpmPackages(packageNames: Set<string>, fileCount: number): Promise<void> {
+        const allPackageNames = [...packageNames]
 
-        if (allImports.length === 0) return
-
+        // package-manager: just keep package.json dependencies current.
         if (this.npmStrategy === "package-manager") {
-            await this.queuePackageJsonUpdate(allImports.map(imp => getBasePackageName(imp.name)))
+            for (const packageName of [...CORE_LIBRARIES, ...PACKAGE_MANAGER_DEV_DEPENDENCIES]) {
+                allPackageNames.push(packageName)
+            }
+
+            await this.queuePackageJsonUpdate(allPackageNames)
             return
         }
 
-        // Filter to supported packages unless --unsupported-npm flag is set
-        const imports =
-            this.npmStrategy === "acquire-types" ? allImports : allImports.filter(i => this.isSupportedPackage(i.name))
+        if (allPackageNames.length === 0) return
 
-        const unsupportedCount = allImports.length - imports.length
-        if (unsupportedCount > 0 && this.npmStrategy !== "acquire-types") {
-            const unsupported = allImports.filter(i => !this.isSupportedPackage(i.name)).map(i => i.name)
-            debug(`Skipping unsupported packages: ${unsupported.join(", ")} (use --unsupported-npm to enable)`)
+        let packagesForAta: string[]
+        if (this.npmStrategy === "acquire-types") {
+            // acquire-types: unsupported npm is explicitly enabled, so every npm import gets ATA.
+            packagesForAta = allPackageNames
+        } else {
+            // default: npm imports are not supported, but default packages still need types via ATA.
+            packagesForAta = allPackageNames.filter(packageName => this.isDefaultPackage(packageName))
+            const unsupportedPackages = allPackageNames.filter(packageName => !this.isDefaultPackage(packageName))
+            if (unsupportedPackages.length > 0) {
+                debug(`Skipping unsupported packages: ${unsupportedPackages.join(", ")} (use --unsupported-npm to enable)`)
+            }
         }
 
-        if (imports.length === 0) {
+        if (packagesForAta.length === 0) {
             return
         }
 
@@ -270,8 +282,8 @@ export class Installer {
             await this.resolvePackageJsonPins()
         }
 
-        const hash = imports
-            .map(imp => this.pinImport(imp.name))
+        const hash = packagesForAta
+            .map(packageName => this.pinImport(packageName))
             .sort()
             .join(",")
 
@@ -280,66 +292,27 @@ export class Installer {
         }
 
         this.processedImports.add(hash)
-        debug(`Processing imports for ${fileName} (${imports.length} packages)`)
-
-        try {
-            await this.ata(await this.buildFilteredImports(imports))
-        } catch (err) {
-            warn(`Type fetching failed for ${fileName}`)
-            debug(`ATA error for ${fileName}:`, err)
-        }
-    }
-
-    private async collectPackageManagerPackageNames(): Promise<string[]> {
-        const packageNames = new Set([...CORE_LIBRARIES, ...PACKAGE_MANAGER_DEV_DEPENDENCIES])
-        await this.addPackageNamesFromDirectory(path.join(this.projectDir, "files"), packageNames)
-        return [...packageNames]
-    }
-
-    private async addPackageNamesFromDirectory(directory: string, packageNames: Set<string>): Promise<void> {
-        let entries: Dirent[]
-        try {
-            entries = await fs.readdir(directory, { withFileTypes: true })
-        } catch {
-            return
-        }
-
-        await Promise.all(
-            entries.map(async entry => {
-                const entryPath = path.join(directory, entry.name)
-
-                if (entry.isDirectory()) {
-                    await this.addPackageNamesFromDirectory(entryPath, packageNames)
-                    return
-                }
-
-                if (!entry.isFile() || JSON_EXTENSION_REGEX.test(entry.name)) {
-                    return
-                }
-
-                try {
-                    const content = await fs.readFile(entryPath, "utf-8")
-                    for (const imported of extractImports(content).filter(i => i.type === "npm")) {
-                        packageNames.add(getBasePackageName(imported.name))
-                    }
-                } catch {
-                    // Best effort; file contents can change while the watcher is active.
-                }
-            })
+        debug(
+            `Processing imports from ${fileCount} ${fileCount === 1 ? "file" : "files"} (${packagesForAta.length} packages)`
         )
+
+        try {
+            await this.ata((await this.buildPinnedImports(packagesForAta)).join("\n"))
+        } catch (err) {
+            warn("Type fetching failed")
+            debug("ATA error:", err)
+        }
     }
 
     private async queuePackageJsonUpdate(packageNames: string[]): Promise<void> {
-        const missingPackageNames = packageNames
-            .map(name => getBasePackageName(name))
-            .filter(name => {
-                if (this.packageManagerPackages.has(name)) {
-                    return false
-                }
+        const missingPackageNames = packageNames.filter(packageName => {
+            if (this.packageManagerPackages.has(packageName)) {
+                return false
+            }
 
-                this.packageManagerPackages.add(name)
-                return true
-            })
+            this.packageManagerPackages.add(packageName)
+            return true
+        })
 
         if (missingPackageNames.length === 0) {
             return this.packageJsonUpdatePromise
@@ -406,31 +379,21 @@ export class Installer {
         pkg.dependencies = sortDependencyMap(dependencies)
         pkg.devDependencies = sortDependencyMap(devDependencies)
         await fs.writeFile(packagePath, JSON.stringify(pkg, null, 4))
-        status("Synced project dependencies to package.json. Run your package manager to install them.")
+        status("Updated dependencies. Run your package manager to install them.")
         debug(`Updated package.json dependency versions for ${uniquePackageNames.join(", ")}`)
     }
 
     /**
-     * Check if a package is in the supported list.
-     * Also checks for subpath imports (e.g., "framer/build" -> "framer")
+     * Check if a package receives ATA types without unsupported npm enabled.
      */
-    private isSupportedPackage(pkgName: string): boolean {
-        // Direct match
-        if (SUPPORTED_PACKAGES.has(pkgName)) {
+    private isDefaultPackage(pkgName: string): boolean {
+        if (DEFAULT_PACKAGES.has(pkgName)) {
             return true
         }
 
-        // Check if base package is supported (e.g., "framer-motion/dist" -> "framer-motion")
         const basePkg = getBasePackageName(pkgName)
 
-        return SUPPORTED_PACKAGES.has(basePkg)
-    }
-
-    /**
-     * Build synthetic import statements for ATA from filtered imports
-     */
-    private async buildFilteredImports(imports: { name: string }[]): Promise<string> {
-        return (await this.buildPinnedImports(imports.map(imp => imp.name))).join("\n")
+        return DEFAULT_PACKAGES.has(basePkg)
     }
 
     private async buildPinnedImports(imports: string[]): Promise<string[]> {
@@ -689,6 +652,22 @@ function getBasePackageName(packageName: string): string {
     }
 
     return parts[0] ?? packageName
+}
+
+async function extractNpmPackageNames(code: string): Promise<string[]> {
+    const imports = await parseImports(code)
+    const seen = new Set<string>()
+
+    for (const imported of imports) {
+        const specifier = imported.moduleSpecifier
+        if (specifier.type !== "package" || !specifier.isConstant || !specifier.value) {
+            continue
+        }
+
+        seen.add(getBasePackageName(specifier.value))
+    }
+
+    return [...seen]
 }
 
 function sortDependencyMap(dependencies: NpmDependencyMap): NpmDependencyMap {

@@ -138,7 +138,7 @@ describe("Installer", () => {
         })
     })
 
-    describe("process()", () => {
+    describe("processFiles()", () => {
         async function initAndClearAta(installer: InstanceType<typeof Installer>) {
             await installer.initialize()
             await vi.waitFor(() => {
@@ -152,9 +152,8 @@ describe("Installer", () => {
             const installer = new Installer({ projectDir: tmpDir })
             await initAndClearAta(installer)
 
-            installer.process("data.json", '{"key": "value"}')
+            await installer.processFiles([{ name: "data.json", content: '{"key": "value"}' }])
 
-            await new Promise(resolve => setTimeout(resolve, 100))
             expect(mockAta).not.toHaveBeenCalled()
         })
 
@@ -162,9 +161,8 @@ describe("Installer", () => {
             const installer = new Installer({ projectDir: tmpDir })
             await initAndClearAta(installer)
 
-            installer.process("component.tsx", "")
+            await installer.processFiles([{ name: "component.tsx", content: "" }])
 
-            await new Promise(resolve => setTimeout(resolve, 100))
             expect(mockAta).not.toHaveBeenCalled()
         })
 
@@ -173,12 +171,8 @@ describe("Installer", () => {
             await initAndClearAta(installer)
 
             const code = `import { motion } from "framer-motion"`
-            installer.process("a.tsx", code)
-            installer.process("b.tsx", code)
-
-            await vi.waitFor(() => {
-                expect(mockAta).toHaveBeenCalled()
-            })
+            await installer.processFiles([{ name: "a.tsx", content: code }])
+            await installer.processFiles([{ name: "b.tsx", content: code }])
 
             expect(mockAta).toHaveBeenCalledTimes(1)
         })
@@ -187,14 +181,12 @@ describe("Installer", () => {
             const installer = new Installer({ projectDir: tmpDir })
             await initAndClearAta(installer)
 
-            installer.process(
-                "component.tsx",
-                `import React from "react"\nimport { createRoot } from "react-dom/client"`
-            )
-
-            await vi.waitFor(() => {
-                expect(mockAta).toHaveBeenCalled()
-            })
+            await installer.processFiles([
+                {
+                    name: "component.tsx",
+                    content: `import React from "react"\nimport { createRoot } from "react-dom/client"`,
+                },
+            ])
 
             const processedCall = mockAta.mock.calls[0][0]
             expect(processedCall).toContain(`import "react"; // types: 18.2.0`)

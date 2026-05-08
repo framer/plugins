@@ -11,6 +11,7 @@
  */
 
 import { fileKeyForLookup, normalizePath, pluralize, sanitizeFilePath } from "@code-link/shared"
+import type { Dirent } from "fs"
 import fs from "fs/promises"
 import path from "path"
 import type { FileOperationMemory } from "../sync-memory.ts"
@@ -29,7 +30,7 @@ export const DEFAULT_REMOTE_DRIFT_MS = 2000
 export async function listFiles(filesDir: string): Promise<FileInfo[]> {
     const files: FileInfo[] = []
 
-    let entries: Awaited<ReturnType<typeof fs.readdir>>
+    let entries: Dirent[]
     try {
         entries = await fs.readdir(filesDir, { withFileTypes: true, recursive: true })
     } catch (err) {

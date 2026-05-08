@@ -153,7 +153,7 @@ vi.mock("./helpers/watcher.ts", () => ({
 vi.mock("./helpers/installer.ts", () => ({
     Installer: class {
         initialize = vi.fn(() => Promise.resolve())
-        process = vi.fn()
+        processFiles = vi.fn(() => Promise.resolve())
         constructor(_opts: unknown) {}
     },
 }))

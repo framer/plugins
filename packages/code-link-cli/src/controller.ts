@@ -668,7 +668,7 @@ async function writeFiles(
         if (!result.ok) continue
         if (!options.silent) fileDown(result.path)
         runtime.memory.recordSyncedContent(result.path, result.file.content, result.file.modifiedAt ?? Date.now())
-        runtime.installer?.process(result.path, result.file.content)
+        if (!options.silent) processInstallerFiles(runtime, [result.file])
     }
 }
 
@@ -697,7 +697,7 @@ async function sendLocalChange(fileName: string, content: string, ctx: ApplyCtx)
     if (!sent) return
     runtime.memory.armContentEcho(fileName, content)
     fileUp(fileName)
-    runtime.installer?.process(fileName, content)
+    processInstallerFiles(runtime, [{ name: fileName, content }])
 }
 
 async function sendFileDelete(fileNames: string[], ctx: ApplyCtx): Promise<void> {
@@ -819,6 +819,7 @@ async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE"
     const wasDisconnected = runtime.disconnectUi.wasRecentlyDisconnected()
     let shouldShutdown = !!config.once
     let shouldTryGitInit = false
+    let statusMessage: string | null = null
 
     if (wasDisconnected) {
         const didShow = runtime.disconnectUi.didShowNotice()
@@ -827,20 +828,38 @@ async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE"
             success(
                 `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
             )
-            status(syncCompleteStatusMessage(config))
+            statusMessage = syncCompleteStatusMessage(config)
         }
     } else {
         const message = syncCompleteSuccessMessage(runtime, effect)
         if (message) success(message)
-        status(syncCompleteStatusMessage(config))
+        statusMessage = syncCompleteStatusMessage(config)
         shouldTryGitInit = !!(runtime.workspace.projectDirCreated && runtime.workspace.projectDir)
     }
+
+    await processAllInstallerFiles(ctx)
+    if (statusMessage) status(statusMessage)
 
     await sendToPlugin(syncState.socket, { type: "sync-status", status: "ready" })
     runtime.noteEmittedSyncStatus("ready")
     if (wasDisconnected) runtime.disconnectUi.reset()
     if (shouldTryGitInit && runtime.workspace.projectDir) tryGitInit(runtime.workspace.projectDir)
     if (shouldShutdown) await shutdown()
+}
+
+function processInstallerFiles(runtime: SyncRuntime, files: FileInfo[]): void {
+    if (!runtime.installer || runtime.lastEmittedSyncStatus !== "ready") return
+    void runtime.installer.processFiles(files).catch((err: unknown) => {
+        debug("Type installer failed", err)
+    })
+}
+
+async function processAllInstallerFiles(ctx: ApplyCtx): Promise<void> {
+    const { runtime } = ctx
+    if (!runtime.installer || !runtime.workspace.filesDir) return
+
+    const files = await listFiles(runtime.workspace.filesDir)
+    await runtime.installer.processFiles(files)
 }
 
 async function flushPendingSyncComplete(ctx: ApplyCtx): Promise<"ready" | "blocked" | "empty"> {

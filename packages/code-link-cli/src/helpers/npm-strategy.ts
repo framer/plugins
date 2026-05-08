@@ -1,11 +1,9 @@
-import fs from "fs/promises"
 import path from "path"
 import type { Config, NpmStrategy } from "../types.ts"
 import { debug, warn } from "../utils/logging.ts"
 import { readAndMigratePackageJson } from "../utils/project.ts"
 
 const CONFIG_FIELD = "codeLink.npmStrategy"
-const LOCKFILES = ["yarn.lock", "pnpm-lock.yaml", "package-lock.json", "bun.lockb"]
 
 export async function resolveNpmStrategy(config: Config, projectDir: string): Promise<NpmStrategy | undefined> {
     if (config.npmStrategy) {
@@ -19,13 +17,7 @@ export async function resolveNpmStrategy(config: Config, projectDir: string): Pr
         return packageJsonStrategy
     }
 
-    const detectedLockfile = await detectLockfile(projectDir)
-    if (detectedLockfile) {
-        debug(`Using npm strategy package-manager from ${detectedLockfile}`)
-        return "package-manager"
-    }
-
-    debug("No npm strategy from CLI, package.json, or lockfile")
+    debug("No npm strategy from CLI or package.json")
     return undefined
 }
 
@@ -50,19 +42,6 @@ async function readPackageJsonStrategy(projectDir: string): Promise<NpmStrategy 
     } catch {
         return null
     }
-}
-
-async function detectLockfile(projectDir: string): Promise<string | null> {
-    for (const fileName of LOCKFILES) {
-        try {
-            await fs.access(path.join(projectDir, fileName))
-            return fileName
-        } catch {
-            // Check the next lockfile.
-        }
-    }
-
-    return null
 }
 
 function isNpmStrategy(value: unknown): value is NpmStrategy {

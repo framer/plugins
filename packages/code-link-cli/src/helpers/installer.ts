@@ -226,16 +226,7 @@ export class Installer {
         // Fire-and-forget type installation - don't block initialization
         Promise.resolve()
             .then(async () => {
-                const coreImports = await this.buildPinnedImports(CORE_LIBRARIES)
-
-                // After pins are resolved, also include package.json deps
-                const packageJsonDeps =
-                    this.npmStrategy === "acquire-types"
-                        ? Object.keys(this.pinnedTypeVersions).filter(name => !DEFAULT_PACKAGES.has(name))
-                        : []
-
-                const imports = [...coreImports, ...(await this.buildPinnedImports(packageJsonDeps))].join("\n")
-                await this.ata(imports)
+                await this.ata((await this.buildPinnedImports(CORE_LIBRARIES)).join("\n"))
             })
             .catch((err: unknown) => {
                 debug("Type installation failed", err)
@@ -279,10 +270,6 @@ export class Installer {
         }
 
         await this.pinnedTypeVersionsPromise
-
-        if (this.npmStrategy === "acquire-types") {
-            await this.resolvePackageJsonPins()
-        }
 
         const hash = packagesForAta
             .map(packageName => this.pinImport(packageName))
@@ -398,29 +385,6 @@ export class Installer {
             )
         } catch (err) {
             debug(`Falling back to default ATA pins for ${FRAMER_PACKAGE_NAME}`, err)
-        }
-
-        if (this.npmStrategy === "acquire-types") {
-            await this.resolvePackageJsonPins()
-        }
-    }
-
-    private async resolvePackageJsonPins(): Promise<void> {
-        try {
-            const pkgPath = path.join(this.projectDir, "package.json")
-            const raw = await fs.readFile(pkgPath, "utf-8")
-            const parsed: unknown = JSON.parse(raw)
-            const pkg = parsed as ProjectPackageJson
-            const allDeps: NpmDependencyMap = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) }
-            for (const [name, range] of Object.entries(allDeps)) {
-                const version = normalizePinnedVersion(range)
-                if (version) {
-                    this.pinnedTypeVersions[name] = version
-                }
-            }
-            debug(`Resolved ${Object.keys(allDeps).length} package.json version pins`)
-        } catch {
-            warn("Could not read package.json for version pinning")
         }
     }
 

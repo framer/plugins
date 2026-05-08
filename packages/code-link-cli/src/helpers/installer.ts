@@ -90,8 +90,6 @@ export class Installer {
     private requestDependencyVersions: (packages: string[]) => Promise<DependencyVersions>
     private ata: ReturnType<typeof setupTypeAcquisition>
     private processedImports = new Set<string>()
-    private packageManagerPackages = new Set<string>()
-    private packageJsonUpdatePromise: Promise<void> = Promise.resolve()
     private initializationPromise: Promise<void> | null = null
     private pinnedTypeVersions: Record<string, string> = { ...DEFAULT_PINNED_TYPE_VERSIONS }
     private pinnedTypeVersionsPromise: Promise<void> | null = null
@@ -253,7 +251,11 @@ export class Installer {
                 allPackageNames.push(packageName)
             }
 
-            await this.queuePackageJsonUpdate(allPackageNames)
+            try {
+                await this.updatePackageJsonDependencies(allPackageNames)
+            } catch (err: unknown) {
+                warn("Could not update package.json dependency versions", err)
+            }
             return
         }
 
@@ -304,32 +306,7 @@ export class Installer {
         }
     }
 
-    private async queuePackageJsonUpdate(packageNames: string[]): Promise<void> {
-        const missingPackageNames = packageNames.filter(packageName => {
-            if (this.packageManagerPackages.has(packageName)) {
-                return false
-            }
-
-            this.packageManagerPackages.add(packageName)
-            return true
-        })
-
-        if (missingPackageNames.length === 0) {
-            return this.packageJsonUpdatePromise
-        }
-
-        this.packageJsonUpdatePromise = this.packageJsonUpdatePromise
-            .then(async () => {
-                await this.updatePackageJsonFromPlugin(missingPackageNames)
-            })
-            .catch((err: unknown) => {
-                warn("Could not refresh package.json dependency versions", err)
-            })
-
-        return this.packageJsonUpdatePromise
-    }
-
-    private async updatePackageJsonFromPlugin(packageNames: string[]): Promise<void> {
+    private async updatePackageJsonDependencies(packageNames: string[]): Promise<void> {
         const uniquePackageNames = [...new Set(packageNames)].sort()
         const versions = await this.requestDependencyVersions(uniquePackageNames)
         const packagePath = path.join(this.projectDir, "package.json")

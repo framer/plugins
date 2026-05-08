@@ -664,12 +664,15 @@ async function writeFiles(
         debug(`Skipped ${pluralize(files.length - filesToWrite.length, "echoed change")}`)
     }
     const results = await writeRemoteFiles(filesToWrite, runtime.workspace.filesDir, runtime.memory)
+    const installerFiles: FileInfo[] = []
     for (const result of results) {
         if (!result.ok) continue
         if (!options.silent) fileDown(result.path)
         runtime.memory.recordSyncedContent(result.path, result.file.content, result.file.modifiedAt ?? Date.now())
-        if (!options.silent) processInstallerFiles(runtime, [result.file])
+        if (!options.silent) installerFiles.push(result.file)
     }
+
+    await processInstallerFiles(runtime, installerFiles)
 }
 
 async function deleteFiles(fileNames: string[], ctx: ApplyCtx): Promise<void> {
@@ -697,7 +700,7 @@ async function sendLocalChange(fileName: string, content: string, ctx: ApplyCtx)
     if (!sent) return
     runtime.memory.armContentEcho(fileName, content)
     fileUp(fileName)
-    processInstallerFiles(runtime, [{ name: fileName, content }])
+    await processInstallerFiles(runtime, [{ name: fileName, content }])
 }
 
 async function sendFileDelete(fileNames: string[], ctx: ApplyCtx): Promise<void> {
@@ -847,11 +850,15 @@ async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE"
     if (shouldShutdown) await shutdown()
 }
 
-function processInstallerFiles(runtime: SyncRuntime, files: FileInfo[]): void {
+async function processInstallerFiles(runtime: SyncRuntime, files: FileInfo[]): Promise<void> {
     if (!runtime.installer || runtime.lastEmittedSyncStatus !== "ready") return
-    void runtime.installer.processFiles(files).catch((err: unknown) => {
+    if (files.length === 0) return
+
+    try {
+        await runtime.installer.processFiles(files)
+    } catch (err: unknown) {
         debug("Type installer failed", err)
-    })
+    }
 }
 
 async function processAllInstallerFiles(ctx: ApplyCtx): Promise<void> {

@@ -28,14 +28,6 @@ function parseUnsupportedNpmMode(mode: string): NpmStrategy {
     throw new InvalidArgumentError("unsupported npm mode must be 'acquire-types' or 'package-manager'")
 }
 
-program.exitOverride(err => {
-    if (err.code === "commander.missingArgument") {
-        console.error("Missing Project ID. Copy command via Code Link Plugin.")
-        process.exit(err.exitCode)
-    }
-    throw err
-})
-
 program
     .name("framer-code-link")
     .description("Sync Framer code components to your local filesystem")

@@ -192,5 +192,48 @@ describe("Installer", () => {
             expect(processedCall).toContain(`import "react"; // types: 18.2.0`)
             expect(processedCall).toContain(`import "react-dom"; // types: 18.2.0`)
         })
+
+        it("updates package.json dependencies in package-manager mode", async () => {
+            const requestDependencyVersions = vi.fn(async () => ({
+                "@types/react": "18.2.0",
+                "@types/react-dom": "18.2.0",
+                framer: "3.0.2",
+                "framer-motion": "12.34.3",
+                lodash: "4.17.21",
+                react: "18.2.0",
+                "react-dom": "18.2.0",
+            }))
+            const installer = new Installer({
+                projectDir: tmpDir,
+                npmStrategy: "package-manager",
+                requestDependencyVersions,
+            })
+
+            await installer.initialize()
+            mockAta.mockClear()
+
+            const files = [{ name: "component.tsx", content: `import debounce from "lodash/debounce"` }]
+            await installer.processFiles(files)
+
+            const packagePath = path.join(tmpDir, "package.json")
+            const firstPackageJson = await fs.readFile(packagePath, "utf-8")
+            const pkg = JSON.parse(firstPackageJson)
+            expect(mockAta).not.toHaveBeenCalled()
+            expect(pkg.dependencies).toMatchObject({
+                framer: "3.0.2",
+                "framer-motion": "12.34.3",
+                lodash: "4.17.21",
+                react: "18.2.0",
+                "react-dom": "18.2.0",
+            })
+            expect(pkg.devDependencies).toMatchObject({
+                "@types/react": "18.2.0",
+                "@types/react-dom": "18.2.0",
+            })
+
+            await installer.processFiles(files)
+
+            expect(await fs.readFile(packagePath, "utf-8")).toBe(firstPackageJson)
+        })
     })
 })

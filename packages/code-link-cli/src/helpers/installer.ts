@@ -5,10 +5,9 @@
 import { setupTypeAcquisition } from "@typescript/ata"
 import fs from "fs/promises"
 import path from "path"
-import { parseImports } from "parse-imports"
 import ts from "typescript"
 import type { DependencyVersions, FileInfo, NpmStrategy } from "../types.ts"
-import { debug, error, status, warn } from "../utils/logging.ts"
+import { debug, error, success, warn } from "../utils/logging.ts"
 import { installSkills } from "./skills.ts"
 
 export interface InstallerConfig {
@@ -192,7 +191,7 @@ export class Installer {
             }
 
             try {
-                const imports = await extractNpmPackageNames(file.content)
+                const imports = extractNpmPackageNames(file.content)
                 for (const packageName of imports) {
                     packageNames.add(packageName)
                 }
@@ -343,7 +342,7 @@ export class Installer {
         pkg.dependencies = sortDependencyMap(dependencies)
         pkg.devDependencies = sortDependencyMap(devDependencies)
         await fs.writeFile(packagePath, JSON.stringify(pkg, null, 4))
-        status("Updated dependencies. Run your package manager to install them.")
+        success("Updated dependencies. Run your package manager to install them.")
         debug(`Updated package.json dependency versions for ${uniquePackageNames.join(", ")}`)
     }
 
@@ -595,20 +594,19 @@ function getBasePackageName(packageName: string): string {
     return parts[0] ?? packageName
 }
 
-async function extractNpmPackageNames(code: string): Promise<string[]> {
-    const imports = await parseImports(code)
+function extractNpmPackageNames(code: string): string[] {
+    const { importedFiles } = ts.preProcessFile(code, true, true)
     const seen = new Set<string>()
-
-    for (const imported of imports) {
-        const specifier = imported.moduleSpecifier
-        if (specifier.type !== "package" || !specifier.isConstant || !specifier.value) {
-            continue
+    for (const { fileName } of importedFiles) {
+        if (isPackageSpecifier(fileName)) {
+            seen.add(getBasePackageName(fileName))
         }
-
-        seen.add(getBasePackageName(specifier.value))
     }
-
     return [...seen]
+}
+
+function isPackageSpecifier(specifier: string): boolean {
+    return !specifier.startsWith(".") && !specifier.startsWith("/") && !/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(specifier)
 }
 
 function sortDependencyMap(dependencies: NpmDependencyMap): NpmDependencyMap {

@@ -342,7 +342,7 @@ export class Installer {
         pkg.dependencies = sortDependencyMap(dependencies)
         pkg.devDependencies = sortDependencyMap(devDependencies)
         await fs.writeFile(packagePath, JSON.stringify(pkg, null, 4))
-        success("Updated dependencies. Run your package manager to install them.")
+        success("Updated project dependencies in package.json. Run your package manager to install them.")
         debug(`Updated package.json dependency versions for ${uniquePackageNames.join(", ")}`)
     }
 

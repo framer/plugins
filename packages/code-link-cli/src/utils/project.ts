@@ -2,12 +2,94 @@ import { shortProjectHash } from "@code-link/shared"
 import fs from "fs/promises"
 import path from "path"
 
-interface PackageJson {
-    shortProjectHash?: string // derived short id (8 chars base58)
+/** Code Link metadata stored under `package.json` → `codeLink`. */
+export interface CodeLinkInPackage {
+    shortProjectHash?: string
     framerProjectName?: string
+    npmStrategy?: unknown
+}
+
+interface PackageJson {
+    codeLink?: CodeLinkInPackage
     name?: string
     version?: string
+    /** @deprecated migrated into codeLink */
+    shortProjectHash?: string
+    /** @deprecated migrated into codeLink */
+    framerProjectName?: string
+    /** @deprecated migrated into codeLink.npmStrategy */
+    codeLinkNpmStrategy?: unknown
     [key: string]: unknown
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+/**
+ * Reads package.json, migrates legacy top-level Code Link fields into `codeLink`,
+ * backfills any provided defaults for missing `codeLink` fields, and persists
+ * when anything changed.
+ */
+export async function readAndMigratePackageJson(
+    packageJsonPath: string,
+    defaults?: { shortProjectHash?: string; framerProjectName?: string }
+): Promise<PackageJson | null> {
+    try {
+        const raw = await fs.readFile(packageJsonPath, "utf-8")
+        const parsed = JSON.parse(raw) as unknown
+        if (!isPlainObject(parsed)) {
+            return null
+        }
+
+        const hadLegacy =
+            "shortProjectHash" in parsed ||
+            "framerProjectName" in parsed ||
+            "codeLinkNpmStrategy" in parsed
+
+        const existing = parsed.codeLink
+        const base: Record<string, unknown> = isPlainObject(existing) ? { ...existing } : {}
+
+        if (parsed.shortProjectHash !== undefined && base.shortProjectHash === undefined) {
+            base.shortProjectHash = parsed.shortProjectHash
+        }
+        if (parsed.framerProjectName !== undefined && base.framerProjectName === undefined) {
+            base.framerProjectName = parsed.framerProjectName
+        }
+        if (parsed.codeLinkNpmStrategy !== undefined && base.npmStrategy === undefined) {
+            base.npmStrategy = parsed.codeLinkNpmStrategy
+        }
+
+        let backfilled = false
+        if (defaults?.shortProjectHash !== undefined && base.shortProjectHash === undefined) {
+            base.shortProjectHash = defaults.shortProjectHash
+            backfilled = true
+        }
+        if (defaults?.framerProjectName !== undefined && base.framerProjectName === undefined) {
+            base.framerProjectName = defaults.framerProjectName
+            backfilled = true
+        }
+
+        if (!hadLegacy && !backfilled) {
+            return parsed as PackageJson
+        }
+
+        const next: PackageJson = { ...parsed }
+        delete next.shortProjectHash
+        delete next.framerProjectName
+        delete next.codeLinkNpmStrategy
+        next.codeLink = base as CodeLinkInPackage
+
+        await fs.writeFile(packageJsonPath, JSON.stringify(next, null, 4))
+        return next
+    } catch {
+        return null
+    }
+}
+
+function getShortProjectHashFromPackage(pkg: PackageJson): string | null {
+    const short = pkg.codeLink?.shortProjectHash
+    return typeof short === "string" ? short : null
 }
 
 export function toPackageName(name: string): string {
@@ -27,14 +109,11 @@ export function toDirectoryName(name: string): string {
 }
 
 export async function getProjectHashFromCwd(): Promise<string | null> {
-    try {
-        const packageJsonPath = path.join(process.cwd(), "package.json")
-        const content = await fs.readFile(packageJsonPath, "utf-8")
-        const pkg = JSON.parse(content) as PackageJson
-        return pkg.shortProjectHash ?? null
-    } catch {
+    const result = await readAndMigratePackageJson(path.join(process.cwd(), "package.json"))
+    if (!result) {
         return null
     }
+    return getShortProjectHashFromPackage(result)
 }
 
 export async function findOrCreateProjectDirectory(options: {
@@ -45,15 +124,22 @@ export async function findOrCreateProjectDirectory(options: {
 }): Promise<{ directory: string; created: boolean; nameCollision?: boolean }> {
     const { projectHash, projectName, explicitDirectory, baseDirectory } = options
 
+    const codeLinkDefaults = {
+        shortProjectHash: shortProjectHash(projectHash),
+        framerProjectName: projectName,
+    }
+
     if (explicitDirectory) {
         const resolved = path.resolve(explicitDirectory)
         await fs.mkdir(path.join(resolved, "files"), { recursive: true })
+        await readAndMigratePackageJson(path.join(resolved, "package.json"), codeLinkDefaults)
         return { directory: resolved, created: false }
     }
 
     const cwd = baseDirectory ?? process.cwd()
     const existing = await findExistingProjectDirectory(cwd, projectHash)
     if (existing) {
+        await readAndMigratePackageJson(path.join(existing, "package.json"), codeLinkDefaults)
         return { directory: existing, created: false }
     }
 
@@ -72,8 +158,10 @@ export async function findOrCreateProjectDirectory(options: {
         name: pkgName || shortId,
         version: "1.0.0",
         private: true,
-        shortProjectHash: shortId,
-        framerProjectName: projectName,
+        codeLink: {
+            shortProjectHash: shortId,
+            framerProjectName: projectName,
+        },
     }
     await fs.writeFile(path.join(projectDirectory, "package.json"), JSON.stringify(pkg, null, 4))
 
@@ -121,11 +209,13 @@ async function findExistingProjectDirectory(baseDirectory: string, projectHash: 
 
 async function matchesProject(packageJsonPath: string, projectHash: string): Promise<boolean> {
     try {
-        const content = await fs.readFile(packageJsonPath, "utf-8")
-        const pkg = JSON.parse(content) as PackageJson
+        const pkg = await readAndMigratePackageJson(packageJsonPath)
+        if (!pkg) {
+            return false
+        }
         const inputShort = shortProjectHash(projectHash)
         // Match on short id (handles both full hash input and short id input)
-        return pkg.shortProjectHash === inputShort
+        return getShortProjectHashFromPackage(pkg) === inputShort
     } catch {
         return false
     }

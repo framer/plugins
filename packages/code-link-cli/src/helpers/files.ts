@@ -11,6 +11,7 @@
  */
 
 import { fileKeyForLookup, normalizePath, pluralize, sanitizeFilePath } from "@code-link/shared"
+import type { Dirent } from "fs"
 import fs from "fs/promises"
 import path from "path"
 import type { FileOperationMemory } from "../sync-memory.ts"
@@ -29,42 +30,35 @@ export const DEFAULT_REMOTE_DRIFT_MS = 2000
 export async function listFiles(filesDir: string): Promise<FileInfo[]> {
     const files: FileInfo[] = []
 
-    async function walk(currentDir: string): Promise<void> {
-        const entries = await fs.readdir(currentDir, { withFileTypes: true })
-
-        for (const entry of entries) {
-            const entryPath = path.join(currentDir, entry.name)
-
-            if (entry.isDirectory()) {
-                await walk(entryPath)
-                continue
-            }
-
-            if (!isSupportedExtension(entry.name)) continue
-
-            const relativePath = path.relative(filesDir, entryPath)
-            const normalizedPath = normalizePath(relativePath)
-            // Don't capitalize when listing existing files - preserve their actual names
-            const sanitizedPath = sanitizeFilePath(normalizedPath, false).path
-
-            try {
-                const [content, stats] = await Promise.all([fs.readFile(entryPath, "utf-8"), fs.stat(entryPath)])
-
-                files.push({
-                    name: sanitizedPath,
-                    content,
-                    modifiedAt: stats.mtimeMs,
-                })
-            } catch (err) {
-                warn(`Failed to read ${entryPath}:`, err)
-            }
-        }
-    }
-
+    let entries: Dirent[]
     try {
-        await walk(filesDir)
+        entries = await fs.readdir(filesDir, { withFileTypes: true, recursive: true })
     } catch (err) {
         warn("Failed to list files:", err)
+        return files
+    }
+
+    for (const entry of entries) {
+        if (!entry.isFile()) continue
+        if (!isSupportedExtension(entry.name)) continue
+
+        const entryPath = path.join(entry.parentPath, entry.name)
+        const relativePath = path.relative(filesDir, entryPath)
+        const normalizedPath = normalizePath(relativePath)
+        // Don't capitalize when listing existing files - preserve their actual names
+        const sanitizedPath = sanitizeFilePath(normalizedPath, false).path
+
+        try {
+            const [content, stats] = await Promise.all([fs.readFile(entryPath, "utf-8"), fs.stat(entryPath)])
+
+            files.push({
+                name: sanitizedPath,
+                content,
+                modifiedAt: stats.mtimeMs,
+            })
+        } catch (err) {
+            warn(`Failed to read ${entryPath}:`, err)
+        }
     }
 
     return files

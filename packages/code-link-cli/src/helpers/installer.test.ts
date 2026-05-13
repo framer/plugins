@@ -138,7 +138,7 @@ describe("Installer", () => {
         })
     })
 
-    describe("process()", () => {
+    describe("processFiles()", () => {
         async function initAndClearAta(installer: InstanceType<typeof Installer>) {
             await installer.initialize()
             await vi.waitFor(() => {
@@ -152,9 +152,8 @@ describe("Installer", () => {
             const installer = new Installer({ projectDir: tmpDir })
             await initAndClearAta(installer)
 
-            installer.process("data.json", '{"key": "value"}')
+            await installer.processFiles([{ name: "data.json", content: '{"key": "value"}' }])
 
-            await new Promise(resolve => setTimeout(resolve, 100))
             expect(mockAta).not.toHaveBeenCalled()
         })
 
@@ -162,9 +161,8 @@ describe("Installer", () => {
             const installer = new Installer({ projectDir: tmpDir })
             await initAndClearAta(installer)
 
-            installer.process("component.tsx", "")
+            await installer.processFiles([{ name: "component.tsx", content: "" }])
 
-            await new Promise(resolve => setTimeout(resolve, 100))
             expect(mockAta).not.toHaveBeenCalled()
         })
 
@@ -173,12 +171,8 @@ describe("Installer", () => {
             await initAndClearAta(installer)
 
             const code = `import { motion } from "framer-motion"`
-            installer.process("a.tsx", code)
-            installer.process("b.tsx", code)
-
-            await vi.waitFor(() => {
-                expect(mockAta).toHaveBeenCalled()
-            })
+            await installer.processFiles([{ name: "a.tsx", content: code }])
+            await installer.processFiles([{ name: "b.tsx", content: code }])
 
             expect(mockAta).toHaveBeenCalledTimes(1)
         })
@@ -187,18 +181,59 @@ describe("Installer", () => {
             const installer = new Installer({ projectDir: tmpDir })
             await initAndClearAta(installer)
 
-            installer.process(
-                "component.tsx",
-                `import React from "react"\nimport { createRoot } from "react-dom/client"`
-            )
-
-            await vi.waitFor(() => {
-                expect(mockAta).toHaveBeenCalled()
-            })
+            await installer.processFiles([
+                {
+                    name: "component.tsx",
+                    content: `import React from "react"\nimport { createRoot } from "react-dom/client"`,
+                },
+            ])
 
             const processedCall = mockAta.mock.calls[0][0]
             expect(processedCall).toContain(`import "react"; // types: 18.2.0`)
             expect(processedCall).toContain(`import "react-dom"; // types: 18.2.0`)
+        })
+
+        it("updates package.json dependencies in package-manager mode", async () => {
+            const requestDependencyVersions = vi.fn(async () => ({
+                "@types/react": "18.2.0",
+                "@types/react-dom": "18.2.0",
+                framer: "3.0.2",
+                "framer-motion": "12.34.3",
+                lodash: "4.17.21",
+                react: "18.2.0",
+                "react-dom": "18.2.0",
+            }))
+            const installer = new Installer({
+                projectDir: tmpDir,
+                npmStrategy: "package-manager",
+                requestDependencyVersions,
+            })
+
+            await installer.initialize()
+            mockAta.mockClear()
+
+            const files = [{ name: "component.tsx", content: `import debounce from "lodash/debounce"` }]
+            await installer.processFiles(files)
+
+            const packagePath = path.join(tmpDir, "package.json")
+            const firstPackageJson = await fs.readFile(packagePath, "utf-8")
+            const pkg = JSON.parse(firstPackageJson)
+            expect(mockAta).not.toHaveBeenCalled()
+            expect(pkg.dependencies).toMatchObject({
+                framer: "3.0.2",
+                "framer-motion": "12.34.3",
+                lodash: "4.17.21",
+                react: "18.2.0",
+                "react-dom": "18.2.0",
+            })
+            expect(pkg.devDependencies).toMatchObject({
+                "@types/react": "18.2.0",
+                "@types/react-dom": "18.2.0",
+            })
+
+            await installer.processFiles(files)
+
+            expect(await fs.readFile(packagePath, "utf-8")).toBe(firstPackageJson)
         })
     })
 })

@@ -15,7 +15,6 @@ function baseConfig(overrides: Partial<Config> = {}): Config {
         projectDir: null,
         filesDir: null,
         dangerouslyAutoDelete: false,
-        allowUnsupportedNpm: false,
         ...overrides,
     }
 }

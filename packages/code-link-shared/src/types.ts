@@ -53,6 +53,8 @@ export interface ConflictVersionData {
     latestRemoteVersionMs?: number
 }
 
+export type DependencyVersions = Record<string, string | null>
+
 // CLI → Plugin messages
 export type CliToPluginMessage =
     | { type: "request-files" }
@@ -69,6 +71,7 @@ export type CliToPluginMessage =
           type: "conflict-version-request"
           conflicts: ConflictVersionRequest[]
       }
+    | { type: "request-dependency-versions"; packages: string[] }
 const cliToPluginMessageTypes = [
     "request-files",
     "file-list",
@@ -80,6 +83,7 @@ const cliToPluginMessageTypes = [
     "conflicts-detected",
     "conflicts-cleared",
     "conflict-version-request",
+    "request-dependency-versions",
 ] as const
 
 export function isCliToPluginMessage(data: unknown): data is CliToPluginMessage {
@@ -108,4 +112,5 @@ export type PluginToCliMessage =
           type: "conflict-version-response"
           versions: ConflictVersionData[]
       }
+    | { type: "dependency-versions"; versions: DependencyVersions }
     | { type: "error"; fileName?: string; message: string }

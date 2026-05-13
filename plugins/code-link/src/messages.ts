@@ -110,6 +110,17 @@ export function createMessageHandler({
                 )
                 break
             }
+            case "request-dependency-versions": {
+                log.debug(`Fetching dependency versions for ${message.packages.length} packages`)
+                const versions = await api.fetchDependencyVersions(message.packages)
+                socket.send(
+                    JSON.stringify({
+                        type: "dependency-versions",
+                        versions,
+                    })
+                )
+                break
+            }
             default:
                 log.warn("Unknown message type:", (message as unknown as { type: string }).type)
                 break

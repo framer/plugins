@@ -7,9 +7,12 @@ export type {
     CliToPluginMessage,
     ConflictVersionData,
     ConflictVersionRequest,
+    DependencyVersions,
     FileInfo,
     PluginToCliMessage,
 } from "@code-link/shared"
+
+export type NpmStrategy = "acquire-types" | "package-manager"
 
 // Configuration
 export interface Config {
@@ -18,7 +21,7 @@ export interface Config {
     projectDir: string | null // Set during handshake if not already determined
     filesDir: string | null // Set during handshake , always projectDir/files
     dangerouslyAutoDelete: boolean
-    allowUnsupportedNpm: boolean // Allow type acquisition for unsupported npm packages
+    npmStrategy?: NpmStrategy
     once?: boolean // Exit after the initial sync completes
     explicitDirectory?: string // User-provided directory override
     explicitName?: string // User-provided name override

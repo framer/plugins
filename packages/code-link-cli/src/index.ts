@@ -9,9 +9,9 @@
 
 import { createRequire } from "node:module"
 import { getPortFromHash } from "@code-link/shared"
-import { Command } from "commander"
+import { Command, InvalidArgumentError, Option } from "commander"
 import { start } from "./controller.ts"
-import type { Config } from "./types.ts"
+import type { Config, NpmStrategy } from "./types.ts"
 import { banner, LogLevel, setLogLevel, warn } from "./utils/logging.ts"
 import { getProjectHashFromCwd } from "./utils/project.ts"
 
@@ -20,13 +20,13 @@ const { version } = require("../package.json") as { version: string }
 
 const program = new Command()
 
-program.exitOverride(err => {
-    if (err.code === "commander.missingArgument") {
-        console.error("Missing Project ID. Copy command via Code Link Plugin.")
-        process.exit(err.exitCode)
+function parseUnsupportedNpmMode(mode: string): NpmStrategy {
+    if (mode === "acquire-types" || mode === "package-manager") {
+        return mode
     }
-    throw err
-})
+
+    throw new InvalidArgumentError("unsupported npm mode must be 'acquire-types' or 'package-manager'")
+}
 
 program
     .name("framer-code-link")
@@ -39,7 +39,14 @@ program
     .option("-v, --verbose", "Enable verbose logging")
     .option("--log-level <level>", "Set log level (debug, info, warn, error)")
     .option("--dangerously-auto-delete", "Automatically delete remote files without confirmation")
-    .option("--unsupported-npm", "Allow type acquisition for unsupported npm packages")
+    .addOption(
+        new Option(
+            "--unsupported-npm [mode]",
+            "Unsupported feature: Handle non-built-in npm packages. Modes: acquire-types (fetches type definitions into node_modules automatically), package-manager (adds the packages to package.json so your package manager can install them) (default: acquire-types)."
+        )
+            .argParser(parseUnsupportedNpmMode)
+            .preset("acquire-types")
+    )
     .action(
         async (
             projectHash: string | undefined,
@@ -50,7 +57,7 @@ program
                 verbose?: boolean
                 logLevel?: string
                 dangerouslyAutoDelete?: boolean
-                unsupportedNpm?: boolean
+                unsupportedNpm?: NpmStrategy
             }
         ) => {
             // If no projectHash provided, try to read from cwd's package.json
@@ -91,7 +98,7 @@ program
                 projectDir: null, // Will be set during handshake
                 filesDir: null, // Will be set during handshake
                 dangerouslyAutoDelete: options.dangerouslyAutoDelete ?? false,
-                allowUnsupportedNpm: options.unsupportedNpm ?? false,
+                npmStrategy: options.unsupportedNpm,
                 once: options.once ?? false,
                 explicitDirectory: options.dir,
                 explicitName: options.name,

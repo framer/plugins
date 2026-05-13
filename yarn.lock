@@ -3849,7 +3849,7 @@ __metadata:
     "@code-link/shared": "workspace:*"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.12"
+    framer-plugin: "npm:3.11.0-alpha.14"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown
@@ -5066,6 +5066,18 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
   checksum: 10/c08bab3bee580b9027dd9e6a098d5e8647ac80ec88e762d9b749539129284e036497f65457dccc4685035dfe8d2b8dc5cc44417359796435702f575ca9a2a7a0
+  languageName: node
+  linkType: hard
+
+"framer-plugin@npm:3.11.0-alpha.14":
+  version: 3.11.0-alpha.14
+  resolution: "framer-plugin@npm:3.11.0-alpha.14"
+  dependencies:
+    csstype: "npm:^3.1.1"
+  peerDependencies:
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/d58b0c7a59e212a48d7f08c2ca07ffb5e734f0067d1a4c93f9e46350d9cdc46b424b735b8c08f59e0392d813a96d997809a6a48bd951ddec0b5d330f162f2f6f
   languageName: node
   linkType: hard
 

@@ -26,7 +26,6 @@ function createConfig(overrides: Partial<Config> = {}): Config {
         projectDir: "/tmp/project",
         filesDir: "/tmp/project/files",
         dangerouslyAutoDelete: false,
-        allowUnsupportedNpm: false,
         ...overrides,
     }
 }

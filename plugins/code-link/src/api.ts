@@ -1,4 +1,4 @@
-import { normalizeCodeFilePathWithExtension } from "@code-link/shared"
+import { type DependencyVersions, normalizeCodeFilePathWithExtension } from "@code-link/shared"
 import { framer } from "framer-plugin"
 import * as log from "./utils/logger"
 
@@ -188,6 +188,22 @@ export class CodeFilesAPI {
         const files = await this.getCodeFilesWithNormalizedPaths()
         const normalizedName = normalizeCodeFilePathWithExtension(fileName)
         return files.find(file => file.name === normalizedName)?.content
+    }
+
+    async fetchDependencyVersions(packages: string[]): Promise<DependencyVersions> {
+        const entries = await Promise.all(
+            packages.map(async packageName => {
+                try {
+                    const version = await framer.unstable_getDependencyVersion(packageName)
+                    return [packageName, version ?? null] as const
+                } catch (err) {
+                    log.warn(`Failed to fetch dependency version for ${packageName}`, err)
+                    return [packageName, null] as const
+                }
+            })
+        )
+
+        return Object.fromEntries(entries)
     }
 
     async fetchConflictVersions(requests: { fileName: string; lastSyncedAt?: number }[]) {

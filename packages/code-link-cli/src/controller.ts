@@ -25,10 +25,11 @@ import {
 } from "./helpers/files.ts"
 import { tryGitInit } from "./helpers/git.ts"
 import { Installer } from "./helpers/installer.ts"
+import { resolveNpmStrategy } from "./helpers/npm-strategy.ts"
 import { initWatcher } from "./helpers/watcher.ts"
 import { type ConflictPromptChange, SyncRuntime } from "./runtime.ts"
 import type { Effect, SyncEvent, SyncState, WriteEchoPolicy } from "./sync-events.ts"
-import type { Config, Conflict, FileInfo } from "./types.ts"
+import type { Config, Conflict, DependencyVersions, FileInfo } from "./types.ts"
 import {
     debug,
     error,
@@ -663,12 +664,15 @@ async function writeFiles(
         debug(`Skipped ${pluralize(files.length - filesToWrite.length, "echoed change")}`)
     }
     const results = await writeRemoteFiles(filesToWrite, runtime.workspace.filesDir, runtime.memory)
+    const installerFiles: FileInfo[] = []
     for (const result of results) {
         if (!result.ok) continue
         if (!options.silent) fileDown(result.path)
         runtime.memory.recordSyncedContent(result.path, result.file.content, result.file.modifiedAt ?? Date.now())
-        runtime.installer?.process(result.path, result.file.content)
+        if (!options.silent) installerFiles.push(result.file)
     }
+
+    await processInstallerFiles(runtime, installerFiles)
 }
 
 async function deleteFiles(fileNames: string[], ctx: ApplyCtx): Promise<void> {
@@ -696,7 +700,7 @@ async function sendLocalChange(fileName: string, content: string, ctx: ApplyCtx)
     if (!sent) return
     runtime.memory.armContentEcho(fileName, content)
     fileUp(fileName)
-    runtime.installer?.process(fileName, content)
+    await processInstallerFiles(runtime, [{ name: fileName, content }])
 }
 
 async function sendFileDelete(fileNames: string[], ctx: ApplyCtx): Promise<void> {
@@ -818,6 +822,7 @@ async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE"
     const wasDisconnected = runtime.disconnectUi.wasRecentlyDisconnected()
     let shouldShutdown = !!config.once
     let shouldTryGitInit = false
+    let statusMessage: string | null = null
 
     if (wasDisconnected) {
         const didShow = runtime.disconnectUi.didShowNotice()
@@ -826,20 +831,42 @@ async function applySyncComplete(effect: Extract<Effect, { type: "SYNC_COMPLETE"
             success(
                 `Reconnected, synced ${pluralize(effect.totalCount, "file")} (${effect.updatedCount} updated, ${effect.unchangedCount} unchanged)`
             )
-            status(syncCompleteStatusMessage(config))
+            statusMessage = syncCompleteStatusMessage(config)
         }
     } else {
         const message = syncCompleteSuccessMessage(runtime, effect)
         if (message) success(message)
-        status(syncCompleteStatusMessage(config))
+        statusMessage = syncCompleteStatusMessage(config)
         shouldTryGitInit = !!(runtime.workspace.projectDirCreated && runtime.workspace.projectDir)
     }
+
+    await processAllInstallerFiles(ctx)
+    if (statusMessage) status(statusMessage)
 
     await sendToPlugin(syncState.socket, { type: "sync-status", status: "ready" })
     runtime.noteEmittedSyncStatus("ready")
     if (wasDisconnected) runtime.disconnectUi.reset()
     if (shouldTryGitInit && runtime.workspace.projectDir) tryGitInit(runtime.workspace.projectDir)
     if (shouldShutdown) await shutdown()
+}
+
+async function processInstallerFiles(runtime: SyncRuntime, files: FileInfo[]): Promise<void> {
+    if (!runtime.installer || runtime.lastEmittedSyncStatus !== "ready") return
+    if (files.length === 0) return
+
+    try {
+        await runtime.installer.processFiles(files)
+    } catch (err: unknown) {
+        debug("Type installer failed", err)
+    }
+}
+
+async function processAllInstallerFiles(ctx: ApplyCtx): Promise<void> {
+    const { runtime } = ctx
+    if (!runtime.installer || !runtime.workspace.filesDir) return
+
+    const files = await listFiles(runtime.workspace.filesDir)
+    await runtime.installer.processFiles(files)
 }
 
 async function flushPendingSyncComplete(ctx: ApplyCtx): Promise<"ready" | "blocked" | "empty"> {
@@ -1101,6 +1128,10 @@ export async function applyEffect(effect: Effect, ctx: ApplyCtx): Promise<SyncEv
 export async function start(config: Config): Promise<void> {
     const runtime = new SyncRuntime()
     let isShuttingDown = false
+    let pendingDependencyVersions: {
+        resolve: (versions: DependencyVersions) => void
+        timeout: NodeJS.Timeout
+    } | null = null
 
     // State machine state
     let syncState: SyncState = {
@@ -1109,6 +1140,46 @@ export async function start(config: Config): Promise<void> {
     }
 
     const eventQueue = createEventQueue()
+
+    function nullDependencyVersions(packages: string[]): DependencyVersions {
+        return Object.fromEntries(packages.map(packageName => [packageName, null]))
+    }
+
+    async function requestDependencyVersions(packages: string[]): Promise<DependencyVersions> {
+        if (packages.length === 0) {
+            return {}
+        }
+
+        const socket = syncState.socket
+        if (!socket) {
+            return nullDependencyVersions(packages)
+        }
+
+        if (pendingDependencyVersions) {
+            warn("Dependency version request already pending")
+            return nullDependencyVersions(packages)
+        }
+
+        return await new Promise<DependencyVersions>(resolve => {
+            const timeout = setTimeout(() => {
+                if (pendingDependencyVersions?.resolve === resolve) {
+                    pendingDependencyVersions = null
+                    warn("Timed out waiting for dependency versions from plugin")
+                    resolve(nullDependencyVersions(packages))
+                }
+            }, 10_000)
+
+            pendingDependencyVersions = { resolve, timeout }
+
+            void sendMessage(socket, { type: "request-dependency-versions", packages }).then(sent => {
+                if (!sent && pendingDependencyVersions?.resolve === resolve) {
+                    clearTimeout(timeout)
+                    pendingDependencyVersions = null
+                    resolve(nullDependencyVersions(packages))
+                }
+            })
+        })
+    }
 
     // Top-level ingress (WS, watcher, disconnect) serializes through the queue — one event at a time.
     // Follow-up events from `applyEffect` run inline before the next queued event, so snapshot results
@@ -1228,9 +1299,11 @@ export async function start(config: Config): Promise<void> {
 
             // Initialize installer if needed
             if (runtime.workspace.projectDir && !runtime.installer) {
+                const npmStrategy = await resolveNpmStrategy(config, runtime.workspace.projectDir)
                 runtime.installer = new Installer({
                     projectDir: runtime.workspace.projectDir,
-                    allowUnsupportedNpm: config.allowUnsupportedNpm,
+                    npmStrategy,
+                    requestDependencyVersions,
                 })
                 await runtime.installer.initialize()
                 // Start file watcher now that we have a directory
@@ -1326,6 +1399,19 @@ export async function start(config: Config): Promise<void> {
                     versions: message.versions,
                 }
                 break
+
+            case "dependency-versions": {
+                if (!pendingDependencyVersions) {
+                    warn("Received dependency versions with no pending request")
+                    return
+                }
+
+                clearTimeout(pendingDependencyVersions.timeout)
+                const pending = pendingDependencyVersions
+                pendingDependencyVersions = null
+                pending.resolve(message.versions)
+                return
+            }
 
             default:
                 warn(`Unhandled message type: ${message.type}`)

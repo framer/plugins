@@ -1,6 +1,6 @@
 {
     "name": "framer-code-link",
-    "version": "0.21.0-alpha.4",
+    "version": "0.21.0-alpha.8",
     "description": "CLI tool for syncing Framer code components - controller-centric architecture",
     "main": "dist/index.mjs",
     "type": "module",

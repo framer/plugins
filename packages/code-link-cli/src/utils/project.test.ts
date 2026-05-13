@@ -187,6 +187,41 @@ describe("readAndMigratePackageJson", () => {
         })
     })
 
+    it("backfills missing codeLink defaults when provided and persists", async () => {
+        const minimal = { name: "test", version: "1.0.0", private: true }
+        const pkgPath = path.join(tmpDir, "package.json")
+        await fs.writeFile(pkgPath, JSON.stringify(minimal, null, 4))
+
+        const pkg = await readAndMigratePackageJson(pkgPath, {
+            shortProjectHash: "default1",
+            framerProjectName: "Default Name",
+        })
+        expect(pkg?.codeLink?.shortProjectHash).toBe("default1")
+        expect(pkg?.codeLink?.framerProjectName).toBe("Default Name")
+
+        const onDisk = JSON.parse(await fs.readFile(pkgPath, "utf-8"))
+        expect(onDisk.codeLink).toEqual({
+            shortProjectHash: "default1",
+            framerProjectName: "Default Name",
+        })
+    })
+
+    it("does not overwrite existing codeLink values with defaults", async () => {
+        const existing = {
+            name: "test",
+            codeLink: { shortProjectHash: "kept", framerProjectName: "Kept Name" },
+        }
+        const pkgPath = path.join(tmpDir, "package.json")
+        await fs.writeFile(pkgPath, JSON.stringify(existing, null, 4))
+
+        const pkg = await readAndMigratePackageJson(pkgPath, {
+            shortProjectHash: "other",
+            framerProjectName: "Other Name",
+        })
+        expect(pkg?.codeLink?.shortProjectHash).toBe("kept")
+        expect(pkg?.codeLink?.framerProjectName).toBe("Kept Name")
+    })
+
     it("keeps nested codeLink values when legacy duplicates exist at top level", async () => {
         const mixed = {
             name: "test",

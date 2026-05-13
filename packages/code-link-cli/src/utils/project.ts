@@ -28,9 +28,13 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 /**
  * Reads package.json, migrates legacy top-level Code Link fields into `codeLink`,
- * and persists when anything changed.
+ * backfills any provided defaults for missing `codeLink` fields, and persists
+ * when anything changed.
  */
-export async function readAndMigratePackageJson(packageJsonPath: string): Promise<PackageJson | null> {
+export async function readAndMigratePackageJson(
+    packageJsonPath: string,
+    defaults?: { shortProjectHash?: string; framerProjectName?: string }
+): Promise<PackageJson | null> {
     try {
         const raw = await fs.readFile(packageJsonPath, "utf-8")
         const parsed = JSON.parse(raw) as unknown
@@ -43,10 +47,6 @@ export async function readAndMigratePackageJson(packageJsonPath: string): Promis
             "framerProjectName" in parsed ||
             "codeLinkNpmStrategy" in parsed
 
-        if (!hadLegacy) {
-            return parsed as PackageJson
-        }
-
         const existing = parsed.codeLink
         const base: Record<string, unknown> = isPlainObject(existing) ? { ...existing } : {}
 
@@ -58,6 +58,20 @@ export async function readAndMigratePackageJson(packageJsonPath: string): Promis
         }
         if (parsed.codeLinkNpmStrategy !== undefined && base.npmStrategy === undefined) {
             base.npmStrategy = parsed.codeLinkNpmStrategy
+        }
+
+        let backfilled = false
+        if (defaults?.shortProjectHash !== undefined && base.shortProjectHash === undefined) {
+            base.shortProjectHash = defaults.shortProjectHash
+            backfilled = true
+        }
+        if (defaults?.framerProjectName !== undefined && base.framerProjectName === undefined) {
+            base.framerProjectName = defaults.framerProjectName
+            backfilled = true
+        }
+
+        if (!hadLegacy && !backfilled) {
+            return parsed as PackageJson
         }
 
         const next: PackageJson = { ...parsed }
@@ -110,15 +124,22 @@ export async function findOrCreateProjectDirectory(options: {
 }): Promise<{ directory: string; created: boolean; nameCollision?: boolean }> {
     const { projectHash, projectName, explicitDirectory, baseDirectory } = options
 
+    const codeLinkDefaults = {
+        shortProjectHash: shortProjectHash(projectHash),
+        framerProjectName: projectName,
+    }
+
     if (explicitDirectory) {
         const resolved = path.resolve(explicitDirectory)
         await fs.mkdir(path.join(resolved, "files"), { recursive: true })
+        await readAndMigratePackageJson(path.join(resolved, "package.json"), codeLinkDefaults)
         return { directory: resolved, created: false }
     }
 
     const cwd = baseDirectory ?? process.cwd()
     const existing = await findExistingProjectDirectory(cwd, projectHash)
     if (existing) {
+        await readAndMigratePackageJson(path.join(existing, "package.json"), codeLinkDefaults)
         return { directory: existing, created: false }
     }
 

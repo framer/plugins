@@ -42,7 +42,7 @@ program
     .addOption(
         new Option(
             "--unsupported-npm [mode]",
-            "Handle unsupported npm packages (default without mode: acquire-types; modes: acquire-types, package-manager)"
+            "Unsupported feature: Handle non-built-in npm packages. Modes: acquire-types (fetches type definitions into node_modules automatically), package-manager (adds the packages to package.json so your package manager can install them) (default: acquire-types)."
         )
             .argParser(parseUnsupportedNpmMode)
             .preset("acquire-types")

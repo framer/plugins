@@ -292,6 +292,10 @@ body:not([data-framer-styles="prerelease"]) .results-container:before {
     padding: 15px;
 }
 
+[data-framer-styles="prerelease"] .container {
+    padding: 10px 15px;
+}
+
 .results-list {
     position: relative;
 }

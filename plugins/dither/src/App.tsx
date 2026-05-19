@@ -310,7 +310,7 @@ function DitherImage({ image }: { image: ImageAsset | null }) {
                             uploadRef.current?.click()
                         }}
                     >
-                        <p>Select an Image...</p>
+                        <p>Select an Image…</p>
                     </div>
                 )}
             </div>

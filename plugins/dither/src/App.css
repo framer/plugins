@@ -11,8 +11,6 @@
     justify-content: center;
     width: 100%;
     aspect-ratio: 16 / 9;
-    border-radius: 8px;
-    border: 1px solid var(--framer-color-divider);
 }
 
 .error-container p {
@@ -217,20 +215,6 @@ body[data-framer-theme="light"] .gui-label {
 button:disabled {
     pointer-events: none;
     opacity: 0.33;
-}
-
-body[data-framer-theme="dark"] .error-container {
-    border-color: rgba(255, 255, 255, 0.05);
-}
-
-body[data-framer-theme="light"] {
-    .error-container {
-        background: rgba(0, 0, 0, 0.05);
-    }
-}
-
-body[data-framer-theme="dark"] .error-container {
-    background: rgba(0, 0, 0, 0.4);
 }
 
 * {

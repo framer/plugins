@@ -78,7 +78,7 @@ const routes: Route[] = [
                         path: "/learn-more",
                         element: LearnMoreTrackingPage,
                         size: {
-                            height: 184,
+                            height: 201,
                         },
                     },
                 ],
@@ -89,7 +89,7 @@ const routes: Route[] = [
         path: "/cms",
         element: CMSMenuPage,
         size: {
-            height: 141,
+            height: 320,
         },
         children: [
             {

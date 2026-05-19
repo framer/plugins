@@ -3,8 +3,8 @@ import { framer } from "framer-plugin"
 import { useEffect } from "react"
 import { useLocation } from "wouter"
 import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "../../api"
+import { HeroSection } from "../../components/HeroSection"
 import { ChartIcon, FormsIcon, LightningIcon, MeetingsIcon, MessageIcon, PersonIcon } from "../../components/Icons"
-import { Logo } from "../../components/Logo"
 import { useIsPrerelease } from "../../utils"
 
 const queryHooks = {
@@ -68,15 +68,7 @@ export default function MenuPage() {
 
     return (
         <main>
-            <div className="col-lg items-center py-[30px]">
-                <Logo />
-                <div className="col items-center">
-                    <h6>Welcome to HubSpot</h6>
-                    <p className="text-center text-tertiary max-w-[200px]">
-                        View forms, monitor site traffic, embed widgets and much more.
-                    </p>
-                </div>
-            </div>
+            <HeroSection description="View forms, monitor site traffic, embed widgets and much more." />
             <div className="grid grid-cols-2 gap-2.5">
                 <MenuOption title="Forms" to="/canvas/forms" icon={<FormsIcon />} />
                 <MenuOption title="Tracking" to="/canvas/tracking" icon={<ChartIcon />} />

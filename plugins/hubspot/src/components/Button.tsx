@@ -1,6 +1,7 @@
 import cx from "classnames"
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    variant?: "primary" | "secondary"
     isLoading?: boolean
 }
 

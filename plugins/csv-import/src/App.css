@@ -23,6 +23,10 @@ body {
     padding-bottom: 15px;
 }
 
+[data-framer-styles="prerelease"] .import-collection {
+    gap: 10px;
+}
+
 .select-csv-file {
     display: flex;
     flex-direction: column;

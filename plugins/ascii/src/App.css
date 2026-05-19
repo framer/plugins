@@ -398,13 +398,28 @@ input[type="number"] {
     bottom: 0;
     border-radius: 6px;
     background-color: var(--framer-color-bg);
-    box-shadow:
-        0px 0px 0px 1px rgba(0, 0, 0, 0.02),
-        0px 1px 0px 0px rgba(0, 0, 0, 0.05),
-        0px 2px 4px 0px rgba(0, 0, 0, 0.1);
     transition: left 150ms ease;
 }
 
+[data-framer-theme="light"] .segmented-control-bg {
+    box-shadow:
+        0px 0px 0px 1px rgba(0, 0, 0, 0.04),
+        0px 1px 0px 0px rgba(0, 0, 0, 0.04),
+        0px 2px 4px 0px rgba(0, 0, 0, 0.08);
+}
+
 [data-framer-theme="dark"] .segmented-control-bg {
-    background-color: #555;
+    background-color: #474747;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+[data-framer-theme="dark"] .segmented-control-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0px;
+    border-radius: 6px;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 1px #ffffff0d;
+    mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
 }

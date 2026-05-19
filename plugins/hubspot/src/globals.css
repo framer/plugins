@@ -86,14 +86,14 @@
 }
 
 @utility framer-button-destructive {
-    @apply bg-framer-red text-white;
+    @apply bg-framer-red/10 text-framer-red dark:bg-framer-red/15;
 
     &:hover {
-        background-color: #e15;
+        @apply bg-framer-red/15 dark:bg-framer-red/10;
     }
 
     &:focus {
-        background-color: #e15;
+        @apply bg-framer-red/15 dark:bg-framer-red/10;
     }
 }
 

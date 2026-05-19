@@ -1,12 +1,12 @@
-import type { HTMLAttributes } from "react"
+import type { SVGProps } from "react"
 
-export function IconCode(props: HTMLAttributes<SVGSVGElement>) {
+export function IconArrowDown(props: SVGProps<SVGSVGElement>) {
     return (
         <svg
             xmlns="http://www.w3.org/2000/svg"
-            width="12"
-            height="12"
-            viewBox="0 0 12 12"
+            width="6"
+            height="6"
+            viewBox="0 0 6 6"
             fill="none"
             role="presentation"
             aria-hidden="true"
@@ -17,8 +17,8 @@ export function IconCode(props: HTMLAttributes<SVGSVGElement>) {
                 stroke="currentColor"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                stroke-width="1.5"
-                d="M3.5 2.75 1.311 4.939a1.5 1.5 0 0 0 0 2.122L3.5 9.25M8.5 2.75l2.189 2.189a1.5 1.5 0 0 1 0 2.122L8.5 9.25"
+                strokeWidth="1.25"
+                d="M 0.86 2.1 L 2.647 3.891 C 2.842 4.087 3.158 4.087 3.354 3.892 L 5.15 2.1"
             />
         </svg>
     )

@@ -5,7 +5,7 @@ import type { PreparedGroup } from "../utils/filter/group-results"
 import type { RootNodeType } from "../utils/indexer/types"
 import { headerId } from "../utils/selection/constants"
 import { useSelection } from "../utils/selection/useSelection"
-import { IconArrowRight } from "./ui/IconArrowRight"
+import { IconArrowDown } from "./ui/IconArrowDown"
 import { IconCode } from "./ui/IconCode"
 import { IconCollection } from "./ui/IconCollection"
 import { IconComponent } from "./ui/IconComponent"
@@ -52,11 +52,11 @@ export const GroupHeader = memo(
                         aria-hidden={index === 0}
                     />
                     <div className="h-[calc(100%-10px)] flex flex-row gap-2 rounded-lg justify-start items-center select-none overflow-hidden ps-2 group-focus-visible:bg-option-light dark:group-focus-visible:bg-option-dark group-focus-visible:text-primary-light dark:group-focus-visible:text-primary-dark">
-                        <div className="flex-shrink-0 flex gap-2 justify-start items-center">
-                            <IconArrowRight
+                        <div className="shrink-0 flex gap-2 justify-start items-center">
+                            <IconArrowDown
                                 className={cn(
-                                    "text-tertiary-light dark:text-secondary-dark transition-transform duration-200 ease-in-out",
-                                    isExpanded && "rotate-90"
+                                    "text-tertiary-light dark:text-secondary-dark",
+                                    !isExpanded && "-rotate-90"
                                 )}
                                 aria-hidden="true"
                             />

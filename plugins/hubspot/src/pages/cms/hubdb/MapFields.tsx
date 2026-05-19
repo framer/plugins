@@ -99,7 +99,7 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
-    if (isLoadingTable) return <CenteredSpinner size="medium" />
+    if (isLoadingTable) return <CenteredSpinner />
 
     if (!tableId) return <div>Expected `tableId` query param</div>
 

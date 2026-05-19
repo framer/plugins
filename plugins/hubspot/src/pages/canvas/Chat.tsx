@@ -144,7 +144,7 @@ export default function ChatPage() {
             </div>
             <hr />
             <button
-                className="framer-button-primary w-full"
+                className="w-full"
                 onClick={() => {
                     window.open(`https://app-eu1.hubspot.com/chatflows/${account.portalId}/`, "_blank")
                 }}

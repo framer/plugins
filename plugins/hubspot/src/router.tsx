@@ -128,12 +128,7 @@ function useRoutes({ routes, hubDbPluginContext, blogPluginContext }: UseRoutesP
         return {
             page: (
                 <motion.div {...(animationProps as MotionProps)} className="w-full h-full">
-                    <Layout
-                        title={pageTitle}
-                        animateForward={animationDirection === 1}
-                        showTopDivider={showTopDivider}
-                        goBack={goBack}
-                    >
+                    <Layout title={pageTitle} showTopDivider={showTopDivider} goBack={goBack}>
                         <PageErrorBoundaryFallback>
                             <Element
                                 params={params}

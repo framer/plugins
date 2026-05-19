@@ -98,7 +98,6 @@ export default function Blog({ blogPluginContext }: PageProps) {
             />
             <div className="sticky left-0 bottom-0 flex justify-between bg-primary pt-[15px] border-t border-divider items-center max-w-full">
                 <Button
-                    variant="secondary"
                     className="w-full"
                     isLoading={isSyncing}
                     disabled={!isAllowedToManage}

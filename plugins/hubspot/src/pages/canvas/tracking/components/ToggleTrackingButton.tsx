@@ -41,7 +41,6 @@ export const ToggleTrackingButton = ({ className }: { className?: string }) => {
 
     return (
         <Button
-            variant={isTrackingEnabled ? "secondary" : "primary"}
             onClick={toggleTracking}
             isLoading={isLoadingUser}
             className={className}

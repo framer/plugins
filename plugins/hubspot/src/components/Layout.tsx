@@ -10,11 +10,10 @@ const PageDivider = () => (
 
 interface TitleProps {
     title: string
-    animateForward?: boolean
     goBack: () => void
 }
 
-const Title = ({ title, animateForwa, goBack }: TitleProps) => (
+const Title = ({ title, goBack }: TitleProps) => (
     <React.Fragment>
         <PageDivider />
         <div className="relative flex gap-[5px] items-center justify-center overflow-hidden min-h-[48px]">
@@ -33,14 +32,13 @@ interface Props {
     children: React.ReactNode
     className?: string
     title?: string
-    animateForward?: boolean
     showTopDivider?: boolean
     goBack: () => void
 }
 
-export const Layout = ({ children, className, title, showTopDivider = true, animateForward, goBack }: Props) => (
+export const Layout = ({ children, className, title, showTopDivider = true, goBack }: Props) => (
     <div className={cx("flex flex-col w-full h-full", className)}>
-        {title && <Title title={title} animateForward={animateForward} goBack={goBack} />}
+        {title && <Title title={title} goBack={goBack} />}
         {showTopDivider && <PageDivider />}
         <div className="col-lg w-full h-full">{children}</div>
     </div>

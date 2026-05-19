@@ -47,10 +47,7 @@ export default function FormsPage() {
 
             <div className="col-lg sticky top-0 left-0 pb-[15px]">
                 <hr />
-                <button
-                    className="framer-button-primary"
-                    onClick={() => window.open(`https://${uiDomain}/forms/${portalId}`, "_blank")}
-                >
+                <button onClick={() => window.open(`https://${uiDomain}/forms/${portalId}`, "_blank")}>
                     View Forms
                 </button>
             </div>

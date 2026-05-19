@@ -103,7 +103,6 @@ const routes: Route[] = [
             {
                 path: "/hubdb",
                 element: HubDBPage,
-                showTopDivider: false,
                 size: {
                     width: 320,
                     height: 305,

@@ -24,7 +24,6 @@ export interface Route {
     element: React.ComponentType<PageProps>
     title?: string | (() => string)
     children?: Route[]
-    showTopDivider?: boolean
     size?: PluginSize
 }
 
@@ -87,7 +86,7 @@ function useRoutes({ routes, hubDbPluginContext, blogPluginContext }: UseRoutesP
 
     for (const { match, route } of matches) {
         const [isMatch, params] = match
-        const { title, showTopDivider, size, element: Element } = route
+        const { title, size, element: Element } = route
 
         if (!isMatch) continue
 
@@ -128,7 +127,7 @@ function useRoutes({ routes, hubDbPluginContext, blogPluginContext }: UseRoutesP
         return {
             page: (
                 <motion.div {...(animationProps as MotionProps)} className="w-full h-full">
-                    <Layout title={pageTitle} showTopDivider={showTopDivider} goBack={goBack}>
+                    <Layout title={pageTitle} goBack={goBack}>
                         <PageErrorBoundaryFallback>
                             <Element
                                 params={params}
@@ -179,12 +178,17 @@ export function Router({ routes, hubDbPluginContext, blogPluginContext }: Router
     }, [size])
 
     return (
-        <div className="relative w-full h-full overflow-hidden">
-            <AnimatePresence>
-                <SizePreserver size={size} key={location.pathname}>
-                    {cloneElement(page, { key: location.pathname })}
-                </SizePreserver>
-            </AnimatePresence>
+        <div className="relative flex flex-col w-full h-full overflow-hidden">
+            <div className="px-[15px] shrink-0">
+                <hr />
+            </div>
+            <div className="relative flex-1 min-h-0 overflow-hidden">
+                <AnimatePresence>
+                    <SizePreserver size={size} key={location.pathname}>
+                        {cloneElement(page, { key: location.pathname })}
+                    </SizePreserver>
+                </AnimatePresence>
+            </div>
         </div>
     )
 }

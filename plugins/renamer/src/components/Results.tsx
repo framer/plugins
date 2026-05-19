@@ -119,7 +119,7 @@ export default function Results({ query, indexing, results, selectedNodeIds, get
                                     void focusResult(result)
                                 }}
                             >
-                                <LayerIcon type={result.entry.type} />
+                                <LayerIcon type={result.entry.type} isBreakpoint={result.entry.isBreakpoint} />
                             </RenameComparison>
                         ))}
                     </div>

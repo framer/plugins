@@ -11,6 +11,7 @@ export interface IndexEntry {
     rect: { x: number; y: number; width: number; height: number } | null
     visible: boolean
     locked: boolean
+    isBreakpoint: boolean
 }
 
 export interface Result {

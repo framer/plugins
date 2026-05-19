@@ -93,6 +93,7 @@ export class Indexer {
                     type: node.__class,
                     locked: node.locked,
                     visible: node.visible,
+                    isBreakpoint: isFrameNode(node) && node.isBreakpoint,
                     name,
                     rect,
                     text,

@@ -41,7 +41,7 @@ const routes: Route[] = [
                 element: AccountPage,
                 title: "Account",
                 size: {
-                    height: 197,
+                    height: 204,
                 },
             },
             {
@@ -49,7 +49,7 @@ const routes: Route[] = [
                 element: ChatPage,
                 title: "Chat",
                 size: {
-                    height: 395,
+                    height: 401,
                 },
             },
             {
@@ -71,7 +71,7 @@ const routes: Route[] = [
                 element: TrackingPage,
                 title: "Tracking",
                 size: {
-                    height: 172,
+                    height: 179,
                 },
                 children: [
                     {

@@ -1,5 +1,4 @@
 import cx from "classnames"
-import { motion } from "motion/react"
 import React from "react"
 import { CaretLeftIcon } from "./Icons"
 
@@ -15,10 +14,10 @@ interface TitleProps {
     goBack: () => void
 }
 
-const Title = ({ title, animateForward, goBack }: TitleProps) => (
+const Title = ({ title, animateForwa, goBack }: TitleProps) => (
     <React.Fragment>
         <PageDivider />
-        <div className="relative flex gap-[5px] items-center justify-center overflow-hidden min-h-10">
+        <div className="relative flex gap-[5px] items-center justify-center overflow-hidden min-h-[48px]">
             <div
                 onClick={goBack}
                 className="absolute left-0 flex items-center justify-center h-full w-10 cursor-pointer"

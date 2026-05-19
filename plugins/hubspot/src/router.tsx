@@ -38,7 +38,7 @@ interface UseRoutesProps extends PluginContexts {
 }
 
 const DEFAULT_PLUGIN_WIDTH = 260
-const DEFAULT_PLUGIN_HEIGHT = 345
+const DEFAULT_PLUGIN_HEIGHT = 352
 
 function useRoutes({ routes, hubDbPluginContext, blogPluginContext }: UseRoutesProps) {
     const [location] = useLocation()
@@ -178,8 +178,8 @@ export function Router({ routes, hubDbPluginContext, blogPluginContext }: Router
 
     useEffect(() => {
         void framer.showUI({
-            width: size?.width ?? 260,
-            height: size?.height ?? 345,
+            width: size?.width ?? DEFAULT_PLUGIN_WIDTH,
+            height: size?.height ?? DEFAULT_PLUGIN_HEIGHT,
         })
     }, [size])
 

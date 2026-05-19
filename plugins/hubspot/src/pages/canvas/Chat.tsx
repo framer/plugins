@@ -95,49 +95,51 @@ export default function ChatPage() {
             )}
             <hr />
             <h6>Settings</h6>
-            <div className="input-container">
-                <label htmlFor="enableWidgetCookieBanner">Banner</label>
-                <select
-                    name="enableWidgetCookieBanner"
-                    id="enableWidgetCookieBanner"
-                    value={JSON.stringify(settings.enableWidgetCookieBanner)}
-                    onChange={value => {
-                        setSettings({
-                            ...settings,
-                            enableWidgetCookieBanner: v.parse(
-                                EnableWidgetCookieBannerSchema,
-                                JSON.parse(value.target.value)
-                            ),
-                        })
-                    }}
-                    disabled={!isAllowedToSetCustomCode}
-                    title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
-                    className={isAllowedToSetCustomCode ? undefined : "opacity-50"}
-                >
-                    <option value="true">Enabled</option>
-                    <option value="false">Disabled</option>
-                    {/* The double quotes are intentional, as these values are the output of JSON.stringify */}
-                    <option value='"ON_EXIT_INTENT"'>On Exit Intent</option>
-                </select>
-            </div>
-            <div className="input-container">
-                <label htmlFor="disableAttachment">Attachment</label>
-                <SegmentedControls
-                    name="disableAttachment"
-                    options={[
-                        { value: "false", label: "Show" },
-                        { value: "true", label: "Hide" },
-                    ]}
-                    value={JSON.stringify(settings.disableAttachment)}
-                    onValueChange={value => {
-                        setSettings({
-                            ...settings,
-                            disableAttachment: v.parse(DisableAttachmentSchema, JSON.parse(value)),
-                        })
-                    }}
-                    disabled={!isAllowedToSetCustomCode}
-                    title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
-                />
+            <div className="col">
+                <div className="input-container">
+                    <label htmlFor="enableWidgetCookieBanner">Banner</label>
+                    <select
+                        name="enableWidgetCookieBanner"
+                        id="enableWidgetCookieBanner"
+                        value={JSON.stringify(settings.enableWidgetCookieBanner)}
+                        onChange={value => {
+                            setSettings({
+                                ...settings,
+                                enableWidgetCookieBanner: v.parse(
+                                    EnableWidgetCookieBannerSchema,
+                                    JSON.parse(value.target.value)
+                                ),
+                            })
+                        }}
+                        disabled={!isAllowedToSetCustomCode}
+                        title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
+                        className={isAllowedToSetCustomCode ? undefined : "opacity-50"}
+                    >
+                        <option value="true">Enabled</option>
+                        <option value="false">Disabled</option>
+                        {/* The double quotes are intentional, as these values are the output of JSON.stringify */}
+                        <option value='"ON_EXIT_INTENT"'>On Exit Intent</option>
+                    </select>
+                </div>
+                <div className="input-container">
+                    <label htmlFor="disableAttachment">Attachment</label>
+                    <SegmentedControls
+                        name="disableAttachment"
+                        options={[
+                            { value: "false", label: "Show" },
+                            { value: "true", label: "Hide" },
+                        ]}
+                        value={JSON.stringify(settings.disableAttachment)}
+                        onValueChange={value => {
+                            setSettings({
+                                ...settings,
+                                disableAttachment: v.parse(DisableAttachmentSchema, JSON.parse(value)),
+                            })
+                        }}
+                        disabled={!isAllowedToSetCustomCode}
+                        title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
+                    />
+                </div>
             </div>
             <hr />
             <button

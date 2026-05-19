@@ -98,7 +98,7 @@
 }
 
 @utility input-container {
-    @apply row items-center justify-between pl-[15px] text-tertiary;
+    @apply row items-center justify-between pl-[15px] text-secondary;
 
     & > p {
         @apply max-w-[134px] truncate text-primary;

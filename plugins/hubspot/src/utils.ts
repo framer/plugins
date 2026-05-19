@@ -1,4 +1,5 @@
 import type { ProtectedMethod } from "framer-plugin"
+import { useMemo } from "react"
 
 export function assert(condition: unknown, ...msg: unknown[]): asserts condition {
     if (condition) return
@@ -31,3 +32,7 @@ export const syncMethods = [
     "ManagedCollection.addItems",
     "ManagedCollection.setPluginData",
 ] as const satisfies ProtectedMethod[]
+
+export const useIsPrerelease = () => {
+    return useMemo(() => document.body.getAttribute("data-framer-styles") === "prerelease", [])
+}

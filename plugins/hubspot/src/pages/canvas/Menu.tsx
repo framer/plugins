@@ -5,6 +5,7 @@ import { useLocation } from "wouter"
 import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "../../api"
 import { ChartIcon, FormsIcon, LightningIcon, MeetingsIcon, MessageIcon, PersonIcon } from "../../components/Icons"
 import { Logo } from "../../components/Logo"
+import { useIsPrerelease } from "../../utils"
 
 const queryHooks = {
     "/canvas/forms": { hook: useFormsQuery, shouldRefetch: true },
@@ -28,10 +29,15 @@ const MenuOption = ({
     onClick?: () => void
 }) => {
     const [, navigate] = useLocation()
+    const isPrerelease = useIsPrerelease()
 
     return (
         <button
-            className={cx("h-[110px] w-full col items-center justify-center rounded-md", className)}
+            className={cx(
+                "h-[110px] w-full col items-center justify-center rounded-md",
+                isPrerelease ? "text-secondary" : "text-tertiary",
+                className
+            )}
             onClick={() => {
                 if (onClick) {
                     onClick()
@@ -41,7 +47,7 @@ const MenuOption = ({
             }}
         >
             {icon}
-            <p className="font-semibold text-tertiary">{title}</p>
+            <span className="font-semibold">{title}</span>
         </button>
     )
 }

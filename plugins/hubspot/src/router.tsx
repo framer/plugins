@@ -117,7 +117,7 @@ function useRoutes({ routes, hubDbPluginContext, blogPluginContext }: UseRoutesP
                   transition: {
                       x: {
                           ease: [0.25, 0.1, 0.25, 1],
-                          duration: 0.3,
+                          duration: 0.2,
                       },
                       opacity: {
                           duration: 0.2,

@@ -211,14 +211,14 @@ export const LightningIcon = () => {
 }
 
 export const CaretLeftIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
+    <svg role="presentation" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none">
         <path
-            d="M 5 2 L 1.5 6 L 5 9.5"
+            d="M 5.25 2.25 L 1.75 6 L 5.25 9.75"
             fill="transparent"
-            strokeWidth={1.5}
-            stroke="rgb(153,153,153)"
+            strokeWidth="1.5"
+            stroke="#999"
             strokeLinecap="round"
-            strokeMiterlimit={10}
+            strokeLinejoin="round"
             strokeDasharray=""
         ></path>
     </svg>

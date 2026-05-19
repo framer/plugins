@@ -18,27 +18,14 @@ interface TitleProps {
 const Title = ({ title, animateForward, goBack }: TitleProps) => (
     <React.Fragment>
         <PageDivider />
-        <div className="flex gap-[5px] items-center overflow-hidden min-h-10">
-            <div onClick={goBack} className="flex items-center pl-[15px] cursor-pointer">
+        <div className="relative flex gap-[5px] items-center justify-center overflow-hidden min-h-10">
+            <div
+                onClick={goBack}
+                className="absolute left-0 flex items-center justify-center h-full w-10 cursor-pointer"
+            >
                 <CaretLeftIcon />
             </div>
-            <motion.div
-                className="py-[15px]"
-                initial={{ opacity: 0.85, x: animateForward ? 45 : -45 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0.85, x: animateForward ? -30 : 30 }}
-                transition={{
-                    type: "spring",
-                    damping: 16,
-                    stiffness: 450,
-                    mass: 0.08,
-                    velocity: 600,
-                    duration: 0.25,
-                    delay: 0.05,
-                }}
-            >
-                <h6>{title}</h6>
-            </motion.div>
+            <h6>{title}</h6>
         </div>
     </React.Fragment>
 )

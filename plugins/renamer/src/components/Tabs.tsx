@@ -1,4 +1,5 @@
 import cx from "classnames"
+import { useMemo } from "react"
 
 interface TabItem {
     label: string
@@ -11,9 +12,20 @@ interface Props {
 }
 
 export default function Tabs({ items }: Props) {
+    const isPrerelease = useMemo(() => document.body.getAttribute("data-framer-styles") === "prerelease", [])
     const activeIndex = items.findIndex(item => item.active)
 
-    return (
+    return isPrerelease ? (
+        <div className="prerelease-tabs">
+            <div className="prerelease-tabs-container">
+                {items.map((item, index) => (
+                    <button key={index} className={cx("prerelease-tab", item.active && "active")} onClick={item.select}>
+                        {item.label}
+                    </button>
+                ))}
+            </div>
+        </div>
+    ) : (
         <div className="tabs">
             <div className="tabs-container">
                 <div className="tab-bg-container">

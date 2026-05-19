@@ -1,4 +1,5 @@
 import { type CustomCode, framer, useIsAllowedTo } from "framer-plugin"
+import cx from "classnames"
 import { useEffect, useState } from "react"
 import { useUserQuery } from "../../../../api"
 import { Button } from "../../../../components/Button"
@@ -43,7 +44,7 @@ export const ToggleTrackingButton = ({ className }: { className?: string }) => {
         <Button
             onClick={toggleTracking}
             isLoading={isLoadingUser}
-            className={className}
+            className={cx(className, !isTrackingEnabled && "framer-button-primary")}
             disabled={!isAllowedToSetCustomCode}
             title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
         >

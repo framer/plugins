@@ -74,6 +74,7 @@ export default function ChatPage() {
                 <Link to="/canvas/tracking"> tracking </Link>
                 is enabled.
             </p>
+            <hr />
             <h6>Inboxes</h6>
             {inboxes.length > 0 ? (
                 inboxes.map((inbox, i) => (

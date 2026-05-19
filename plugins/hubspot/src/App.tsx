@@ -49,7 +49,7 @@ const routes: Route[] = [
                 element: ChatPage,
                 title: "Chat",
                 size: {
-                    height: 380,
+                    height: 395,
                 },
             },
             {

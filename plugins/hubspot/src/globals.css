@@ -115,6 +115,10 @@
         0px 1px 0px 0px rgba(0, 0, 0, 0.05);
 }
 
+@utility tile-border {
+    box-shadow: inset 0 0 0 1px var(--color-tile-border);
+}
+
 @layer base {
     h6 {
         @apply font-semibold text-primary leading-[1.2];
@@ -136,4 +140,12 @@ main {
     display: flex;
     flex-direction: column;
     gap: 15px;
+}
+
+body {
+    --color-tile-border: rgba(0, 0, 0, 0.05);
+}
+
+body[data-framer-theme="dark"] {
+    --color-tile-border: rgba(255, 255, 255, 0.07);
 }

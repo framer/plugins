@@ -1,5 +1,6 @@
 import cx from "classnames"
 import { useLocation } from "wouter"
+import { useIsPrerelease } from "../utils"
 
 interface Props {
     icon: React.ReactElement
@@ -11,10 +12,15 @@ interface Props {
 
 export const MenuOption = ({ icon, title, to, className, onClick }: Props) => {
     const [, navigate] = useLocation()
+    const isPrerelease = useIsPrerelease()
 
     return (
         <button
-            className={cx("h-[110px] w-full col items-center justify-center rounded-md", className)}
+            className={cx(
+                "h-[110px] w-full col items-center justify-center",
+                isPrerelease ? "text-secondary rounded-[10px] tile-border" : "text-tertiary rounded-md",
+                className
+            )}
             onClick={() => {
                 if (onClick) {
                     onClick()
@@ -24,7 +30,7 @@ export const MenuOption = ({ icon, title, to, className, onClick }: Props) => {
             }}
         >
             {icon}
-            <p className="font-semibold text-tertiary">{title}</p>
+            <span className="font-semibold">{title}</span>
         </button>
     )
 }

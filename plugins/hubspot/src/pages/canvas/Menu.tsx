@@ -34,8 +34,8 @@ const MenuOption = ({
     return (
         <button
             className={cx(
-                "h-[110px] w-full col items-center justify-center rounded-md",
-                isPrerelease ? "text-secondary" : "text-tertiary",
+                "h-[110px] w-full col items-center justify-center",
+                isPrerelease ? "text-secondary rounded-[10px] tile-border" : "text-tertiary rounded-md",
                 className
             )}
             onClick={() => {

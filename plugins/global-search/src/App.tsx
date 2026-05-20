@@ -13,9 +13,7 @@ document.addEventListener("keydown", event => {
 
     if (!isEscape && !isOwnOpenCombination) return
 
-    // This will close the plugin, but also show a message that the plugin was closed.
-    // We might add a "silent" option later.
-    framer.closePlugin()
+    framer.closePlugin(undefined, { silent: true })
 })
 
 void framer.showUI(getPluginUiOptions({ query: undefined, hasResults: false }))

@@ -3,5 +3,5 @@
     "name": "HubSpot",
     "modes": ["canvas", "configureManagedCollection", "syncManagedCollection"],
     "prereleaseStyles": true,
-    "icon": "/hubspot.png"
+    "icon": "/icon.svg"
 }

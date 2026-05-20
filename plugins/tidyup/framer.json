@@ -3,5 +3,5 @@
     "name": "Tidy Up",
     "modes": ["canvas"],
     "prereleaseStyles": true,
-    "icon": "/icon.png"
+    "icon": "/icon.svg"
 }

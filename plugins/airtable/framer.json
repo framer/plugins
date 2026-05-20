@@ -3,5 +3,5 @@
     "name": "Airtable",
     "modes": ["configureManagedCollection", "syncManagedCollection"],
     "prereleaseStyles": true,
-    "icon": "/icon.png"
+    "icon": "/icon.svg"
 }

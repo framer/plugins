@@ -3,5 +3,5 @@
     "name": "Greenhouse",
     "modes": ["syncManagedCollection", "configureManagedCollection"],
     "prereleaseStyles": true,
-    "icon": "/icon.png"
+    "icon": "/icon.svg"
 }

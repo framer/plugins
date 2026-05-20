@@ -49,6 +49,10 @@
     position: relative;
 }
 
+[data-framer-styles="prerelease"] .tabs {
+    padding: 0 15px;
+}
+
 .tabs:before {
     content: "";
     position: absolute;
@@ -58,6 +62,10 @@
     height: 1px;
     background-color: var(--framer-color-divider);
     z-index: 1;
+}
+
+[data-framer-styles="prerelease"] .tabs:before {
+    display: none;
 }
 
 .tabs-container {
@@ -73,6 +81,16 @@
     height: 30px;
 }
 
+[data-framer-styles="prerelease"] .tabs-container {
+    justify-content: start;
+    background-color: transparent;
+    border-radius: 0;
+    padding: 10px 0;
+    height: auto;
+    border-top: 1px solid var(--framer-color-divider);
+    border-bottom: 1px solid var(--framer-color-divider);
+}
+
 .tab {
     position: relative;
     background: none !important;
@@ -85,13 +103,31 @@
     transition: color 200ms ease;
 }
 
+[data-framer-styles="prerelease"] .tab {
+    flex: none;
+    width: fit-content;
+    height: 30px;
+    padding: 0 11px;
+    transition:
+        color 100ms ease,
+        background-color 100ms ease;
+}
+
 .tab:not(.active):hover {
     color: var(--framer-color-text-secondary);
+}
+
+[data-framer-styles="prerelease"] .tab:not(.active):hover {
+    color: #999999;
 }
 
 .tab.active {
     color: var(--framer-color-text);
     font-weight: 600;
+}
+
+[data-framer-styles="prerelease"] .tab.active {
+    background-color: var(--framer-color-bg-tertiary) !important;
 }
 
 .tab-bg-container {
@@ -114,48 +150,6 @@
 
 [data-framer-theme="dark"] .tab-bg {
     background-color: #555;
-}
-
-/* Prerelease tabs styles */
-.prerelease-tabs {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    padding: 0 15px;
-    position: relative;
-}
-
-.prerelease-tabs-container {
-    position: relative;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: start;
-    width: 100%;
-    padding: 10px 0;
-    border-top: 1px solid var(--framer-color-divider);
-    border-bottom: 1px solid var(--framer-color-divider);
-}
-
-.prerelease-tab {
-    position: relative;
-    border: 0;
-    width: fit-content;
-    height: 30px;
-    color: #999999;
-    background-color: transparent !important;
-    font-weight: 500;
-    user-select: none;
-    padding: 0 11px;
-    transition:
-        color 100ms ease,
-        background-color 100ms ease;
-}
-
-.prerelease-tab.active {
-    color: var(--framer-color-text);
-    background-color: var(--framer-color-bg-tertiary) !important;
-    font-weight: 600;
 }
 
 /* TextField styles */

@@ -3,5 +3,5 @@
     "name": "Unsplash",
     "modes": ["canvas", "editImage", "image"],
     "prereleaseStyles": true,
-    "icon": "/Unsplash.png"
+    "icon": "/icon.svg"
 }

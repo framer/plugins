@@ -3,5 +3,5 @@
     "name": "Search Console",
     "modes": ["canvas"],
     "prereleaseStyles": true,
-    "icon": "/icon.png"
+    "icon": "/icon.svg"
 }

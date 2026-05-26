@@ -3,5 +3,5 @@
     "name": "Phosphor",
     "modes": ["canvas"],
     "prereleaseStyles": true,
-    "icon": "/icon.png"
+    "icon": "/icon.svg"
 }

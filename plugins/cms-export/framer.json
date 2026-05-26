@@ -3,5 +3,5 @@
     "name": "CMS Export",
     "modes": ["collection"],
     "prereleaseStyles": true,
-    "icon": "/icon.png"
+    "icon": "/icon.svg"
 }

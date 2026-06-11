@@ -1,0 +1,22 @@
+{
+    "name": "first-rank-pro",
+    "type": "module",
+    "scripts": {
+        "dev": "run g:dev",
+        "build": "run g:build",
+        "check-biome": "run g:check-biome",
+        "check-eslint": "run g:check-eslint",
+        "preview": "run g:preview",
+        "pack": "run g:pack",
+        "check-typescript": "run g:check-typescript"
+    },
+    "dependencies": {
+        "framer-plugin": "3.11.0-alpha.12",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1"
+    },
+    "devDependencies": {
+        "@types/react": "^18.3.24",
+        "@types/react-dom": "^18.3.7"
+    }
+}

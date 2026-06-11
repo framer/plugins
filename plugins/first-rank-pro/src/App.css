@@ -1,0 +1,446 @@
+:root {
+    /* Native controls / scrollbars follow the theme (dark by default) */
+    color-scheme: dark;
+
+    /* Typography */
+    --font-family:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+
+    /* Font weights */
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* Colors - Dark Mode (default) */
+    --color-bg: #10131e;
+    --color-surface: #0a0c13;
+    --color-border: #141824;
+    --color-text-primary: #b8c5f6;
+    --color-text-secondary: #96a2d0;
+    --color-text-tertiary: #565e7b;
+    --color-accent: #73d5ff;
+
+    /* Status Colors - Dark Mode */
+    --color-pass: #22c55e;
+    --color-pass-bg: rgba(34, 197, 94, 0.1);
+    --color-pass-text: #e4ffee;
+    --color-fail: #ef4444;
+    --color-fail-bg: rgba(239, 68, 68, 0.1);
+    --color-fail-text: #ffd9d9;
+    --color-warning: #eab308;
+    --color-warning-bg: rgba(234, 179, 8, 0.1);
+    --color-warning-text: #fff6e0;
+
+    /* UI Elements - Dark Mode */
+    --color-input-bg: var(--color-surface);
+    --color-card-bg: #2a2a2a;
+    --color-pill-bg: #141824;
+
+    /* Extended tokens - Dark Mode (buttons / AI / neutral surfaces / info / status-strong) */
+    --color-button-primary: #3b82f6;
+    --color-button-primary-hover: #2563eb;
+    --color-button-primary-text: #ffffff;
+    --color-button-neutral: #6b7280;
+    --color-accent-hover: #5bbfef;
+    --color-ai-gradient-start: #6985ff;
+    --color-ai-gradient-end: #a44cff;
+    --color-ai-surface: #382b60;
+    --color-ai-on-gradient: #ffffff;
+    --color-neutral-surface: #2a2a2a;
+    --color-neutral-surface-alt: #1f2230;
+    --color-on-neutral-surface: #b8c5f6;
+    --color-on-pass-solid: #06210f;
+    --color-pass-hover: #16a34a;
+    --color-info: #2196f3;
+    --color-info-bg: rgba(33, 150, 243, 0.12);
+    --color-info-text: #9ac3ff;
+    --color-serp-title: #9ac3ff;
+    --color-serp-meta: #bfbfbf;
+    --color-warning-strong: #d09500;
+    --color-warning-strong-text: #ffffff;
+    --color-fail-strong: #980000;
+    --color-fail-strong-text: #ffffff;
+    --color-highlight-pulse: #5c4714;
+    --color-check-warning-bg: #191815;
+    --color-check-warning-border: #36332d;
+    --color-check-fail-bg: #151213;
+    --color-check-fail-border: #443a3b;
+    --color-tag-purple-bg: rgba(168, 85, 247, 0.15);
+    --color-tag-purple: #c4b5fd;
+}
+
+/* Light Mode - Framer theme attribute (Framer sets data-framer-theme on document.body) */
+[data-framer-theme="light"] {
+    color-scheme: light;
+    --color-bg: #ffffff;
+    --color-surface: #f7f8fa;
+    --color-border: #e4e7ec;
+    --color-text-primary: #1a1d26;
+    --color-text-secondary: #4a5568;
+    --color-text-tertiary: #667085;
+    --color-accent: #0a66c2;
+
+    /* Status Colors - Light Mode */
+    --color-pass: #15803d;
+    --color-pass-bg: rgba(34, 197, 94, 0.12);
+    --color-pass-text: #166534;
+    --color-fail: #c81e1e;
+    --color-fail-bg: rgba(239, 68, 68, 0.12);
+    --color-fail-text: #991b1b;
+    --color-warning: #9a6700;
+    --color-warning-bg: rgba(234, 179, 8, 0.12);
+    --color-warning-text: #854d0e;
+
+    /* UI Elements - Light Mode */
+    --color-input-bg: #ffffff;
+    --color-card-bg: #f3f4f6;
+    --color-pill-bg: #e5e7eb;
+
+    /* Extended tokens - Light Mode */
+    --color-button-primary: #2563eb;
+    --color-button-primary-hover: #1d4ed8;
+    --color-button-primary-text: #ffffff;
+    --color-button-neutral: #9ca3af;
+    --color-accent-hover: #0056b3;
+    --color-ai-gradient-start: #6985ff;
+    --color-ai-gradient-end: #8b3fe0;
+    --color-ai-surface: #ede9fe;
+    --color-ai-on-gradient: #ffffff;
+    --color-neutral-surface: #f3f4f6;
+    --color-neutral-surface-alt: #e5e7eb;
+    --color-on-neutral-surface: #1a1d26;
+    --color-on-pass-solid: #ffffff;
+    --color-pass-hover: #166534;
+    --color-info: #1565c0;
+    --color-info-bg: #e3f2fd;
+    --color-info-text: #1565c0;
+    --color-serp-title: #1a56db;
+    --color-serp-meta: #5f6368;
+    --color-warning-strong: #b45309;
+    --color-warning-strong-text: #ffffff;
+    --color-fail-strong: #b91c1c;
+    --color-fail-strong-text: #ffffff;
+    --color-highlight-pulse: #fde68a;
+    --color-check-warning-bg: #fffbeb;
+    --color-check-warning-border: #fde68a;
+    --color-check-fail-bg: #fef2f2;
+    --color-check-fail-border: #fecaca;
+    --color-tag-purple-bg: #f3e8ff;
+    --color-tag-purple: #7e22ce;
+}
+
+/* Fallback: prefers-color-scheme for system preference */
+@media (prefers-color-scheme: light) {
+    :root:not([data-framer-theme="dark"]) {
+        color-scheme: light;
+        --color-bg: #ffffff;
+        --color-surface: #f7f8fa;
+        --color-border: #e4e7ec;
+        --color-text-primary: #1a1d26;
+        --color-text-secondary: #4a5568;
+        --color-text-tertiary: #667085;
+        --color-accent: #0a66c2;
+
+        /* Status Colors - Light Mode */
+        --color-pass: #15803d;
+        --color-pass-bg: rgba(34, 197, 94, 0.12);
+        --color-pass-text: #166534;
+        --color-fail: #c81e1e;
+        --color-fail-bg: rgba(239, 68, 68, 0.12);
+        --color-fail-text: #991b1b;
+        --color-warning: #9a6700;
+        --color-warning-bg: rgba(234, 179, 8, 0.12);
+        --color-warning-text: #854d0e;
+
+        /* UI Elements - Light Mode */
+        --color-input-bg: #ffffff;
+        --color-card-bg: #f3f4f6;
+        --color-pill-bg: #e5e7eb;
+
+        /* Extended tokens - Light Mode */
+        --color-button-primary: #2563eb;
+        --color-button-primary-hover: #1d4ed8;
+        --color-button-primary-text: #ffffff;
+        --color-button-neutral: #9ca3af;
+        --color-accent-hover: #0056b3;
+        --color-ai-gradient-start: #6985ff;
+        --color-ai-gradient-end: #8b3fe0;
+        --color-ai-surface: #ede9fe;
+        --color-ai-on-gradient: #ffffff;
+        --color-neutral-surface: #f3f4f6;
+        --color-neutral-surface-alt: #e5e7eb;
+        --color-on-neutral-surface: #1a1d26;
+        --color-on-pass-solid: #ffffff;
+        --color-pass-hover: #166534;
+        --color-info: #1565c0;
+        --color-info-bg: #e3f2fd;
+        --color-info-text: #1565c0;
+        --color-serp-title: #1a56db;
+        --color-serp-meta: #5f6368;
+        --color-warning-strong: #b45309;
+        --color-warning-strong-text: #ffffff;
+        --color-fail-strong: #b91c1c;
+        --color-fail-strong-text: #ffffff;
+        --color-highlight-pulse: #fde68a;
+        --color-check-warning-bg: #fffbeb;
+        --color-check-warning-border: #fde68a;
+        --color-check-fail-bg: #fef2f2;
+        --color-check-fail-border: #fecaca;
+        --color-tag-purple-bg: #f3e8ff;
+        --color-tag-purple: #7e22ce;
+    }
+}
+
+/* Global styles */
+* {
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    background-color: var(--color-bg);
+    font-family: var(--font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Navbar styles */
+.navbar {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 24px 24px;
+    gap: 8px;
+}
+
+.navbar-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.navbar-url {
+    color: var(--color-text-primary);
+    font-size: 16px;
+    line-height: 20px;
+    font-weight: var(--font-weight-regular);
+}
+
+.navbar-theme-toggle {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background-color: var(--color-border);
+    color: var(--color-text-secondary);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition:
+        background-color 0.2s,
+        color 0.2s;
+}
+
+.navbar-theme-toggle:hover {
+    color: var(--color-accent);
+    background-color: var(--color-surface);
+}
+
+/* Domain switcher (shown only when more than one distinct domain exists).
+   The visible text + caret hug each other; a transparent native <select>
+   overlays them so clicking the domain opens the picker. */
+.navbar-domain-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 6px;
+    margin-left: -6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    transition:
+        border-color 0.2s,
+        background-color 0.2s;
+}
+
+.navbar-domain-switch:hover {
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
+}
+
+.navbar-domain-switch:focus-within {
+    border-color: var(--color-accent);
+}
+
+.navbar-domain-caret {
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+}
+
+.navbar-domain-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+}
+
+.navbar-domain-select option {
+    color: var(--color-text-primary);
+    background-color: var(--color-bg);
+}
+
+.navbar-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.navbar-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: var(--color-border);
+    color: var(--color-accent);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: var(--font-weight-semibold);
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    width: fit-content;
+    transition:
+        background-color 0.2s,
+        color 0.2s;
+}
+
+.navbar-button:hover {
+    background-color: var(--color-accent);
+    color: var(--color-border);
+}
+
+/* Pages styles */
+.pages-header-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    line-height: 14px;
+    font-weight: var(--font-weight-bold);
+    background-color: var(--color-surface);
+    color: var(--color-text-tertiary);
+    min-width: 40px;
+}
+
+.pages-header-title .sub-title {
+    min-width: 40px;
+}
+
+.pages-content {
+    padding: 24px;
+}
+
+/* Search styles */
+.search-icon {
+    color: var(--color-text-secondary);
+    margin-right: 4px;
+}
+
+.search-container {
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 8px 16px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    color: var(--color-text-primary);
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+}
+
+.search-container:focus-within {
+    border-color: var(--color-accent);
+}
+
+.search-input {
+    width: 100%;
+    background: none;
+    border: none;
+    color: var(--color-text-primary);
+    margin-left: 8px;
+}
+
+.search-input::placeholder {
+    font-size: 14px;
+    font-weight: var(--font-weight-regular);
+    line-height: 20px;
+    color: var(--color-text-tertiary);
+}
+
+.search-input:focus {
+    outline: none;
+}
+
+/* Empty State styles */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 40px;
+    min-height: 500px;
+    background-color: var(--color-bg);
+}
+
+.empty-state-icon {
+    margin-bottom: 24px;
+    opacity: 0.8;
+}
+
+.empty-state-title {
+    color: var(--color-text-primary);
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: 12px;
+}
+
+.empty-state-message {
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: var(--font-weight-regular);
+    margin-bottom: 24px;
+    max-width: 400px;
+}
+
+.empty-state-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: var(--font-weight-regular);
+}
+
+.empty-state-hint svg {
+    flex-shrink: 0;
+}

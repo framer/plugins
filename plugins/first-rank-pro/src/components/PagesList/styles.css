@@ -1,0 +1,120 @@
+@import "../../App.css";
+
+.pages-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.pages-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-tertiary);
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.header-name {
+    flex: 1;
+}
+
+.header-counts {
+    display: flex;
+    min-width: 240px;
+    justify-content: space-between;
+}
+
+.header-pass,
+.header-warning,
+.header-fail {
+    width: 32px;
+    text-align: center;
+}
+
+.page-name {
+    flex: 1;
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--color-text-primary);
+    transition: color 0.2s;
+}
+
+.page-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--color-surface);
+    gap: 8px;
+    padding: 16px;
+    border-bottom: 1px solid var(--color-border);
+    border-left: 2px solid var(--color-surface);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.page-item:hover {
+    background-color: var(--color-border);
+    border-left: 2px solid var(--color-accent);
+}
+
+.page-item:hover .page-name {
+    color: var(--color-accent);
+}
+
+.page-item:hover .page-icon svg path {
+    fill: var(--color-accent);
+}
+
+.page-icon svg path {
+    opacity: 0.8;
+}
+
+.page-item.selected {
+    background-color: var(--color-border);
+}
+
+.page-icon-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+}
+
+.analysis-counts {
+    display: flex;
+    min-width: 240px;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.count-pass,
+.count-warning,
+.count-fail {
+    width: 32px;
+    text-align: center;
+    padding: 2px 2px;
+    border-radius: 4px;
+    font-variant-numeric: tabular-nums;
+    min-width: 40px;
+}
+
+.count-pass {
+    color: var(--color-pass-text);
+    background: var(--color-pass-bg);
+}
+
+.count-warning {
+    color: var(--color-warning-text);
+    background: var(--color-warning-bg);
+}
+
+.count-fail {
+    color: var(--color-fail-text);
+    background: var(--color-fail-bg);
+}

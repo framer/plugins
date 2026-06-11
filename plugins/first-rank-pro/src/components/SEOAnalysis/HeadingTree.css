@@ -1,0 +1,137 @@
+.heading-tree {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 12px;
+}
+
+.heading-tree-controls {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.heading-tree-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.heading-tree-toggle-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.heading-tree-item {
+    margin: 4px 0;
+}
+
+.heading-tree-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.heading-tree-row:hover {
+    background: var(--color-border);
+}
+
+.heading-tree-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    transition: transform 0.2s ease;
+}
+
+.heading-tree-toggle:hover {
+    color: var(--color-text-primary);
+}
+
+.heading-tree-indent {
+    width: 20px;
+}
+
+.heading-tree-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.heading-level-badge {
+    font-size: 11px;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    padding: 2px 6px;
+    background: var(--color-border);
+    border-radius: 3px;
+    min-width: 24px;
+    text-align: center;
+}
+
+.heading-text {
+    color: var(--color-text-primary);
+    font-size: 14px;
+    text-align: left;
+}
+
+.heading-meta {
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+    font-style: italic;
+}
+
+.heading-tree-children {
+    margin-left: 4px;
+    border-left: 1px solid var(--color-border);
+}
+
+/* Issue highlighting */
+.heading-tree-item.has-issue {
+    border-left: 2px solid var(--color-warning-strong);
+    padding-left: 12px;
+    margin-left: 0 !important;
+    border-radius: 4px;
+}
+
+.heading-tree-item.has-issue .heading-tree-row {
+    padding: 4px 0;
+}
+
+.heading-tree-item.highlighted {
+    /* background-color: #D09500; */
+    animation: highlight-pulse 0.5s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+    0%,
+    100% {
+        background-color: var(--color-highlight-pulse);
+    }
+}
+
+.heading-level-badge.has-issue {
+    background-color: var(--color-warning-strong);
+    color: var(--color-warning-strong-text);
+    font-weight: 600;
+}
+
+.issue-indicator {
+    margin-left: 8px;
+    font-size: 14px;
+}

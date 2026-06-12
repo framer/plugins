@@ -5,7 +5,7 @@ import {
     type ManagedCollectionFieldInput,
     type ManagedCollectionItemInput,
     type ProtectedMethod,
-} from "framer-plugin"
+} from "@framer/plugin"
 
 export const PLUGIN_KEYS = {
     DATA_SOURCE_ID: "dataSourceId",

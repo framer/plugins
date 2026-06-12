@@ -753,6 +753,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@framer/plugin@npm:4.0.0":
+  version: 4.0.0
+  resolution: "@framer/plugin@npm:4.0.0"
+  peerDependencies:
+    csstype: ^3.1.1
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/5c1ad07452d71732d469e6badaf4b925b5c6ef1872e58768a1debffefbc925dabd2cff94b07def43548fcd8a4a598195c6c5fcd36a121c711be46c6e7f68167b
+  languageName: node
+  linkType: hard
+
 "@framer/vite-config@workspace:*, @framer/vite-config@workspace:packages/vite-config":
   version: 0.0.0-use.local
   resolution: "@framer/vite-config@workspace:packages/vite-config"
@@ -3822,13 +3833,14 @@ __metadata:
   resolution: "cms-starter@workspace:starters/cms"
   dependencies:
     "@eslint/js": "npm:^9.35.0"
+    "@framer/plugin": "npm:4.0.0"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     "@vitejs/plugin-react": "npm:^6.0.1"
+    csstype: "npm:^3.1.1"
     eslint: "npm:^9.35.0"
     eslint-plugin-react-hooks: "npm:^5.2.0"
     eslint-plugin-react-refresh: "npm:^0.4.20"
-    framer-plugin: "npm:^3.10.0"
     globals: "npm:^16.4.0"
     jiti: "npm:^2.5.1"
     prettier: "npm:^3.6.2"
@@ -5078,16 +5090,6 @@ __metadata:
     react: ^18.2.0
     react-dom: ^18.2.0
   checksum: 10/d58b0c7a59e212a48d7f08c2ca07ffb5e734f0067d1a4c93f9e46350d9cdc46b424b735b8c08f59e0392d813a96d997809a6a48bd951ddec0b5d330f162f2f6f
-  languageName: node
-  linkType: hard
-
-"framer-plugin@npm:^3.10.0":
-  version: 3.10.3
-  resolution: "framer-plugin@npm:3.10.3"
-  peerDependencies:
-    react: ^18.2.0
-    react-dom: ^18.2.0
-  checksum: 10/c677a261461cc3a79605cd74fc9de746de7c32e531a0c6a7aba0d5794af1c6c194cdea3576a6e74034c0228e7cc5a8ca8b0e40c213fe85e0dacece7cc01ce6c2
   languageName: node
   linkType: hard
 

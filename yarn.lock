@@ -753,7 +753,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@framer/plugin@npm:4.0.0":
+"@framer/plugin@npm:^4":
   version: 4.0.0
   resolution: "@framer/plugin@npm:4.0.0"
   peerDependencies:
@@ -3833,7 +3833,7 @@ __metadata:
   resolution: "cms-starter@workspace:starters/cms"
   dependencies:
     "@eslint/js": "npm:^9.35.0"
-    "@framer/plugin": "npm:4.0.0"
+    "@framer/plugin": "npm:^4"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
     "@vitejs/plugin-react": "npm:^6.0.1"

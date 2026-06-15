@@ -216,6 +216,17 @@ function getSortedRects(
 
             break
         }
+        case "vertical": {
+            let currentY = 0
+
+            for (const rect of result) {
+                rect.x = 0
+                rect.y = currentY
+                currentY += rect.height + rowGap
+            }
+
+            break
+        }
         case "grid": {
             const maxSize = getMaxSize(result)
             result.forEach((rect, index) => {
@@ -348,9 +359,10 @@ function getBoundingBox(rects: Rect[]): Rect {
     }
 }
 
-const allLayouts = ["horizontal", "grid", "random"] as const
+const allLayouts = ["horizontal", "vertical", "grid", "random"] as const
 const layoutTitles = {
     horizontal: "Horizontal",
+    vertical: "Vertical",
     grid: "Grid",
     random: "Random",
 } as const
@@ -533,20 +545,22 @@ export function App() {
                     />
                 </Row>
             )}
-            <Row title={layout === "random" ? "Min Gap" : layout === "grid" ? "Column Gap" : "Gap"}>
-                <Stepper
-                    value={columnGap}
-                    min={0}
-                    step={10}
-                    onChange={value => {
-                        assert(v.is(GapSchema, value))
-                        setColumnGap(value)
-                        setTransitionEnabled(true)
-                    }}
-                />
-            </Row>
-            {layout === "grid" && (
-                <Row title="Row Gap">
+            {layout !== "vertical" && (
+                <Row title={layout === "random" ? "Min Gap" : layout === "grid" ? "Column Gap" : "Gap"}>
+                    <Stepper
+                        value={columnGap}
+                        min={0}
+                        step={10}
+                        onChange={value => {
+                            assert(v.is(GapSchema, value))
+                            setColumnGap(value)
+                            setTransitionEnabled(true)
+                        }}
+                    />
+                </Row>
+            )}
+            {(layout === "grid" || layout === "vertical") && (
+                <Row title={layout === "vertical" ? "Gap" : "Row Gap"}>
                     <Stepper
                         value={rowGap}
                         min={0}

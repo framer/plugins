@@ -87,7 +87,7 @@ function isDeepEqual(a: unknown, b: unknown): boolean {
     return false
 }
 
-function useGroundNodeRects() {
+function useGroundNodes() {
     const root = useCanvasRoot()
     const selection = useSelection()
 
@@ -385,7 +385,7 @@ const GapSchema = v.pipe(v.number(), v.integer(), v.minValue(0))
 
 export function App() {
     const isAllowedToSetAttributes = useIsAllowedTo("setAttributes")
-    const { rects, names } = useGroundNodeRects()
+    const { rects, names } = useGroundNodes()
 
     const isEnabled = Object.keys(rects).length > 1
 

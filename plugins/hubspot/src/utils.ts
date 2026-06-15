@@ -32,7 +32,3 @@ export const syncMethods = [
     "ManagedCollection.addItems",
     "ManagedCollection.setPluginData",
 ] as const satisfies ProtectedMethod[]
-
-export const useIsPrerelease = () => {
-    return useMemo(() => document.body.getAttribute("data-framer-styles") === "prerelease", [])
-}

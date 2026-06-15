@@ -17,14 +17,10 @@ body {
     align-items: center;
     text-align: left;
     height: 100%;
-    gap: 15px;
+    gap: 10px;
     padding-left: 15px;
     padding-right: 15px;
     padding-bottom: 15px;
-}
-
-[data-framer-styles="prerelease"] .import-collection {
-    gap: 10px;
 }
 
 .select-csv-file {

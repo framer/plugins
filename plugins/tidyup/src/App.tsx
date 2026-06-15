@@ -6,6 +6,7 @@ import {
     isDesignPageNode,
     isVectorSetNode,
     isWebPageNode,
+    supportsName,
     supportsPins,
     useIsAllowedTo,
 } from "framer-plugin"
@@ -67,6 +68,10 @@ type RectByGroundNodeId = Record<string, Rect | null>
 
 const noRectByGroundNodeId: RectByGroundNodeId = {}
 
+type NameByGroundNodeId = Record<string, string | null>
+
+const noNameByGroundNodeId: NameByGroundNodeId = {}
+
 function isDeepEqual(a: unknown, b: unknown): boolean {
     if (a === b) return true
     if (isArray(a) && isArray(b)) {
@@ -87,10 +92,12 @@ function useGroundNodeRects() {
     const selection = useSelection()
 
     const [rects, setRects] = useState<RectByGroundNodeId>(noRectByGroundNodeId)
+    const [names, setNames] = useState<NameByGroundNodeId>(noNameByGroundNodeId)
 
     useEffect(() => {
         if (!root) {
             setRects(noRectByGroundNodeId)
+            setNames(noNameByGroundNodeId)
             return
         }
 
@@ -121,14 +128,17 @@ function useGroundNodeRects() {
             }
 
             const result: RectByGroundNodeId = {}
+            const resultNames: NameByGroundNodeId = {}
 
             for (const groundNode of groundNodes) {
                 const rect = await groundNode.getRect()
                 if (!active) return
                 result[groundNode.id] = rect
+                resultNames[groundNode.id] = supportsName(groundNode) ? groundNode.name : null
             }
 
             setRects(current => (isDeepEqual(current, result) ? current : result))
+            setNames(current => (isDeepEqual(current, resultNames) ? current : resultNames))
         }
 
         void getRects()
@@ -138,7 +148,7 @@ function useGroundNodeRects() {
         }
     }, [root, selection])
 
-    return rects
+    return { rects, names }
 }
 
 interface RectWithId extends Rect {
@@ -147,6 +157,7 @@ interface RectWithId extends Rect {
 
 function getSortedRects(
     rects: RectByGroundNodeId,
+    names: NameByGroundNodeId,
     layout: Layout,
     sorting: Sorting,
     columnCount: number,
@@ -179,6 +190,13 @@ function getSortedRects(
                     const areaA = a.width * a.height
                     const areaB = b.width * b.height
                     return areaB - areaA
+                })
+                break
+            case "name":
+                result.sort((a, b) => {
+                    const nameA = names[a.id] ?? ""
+                    const nameB = names[b.id] ?? ""
+                    return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: "base" })
                 })
                 break
             default:
@@ -331,10 +349,22 @@ function getBoundingBox(rects: Rect[]): Rect {
 }
 
 const allLayouts = ["horizontal", "grid", "random"] as const
+const layoutTitles = {
+    horizontal: "Horizontal",
+    grid: "Grid",
+    random: "Random",
+} as const
 const LayoutSchema = v.union(allLayouts.map(layout => v.literal(layout)))
 type Layout = v.InferOutput<typeof LayoutSchema>
 
-const allSortings = ["position", "width", "height", "area"] as const
+const allSortings = ["position", "width", "height", "area", "name"] as const
+const sortingTitles = {
+    position: "Position",
+    width: "Width",
+    height: "Height",
+    area: "Area",
+    name: "Name (A → Z)",
+} as const
 const SortingSchema = v.union(allSortings.map(sorting => v.literal(sorting)))
 type Sorting = v.InferOutput<typeof SortingSchema>
 
@@ -343,17 +373,17 @@ const GapSchema = v.pipe(v.number(), v.integer(), v.minValue(0))
 
 export function App() {
     const isAllowedToSetAttributes = useIsAllowedTo("setAttributes")
-    const rects = useGroundNodeRects()
+    const { rects, names } = useGroundNodeRects()
 
     const isEnabled = Object.keys(rects).length > 1
 
     const [transitionEnabled, setTransitionEnabled] = useState(false)
 
-    const [layout, setLayout] = useLocaleStorageState("layout", "horizontal", LayoutSchema)
-    const [sorting, setSorting] = useLocaleStorageState("sorting", "position", SortingSchema)
-    const [columnCount, setColumnCount] = useLocaleStorageState("columnCount", 3, ColumnCountSchema)
-    const [columnGap, setColumnGap] = useLocaleStorageState("columnGap", 100, GapSchema)
-    const [rowGap, setRowGap] = useLocaleStorageState("rowGap", 100, GapSchema)
+    const [layout, setLayout] = useLocalStorageState("layout", "horizontal", LayoutSchema)
+    const [sorting, setSorting] = useLocalStorageState("sorting", "position", SortingSchema)
+    const [columnCount, setColumnCount] = useLocalStorageState("columnCount", 3, ColumnCountSchema)
+    const [columnGap, setColumnGap] = useLocalStorageState("columnGap", 100, GapSchema)
+    const [rowGap, setRowGap] = useLocalStorageState("rowGap", 100, GapSchema)
 
     const previewElement = useRef<HTMLDivElement | null>(null)
     const previewSize = useElementSize({
@@ -367,8 +397,8 @@ export function App() {
     const [randomKey, randomize] = useReducer((state: number) => state + 1, 0)
 
     const sortedRects = useMemo(
-        () => getSortedRects(rects, layout, sorting, columnCount, columnGap, rowGap),
-        [rects, layout, sorting, columnCount, columnGap, rowGap, randomKey]
+        () => getSortedRects(rects, names, layout, sorting, columnCount, columnGap, rowGap),
+        [rects, names, layout, sorting, columnCount, columnGap, rowGap, randomKey]
     )
     const boundingBox = getBoundingBox(sortedRects)
     const [previewScale, previewOffset] = getPreviewScaleAndOffset(boundingBox, previewSize)
@@ -468,7 +498,7 @@ export function App() {
                 >
                     {allLayouts.map(layout => (
                         <option key={layout} value={layout}>
-                            {uppercaseFirstCharacter(layout)}
+                            {layoutTitles[layout]}
                         </option>
                     ))}
                 </select>
@@ -485,7 +515,7 @@ export function App() {
                     >
                         {allSortings.map(sorting => (
                             <option key={sorting} value={sorting}>
-                                {uppercaseFirstCharacter(sorting)}
+                                {sortingTitles[sorting]}
                             </option>
                         ))}
                     </select>
@@ -575,10 +605,6 @@ function assertNever(condition: never): never {
     throw Error(`Should never happen: ${String(condition)}`)
 }
 
-function uppercaseFirstCharacter(value: string) {
-    return value.charAt(0).toUpperCase() + value.slice(1)
-}
-
 function isArray(value: unknown): value is unknown[] {
     return Array.isArray(value)
 }
@@ -587,7 +613,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !isArray(value)
 }
 
-function useLocaleStorageState<const TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
+function useLocalStorageState<const TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
     key: string,
     defaultValue: v.InferOutput<TSchema>,
     schema: TSchema

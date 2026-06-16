@@ -1,6 +1,6 @@
-import "framer-plugin/framer.css"
+import "@framer/plugin/framer.css"
 
-import { framer } from "framer-plugin"
+import { framer } from "@framer/plugin"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
 import { App } from "./App.tsx"

@@ -1,5 +1,3 @@
-import cx from "classnames"
-
 export const FormsIcon = () => (
     <svg role="presentation" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" width="16" height="16" fill="none">
         <path

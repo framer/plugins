@@ -1,5 +1,15 @@
 /* Your Plugin CSS */
 
+[data-framer-theme="light"] {
+    --preview-frame-bg: #fff;
+    --preview-border: rgba(0, 0, 0, 0.05);
+}
+
+[data-framer-theme="dark"] {
+    --preview-frame-bg: rgba(187, 187, 187, 0.2);
+    --preview-border: rgba(255, 255, 255, 0.07);
+}
+
 main {
     display: flex;
     flex-direction: column;
@@ -26,10 +36,6 @@ main {
     width: 100%;
 }
 
-[data-framer-theme="light"] .preview-frame {
-    background: white;
-}
-
-[data-framer-theme="dark"] .preview-frame {
-    background: rgba(187, 187, 187, 0.2);
+.preview-frame {
+    background: var(--preview-frame-bg);
 }

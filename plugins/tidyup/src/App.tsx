@@ -428,6 +428,7 @@ export function App() {
                     width: "100%",
                     borderRadius: 10,
                     backgroundColor: "var(--framer-color-bg-tertiary)",
+                    boxShadow: "inset 0 0 0 1px var(--preview-border)",
                     overflow: "hidden",
                     cursor: layout === "random" ? "pointer" : "default",
                 }}

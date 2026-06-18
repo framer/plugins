@@ -1,4 +1,4 @@
-import { type SVGProps, useMemo } from "react"
+import { type SVGProps } from "react"
 
 export function IconWebPage(props: SVGProps<SVGSVGElement>) {
     return (

@@ -1,4 +1,4 @@
-import { type SVGProps, useMemo } from "react"
+import { type SVGProps } from "react"
 
 export function IconCollection(props: SVGProps<SVGSVGElement>) {
     return (

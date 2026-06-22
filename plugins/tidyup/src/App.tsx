@@ -400,7 +400,7 @@ export function App() {
     const previewElement = useRef<HTMLDivElement | null>(null)
     const previewSize = useElementSize({
         ref: previewElement,
-        deps: [layout],
+        layout,
         onChange: () => {
             setTransitionEnabled(false)
         },
@@ -410,6 +410,7 @@ export function App() {
 
     const sortedRects = useMemo(
         () => getSortedRects(rects, names, layout, sorting, columnCount, columnGap, rowGap),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- randomKey busts memo cache on shuffle
         [rects, names, layout, sorting, columnCount, columnGap, rowGap, randomKey]
     )
     const boundingBox = getBoundingBox(sortedRects)
@@ -681,11 +682,11 @@ function useStableCallback<Args extends unknown[], Result>(callback: (...args: A
 
 function useElementSize({
     ref,
-    deps,
+    layout,
     onChange,
 }: {
     ref: React.RefObject<HTMLElement>
-    deps: React.DependencyList
+    layout: string
     onChange?: VoidFunction
 }): Size {
     const [size, setSize] = useState<Size>({ width: 0, height: 0 })
@@ -710,7 +711,7 @@ function useElementSize({
         return () => {
             window.removeEventListener("resize", updateSizeWhenNeeded)
         }
-    }, [ref, stableOnChange, ...deps])
+    }, [ref, stableOnChange, layout])
 
     return size
 }

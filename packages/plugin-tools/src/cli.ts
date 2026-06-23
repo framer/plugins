@@ -1,12 +1,13 @@
 import path from "node:path"
 import { program } from "@commander-js/extra-typings"
+import { version } from "../package.json"
 import { runPluginBuildScript, zipPluginDistribution } from "./lib"
 
 const defaultDistDir = "dist"
 const defaultOutputFilename = "plugin.zip"
 const defaultCWD = process.cwd()
 
-program.name("framer-plugin-tools").description("CLI tools for Framer Plugins").version("1.1.0")
+program.name("framer-plugin-tools").description("CLI tools for Framer Plugins").version(version)
 
 program
     .command("pack")

@@ -36,7 +36,7 @@ program
         const dirName = path.dirname(zipFilePath)
 
         console.log(
-            `\n⚡️ ${fileName} file has been created in ${dirName} \n Submit your Plugin on the Framer Marketplace: https://www.framer.com/marketplace/dashboard/plugins/`
+            `\n⚡️ ${fileName} file has been created in ${dirName} \n Submit your Plugin on the Framer Marketplace: https://www.framer.com/community/marketplace/plugins/`
         )
     })
 

@@ -38,5 +38,5 @@ framer-plugin-tools pack --help
 
 ## Submitting Your Plugin
 
-After running `pack`, submit your plugin at:
+After running `pack`, publish your plugin at:
 https://www.framer.com/community/marketplace/plugins/

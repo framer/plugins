@@ -31,6 +31,7 @@ function queueAfterPaintCallback(callback: VoidFunction) {
 /** Runs all callbacks that still need to complete before the page is hidden/unloaded. */
 function resolvePendingPromises() {
     while (pendingCallbacks.size) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const callback = pendingCallbacks.values().next().value!
         pendingCallbacks.delete(callback)
         callback()
@@ -44,8 +45,8 @@ declare const scheduler: {
 const lowPriorityCallback =
     "scheduler" in window && "postTask" in scheduler
         ? (cb: VoidFunction) => {
-                scheduler.postTask(cb, { priority: "background" })
-            }
+              scheduler.postTask(cb, { priority: "background" })
+          }
         : (cb: VoidFunction) => setTimeout(cb, 1)
 
 let loadPromise: Promise<void> | undefined = new Promise<void>(resolve => {
@@ -82,9 +83,9 @@ async function queueYieldCallback(callback: VoidFunction, shouldWaitForLoad: boo
         }
     }
 
-	// Callback has already been run
+    // Callback has already been run
     if (!pendingCallbacks.has(callback)) return
-	
+
     if (document.hidden) {
         // The tab may have been hidden while we were waiting for load; don't leave this callback behind
         // for a rAF that may never run.
@@ -175,7 +176,7 @@ document.addEventListener(
             globalClickReceivedListener()
         }
     },
-    true,
+    true
 )
 document.addEventListener(
     "pagehide",
@@ -183,7 +184,7 @@ document.addEventListener(
         globalClickReceivedListener()
         resolvePendingPromises()
     },
-    true,
+    true
 )
 
 type DataLayerPush = (...items: object[]) => boolean
@@ -220,7 +221,7 @@ function logEventDiff(event: Event, newEvent: Event) {
 document.addEventListener = function (
     type: string,
     listener: EventListenerOrEventListenerObject,
-    options: boolean | AddEventListenerOptions | undefined,
+    options: boolean | AddEventListenerOptions | undefined
 ) {
     if (typesToIntercept.includes(type as EventType)) {
         if (DEBUG) console.log(`Overriding ${type} listener`, listener)
@@ -256,7 +257,7 @@ document.addEventListener = function (
                     }
                 })
             },
-            options,
+            options
         )
         return
     }
@@ -348,28 +349,51 @@ const gtmObserver = new MutationObserver(() => {
 gtmObserver.observe(document.documentElement, { childList: true, subtree: true })
 
 // #region History/submit wrapper override
-const originalMethodsCalledInCurrentChain = new Set<Function>()
+/**
+ * History/form overrides usually chain by capturing the previous function:
+ *
+ * ```js
+ * const previousPushState = history.pushState
+ * history.pushState = function (...args) {
+ *     previousPushState.apply(this, args)
+ *     // 3p side effects
+ * }
+ * ```
+ *
+ * Our wrapper calls the native method immediately, then yields before running the 3p override body. If the
+ * override body calls a captured older wrapper, that older wrapper must not call the native method again for
+ * the same top-level navigation/submit. Each wrapper therefore gets a generation number, and while wrapper N
+ * runs its override body we mark generations `< N` as "native already handled".
+ *
+ * Fresh nested calls still work: if an override intentionally calls `history.pushState(...)` again, it goes
+ * through the current wrapper, whose generation is `>= N`, so it still calls native. This preserves real nested
+ * navigations while suppressing duplicate native calls from captured older wrappers, including stale captures
+ * that are older than the immediately previous wrapper.
+ */
+const skippedWrappedListenerGenerations = new Map<Function, number>()
+let nextWrappedListenerGeneration = 0
 
-function callOriginalMethod(this: unknown, originalMethod: Function, args: unknown[]) {
-    if (originalMethodsCalledInCurrentChain.has(originalMethod)) return
-    originalMethod.apply(this, args)
-}
-
-function withOriginalMethodAlreadyCalled(originalMethod: Function, callback: VoidFunction) {
-    const alreadyMarked = originalMethodsCalledInCurrentChain.has(originalMethod)
-    originalMethodsCalledInCurrentChain.add(originalMethod)
+function withOlderWrappedListenersSkipped(originalMethod: Function, generation: number, callback: VoidFunction) {
+    const previousSkippedGeneration = skippedWrappedListenerGenerations.get(originalMethod)
+    skippedWrappedListenerGenerations.set(
+        originalMethod,
+        previousSkippedGeneration === undefined ? generation : Math.max(previousSkippedGeneration, generation)
+    )
     try {
         callback()
     } finally {
-        if (!alreadyMarked) {
-            originalMethodsCalledInCurrentChain.delete(originalMethod)
+        if (previousSkippedGeneration === undefined) {
+            skippedWrappedListenerGenerations.delete(originalMethod)
+        } else {
+            skippedWrappedListenerGenerations.set(originalMethod, previousSkippedGeneration)
         }
     }
 }
 
-function wrapListener(originalMethod: Function, value: Function) {
+function wrapListener(originalMethod: Function, value?: Function) {
+    const generation = nextWrappedListenerGeneration++
     // the function syntax is important here so we keep the correct `this`.
-    return function yieldingListener(this: unknown, ...args: unknown[]) {
+    function yieldingListener(this: unknown, ...args: unknown[]) {
         if (DEBUG) {
             console.log("Yielding for", originalMethod)
             console.timeStamp(originalMethod as unknown as string)
@@ -378,29 +402,31 @@ function wrapListener(originalMethod: Function, value: Function) {
         // We first call the original: This optimizes for UX & correctness of React components.
         // e.g., for pushState, when a component renders on a new route, it might set state and/or read from the URL. If the URL isn't
         // accurate, it might lead to wrong behavior.
-        // We don't want to call the underlying native method twice if an override calls a previously captured wrapper.
-        callOriginalMethod.call(this, originalMethod, args)
+        // If an override calls a previously captured wrapper, that older wrapper skips the native method;
+        // fresh calls through the current getter still update history/submit normally.
+        const skippedGeneration = skippedWrappedListenerGenerations.get(originalMethod)
+        if (skippedGeneration === undefined || generation >= skippedGeneration) {
+            originalMethod.apply(this, args)
+        }
+
+        if (!value) return
 
         // If `method` is overriden N times, it creates N yield points (as overrides might be chained)
         yieldUnlessUrgent(() => {
             // The arrow FN is important here so we keep the correct `this`.
-            withOriginalMethodAlreadyCalled(originalMethod, () => {
+            withOlderWrappedListenersSkipped(originalMethod, generation, () => {
                 value.apply(this, args)
             })
         })
     }
+
+    return yieldingListener
 }
 function overrideListener<T extends object>(target: T, method: keyof T) {
     // @ts-expect-error TS(2339): Prototype chain call. We try __proto__ first, as this will usually be the original method.
     const originalMethod: Function = (target.__proto__ as unknown as T)[method] ?? (target[method] as Function)
 
-    let mostRecentWrapper: Function | undefined = wrapListener(
-        originalMethod,
-        // The function syntax is important here so we keep the correct `this`.
-        function firstOverride(this: unknown, ...args: unknown[]) {
-            callOriginalMethod.call(this, originalMethod, args)
-        },
-    )
+    let mostRecentWrapper: Function | undefined = wrapListener(originalMethod)
 
     Object.defineProperty(target, method, {
         enumerable: true,

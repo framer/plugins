@@ -4,17 +4,19 @@
 // turns on override logs
 const DEBUG = false
 
-/** A set to keep track of all unresolved yield promises */
-const pendingResolvers = new Set<VoidFunction>()
+/** A set to keep track of all deferred callbacks that should run before the page is hidden/unloaded. */
+const pendingCallbacks = new Set<VoidFunction>()
 const pendingAnimationFrameCallbacks = new Set<VoidFunction>()
 let animationFrameScheduled = false
 
 function resolveAnimationFrameCallbacks() {
     animationFrameScheduled = false
-    for (const callback of pendingAnimationFrameCallbacks) {
+    const callbacks = Array.from(pendingAnimationFrameCallbacks)
+    // Clear before invoking callbacks so callbacks queued during this drain are scheduled for the next frame.
+    pendingAnimationFrameCallbacks.clear()
+    for (const callback of callbacks) {
         callback()
     }
-    pendingAnimationFrameCallbacks.clear()
 }
 
 function queueAfterPaintCallback(callback: VoidFunction) {
@@ -26,10 +28,13 @@ function queueAfterPaintCallback(callback: VoidFunction) {
     requestAnimationFrame(resolveAnimationFrameCallbacks)
 }
 
-/** Resolves all unresolved yield promises and clears the set. */
+/** Runs all callbacks that still need to complete before the page is hidden/unloaded. */
 function resolvePendingPromises() {
-    for (const resolve of pendingResolvers) resolve()
-    pendingResolvers.clear()
+    while (pendingCallbacks.size) {
+        const callback = pendingCallbacks.values().next().value!
+        pendingCallbacks.delete(callback)
+        callback()
+    }
 }
 
 declare const scheduler: {
@@ -39,8 +44,8 @@ declare const scheduler: {
 const lowPriorityCallback =
     "scheduler" in window && "postTask" in scheduler
         ? (cb: VoidFunction) => {
-              scheduler.postTask(cb, { priority: "background" })
-          }
+                scheduler.postTask(cb, { priority: "background" })
+            }
         : (cb: VoidFunction) => setTimeout(cb, 1)
 
 let loadPromise: Promise<void> | undefined = new Promise<void>(resolve => {
@@ -58,7 +63,7 @@ const isInputPending =
         : () => false
 
 async function queueYieldCallback(callback: VoidFunction, shouldWaitForLoad: boolean) {
-    pendingResolvers.add(callback)
+    pendingCallbacks.add(callback)
 
     let timeStamp: number | undefined
     if (DEBUG) {
@@ -77,14 +82,27 @@ async function queueYieldCallback(callback: VoidFunction, shouldWaitForLoad: boo
         }
     }
 
+	// Callback has already been run
+    if (!pendingCallbacks.has(callback)) return
+	
+    if (document.hidden) {
+        // The tab may have been hidden while we were waiting for load; don't leave this callback behind
+        // for a rAF that may never run.
+        pendingCallbacks.delete(callback)
+        callback()
+        return
+    }
+
     const run = () => {
         lowPriorityCallback(() => {
+            // A visibility/pagehide flush may have already run this callback synchronously.
+            if (!pendingCallbacks.delete(callback)) return
+
             if (DEBUG)
                 // @ts-expect-error TS(2554): TS doesn't know about the new syntax yet
                 // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
                 console.timeStamp(`yield-${timeStamp}`, timeStamp, performance.now(), "GTM yield", "GTM yield")
 
-            pendingResolvers.delete(callback)
             callback()
         })
     }
@@ -106,7 +124,6 @@ async function queueYieldCallback(callback: VoidFunction, shouldWaitForLoad: boo
  */
 function yieldUnlessUrgent(callback: VoidFunction, shouldWaitForLoad = false) {
     if (document.hidden) {
-        resolvePendingPromises()
         callback()
         return
     }
@@ -120,7 +137,7 @@ let globalWaitingForClickResolve: (() => void) | undefined
 async function getPromiseWithFallback() {
     return new Promise<void>(resolve => {
         const resolveFn = () => {
-            pendingResolvers.delete(resolve)
+            pendingCallbacks.delete(resolve)
             resolve()
         }
 
@@ -129,7 +146,7 @@ async function getPromiseWithFallback() {
         // Safety fallback in case `click` never fires, where 150ms ensures the delay isn't noticeable by users
         // TODO: Add a log here when `yieldOnTap` ships to stable, so we understand how often this occurs.
         setTimeout(resolveFn, 150)
-        pendingResolvers.add(resolve) // Ensure we resolve when the page becomes hidden
+        pendingCallbacks.add(resolve) // Ensure we resolve when the page becomes hidden
     })
 }
 
@@ -158,7 +175,7 @@ document.addEventListener(
             globalClickReceivedListener()
         }
     },
-    true
+    true,
 )
 document.addEventListener(
     "pagehide",
@@ -166,7 +183,7 @@ document.addEventListener(
         globalClickReceivedListener()
         resolvePendingPromises()
     },
-    true
+    true,
 )
 
 type DataLayerPush = (...items: object[]) => boolean
@@ -203,7 +220,7 @@ function logEventDiff(event: Event, newEvent: Event) {
 document.addEventListener = function (
     type: string,
     listener: EventListenerOrEventListenerObject,
-    options: boolean | AddEventListenerOptions | undefined
+    options: boolean | AddEventListenerOptions | undefined,
 ) {
     if (typesToIntercept.includes(type as EventType)) {
         if (DEBUG) console.log(`Overriding ${type} listener`, listener)
@@ -239,7 +256,7 @@ document.addEventListener = function (
                     }
                 })
             },
-            options
+            options,
         )
         return
     }
@@ -331,30 +348,28 @@ const gtmObserver = new MutationObserver(() => {
 gtmObserver.observe(document.documentElement, { childList: true, subtree: true })
 
 // #region History/submit wrapper override
-function callOriginalMethod(
-    this: unknown,
-    originalMethod: Function,
-    args: unknown[],
-    callIfFirstArgIsntObject = false
-) {
-    const firstArg = args[0] ?? this
+const originalMethodsCalledInCurrentChain = new Set<Function>()
 
-    const argIsObject = firstArg != null && typeof firstArg === "object"
+function callOriginalMethod(this: unknown, originalMethod: Function, args: unknown[]) {
+    if (originalMethodsCalledInCurrentChain.has(originalMethod)) return
+    originalMethod.apply(this, args)
+}
 
-    if (argIsObject && !("__f" in firstArg)) {
-        originalMethod.apply(this, args)
-
-        // @ts-expect-error TS(2339): Flag to indicate that the native method was called
-        firstArg.__f = true
-    } else if (!argIsObject && callIfFirstArgIsntObject) {
-        // If for some reason, we haven't called the original method yet, we call it here.
-        originalMethod.apply(this, args)
+function withOriginalMethodAlreadyCalled(originalMethod: Function, callback: VoidFunction) {
+    const alreadyMarked = originalMethodsCalledInCurrentChain.has(originalMethod)
+    originalMethodsCalledInCurrentChain.add(originalMethod)
+    try {
+        callback()
+    } finally {
+        if (!alreadyMarked) {
+            originalMethodsCalledInCurrentChain.delete(originalMethod)
+        }
     }
 }
 
 function wrapListener(originalMethod: Function, value: Function) {
     // the function syntax is important here so we keep the correct `this`.
-    return function yieldingListener(this: unknown, ...args: [data: object, ...args: unknown[]]) {
+    return function yieldingListener(this: unknown, ...args: unknown[]) {
         if (DEBUG) {
             console.log("Yielding for", originalMethod)
             console.timeStamp(originalMethod as unknown as string)
@@ -363,14 +378,15 @@ function wrapListener(originalMethod: Function, value: Function) {
         // We first call the original: This optimizes for UX & correctness of React components.
         // e.g., for pushState, when a component renders on a new route, it might set state and/or read from the URL. If the URL isn't
         // accurate, it might lead to wrong behavior.
-        // We don't want to call the underlying native method twice (or multiple times), so we add a
-        // flag to the data object or `this`.
+        // We don't want to call the underlying native method twice if an override calls a previously captured wrapper.
         callOriginalMethod.call(this, originalMethod, args)
 
         // If `method` is overriden N times, it creates N yield points (as overrides might be chained)
         yieldUnlessUrgent(() => {
             // The arrow FN is important here so we keep the correct `this`.
-            value.apply(this, args)
+            withOriginalMethodAlreadyCalled(originalMethod, () => {
+                value.apply(this, args)
+            })
         })
     }
 }
@@ -381,9 +397,9 @@ function overrideListener<T extends object>(target: T, method: keyof T) {
     let mostRecentWrapper: Function | undefined = wrapListener(
         originalMethod,
         // The function syntax is important here so we keep the correct `this`.
-        function firstOverride(this: unknown, ...args: [data: object, ...args: unknown[]]) {
-            callOriginalMethod.call(this, originalMethod, args, true)
-        }
+        function firstOverride(this: unknown, ...args: unknown[]) {
+            callOriginalMethod.call(this, originalMethod, args)
+        },
     )
 
     Object.defineProperty(target, method, {

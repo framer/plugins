@@ -20,7 +20,7 @@ When the inline script executes, it installs:
 #### `MutationObserver` that waits for `dataLayer` to appear
 
 - We need to wait for `dataLayer` to appear, so that the initial pushes happen as expected (e.g. `gtm.load`, `consent default`)
-- Overrides `dataLayer.push` and `ga`/`gtag()` to yield first before calling the browser-native `push` function
+- Overrides `dataLayer.push` and `gtag()` to yield first before calling the browser-native `push` function
 - The override makes sure any further override is overridden again
 - It yields between every overridden-call. This ensures we have natural yield points between the nested GTM tasks (that call `push` from within a `push`), ensuring tasks are split across multiple frames.
 - The real `push` is called last.

@@ -24,7 +24,12 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
     const handleFileSelected = useCallback(
         async (csvContent: string) => {
             if (!collection) return
-            if (!hasAllPermissions) return
+            if (!hasAllPermissions) {
+                framer.notify("You do not have permission to edit CMS collections.", {
+                    variant: "error",
+                })
+                return
+            }
 
             try {
                 const csvRecords = await parseCSV(csvContent)

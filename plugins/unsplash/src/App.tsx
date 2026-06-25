@@ -22,7 +22,7 @@ const minWindowWidth = mode === "canvas" ? 260 : 600
 const minColumnWidth = 100
 const columnGap = 5
 const sidePadding = 15 * 2
-const resizable = framer.mode === "canvas"
+const resizable = mode === "canvas"
 
 void framer.showUI({
     position: "top right",
@@ -34,7 +34,7 @@ void framer.showUI({
 })
 
 export function App() {
-    const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
+    const isAllowedToUpsertImage = useIsAllowedTo(mode === "canvas" ? "addImage" : "setImage")
 
     const [query, setQuery] = useState("")
 
@@ -42,7 +42,6 @@ export function App() {
 
     const addRandomMutation = useMutation({
         mutationFn: async (query: string) => {
-            const mode = framer.mode
             const randomPhoto = await getRandomPhoto(query)
 
             if (mode === "canvas") {
@@ -83,7 +82,7 @@ export function App() {
                 </div>
             </div>
             <AppErrorBoundary>
-                <PhotosList query={debouncedQuery} />
+                <PhotosList query={debouncedQuery} isAllowedToUpsertImage={isAllowedToUpsertImage} />
             </AppErrorBoundary>
             <div className="mt-[15px] px-[15px]">
                 <button
@@ -104,9 +103,13 @@ export function App() {
 
 type PhotoId = string
 
-const PhotosList = memo(function PhotosList({ query }: { query: string }) {
-    const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
-
+const PhotosList = memo(function PhotosList({
+    query,
+    isAllowedToUpsertImage,
+}: {
+    query: string
+    isAllowedToUpsertImage: boolean
+}) {
     const { data, fetchNextPage, isFetchingNextPage, isLoading, hasNextPage } = useListPhotosInfinite(query)
     const scrollRef = useRef<HTMLDivElement>(null)
     const [windowWidth, setWindowWidth] = useState(window.innerWidth)
@@ -147,8 +150,6 @@ const PhotosList = memo(function PhotosList({ query }: { query: string }) {
 
     const addPhotoMutation = useMutation({
         mutationFn: async (photo: UnsplashPhoto) => {
-            const mode = framer.mode
-
             if (mode === "canvas") {
                 await framer.addImage({
                     image: photo.urls.full,

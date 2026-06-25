@@ -3,6 +3,7 @@
 [data-framer-theme="light"] #root {
     --framer-color-tint: #000;
     --framer-color-tint-dark: #262626;
+    --framer-color-tint-dimmed: rgba(0, 0, 0, 0.15);
     --framer-color-tint-extra-dark: #333333;
 }
 
@@ -10,6 +11,7 @@
     --framer-color-tint: #fff;
     --framer-color-tint-dark: #e3e3e3;
     --framer-color-tint-extra-dark: #c3c3c3;
+    --framer-color-tint-dimmed: rgba(255, 255, 255, 0.2);
     --framer-color-text-reversed: #000;
 }
 

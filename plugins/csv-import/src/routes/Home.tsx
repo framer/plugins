@@ -4,12 +4,19 @@ import { SelectCSVFile } from "../components/SelectCSVFile"
 
 interface HomeProps {
     collection: Collection | null
+    canAddItems: boolean
     forceCreateCollection?: boolean
     onCollectionChange: (collection: Collection) => void
     onFileSelected: (csvContent: string) => Promise<void>
 }
 
-export function Home({ collection, onCollectionChange, onFileSelected, forceCreateCollection }: HomeProps) {
+export function Home({
+    collection,
+    canAddItems,
+    onCollectionChange,
+    onFileSelected,
+    forceCreateCollection,
+}: HomeProps) {
     return (
         <div className="import-collection">
             <hr />
@@ -22,7 +29,7 @@ export function Home({ collection, onCollectionChange, onFileSelected, forceCrea
 
             <hr />
 
-            <SelectCSVFile disabled={!collection} onFileSelected={onFileSelected} />
+            <SelectCSVFile disabled={!collection || !canAddItems} onFileSelected={onFileSelected} />
         </div>
     )
 }

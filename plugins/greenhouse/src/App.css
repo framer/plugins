@@ -10,6 +10,11 @@ main {
 
     user-select: none;
     -webkit-user-select: none;
+
+    --framer-color-tint: #23a47f;
+    --framer-color-tint-dark: #23a47f;
+    --framer-color-tint-extra-dark: #23a47f;
+    --framer-color-tint-dimmed: rgba(35, 164, 127, 0.12);
 }
 
 form {
@@ -138,11 +143,6 @@ form {
     background-color: var(--framer-color-bg-tertiary) !important;
 }
 
-.mapping .source-field:focus-visible {
-    outline: none;
-    box-shadow: inset 0 0 0 1px #15372c;
-}
-
 .mapping .source-field.missing-reference,
 .mapping .source-field.missing-reference input[type="checkbox"] {
     cursor: not-allowed;
@@ -193,10 +193,6 @@ form {
     height: 45px;
     background: linear-gradient(to bottom, transparent, var(--framer-color-bg));
     pointer-events: none;
-}
-
-input[type="checkbox"]:checked {
-    background-color: #15372c;
 }
 
 .setup,

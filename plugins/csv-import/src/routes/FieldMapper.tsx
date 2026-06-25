@@ -26,6 +26,11 @@ export interface FieldMapperSubmitOpts {
 interface FieldMapperProps {
     collection: Collection
     csvRecords: Record<string, string>[]
+    /**
+     * When false, the user can only map CSV columns onto existing fields. Creating new
+     * fields and removing existing fields is disabled (e.g. content-editing-only permissions).
+     */
+    canEditFields: boolean
     onSubmit: (opts: FieldMapperSubmitOpts) => Promise<void>
 }
 
@@ -40,7 +45,45 @@ function calculatePossibleSlugFields(mappings: FieldMappingItem[], csvRecords: R
 const caseInsensitiveEquals = (a: string | undefined | null, b: string | undefined | null) =>
     a?.toLocaleLowerCase() === b?.toLocaleLowerCase()
 
-export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperProps) {
+/**
+ * Determine how a column should be restored when it is un-ignored. With field-editing
+ * permissions it becomes a new field. Without them the user can only map onto existing
+ * fields, so we pick the first unmapped existing field (or keep it ignored if none remain).
+ */
+function buildUnignoreUpdate(
+    item: FieldMappingItem,
+    canEditFields: boolean,
+    existingFields: Field[],
+    allMappings: FieldMappingItem[]
+): Partial<FieldMappingItem> {
+    if (canEditFields) {
+        return { action: "create", targetFieldId: undefined, hasTypeMismatch: false }
+    }
+
+    const usedFieldIds = new Set(
+        allMappings
+            .filter(
+                m =>
+                    m.action === "map" &&
+                    m.targetFieldId &&
+                    m.inferredField.columnName !== item.inferredField.columnName
+            )
+            .map(m => m.targetFieldId)
+    )
+    const target = existingFields.find(field => !usedFieldIds.has(field.id))
+    if (!target) {
+        return { action: "ignore", targetFieldId: undefined, hasTypeMismatch: false }
+    }
+
+    const targetVirtualType = sdkTypeToVirtual(target)
+    const hasTypeMismatch = targetVirtualType
+        ? !isTypeCompatible(item.inferredField.inferredType, targetVirtualType)
+        : false
+
+    return { action: "map", targetFieldId: target.id, hasTypeMismatch }
+}
+
+export function FieldMapper({ collection, csvRecords, canEditFields, onSubmit }: FieldMapperProps) {
     const [existingFields, setExistingFields] = useState<Field[]>([])
     const [mappings, setMappings] = useState<FieldMappingItem[]>([])
     const possibleSlugFields = useMemo(() => calculatePossibleSlugFields(mappings, csvRecords), [csvRecords, mappings])
@@ -91,10 +134,12 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                         }
                     }
 
-                    // No match - create new field or ignore if it's the slug field
+                    // No match - create a new field, or ignore it when it's the slug field
+                    // or when the user isn't allowed to create fields (they can only map
+                    // onto existing fields, so unmatched columns stay unmapped).
                     return {
                         inferredField,
-                        action: isSlugField ? "ignore" : "create",
+                        action: isSlugField || !canEditFields ? "ignore" : "create",
                         hasTypeMismatch: false,
                     }
                 })
@@ -124,43 +169,68 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
         }
 
         void loadFields()
-    }, [collection, csvRecords])
+    }, [collection, csvRecords, canEditFields])
 
-    const toggleIgnored = useCallback((columnName: string) => {
-        setMappings(prev => {
-            const newMappings = prev.map(item => {
-                if (item.inferredField.columnName !== columnName) return item
+    // Keep the "Unmapped CMS Fields" list in sync with the current mappings, preserving any
+    // action the user already chose for a field that remains unmapped.
+    const recomputeMissingFields = useCallback(
+        (newMappings: FieldMappingItem[]) => {
+            const mappedFieldIds = new Set(
+                newMappings.filter(m => m.action === "map" && m.targetFieldId).map(m => m.targetFieldId)
+            )
+            setMissingFields(prev => {
+                const prevActionMap = new Map(prev.map(item => [item.field.id, item.action]))
 
-                if (item.action === "ignore") {
-                    // Un-ignore: restore to create mode
-                    return { ...item, action: "create" as const, targetFieldId: undefined, hasTypeMismatch: false }
-                } else {
-                    // Ignore
-                    return { ...item, action: "ignore" as const, targetFieldId: undefined, hasTypeMismatch: false }
-                }
+                return existingFields
+                    .filter(field => !mappedFieldIds.has(field.id))
+                    .map(field => ({
+                        field,
+                        action: prevActionMap.get(field.id) ?? ("ignore" as MissingFieldAction),
+                    }))
             })
+        },
+        [existingFields]
+    )
 
-            return newMappings
-        })
-    }, [])
+    const toggleIgnored = useCallback(
+        (columnName: string) => {
+            setMappings(prev => {
+                const newMappings = prev.map(item => {
+                    if (item.inferredField.columnName !== columnName) return item
 
-    const setIgnored = useCallback((columnName: string, ignored: boolean) => {
-        setMappings(prev => {
-            const newMappings = prev.map(item => {
-                if (item.inferredField.columnName !== columnName) return item
-
-                if (ignored) {
+                    if (item.action === "ignore") {
+                        return { ...item, ...buildUnignoreUpdate(item, canEditFields, existingFields, prev) }
+                    }
                     return { ...item, action: "ignore" as const, targetFieldId: undefined, hasTypeMismatch: false }
-                } else if (item.action === "ignore") {
-                    // Un-ignore: restore to create mode
-                    return { ...item, action: "create" as const, targetFieldId: undefined, hasTypeMismatch: false }
-                }
-                return item
-            })
+                })
 
-            return newMappings
-        })
-    }, [])
+                recomputeMissingFields(newMappings)
+                return newMappings
+            })
+        },
+        [canEditFields, existingFields, recomputeMissingFields]
+    )
+
+    const setIgnored = useCallback(
+        (columnName: string, ignored: boolean) => {
+            setMappings(prev => {
+                const newMappings = prev.map(item => {
+                    if (item.inferredField.columnName !== columnName) return item
+
+                    if (ignored) {
+                        return { ...item, action: "ignore" as const, targetFieldId: undefined, hasTypeMismatch: false }
+                    } else if (item.action === "ignore") {
+                        return { ...item, ...buildUnignoreUpdate(item, canEditFields, existingFields, prev) }
+                    }
+                    return item
+                })
+
+                recomputeMissingFields(newMappings)
+                return newMappings
+            })
+        },
+        [canEditFields, existingFields, recomputeMissingFields]
+    )
 
     const updateTarget = useCallback(
         (columnName: string, targetFieldId: string | null) => {
@@ -194,25 +264,11 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                     }
                 })
 
-                // Update missing fields based on new mappings
-                const mappedFieldIds = new Set(
-                    newMappings.filter(m => m.action === "map" && m.targetFieldId).map(m => m.targetFieldId)
-                )
-                setMissingFields(prev => {
-                    const prevActionMap = new Map(prev.map(item => [item.field.id, item.action]))
-
-                    return existingFields
-                        .filter(field => !mappedFieldIds.has(field.id))
-                        .map(field => ({
-                            field,
-                            action: prevActionMap.get(field.id) ?? ("ignore" as MissingFieldAction),
-                        }))
-                })
-
+                recomputeMissingFields(newMappings)
                 return newMappings
             })
         },
-        [existingFields]
+        [existingFields, recomputeMissingFields]
     )
 
     const updateMissingFieldAction = useCallback((fieldId: string, action: MissingFieldAction) => {
@@ -328,6 +384,7 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                             key={item.inferredField.columnName}
                             item={item}
                             existingFields={existingFields}
+                            canEditFields={canEditFields}
                             slugFieldName={selectedSlugFieldName}
                             onToggleIgnored={() => {
                                 toggleIgnored(item.inferredField.columnName)
@@ -359,13 +416,14 @@ export function FieldMapper({ collection, csvRecords, onSubmit }: FieldMapperPro
                                 <ChevronIcon />
                                 <select
                                     className="missing-field-action"
+                                    disabled={!canEditFields}
                                     value={item.action}
                                     onChange={e => {
                                         updateMissingFieldAction(item.field.id, e.target.value as MissingFieldAction)
                                     }}
                                 >
                                     <option value="ignore">Keep Empty</option>
-                                    <option value="remove">Remove</option>
+                                    {canEditFields && <option value="remove">Remove</option>}
                                 </select>
                             </div>
                         ))}

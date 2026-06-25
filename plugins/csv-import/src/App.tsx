@@ -17,14 +17,15 @@ import { ImportError, type ImportItem, prepareImportPayload } from "./utils/prep
 
 export function App({ initialCollection }: { initialCollection: Collection | null }) {
     const [collection, setCollection] = useState<Collection | null>(initialCollection)
-    const hasAllPermissions = useIsAllowedTo("Collection.addItems", "Collection.addFields", "Collection.removeFields")
+    const canAddItems = useIsAllowedTo("Collection.addItems")
+    const canEditFields = useIsAllowedTo("Collection.addFields", "Collection.removeFields")
 
     const { currentRoute, navigate } = useMiniRouter()
 
     const handleFileSelected = useCallback(
         async (csvContent: string) => {
             if (!collection) return
-            if (!hasAllPermissions) {
+            if (!canAddItems) {
                 framer.notify("You do not have permission to edit CMS collections.", {
                     variant: "error",
                 })
@@ -62,7 +63,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 })
             }
         },
-        [collection, hasAllPermissions, navigate]
+        [collection, canAddItems, navigate]
     )
 
     const handleFieldMapperSubmit = useCallback(
@@ -73,11 +74,15 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             slugFieldName: string
             missingFields: MissingFieldItem[]
         }) => {
-            if (!hasAllPermissions) return
+            if (!canAddItems) return
 
             try {
-                await applyFieldRemovalsToCms(opts.collection, opts.missingFields)
-                await applyFieldCreationsToCms(opts.collection, opts.mappings)
+                // Field creation/removal requires elevated permissions. Users who can only add
+                // items still import by mapping CSV columns onto existing fields.
+                if (canEditFields) {
+                    await applyFieldRemovalsToCms(opts.collection, opts.missingFields)
+                    await applyFieldCreationsToCms(opts.collection, opts.mappings)
+                }
 
                 // Process records with field mapping
                 const payload = await prepareImportPayload({
@@ -134,7 +139,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 })
             }
         },
-        [hasAllPermissions, navigate]
+        [canAddItems, canEditFields, navigate]
     )
 
     switch (currentRoute.uid) {
@@ -142,6 +147,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
             return (
                 <Home
                     collection={collection}
+                    canAddItems={canAddItems}
                     forceCreateCollection={currentRoute.opts?.forceCreateCollection}
                     onCollectionChange={setCollection}
                     onFileSelected={handleFileSelected}
@@ -153,6 +159,7 @@ export function App({ initialCollection }: { initialCollection: Collection | nul
                 <FieldMapper
                     collection={currentRoute.opts.collection}
                     csvRecords={currentRoute.opts.csvRecords}
+                    canEditFields={canEditFields}
                     onSubmit={opts =>
                         handleFieldMapperSubmit({
                             collection: currentRoute.opts.collection,

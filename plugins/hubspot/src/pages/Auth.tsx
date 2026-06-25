@@ -64,7 +64,7 @@ export default function AuthPage() {
                     </p>
                 </div>
             </div>
-            <Button className="w-full" onClick={login} isLoading={isLoading} variant="secondary">
+            <Button className="w-full" onClick={login} isLoading={isLoading}>
                 Log In
             </Button>
         </main>

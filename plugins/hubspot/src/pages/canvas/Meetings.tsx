@@ -41,10 +41,7 @@ export default function MeetingsPage() {
 
             <div className="col-lg sticky top-0 left-0">
                 <hr />
-                <button
-                    className="framer-button-primary"
-                    onClick={() => window.open(`https://${uiDomain}/meetings/${portalId}`, "_blank")}
-                >
+                <button onClick={() => window.open(`https://${uiDomain}/meetings/${portalId}`, "_blank")}>
                     View Meetings
                 </button>
             </div>

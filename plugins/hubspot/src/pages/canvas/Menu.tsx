@@ -3,8 +3,8 @@ import { framer } from "framer-plugin"
 import { useEffect } from "react"
 import { useLocation } from "wouter"
 import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "../../api"
+import { HeroSection } from "../../components/HeroSection"
 import { ChartIcon, FormsIcon, LightningIcon, MeetingsIcon, MessageIcon, PersonIcon } from "../../components/Icons"
-import { Logo } from "../../components/Logo"
 
 const queryHooks = {
     "/canvas/forms": { hook: useFormsQuery, shouldRefetch: true },
@@ -31,7 +31,10 @@ const MenuOption = ({
 
     return (
         <button
-            className={cx("h-[110px] w-full col items-center justify-center rounded-md", className)}
+            className={cx(
+                "h-[110px] w-full col items-center justify-center text-secondary rounded-[10px] tile-border",
+                className
+            )}
             onClick={() => {
                 if (onClick) {
                     onClick()
@@ -41,7 +44,7 @@ const MenuOption = ({
             }}
         >
             {icon}
-            <p className="font-semibold text-tertiary">{title}</p>
+            <span className="font-semibold">{title}</span>
         </button>
     )
 }
@@ -62,15 +65,7 @@ export default function MenuPage() {
 
     return (
         <main>
-            <div className="col-lg items-center py-[30px]">
-                <Logo />
-                <div className="col items-center">
-                    <h6>Welcome to HubSpot</h6>
-                    <p className="text-center text-tertiary max-w-[200px]">
-                        View forms, monitor site traffic, embed widgets and much more.
-                    </p>
-                </div>
-            </div>
+            <HeroSection description="View forms, monitor site traffic, embed widgets and much more." />
             <div className="grid grid-cols-2 gap-2.5">
                 <MenuOption title="Forms" to="/canvas/forms" icon={<FormsIcon />} />
                 <MenuOption title="Tracking" to="/canvas/tracking" icon={<ChartIcon />} />

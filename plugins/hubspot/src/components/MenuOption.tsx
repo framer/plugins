@@ -14,7 +14,10 @@ export const MenuOption = ({ icon, title, to, className, onClick }: Props) => {
 
     return (
         <button
-            className={cx("h-[110px] w-full col items-center justify-center rounded-md", className)}
+            className={cx(
+                "h-[110px] w-full col items-center justify-center text-secondary rounded-[10px] tile-border",
+                className
+            )}
             onClick={() => {
                 if (onClick) {
                     onClick()
@@ -24,7 +27,7 @@ export const MenuOption = ({ icon, title, to, className, onClick }: Props) => {
             }}
         >
             {icon}
-            <p className="font-semibold text-tertiary">{title}</p>
+            <span className="font-semibold">{title}</span>
         </button>
     )
 }

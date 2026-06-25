@@ -99,7 +99,7 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
 
     const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
 
-    if (isLoadingTable) return <CenteredSpinner size="medium" />
+    if (isLoadingTable) return <CenteredSpinner />
 
     if (!tableId) return <div>Expected `tableId` query param</div>
 
@@ -150,7 +150,6 @@ export default function MapHubDBFieldsPage({ hubDbPluginContext }: PageProps) {
             />
             <div className="sticky left-0 bottom-0 flex justify-between bg-primary pt-[15px] border-t border-divider items-center max-w-full">
                 <Button
-                    variant="secondary"
                     className="w-full"
                     isLoading={isSyncing}
                     disabled={!isAllowedToManage}

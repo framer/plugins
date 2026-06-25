@@ -41,15 +41,15 @@ const routes: Route[] = [
                 element: AccountPage,
                 title: "Account",
                 size: {
-                    height: 197,
+                    height: 204,
                 },
             },
             {
                 path: "/chat",
                 element: ChatPage,
-                title: "Chat",
+                title: "Chats",
                 size: {
-                    height: 380,
+                    height: 401,
                 },
             },
             {
@@ -71,14 +71,14 @@ const routes: Route[] = [
                 element: TrackingPage,
                 title: "Tracking",
                 size: {
-                    height: 172,
+                    height: 179,
                 },
                 children: [
                     {
                         path: "/learn-more",
                         element: LearnMoreTrackingPage,
                         size: {
-                            height: 184,
+                            height: 201,
                         },
                     },
                 ],
@@ -89,7 +89,7 @@ const routes: Route[] = [
         path: "/cms",
         element: CMSMenuPage,
         size: {
-            height: 141,
+            height: 320,
         },
         children: [
             {
@@ -103,7 +103,6 @@ const routes: Route[] = [
             {
                 path: "/hubdb",
                 element: HubDBPage,
-                showTopDivider: false,
                 size: {
                     width: 320,
                     height: 305,

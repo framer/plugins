@@ -1,13 +1,16 @@
 import cx from "classnames"
-import { Spinner } from "./Spinner"
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: "primary" | "secondary" | "destructive"
+    variant?: "primary" | "secondary"
     isLoading?: boolean
 }
 
-export const Button = ({ variant = "primary", children, className, isLoading = false, disabled, ...rest }: Props) => (
-    <button className={cx(`framer-button-${variant}`, className)} disabled={isLoading || disabled} {...rest}>
-        {isLoading ? <Spinner inheritColor={variant === "secondary"} className="mx-auto" inline /> : children}
+export const Button = ({ variant = "secondary", children, className, isLoading = false, disabled, ...rest }: Props) => (
+    <button
+        className={cx(variant === "primary" && "framer-button-primary", className)}
+        disabled={isLoading || disabled}
+        {...rest}
+    >
+        {isLoading ? <div className="framer-spinner" /> : children}
     </button>
 )

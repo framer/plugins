@@ -13,7 +13,6 @@
     --background-color-tint-dimmed: var(--framer-color-tint-dimmed);
     --background-color-tint-dark: var(--framer-color-tint-dark);
     --background-color-black-dimmed: rgba(0, 0, 0, 0.5);
-    --background-color-hs-orange: #ff5c35;
     --background-color-framer-red: #ff3366;
     --background-color-framer-blue: #0099ff;
 
@@ -22,7 +21,6 @@
     --color-tertiary: var(--framer-color-text-tertiary);
     --color-inverted: var(--framer-color-text-inverted);
     --color-tint: var(--framer-color-tint);
-    --color-hs-orange: #ff5c35;
     --color-framer-red: #ff3366;
 
     --border-color-divider: var(--framer-color-divider);
@@ -86,19 +84,19 @@
 }
 
 @utility framer-button-destructive {
-    @apply bg-framer-red text-white;
+    @apply bg-framer-red/10 text-framer-red dark:bg-framer-red/15;
 
     &:hover {
-        background-color: #e15;
+        @apply bg-framer-red/15 dark:bg-framer-red/10;
     }
 
     &:focus {
-        background-color: #e15;
+        @apply bg-framer-red/15 dark:bg-framer-red/10;
     }
 }
 
 @utility input-container {
-    @apply row items-center justify-between pl-[15px] text-tertiary;
+    @apply row items-center justify-between pl-[15px] text-secondary;
 
     & > p {
         @apply max-w-[134px] truncate text-primary;
@@ -109,10 +107,30 @@
     @apply bg-tertiary-dimmed-light dark:bg-tertiary-dimmed-dark dark:hover:bg-tertiary hover:bg-tertiary;
 }
 
-@utility segment-control-shadow {
+[data-framer-theme="light"] .segmented-control-shadow {
     box-shadow:
-        0px 2px 4px 0px rgba(0, 0, 0, 0.1),
-        0px 1px 0px 0px rgba(0, 0, 0, 0.05);
+        0px 0px 0px 1px rgba(0, 0, 0, 0.04),
+        0px 1px 0px 0px rgba(0, 0, 0, 0.04),
+        0px 2px 4px 0px rgba(0, 0, 0, 0.08);
+}
+
+[data-framer-theme="dark"] .segmented-control-shadow {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+[data-framer-theme="dark"] .segmented-control-shadow::after {
+    content: "";
+    position: absolute;
+    inset: 0px;
+    border-radius: 6px;
+    pointer-events: none;
+    box-shadow: inset 0 0 0 1px #ffffff0d;
+    mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+    --webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+}
+
+@utility tile-border {
+    box-shadow: inset 0 0 0 1px var(--color-tile-border);
 }
 
 @layer base {
@@ -136,4 +154,33 @@ main {
     display: flex;
     flex-direction: column;
     gap: 15px;
+}
+
+#root {
+    --framer-color-tint: #ff5c35;
+    --framer-color-tint-dark: #f25730;
+    --framer-color-tint-extra-dark: #e34e29;
+    --framer-color-tint-dimmed: rgba(255, 92, 53, 0.1);
+}
+
+body {
+    --color-tile-border: rgba(0, 0, 0, 0.05);
+}
+
+body[data-framer-theme="dark"] {
+    --color-tile-border: rgba(255, 255, 255, 0.07);
+}
+
+[data-framer-theme="light"] .framer-button-primary {
+    --framer-color-tint: #111;
+    --framer-color-tint-dark: #333;
+    --framer-color-tint-extra-dark: #444;
+    --framer-color-text-reversed: #fff;
+}
+
+[data-framer-theme="dark"] .framer-button-primary {
+    --framer-color-tint: #fff;
+    --framer-color-tint-dark: #ddd;
+    --framer-color-tint-extra-dark: #c5c5c5;
+    --framer-color-text-reversed: #000;
 }

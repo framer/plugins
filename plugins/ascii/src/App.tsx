@@ -55,7 +55,10 @@ function ASCIIPlugin({ framerCanvasImage }: { framerCanvasImage: ImageAsset | nu
     const asciiRef = useRef<ASCIIRef | null>(null)
     const { gl, toBytes, program, setProgram, setResolution } = useOGLPipeline()
 
-    const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
+    const isAllowedToAddImage = useIsAllowedTo("addImage")
+    const isAllowedToSetImage = useIsAllowedTo("setImage")
+    const isAllowedToUpsertImage =
+        framer.mode === "canvas" ? isAllowedToAddImage && isAllowedToSetImage : isAllowedToSetImage
 
     useEffect(() => {
         asciiRef.current?.setPixelSize(exportSize * 0.02)

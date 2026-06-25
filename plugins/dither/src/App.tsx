@@ -42,7 +42,10 @@ export interface DroppedAsset {
 }
 
 function DitherImage({ image }: { image: ImageAsset | null }) {
-    const isAllowedToUpsertImage = useIsAllowedTo("addImage", "setImage")
+    const isAllowedToAddImage = useIsAllowedTo("addImage")
+    const isAllowedToSetImage = useIsAllowedTo("setImage")
+    const isAllowedToUpsertImage =
+        framer.mode === "canvas" ? isAllowedToAddImage && isAllowedToSetImage : isAllowedToSetImage
 
     const canvasContainerRef = useRef<HTMLDivElement>(null)
     const [droppedAsset, setDroppedAsset] = useState<DroppedAsset | null>()

@@ -76,9 +76,7 @@ function buildUnignoreUpdate(
     }
 
     const targetVirtualType = sdkTypeToVirtual(target)
-    const hasTypeMismatch = targetVirtualType
-        ? !isTypeCompatible(item.inferredField.inferredType, targetVirtualType)
-        : false
+    const hasTypeMismatch = !isTypeCompatible(item.inferredField.inferredType, targetVirtualType)
 
     return { action: "map", targetFieldId: target.id, hasTypeMismatch }
 }

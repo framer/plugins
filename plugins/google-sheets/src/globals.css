@@ -6,6 +6,7 @@ main {
     --framer-color-tint: #00c43e;
     --framer-color-tint-dark: #00b539;
     --framer-color-tint-extra-dark: #00ab36;
+    --framer-color-tint-dimmed: rgba(0, 196, 62, 0.1);
 }
 
 select:not(:disabled) {

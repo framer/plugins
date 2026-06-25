@@ -17,6 +17,11 @@ main {
     --framer-color-tint-dimmed: rgba(73, 63, 172, 0.12);
 }
 
+[data-framer-theme="dark"] *::selection {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
 form {
     display: flex;
     flex-direction: column;

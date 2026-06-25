@@ -13,6 +13,12 @@ main {
     --framer-color-tint: #493fac;
     --framer-color-tint-dark: #493fac;
     --framer-color-tint-extra-dark: #493fac;
+    --framer-color-tint-dimmed: rgba(73, 63, 172, 0.15);
+}
+
+[data-framer-theme="dark"] *::selection {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
 }
 
 form {

@@ -363,7 +363,8 @@ gtmObserver.observe(document.documentElement, { childList: true, subtree: true }
  * Our wrapper calls the native method immediately, then yields before running the 3p override body. If the
  * override body calls a captured older wrapper, that older wrapper must not call the native method again for
  * the same top-level navigation/submit. Each wrapper therefore gets a generation number, and while wrapper N
- * runs its override body we mark generations `< N` as "native already handled".
+ * runs its override body (including Promise-returning async work) we mark generations `< N` as "native already
+ * handled".
  *
  * Fresh nested calls still work: if an override intentionally calls `history.pushState(...)` again, it goes
  * through the current wrapper, whose generation is `>= N`, so it still calls native. This preserves real nested
@@ -373,20 +374,35 @@ gtmObserver.observe(document.documentElement, { childList: true, subtree: true }
 const skippedWrappedListenerGenerations = new Map<Function, number>()
 let nextWrappedListenerGeneration = 0
 
-function withOlderWrappedListenersSkipped(originalMethod: Function, generation: number, callback: VoidFunction) {
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+    return value != null && typeof value === "object" && "then" in value && typeof value.then === "function"
+}
+
+function withOlderWrappedListenersSkipped(originalMethod: Function, generation: number, callback: () => unknown) {
     const previousSkippedGeneration = skippedWrappedListenerGenerations.get(originalMethod)
     skippedWrappedListenerGenerations.set(
         originalMethod,
         previousSkippedGeneration === undefined ? generation : Math.max(previousSkippedGeneration, generation)
     )
-    try {
-        callback()
-    } finally {
+
+    const restoreSkippedGeneration = () => {
         if (previousSkippedGeneration === undefined) {
             skippedWrappedListenerGenerations.delete(originalMethod)
         } else {
             skippedWrappedListenerGenerations.set(originalMethod, previousSkippedGeneration)
         }
+    }
+
+    try {
+        const result = callback()
+        if (isPromiseLike(result)) {
+            void result.then(restoreSkippedGeneration, restoreSkippedGeneration)
+        } else {
+            restoreSkippedGeneration()
+        }
+    } catch (error) {
+        restoreSkippedGeneration()
+        throw error
     }
 }
 
@@ -415,7 +431,7 @@ function wrapListener(originalMethod: Function, value?: Function) {
         yieldUnlessUrgent(() => {
             // The arrow FN is important here so we keep the correct `this`.
             withOlderWrappedListenersSkipped(originalMethod, generation, () => {
-                value.apply(this, args)
+                return value.apply(this, args)
             })
         })
     }

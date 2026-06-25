@@ -45,48 +45,19 @@
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    padding: 15px;
-    position: relative;
-}
-
-[data-framer-styles="prerelease"] .tabs {
     padding: 0 15px;
-}
-
-.tabs:before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 15px;
-    right: 15px;
-    height: 1px;
-    background-color: var(--framer-color-divider);
-    z-index: 1;
-}
-
-[data-framer-styles="prerelease"] .tabs:before {
-    display: none;
+    position: relative;
 }
 
 .tabs-container {
     position: relative;
     display: flex;
+    width: 100%;
+    height: auto;
     flex-direction: row;
     align-items: center;
-    justify-content: space-around;
-    background-color: var(--framer-color-bg-tertiary);
-    border-radius: 8px;
-    width: 100%;
-    padding: 2px;
-    height: 30px;
-}
-
-[data-framer-styles="prerelease"] .tabs-container {
     justify-content: start;
-    background-color: transparent;
-    border-radius: 0;
     padding: 10px 0;
-    height: auto;
     border-top: 1px solid var(--framer-color-divider);
     border-bottom: 1px solid var(--framer-color-divider);
 }
@@ -95,15 +66,9 @@
     position: relative;
     background: none !important;
     border: 0;
-    flex: 1;
-    height: 100%;
     color: #999999;
     font-weight: 500;
     user-select: none;
-    transition: color 200ms ease;
-}
-
-[data-framer-styles="prerelease"] .tab {
     flex: none;
     width: fit-content;
     height: 30px;
@@ -113,20 +78,9 @@
         background-color 100ms ease;
 }
 
-.tab:not(.active):hover {
-    color: var(--framer-color-text-secondary);
-}
-
-[data-framer-styles="prerelease"] .tab:not(.active):hover {
-    color: #999999;
-}
-
 .tab.active {
     color: var(--framer-color-text);
     font-weight: 600;
-}
-
-[data-framer-styles="prerelease"] .tab.active {
     background-color: var(--framer-color-bg-tertiary) !important;
 }
 
@@ -257,17 +211,6 @@
     inset: 0;
 }
 
-body:not([data-framer-styles="prerelease"]) .results-container:before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 15px;
-    right: 15px;
-    height: 1px;
-    background-color: var(--framer-color-divider);
-    z-index: 1;
-}
-
 .results-container.is-scrollable:after {
     content: "";
     position: absolute;
@@ -283,10 +226,6 @@ body:not([data-framer-styles="prerelease"]) .results-container:before {
     flex: 1;
     height: 100%;
     overflow-y: auto;
-    padding: 15px;
-}
-
-[data-framer-styles="prerelease"] .container {
     padding: 10px 15px;
 }
 

@@ -160,6 +160,7 @@ main {
     --framer-color-tint: #ff5c35;
     --framer-color-tint-dark: #f25730;
     --framer-color-tint-extra-dark: #e34e29;
+    --framer-color-tint-dimmed: rgba(255, 92, 53, 0.1);
 }
 
 body {

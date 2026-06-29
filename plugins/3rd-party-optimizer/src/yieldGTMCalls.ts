@@ -362,34 +362,54 @@ gtmObserver.observe(document.documentElement, { childList: true, subtree: true }
  *
  * Our wrapper calls the native method immediately, then yields before running the 3p override body. If the
  * override body calls a captured older wrapper, that older wrapper must not call the native method again for
- * the same top-level navigation/submit. Each wrapper therefore gets a generation number, and while wrapper N
- * runs its override body (including Promise-returning async work) we mark generations `< N` as "native already
- * handled".
+ * the same top-level navigation/submit. Each wrapper therefore gets a generation number, and each active
+ * override body (including Promise-returning async work) contributes one skip scope. The highest active
+ * generation for a native method marks generations below it as "native already handled".
  *
  * Fresh nested calls still work: if an override intentionally calls `history.pushState(...)` again, it goes
  * through the current wrapper, whose generation is `>= N`, so it still calls native. This preserves real nested
  * navigations while suppressing duplicate native calls from captured older wrappers, including stale captures
  * that are older than the immediately previous wrapper.
  */
-const skippedWrappedListenerGenerations = new Map<Function, number>()
+const activeSkipGenerationsByMethod = new Map<Function, number[]>()
 let nextWrappedListenerGeneration = 0
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
     return value != null && typeof value === "object" && "then" in value && typeof value.then === "function"
 }
 
-function withOlderWrappedListenersSkipped(originalMethod: Function, generation: number, callback: () => unknown) {
-    const previousSkippedGeneration = skippedWrappedListenerGenerations.get(originalMethod)
-    skippedWrappedListenerGenerations.set(
-        originalMethod,
-        previousSkippedGeneration === undefined ? generation : Math.max(previousSkippedGeneration, generation)
-    )
+function getHighestActiveSkipGeneration(originalMethod: Function) {
+    const generations = activeSkipGenerationsByMethod.get(originalMethod)
+    if (!generations) return undefined
 
+    let highestActiveSkipGeneration: number | undefined
+    for (const generation of generations) {
+        if (highestActiveSkipGeneration === undefined || generation > highestActiveSkipGeneration) {
+            highestActiveSkipGeneration = generation
+        }
+    }
+    return highestActiveSkipGeneration
+}
+
+function withOlderWrappedListenersSkipped(originalMethod: Function, generation: number, callback: () => unknown) {
+    const generations = activeSkipGenerationsByMethod.get(originalMethod) ?? []
+    generations.push(generation)
+    activeSkipGenerationsByMethod.set(originalMethod, generations)
+
+    let didRestore = false
     const restoreSkippedGeneration = () => {
-        if (previousSkippedGeneration === undefined) {
-            skippedWrappedListenerGenerations.delete(originalMethod)
-        } else {
-            skippedWrappedListenerGenerations.set(originalMethod, previousSkippedGeneration)
+        if (didRestore) return
+        didRestore = true
+
+        const activeGenerations = activeSkipGenerationsByMethod.get(originalMethod)
+        if (!activeGenerations) return
+
+        const index = activeGenerations.lastIndexOf(generation)
+        if (index !== -1) {
+            activeGenerations.splice(index, 1)
+        }
+        if (!activeGenerations.length) {
+            activeSkipGenerationsByMethod.delete(originalMethod)
         }
     }
 
@@ -420,8 +440,8 @@ function wrapListener(originalMethod: Function, value?: Function) {
         // accurate, it might lead to wrong behavior.
         // If an override calls a previously captured wrapper, that older wrapper skips the native method;
         // fresh calls through the current getter still update history/submit normally.
-        const skippedGeneration = skippedWrappedListenerGenerations.get(originalMethod)
-        if (skippedGeneration === undefined || generation >= skippedGeneration) {
+        const highestActiveSkipGeneration = getHighestActiveSkipGeneration(originalMethod)
+        if (highestActiveSkipGeneration === undefined || generation >= highestActiveSkipGeneration) {
             originalMethod.apply(this, args)
         }
 

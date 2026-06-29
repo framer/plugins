@@ -362,214 +362,65 @@ gtmObserver.observe(document.documentElement, { childList: true, subtree: true }
  *
  * Our wrapper calls the native method immediately, then yields before running the 3p override body. If the
  * override body calls a captured older wrapper, that older wrapper must not call the native method again for
- * the same top-level navigation/submit. Each wrapper therefore gets a generation number, and each active
- * override body contributes one skip scope. The highest active generation for a native method marks
- * generations below it as "native already handled". Callback APIs scheduled by an override inherit the active
- * skip scopes, so captured previous wrappers called later from setTimeout/rAF/queueMicrotask still see the
- * marker without keeping it alive globally for a fixed timeout.
+ * the same top-level navigation/submit. Each wrapper therefore gets a generation number, and while wrapper N
+ * runs its override body synchronously we mark generations `< N` as "native already handled".
  *
  * Fresh nested calls still work: if an override intentionally calls `history.pushState(...)` again, it goes
  * through the current wrapper, whose generation is `>= N`, so it still calls native. This preserves real nested
  * navigations while suppressing duplicate native calls from captured older wrappers, including stale captures
  * that are older than the immediately previous wrapper.
+ *
+ * This intentionally targets the observed GTM/router pattern where captured wrappers are called synchronously.
+ * Fire-and-forget delayed calls to captured wrappers are not covered; supporting them requires much more global
+ * scheduler patching and is not worth the complexity for this optimization.
  */
-interface SkipScope {
-    originalMethod: Function
-    generation: number
-}
-
-const activeSkipGenerationsByMethod = new Map<Function, number[]>()
-const activeSchedulerSkipScopes: SkipScope[] = []
-let nextWrappedListenerGeneration = 0
-let originalSetTimeout: typeof window.setTimeout | undefined
-let originalRequestAnimationFrame: typeof window.requestAnimationFrame | undefined
-let originalQueueMicrotask: typeof window.queueMicrotask | undefined
-
-function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
-    return value != null && typeof value === "object" && "then" in value && typeof value.then === "function"
-}
-
-function getHighestActiveSkipGeneration(originalMethod: Function) {
-    const generations = activeSkipGenerationsByMethod.get(originalMethod)
-    if (!generations) return undefined
-
-    let highestActiveSkipGeneration: number | undefined
-    for (const generation of generations) {
-        if (highestActiveSkipGeneration === undefined || generation > highestActiveSkipGeneration) {
-            highestActiveSkipGeneration = generation
-        }
-    }
-    return highestActiveSkipGeneration
-}
-
-function addActiveSkipGeneration(originalMethod: Function, generation: number) {
-    const generations = activeSkipGenerationsByMethod.get(originalMethod) ?? []
-    generations.push(generation)
-    activeSkipGenerationsByMethod.set(originalMethod, generations)
-
-    let didRestore = false
-    return () => {
-        if (didRestore) return
-        didRestore = true
-
-        const activeGenerations = activeSkipGenerationsByMethod.get(originalMethod)
-        if (!activeGenerations) return
-
-        const index = activeGenerations.lastIndexOf(generation)
-        if (index !== -1) {
-            activeGenerations.splice(index, 1)
-        }
-        if (!activeGenerations.length) {
-            activeSkipGenerationsByMethod.delete(originalMethod)
-        }
-    }
-}
-
-function installSchedulerSkipScopeWrappers() {
-    const setTimeoutBeforeInstall = window.setTimeout
-    const requestAnimationFrameBeforeInstall = window.requestAnimationFrame
-    const queueMicrotaskBeforeInstall = window.queueMicrotask
-
-    originalSetTimeout = setTimeoutBeforeInstall
-    originalRequestAnimationFrame = requestAnimationFrameBeforeInstall
-    originalQueueMicrotask = queueMicrotaskBeforeInstall
-
-    window.setTimeout = function skipScopedSetTimeout(handler: TimerHandler, timeout?: number, ...args: unknown[]) {
-        if (typeof handler !== "function") {
-            return setTimeoutBeforeInstall.call(window, handler, timeout, ...args)
-        }
-
-        const capturedSkipScopes = activeSchedulerSkipScopes.slice()
-        return setTimeoutBeforeInstall.call(
-            window,
-            function skipScopedTimeoutHandler(this: unknown, ...handlerArgs: unknown[]) {
-                return runWithSkipScopes(capturedSkipScopes, () => handler.apply(this, handlerArgs))
-            },
-            timeout,
-            ...args
-        )
-    }
-
-    window.requestAnimationFrame = function skipScopedRequestAnimationFrame(callback: FrameRequestCallback) {
-        const capturedSkipScopes = activeSchedulerSkipScopes.slice()
-        return requestAnimationFrameBeforeInstall.call(window, time => {
-            runWithSkipScopes(capturedSkipScopes, () => callback(time))
-        })
-    }
-
-    window.queueMicrotask = function skipScopedQueueMicrotask(callback: VoidFunction) {
-        const capturedSkipScopes = activeSchedulerSkipScopes.slice()
-        queueMicrotaskBeforeInstall.call(window, () => {
-            runWithSkipScopes(capturedSkipScopes, callback)
-        })
-    }
-}
-
-function restoreSchedulerSkipScopeWrappers() {
-    if (originalSetTimeout) {
-        window.setTimeout = originalSetTimeout
-        originalSetTimeout = undefined
-    }
-    if (originalRequestAnimationFrame) {
-        window.requestAnimationFrame = originalRequestAnimationFrame
-        originalRequestAnimationFrame = undefined
-    }
-    if (originalQueueMicrotask) {
-        window.queueMicrotask = originalQueueMicrotask
-        originalQueueMicrotask = undefined
-    }
-}
-
-function addActiveSchedulerSkipScope(skipScope: SkipScope) {
-    if (!activeSchedulerSkipScopes.length) {
-        installSchedulerSkipScopeWrappers()
-    }
-    activeSchedulerSkipScopes.push(skipScope)
-
-    let didRestore = false
-    return () => {
-        if (didRestore) return
-        didRestore = true
-
-        const index = activeSchedulerSkipScopes.lastIndexOf(skipScope)
-        if (index !== -1) {
-            activeSchedulerSkipScopes.splice(index, 1)
-        }
-        if (!activeSchedulerSkipScopes.length) {
-            restoreSchedulerSkipScopeWrappers()
-        }
-    }
-}
-
-function runWithSkipScopes(skipScopes: SkipScope[], callback: () => unknown) {
-    const restoreSkipGenerations = skipScopes.map(skipScope =>
-        addActiveSkipGeneration(skipScope.originalMethod, skipScope.generation)
-    )
-    const restoreSchedulerSkipScopes = skipScopes.map(addActiveSchedulerSkipScope)
-
-    const restore = () => {
-        for (const restoreSchedulerSkipScope of restoreSchedulerSkipScopes) {
-            restoreSchedulerSkipScope()
-        }
-        for (const restoreSkipGeneration of restoreSkipGenerations) {
-            restoreSkipGeneration()
-        }
-    }
-
-    try {
-        const result = callback()
-        if (isPromiseLike(result)) {
-            void result.then(restore, restore)
-        } else {
-            void Promise.resolve().then(restore)
-        }
-    } catch (error) {
-        restore()
-        throw error
-    }
-}
-
-function withOlderWrappedListenersSkipped(originalMethod: Function, generation: number, callback: () => unknown) {
-    return runWithSkipScopes([{ originalMethod, generation }], callback)
-}
-
-function wrapListener(originalMethod: Function, value?: Function) {
-    const generation = nextWrappedListenerGeneration++
-    // the function syntax is important here so we keep the correct `this`.
-    function yieldingListener(this: unknown, ...args: unknown[]) {
-        if (DEBUG) {
-            console.log("Yielding for", originalMethod)
-            console.timeStamp(originalMethod as unknown as string)
-        }
-
-        // We first call the original: This optimizes for UX & correctness of React components.
-        // e.g., for pushState, when a component renders on a new route, it might set state and/or read from the URL. If the URL isn't
-        // accurate, it might lead to wrong behavior.
-        // If an override calls a previously captured wrapper, that older wrapper skips the native method;
-        // fresh calls through the current getter still update history/submit normally.
-        const highestActiveSkipGeneration = getHighestActiveSkipGeneration(originalMethod)
-        if (highestActiveSkipGeneration === undefined || generation >= highestActiveSkipGeneration) {
-            originalMethod.apply(this, args)
-        }
-
-        if (!value) return
-
-        // If `method` is overriden N times, it creates N yield points (as overrides might be chained)
-        yieldUnlessUrgent(() => {
-            // The arrow FN is important here so we keep the correct `this`.
-            withOlderWrappedListenersSkipped(originalMethod, generation, () => {
-                return value.apply(this, args)
-            })
-        })
-    }
-
-    return yieldingListener
-}
 function overrideListener<T extends object>(target: T, method: keyof T) {
     // @ts-expect-error TS(2339): Prototype chain call. We try __proto__ first, as this will usually be the original method.
     const originalMethod: Function = (target.__proto__ as unknown as T)[method] ?? (target[method] as Function)
+    let activeSkipGeneration: number | undefined
+    let nextWrappedListenerGeneration = 0
 
-    let mostRecentWrapper: Function | undefined = wrapListener(originalMethod)
+    function wrapListener(value?: Function) {
+        const generation = nextWrappedListenerGeneration++
+        // the function syntax is important here so we keep the correct `this`.
+        function yieldingListener(this: unknown, ...args: unknown[]) {
+            if (DEBUG) {
+                console.log("Yielding for", originalMethod)
+                console.timeStamp(originalMethod as unknown as string)
+            }
+
+            // We first call the original: This optimizes for UX & correctness of React components.
+            // e.g., for pushState, when a component renders on a new route, it might set state and/or read from the URL. If the URL isn't
+            // accurate, it might lead to wrong behavior.
+            // If an override calls a previously captured wrapper, that older wrapper skips the native method;
+            // fresh calls through the current getter still update history/submit normally.
+            if (activeSkipGeneration === undefined || generation >= activeSkipGeneration) {
+                originalMethod.apply(this, args)
+            }
+
+            if (!value) return
+
+            // If `method` is overriden N times, it creates N yield points (as overrides might be chained)
+            yieldUnlessUrgent(() => {
+                // The arrow FN is important here so we keep the correct `this`.
+                const previousActiveSkipGeneration = activeSkipGeneration
+                activeSkipGeneration =
+                    previousActiveSkipGeneration === undefined
+                        ? generation
+                        : Math.max(previousActiveSkipGeneration, generation)
+
+                try {
+                    value.apply(this, args)
+                } finally {
+                    activeSkipGeneration = previousActiveSkipGeneration
+                }
+            })
+        }
+
+        return yieldingListener
+    }
+
+    let mostRecentWrapper: Function | undefined = wrapListener()
 
     Object.defineProperty(target, method, {
         enumerable: true,
@@ -580,7 +431,7 @@ function overrideListener<T extends object>(target: T, method: keyof T) {
             if (DEBUG) console.log(`set ${String(method)}`, target, value)
 
             if (value === mostRecentWrapper) return
-            mostRecentWrapper = value ? wrapListener(originalMethod, value as Function) : undefined
+            mostRecentWrapper = value ? wrapListener(value as Function) : undefined
         },
     })
 }

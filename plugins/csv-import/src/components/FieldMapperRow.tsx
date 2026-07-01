@@ -21,6 +21,8 @@ export interface FieldMappingItem {
 interface FieldMapperRowProps {
     item: FieldMappingItem
     existingFields: Field[]
+    /** When false, the column can only be mapped onto an existing field (no new fields). */
+    canEditFields: boolean
     slugFieldName: string | null
     onToggleIgnored: () => void
     onSetIgnored: (ignored: boolean) => void
@@ -31,6 +33,7 @@ interface FieldMapperRowProps {
 export function FieldMapperRow({
     item,
     existingFields,
+    canEditFields,
     slugFieldName,
     onToggleIgnored,
     onSetIgnored,
@@ -86,8 +89,12 @@ export function FieldMapperRow({
                     }
                 }}
             >
-                <option value="__create__">New Field...</option>
-                {isIgnored && <option value="__ignore__">{isSlugField ? "Slug Field" : ""}</option>}
+                {canEditFields && <option value="__create__">New Field...</option>}
+                {isIgnored && (
+                    <option value="__ignore__">
+                        {isSlugField ? "Slug Field" : canEditFields ? "" : "Don't Import"}
+                    </option>
+                )}
 
                 {existingFields.length > 0 && <hr />}
                 {existingFields.map(field => (

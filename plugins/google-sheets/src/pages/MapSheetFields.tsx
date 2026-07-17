@@ -1,8 +1,9 @@
 import cx from "classnames"
-import { framer, type MenuItem, useIsAllowedTo } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
-import { IconChevron, IconChevronDown } from "../components/Icons"
+import { FieldTypeMenuButton } from "../components/FieldTypeMenuButton"
+import { IconChevron } from "../components/Icons"
 import type {
     CellValue,
     HeaderRow,
@@ -14,25 +15,6 @@ import type {
     VirtualFieldType,
 } from "../sheets"
 import { generateUniqueNames, isDefined, syncMethods } from "../utils"
-
-interface FieldTypeOption {
-    type: VirtualFieldType
-    label: string
-}
-
-const fieldTypeOptions: FieldTypeOption[] = [
-    { type: "string", label: "Plain Text" },
-    { type: "formattedText", label: "Formatted Text" },
-    { type: "date", label: "Date" },
-    { type: "dateTime", label: "Date & Time" },
-    { type: "link", label: "Link" },
-    { type: "image", label: "Image" },
-    { type: "color", label: "Color" },
-    { type: "boolean", label: "Toggle" },
-    { type: "number", label: "Number" },
-    { type: "enum", label: "Option" },
-    { type: "file", label: "File" },
-]
 
 const getInitialSlugColumn = (context: PluginContext, slugFields: SheetCollectionFieldInput[]): string => {
     if (context.type === "update" && context.slugColumn) {
@@ -157,19 +139,6 @@ const getPossibleSlugFields = (fieldConfig: SheetCollectionFieldInput[]): SheetC
     return fieldConfig.filter(field => field.type === "string")
 }
 
-const getFieldTypeLabel = (field: SheetCollectionFieldInput, allFields: SheetCollectionFieldInput[]): string => {
-    if (field.type === "altText") {
-        const imageField = allFields.find(f => f.id === field.imageFieldId)
-        return imageField ? `Alt Text → ${imageField.name}` : "Alt Text"
-    }
-
-    return fieldTypeOptions.find(option => option.type === field.type)?.label ?? field.type
-}
-
-const getAltTextImageField = (field: SheetCollectionFieldInput, allFields: SheetCollectionFieldInput[]) => {
-    return allFields.find(candidate => candidate.id === field.imageFieldId)
-}
-
 interface Props {
     spreadsheetId: string
     sheetTitle: string
@@ -234,44 +203,6 @@ export function MapSheetFieldsPage({
                 return field
             })
         )
-    }
-
-    const handleFieldTypeMenuOpen = (field: SheetCollectionFieldInput, e: React.MouseEvent<HTMLButtonElement>) => {
-        const imageFields = fieldConfig.filter(
-            f => f.type === "image" && f.id !== field.id && !disabledColumns.has(f.id)
-        )
-        const { left, bottom, width } = e.currentTarget.getBoundingClientRect()
-
-        const items: MenuItem[] = [
-            ...fieldTypeOptions.map(({ type, label }) => ({
-                label,
-                checked: field.type === type,
-                onAction: () => {
-                    handleFieldTypeChange(field.id, type)
-                },
-            })),
-            {
-                label: "Alt Text",
-                checked: field.type === "altText",
-                enabled: imageFields.length > 0,
-                submenu: imageFields.map(imgField => ({
-                    label: imgField.name,
-                    checked: field.type === "altText" && field.imageFieldId === imgField.id,
-                    onAction: () => {
-                        handleFieldTypeChange(field.id, "altText", imgField.id)
-                    },
-                })),
-            },
-        ]
-
-        const locationX = left + width - 4;
-        const locationY = bottom + 4;
-
-        void framer.showContextMenu(items, {
-            location: { x: locationX, y: locationY },
-            placement: "bottom-left",
-            width,
-        })
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -351,41 +282,13 @@ export function MapSheetFieldsPage({
                                 <div className="flex items-center justify-center">
                                     <IconChevron />
                                 </div>
-                                <button
-                                    type="button"
-                                    className={cx(
-                                        "flex w-full min-w-0 items-center gap-1 text-left",
-                                        (isDisabled || !isAllowedToManage) && "opacity-50"
-                                    )}
-                                    disabled={isDisabled || !isAllowedToManage}
-                                    title={
-                                        isAllowedToManage
-                                            ? getFieldTypeLabel(field, fieldConfig)
-                                            : "Insufficient permissions"
-                                    }
-                                    onClick={e => {
-                                        handleFieldTypeMenuOpen(field, e)
-                                    }}
-                                >
-                                    {field.type === "altText" ? (
-                                        <span className="flex min-w-0 flex-1 items-center gap-1">
-                                            <span className="flex shrink-0 items-center gap-1">
-                                                Alt Text
-                                                <IconChevron />
-                                            </span>
-                                            <span className="truncate">
-                                                {getAltTextImageField(field, fieldConfig)?.name ?? "Image"}
-                                            </span>
-                                        </span>
-                                    ) : (
-                                        <span className="min-w-0 flex-1 truncate">
-                                            {getFieldTypeLabel(field, fieldConfig)}
-                                        </span>
-                                    )}
-                                    <span className="shrink-0 text-content">
-                                        <IconChevronDown />
-                                    </span>
-                                </button>
+                                <FieldTypeMenuButton
+                                    field={field}
+                                    fields={fieldConfig}
+                                    disabled={isDisabled}
+                                    disabledFieldIds={disabledColumns}
+                                    onFieldTypeChange={handleFieldTypeChange}
+                                />
                                 {field.type !== "altText" ? (
                                     <input
                                         type="text"

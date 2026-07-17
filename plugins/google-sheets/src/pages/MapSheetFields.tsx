@@ -89,7 +89,7 @@ const inferFieldType = (cellValue: CellValue): VirtualFieldType => {
 
 const getColumnConfig = (context: PluginContext, columnId: string, cellValue?: CellValue): SheetColumnConfig => {
     if (context.type === "update" && Object.hasOwn(context.altTextAssignments, columnId)) {
-        return { type: "altText", imageFieldId: context.altTextAssignments[columnId] }
+        return { type: "altText", imageColumnId: context.altTextAssignments[columnId] }
     }
 
     // Determine if the field type is already configured
@@ -113,13 +113,13 @@ const createFieldConfig = (
             const sanitizedName = uniqueColumnNames[columnIndex]
             if (!sanitizedName) return null
 
-            const { type, imageFieldId } = getColumnConfig(context, sanitizedName, row?.[columnIndex])
+            const { type, imageColumnId } = getColumnConfig(context, sanitizedName, row?.[columnIndex])
 
             return {
                 id: sanitizedName,
                 name: sanitizedName,
                 type,
-                imageFieldId,
+                imageColumnId,
             } as SheetCollectionFieldInput
         })
         .filter(isDefined)
@@ -191,22 +191,22 @@ export function MapSheetFieldsPage({
         }))
     }
 
-    const handleFieldTypeChange = (id: string, type: VirtualFieldType, imageFieldId?: string) => {
+    const handleFieldTypeChange = (id: string, type: VirtualFieldType, imageColumnId?: string) => {
         setFieldConfig(current =>
             current.map(field => {
                 if (field.id === id) {
                     return {
                         ...field,
                         type,
-                        imageFieldId: type === "altText" ? imageFieldId : undefined,
+                        imageColumnId: type === "altText" ? imageColumnId : undefined,
                     }
                 }
 
-                if (type !== "image" && isAltTextColumn(field) && field.imageFieldId === id) {
+                if (type !== "image" && isAltTextColumn(field) && field.imageColumnId === id) {
                     return {
                         ...field,
                         type: "string",
-                        imageFieldId: undefined,
+                        imageColumnId: undefined,
                     }
                 }
 
@@ -238,7 +238,7 @@ export function MapSheetFieldsPage({
             fields: allFields,
             spreadsheetId,
             sheetTitle,
-            columnConfigs: fieldConfig.map(field => ({ type: field.type, imageFieldId: field.imageFieldId })),
+            columnConfigs: fieldConfig.map(field => ({ type: field.type, imageColumnId: field.imageColumnId })),
             ignoredColumns: Array.from(disabledColumns),
             slugColumn,
             lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),

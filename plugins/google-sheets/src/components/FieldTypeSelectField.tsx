@@ -30,19 +30,19 @@ interface Props {
     fields: SheetCollectionFieldInput[]
     isDisabled: boolean
     disabledFieldIds: Set<string>
-    onFieldTypeChange: (id: string, type: VirtualFieldType, imageFieldId?: string) => void
+    onFieldTypeChange: (id: string, type: VirtualFieldType, imageColumnId?: string) => void
 }
 
 export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldIds, onFieldTypeChange }: Props) {
-    const imageField = fields.find(candidate => candidate.id === field.imageFieldId)
+    const imageColumn = fields.find(candidate => candidate.id === field.imageColumnId)
 
     const fieldTypeLabel = useMemo(() => {
         if (isAltTextColumn(field)) {
-            return imageField ? `Alt Text → ${imageField.name}` : "Alt Text"
+            return imageColumn ? `Alt Text → ${imageColumn.name}` : "Alt Text"
         }
 
         return fieldTypeOptions.find(option => option.type === field.type)?.label ?? field.type
-    }, [field, imageField])
+    }, [field, imageColumn])
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
         const availableImageFields = fields.filter(
@@ -63,7 +63,7 @@ export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldI
                 enabled: availableImageFields.length > 0,
                 submenu: availableImageFields.map(candidate => ({
                     label: candidate.name,
-                    checked: isAltTextColumn(field) && field.imageFieldId === candidate.id,
+                    checked: isAltTextColumn(field) && field.imageColumnId === candidate.id,
                     onAction: () => {
                         onFieldTypeChange(field.id, "altText", candidate.id)
                     },
@@ -96,7 +96,7 @@ export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldI
                         Alt Text
                         <IconChevron />
                     </span>
-                    <span className="truncate">{imageField?.name ?? "Image"}</span>
+                    <span className="truncate">{imageColumn?.name ?? "Image"}</span>
                 </span>
             ) : (
                 <span className="min-w-0 flex-1 truncate">{fieldTypeLabel}</span>

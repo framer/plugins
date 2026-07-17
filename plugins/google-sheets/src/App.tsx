@@ -229,7 +229,7 @@ export function App({ pluginContext }: AppProps) {
                     // Alt text columns never become real CMS fields, so `fields` won't have them.
                     columnConfigs: headerRow.map(columnId => {
                         if (Object.hasOwn(altTextAssignments, columnId)) {
-                            return { type: "altText" as const, imageFieldId: altTextAssignments[columnId] }
+                            return { type: "altText" as const, imageColumnId: altTextAssignments[columnId] }
                         }
                         const field = fields.find(field => field.id === columnId)
                         return { type: field?.type ?? "string" }

@@ -240,7 +240,7 @@ export type VirtualFieldType = CollectionFieldType | "dateTime" | "altText"
 
 export interface SheetColumnConfig {
     type: VirtualFieldType
-    imageFieldId?: string
+    imageColumnId?: string
 }
 
 export type SheetCollectionFieldInput = Omit<ManagedCollectionFieldInput, "type"> & SheetColumnConfig
@@ -419,20 +419,23 @@ function enrichFieldsWithEnumCases(
     })
 }
 
-function buildAltTextAssignments(columnConfigs: SheetColumnConfig[], uniqueHeaderRowNames: string[]): Record<string, string> {
+function buildAltTextAssignments(
+    columnConfigs: SheetColumnConfig[],
+    uniqueHeaderRowNames: string[]
+): Record<string, string> {
     const assignments: Record<string, string> = {}
 
     for (const [altColumnIndex, columnConfig] of columnConfigs.entries()) {
         if (!isAltTextColumn(columnConfig)) continue
 
         const altColumnId = uniqueHeaderRowNames[altColumnIndex]
-        const imageFieldId = columnConfig.imageFieldId
-        if (!altColumnId || !imageFieldId) continue
+        const imageColumnId = columnConfig.imageColumnId
+        if (!altColumnId || !imageColumnId) continue
 
-        const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageFieldId)
+        const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageColumnId)
         if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") continue
 
-        assignments[altColumnId] = imageFieldId
+        assignments[altColumnId] = imageColumnId
     }
 
     return assignments
@@ -449,10 +452,10 @@ function buildAltColumnIndexByImageColumnIndex(
         const altColumnId = uniqueHeaderRowNames[altColumnIndex]
         if (!altColumnId || ignoredColumns.includes(altColumnId) || !isAltTextColumn(columnConfig)) continue
 
-        const imageFieldId = columnConfig.imageFieldId
-        if (!imageFieldId || ignoredColumns.includes(imageFieldId)) continue
+        const imageColumnId = columnConfig.imageColumnId
+        if (!imageColumnId || ignoredColumns.includes(imageColumnId)) continue
 
-        const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageFieldId)
+        const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageColumnId)
         if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") continue
 
         altColumnIndexByImageColumnIndex.set(imageColumnIndex, altColumnIndex)

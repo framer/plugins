@@ -87,7 +87,7 @@ const inferFieldType = (cellValue: CellValue): VirtualFieldType => {
 }
 
 const getColumnConfig = (context: PluginContext, columnId: string, cellValue?: CellValue): SheetColumnConfig => {
-    if (context.type === "update" && columnId in context.altTextAssignments) {
+    if (context.type === "update" && Object.hasOwn(context.altTextAssignments, columnId)) {
         return { type: "altText", imageFieldId: context.altTextAssignments[columnId] }
     }
 
@@ -191,18 +191,23 @@ export function MapSheetFieldsPage({
     }
 
     const handleFieldTypeChange = (id: string, type: VirtualFieldType, imageFieldId?: string) => {
-        setFieldConfig(current =>
-            current.map(field => {
-                if (field.id === id) {
-                    return {
-                        ...field,
-                        type,
-                        imageFieldId: type === "altText" ? imageFieldId : undefined,
-                    } as SheetCollectionFieldInput
-                }
-                return field
-            })
-        )
+        const nextFieldConfig = fieldConfig.map(field => {
+            if (field.id === id) {
+                return {
+                    ...field,
+                    type,
+                    imageFieldId: type === "altText" ? imageFieldId : undefined,
+                } as SheetCollectionFieldInput
+            }
+            return field
+        })
+
+        setFieldConfig(nextFieldConfig)
+
+        const nextSlugFields = getPossibleSlugFields(nextFieldConfig)
+        if (!nextSlugFields.some(field => field.id === slugColumn)) {
+            setSlugColumn(nextSlugFields[0]?.id ?? "")
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {

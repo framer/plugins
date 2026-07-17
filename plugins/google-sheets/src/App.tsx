@@ -229,7 +229,7 @@ export function App({ pluginContext }: AppProps) {
                     // Determine if the field type is already configured, otherwise default to "string".
                     // Alt text columns never become real CMS fields, so `fields` won't have them.
                     columnConfigs: uniqueHeaderRowNames.map(columnId => {
-                        if (columnId in altTextAssignments) {
+                        if (Object.hasOwn(altTextAssignments, columnId)) {
                             return { type: "altText" as const, imageFieldId: altTextAssignments[columnId] }
                         }
                         const field = fields.find(field => field.id === columnId)

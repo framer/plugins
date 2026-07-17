@@ -311,7 +311,7 @@ interface ProcessSheetRowParams {
     uniqueHeaderRowNames: string[]
     slugFieldColumnIndex: number
     ignoredFieldColumnIndexes: number[]
-    imageAltColumnIndexes: Map<number, number>
+    altColumnIndexByImageColumnIndex: Map<number, number>
     status: SyncStatus
 }
 
@@ -419,7 +419,7 @@ function enrichFieldsWithEnumCases(
     })
 }
 
-function getAltTextAssignments(columnConfigs: SheetColumnConfig[], uniqueHeaderRowNames: string[]) {
+function buildAltTextAssignments(columnConfigs: SheetColumnConfig[], uniqueHeaderRowNames: string[]) {
     return columnConfigs.reduce<Record<string, string>>((assignments, column, i) => {
         if (column.type !== "altText") return assignments
 
@@ -429,6 +429,29 @@ function getAltTextAssignments(columnConfigs: SheetColumnConfig[], uniqueHeaderR
 
         return { ...assignments, [altColumnId]: imageFieldId }
     }, {})
+}
+
+function buildAltColumnIndexByImageColumnIndex(
+    columnConfigs: SheetColumnConfig[],
+    uniqueHeaderRowNames: string[],
+    ignoredColumns: string[]
+): Map<number, number> {
+    const altColumnIndexByImageColumnIndex = new Map<number, number>()
+
+    for (let i = 0; i < columnConfigs.length; i++) {
+        if (columnConfigs[i]?.type !== "altText") continue
+        if (ignoredColumns.includes(uniqueHeaderRowNames[i] ?? "")) continue
+
+        const imageFieldId = columnConfigs[i]?.imageFieldId
+        if (!imageFieldId || ignoredColumns.includes(imageFieldId)) continue
+
+        const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageFieldId)
+        if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") continue
+
+        altColumnIndexByImageColumnIndex.set(imageColumnIndex, i)
+    }
+
+    return altColumnIndexByImageColumnIndex
 }
 
 function getFieldDataEntryInput(
@@ -499,7 +522,7 @@ function processSheetRow({
     uniqueHeaderRowNames,
     ignoredFieldColumnIndexes,
     slugFieldColumnIndex,
-    imageAltColumnIndexes,
+    altColumnIndexByImageColumnIndex,
     status,
     columnConfigs,
 }: ProcessSheetRowParams) {
@@ -522,7 +545,7 @@ function processSheetRow({
 
         if (isIgnored && !isSlugField) continue
 
-        const altColumnIndex = imageAltColumnIndexes.get(i)
+        const altColumnIndex = altColumnIndexByImageColumnIndex.get(i)
         const altCell = isDefined(altColumnIndex) ? (row[altColumnIndex] ?? null) : undefined
 
         let fieldDataEntryInput = getFieldDataEntryInput(fieldType, cell, altCell)
@@ -689,7 +712,7 @@ export async function syncSheet({
 
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
 
-    const altTextAssignments = getAltTextAssignments(columnConfigs, uniqueHeaderRowNames)
+    const altTextAssignments = buildAltTextAssignments(columnConfigs, uniqueHeaderRowNames)
 
     const enrichedFields = enrichFieldsWithEnumCases(fields, uniqueHeaderRowNames, rows)
     const needsFieldSchemaUpdate = configureFields || enrichedFields.some(field => field.type === "enum")
@@ -722,26 +745,18 @@ export async function syncSheet({
         )
     }
 
-    const imageAltColumnIndexes = new Map<number, number>()
-    for (let i = 0; i < columnConfigs.length; i++) {
-        if (columnConfigs[i]?.type !== "altText") continue
-        if (ignoredColumns.includes(uniqueHeaderRowNames[i] ?? "")) continue
-
-        const imageFieldId = columnConfigs[i]?.imageFieldId
-        if (!imageFieldId || ignoredColumns.includes(imageFieldId)) continue
-
-        const imageColIndex = uniqueHeaderRowNames.indexOf(imageFieldId)
-        if (imageColIndex === -1 || columnConfigs[imageColIndex]?.type !== "image") continue
-
-        imageAltColumnIndexes.set(imageColIndex, i)
-    }
+    const altColumnIndexByImageColumnIndex = buildAltColumnIndexByImageColumnIndex(
+        columnConfigs,
+        uniqueHeaderRowNames,
+        ignoredColumns
+    )
 
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
         columnConfigs,
         ignoredFieldColumnIndexes: ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col)),
         slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
-        imageAltColumnIndexes,
+        altColumnIndexByImageColumnIndex,
         columnCount: headerRow.length,
     })
 

@@ -1,5 +1,6 @@
 import cx from "classnames"
 import { framer, type MenuItem } from "framer-plugin"
+import { useMemo } from "react"
 import { isAltTextColumn, type SheetCollectionFieldInput, type VirtualFieldType } from "../sheets"
 import { IconChevron, IconChevronDown } from "./Icons"
 
@@ -24,15 +25,6 @@ const fieldTypeOptions: FieldTypeOption[] = [
 
 const contextMenuOffset = 4
 
-const getFieldTypeLabel = (field: SheetCollectionFieldInput, allFields: SheetCollectionFieldInput[]): string => {
-    if (isAltTextColumn(field)) {
-        const imageField = allFields.find(candidate => candidate.id === field.imageFieldId)
-        return imageField ? `Alt Text → ${imageField.name}` : "Alt Text"
-    }
-
-    return fieldTypeOptions.find(option => option.type === field.type)?.label ?? field.type
-}
-
 interface Props {
     field: SheetCollectionFieldInput
     fields: SheetCollectionFieldInput[]
@@ -44,11 +36,18 @@ interface Props {
 export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldIds, onFieldTypeChange }: Props) {
     const imageField = fields.find(candidate => candidate.id === field.imageFieldId)
 
+    const fieldTypeLabel = useMemo(() => {
+        if (isAltTextColumn(field)) {
+            return imageField ? `Alt Text → ${imageField.name}` : "Alt Text"
+        }
+
+        return fieldTypeOptions.find(option => option.type === field.type)?.label ?? field.type
+    }, [field, imageField])
+
     const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
         const availableImageFields = fields.filter(
             candidate => candidate.type === "image" && candidate.id !== field.id && !disabledFieldIds.has(candidate.id)
         )
-        const { left, bottom, width } = event.currentTarget.getBoundingClientRect()
 
         const items: MenuItem[] = [
             ...fieldTypeOptions.map(({ type, label }) => ({
@@ -72,6 +71,7 @@ export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldI
             },
         ]
 
+        const { left, bottom, width } = event.currentTarget.getBoundingClientRect()
         void framer.showContextMenu(items, {
             location: {
                 x: left + width - contextMenuOffset,
@@ -87,7 +87,7 @@ export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldI
             type="button"
             className={cx("flex w-full min-w-0 items-center gap-1 text-left", isDisabled && "opacity-50")}
             disabled={isDisabled}
-            title={getFieldTypeLabel(field, fields)}
+            title={fieldTypeLabel}
             onClick={handleMenuOpen}
         >
             {isAltTextColumn(field) ? (
@@ -99,7 +99,7 @@ export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldI
                     <span className="truncate">{imageField?.name ?? "Image"}</span>
                 </span>
             ) : (
-                <span className="min-w-0 flex-1 truncate">{getFieldTypeLabel(field, fields)}</span>
+                <span className="min-w-0 flex-1 truncate">{fieldTypeLabel}</span>
             )}
             <span className="shrink-0 text-content">
                 <IconChevronDown />

@@ -237,15 +237,13 @@ function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?:
 
 export type CollectionFieldType = ManagedCollectionFieldInput["type"]
 export type VirtualFieldType = CollectionFieldType | "dateTime" | "altText"
-export type SheetCollectionFieldInput = Omit<ManagedCollectionFieldInput, "type"> & {
-    type: VirtualFieldType
-    imageFieldId?: string
-}
 
 export interface SheetColumnConfig {
     type: VirtualFieldType
     imageFieldId?: string
 }
+
+export type SheetCollectionFieldInput = Omit<ManagedCollectionFieldInput, "type"> & SheetColumnConfig
 
 export const isAltTextColumn = (column: Pick<SheetColumnConfig, "type">): boolean => column.type === "altText"
 
@@ -421,19 +419,23 @@ function enrichFieldsWithEnumCases(
     })
 }
 
-function buildAltTextAssignments(columnConfigs: SheetColumnConfig[], uniqueHeaderRowNames: string[]) {
-    return columnConfigs.reduce<Record<string, string>>((assignments, column, i) => {
-        if (!isAltTextColumn(column)) return assignments
+function buildAltTextAssignments(columnConfigs: SheetColumnConfig[], uniqueHeaderRowNames: string[]): Record<string, string> {
+    const assignments: Record<string, string> = {}
 
-        const imageFieldId = column.imageFieldId
-        const altColumnId = uniqueHeaderRowNames[i]
-        if (!imageFieldId || !altColumnId) return assignments
+    for (const [altColumnIndex, columnConfig] of columnConfigs.entries()) {
+        if (!isAltTextColumn(columnConfig)) continue
+
+        const altColumnId = uniqueHeaderRowNames[altColumnIndex]
+        const imageFieldId = columnConfig.imageFieldId
+        if (!altColumnId || !imageFieldId) continue
 
         const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageFieldId)
-        if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") return assignments
+        if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") continue
 
-        return { ...assignments, [altColumnId]: imageFieldId }
-    }, {})
+        assignments[altColumnId] = imageFieldId
+    }
+
+    return assignments
 }
 
 function buildAltColumnIndexByImageColumnIndex(
@@ -443,10 +445,9 @@ function buildAltColumnIndexByImageColumnIndex(
 ): Map<number, number> {
     const altColumnIndexByImageColumnIndex = new Map<number, number>()
 
-    for (let i = 0; i < columnConfigs.length; i++) {
-        const columnConfig = columnConfigs[i]
-        if (!columnConfig || !isAltTextColumn(columnConfig)) continue
-        if (ignoredColumns.includes(uniqueHeaderRowNames[i] ?? "")) continue
+    for (const [altColumnIndex, columnConfig] of columnConfigs.entries()) {
+        const altColumnId = uniqueHeaderRowNames[altColumnIndex]
+        if (!altColumnId || ignoredColumns.includes(altColumnId) || !isAltTextColumn(columnConfig)) continue
 
         const imageFieldId = columnConfig.imageFieldId
         if (!imageFieldId || ignoredColumns.includes(imageFieldId)) continue
@@ -454,7 +455,7 @@ function buildAltColumnIndexByImageColumnIndex(
         const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageFieldId)
         if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") continue
 
-        altColumnIndexByImageColumnIndex.set(imageColumnIndex, i)
+        altColumnIndexByImageColumnIndex.set(imageColumnIndex, altColumnIndex)
     }
 
     return altColumnIndexByImageColumnIndex

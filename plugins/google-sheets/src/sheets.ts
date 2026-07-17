@@ -429,6 +429,9 @@ function buildAltTextAssignments(columnConfigs: SheetColumnConfig[], uniqueHeade
         const altColumnId = uniqueHeaderRowNames[i]
         if (!imageFieldId || !altColumnId) return assignments
 
+        const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageFieldId)
+        if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") return assignments
+
         return { ...assignments, [altColumnId]: imageFieldId }
     }, {})
 }

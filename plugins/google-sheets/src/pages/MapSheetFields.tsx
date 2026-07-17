@@ -199,8 +199,17 @@ export function MapSheetFieldsPage({
                         ...field,
                         type,
                         imageFieldId: type === "altText" ? imageFieldId : undefined,
-                    } as SheetCollectionFieldInput
+                    }
                 }
+
+                if (type !== "image" && isAltTextColumn(field) && field.imageFieldId === id) {
+                    return {
+                        ...field,
+                        type: "string",
+                        imageFieldId: undefined,
+                    }
+                }
+
                 return field
             })
         )

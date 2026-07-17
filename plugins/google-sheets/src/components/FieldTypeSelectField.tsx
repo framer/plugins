@@ -1,7 +1,6 @@
 import cx from "classnames"
-import { framer, type MenuItem, useIsAllowedTo } from "framer-plugin"
-import type { SheetCollectionFieldInput, VirtualFieldType } from "../sheets"
-import { syncMethods } from "../utils"
+import { framer, type MenuItem } from "framer-plugin"
+import { isAltTextColumn, type SheetCollectionFieldInput, type VirtualFieldType } from "../sheets"
 import { IconChevron, IconChevronDown } from "./Icons"
 
 interface FieldTypeOption {
@@ -26,7 +25,7 @@ const fieldTypeOptions: FieldTypeOption[] = [
 const contextMenuOffset = 4
 
 const getFieldTypeLabel = (field: SheetCollectionFieldInput, allFields: SheetCollectionFieldInput[]): string => {
-    if (field.type === "altText") {
+    if (isAltTextColumn(field)) {
         const imageField = allFields.find(candidate => candidate.id === field.imageFieldId)
         return imageField ? `Alt Text → ${imageField.name}` : "Alt Text"
     }
@@ -37,14 +36,12 @@ const getFieldTypeLabel = (field: SheetCollectionFieldInput, allFields: SheetCol
 interface Props {
     field: SheetCollectionFieldInput
     fields: SheetCollectionFieldInput[]
-    disabled: boolean
+    isDisabled: boolean
     disabledFieldIds: Set<string>
     onFieldTypeChange: (id: string, type: VirtualFieldType, imageFieldId?: string) => void
 }
 
-export function FieldTypeMenuButton({ field, fields, disabled, disabledFieldIds, onFieldTypeChange }: Props) {
-    const isAllowedToManage = useIsAllowedTo("ManagedCollection.setFields", ...syncMethods)
-    const isDisabled = disabled || !isAllowedToManage
+export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldIds, onFieldTypeChange }: Props) {
     const imageField = fields.find(candidate => candidate.id === field.imageFieldId)
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -63,11 +60,11 @@ export function FieldTypeMenuButton({ field, fields, disabled, disabledFieldIds,
             })),
             {
                 label: "Alt Text",
-                checked: field.type === "altText",
+                checked: isAltTextColumn(field),
                 enabled: availableImageFields.length > 0,
                 submenu: availableImageFields.map(candidate => ({
                     label: candidate.name,
-                    checked: field.type === "altText" && field.imageFieldId === candidate.id,
+                    checked: isAltTextColumn(field) && field.imageFieldId === candidate.id,
                     onAction: () => {
                         onFieldTypeChange(field.id, "altText", candidate.id)
                     },
@@ -90,10 +87,10 @@ export function FieldTypeMenuButton({ field, fields, disabled, disabledFieldIds,
             type="button"
             className={cx("flex w-full min-w-0 items-center gap-1 text-left", isDisabled && "opacity-50")}
             disabled={isDisabled}
-            title={isAllowedToManage ? getFieldTypeLabel(field, fields) : "Insufficient permissions"}
+            title={getFieldTypeLabel(field, fields)}
             onClick={handleMenuOpen}
         >
-            {field.type === "altText" ? (
+            {isAltTextColumn(field) ? (
                 <span className="flex min-w-0 flex-1 items-center gap-1">
                     <span className="flex shrink-0 items-center gap-1">
                         Alt Text

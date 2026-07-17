@@ -247,6 +247,8 @@ export interface SheetColumnConfig {
     imageFieldId?: string
 }
 
+export const isAltTextColumn = (column: Pick<SheetColumnConfig, "type">): boolean => column.type === "altText"
+
 export interface PluginContextNew {
     type: "new"
     collection: ManagedCollection
@@ -421,7 +423,7 @@ function enrichFieldsWithEnumCases(
 
 function buildAltTextAssignments(columnConfigs: SheetColumnConfig[], uniqueHeaderRowNames: string[]) {
     return columnConfigs.reduce<Record<string, string>>((assignments, column, i) => {
-        if (column.type !== "altText") return assignments
+        if (!isAltTextColumn(column)) return assignments
 
         const imageFieldId = column.imageFieldId
         const altColumnId = uniqueHeaderRowNames[i]
@@ -439,10 +441,11 @@ function buildAltColumnIndexByImageColumnIndex(
     const altColumnIndexByImageColumnIndex = new Map<number, number>()
 
     for (let i = 0; i < columnConfigs.length; i++) {
-        if (columnConfigs[i]?.type !== "altText") continue
+        const columnConfig = columnConfigs[i]
+        if (!columnConfig || !isAltTextColumn(columnConfig)) continue
         if (ignoredColumns.includes(uniqueHeaderRowNames[i] ?? "")) continue
 
-        const imageFieldId = columnConfigs[i]?.imageFieldId
+        const imageFieldId = columnConfig.imageFieldId
         if (!imageFieldId || ignoredColumns.includes(imageFieldId)) continue
 
         const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageFieldId)
@@ -533,11 +536,10 @@ function processSheetRow({
     for (let i = 0; i < columnCount; i++) {
         const cell = row[i] ?? null
 
-        const fieldType = columnConfigs[i]?.type
-        if (!fieldType) continue
-
-        // Alt text columns are virtual and never become their own field
-        if (fieldType === "altText") continue
+        const columnConfig = columnConfigs[i]
+        // Alt text columns are virtual and never become their own field.
+        if (!columnConfig || isAltTextColumn(columnConfig)) continue
+        const fieldType = columnConfig.type
 
         // Skip processing ignored columns unless they are the slug field
         const isIgnored = ignoredFieldColumnIndexes.includes(i)

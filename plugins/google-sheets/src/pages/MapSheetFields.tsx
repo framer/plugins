@@ -2,7 +2,7 @@ import cx from "classnames"
 import { framer, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
-import { FieldTypeMenuButton } from "../components/FieldTypeMenuButton"
+import { FieldTypeSelectField } from "../components/FieldTypeSelectField"
 import { IconChevron } from "../components/Icons"
 import type {
     CellValue,
@@ -14,6 +14,7 @@ import type {
     SyncMutationOptions,
     VirtualFieldType,
 } from "../sheets"
+import { isAltTextColumn } from "../sheets"
 import { generateUniqueNames, isDefined, syncMethods } from "../utils"
 
 const getInitialSlugColumn = (context: PluginContext, slugFields: SheetCollectionFieldInput[]): string => {
@@ -191,23 +192,18 @@ export function MapSheetFieldsPage({
     }
 
     const handleFieldTypeChange = (id: string, type: VirtualFieldType, imageFieldId?: string) => {
-        const nextFieldConfig = fieldConfig.map(field => {
-            if (field.id === id) {
-                return {
-                    ...field,
-                    type,
-                    imageFieldId: type === "altText" ? imageFieldId : undefined,
-                } as SheetCollectionFieldInput
-            }
-            return field
-        })
-
-        setFieldConfig(nextFieldConfig)
-
-        const nextSlugFields = getPossibleSlugFields(nextFieldConfig)
-        if (!nextSlugFields.some(field => field.id === slugColumn)) {
-            setSlugColumn(nextSlugFields[0]?.id ?? "")
-        }
+        setFieldConfig(current =>
+            current.map(field => {
+                if (field.id === id) {
+                    return {
+                        ...field,
+                        type,
+                        imageFieldId: type === "altText" ? imageFieldId : undefined,
+                    } as SheetCollectionFieldInput
+                }
+                return field
+            })
+        )
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -217,7 +213,7 @@ export function MapSheetFieldsPage({
 
         const allFields = fieldConfig
             // Alt text columns are virtual: they never become their own CMS field.
-            .filter(field => !disabledColumns.has(field.id) && field.type !== "altText")
+            .filter(field => !disabledColumns.has(field.id) && !isAltTextColumn(field))
             .map(field => {
                 const maybeOverride = fieldNameOverrides[field.id]
                 if (maybeOverride) {
@@ -287,14 +283,14 @@ export function MapSheetFieldsPage({
                                 <div className="flex items-center justify-center">
                                     <IconChevron />
                                 </div>
-                                <FieldTypeMenuButton
+                                <FieldTypeSelectField
                                     field={field}
                                     fields={fieldConfig}
-                                    disabled={isDisabled}
+                                    isDisabled={isDisabled || !isAllowedToManage}
                                     disabledFieldIds={disabledColumns}
                                     onFieldTypeChange={handleFieldTypeChange}
                                 />
-                                {field.type !== "altText" ? (
+                                {!isAltTextColumn(field) ? (
                                     <input
                                         type="text"
                                         className={cx("w-full", (isDisabled || !isAllowedToManage) && "opacity-50")}

@@ -1009,7 +1009,7 @@ function mapFieldFromFramer(field: ManagedCollectionFieldInput): SheetCollection
     return field
 }
 
-function mapFieldToFramer(field: SheetCollectionFieldInput): ManagedCollectionFieldInput {
+function mapFieldToFramer({ imageColumnId: _, ...field }: SheetCollectionFieldInput): ManagedCollectionFieldInput {
     if (field.type === "dateTime") {
         return {
             ...field,

@@ -209,6 +209,7 @@ export function App({ pluginContext }: AppProps) {
             slugColumn,
             lastSyncedTime,
             sheet,
+            altTextAssignments,
         } = context
         const [headerRow] = sheet.values
 
@@ -224,10 +225,14 @@ export function App({ pluginContext }: AppProps) {
                     spreadsheetId,
                     sheetTitle,
                     fields,
-                    // Determine if the field type is already configured, otherwise default to "string"
-                    colFieldTypes: headerRow.map(colName => {
-                        const field = fields.find(field => field.name === colName)
-                        return field?.type ?? "string"
+                    // Determine if the field type is already configured, otherwise default to "string".
+                    // Alt text columns never become real CMS fields, so `fields` won't have them.
+                    columnConfigs: headerRow.map(columnId => {
+                        if (Object.hasOwn(altTextAssignments, columnId)) {
+                            return { type: "altText" as const, imageColumnId: altTextAssignments[columnId] }
+                        }
+                        const field = fields.find(field => field.id === columnId)
+                        return { type: field?.type ?? "string" }
                     }),
                     configureFields: false,
                 })

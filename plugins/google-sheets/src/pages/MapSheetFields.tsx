@@ -2,6 +2,7 @@ import cx from "classnames"
 import { framer, useIsAllowedTo } from "framer-plugin"
 import { Fragment, useMemo, useState } from "react"
 import { CheckboxTextfield } from "../components/CheckboxTextField"
+import { FieldTypeSelectField } from "../components/FieldTypeSelectField"
 import { IconChevron } from "../components/Icons"
 import type {
     CellValue,
@@ -9,29 +10,12 @@ import type {
     PluginContext,
     Row,
     SheetCollectionFieldInput,
+    SheetColumnConfig,
     SyncMutationOptions,
     VirtualFieldType,
 } from "../sheets"
+import { isAltTextColumn } from "../sheets"
 import { generateUniqueNames, isDefined, syncMethods } from "../utils"
-
-interface FieldTypeOption {
-    type: VirtualFieldType
-    label: string
-}
-
-const fieldTypeOptions: FieldTypeOption[] = [
-    { type: "string", label: "Plain Text" },
-    { type: "formattedText", label: "Formatted Text" },
-    { type: "date", label: "Date" },
-    { type: "dateTime", label: "Date & Time" },
-    { type: "link", label: "Link" },
-    { type: "image", label: "Image" },
-    { type: "color", label: "Color" },
-    { type: "boolean", label: "Toggle" },
-    { type: "number", label: "Number" },
-    { type: "enum", label: "Option" },
-    { type: "file", label: "File" },
-]
 
 const getInitialSlugColumn = (context: PluginContext, slugFields: SheetCollectionFieldInput[]): string => {
     if (context.type === "update" && context.slugColumn) {
@@ -103,15 +87,19 @@ const inferFieldType = (cellValue: CellValue): VirtualFieldType => {
     return "string"
 }
 
-const getFieldType = (context: PluginContext, columnId: string, cellValue?: CellValue): VirtualFieldType => {
+const getColumnConfig = (context: PluginContext, columnId: string, cellValue?: CellValue): SheetColumnConfig => {
+    if (context.type === "update" && Object.hasOwn(context.altTextAssignments, columnId)) {
+        return { type: "altText", imageColumnId: context.altTextAssignments[columnId] }
+    }
+
     // Determine if the field type is already configured
     if ("collectionFields" in context) {
         const field = context.collectionFields.find(field => field.id === columnId)
-        return field?.type ?? "string"
+        return { type: field?.type ?? "string" }
     }
 
     // Otherwise, infer the field type from the cell value
-    return cellValue ? inferFieldType(cellValue) : "string"
+    return { type: cellValue ? inferFieldType(cellValue) : "string" }
 }
 
 const createFieldConfig = (
@@ -125,10 +113,13 @@ const createFieldConfig = (
             const sanitizedName = uniqueColumnNames[columnIndex]
             if (!sanitizedName) return null
 
+            const { type, imageColumnId } = getColumnConfig(context, sanitizedName, row?.[columnIndex])
+
             return {
                 id: sanitizedName,
                 name: sanitizedName,
-                type: getFieldType(context, sanitizedName, row?.[columnIndex]),
+                type,
+                imageColumnId,
             } as SheetCollectionFieldInput
         })
         .filter(isDefined)
@@ -200,15 +191,25 @@ export function MapSheetFieldsPage({
         }))
     }
 
-    const handleFieldTypeChange = (id: string, type: VirtualFieldType) => {
+    const handleFieldTypeChange = (id: string, type: VirtualFieldType, imageColumnId?: string) => {
         setFieldConfig(current =>
             current.map(field => {
                 if (field.id === id) {
                     return {
                         ...field,
                         type,
-                    } as SheetCollectionFieldInput
+                        imageColumnId: type === "altText" ? imageColumnId : undefined,
+                    }
                 }
+
+                if (type !== "image" && isAltTextColumn(field) && field.imageColumnId === id) {
+                    return {
+                        ...field,
+                        type: "string",
+                        imageColumnId: undefined,
+                    }
+                }
+
                 return field
             })
         )
@@ -220,7 +221,8 @@ export function MapSheetFieldsPage({
         if (isPending) return
 
         const allFields = fieldConfig
-            .filter(field => !disabledColumns.has(field.id))
+            // Alt text columns are virtual: they never become their own CMS field.
+            .filter(field => !disabledColumns.has(field.id) && !isAltTextColumn(field))
             .map(field => {
                 const maybeOverride = fieldNameOverrides[field.id]
                 if (maybeOverride) {
@@ -236,7 +238,7 @@ export function MapSheetFieldsPage({
             fields: allFields,
             spreadsheetId,
             sheetTitle,
-            colFieldTypes: fieldConfig.map(field => field.type),
+            columnConfigs: fieldConfig.map(field => ({ type: field.type, imageColumnId: field.imageColumnId })),
             ignoredColumns: Array.from(disabledColumns),
             slugColumn,
             lastSyncedTime: getLastSyncedTime(pluginContext, slugColumn),
@@ -290,31 +292,27 @@ export function MapSheetFieldsPage({
                                 <div className="flex items-center justify-center">
                                     <IconChevron />
                                 </div>
-                                <select
-                                    className={cx("w-full", (isDisabled || !isAllowedToManage) && "opacity-50")}
-                                    disabled={isDisabled || !isAllowedToManage}
-                                    value={field.type}
-                                    onChange={e => {
-                                        handleFieldTypeChange(field.id, e.target.value as VirtualFieldType)
-                                    }}
-                                    title={isAllowedToManage ? undefined : "Insufficient permissions"}
-                                >
-                                    {fieldTypeOptions.map(({ type, label }) => (
-                                        <option key={type} value={type}>
-                                            {label}
-                                        </option>
-                                    ))}
-                                </select>
-                                <input
-                                    type="text"
-                                    className={cx("w-full", (isDisabled || !isAllowedToManage) && "opacity-50")}
-                                    disabled={isDisabled || !isAllowedToManage}
-                                    placeholder={field.name}
-                                    value={fieldNameOverrides[field.id] ?? ""}
-                                    onChange={e => {
-                                        handleFieldNameChange(field.id, e.target.value)
-                                    }}
+                                <FieldTypeSelectField
+                                    field={field}
+                                    fields={fieldConfig}
+                                    isDisabled={isDisabled || !isAllowedToManage}
+                                    disabledFieldIds={disabledColumns}
+                                    onFieldTypeChange={handleFieldTypeChange}
                                 />
+                                {!isAltTextColumn(field) ? (
+                                    <input
+                                        type="text"
+                                        className={cx("w-full", (isDisabled || !isAllowedToManage) && "opacity-50")}
+                                        disabled={isDisabled || !isAllowedToManage}
+                                        placeholder={field.name}
+                                        value={fieldNameOverrides[field.id] ?? ""}
+                                        onChange={e => {
+                                            handleFieldNameChange(field.id, e.target.value)
+                                        }}
+                                    />
+                                ) : (
+                                    <div />
+                                )}
                             </Fragment>
                         )
                     })}

@@ -31,6 +31,7 @@ const PLUGIN_LAST_SYNCED_KEY = "sheetsPluginLastSynced"
 const PLUGIN_IGNORED_COLUMNS_KEY = "sheetsPluginIgnoredColumns"
 const PLUGIN_SHEET_HEADER_ROW_HASH_KEY = "sheetsPluginSheetHeaderRowHash"
 const PLUGIN_SLUG_COLUMN_KEY = "sheetsPluginSlugColumn"
+const PLUGIN_ALT_TEXT_ASSIGNMENTS_KEY = "sheetsPluginAltTextAssignments"
 
 const CELL_BOOLEAN_VALUES = ["Y", "yes", "true", "TRUE", "Yes", 1, true]
 const HEADER_ROW_DELIMITER = "OIhpKTpp"
@@ -235,10 +236,16 @@ function fetchSheetWithClient(spreadsheetId: string, sheetTitle: string, range?:
 }
 
 export type CollectionFieldType = ManagedCollectionFieldInput["type"]
-export type VirtualFieldType = CollectionFieldType | "dateTime"
-export type SheetCollectionFieldInput = Omit<ManagedCollectionFieldInput, "type"> & {
+export type VirtualFieldType = CollectionFieldType | "dateTime" | "altText"
+
+export interface SheetColumnConfig {
     type: VirtualFieldType
+    imageColumnId?: string
 }
+
+export type SheetCollectionFieldInput = Omit<ManagedCollectionFieldInput, "type"> & SheetColumnConfig
+
+export const isAltTextColumn = (column: Pick<SheetColumnConfig, "type">): boolean => column.type === "altText"
 
 export interface PluginContextNew {
     type: "new"
@@ -259,6 +266,7 @@ export interface PluginContextUpdate {
     sheet: Sheet
     lastSyncedTime: string
     sheetHeaderRow: string[]
+    altTextAssignments: Record<string, string>
 }
 
 export interface PluginContextNoSheetAccess {
@@ -296,13 +304,14 @@ export interface SyncResult extends SyncStatus {
 }
 
 interface ProcessSheetRowParams {
-    fieldTypes: VirtualFieldType[]
+    columnConfigs: SheetColumnConfig[]
     row: Row
     rowIndex: number
     columnCount: number
     uniqueHeaderRowNames: string[]
     slugFieldColumnIndex: number
     ignoredFieldColumnIndexes: number[]
+    altColumnIndexByImageColumnIndex: Map<number, number>
     status: SyncStatus
 }
 
@@ -313,7 +322,7 @@ export interface SyncMutationOptions {
     fields: SheetCollectionFieldInput[]
     slugColumn: string | null
     ignoredColumns: string[]
-    colFieldTypes: VirtualFieldType[]
+    columnConfigs: SheetColumnConfig[]
     lastSyncedTime: string | null
     /**
      * When false (sync-only mode), schema is only applied when enum fields need refreshed cases.
@@ -410,7 +419,62 @@ function enrichFieldsWithEnumCases(
     })
 }
 
-function getFieldDataEntryInput(type: VirtualFieldType, cellValue: CellValue): FieldDataEntryInput | null {
+function resolveAltTextPair(
+    altColumnIndex: number,
+    columnConfig: SheetColumnConfig,
+    columnConfigs: SheetColumnConfig[],
+    uniqueHeaderRowNames: string[]
+) {
+    if (!isAltTextColumn(columnConfig)) return null
+
+    const altColumnId = uniqueHeaderRowNames[altColumnIndex]
+    const imageColumnId = columnConfig.imageColumnId
+    if (!altColumnId || !imageColumnId) return null
+
+    const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageColumnId)
+    if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") return null
+
+    return { altColumnId, imageColumnId, imageColumnIndex }
+}
+
+function buildAltTextAssignments(
+    columnConfigs: SheetColumnConfig[],
+    uniqueHeaderRowNames: string[]
+): Record<string, string> {
+    const assignments: Record<string, string> = {}
+
+    for (const [altColumnIndex, columnConfig] of columnConfigs.entries()) {
+        const pair = resolveAltTextPair(altColumnIndex, columnConfig, columnConfigs, uniqueHeaderRowNames)
+        if (!pair) continue
+
+        assignments[pair.altColumnId] = pair.imageColumnId
+    }
+
+    return assignments
+}
+
+function buildAltColumnIndexByImageColumnIndex(
+    columnConfigs: SheetColumnConfig[],
+    uniqueHeaderRowNames: string[],
+    ignoredColumns: string[]
+): Map<number, number> {
+    const altColumnIndexByImageColumnIndex = new Map<number, number>()
+
+    for (const [altColumnIndex, columnConfig] of columnConfigs.entries()) {
+        const pair = resolveAltTextPair(altColumnIndex, columnConfig, columnConfigs, uniqueHeaderRowNames)
+        if (!pair || ignoredColumns.includes(pair.altColumnId)) continue
+
+        altColumnIndexByImageColumnIndex.set(pair.imageColumnIndex, altColumnIndex)
+    }
+
+    return altColumnIndexByImageColumnIndex
+}
+
+function getFieldDataEntryInput(
+    type: VirtualFieldType,
+    cellValue: CellValue,
+    altCellValue?: CellValue
+): FieldDataEntryInput | null {
     switch (type) {
         case "number": {
             const num = Number(cellValue)
@@ -442,7 +506,14 @@ function getFieldDataEntryInput(type: VirtualFieldType, cellValue: CellValue): F
 
             return null
         }
-        case "image":
+        case "image": {
+            if (!isDefined(cellValue)) return null
+            return {
+                type: "image",
+                value: String(cellValue),
+                alt: isDefined(altCellValue) ? String(altCellValue) : undefined,
+            }
+        }
         case "link":
         case "file":
         case "formattedText":
@@ -467,8 +538,9 @@ function processSheetRow({
     uniqueHeaderRowNames,
     ignoredFieldColumnIndexes,
     slugFieldColumnIndex,
+    altColumnIndexByImageColumnIndex,
     status,
-    fieldTypes,
+    columnConfigs,
 }: ProcessSheetRowParams) {
     const fieldData: FieldDataInput = {}
     let slugValue: string | null = null
@@ -477,8 +549,10 @@ function processSheetRow({
     for (let i = 0; i < columnCount; i++) {
         const cell = row[i] ?? null
 
-        const fieldType = fieldTypes[i]
-        if (!fieldType) continue
+        const columnConfig = columnConfigs[i]
+        // Alt text columns are virtual and never become their own field.
+        if (!columnConfig || isAltTextColumn(columnConfig)) continue
+        const fieldType = columnConfig.type
 
         // Skip processing ignored columns unless they are the slug field
         const isIgnored = ignoredFieldColumnIndexes.includes(i)
@@ -486,7 +560,10 @@ function processSheetRow({
 
         if (isIgnored && !isSlugField) continue
 
-        let fieldDataEntryInput = getFieldDataEntryInput(fieldType, cell)
+        const altColumnIndex = altColumnIndexByImageColumnIndex.get(i)
+        const altCell = isDefined(altColumnIndex) ? (row[altColumnIndex] ?? null) : undefined
+
+        let fieldDataEntryInput = getFieldDataEntryInput(fieldType, cell, altCell)
 
         // Set to default value for type if no value is provided
         if (!fieldDataEntryInput) {
@@ -636,7 +713,7 @@ export async function syncSheet({
     fields,
     ignoredColumns,
     slugColumn,
-    colFieldTypes,
+    columnConfigs,
     configureFields,
 }: SyncMutationOptions) {
     if (fields.length === 0) {
@@ -649,6 +726,9 @@ export async function syncSheet({
     const [headerRow, ...rows] = sheet.values
 
     const uniqueHeaderRowNames = generateUniqueNames(headerRow)
+
+    const altTextAssignments = buildAltTextAssignments(columnConfigs, uniqueHeaderRowNames)
+
     const enrichedFields = enrichFieldsWithEnumCases(fields, uniqueHeaderRowNames, rows)
     const needsFieldSchemaUpdate = configureFields || enrichedFields.some(field => field.type === "enum")
 
@@ -680,11 +760,18 @@ export async function syncSheet({
         )
     }
 
+    const altColumnIndexByImageColumnIndex = buildAltColumnIndexByImageColumnIndex(
+        columnConfigs,
+        uniqueHeaderRowNames,
+        ignoredColumns
+    )
+
     const { collectionItems, status } = processSheet(rows, {
         uniqueHeaderRowNames,
-        fieldTypes: colFieldTypes,
+        columnConfigs,
         ignoredFieldColumnIndexes: ignoredColumns.map(col => uniqueHeaderRowNames.indexOf(col)),
         slugFieldColumnIndex: slugColumn ? uniqueHeaderRowNames.indexOf(slugColumn) : -1,
+        altColumnIndexByImageColumnIndex,
         columnCount: headerRow.length,
     })
 
@@ -712,6 +799,7 @@ export async function syncSheet({
         collection.setPluginData(PLUGIN_IGNORED_COLUMNS_KEY, JSON.stringify(ignoredColumns)),
         collection.setPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY, headerRowHash),
         collection.setPluginData(PLUGIN_SLUG_COLUMN_KEY, slugColumn),
+        collection.setPluginData(PLUGIN_ALT_TEXT_ASSIGNMENTS_KEY, JSON.stringify(altTextAssignments)),
         collection.setPluginData(PLUGIN_LAST_SYNCED_KEY, new Date().toISOString()),
     ])
 
@@ -747,12 +835,20 @@ export async function getPluginContext(): Promise<PluginContext> {
     }
 
     // Fetch both new and legacy data
-    const [rawIgnoredColumns, rawSheetHeaderRowHash, storedSlugColumn, lastSyncedTime] = await Promise.all([
-        collection.getPluginData(PLUGIN_IGNORED_COLUMNS_KEY),
-        collection.getPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY),
-        collection.getPluginData(PLUGIN_SLUG_COLUMN_KEY),
-        collection.getPluginData(PLUGIN_LAST_SYNCED_KEY),
-    ])
+    const [rawIgnoredColumns, rawSheetHeaderRowHash, storedSlugColumn, lastSyncedTime, rawAltTextAssignments] =
+        await Promise.all([
+            collection.getPluginData(PLUGIN_IGNORED_COLUMNS_KEY),
+            collection.getPluginData(PLUGIN_SHEET_HEADER_ROW_HASH_KEY),
+            collection.getPluginData(PLUGIN_SLUG_COLUMN_KEY),
+            collection.getPluginData(PLUGIN_LAST_SYNCED_KEY),
+            collection.getPluginData(PLUGIN_ALT_TEXT_ASSIGNMENTS_KEY),
+        ])
+
+    const altTextAssignmentsResult = v.safeParse(
+        v.pipe(v.string(), v.parseJson(), v.record(v.string(), v.string())),
+        rawAltTextAssignments
+    )
+    const altTextAssignments = altTextAssignmentsResult.success ? altTextAssignmentsResult.output : {}
 
     let spreadsheetInfo
 
@@ -865,6 +961,7 @@ export async function getPluginContext(): Promise<PluginContext> {
         collectionFields,
         sheetHeaderRow,
         ignoredColumns,
+        altTextAssignments,
         hasChangedFields: storedSheetHeaderRowHash !== currentSheetHeaderRowHash,
     }
 }
@@ -912,7 +1009,7 @@ function mapFieldFromFramer(field: ManagedCollectionFieldInput): SheetCollection
     return field
 }
 
-function mapFieldToFramer(field: SheetCollectionFieldInput): ManagedCollectionFieldInput {
+function mapFieldToFramer({ imageColumnId: _, ...field }: SheetCollectionFieldInput): ManagedCollectionFieldInput {
     if (field.type === "dateTime") {
         return {
             ...field,

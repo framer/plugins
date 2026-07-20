@@ -419,6 +419,24 @@ function enrichFieldsWithEnumCases(
     })
 }
 
+function resolveAltTextPair(
+    altColumnIndex: number,
+    columnConfig: SheetColumnConfig,
+    columnConfigs: SheetColumnConfig[],
+    uniqueHeaderRowNames: string[]
+) {
+    if (!isAltTextColumn(columnConfig)) return null
+
+    const altColumnId = uniqueHeaderRowNames[altColumnIndex]
+    const imageColumnId = columnConfig.imageColumnId
+    if (!altColumnId || !imageColumnId) return null
+
+    const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageColumnId)
+    if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") return null
+
+    return { altColumnId, imageColumnId, imageColumnIndex }
+}
+
 function buildAltTextAssignments(
     columnConfigs: SheetColumnConfig[],
     uniqueHeaderRowNames: string[]
@@ -426,16 +444,10 @@ function buildAltTextAssignments(
     const assignments: Record<string, string> = {}
 
     for (const [altColumnIndex, columnConfig] of columnConfigs.entries()) {
-        if (!isAltTextColumn(columnConfig)) continue
+        const pair = resolveAltTextPair(altColumnIndex, columnConfig, columnConfigs, uniqueHeaderRowNames)
+        if (!pair) continue
 
-        const altColumnId = uniqueHeaderRowNames[altColumnIndex]
-        const imageColumnId = columnConfig.imageColumnId
-        if (!altColumnId || !imageColumnId) continue
-
-        const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageColumnId)
-        if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") continue
-
-        assignments[altColumnId] = imageColumnId
+        assignments[pair.altColumnId] = pair.imageColumnId
     }
 
     return assignments
@@ -449,16 +461,10 @@ function buildAltColumnIndexByImageColumnIndex(
     const altColumnIndexByImageColumnIndex = new Map<number, number>()
 
     for (const [altColumnIndex, columnConfig] of columnConfigs.entries()) {
-        const altColumnId = uniqueHeaderRowNames[altColumnIndex]
-        if (!altColumnId || ignoredColumns.includes(altColumnId) || !isAltTextColumn(columnConfig)) continue
+        const pair = resolveAltTextPair(altColumnIndex, columnConfig, columnConfigs, uniqueHeaderRowNames)
+        if (!pair || ignoredColumns.includes(pair.altColumnId)) continue
 
-        const imageColumnId = columnConfig.imageColumnId
-        if (!imageColumnId || ignoredColumns.includes(imageColumnId)) continue
-
-        const imageColumnIndex = uniqueHeaderRowNames.indexOf(imageColumnId)
-        if (imageColumnIndex === -1 || columnConfigs[imageColumnIndex]?.type !== "image") continue
-
-        altColumnIndexByImageColumnIndex.set(imageColumnIndex, altColumnIndex)
+        altColumnIndexByImageColumnIndex.set(pair.imageColumnIndex, altColumnIndex)
     }
 
     return altColumnIndexByImageColumnIndex

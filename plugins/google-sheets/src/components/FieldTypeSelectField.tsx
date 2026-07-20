@@ -1,6 +1,6 @@
 import cx from "classnames"
 import { framer, type MenuItem } from "framer-plugin"
-import { useMemo } from "react"
+import React, { useMemo } from "react"
 import { isAltTextColumn, type SheetCollectionFieldInput, type VirtualFieldType } from "../sheets"
 import { IconChevron, IconChevronDown } from "./Icons"
 
@@ -47,13 +47,11 @@ export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldI
     const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
         const assignedImageColumnIds = new Set(fields.filter(isAltTextColumn).map(candidate => candidate.imageColumnId))
 
-        const availableImageFields = fields.filter(
-            candidate =>
-                candidate.type === "image" &&
-                candidate.id !== field.id &&
-                !disabledFieldIds.has(candidate.id) &&
-                (!assignedImageColumnIds.has(candidate.id) || candidate.id === field.imageColumnId)
+        const imageFields = fields.filter(
+            candidate => candidate.type === "image" && candidate.id !== field.id && !disabledFieldIds.has(candidate.id)
         )
+        const canAssignImageField = (candidate: SheetCollectionFieldInput) =>
+            !assignedImageColumnIds.has(candidate.id) || candidate.id === field.imageColumnId
 
         const items: MenuItem[] = [
             ...fieldTypeOptions.map(({ type, label }) => ({
@@ -66,10 +64,11 @@ export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldI
             {
                 label: "Alt Text",
                 checked: isAltTextColumn(field),
-                enabled: availableImageFields.length > 0,
-                submenu: availableImageFields.map(candidate => ({
+                enabled: imageFields.some(canAssignImageField),
+                submenu: imageFields.map(candidate => ({
                     label: candidate.name,
                     checked: isAltTextColumn(field) && field.imageColumnId === candidate.id,
+                    enabled: canAssignImageField(candidate),
                     onAction: () => {
                         onFieldTypeChange(field.id, "altText", candidate.id)
                     },

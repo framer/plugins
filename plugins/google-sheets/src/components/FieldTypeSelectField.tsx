@@ -45,8 +45,14 @@ export function FieldTypeSelectField({ field, fields, isDisabled, disabledFieldI
     }, [field, imageColumn])
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+        const assignedImageColumnIds = new Set(fields.filter(isAltTextColumn).map(candidate => candidate.imageColumnId))
+
         const availableImageFields = fields.filter(
-            candidate => candidate.type === "image" && candidate.id !== field.id && !disabledFieldIds.has(candidate.id)
+            candidate =>
+                candidate.type === "image" &&
+                candidate.id !== field.id &&
+                !disabledFieldIds.has(candidate.id) &&
+                (!assignedImageColumnIds.has(candidate.id) || candidate.id === field.imageColumnId)
         )
 
         const items: MenuItem[] = [

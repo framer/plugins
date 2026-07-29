@@ -1468,12 +1468,21 @@ export async function start(config: Config): Promise<void> {
         isShuttingDown = true
         runtime.cleanupUserActions()
 
+        if (pendingDependencyVersions) {
+            clearTimeout(pendingDependencyVersions.timeout)
+            pendingDependencyVersions = null
+        }
+
         if (watcher) {
             await watcher.close()
             watcher = null
         }
 
         connection.close()
+
+        // Closing the server does not always release the event loop, so a one-shot run has
+        // to exit explicitly.
+        if (config.once) process.exit(0)
     }
 
     const startWatcher = () => {

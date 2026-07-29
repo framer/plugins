@@ -118,7 +118,3 @@ program
     )
 
 program.parse()
-
-// Export for programmatic usage
-export { start } from "./controller.ts"
-export type { Config } from "./types.ts"

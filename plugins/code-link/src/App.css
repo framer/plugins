@@ -113,6 +113,20 @@ html,
 .destructive-button:active {
     background: #cf2e55;
 }
+
+[data-framer-theme="dark"] .framer-button-primary.destructive-button {
+    background: #ff3366;
+}
+
+[data-framer-theme="dark"] .framer-button-primary.destructive-button:hover,
+[data-framer-theme="dark"] .framer-button-primary.destructive-button:focus {
+    background: #e7315e;
+}
+
+[data-framer-theme="dark"] .framer-button-primary.destructive-button:active {
+    background: #cf2e55;
+}
+
 /* Copy Button */
 .copy-button {
     display: flex;

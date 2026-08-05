@@ -355,7 +355,7 @@ function DeletePanel({ files, onConfirm, onKeep }: DeletePanelProps) {
           }
         : {
               title: "Confirm Deletion",
-              description: "Code file was deleted locally and will be permanently removed from this Project.",
+              description: "File was deleted locally and will be permanently removed from this Project.",
           }
 
     const lines = files.map(file => file.content?.split("\n").length ?? 0)

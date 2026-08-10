@@ -1,4 +1,14 @@
 import { framer } from "framer-plugin"
+import type { SyncResult } from "./data"
+
+type SyncResultWithErrors = Extract<SyncResult, { status: "completed-with-errors" }>
+
+export function closePluginAfterSyncWithErrors(result: SyncResultWithErrors) {
+    const pluralSuffix = result.failed === 1 ? "" : "s"
+    framer.closePlugin(`Failed to sync ${result.failed} item${pluralSuffix}. Please try again.`, {
+        variant: "error",
+    })
+}
 
 export async function showAccessErrorUI() {
     await framer.showUI({

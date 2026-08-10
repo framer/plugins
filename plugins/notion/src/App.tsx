@@ -16,7 +16,13 @@ import { FieldMapping } from "./FieldMapping"
 import { NoTableAccess } from "./NoAccess"
 import { Progress } from "./Progress"
 import { SelectDataSource } from "./SelectDataSource"
-import { showAccessErrorUI, showFieldMappingUI, showLoginUI, showProgressUI } from "./ui"
+import {
+    closePluginAfterSyncWithErrors,
+    showAccessErrorUI,
+    showFieldMappingUI,
+    showLoginUI,
+    showProgressUI,
+} from "./ui"
 
 interface AppProps {
     collection: ManagedCollection
@@ -59,7 +65,7 @@ export function App({
             void showProgressUI()
 
             try {
-                const { didSync } = await syncExistingCollection(
+                const sync = await syncExistingCollection(
                     collection,
                     previousDatabaseId,
                     previousSlugFieldId,
@@ -70,12 +76,14 @@ export function App({
                     setProgress
                 )
 
-                if (didSync) {
+                if (!sync.didSync) {
+                    setIsSyncMode(false)
+                } else if (sync.result.status === "completed-with-errors") {
+                    closePluginAfterSyncWithErrors(sync.result)
+                } else {
                     framer.closePlugin("Synchronization successful", {
                         variant: "success",
                     })
-                } else {
-                    setIsSyncMode(false)
                 }
             } catch (error) {
                 if (error instanceof FramerPluginClosedError) return

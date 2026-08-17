@@ -4,7 +4,7 @@ import type {
     LocalizationGroup,
     LocalizationSource,
     LocalizedValueStatus,
-} from "framer-plugin"
+} from "@framer/plugin"
 import "./App.css"
 
 function escapeXml(unsafe: string): string {

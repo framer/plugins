@@ -753,6 +753,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@framer/plugin@npm:4.2.0-beta.0":
+  version: 4.2.0-beta.0
+  resolution: "@framer/plugin@npm:4.2.0-beta.0"
+  peerDependencies:
+    csstype: ^3.1.1
+    react: ^18.2.0
+    react-dom: ^18.2.0
+  checksum: 10/290c3d761661dfa898c60e35fc272c2ca616a19a2c4e12bff6661920f10c056eaf8eca3a1dabde16c9c47572df965d9f63cdc1f00e68d3a6e86a07fbb8845000
+  languageName: node
+  linkType: hard
+
 "@framer/plugin@npm:^4":
   version: 4.0.0
   resolution: "@framer/plugin@npm:4.0.0"
@@ -5840,9 +5851,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "locale-sync@workspace:plugins/locale-sync"
   dependencies:
+    "@framer/plugin": "npm:4.2.0-beta.0"
     "@types/react": "npm:^18.3.24"
     "@types/react-dom": "npm:^18.3.7"
-    framer-plugin: "npm:3.11.0-alpha.12"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
   languageName: unknown

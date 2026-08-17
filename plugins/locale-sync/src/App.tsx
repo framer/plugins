@@ -1,6 +1,6 @@
-import type { Locale } from "framer-plugin"
+import type { Locale } from "@framer/plugin"
 
-import { framer, useIsAllowedTo } from "framer-plugin"
+import { framer, useIsAllowedTo } from "@framer/plugin"
 import { useEffect, useState } from "react"
 import "./App.css"
 import { downloadBlob, importFileAsText } from "./files"
@@ -38,7 +38,11 @@ async function exportXliff(defaultLocale: Locale, targetLocale: Locale) {
     const filename = `locale_${targetLocale.code}.xlf`
 
     try {
-        const groups = await framer.getLocalizationGroups()
+        const groups = []
+        for await (const group of framer.listLocalizationGroups()) {
+            groups.push(group)
+        }
+
         const xliff = generateXliff(defaultLocale, targetLocale, groups)
         downloadBlob(xliff, filename, "application/x-xliff+xml")
 

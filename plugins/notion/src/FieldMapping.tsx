@@ -25,6 +25,7 @@ import {
     syncCollection,
 } from "./data"
 import { Progress } from "./Progress"
+import { closePluginAfterSyncWithErrors } from "./ui"
 import { assert, syncMethods } from "./utils"
 
 const labelByFieldTypeOption: Record<VirtualFieldType, string> = {
@@ -271,7 +272,7 @@ export function FieldMapping({
                 }
 
                 await collection.setFields(fieldsToSync)
-                await syncCollection(
+                const result = await syncCollection(
                     collection,
                     dataSource,
                     fieldsToSync,
@@ -281,7 +282,12 @@ export function FieldMapping({
                     existingFields,
                     setSyncProgress
                 )
-                framer.closePlugin("Synchronization successful", { variant: "success" })
+
+                if (result.status === "completed-with-errors") {
+                    closePluginAfterSyncWithErrors(result)
+                } else {
+                    framer.closePlugin("Synchronization successful", { variant: "success" })
+                }
             } catch (error) {
                 if (error instanceof FramerPluginClosedError) return
                 console.error(error)

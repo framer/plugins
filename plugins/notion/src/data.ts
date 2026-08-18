@@ -114,6 +114,14 @@ export interface SyncError {
     error: unknown
 }
 
+export type SyncResult =
+    | { status: "completed" }
+    | {
+          status: "completed-with-errors"
+          succeeded: number
+          failed: number
+      }
+
 export async function syncCollection(
     collection: ManagedCollection,
     dataSource: DataSource,
@@ -123,7 +131,7 @@ export async function syncCollection(
     lastSynced: string | null,
     existingFields?: readonly ManagedCollectionFieldInput[],
     onProgress?: (progress: SyncProgress) => void
-) {
+): Promise<SyncResult> {
     const fieldsById = new Map(fields.map(field => [field.id, field]))
     const contentFieldEnabled = fieldsById.has(pageContentProperty.id)
     const reportProgress = (p: { current: number; total: number; hasFinishedLoading: boolean }) =>
@@ -144,6 +152,10 @@ export async function syncCollection(
 
     const seenItemIds = new Set<string>()
 
+    // Save a conservative checkpoint from before reading Notion. If an item is edited
+    // while this sync is running, its edit time will be newer than this checkpoint and
+    // the item will be picked up by the next sync.
+    const syncStartedAt = new Date().toISOString()
     const databaseItems = await getDatabaseItems(dataSource.database, reportProgress)
 
     // Validate slugs before fetching page content
@@ -377,10 +389,23 @@ export async function syncCollection(
             ignoredFieldIds.size > 0 ? JSON.stringify(Array.from(ignoredFieldIds)) : null
         ),
         collection.setPluginData(PLUGIN_KEYS.DATABASE_ID, dataSource.database.id),
-        collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, new Date().toISOString()),
         collection.setPluginData(PLUGIN_KEYS.SLUG_FIELD_ID, slugField.id),
         collection.setPluginData(PLUGIN_KEYS.DATABASE_NAME, richTextToPlainText(dataSource.database.title)),
+        // The Notion plugin uses `LAST_SYNCED` to only sync items that have changed since the last sync.
+        // We don’t want to update this value if some items failed to sync. This gives these items
+        // a chance to retry on the next sync.
+        syncErrors.length === 0 ? collection.setPluginData(PLUGIN_KEYS.LAST_SYNCED, syncStartedAt) : Promise.resolve(),
     ])
+
+    if (syncErrors.length > 0) {
+        return {
+            status: "completed-with-errors",
+            succeeded: items.length,
+            failed: syncErrors.length,
+        }
+    }
+
+    return { status: "completed" }
 }
 
 const IgnoredFieldIdsSchema = v.array(v.string())
@@ -415,7 +440,7 @@ export async function syncExistingCollection(
     previousDatabaseName: string | null,
     databaseIdMap: DatabaseIdMap,
     onProgress?: (progress: SyncProgress) => void
-): Promise<{ didSync: boolean }> {
+): Promise<{ didSync: false } | { didSync: true; result: SyncResult }> {
     if (
         !shouldSyncExistingCollection({ previousSlugFieldId, previousDatabaseId }) ||
         !previousSlugFieldId ||
@@ -449,7 +474,7 @@ export async function syncExistingCollection(
                 existingFields.some(existingField => existingField.id === field.id) && !ignoredFieldIds.has(field.id)
         )
 
-        await syncCollection(
+        const result = await syncCollection(
             collection,
             dataSource,
             fieldsToSync,
@@ -459,7 +484,7 @@ export async function syncExistingCollection(
             existingFields,
             onProgress
         )
-        return { didSync: true }
+        return { didSync: true, result }
     } catch (error) {
         console.error(error)
         framer.notify(

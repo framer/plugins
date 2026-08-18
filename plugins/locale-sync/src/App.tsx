@@ -1,6 +1,6 @@
-import type { Locale } from "framer-plugin"
+import type { Locale, LocalizationGroup } from "@framer/plugin"
 
-import { framer, useIsAllowedTo } from "framer-plugin"
+import { framer, useIsAllowedTo } from "@framer/plugin"
 import { useEffect, useState } from "react"
 import "./App.css"
 import { downloadBlob, importFileAsText } from "./files"
@@ -35,18 +35,15 @@ function importXliff() {
 }
 
 async function exportXliff(defaultLocale: Locale, targetLocale: Locale) {
+    const groups: LocalizationGroup[] = []
+    for await (const group of framer.listLocalizationGroups()) {
+        groups.push(group)
+    }
+
+    const xliff = generateXliff(defaultLocale, targetLocale, groups)
     const filename = `locale_${targetLocale.code}.xlf`
 
-    try {
-        const groups = await framer.getLocalizationGroups()
-        const xliff = generateXliff(defaultLocale, targetLocale, groups)
-        downloadBlob(xliff, filename, "application/x-xliff+xml")
-
-        framer.notify(`Successfully exported ${filename}`)
-    } catch (error) {
-        console.error(error)
-        framer.notify(`Error exporting ${filename}`, { variant: "error" })
-    }
+    downloadBlob(xliff, filename, "application/x-xliff+xml")
 }
 
 export function App() {
@@ -55,6 +52,7 @@ export function App() {
     const [selectedLocaleId, setSelectedLocaleId] = useState<string>("")
     const [locales, setLocales] = useState<readonly Locale[]>([])
     const [defaultLocale, setDefaultLocale] = useState<Locale | null>(null)
+    const [isExporting, setIsExporting] = useState(false)
 
     useEffect(() => {
         async function loadLocales() {
@@ -72,15 +70,26 @@ export function App() {
         void loadLocales()
     }, [])
 
-    function handleExport() {
-        if (!selectedLocaleId || !defaultLocale) return
+    async function handleExport() {
+        if (isExporting || !selectedLocaleId || !defaultLocale) return
 
         const targetLocale = locales.find(locale => locale.id === selectedLocaleId)
         if (!targetLocale) {
-            throw new Error(`Could not find locale with id ${selectedLocaleId}`)
+            console.error(`Could not find locale with id ${selectedLocaleId}`)
+            framer.notify("Could not find the selected locale.", { variant: "error" })
+            return
         }
 
-        void exportXliff(defaultLocale, targetLocale)
+        setIsExporting(true)
+
+        try {
+            await exportXliff(defaultLocale, targetLocale)
+        } catch (error) {
+            console.error(error)
+            framer.notify(`Failed to export.`, { variant: "error" })
+        } finally {
+            setIsExporting(false)
+        }
     }
 
     return (
@@ -111,10 +120,11 @@ export function App() {
                 <button
                     type="button"
                     className="framer-button-primary"
-                    onClick={handleExport}
-                    disabled={!selectedLocaleId}
+                    onClick={() => void handleExport()}
+                    disabled={!selectedLocaleId || isExporting}
+                    aria-label={isExporting ? "Exporting" : "Export"}
                 >
-                    Export
+                    {isExporting ? <div className="framer-spinner" /> : "Export"}
                 </button>
             </div>
         </main>

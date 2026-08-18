@@ -34,13 +34,15 @@ function importXliff() {
     })
 }
 
-async function exportXliff(defaultLocale: Locale, targetLocale: Locale, filename: string) {
+async function exportXliff(defaultLocale: Locale, targetLocale: Locale) {
     const groups: LocalizationGroup[] = []
     for await (const group of framer.listLocalizationGroups()) {
         groups.push(group)
     }
 
     const xliff = generateXliff(defaultLocale, targetLocale, groups)
+    const filename = `locale_${targetLocale.code}.xlf`
+
     downloadBlob(xliff, filename, "application/x-xliff+xml")
 }
 
@@ -72,19 +74,19 @@ export function App() {
         if (isExporting || !selectedLocaleId || !defaultLocale) return
 
         const targetLocale = locales.find(locale => locale.id === selectedLocaleId)
-        const filename = targetLocale ? `locale_${targetLocale.code}.xlf` : "XLIFF file"
+        if (!targetLocale) {
+            console.error(`Could not find locale with id ${selectedLocaleId}`)
+            framer.notify("Could not find the selected locale.", { variant: "error" })
+            return
+        }
+
         setIsExporting(true)
 
         try {
-            if (!targetLocale) {
-                throw new Error(`Could not find locale with id ${selectedLocaleId}`)
-            }
-
-            await exportXliff(defaultLocale, targetLocale, filename)
-            framer.notify(`Successfully exported ${filename}`)
+            await exportXliff(defaultLocale, targetLocale)
         } catch (error) {
             console.error(error)
-            framer.notify(`Error exporting ${filename}`, { variant: "error" })
+            framer.notify(`Failed to export.`, { variant: "error" })
         } finally {
             setIsExporting(false)
         }

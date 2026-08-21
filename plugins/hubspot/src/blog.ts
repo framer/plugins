@@ -242,15 +242,22 @@ export async function syncBlogs({ fields, includedFieldIds }: SyncBlogMutation) 
 
     const fieldsById = new Map(fields.map(field => [field.id, field]))
     const unsyncedItemIds = new Set(await collection.getItemIds())
+    const hasAuthorNameField = fieldsById.has(AUTHOR_NAME_FIELD_ID)
     const requestedProperties = new Set([...includedFieldIds, "id", "slug"])
 
-    if (fieldsById.has(AUTHOR_NAME_FIELD_ID)) requestedProperties.add(BLOG_AUTHOR_ID_FIELD_ID)
+    if (hasAuthorNameField) requestedProperties.add(BLOG_AUTHOR_ID_FIELD_ID)
 
     const { results: posts } = await fetchAllBlogPosts(MAX_CMS_ITEMS, Array.from(requestedProperties))
 
-    const authorIds = Array.from(new Set(posts.map(post => post.blogAuthorId)))
-    const authors = authorIds.length ? await Promise.all(authorIds.map(fetchBlogAuthor)) : []
-    const authorNamesById = new Map(authors.map(author => [author.id, author.displayName]))
+    const authorNamesById = new Map<string, string>()
+    if (hasAuthorNameField) {
+        const authorIds = Array.from(new Set(posts.map(post => post.blogAuthorId)))
+        const authors = authorIds.length ? await Promise.all(authorIds.map(fetchBlogAuthor)) : []
+
+        for (const author of authors) {
+            authorNamesById.set(author.id, author.displayName)
+        }
+    }
 
     const { collectionItems, status } = processBlog(posts, {
         fields,

@@ -1,3 +1,4 @@
+import type { BlogAuthor } from "@hubspot/api-client/lib/codegen/cms/blogs/authors/models/BlogAuthor"
 import { BlogPost } from "@hubspot/api-client/lib/codegen/cms/blogs/blog_posts/models/BlogPost"
 import { HubDbTableRowV3 } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/HubDbTableRowV3"
 import { HubDbTableV3 } from "@hubspot/api-client/lib/codegen/cms/hubdb/models/HubDbTableV3"
@@ -100,6 +101,7 @@ const API_URL = "https://api.hubapi.com"
 
 const queryKeys = {
     blogPosts: (limit: number, properties: string[]) => ["blog-posts", limit, properties] as const,
+    blogAuthor: (id: string) => ["blog-author", id] as const,
     publishedTables: (limit: number) => ["hubdb-tables", limit] as const,
     publishedTable: (tableId: string) => ["hubdb-table", tableId] as const,
     tableRows: (tableId: string, properties: string[], limit: number) =>
@@ -174,6 +176,13 @@ export const fetchAllBlogPosts = (limit: number, properties: string[]): Promise<
     return cachedFetch(
         queryKeys.blogPosts(limit, properties),
         () => request({ path: "/cms/v3/blogs/posts", query: { limit, properties } }) as Promise<CMSPaging<BlogPost>>
+    )
+}
+
+export const fetchBlogAuthor = (authorId: string): Promise<BlogAuthor> => {
+    return cachedFetch(
+        queryKeys.blogAuthor(authorId),
+        () => request({ path: `/cms/v3/blogs/authors/${authorId}` }) as Promise<BlogAuthor>
     )
 }
 

@@ -7,7 +7,7 @@ import {
     type ManagedCollection,
     type ManagedCollectionFieldInput,
 } from "framer-plugin"
-import { fetchAllBlogPosts } from "./api"
+import { fetchAllBlogPosts, fetchBlogAuthor } from "./api"
 import {
     computeFieldSets,
     createFieldSetHash,
@@ -22,6 +22,10 @@ import { assert, isDefined } from "./utils"
 
 export const PLUGIN_INCLUDED_FIELDS_HASH = "hubspotPluginBlogIncludedFieldsHash"
 
+// Keep this ID stable for existing managed collections and their Framer bindings.
+const AUTHOR_NAME_FIELD_ID = "authorName"
+const BLOG_AUTHOR_ID_FIELD_ID = "blogAuthorId"
+
 export interface SyncBlogMutation {
     fields: ManagedCollectionFieldInput[]
     includedFieldIds: string[]
@@ -30,6 +34,7 @@ export interface SyncBlogMutation {
 export interface ProcessBlogParams {
     fields: ManagedCollectionFieldInput[]
     fieldsById: FieldsById
+    authorNamesById: Map<string, string>
     unsyncedItemIds: Set<string>
 }
 
@@ -166,7 +171,7 @@ function getFieldDataEntryInput(
     }
 }
 
-function processPost({ post, fieldsById, unsyncedItemIds, status }: ProcessPostParams) {
+function processPost({ post, fieldsById, authorNamesById, unsyncedItemIds, status }: ProcessPostParams) {
     let slugValue: string | null = null
     const fieldData: FieldDataInput = {}
 
@@ -184,7 +189,12 @@ function processPost({ post, fieldsById, unsyncedItemIds, status }: ProcessPostP
         // Not included in field mapping, skip
         if (!field) continue
 
-        const fieldDataEntryInput = getFieldDataEntryInput(field, propertyValue, post)
+        // HubSpot uses authorName for the user who updated the post, not its blog author.
+        // Retain that value when the associated Blog Author cannot be resolved.
+        const resolvedAuthorName =
+            propertyName === AUTHOR_NAME_FIELD_ID ? authorNamesById.get(post.blogAuthorId) : undefined
+        const value = resolvedAuthorName ?? propertyValue
+        const fieldDataEntryInput = getFieldDataEntryInput(field, value, post)
         if (fieldDataEntryInput) {
             fieldData[propertyName] = fieldDataEntryInput
         } else {
@@ -232,15 +242,20 @@ export async function syncBlogs({ fields, includedFieldIds }: SyncBlogMutation) 
 
     const fieldsById = new Map(fields.map(field => [field.id, field]))
     const unsyncedItemIds = new Set(await collection.getItemIds())
+    const requestedProperties = new Set([...includedFieldIds, "id", "slug"])
 
-    // Always include the blog Id and slug
-    const { results: posts } = await fetchAllBlogPosts(
-        MAX_CMS_ITEMS,
-        Array.from(new Set([...includedFieldIds, "id", "slug"]))
-    )
+    if (fieldsById.has(AUTHOR_NAME_FIELD_ID)) requestedProperties.add(BLOG_AUTHOR_ID_FIELD_ID)
+
+    const { results: posts } = await fetchAllBlogPosts(MAX_CMS_ITEMS, Array.from(requestedProperties))
+
+    const authorIds = Array.from(new Set(posts.map(post => post.blogAuthorId)))
+    const authors = authorIds.length ? await Promise.all(authorIds.map(fetchBlogAuthor)) : []
+    const authorNamesById = new Map(authors.map(author => [author.id, author.displayName]))
+
     const { collectionItems, status } = processBlog(posts, {
         fields,
         fieldsById,
+        authorNamesById,
         unsyncedItemIds,
     })
 

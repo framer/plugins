@@ -149,7 +149,7 @@ const request = async ({ path, method, query, body }: RequestOptions): Promise<u
         }
 
         if (!res.ok) {
-            throw new PluginError("Fetch Failed", `Failed to fetch HubSpot API: ${res.status}`)
+            throw new PluginError("Fetch Failed", `Failed to fetch HubSpot API: ${res.status}`, res.status)
         }
 
         return await res.json()
@@ -179,11 +179,20 @@ export const fetchAllBlogPosts = (limit: number, properties: string[]): Promise<
     )
 }
 
-export const fetchBlogAuthor = (authorId: string): Promise<BlogAuthor> => {
-    return cachedFetch(
-        queryKeys.blogAuthor(authorId),
-        () => request({ path: `/cms/v3/blogs/authors/${authorId}` }) as Promise<BlogAuthor>
-    )
+export async function fetchBlogAuthor(authorId: string): Promise<BlogAuthor | undefined> {
+    try {
+        return await cachedFetch(
+            queryKeys.blogAuthor(authorId),
+            () =>
+                request({
+                    path: `/cms/v3/blogs/authors/${authorId}`,
+                    query: { archived: "true" },
+                }) as Promise<BlogAuthor>
+        )
+    } catch (e) {
+        if (e instanceof PluginError && e.status === 404) return undefined
+        throw e
+    }
 }
 
 export const fetchPublishedTables = (limit: number): Promise<CMSPaging<HubDbTableV3>> => {

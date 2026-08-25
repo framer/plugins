@@ -251,8 +251,14 @@ export async function syncBlogs({ fields, includedFieldIds }: SyncBlogMutation) 
 
     const authorNamesById = new Map<string, string>()
     if (hasAuthorNameField) {
-        const authorIds = Array.from(new Set(posts.map(post => post.blogAuthorId)))
-        const authors = authorIds.length ? await Promise.all(authorIds.map(fetchBlogAuthor)) : []
+        // Blog posts should have a blogAuthorId, but drafts or unexpected data may not.
+        // Gracefully fall back to the last updated author name in those cases.
+        const authorIds = Array.from(
+            new Set(
+                posts.map(post => post.blogAuthorId).filter((id): id is string => typeof id === "string" && id !== "")
+            )
+        )
+        const authors = authorIds.length ? (await Promise.all(authorIds.map(fetchBlogAuthor))).filter(isDefined) : []
 
         for (const author of authors) {
             authorNamesById.set(author.id, author.displayName)

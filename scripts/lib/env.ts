@@ -27,7 +27,6 @@ export const EnvSchema = v.object({
     DRY_RUN: BooleanEnvSchema,
     REPO_ROOT: v.optional(v.string()),
     SESSION_TOKEN: v.pipe(v.string(), v.minLength(1)),
-    FRAMER_ADMIN_SECRET: v.pipe(v.string(), v.minLength(1)),
 })
 
 export type FramerEnv = v.InferOutput<typeof FramerEnvSchema>
@@ -35,7 +34,6 @@ export type Environment = v.InferOutput<typeof EnvSchema>
 
 export interface EnvironmentUrls {
     apiBase: string
-    creatorsApiBase: string
     framerAppUrl: string
     marketplaceBaseUrl: string
 }
@@ -43,13 +41,11 @@ export interface EnvironmentUrls {
 export const ENVIRONMENT_URLS: Record<FramerEnv, EnvironmentUrls> = {
     production: {
         apiBase: "https://api.framer.com",
-        creatorsApiBase: "https://marketplace.framer.com",
         framerAppUrl: "https://framer.com",
         marketplaceBaseUrl: "https://framer.com/marketplace",
     },
     development: {
         apiBase: "https://api.development.framer.com",
-        creatorsApiBase: "https://marketplace.development.framer.com",
         framerAppUrl: "https://development.framer.com",
         marketplaceBaseUrl: "https://marketplace.development.framer.com/marketplace",
     },

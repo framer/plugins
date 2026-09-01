@@ -53,7 +53,6 @@ jobs:
           DEBUG: "1"
           PR_BODY_FILE: /tmp/pr-body.txt
           SESSION_TOKEN: ${{ secrets.SESSION_TOKEN }}
-          FRAMER_ADMIN_SECRET: ${{ secrets.FRAMER_ADMIN_SECRET }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_ERROR_WEBHOOK_URL: ${{ secrets.SLACK_ERROR_WEBHOOK_URL }}
           RETOOL_URL: ${{ secrets.RETOOL_URL }}

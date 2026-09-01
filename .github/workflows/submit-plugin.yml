@@ -55,9 +55,6 @@ on:
       SESSION_TOKEN:
         description: 'Framer session cookie'
         required: true
-      FRAMER_ADMIN_SECRET:
-        description: 'Framer admin API key'
-        required: true
       SLACK_WEBHOOK_URL:
         description: 'Slack webhook URL for notifications'
         required: false
@@ -146,7 +143,6 @@ jobs:
           CHANGELOG: ${{ inputs.changelog }}
           PR_BODY: ${{ inputs.pr_body }}
           SESSION_TOKEN: ${{ secrets.SESSION_TOKEN }}
-          FRAMER_ADMIN_SECRET: ${{ secrets.FRAMER_ADMIN_SECRET }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_ERROR_WEBHOOK_URL: ${{ secrets.SLACK_ERROR_WEBHOOK_URL }}
           RETOOL_URL: ${{ secrets.RETOOL_URL }}

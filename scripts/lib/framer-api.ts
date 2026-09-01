@@ -51,6 +51,11 @@ const SubmissionResponseSchema = v.object({
 })
 export type SubmissionResponse = v.InferOutput<typeof SubmissionResponseSchema>
 
+/** The Creators Service wraps every response, so the release details sit under `data`. */
+const ReleaseResponseSchema = v.object({
+    data: SubmissionResponseSchema,
+})
+
 export const FramerJsonSchema = v.object({
     id: v.string(),
     name: v.string(),
@@ -111,43 +116,86 @@ export function loadFramerJsonFile(pluginPath: string): FramerJson {
     return framerJson
 }
 
+/**
+ * Two calls, because the zip goes to the plugins API and only the resulting
+ * version id goes to the marketplace. The version is left pending for a human
+ * to approve.
+ */
 export async function submitPlugin(
     zipFilePath: string,
     plugin: Plugin,
     env: Environment,
     changelog: string
 ): Promise<SubmissionResponse> {
-    if (!env.SESSION_TOKEN || !env.FRAMER_ADMIN_SECRET) {
-        throw new Error("Session token and Framer admin secret are required for submission")
-    }
+    const accessToken = await getAccessToken(env)
+    const releaseNotes = await changelogToHtml(changelog)
 
-    const url = `${getURL(env, "creatorsApiBase")}/api/admin/plugin/${plugin.id}/versions/`
+    const versionId = await uploadPluginVersion(zipFilePath, plugin, env, accessToken, releaseNotes)
+    const result = await submitToMarketplace(plugin, env, accessToken, versionId)
 
-    log.info(`Submitting to: ${url}`)
+    log.success(`Submitted! Version: ${result.version}`)
+
+    return result
+}
+
+async function uploadPluginVersion(
+    zipFilePath: string,
+    plugin: Plugin,
+    env: Environment,
+    accessToken: string,
+    releaseNotes: string
+): Promise<string> {
+    const url = `${getURL(env, "apiBase")}/site/v1/plugins/${plugin.id}/versions`
+
+    log.info(`Uploading to: ${url}`)
 
     const zipBuffer = readFileSync(zipFilePath)
-    const blob = new Blob([zipBuffer], { type: "application/zip" })
-
     const formData = new FormData()
-    formData.append("file", blob, "plugin.zip")
-    formData.append("content", await changelogToHtml(changelog))
+    formData.append("file", new Blob([zipBuffer], { type: "application/zip" }), "plugin.zip")
+    formData.append("releaseNotes", releaseNotes)
 
     const response = await fetch(url, {
         method: "POST",
-        headers: {
-            Cookie: `session=${env.SESSION_TOKEN}`,
-            Authorization: `Bearer ${env.FRAMER_ADMIN_SECRET}`,
-        },
+        headers: { Authorization: `Bearer ${accessToken}` },
         body: formData,
     })
 
     if (!response.ok) {
         const errorText = await response.text()
-        throw new Error(`API submission failed: ${response.status} ${response.statusText}\n${errorText}`)
+        throw new Error(`Plugin upload failed: ${response.status} ${response.statusText}\n${errorText}`)
     }
 
-    const result = v.parse(SubmissionResponseSchema, await response.json())
-    log.success(`Submitted! Version: ${result.version}`)
+    const version = v.parse(PluginVersionSchema, await response.json())
 
-    return result
+    return version.id
+}
+
+async function submitToMarketplace(
+    plugin: Plugin,
+    env: Environment,
+    accessToken: string,
+    versionId: string
+): Promise<SubmissionResponse> {
+    const url = `${getURL(env, "apiBase")}/creators/v1/resources/plugin/${plugin.id}/release`
+
+    log.info(`Submitting to: ${url}`)
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            "x-requested-by": "plugin-release-action",
+        },
+        body: JSON.stringify({ versionId }),
+    })
+
+    if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Marketplace submission failed: ${response.status} ${response.statusText}\n${errorText}`)
+    }
+
+    const body = v.parse(ReleaseResponseSchema, await response.json())
+
+    return body.data
 }

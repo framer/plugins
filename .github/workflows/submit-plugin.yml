@@ -55,6 +55,9 @@ on:
       SESSION_TOKEN:
         description: 'Framer session cookie'
         required: true
+      FRAMER_ADMIN_SECRET:
+        description: 'Unused. Callers that still pass it fail validation if it is not declared. Remove once none do.'
+        required: false
       SLACK_WEBHOOK_URL:
         description: 'Slack webhook URL for notifications'
         required: false

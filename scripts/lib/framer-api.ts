@@ -81,6 +81,8 @@ export async function getAccessToken(env: Environment): Promise<string> {
     }
 
     const data = v.parse(AccessTokenResponseSchema, await response.json())
+
+    // Never log this, or anything built from it. GitHub will not mask it.
     return data.accessToken
 }
 

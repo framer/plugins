@@ -14,7 +14,7 @@
  *   REPO_ROOT      - Root of the git repository (optional, defaults to parent of scripts/)
  *
  * Plus all environment variables required by submit-plugin.ts:
- *   SESSION_TOKEN, FRAMER_ADMIN_SECRET, SLACK_WEBHOOK_URL, etc.
+ *   SESSION_TOKEN, SLACK_WEBHOOK_URL, etc.
  */
 
 import { execSync } from "node:child_process"

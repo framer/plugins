@@ -12,7 +12,6 @@
  *   CHANGELOG           - Changelog text (required unless PR_BODY is set)
  *   PR_BODY             - Full PR body — changelog will be extracted (alternative to CHANGELOG)
  *   SESSION_TOKEN       - Framer session cookie (required unless DRY_RUN)
- *   FRAMER_ADMIN_SECRET - Framer admin API key (required unless DRY_RUN)
  *   SLACK_WEBHOOK_URL   - Slack workflow webhook for success notifications (optional)
  *   SLACK_ERROR_WEBHOOK_URL - Slack workflow webhook for error notifications (optional)
  *   RETOOL_URL          - Retool dashboard URL for Slack notifications (optional)
@@ -50,7 +49,7 @@ async function main(): Promise<void> {
     try {
         log.info(`Plugin path: ${env.PLUGIN_PATH}`)
         log.info(`Environment: ${env.FRAMER_ENV}`)
-        log.info(`API base: ${getURL(env, "creatorsApiBase")}`)
+        log.info(`API base: ${getURL(env, "apiBase")}`)
         log.info(`Dry run: ${String(env.DRY_RUN)}`)
 
         if (!existsSync(env.PLUGIN_PATH)) {

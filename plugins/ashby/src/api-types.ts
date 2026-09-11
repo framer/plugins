@@ -39,7 +39,7 @@ export const SecondaryLocationSchema = v.object({
     address: JobAddressSchema,
 })
 
-const CompensationSchema = v.object({
+export const CompensationSchema = v.object({
     compensationTierSummary: v.nullable(v.string()),
     scrapeableCompensationSalarySummary: v.nullable(v.string()),
     compensationTiers: v.array(CompensationTiersSchema),

@@ -1,6 +1,7 @@
 import type { ManagedCollectionFieldInput } from "framer-plugin"
 import * as v from "valibot"
 import {
+    CompensationSchema,
     type DataItem,
     type Job,
     type JobAddress,
@@ -69,6 +70,14 @@ function getLocationId(entry: unknown): string | null {
         return slugify(entry.location)
     }
     return null
+}
+
+export function extractCompensationSummary(value: unknown): string | null {
+    if (typeof value !== "object" || value === null) return null
+
+    const compensation = v.parse(CompensationSchema, value)
+
+    return compensation.scrapeableCompensationSalarySummary ?? compensation.compensationTierSummary
 }
 
 export function extractLocation(locationName: string, address: JobAddress | null): Location {
@@ -169,19 +178,7 @@ const jobsDataSource = createDataSource(
             id: "compensation",
             name: "Compensation",
             type: "string",
-            getValue: value => {
-                if (typeof value !== "object" || value === null) return null
-
-                if ("scrapeableCompensationSalarySummary" in value) {
-                    return value.scrapeableCompensationSalarySummary
-                }
-
-                if ("compensationTierSummary" in value) {
-                    return value.compensationTierSummary
-                }
-
-                return null
-            },
+            getValue: extractCompensationSummary,
         },
         {
             id: "address",

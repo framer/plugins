@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { extractLocation } from "./dataSources"
+import { extractCompensationSummary, extractLocation } from "./dataSources"
 
 describe("extractLocation", () => {
     it("extracts location with full address", () => {
@@ -86,5 +86,38 @@ describe("extractLocation", () => {
 
         expect(result.id).toBe("東京")
         expect(result.name).toBe("東京")
+    })
+})
+
+const emptyCompensation = {
+    compensationTierSummary: null,
+    scrapeableCompensationSalarySummary: null,
+    compensationTiers: [],
+    summaryComponents: [],
+}
+
+describe("extractCompensationSummary", () => {
+    it("prefers the scrapeable salary summary", () => {
+        const result = extractCompensationSummary({
+            ...emptyCompensation,
+            scrapeableCompensationSalarySummary: "€100K - €150K",
+            compensationTierSummary: "€100K - €150K • Offers Equity",
+        })
+
+        expect(result).toBe("€100K - €150K")
+    })
+
+    it("falls back to the tier summary when the scrapeable summary is null", () => {
+        const result = extractCompensationSummary({
+            ...emptyCompensation,
+            compensationTierSummary: "€8K - €12K / month",
+        })
+
+        expect(result).toBe("€8K - €12K / month")
+    })
+
+    it("returns null when no summary is available", () => {
+        expect(extractCompensationSummary(emptyCompensation)).toBeNull()
+        expect(extractCompensationSummary(null)).toBeNull()
     })
 })

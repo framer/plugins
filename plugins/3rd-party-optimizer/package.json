@@ -4,11 +4,11 @@
     "version": "1.0.3",
     "type": "module",
     "scripts": {
-        "dev": "VITE_CONFIG_PATH=$(pwd)/vite.config.ts run g:dev",
-        "build": "VITE_CONFIG_PATH=$(pwd)/vite.config.ts run g:build",
+        "dev": "run g:dev",
+        "build": "run g:build",
         "check-biome": "run g:check-biome",
         "check-eslint": "run g:check-eslint",
-        "preview": "VITE_CONFIG_PATH=$(pwd)/vite.config.ts run g:preview",
+        "preview": "run g:preview",
         "pack": "run g:pack",
         "check-typescript": "run g:check-typescript"
     },
@@ -18,10 +18,7 @@
         "react-dom": "^18.3.1"
     },
     "devDependencies": {
-        "@framer/vite-config": "workspace:*",
-        "@types/node": "^24.4.0",
         "@types/react": "^18.3.24",
-        "@types/react-dom": "^18.3.7",
-        "esbuild": "^0.25.9"
+        "@types/react-dom": "^18.3.7"
     }
 }

@@ -1,10 +1,12 @@
 import type { CustomCode } from "framer-plugin"
-import { framer } from "framer-plugin"
+import { framer, useIsAllowedTo } from "framer-plugin"
 import { useLayoutEffect, useSyncExternalStore } from "react"
 import "./App.css"
 
-import scriptSource from "virtual:yield-gtm-calls"
-import warning from "./warning.svg?url"
+const PLUGIN_WIDTH = 260
+const PLUGIN_WIDTH_WITH_ACTION = 280
+// showUI height is the body. The title bar is outside it, so the body is shorter by this much.
+const PLUGIN_TITLE_BAR_HEIGHT = 50
 
 let currentCustomCode: CustomCode | null = null
 
@@ -18,79 +20,53 @@ const getSnapshot = () => currentCustomCode
 
 export function App() {
     const customCode = useSyncExternalStore(subscribe, getSnapshot)
+    const isAllowedToSetCustomCode = useIsAllowedTo("setCustomCode")
 
-    const scriptAdded = !!customCode?.headStart.html
-    const scriptOutdated = scriptAdded && customCode.headStart.html !== scriptSource
-    const toggleScript = (update?: boolean) => {
+    // subscribeToCustomCode only reports snippets this plugin installed.
+    const snippetInstalled = !!customCode?.headStart.html
+
+    useLayoutEffect(
+        function sizeSquarePopover() {
+            const width = snippetInstalled ? PLUGIN_WIDTH_WITH_ACTION : PLUGIN_WIDTH
+
+            void framer.showUI({
+                position: "top right",
+                width,
+                height: width - PLUGIN_TITLE_BAR_HEIGHT,
+            })
+        },
+        [snippetInstalled]
+    )
+
+    const removeSnippet = () => {
         void framer.setCustomCode({
-            html: scriptAdded && !update ? "" : scriptSource,
+            html: null,
             location: "headStart",
         })
     }
 
-    useLayoutEffect(() => {
-        let height = 137
-        if (customCode?.headStart.disabled) {
-            height += 10
-        }
-        if (scriptOutdated) {
-            height += 60
-        }
-
-        void framer.showUI({
-            position: "top right",
-            width: 260,
-            height,
-        })
-    }, [customCode?.headStart.disabled, scriptOutdated])
-
     return (
-        <main className="flex flex-col gap-[15px] | items-start | h-full | p-[15px] pt-0">
+        <main className="flex flex-col | w-full h-full | p-[15px] pt-0 box-border">
             <div className="framer-divider" />
 
-            {!customCode?.headStart.disabled && (
+            <div className="flex flex-1 flex-col gap-[15px] justify-center items-center | w-full">
                 <p>
-                    Add a script to your custom HTML to improve site performance when using 3rd-party tracking scripts.{" "}
-                    <a href="https://www.framer.com/marketplace/plugins/3rd-party-optimizer/" target="_blank">
-                        Learn more
-                    </a>
+                    This plugin has been replaced by “Optimize third-party scripts”
+                    <br />
+                    in Settings → Performance.
                 </p>
-            )}
 
-            {customCode?.headStart.disabled && (
-                <div className="flex flex-col gap-[10px] | justify-center items-center">
-                    <div className="flex | justify-center | w-full | py-[4px]">
-                        <img src={warning} alt="Warning" />
-                    </div>
-                    <p>
-                        The script is disabled. Please go to
-                        <br /> Site Settings → General and enable it.
-                    </p>
-                </div>
-            )}
-
-            {scriptOutdated && (
-                <>
-                    <div className="framer-divider" />
-                    <div className="flex | justify-between items-center | w-full">
-                        <p>New script version available</p>
-                        <button
-                            className="framer-button-primary | rounded-[6px] | text-[10px] font-500 | w-[46px] h-[20px]"
-                            onClick={toggleScript.bind(null, true)}
-                        >
-                            Update
-                        </button>
-                    </div>
-                    <div className="framer-divider" />
-                </>
-            )}
-
-            <button
-                className={`framer-button-secondary${scriptOutdated ? "" : " mt-[5px]"}`}
-                onClick={toggleScript.bind(null, false)}
-            >
-                {scriptAdded ? "Remove Script" : "Add Script"}
-            </button>
+                {snippetInstalled && (
+                    <button
+                        className="framer-button-secondary | w-auto p-3"
+                        onClick={removeSnippet}
+                        disabled={!isAllowedToSetCustomCode}
+                        title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}
+                    >
+                        Remove script
+                    </button>
+                )}
+            </div>
         </main>
     )
 }

@@ -31,6 +31,6 @@
         "@types/react": "^18.3.24",
         "@types/react-dom": "^18.3.7",
         "happy-dom": "^20.8.9",
-        "vitest": "^4.1.5"
+        "vitest": "^4.1.11"
     }
 }

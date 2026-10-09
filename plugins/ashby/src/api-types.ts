@@ -36,7 +36,8 @@ export const JobAddressSchema = v.object({
 
 export const SecondaryLocationSchema = v.object({
     location: v.string(),
-    address: JobAddressSchema,
+    // Ashby can omit an address for secondary locations (e.g. "Remote").
+    address: v.nullable(JobAddressSchema),
 })
 
 const CompensationSchema = v.object({

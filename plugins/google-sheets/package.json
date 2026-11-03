@@ -8,7 +8,8 @@
         "check-eslint": "run g:check-eslint",
         "preview": "run g:preview",
         "pack": "run g:pack",
-        "check-typescript": "run g:check-typescript"
+        "check-typescript": "run g:check-typescript",
+        "check-vitest": "run g:check-vitest"
     },
     "dependencies": {
         "@tanstack/react-query": "^5.87.4",

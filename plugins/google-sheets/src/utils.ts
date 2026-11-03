@@ -1,4 +1,5 @@
 import type { ProtectedMethod } from "framer-plugin"
+import type { SheetCollectionFieldInput, SheetColumnConfig } from "./sheets"
 
 export function assert(condition: unknown, ...msg: unknown[]): asserts condition {
     if (condition) return
@@ -109,6 +110,46 @@ export function generateUniqueNames(names: string[]): string[] {
         nameCount.set(name, count + 1)
 
         return count > 0 ? `${name} ${count + 1}` : name
+    })
+}
+
+/**
+ * Orders stored collection fields to match the sheet's columns. Field ids are the
+ * unique column names, so duplicate headers ("Status", "Status") are matched as
+ * "Status" and "Status 2" instead of resolving to the first column twice.
+ */
+export function orderFieldsByHeaderRow(
+    headerRow: string[],
+    fields: SheetCollectionFieldInput[]
+): SheetCollectionFieldInput[] {
+    const orderedFields: SheetCollectionFieldInput[] = []
+
+    for (const fieldId of generateUniqueNames(headerRow)) {
+        const field = fields.find(field => field.id === fieldId)
+
+        if (field) {
+            orderedFields.push(field)
+        }
+    }
+
+    return orderedFields
+}
+
+/**
+ * Rebuilds the column configs for a sync without UI from the stored fields and alt text
+ * assignments, using the same unique column names as the field mapping page.
+ */
+export function getStoredColumnConfigs(
+    headerRow: string[],
+    fields: SheetCollectionFieldInput[],
+    altTextAssignments: Record<string, string>
+): SheetColumnConfig[] {
+    return generateUniqueNames(headerRow).map(columnId => {
+        if (Object.hasOwn(altTextAssignments, columnId)) {
+            return { type: "altText" as const, imageColumnId: altTextAssignments[columnId] }
+        }
+        const field = fields.find(field => field.id === columnId)
+        return { type: field?.type ?? "string" }
     })
 }
 

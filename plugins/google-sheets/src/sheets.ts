@@ -18,6 +18,7 @@ import {
     hashStringToEnumCaseId,
     isDefined,
     listFormatter,
+    orderFieldsByHeaderRow,
     slugify,
 } from "./utils"
 
@@ -931,21 +932,11 @@ export async function getPluginContext(): Promise<PluginContext> {
 
     // If the order of the columns has changed, we need to reorder the collection fields
     if (storedSheetHeaderRowHash && collectionFields.length > 0) {
-        const reorderedCollectionFields = []
-
-        for (const fieldId of sheetHeaderRow) {
-            const field = collectionFields.find(field => field.id === fieldId)
-
-            if (field) {
-                reorderedCollectionFields.push(field)
-            }
-        }
-
-        collectionFields = reorderedCollectionFields
+        collectionFields = orderFieldsByHeaderRow(sheetHeaderRow, collectionFields)
     }
 
     // If the stored slug column is not in the spreadsheet header row, we need to update it
-    if (slugColumn && !sheetHeaderRow.includes(slugColumn)) {
+    if (slugColumn && !generateUniqueNames(sheetHeaderRow).includes(slugColumn)) {
         slugColumn = null
     }
 

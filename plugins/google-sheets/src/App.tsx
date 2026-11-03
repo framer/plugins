@@ -15,7 +15,7 @@ import {
     useSyncSheetMutation,
 } from "./sheets"
 import { showFieldMappingUI, showLoginUI } from "./ui"
-import { assert, syncMethods } from "./utils"
+import { assert, getStoredColumnConfigs, syncMethods } from "./utils"
 
 interface AppProps {
     pluginContext: PluginContext
@@ -227,13 +227,7 @@ export function App({ pluginContext }: AppProps) {
                     fields,
                     // Determine if the field type is already configured, otherwise default to "string".
                     // Alt text columns never become real CMS fields, so `fields` won't have them.
-                    columnConfigs: headerRow.map(columnId => {
-                        if (Object.hasOwn(altTextAssignments, columnId)) {
-                            return { type: "altText" as const, imageColumnId: altTextAssignments[columnId] }
-                        }
-                        const field = fields.find(field => field.id === columnId)
-                        return { type: field?.type ?? "string" }
-                    }),
+                    columnConfigs: getStoredColumnConfigs(headerRow, fields, altTextAssignments),
                     configureFields: false,
                 })
 

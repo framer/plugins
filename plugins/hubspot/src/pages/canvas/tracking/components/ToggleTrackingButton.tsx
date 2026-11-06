@@ -1,6 +1,6 @@
 import { type CustomCode, framer, useIsAllowedTo } from "framer-plugin"
 import { useEffect, useState } from "react"
-import { useUserQuery } from "../../../../api"
+import { useAccountQuery } from "../../../../api"
 import { Button } from "../../../../components/Button"
 
 const useCustomCode = () => {
@@ -11,25 +11,37 @@ const useCustomCode = () => {
     return customCode
 }
 
-const buildTrackingScript = (hubId: number) => {
-    return `<script type="text/javascript" id="hs-script-loader" async defer src="//js-eu1.hs-scripts.com/${hubId}.js"></script>`
+const buildTrackingScript = (hubId: number, dataHostingLocation: string) => {
+    return `<script type="text/javascript" id="hs-script-loader" async defer src="//js-${dataHostingLocation}.hs-scripts.com/${hubId}.js"></script>`
 }
+
+// Earlier versions always loaded the tracking script from the EU host, whatever the portal's region.
+const LEGACY_DATA_HOSTING_LOCATION = "eu1"
 
 export const ToggleTrackingButton = ({ className }: { className?: string }) => {
     const customCode = useCustomCode()
-    const { data: user, isLoading: isLoadingUser } = useUserQuery()
+    const { data: account, isLoading: isLoadingAccount } = useAccountQuery()
     const [isTrackingEnabled, setIsTrackingEnabled] = useState<boolean | null>(null)
+    const isAllowedToSetCustomCode = useIsAllowedTo("setCustomCode")
 
-    const trackingScript = buildTrackingScript(user?.hub_id ?? 0)
+    const hubId = account?.portalId ?? 0
+    const trackingScript = buildTrackingScript(hubId, account?.dataHostingLocation ?? LEGACY_DATA_HOSTING_LOCATION)
+    const legacyTrackingScript = buildTrackingScript(hubId, LEGACY_DATA_HOSTING_LOCATION)
 
     useEffect(() => {
-        if (!user) return
+        if (!account) return
 
         const existingHtml = customCode?.bodyEnd.html
-        const isEnabled = existingHtml?.includes(trackingScript)
+        const hasLegacyScript =
+            trackingScript !== legacyTrackingScript && !!existingHtml?.includes(legacyTrackingScript)
 
-        setIsTrackingEnabled(!!isEnabled)
-    }, [customCode, user, trackingScript])
+        // Move sites that enabled tracking with the EU-only script onto their portal's own region.
+        if (hasLegacyScript && isAllowedToSetCustomCode) {
+            void framer.setCustomCode({ location: "bodyEnd", html: trackingScript })
+        }
+
+        setIsTrackingEnabled(!!existingHtml?.includes(trackingScript) || hasLegacyScript)
+    }, [customCode, account, trackingScript, legacyTrackingScript, isAllowedToSetCustomCode])
 
     const toggleTracking = () =>
         void framer.setCustomCode({
@@ -37,13 +49,11 @@ export const ToggleTrackingButton = ({ className }: { className?: string }) => {
             html: isTrackingEnabled ? null : trackingScript,
         })
 
-    const isAllowedToSetCustomCode = useIsAllowedTo("setCustomCode")
-
     return (
         <Button
             variant={isTrackingEnabled ? "secondary" : "primary"}
             onClick={toggleTracking}
-            isLoading={isLoadingUser}
+            isLoading={isLoadingAccount}
             className={className}
             disabled={!isAllowedToSetCustomCode}
             title={isAllowedToSetCustomCode ? undefined : "Insufficient permissions"}

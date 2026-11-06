@@ -2,14 +2,14 @@ import cx from "classnames"
 import { framer } from "framer-plugin"
 import { useEffect } from "react"
 import { useLocation } from "wouter"
-import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery, useUserQuery } from "../../api"
+import { useAccountQuery, useFormsQuery, useInboxesQuery, useMeetingsQuery } from "../../api"
 import { HeroSection } from "../../components/HeroSection"
 import { ChartIcon, FormsIcon, LightningIcon, MeetingsIcon, MessageIcon, PersonIcon } from "../../components/Icons"
 
 const queryHooks = {
     "/canvas/forms": { hook: useFormsQuery, shouldRefetch: true },
     "/canvas/account": { hook: useAccountQuery, shouldRefetch: false },
-    "/canvas/tracking": { hook: useUserQuery, shouldRefetch: true },
+    "/canvas/tracking": { hook: useAccountQuery, shouldRefetch: true },
     "/canvas/chat": { hook: useInboxesQuery, shouldRefetch: true },
     "/canvas/meetings": { hook: useMeetingsQuery, shouldRefetch: true },
 }

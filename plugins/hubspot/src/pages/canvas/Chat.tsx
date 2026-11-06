@@ -83,7 +83,7 @@ export default function ChatPage() {
                         <a
                             target="_blank"
                             title={inbox.name}
-                            href={`https://app.hubspot.com/live-messages-settings/${account.portalId}/inboxes/${inbox.id}/edit/live-chat/primary/configure`}
+                            href={`https://${account.uiDomain}/live-messages-settings/${account.portalId}/inboxes/${inbox.id}/edit/live-chat/primary/configure`}
                         >
                             Open
                         </a>
@@ -146,7 +146,7 @@ export default function ChatPage() {
             <button
                 className="w-full"
                 onClick={() => {
-                    window.open(`https://app-eu1.hubspot.com/chatflows/${account.portalId}/`, "_blank")
+                    window.open(`https://${account.uiDomain}/chatflows/${account.portalId}/`, "_blank")
                 }}
             >
                 View Chatflows
